@@ -1,0 +1,31 @@
+:root {
+  --zook-graphite-950: #070908;
+  --zook-graphite-900: #101310;
+  --zook-graphite-800: #171c18;
+  --zook-graphite-700: #222820;
+  --zook-graphite-600: #333b32;
+  --zook-glass: rgba(255, 255, 255, 0.08);
+  --zook-glass-strong: rgba(255, 255, 255, 0.14);
+  --zook-border: rgba(255, 255, 255, 0.14);
+  --zook-text: #f4f7ef;
+  --zook-text-muted: #aeb8a8;
+  --zook-lime: #b9f455;
+  --zook-lime-deep: #6fad21;
+  --zook-amber: #ffb650;
+  --zook-red: #ff5d5d;
+  --zook-blue: #7dd3fc;
+  --zook-radius-xs: 8px;
+  --zook-radius-sm: 12px;
+  --zook-radius-md: 18px;
+  --zook-radius-lg: 24px;
+  --zook-radius-xl: 32px;
+  --zook-shadow-glass: 0 20px 70px rgba(0, 0, 0, 0.36);
+  --zook-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.zook-glass {
+  background: var(--zook-glass);
+  border: 1px solid var(--zook-border);
+  box-shadow: var(--zook-shadow-glass), var(--zook-shadow-inset);
+  backdrop-filter: blur(24px);
+}
