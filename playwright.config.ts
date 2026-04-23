@@ -9,7 +9,7 @@ export default defineConfig({
     trace: "on-first-retry"
   },
   webServer: {
-    command: "pnpm --filter @zook/web dev -- --port 3100",
+    command: "pnpm --filter @zook/web exec next dev -p 3100",
     url: "http://127.0.0.1:3100",
     reuseExistingServer: true,
     timeout: 120_000
