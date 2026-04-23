@@ -1,0 +1,20 @@
+import { NextResponse } from "next/server";
+
+export function ok<T>(data: T, init?: ResponseInit) {
+  return NextResponse.json({ ok: true, data }, init);
+}
+
+export function fail(code: string, message: string, status = 400) {
+  return NextResponse.json({ ok: false, error: { code, message } }, { status });
+}
+
+export async function readJson<T = unknown>(request: Request): Promise<T> {
+  if (request.method === "GET" || request.method === "HEAD") {
+    return {} as T;
+  }
+  const text = await request.text();
+  if (!text) {
+    return {} as T;
+  }
+  return JSON.parse(text) as T;
+}
