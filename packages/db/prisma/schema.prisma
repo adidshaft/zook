@@ -1,0 +1,1304 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PLATFORM_ADMIN
+  OWNER
+  ADMIN
+  RECEPTIONIST
+  TRAINER
+  MEMBER
+}
+
+enum Permission {
+  ORG_MANAGE_BILLING
+  ORG_MANAGE_STAFF
+  ORG_MANAGE_PERMISSIONS
+  ORG_MANAGE_PROFILE
+  ORG_MANAGE_LOCATION
+  ORG_VIEW_REPORTS
+  MEMBERS_VIEW
+  MEMBERS_MANAGE
+  MEMBERSHIP_PLAN_MANAGE
+  MEMBERSHIP_SUBSCRIPTION_MANAGE
+  PAYMENTS_VIEW
+  PAYMENTS_RECORD_OFFLINE
+  PAYMENTS_REFUND
+  COUPONS_MANAGE
+  REFERRALS_MANAGE
+  ATTENDANCE_QR_DISPLAY
+  ATTENDANCE_APPROVE
+  ATTENDANCE_MANUAL_OVERRIDE
+  TRAINERS_MANAGE
+  PT_RECORD
+  PLANS_CREATE
+  PLANS_PUBLISH_ALL
+  PLANS_PUBLISH_ASSIGNED
+  AI_USE_TEXT
+  AI_GENERATE_PLAN
+  AI_GENERATE_IMAGE
+  AI_MANAGE_SETTINGS
+  SHOP_MANAGE_PRODUCTS
+  SHOP_FULFILL_ORDER
+  NOTIFICATION_CREATE_DRAFT
+  NOTIFICATION_SEND_SELECTED
+  NOTIFICATION_SEND_ASSIGNED
+  NOTIFICATION_SEND_OPERATIONAL
+  NOTIFICATION_SEND_PROMOTIONAL
+  NOTIFICATION_SEND_RENEWAL
+  NOTIFICATION_SEND_PLAN
+  NOTIFICATION_APPROVE_BROADCAST
+  NOTIFICATION_MANAGE_TEMPLATES
+  NOTIFICATION_VIEW_ANALYTICS
+  PRIVACY_VIEW_AUDIT
+  PLATFORM_MANAGE_ORGS
+  PLATFORM_VIEW_AI_USAGE
+  PLATFORM_MANAGE_SETTINGS
+}
+
+enum OrganizationStatus {
+  TRIAL_ACTIVE
+  TRIAL_EXPIRING
+  TRIAL_EXPIRED
+  PAYMENT_PENDING
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum GymVisibility {
+  PUBLIC
+  INVITE_ONLY
+  HIDDEN
+}
+
+enum GymJoinMode {
+  OPEN_JOIN
+  APPROVAL_REQUIRED
+  INVITE_ONLY
+}
+
+enum LocationSource {
+  MANUAL
+  GOOGLE_PLACE
+  GOOGLE_MAPS_LINK
+  MOCK
+}
+
+enum MembershipPlanType {
+  DURATION
+  VISIT_PACK
+  DATE_RANGE
+  HYBRID
+  TRIAL
+}
+
+enum SubscriptionStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  PAUSED
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMode {
+  MOCK_ONLINE
+  CASH
+  DIRECT_UPI
+  BANK_TRANSFER
+  CARD
+  OTHER
+}
+
+enum PaymentPurpose {
+  SAAS_BILLING
+  MEMBERSHIP
+  SHOP_ORDER
+  PERSONAL_TRAINING
+  MANUAL_ADJUSTMENT
+}
+
+enum CouponType {
+  FIXED_AMOUNT
+  PERCENTAGE
+}
+
+enum AttendanceMode {
+  AUTOMATIC
+  EXCEPTION_APPROVAL
+  MANUAL_APPROVAL
+}
+
+enum AttendanceStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum AttendanceSource {
+  QR_SCAN
+  MANUAL
+  IMPORT
+}
+
+enum NotificationType {
+  TRANSACTIONAL
+  OPERATIONAL
+  PROMOTIONAL
+  ENGAGEMENT
+  PLAN
+  SECURITY
+}
+
+enum NotificationStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  CANCELLED
+  FAILED
+  NEEDS_APPROVAL
+}
+
+enum PlanType {
+  WORKOUT
+  DIET
+  EXERCISE_ROUTINE
+  TRANSFORMATION_PROGRAM
+  TRAINER_NOTE
+  GYM_ADVISORY
+  MACHINE_GUIDE
+  RECOVERY
+}
+
+enum PlanStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AIProviderType {
+  MOCK
+  OPENAI
+}
+
+enum AIRequestType {
+  CHAT
+  STRUCTURED_PLAN
+  IMAGE
+  SCOPE_CLASSIFICATION
+  SAFETY_CLASSIFICATION
+}
+
+enum ProductCategory {
+  WATER
+  PROTEIN_SHAKE
+  SHAKER
+  TOWEL
+  SUPPLEMENT
+  OTHER
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  READY_FOR_PICKUP
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+enum ConsentType {
+  MARKETING
+  AI_PERSONALIZATION
+  PROFILE_PHOTO_ATTENDANCE
+  GUARDIAN
+  NOTIFICATION_PUSH
+  DATA_EXPORT
+  ACCOUNT_DELETION
+}
+
+enum ConsentStatus {
+  PENDING
+  GRANTED
+  REVOKED
+  DENIED
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  emailVerifiedAt    DateTime?
+  name               String
+  phone              String?
+  dateOfBirth        DateTime?
+  profilePhotoUrl    String?
+  gender             String?
+  fitnessGoal        String?
+  emergencyContact   Json?
+  isMinor            Boolean   @default(false)
+  guardianPending    Boolean   @default(false)
+  isPlatformAdmin    Boolean   @default(false)
+  marketingOptIn     Boolean   @default(true)
+  aiConsent          Boolean   @default(false)
+  deletedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([email])
+  @@index([isPlatformAdmin])
+}
+
+model UserSession {
+  id             String    @id @default(cuid())
+  userId         String
+  tokenHash      String    @unique
+  userAgent      String?
+  ipAddress      String?
+  deviceLabel    String?
+  revokedAt      DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model OtpChallenge {
+  id           String    @id @default(cuid())
+  email        String
+  codeHash     String
+  purpose      String    @default("login")
+  attempts     Int       @default(0)
+  maxAttempts  Int       @default(5)
+  resendCount  Int       @default(0)
+  ipAddress    String?
+  consumedAt   DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+}
+
+model FileAsset {
+  id            String   @id @default(cuid())
+  orgId         String?
+  ownerUserId   String?
+  storageKey    String
+  url           String
+  mimeType      String
+  sizeBytes     Int
+  purpose       String
+  checksum      String?
+  metadata      Json?
+  deletedAt     DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([orgId])
+  @@index([ownerUserId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  orgId       String?
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String?
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([orgId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model Organization {
+  id                    String             @id @default(cuid())
+  name                  String
+  username              String             @unique
+  logoUrl               String?
+  coverImageUrl         String?
+  contactPhone          String?
+  contactEmail          String?
+  address               String
+  city                  String
+  state                 String
+  pincode               String
+  country               String             @default("India")
+  latitude              Decimal?           @db.Decimal(10, 7)
+  longitude             Decimal?           @db.Decimal(10, 7)
+  googlePlaceId         String?
+  originalGoogleMapsUrl String?
+  locationSource        LocationSource     @default(MANUAL)
+  operatingHours        Json?
+  amenities             Json?
+  visibility            GymVisibility      @default(PUBLIC)
+  joinMode              GymJoinMode        @default(OPEN_JOIN)
+  status                OrganizationStatus @default(TRIAL_ACTIVE)
+  trialStartAt          DateTime           @default(now())
+  trialEndAt            DateTime
+  gstNumber             String?
+  legalName             String?
+  attendanceMode        AttendanceMode     @default(EXCEPTION_APPROVAL)
+  multiEntryConsumes    Boolean            @default(false)
+  settings              Json?
+  createdByUserId       String
+  deletedAt             DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([city])
+  @@index([status])
+  @@index([visibility])
+  @@index([latitude, longitude])
+}
+
+model OrganizationUsernameHistory {
+  id          String   @id @default(cuid())
+  orgId       String
+  oldUsername String   @unique
+  newUsername String
+  changedById String
+  createdAt   DateTime @default(now())
+
+  @@index([orgId])
+}
+
+model Branch {
+  id             String         @id @default(cuid())
+  orgId          String
+  name           String
+  address        String
+  city           String
+  state          String
+  pincode        String
+  latitude       Decimal?       @db.Decimal(10, 7)
+  longitude      Decimal?       @db.Decimal(10, 7)
+  locationSource LocationSource @default(MANUAL)
+  isDefault      Boolean        @default(false)
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([orgId])
+  @@unique([orgId, name])
+}
+
+model OrganizationUser {
+  id        String    @id @default(cuid())
+  orgId     String
+  userId    String
+  status    String    @default("active")
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([orgId, userId])
+  @@index([userId])
+}
+
+model OrganizationRoleAssignment {
+  id           String   @id @default(cuid())
+  orgId        String
+  userId       String
+  role         Role
+  assignedById String?
+  createdAt    DateTime @default(now())
+
+  @@unique([orgId, userId, role])
+  @@index([orgId, role])
+  @@index([userId])
+}
+
+model OrganizationRolePermission {
+  id          String     @id @default(cuid())
+  orgId       String
+  role        Role
+  permission  Permission
+  enabled     Boolean    @default(true)
+  overriddenByUserId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([orgId, role, permission])
+  @@index([orgId])
+}
+
+model StaffInvitation {
+  id            String   @id @default(cuid())
+  orgId         String
+  email         String
+  role          Role
+  token         String   @unique
+  invitedById   String
+  acceptedById  String?
+  acceptedAt    DateTime?
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([orgId, email])
+}
+
+model SaaSSubscription {
+  id               String             @id @default(cuid())
+  orgId            String             @unique
+  status           OrganizationStatus @default(TRIAL_ACTIVE)
+  trialStartAt     DateTime
+  trialEndAt       DateTime
+  billingEmail     String?
+  paymentSessionId String?
+  nextBillingAt    DateTime?
+  cancelledAt      DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([status])
+}
+
+model OrganizationSetting {
+  id        String   @id @default(cuid())
+  orgId     String   @unique
+  keyValues Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MemberProfile {
+  id                      String   @id @default(cuid())
+  orgId                   String
+  userId                  String
+  profilePhotoUrl          String?
+  profilePhotoConsentAt    DateTime?
+  marketingOptIn           Boolean  @default(true)
+  publicVisibility         Boolean  @default(false)
+  joinedViaReferralCodeId  String?
+  emergencyContact         Json?
+  notes                    String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@unique([orgId, userId])
+  @@index([orgId])
+  @@index([userId])
+}
+
+model GuardianConsent {
+  id             String        @id @default(cuid())
+  minorUserId    String
+  guardianName   String
+  guardianEmail  String
+  guardianPhone  String
+  relationship   String
+  status         ConsentStatus @default(PENDING)
+  otpChallengeId String?
+  consentedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([minorUserId])
+  @@index([guardianEmail])
+}
+
+model ConsentRecord {
+  id          String        @id @default(cuid())
+  orgId       String?
+  userId      String
+  type        ConsentType
+  status      ConsentStatus
+  metadata    Json?
+  recordedById String?
+  createdAt   DateTime     @default(now())
+
+  @@index([orgId])
+  @@index([userId, type])
+}
+
+model MembershipPlan {
+  id                 String             @id @default(cuid())
+  orgId              String
+  branchId           String?
+  name               String
+  description        String?
+  type               MembershipPlanType
+  pricePaise         Int
+  currency           String             @default("INR")
+  gstRateBps         Int?
+  joiningFeePaise    Int?               @default(0)
+  durationDays       Int?
+  visitLimit         Int?
+  validityDays       Int?
+  startDate          DateTime?
+  endDate            DateTime?
+  accessDays         Json?
+  maxEntriesPerDay   Int                @default(1)
+  active             Boolean            @default(true)
+  publicVisible      Boolean            @default(true)
+  terms              String?
+  cancellationPolicy String?
+  createdById        String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([orgId, active])
+  @@index([orgId, publicVisible])
+}
+
+model MemberSubscription {
+  id                 String             @id @default(cuid())
+  orgId              String
+  branchId           String
+  memberUserId       String
+  planId             String
+  status             SubscriptionStatus @default(PENDING_PAYMENT)
+  startsAt           DateTime?
+  endsAt             DateTime?
+  remainingVisits    Int?
+  paymentId          String?
+  couponRedemptionId String?
+  referralCodeId     String?
+  activatedById      String?
+  pausedAt           DateTime?
+  cancelledAt        DateTime?
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([orgId, memberUserId, status])
+  @@index([orgId, planId])
+  @@index([endsAt])
+}
+
+model MembershipUsage {
+  id             String   @id @default(cuid())
+  orgId          String
+  subscriptionId String
+  attendanceId   String?
+  usedVisits      Int      @default(1)
+  usageDate       DateTime @default(now())
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  @@index([orgId, subscriptionId])
+}
+
+model MembershipJoinRequest {
+  id           String   @id @default(cuid())
+  orgId        String
+  branchId     String?
+  userId       String
+  planId       String?
+  referralCode String?
+  status       String   @default("pending")
+  message      String?
+  reviewedById String?
+  reviewedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([orgId, status])
+  @@index([userId])
+}
+
+model PaymentSession {
+  id              String         @id @default(cuid())
+  provider        String         @default("mock")
+  orgId           String?
+  userId          String?
+  purpose         PaymentPurpose
+  amountPaise     Int
+  currency        String         @default("INR")
+  status          PaymentStatus  @default(CREATED)
+  checkoutUrl     String
+  providerRef     String?
+  metadata        Json?
+  expiresAt       DateTime
+  completedAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([orgId, status])
+  @@index([userId, status])
+  @@index([status])
+}
+
+model Payment {
+  id               String         @id @default(cuid())
+  orgId            String?
+  userId           String?
+  sessionId        String?
+  purpose          PaymentPurpose
+  amountPaise      Int
+  currency         String         @default("INR")
+  status           PaymentStatus
+  mode             PaymentMode
+  provider         String?
+  providerRef      String?
+  receiptNumber    String?
+  proofAssetId     String?
+  recordedById     String?
+  recordedAt       DateTime?
+  metadata         Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([orgId, status])
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model Invoice {
+  id           String        @id @default(cuid())
+  orgId        String?
+  userId       String?
+  paymentId    String
+  invoiceNo    String        @unique
+  amountPaise  Int
+  taxPaise     Int           @default(0)
+  status       PaymentStatus
+  issuedAt     DateTime      @default(now())
+  metadata     Json?
+
+  @@index([orgId])
+  @@index([userId])
+}
+
+model ManualPaymentAdjustment {
+  id                String   @id @default(cuid())
+  orgId             String
+  originalPaymentId String
+  adjustmentType    String
+  amountPaise       Int
+  reason            String
+  recordedById      String
+  createdAt         DateTime @default(now())
+
+  @@index([orgId, originalPaymentId])
+}
+
+model Coupon {
+  id                String     @id @default(cuid())
+  orgId             String
+  code              String
+  type              CouponType
+  valuePaise        Int?
+  valuePercentBps   Int?
+  active            Boolean    @default(true)
+  validFrom         DateTime?
+  validUntil        DateTime?
+  maxRedemptions    Int?
+  perUserLimit      Int?
+  applicablePlanId  String?
+  createdById       String
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@unique([orgId, code])
+  @@index([orgId, active])
+}
+
+model CouponRedemption {
+  id              String   @id @default(cuid())
+  orgId           String
+  couponId        String
+  userId          String
+  subscriptionId  String?
+  paymentSessionId String?
+  discountPaise   Int
+  createdAt       DateTime @default(now())
+
+  @@index([orgId, couponId])
+  @@index([orgId, userId])
+}
+
+model ReferralCode {
+  id              String   @id @default(cuid())
+  orgId           String
+  referrerUserId  String
+  code            String   @unique
+  couponId        String?
+  createdByRole   Role
+  expiresAt       DateTime?
+  maxUses         Int?
+  status          String   @default("active")
+  redemptionCount Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([referrerUserId])
+}
+
+model ReferralRedemption {
+  id             String   @id @default(cuid())
+  orgId          String
+  referralCodeId String
+  referredUserId String
+  subscriptionId String?
+  suspicious     Boolean  @default(false)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@unique([orgId, referralCodeId, referredUserId])
+  @@index([orgId, referredUserId])
+}
+
+model AttendanceQrToken {
+  id        String    @id @default(cuid())
+  orgId     String
+  branchId  String
+  nonce     String    @unique
+  issuedAt  DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+  signature String
+  createdById String?
+
+  @@index([orgId, branchId, expiresAt])
+}
+
+model AttendanceRecord {
+  id              String           @id @default(cuid())
+  orgId           String
+  branchId        String
+  userId          String
+  subscriptionId  String?
+  status          AttendanceStatus @default(PENDING_APPROVAL)
+  source          AttendanceSource @default(QR_SCAN)
+  dateKey         String
+  checkedInAt     DateTime         @default(now())
+  approvedById    String?
+  approvedAt      DateTime?
+  rejectedById    String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  suspiciousFlags Json?
+  qrTokenId       String?
+  deviceId        String?
+  createdAt       DateTime         @default(now())
+
+  @@unique([orgId, branchId, userId, dateKey])
+  @@index([orgId, status, checkedInAt])
+  @@index([userId, checkedInAt])
+}
+
+model AttendanceOverride {
+  id                 String   @id @default(cuid())
+  orgId              String
+  attendanceRecordId String?
+  userId             String
+  reason             String
+  notes              String?
+  createdById        String
+  createdAt          DateTime @default(now())
+
+  @@index([orgId, userId])
+}
+
+model TrainerProfile {
+  id              String   @id @default(cuid())
+  orgId           String
+  userId          String
+  bio             String?
+  specialties     Json?
+  availability    Json?
+  upiId           String?
+  upiQrAssetId    String?
+  visibleToMembers Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([orgId, userId])
+  @@index([orgId])
+}
+
+model TrainerAssignment {
+  id            String   @id @default(cuid())
+  orgId         String
+  trainerUserId String
+  memberUserId  String
+  assignedById  String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@unique([orgId, trainerUserId, memberUserId])
+  @@index([orgId, trainerUserId])
+  @@index([orgId, memberUserId])
+}
+
+model PersonalTrainingPlan {
+  id              String   @id @default(cuid())
+  orgId           String
+  trainerUserId   String
+  name            String
+  description     String?
+  durationDays    Int?
+  sessionCount    Int?
+  pricePaise      Int
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([orgId, trainerUserId])
+}
+
+model PersonalTrainingSubscription {
+  id                 String             @id @default(cuid())
+  orgId              String
+  memberUserId       String
+  trainerUserId      String
+  ptPlanId           String?
+  status             SubscriptionStatus @default(PENDING_PAYMENT)
+  startsAt           DateTime?
+  endsAt             DateTime?
+  totalSessions      Int?
+  remainingSessions  Int?
+  amountPaise        Int
+  paymentMode        PaymentMode
+  proofAssetId       String?
+  notes              String?
+  recordedById       String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([orgId, trainerUserId, status])
+  @@index([orgId, memberUserId])
+}
+
+model PersonalTrainingSessionLog {
+  id             String   @id @default(cuid())
+  orgId          String
+  subscriptionId String
+  trainerUserId  String
+  memberUserId   String
+  sessionAt      DateTime @default(now())
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  @@index([orgId, subscriptionId])
+}
+
+model PlanContent {
+  id             String     @id @default(cuid())
+  orgId          String
+  creatorUserId  String
+  type           PlanType
+  title          String
+  description    String?
+  content        Json
+  attachments    Json?
+  aiGenerated    Boolean    @default(false)
+  reviewed       Boolean    @default(false)
+  reviewedById   String?
+  status         PlanStatus @default(DRAFT)
+  visibility     String     @default("selected")
+  versionNumber  Int        @default(1)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([orgId, status])
+  @@index([creatorUserId])
+}
+
+model PlanVersion {
+  id           String   @id @default(cuid())
+  orgId        String
+  planId       String
+  versionNo    Int
+  content      Json
+  createdById  String
+  createdAt    DateTime @default(now())
+
+  @@unique([planId, versionNo])
+  @@index([orgId, planId])
+}
+
+model PlanAssignment {
+  id             String   @id @default(cuid())
+  orgId          String
+  planId         String
+  assignedById   String
+  assignedToUserId String?
+  audience       String
+  metadata       Json?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@index([orgId, assignedToUserId])
+  @@index([orgId, planId])
+}
+
+model PlanProgress {
+  id             String   @id @default(cuid())
+  orgId          String
+  assignmentId   String
+  userId         String
+  progressJson   Json
+  completionPct  Int      @default(0)
+  feedback       String?
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
+  @@unique([assignmentId, userId])
+  @@index([orgId, userId])
+}
+
+model ResourceLibraryItem {
+  id          String   @id @default(cuid())
+  orgId       String
+  title       String
+  url         String?
+  summary     String?
+  content     String?
+  approved    Boolean  @default(true)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orgId, approved])
+}
+
+model AIConversation {
+  id        String   @id @default(cuid())
+  orgId     String?
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, userId])
+}
+
+model AIMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  safetyFlags    Json?
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model AIUsageLog {
+  id              String         @id @default(cuid())
+  orgId           String?
+  userId          String
+  role            Role
+  provider        AIProviderType
+  requestType     AIRequestType
+  promptSummary   String
+  responseSummary String?
+  tokenEstimate   Int            @default(0)
+  costEstimatePaise Int          @default(0)
+  imageCount      Int            @default(0)
+  safetyFlags     Json?
+  quotaConsumed   Int            @default(1)
+  createdPlanId   String?
+  createdAt       DateTime       @default(now())
+
+  @@index([orgId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model AIQuota {
+  id             String   @id @default(cuid())
+  orgId          String?
+  userId         String?
+  role           Role?
+  textDailyLimit Int
+  textMonthLimit Int
+  imageMonthLimit Int   @default(0)
+  usedTextDaily  Int    @default(0)
+  usedTextMonth  Int    @default(0)
+  usedImagesMonth Int   @default(0)
+  resetDailyAt   DateTime
+  resetMonthAt   DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([userId])
+}
+
+model Notification {
+  id            String             @id @default(cuid())
+  orgId         String?
+  createdById   String?
+  type          NotificationType
+  status        NotificationStatus @default(DRAFT)
+  title         String
+  body          String
+  audience      String
+  scheduledAt   DateTime?
+  sentAt        DateTime?
+  pushEnabled   Boolean            @default(false)
+  metadata      Json?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([orgId, status])
+}
+
+model NotificationRecipient {
+  id              String   @id @default(cuid())
+  notificationId  String
+  userId          String
+  readAt          DateTime?
+  deliveryStatus  String   @default("in_app")
+  deliveredAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@unique([notificationId, userId])
+  @@index([userId, readAt])
+}
+
+model NotificationTemplate {
+  id          String           @id @default(cuid())
+  orgId       String?
+  type        NotificationType
+  name        String
+  title       String
+  body        String
+  active      Boolean          @default(true)
+  createdById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([orgId, active])
+}
+
+model UserNotificationPreference {
+  id              String   @id @default(cuid())
+  orgId           String?
+  userId          String
+  transactional   Boolean  @default(true)
+  operational     Boolean  @default(true)
+  promotional     Boolean  @default(true)
+  engagement      Boolean  @default(true)
+  pushEnabled     Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([orgId, userId])
+  @@index([userId])
+}
+
+model UserGoal {
+  id          String   @id @default(cuid())
+  orgId       String?
+  userId      String
+  type        String
+  title       String
+  targetValue Int?
+  currentValue Int   @default(0)
+  period      String?
+  active      Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orgId, userId])
+}
+
+model HabitChecklist {
+  id        String   @id @default(cuid())
+  orgId     String?
+  userId    String
+  title     String
+  items     Json
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model HabitCompletion {
+  id          String   @id @default(cuid())
+  habitId     String
+  userId      String
+  dateKey     String
+  completedItems Json
+  createdAt   DateTime @default(now())
+
+  @@unique([habitId, userId, dateKey])
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String
+  icon        String?
+  createdAt   DateTime @default(now())
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  orgId     String?
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+  metadata  Json?
+
+  @@unique([orgId, userId, badgeId])
+  @@index([userId])
+}
+
+model Challenge {
+  id          String   @id @default(cuid())
+  orgId       String
+  createdById String
+  title       String
+  description String?
+  startsAt    DateTime
+  endsAt      DateTime
+  optInOnly   Boolean  @default(true)
+  leaderboardEnabled Boolean @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orgId, active])
+}
+
+model ChallengeParticipant {
+  id          String   @id @default(cuid())
+  orgId       String
+  challengeId String
+  userId      String
+  optedInAt   DateTime @default(now())
+  visibleOnLeaderboard Boolean @default(false)
+
+  @@unique([challengeId, userId])
+  @@index([orgId, userId])
+}
+
+model ChallengeProgress {
+  id          String   @id @default(cuid())
+  orgId       String
+  challengeId String
+  userId      String
+  value       Int      @default(0)
+  metadata    Json?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([challengeId, userId])
+}
+
+model Product {
+  id                 String          @id @default(cuid())
+  orgId              String
+  name               String
+  description        String?
+  category           ProductCategory
+  pricePaise         Int
+  stock              Int
+  lowStockThreshold  Int             @default(5)
+  imageUrl           String?
+  active             Boolean         @default(true)
+  taxRateBps         Int?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([orgId, active])
+}
+
+model InventoryMovement {
+  id          String   @id @default(cuid())
+  orgId       String
+  productId   String
+  delta       Int
+  reason      String
+  orderId     String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([orgId, productId])
+}
+
+model ShopOrder {
+  id               String      @id @default(cuid())
+  orgId            String
+  userId           String
+  status           OrderStatus @default(PENDING_PAYMENT)
+  paymentSessionId String?
+  paymentId        String?
+  totalPaise       Int
+  pickupCode       String?
+  fulfilledById    String?
+  fulfilledAt      DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([orgId, status])
+  @@index([userId, status])
+}
+
+model ShopOrderItem {
+  id          String   @id @default(cuid())
+  orgId       String
+  orderId     String
+  productId   String
+  quantity    Int
+  unitPaise   Int
+  createdAt   DateTime @default(now())
+
+  @@index([orgId, orderId])
+}
+
+model PickupCode {
+  id          String      @id @default(cuid())
+  orgId       String
+  orderId     String      @unique
+  code        String      @unique
+  status      OrderStatus @default(READY_FOR_PICKUP)
+  expiresAt   DateTime?
+  createdAt   DateTime    @default(now())
+  fulfilledAt DateTime?
+
+  @@index([orgId, status])
+}
+
+model PlatformSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedById String?
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model OrganizationAbuseFlag {
+  id          String   @id @default(cuid())
+  orgId       String
+  userId      String?
+  type        String
+  severity    String
+  status      String   @default("open")
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  resolvedById String?
+
+  @@index([orgId, status])
+}
