@@ -44,6 +44,7 @@ export function LoginPanel() {
       <div className="mt-6 grid gap-3">
         <label className="text-xs font-medium uppercase text-white/45">Email</label>
         <input
+          aria-label="Email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
@@ -52,6 +53,7 @@ export function LoginPanel() {
           <>
             <label className="text-xs font-medium uppercase text-white/45">OTP</label>
             <input
+              aria-label="OTP"
               value={code}
               onChange={(event) => setCode(event.target.value)}
               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
