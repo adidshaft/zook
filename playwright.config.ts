@@ -5,12 +5,12 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 5_000 },
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: "http://127.0.0.1:3100",
     trace: "on-first-retry"
   },
   webServer: {
-    command: "pnpm dev:web",
-    url: "http://127.0.0.1:3000",
+    command: "pnpm --filter @zook/web dev -- --port 3100",
+    url: "http://127.0.0.1:3100",
     reuseExistingServer: true,
     timeout: 120_000
   },
