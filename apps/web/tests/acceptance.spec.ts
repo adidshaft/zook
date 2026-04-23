@@ -13,7 +13,7 @@ test("mock checkout page renders", async ({ page }) => {
 
 test("QR display route renders dashboard QR panel", async ({ page }) => {
   await page.goto("/dashboard/attendance/qr-display");
-  await expect(page.getByRole("heading", { name: "Attendance Qr Display" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Attendance / Qr Display" })).toBeVisible();
   await expect(page.getByText("Rolling signed tokens refresh")).toBeVisible();
 });
 
