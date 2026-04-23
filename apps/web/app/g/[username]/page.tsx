@@ -37,7 +37,9 @@ export default async function GymPublicPage({
         take: 4
       });
     }
-  } catch {}
+  } catch {
+    // Database is optional for static preview; seeded demo data remains available.
+  }
 
   if (!org) {
     return <main className="p-8">Gym not found.</main>;

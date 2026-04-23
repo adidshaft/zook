@@ -14,7 +14,9 @@ export default async function ReferralPage({
     const referral = await prisma.referralCode.findUnique({ where: { code } });
     const org = referral ? await prisma.organization.findUnique({ where: { id: referral.orgId } }) : null;
     if (org) username = org.username;
-  } catch {}
+  } catch {
+    // Database is optional for static preview; referral fallback remains usable.
+  }
 
   return (
     <main className="grid min-h-screen place-items-center px-5 py-8">

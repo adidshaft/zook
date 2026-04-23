@@ -410,7 +410,7 @@ async function main() {
     }
   });
 
-  const annual = await prisma.membershipPlan.create({
+  await prisma.membershipPlan.create({
     data: {
       orgId: ironHouse.id,
       branchId: ironBranch.id,

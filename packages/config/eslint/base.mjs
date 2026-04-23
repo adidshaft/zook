@@ -1,8 +1,24 @@
 import js from "@eslint/js";
+import tseslint from "typescript-eslint";
 
 export default [
-  js.configs.recommended,
   {
+    ignores: [
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/coverage/**",
+      "**/.expo/**",
+      "**/playwright-report/**",
+      "**/next-env.d.ts",
+      "**/expo-env.d.ts"
+    ]
+  },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    files: ["**/*.{js,mjs,cjs,ts,tsx}"],
     ignores: [
       "node_modules/**",
       ".next/**",
@@ -18,7 +34,12 @@ export default [
     },
     rules: {
       "no-unused-vars": "off",
-      "no-undef": "off"
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+      ],
+      "no-undef": "off",
+      "@typescript-eslint/no-explicit-any": "off"
     }
   }
 ];
