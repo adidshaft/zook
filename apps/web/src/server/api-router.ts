@@ -691,6 +691,221 @@ async function handleAttendance(request: NextRequest, path: string[]) {
   return undefined;
 }
 
+async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "staff"])) {
+    const orgId = path[1]!;
+    const staff = await prisma.organizationRoleAssignment.findMany({ where: { orgId, role: { not: "MEMBER" } } });
+    const users = await prisma.user.findMany({ where: { id: { in: staff.map((row) => row.userId) } } });
+    return ok({ staff, users });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "staff", "invite"])) {
+    const userId = requireUser(await createRequestContext(request));
+    const orgId = path[1]!;
+    await ensureOrgRole(orgId, userId, "ORG_MANAGE_STAFF");
+    const body = (await readJson(request)) as { email: string; role: Role };
+    const invite = await prisma.staffInvitation.create({
+      data: {
+        orgId,
+        email: body.email,
+        role: body.role,
+        token: randomBytes(18).toString("base64url"),
+        invitedById: userId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+    });
+    return ok({ invite });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "permissions"])) {
+    return ok({ permissions: await prisma.organizationRolePermission.findMany({ where: { orgId: path[1]! } }) });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "permissions"])) {
+    const userId = requireUser(await createRequestContext(request));
+    const orgId = path[1]!;
+    await ensureOrgRole(orgId, userId, "ORG_MANAGE_PERMISSIONS");
+    const body = (await readJson(request)) as { role: Role; permission: string; enabled: boolean };
+    const permission = await prisma.organizationRolePermission.upsert({
+      where: { orgId_role_permission: { orgId, role: body.role, permission: body.permission as never } },
+      update: { enabled: body.enabled, overriddenByUserId: userId },
+      create: { orgId, role: body.role, permission: body.permission as never, enabled: body.enabled, overriddenByUserId: userId }
+    });
+    return ok({ permission });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "manual-payments"])) {
+    const userId = requireUser(await createRequestContext(request));
+    const orgId = path[1]!;
+    await ensureOrgRole(orgId, userId, "PAYMENTS_RECORD_OFFLINE");
+    const body = (await readJson(request)) as {
+      memberUserId?: string;
+      amountPaise: number;
+      mode: "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "OTHER";
+      receiptNumber?: string;
+      notes?: string;
+    };
+    const payment = await prisma.payment.create({
+      data: clean({
+        orgId,
+        userId: body.memberUserId,
+        purpose: "MEMBERSHIP",
+        amountPaise: body.amountPaise,
+        status: "SUCCEEDED",
+        mode: body.mode,
+        receiptNumber: body.receiptNumber,
+        notes: body.notes,
+        recordedById: userId,
+        recordedAt: new Date()
+      })
+    });
+    return ok({ payment });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients"])) {
+    const orgId = path[1]!;
+    const trainerId = path[3]!;
+    return ok({
+      clients: await prisma.trainerAssignment.findMany({
+        where: { orgId, trainerUserId: trainerId, active: true }
+      })
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "pt-plans"])) {
+    const userId = requireUser(await createRequestContext(request));
+    const orgId = path[1]!;
+    await ensureOrgRole(orgId, userId, "PT_RECORD");
+    const body = (await readJson(request)) as { name: string; description?: string; sessionCount?: number; durationDays?: number; pricePaise: number };
+    const plan = await prisma.personalTrainingPlan.create({
+      data: clean({
+        orgId,
+        trainerUserId: path[3]!,
+        name: body.name,
+        description: body.description,
+        sessionCount: body.sessionCount,
+        durationDays: body.durationDays,
+        pricePaise: body.pricePaise
+      })
+    });
+    return ok({ plan });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "pt-subscriptions"])) {
+    const userId = requireUser(await createRequestContext(request));
+    const orgId = path[1]!;
+    await ensureOrgRole(orgId, userId, "PT_RECORD");
+    const body = (await readJson(request)) as {
+      memberUserId: string;
+      trainerUserId: string;
+      ptPlanId?: string;
+      amountPaise: number;
+      paymentMode: "CASH" | "DIRECT_UPI" | "OTHER";
+      totalSessions?: number;
+      notes?: string;
+    };
+    const sub = await prisma.personalTrainingSubscription.create({
+      data: clean({
+        orgId,
+        memberUserId: body.memberUserId,
+        trainerUserId: body.trainerUserId,
+        ptPlanId: body.ptPlanId,
+        status: "ACTIVE",
+        startsAt: new Date(),
+        totalSessions: body.totalSessions,
+        remainingSessions: body.totalSessions,
+        amountPaise: body.amountPaise,
+        paymentMode: body.paymentMode,
+        notes: body.notes,
+        recordedById: userId
+      })
+    });
+    return ok({ subscription: sub });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plans"])) {
+    const userId = requireUser(await createRequestContext(request));
+    const orgId = path[1]!;
+    await ensureOrgRole(orgId, userId, "PLANS_CREATE");
+    const body = (await readJson(request)) as { title: string; type?: string; description?: string; content?: Record<string, unknown>; aiGenerated?: boolean };
+    const plan = await prisma.planContent.create({
+      data: clean({
+        orgId,
+        creatorUserId: userId,
+        type: (body.type ?? "WORKOUT") as never,
+        title: body.title,
+        description: body.description,
+        content: (body.content ?? { blocks: [] }) as Prisma.InputJsonValue,
+        aiGenerated: body.aiGenerated ?? false
+      })
+    });
+    return ok({ plan });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plans", /.+/, "publish"])) {
+    const userId = requireUser(await createRequestContext(request));
+    const orgId = path[1]!;
+    await ensureOrgRole(orgId, userId, "PLANS_PUBLISH_ALL");
+    const plan = await prisma.planContent.update({
+      where: { id: path[3]! },
+      data: { status: "PUBLISHED", reviewed: true, reviewedById: userId }
+    });
+    return ok({ plan });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plans", /.+/, "assign"])) {
+    const userId = requireUser(await createRequestContext(request));
+    const orgId = path[1]!;
+    await ensureOrgRole(orgId, userId, "PLANS_PUBLISH_ASSIGNED");
+    const body = (await readJson(request)) as { assignedToUserId?: string; audience?: string };
+    const assignment = await prisma.planAssignment.create({
+      data: clean({
+        orgId,
+        planId: path[3]!,
+        assignedById: userId,
+        assignedToUserId: body.assignedToUserId,
+        audience: body.audience ?? "selected_member"
+      })
+    });
+    return ok({ assignment });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "plans"])) {
+    const userId = requireUser(await createRequestContext(request));
+    return ok({ plans: await prisma.planAssignment.findMany({ where: { assignedToUserId: userId, active: true } }) });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "plans", /.+/, "progress"])) {
+    const userId = requireUser(await createRequestContext(request));
+    const body = (await readJson(request)) as { orgId: string; progressJson?: Record<string, unknown>; completionPct?: number; feedback?: string };
+    const progress = await prisma.planProgress.upsert({
+      where: { assignmentId_userId: { assignmentId: path[2]!, userId } },
+      update: clean({
+        progressJson: (body.progressJson ?? {}) as Prisma.InputJsonValue,
+        completionPct: body.completionPct ?? 0,
+        feedback: body.feedback
+      }),
+      create: clean({
+        orgId: body.orgId,
+        assignmentId: path[2]!,
+        userId,
+        progressJson: (body.progressJson ?? {}) as Prisma.InputJsonValue,
+        completionPct: body.completionPct ?? 0,
+        feedback: body.feedback
+      })
+    });
+    return ok({ progress });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "goals"])) {
+    const userId = requireUser(await createRequestContext(request));
+    return ok({ goals: await prisma.userGoal.findMany({ where: { userId, active: true } }) });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "goals"])) {
+    const userId = requireUser(await createRequestContext(request));
+    const body = (await readJson(request)) as { orgId?: string; type: string; title: string; targetValue?: number; period?: string };
+    const goal = await prisma.userGoal.create({
+      data: clean({ orgId: body.orgId, userId, type: body.type, title: body.title, targetValue: body.targetValue, period: body.period })
+    });
+    return ok({ goal });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "badges"])) {
+    const userId = requireUser(await createRequestContext(request));
+    return ok({ badges: await prisma.userBadge.findMany({ where: { userId } }) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "challenges"])) {
+    return ok({ challenges: await prisma.challenge.findMany({ where: { orgId: path[1]!, active: true } }) });
+  }
+  return undefined;
+}
+
 async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["ai", "chat"])) {
     const ctx = await createRequestContext(request);
@@ -887,6 +1102,7 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
       handleMembershipPayments,
       handleCouponsReferrals,
       handleAttendance,
+      handleStaffPlansGoals,
       handleAiNotificationsShopPrivacyPlatform
     ]) {
       const response = await handler(request, path);
