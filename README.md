@@ -126,6 +126,7 @@ RUN_DB_WEB_TESTS=1 pnpm test:web
 - QR scan UI uses Expo Camera; simulator testing may require a physical device or pasted QR payload.
 - Multi-branch data model exists, but UI focuses on one branch.
 - OpenAI, Google Maps, real payments, SMS, production push, and S3/R2 are prepared but not implemented with live credentials.
+- The physical iOS dev build omits the native `expo-notifications` package until an Apple provisioning profile with Push Notifications is configured; the backend push abstraction remains mocked.
 - Database-dependent commands require local PostgreSQL via Docker.
 
 ## Acceptance Checklist

@@ -24,8 +24,7 @@
         {
           "cameraPermission": "Zook uses the camera to scan gym attendance QR codes."
         }
-      ],
-      "expo-notifications"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
