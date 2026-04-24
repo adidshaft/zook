@@ -4,13 +4,25 @@ import { spawnSync } from "node:child_process";
 
 async function main() {
   loadLocalEnvironment();
+  const args = new Set(process.argv.slice(2));
+  const requireDb = args.has("--require-db");
+  const headed = args.has("--headed");
+  const debug = args.has("--debug");
 
   if (!env("DATABASE_URL")) {
+    const message = [
+      "DATABASE_URL is not set for DB-gated acceptance tests.",
+      "Create `.env.test.local` or `.env.test`, or export DATABASE_URL directly.",
+      "Then run `pnpm test:db:prepare` followed by `pnpm test:acceptance:db`."
+    ].join("\n");
+
+    if (requireDb) {
+      console.error(message);
+      process.exit(1);
+    }
+
     console.log("Skipping DB-gated acceptance tests because DATABASE_URL is not set.");
-    console.log("To run them:");
-    console.log("1. Copy `.env.example` to `.env`.");
-    console.log("2. Start Postgres and run `pnpm db:push && pnpm db:seed`.");
-    console.log("3. Run `RUN_DB_WEB_TESTS=1 pnpm test:web` or `pnpm test:acceptance`.");
+    console.log(message);
     return;
   }
 
@@ -23,7 +35,15 @@ async function main() {
     process.exit(1);
   }
 
-  const result = spawnSync("pnpm", ["exec", "playwright", "test"], {
+  const playwrightArgs = ["exec", "playwright", "test"];
+  if (headed) {
+    playwrightArgs.push("--headed");
+  }
+  if (debug) {
+    playwrightArgs.push("--debug");
+  }
+
+  const result = spawnSync("pnpm", playwrightArgs, {
     cwd: rootDir,
     env: {
       ...process.env,

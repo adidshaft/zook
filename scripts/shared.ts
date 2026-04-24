@@ -17,7 +17,7 @@ export const envProfiles = ["local", "staging", "production"] as const;
 export type EnvProfile = (typeof envProfiles)[number];
 
 export const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const envFiles = [".env", ".env.local"] as const;
+export const orderedTestEnvFiles = [".env.test.local", ".env.test", ".env.local", ".env"] as const;
 
 let didLoadEnvironment = false;
 
@@ -108,14 +108,19 @@ export function loadLocalEnvironment() {
   const externalEnv = { ...process.env };
   const parsedEnv: Record<string, string> = {};
 
-  for (const fileName of envFiles) {
+  for (const fileName of orderedTestEnvFiles) {
     const filePath = resolve(rootDir, fileName);
     if (!existsSync(filePath)) {
       continue;
     }
 
     const fileContents = readFileSync(filePath, "utf8");
-    Object.assign(parsedEnv, parse(fileContents));
+    const fileValues = parse(fileContents);
+    for (const [key, value] of Object.entries(fileValues)) {
+      if (parsedEnv[key] === undefined) {
+        parsedEnv[key] = value;
+      }
+    }
   }
 
   Object.assign(process.env, parsedEnv, externalEnv);

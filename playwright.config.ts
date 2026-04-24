@@ -1,16 +1,10 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { config as loadDotenv } from "dotenv";
+import { parse } from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
 
 const rootDir = process.cwd();
-for (const envFile of [".env", ".env.local"]) {
-  const filePath = resolve(rootDir, envFile);
-  if (existsSync(filePath)) {
-    loadDotenv({ path: filePath, override: false });
-  }
-}
-
+const orderedTestEnvFiles = [".env.test.local", ".env.test", ".env.local", ".env"] as const;
 const playwrightForwardEnvKeys = [
   "DATABASE_URL",
   "SESSION_SECRET",
@@ -31,6 +25,27 @@ const playwrightForwardEnvKeys = [
   "ALLOW_FIXED_OTP_IN_STAGING"
 ] as const;
 
+function loadOrderedEnvironment() {
+  const externalEnv = { ...process.env };
+  const parsedEnv: Record<string, string> = {};
+
+  for (const envFile of orderedTestEnvFiles) {
+    const filePath = resolve(rootDir, envFile);
+    if (!existsSync(filePath)) {
+      continue;
+    }
+
+    const fileValues = parse(readFileSync(filePath, "utf8"));
+    for (const [key, value] of Object.entries(fileValues)) {
+      if (parsedEnv[key] === undefined) {
+        parsedEnv[key] = value;
+      }
+    }
+  }
+
+  Object.assign(process.env, parsedEnv, externalEnv);
+}
+
 function pickDefinedEnv(keys: readonly string[], overrides: Record<string, string> = {}) {
   const selected: Record<string, string> = {};
   for (const key of keys) {
@@ -39,12 +54,16 @@ function pickDefinedEnv(keys: readonly string[], overrides: Record<string, strin
       selected[key] = value;
     }
   }
+
   return { ...selected, ...overrides };
 }
+
+loadOrderedEnvironment();
 
 const webServerUrl = "http://127.0.0.1:3120";
 
 export default defineConfig({
+  fullyParallel: false,
   testDir: "./apps/web/tests",
   testMatch: ["**/*.spec.ts"],
   timeout: 30_000,
@@ -55,6 +74,7 @@ export default defineConfig({
   },
   webServer: {
     command: "pnpm --filter @zook/web exec next dev --hostname 127.0.0.1 --port 3120",
+    cwd: rootDir,
     env: {
       PATH: process.env.PATH ?? "",
       HOME: process.env.HOME ?? "",

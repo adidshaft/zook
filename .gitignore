@@ -14,6 +14,7 @@ artifacts
 .env
 .env.*
 !.env.example
+!.env.test.example
 *.log
 *.tsbuildinfo
 packages/db/prisma/dev.db
