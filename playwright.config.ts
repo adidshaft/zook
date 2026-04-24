@@ -1,7 +1,39 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { config as loadDotenv } from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
-import { loadLocalEnvironment, pickDefinedEnv, playwrightForwardEnvKeys } from "./scripts/shared";
 
-loadLocalEnvironment();
+const rootDir = process.cwd();
+for (const envFile of [".env", ".env.local"]) {
+  const filePath = resolve(rootDir, envFile);
+  if (existsSync(filePath)) {
+    loadDotenv({ path: filePath, override: false });
+  }
+}
+
+const playwrightForwardEnvKeys = [
+  "DATABASE_URL",
+  "SESSION_SECRET",
+  "OTP_FIXED_CODE_DEV",
+  "NEXT_PUBLIC_APP_URL",
+  "NEXT_PUBLIC_WEB_URL",
+  "AI_PROVIDER",
+  "PAYMENT_PROVIDER",
+  "MAP_PROVIDER",
+  "STORAGE_PROVIDER",
+  "PUSH_PROVIDER"
+] as const;
+
+function pickDefinedEnv(keys: readonly string[], overrides: Record<string, string> = {}) {
+  const selected: Record<string, string> = {};
+  for (const key of keys) {
+    const value = process.env[key]?.trim();
+    if (value) {
+      selected[key] = value;
+    }
+  }
+  return { ...selected, ...overrides };
+}
 
 const webServerUrl = "http://127.0.0.1:3100";
 
