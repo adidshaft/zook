@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookLogo } from "./zook-logo";
+import { AttendanceQrPanel } from "./attendance-qr-panel";
+import { AttendanceApprovalsPanel } from "./attendance-approvals-panel";
 import { formatInr, titleFromSection } from "@/lib/format";
 
 const nav = [
@@ -47,6 +49,8 @@ export function DashboardShell({
   data: Awaited<ReturnType<typeof import("@/lib/data").getDashboardData>>;
 }) {
   const title = titleFromSection(section);
+  const sectionKey = section?.join("/") ?? "";
+  const activeOrgId = data.orgs[0]?.id;
   return (
     <main className="min-h-screen px-4 py-4 lg:px-6">
       <div className="mx-auto grid max-w-[1500px] gap-4 lg:grid-cols-[280px_1fr]">
@@ -119,21 +123,27 @@ export function DashboardShell({
               </div>
             </GlassCard>
 
-            <GlassCard className="overflow-hidden">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">QR Check-in</h2>
-                <QrCode className="text-lime-200" />
-              </div>
-              <div className="mt-5 grid aspect-square place-items-center rounded-[22px] border border-white/10 bg-black/30">
-                <div className="grid h-44 w-44 grid-cols-5 gap-2 rounded-2xl bg-white p-4">
-                  {Array.from({ length: 25 }).map((_, index) => (
-                    <div key={index} className={index % 3 === 0 || index % 7 === 0 ? "rounded bg-black" : "rounded bg-black/15"} />
-                  ))}
+            {sectionKey === "attendance/qr-display" && activeOrgId ? (
+              <AttendanceQrPanel orgId={activeOrgId} />
+            ) : (
+              <GlassCard className="overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">QR Check-in</h2>
+                  <QrCode className="text-lime-200" />
                 </div>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-white/50">Rolling signed tokens refresh every 2-5 minutes and are validated server-side.</p>
-            </GlassCard>
+                <div className="mt-5 grid aspect-square place-items-center rounded-[22px] border border-white/10 bg-black/30">
+                  <div className="grid h-44 w-44 grid-cols-5 gap-2 rounded-2xl bg-white p-4">
+                    {Array.from({ length: 25 }).map((_, index) => (
+                      <div key={index} className={index % 3 === 0 || index % 7 === 0 ? "rounded bg-black" : "rounded bg-black/15"} />
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-4 text-sm leading-6 text-white/50">Rolling signed tokens refresh every 2-5 minutes and are validated server-side.</p>
+              </GlassCard>
+            )}
           </div>
+
+          {sectionKey === "attendance/approvals" && activeOrgId ? <AttendanceApprovalsPanel orgId={activeOrgId} /> : null}
 
           <div className="grid gap-4 xl:grid-cols-3">
             <GlassCard className="xl:col-span-2">

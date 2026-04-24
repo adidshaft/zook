@@ -22,6 +22,7 @@ import { MockAIProvider, MockEmailProvider, MockMapProvider } from "@zook/core/p
 import {
   AuthService,
   computeSubscriptionWindow,
+  consumeVisit,
   type OtpChallengeRecord,
   applyCoupon,
   createSignedQrToken,
@@ -31,9 +32,12 @@ import {
   encodeQrPayload,
   normalizeUsername,
   PersonalTrackingService,
+  requireManualOverrideReason,
   runAIGuardedRequest,
   transitionPaymentSession,
-  validateReferralRedemption
+  validateAttendanceScan,
+  validateReferralRedemption,
+  validateSignedQrToken
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
 import { extractSessionToken, sessionCookieName } from "./context";
@@ -81,6 +85,17 @@ const manualMembershipPaymentSchema = z
     notes: z.string().max(500).optional()
   })
   .refine((value) => Boolean(value.planId || value.subscriptionId), "A planId or subscriptionId is required");
+
+const attendanceRejectSchema = z.object({
+  reason: z.string().trim().min(2).max(200)
+});
+
+const manualAttendanceSchema = z.object({
+  memberUserId: z.string(),
+  branchId: z.string().optional(),
+  reason: z.string().trim().min(2).max(200),
+  notes: z.string().max(500).optional()
+});
 
 function clean<T extends Record<string, unknown>>(input: T): any {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
@@ -263,6 +278,38 @@ function toCouponInput(coupon: {
   });
 }
 
+function toMembershipPlanInput(plan: {
+  id: string;
+  orgId: string;
+  branchId: string | null;
+  name: string;
+  type: "DURATION" | "VISIT_PACK" | "DATE_RANGE" | "HYBRID" | "TRIAL";
+  pricePaise: number;
+  durationDays: number | null;
+  visitLimit: number | null;
+  validityDays: number | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  active: boolean;
+  publicVisible: boolean;
+}) {
+  return clean({
+    id: plan.id,
+    orgId: plan.orgId,
+    branchId: plan.branchId ?? undefined,
+    name: plan.name,
+    type: plan.type,
+    pricePaise: plan.pricePaise,
+    durationDays: plan.durationDays ?? undefined,
+    visitLimit: plan.visitLimit ?? undefined,
+    validityDays: plan.validityDays ?? undefined,
+    startDate: plan.startDate ?? undefined,
+    endDate: plan.endDate ?? undefined,
+    active: plan.active,
+    publicVisible: plan.publicVisible
+  });
+}
+
 async function resolveValidatedReferral(input: {
   orgId: string;
   userId: string;
@@ -340,6 +387,79 @@ async function resolveValidatedCoupon(input: {
   });
 
   return { coupon, ...result };
+}
+
+async function applyAttendanceUsage(input: {
+  orgId: string;
+  subscription: {
+    id: string;
+    orgId: string;
+    branchId: string;
+    memberUserId: string;
+    planId: string;
+    status: "PENDING_PAYMENT" | "ACTIVE" | "PAUSED" | "EXPIRED" | "CANCELLED" | "REFUNDED";
+    startsAt: Date | null;
+    endsAt: Date | null;
+    remainingVisits: number | null;
+  };
+  plan: {
+    id: string;
+    orgId: string;
+    branchId: string | null;
+    name: string;
+    type: "DURATION" | "VISIT_PACK" | "DATE_RANGE" | "HYBRID" | "TRIAL";
+    pricePaise: number;
+    durationDays: number | null;
+    visitLimit: number | null;
+    validityDays: number | null;
+    startDate: Date | null;
+    endDate: Date | null;
+    active: boolean;
+    publicVisible: boolean;
+  };
+  recordId: string;
+  alreadyCheckedInToday?: boolean;
+  multiEntryConsumes?: boolean;
+}) {
+  const existingUsage = await prisma.membershipUsage.findFirst({
+    where: { orgId: input.orgId, attendanceId: input.recordId }
+  });
+  if (existingUsage) {
+    return input.subscription;
+  }
+  const updated = consumeVisit(
+    clean({
+      id: input.subscription.id,
+      orgId: input.subscription.orgId,
+      branchId: input.subscription.branchId,
+      memberUserId: input.subscription.memberUserId,
+      planId: input.subscription.planId,
+      status: input.subscription.status,
+      startsAt: input.subscription.startsAt ?? undefined,
+      endsAt: input.subscription.endsAt ?? undefined,
+      remainingVisits: input.subscription.remainingVisits ?? undefined
+    }),
+    toMembershipPlanInput(input.plan),
+    clean({
+      alreadyCheckedInToday: input.alreadyCheckedInToday ?? false,
+      multiEntryConsumes: input.multiEntryConsumes
+    })
+  );
+  if (updated.remainingVisits !== input.subscription.remainingVisits) {
+    await prisma.memberSubscription.update({
+      where: { id: input.subscription.id },
+      data: clean({ remainingVisits: updated.remainingVisits })
+    });
+    await prisma.membershipUsage.create({
+      data: {
+        orgId: input.orgId,
+        subscriptionId: input.subscription.id,
+        attendanceId: input.recordId,
+        usedVisits: Math.max((input.subscription.remainingVisits ?? 0) - (updated.remainingVisits ?? 0), 0)
+      }
+    });
+  }
+  return updated;
 }
 
 class PrismaAuthRepo {
@@ -1565,15 +1685,27 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
     const body = attendanceScanSchema.parse(await readJson(request));
-    const decoded = JSON.parse(Buffer.from(body.qrPayload, "base64url").toString("utf8")) as { orgId: string; branchId: string; expiry: number; nonce: string };
-    if (decoded.expiry < Date.now()) {
-      return fail("QR_EXPIRED", "QR token expired", 400);
+    const now = new Date();
+    const decoded = validateSignedQrToken({
+      encoded: body.qrPayload,
+      secret: process.env.ZOOK_QR_SECRET ?? "dev-secret",
+      now
+    });
+    const qrToken = await prisma.attendanceQrToken.findUnique({ where: { nonce: decoded.nonce } });
+    if (
+      !qrToken ||
+      qrToken.orgId !== decoded.orgId ||
+      qrToken.branchId !== decoded.branchId ||
+      qrToken.signature !== decoded.signature ||
+      qrToken.expiresAt <= now
+    ) {
+      throw validationError("QR token is invalid or expired.");
     }
     const [org, memberProfile, subscription, duplicate] = await Promise.all([
       prisma.organization.findUnique({ where: { id: decoded.orgId } }),
       prisma.memberProfile.findUnique({ where: { orgId_userId: { orgId: decoded.orgId, userId } } }),
       prisma.memberSubscription.findFirst({
-        where: { orgId: decoded.orgId, branchId: decoded.branchId, memberUserId: userId, status: "ACTIVE" },
+        where: { orgId: decoded.orgId, memberUserId: userId, status: "ACTIVE" },
         orderBy: { createdAt: "desc" }
       }),
       prisma.attendanceRecord.findUnique({
@@ -1587,14 +1719,42 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         }
       })
     ]);
+    if (duplicate) {
+      return ok({
+        attendance: duplicate,
+        status: duplicate.status,
+        duplicate: true,
+        suspiciousFlags: Array.isArray(duplicate.suspiciousFlags) ? duplicate.suspiciousFlags : ["duplicate_same_day"]
+      });
+    }
     if (!org || !subscription) {
       return fail("NO_ACTIVE_MEMBERSHIP", "No active membership", 400);
     }
     const plan = await prisma.membershipPlan.findUnique({ where: { id: subscription.planId } });
     if (!plan) return fail("PLAN_NOT_FOUND", "Plan not found", 400);
-    const flags = duplicate ? ["duplicate_same_day"] : [];
-    if (!memberProfile?.profilePhotoUrl) flags.push("profile_photo_required");
-    const status = decideAttendanceStatus({ mode: org.attendanceMode, suspiciousFlags: flags });
+    const validation = validateAttendanceScan({
+      subscription: clean({
+        id: subscription.id,
+        orgId: subscription.orgId,
+        branchId: subscription.branchId,
+        memberUserId: subscription.memberUserId,
+        planId: subscription.planId,
+        status: subscription.status,
+        startsAt: subscription.startsAt ?? undefined,
+        endsAt: subscription.endsAt ?? undefined,
+        remainingVisits: subscription.remainingVisits ?? undefined
+      }),
+      plan: toMembershipPlanInput(plan),
+      orgStatus: org.status,
+      hasProfilePhoto: Boolean(memberProfile?.profilePhotoUrl),
+      alreadyCheckedInToday: false,
+      wrongBranch: subscription.branchId !== decoded.branchId,
+      now
+    });
+    if (!validation.allowed) {
+      return fail(validation.reason?.toUpperCase() ?? "ATTENDANCE_BLOCKED", validation.reason ?? "Attendance blocked", 400);
+    }
+    const status = decideAttendanceStatus({ mode: org.attendanceMode, suspiciousFlags: validation.suspiciousFlags });
     const record = await prisma.attendanceRecord.create({
       data: clean({
         orgId: decoded.orgId,
@@ -1605,24 +1765,59 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         status,
         source: "QR_SCAN",
         qrTokenId: decoded.nonce,
-        suspiciousFlags: flags,
+        suspiciousFlags: validation.suspiciousFlags,
         deviceId: body.deviceId
       })
     });
-    if (status === "APPROVED" && (plan.type === "VISIT_PACK" || plan.type === "HYBRID" || plan.type === "TRIAL")) {
-      await prisma.memberSubscription.update({
-        where: { id: subscription.id },
-        data: { remainingVisits: Math.max((subscription.remainingVisits ?? 0) - 1, 0) }
+    if (status === "APPROVED") {
+      await applyAttendanceUsage({
+        orgId: decoded.orgId,
+        subscription,
+        plan,
+        recordId: record.id,
+        multiEntryConsumes: org.multiEntryConsumes
       });
     }
-    return ok({ attendance: record, status, suspiciousFlags: flags });
+    return ok({ attendance: record, status, duplicate: false, suspiciousFlags: validation.suspiciousFlags });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "attendance", "live"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "ATTENDANCE_APPROVE");
+    const records = await prisma.attendanceRecord.findMany({
+      where: { orgId, status: { in: ["PENDING_APPROVAL", "FLAGGED"] } },
+      take: 40,
+      orderBy: { checkedInAt: "desc" }
+    });
+    const [users, profiles, subscriptions, plans] = await Promise.all([
+      prisma.user.findMany({ where: { id: { in: records.map((record) => record.userId) } } }),
+      prisma.memberProfile.findMany({
+        where: { orgId, userId: { in: records.map((record) => record.userId) } }
+      }),
+      prisma.memberSubscription.findMany({
+        where: { id: { in: records.map((record) => record.subscriptionId).filter(Boolean) as string[] } }
+      }),
+      prisma.membershipPlan.findMany({
+        where: {
+          id: {
+            in: (
+              await prisma.memberSubscription.findMany({
+                where: { id: { in: records.map((record) => record.subscriptionId).filter(Boolean) as string[] } },
+                select: { planId: true }
+              })
+            ).map((subscription) => subscription.planId)
+          }
+        }
+      })
+    ]);
     return ok({
-      records: await prisma.attendanceRecord.findMany({ where: { orgId }, take: 20, orderBy: { checkedInAt: "desc" } })
+      records: records.map((record) => {
+        const user = users.find((candidate) => candidate.id === record.userId) ?? null;
+        const profile = profiles.find((candidate) => candidate.userId === record.userId) ?? null;
+        const subscription = subscriptions.find((candidate) => candidate.id === record.subscriptionId) ?? null;
+        const plan = subscription ? plans.find((candidate) => candidate.id === subscription.planId) ?? null : null;
+        return { ...record, user, profile, subscription, plan };
+      })
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "attendance", /.+/, "approve"])) {
@@ -1633,9 +1828,36 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     if (!existingRecord) {
       throw notFoundError("Attendance record not found");
     }
+    if (existingRecord.status === "REJECTED") {
+      throw conflictError("Rejected attendance records cannot be approved.");
+    }
     const record = await prisma.attendanceRecord.update({
       where: { id: existingRecord.id },
       data: { status: "APPROVED", approvedById: userId, approvedAt: new Date() }
+    });
+    if (record.subscriptionId) {
+      const subscription = await prisma.memberSubscription.findUnique({ where: { id: record.subscriptionId } });
+      const plan = subscription ? await prisma.membershipPlan.findUnique({ where: { id: subscription.planId } }) : null;
+      const org = await prisma.organization.findUnique({ where: { id: orgId } });
+      if (subscription && plan && org) {
+        await applyAttendanceUsage({
+          orgId,
+          subscription,
+          plan,
+          recordId: record.id,
+          multiEntryConsumes: org.multiEntryConsumes
+        });
+      }
+    }
+    await createDirectNotification({
+      orgId,
+      createdById: userId,
+      type: "TRANSACTIONAL",
+      title: "Check-in approved",
+      body: "Your attendance has been approved.",
+      audience: "selected_member",
+      userIds: [record.userId],
+      metadata: { attendanceRecordId: record.id }
     });
     await writeAuditLog({
       request,
@@ -1649,16 +1871,68 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       record
     });
   }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "attendance", /.+/, "reject"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ATTENDANCE_APPROVE");
+    const body = attendanceRejectSchema.parse(await readJson(request));
+    const existingRecord = await prisma.attendanceRecord.findFirst({ where: { id: path[3]!, orgId } });
+    if (!existingRecord) {
+      throw notFoundError("Attendance record not found");
+    }
+    const record = await prisma.attendanceRecord.update({
+      where: { id: existingRecord.id },
+      data: {
+        status: "REJECTED",
+        rejectedById: userId,
+        rejectedAt: new Date(),
+        rejectionReason: body.reason
+      }
+    });
+    await createDirectNotification({
+      orgId,
+      createdById: userId,
+      type: "TRANSACTIONAL",
+      title: "Check-in rejected",
+      body: body.reason,
+      audience: "selected_member",
+      userIds: [record.userId],
+      metadata: { attendanceRecordId: record.id }
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "attendance.rejected",
+      entityType: "attendance_record",
+      entityId: record.id,
+      metadata: { reason: body.reason }
+    });
+    return ok({ record });
+  }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "attendance", "manual"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ATTENDANCE_MANUAL_OVERRIDE");
-    const body = (await readJson(request)) as { memberUserId: string; branchId?: string; reason?: string };
-    if (!body.reason?.trim()) return fail("REASON_REQUIRED", "Manual override reason required", 400);
+    const body = manualAttendanceSchema.parse(await readJson(request));
+    requireManualOverrideReason(body.reason);
     const branch = body.branchId
-      ? await prisma.branch.findUnique({ where: { id: body.branchId } })
+      ? await prisma.branch.findFirst({ where: { id: body.branchId, orgId } })
       : await prisma.branch.findFirst({ where: { orgId, isDefault: true } });
     if (!branch) return fail("NOT_FOUND", "Branch not found", 404);
+    const duplicate = await prisma.attendanceRecord.findUnique({
+      where: {
+        orgId_branchId_userId_dateKey: {
+          orgId,
+          branchId: branch.id,
+          userId: body.memberUserId,
+          dateKey: dateKey()
+        }
+      }
+    });
+    if (duplicate) {
+      throw conflictError("Member already has an attendance record for today.");
+    }
     const record = await prisma.attendanceRecord.create({
       data: {
         orgId,
@@ -1673,7 +1947,39 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       }
     });
     await prisma.attendanceOverride.create({
-      data: { orgId, attendanceRecordId: record.id, userId: body.memberUserId, reason: body.reason, createdById: userId }
+      data: clean({
+        orgId,
+        attendanceRecordId: record.id,
+        userId: body.memberUserId,
+        reason: body.reason,
+        notes: body.notes,
+        createdById: userId
+      })
+    });
+    const subscription = await prisma.memberSubscription.findFirst({
+      where: { orgId, branchId: branch.id, memberUserId: body.memberUserId, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" }
+    });
+    const plan = subscription ? await prisma.membershipPlan.findUnique({ where: { id: subscription.planId } }) : null;
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (subscription && plan && org) {
+      await applyAttendanceUsage({
+        orgId,
+        subscription,
+        plan,
+        recordId: record.id,
+        multiEntryConsumes: org.multiEntryConsumes
+      });
+    }
+    await createDirectNotification({
+      orgId,
+      createdById: userId,
+      type: "TRANSACTIONAL",
+      title: "Manual attendance recorded",
+      body: `Attendance was recorded manually: ${body.reason}.`,
+      audience: "selected_member",
+      userIds: [body.memberUserId],
+      metadata: { attendanceRecordId: record.id }
     });
     await writeAuditLog({
       request,
