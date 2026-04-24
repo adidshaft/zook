@@ -681,7 +681,11 @@ async function startPaymentSessionCheckout(input: {
       provider: provider.providerName,
       providerRef: checkout.providerOrderId ?? checkout.providerSessionId ?? input.session.providerRef ?? null,
       checkoutUrl,
-      status: checkout.status
+      status: checkout.status,
+      metadata: {
+        ...metadata,
+        ...(checkout.checkoutData ? { providerCheckoutData: checkout.checkoutData } : {})
+      } as Prisma.InputJsonValue
     })
   });
 
