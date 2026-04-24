@@ -1,13 +1,25 @@
 import { ScrollView, StyleSheet, Text } from "react-native";
 import { Card, PrimaryButton, Screen } from "@/components/primitives";
+import { useReceptionQueue } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
 const tasks = ["Pending check-ins", "Live check-ins", "Member search", "Manual payment", "Shop pickup", "Operational notice"];
 
 export default function Reception() {
+  const queueQuery = useReceptionQueue();
+  const records = queueQuery.data?.records ?? [];
+
   return (
     <Screen title="Reception">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+        <Card>
+          <Text style={styles.title} selectable>
+            Live queue
+          </Text>
+          <Text style={styles.body} selectable>
+            {queueQuery.isLoading ? "Loading check-ins..." : `${records.length} recent attendance records waiting in the live feed.`}
+          </Text>
+        </Card>
         {tasks.map((task) => (
           <Card key={task}>
             <Text style={styles.title} selectable>

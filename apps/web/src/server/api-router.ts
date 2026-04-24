@@ -29,10 +29,16 @@ import {
 import { Prisma, prisma } from "@zook/db";
 import { extractSessionToken, sessionCookieName } from "./context";
 import { getRequestContext, requireAuth, requireOrgPermission, requirePlatformAdmin } from "./access";
-import { forbiddenError, notFoundError, toErrorResponse } from "./errors";
+import { forbiddenError, notFoundError, toErrorResponse, unauthorizedError } from "./errors";
 import { fail, ok, readJson } from "./response";
 import { resolveSessionSummaryFromToken } from "./session";
 import { writeAuditLog } from "./audit";
+import {
+  getMemberHomeData,
+  getMyShopOrders,
+  getOrganizationDashboardData,
+  getOrganizationMembers
+} from "./read-models";
 
 const emailProvider = new MockEmailProvider();
 const mapProvider = new MockMapProvider();
@@ -228,6 +234,40 @@ async function handleAuth(request: NextRequest, path: string[]) {
   return undefined;
 }
 
+async function handleMeData(request: NextRequest, path: string[]) {
+  if (request.method === "GET" && pathMatches(path, ["me", "orgs"])) {
+    const token = extractSessionToken(request);
+    const summary = await resolveSessionSummaryFromToken(
+      token,
+      request.headers.get("x-zook-org-id") ?? request.nextUrl.searchParams.get("orgId") ?? undefined
+    );
+    if (!summary) {
+      throw unauthorizedError();
+    }
+    return ok({ organizations: summary.organizations, activeOrgId: summary.activeOrgId });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "home"])) {
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    return ok(await getMemberHomeData(userId, ctx.orgId));
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "attendance"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    return ok({
+      attendance: await prisma.attendanceRecord.findMany({
+        where: { userId },
+        orderBy: { checkedInAt: "desc" },
+        take: 50
+      })
+    });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "shop-orders"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    return ok({ orders: await getMyShopOrders(userId) });
+  }
+  return undefined;
+}
+
 async function handleOrganizations(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", "public", "search"])) {
     const query = request.nextUrl.searchParams.get("q") ?? "";
@@ -334,6 +374,24 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     }
     return ok({ org: await prisma.organization.findUnique({ where: { id: membership.orgId } }) });
   }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "dashboard"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    return ok(await getOrganizationDashboardData(orgId));
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    return ok({ members: await getOrganizationMembers(orgId) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "reports", "summary"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ORG_VIEW_REPORTS");
+    return ok(await getOrganizationDashboardData(orgId));
+  }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "location", "resolve"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -426,6 +484,18 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       data: clean({ orgId, userId, planId: body.planId, referralCode: body.referralCode, message: body.message })
     });
     return ok({ joinRequest: requestRow });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "join-requests"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "MEMBERS_MANAGE");
+    return ok({
+      joinRequests: await prisma.membershipJoinRequest.findMany({
+        where: { orgId },
+        orderBy: { createdAt: "desc" },
+        take: 100
+      })
+    });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "join-requests", /.+/, "approve"])) {
     const orgId = path[1]!;
@@ -1192,6 +1262,18 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     });
     return ok({ notification });
   }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "notifications"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
+    return ok({
+      notifications: await prisma.notification.findMany({
+        where: { orgId },
+        orderBy: { createdAt: "desc" },
+        take: 100
+      })
+    });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "notifications"])) {
     const userId = requireAuth(await getRequestContext(request));
     return ok({ notifications: await prisma.notificationRecipient.findMany({ where: { userId }, take: 30 }) });
@@ -1263,6 +1345,18 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     });
     const updated = await prisma.paymentSession.update({ where: { id: session.id }, data: { checkoutUrl: `/checkout/mock/${session.id}` } });
     return ok({ order, checkoutUrl: updated.checkoutUrl });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "shop", "orders"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "SHOP_FULFILL_ORDER");
+    return ok({
+      orders: await prisma.shopOrder.findMany({
+        where: { orgId },
+        orderBy: { createdAt: "desc" },
+        take: 100
+      })
+    });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "shop", "orders", /.+/, "fulfill"])) {
     const orgId = path[1]!;
@@ -1337,6 +1431,7 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
     const path = rawPath.filter(Boolean);
     for (const handler of [
       handleAuth,
+      handleMeData,
       handleOrganizations,
       handleMembershipPayments,
       handleCouponsReferrals,

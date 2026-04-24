@@ -1,9 +1,12 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { demoGyms } from "@zook/core";
 import { Card, Pill, PrimaryLink, Screen } from "@/components/primitives";
+import { useGymSearch } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
 export default function FindGyms() {
+  const gymsQuery = useGymSearch();
+  const gyms = gymsQuery.data?.gyms ?? [];
+
   return (
     <Screen title="Find Gyms">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
@@ -18,7 +21,17 @@ export default function FindGyms() {
             <Text style={styles.mapText}>Pune · Bengaluru · Nearby</Text>
           </View>
         </Card>
-        {demoGyms.map((gym) => (
+        {gymsQuery.isLoading ? (
+          <Card>
+            <Text style={styles.body}>Loading gyms...</Text>
+          </Card>
+        ) : null}
+        {!gymsQuery.isLoading && !gyms.length ? (
+          <Card>
+            <Text style={styles.body}>No public gyms matched the current search.</Text>
+          </Card>
+        ) : null}
+        {gyms.map((gym) => (
           <Card key={gym.username}>
             <View style={styles.row}>
               <View style={{ flex: 1 }}>

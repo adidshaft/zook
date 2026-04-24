@@ -8,7 +8,7 @@ export default async function DashboardPage({
   params: Promise<{ section?: string[] }>;
 }) {
   const { section } = await params;
-  await requireDashboardSession();
-  const data = await getDashboardData();
+  const session = await requireDashboardSession();
+  const data = await getDashboardData(session.activeOrgId);
   return <DashboardShell section={section} data={data} />;
 }

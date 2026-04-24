@@ -1,20 +1,18 @@
 import { ScrollView, StyleSheet, Text } from "react-native";
 import { Card, Pill, Screen } from "@/components/primitives";
+import { useOwnerDashboard } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
-const ownerCards = [
-  ["Today attendance", "84", "Check-ins and pending approvals"],
-  ["Active members", "642", "Expiring: 39"],
-  ["Cash collected", "₹18.4k", "By staff and mode"],
-  ["AI usage", "42", "Org pool guarded"]
-];
-
 export default function Owner() {
+  const dashboardQuery = useOwnerDashboard();
+  const dashboard = dashboardQuery.data as { metrics?: Array<{ label: string; value: string; delta: string }>; organization?: { status?: string } } | undefined;
+  const metrics = dashboard?.metrics ?? [];
+
   return (
     <Screen title="Owner">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <Card>
-          <Pill tone="lime">Trial active</Pill>
+          <Pill tone="lime">{dashboard?.organization?.status ?? "Loading"}</Pill>
           <Text style={styles.title} selectable>
             Owner command center
           </Text>
@@ -22,16 +20,21 @@ export default function Owner() {
             Manage staff, permissions, plans, coupons, referrals, reports, shop, AI, billing, privacy, and public profile.
           </Text>
         </Card>
-        {ownerCards.map(([label, value, detail]) => (
-          <Card key={label}>
+        {dashboardQuery.isLoading ? (
+          <Card>
+            <Text style={styles.body}>Loading owner dashboard...</Text>
+          </Card>
+        ) : null}
+        {metrics.map((metric) => (
+          <Card key={metric.label}>
             <Text style={styles.body} selectable>
-              {label}
+              {metric.label}
             </Text>
             <Text style={styles.metric} selectable>
-              {value}
+              {metric.value}
             </Text>
             <Text style={styles.body} selectable>
-              {detail}
+              {metric.delta}
             </Text>
           </Card>
         ))}

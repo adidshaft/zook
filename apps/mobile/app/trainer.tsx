@@ -1,10 +1,14 @@
 import { ScrollView, StyleSheet, Text } from "react-native";
 import { Card, Pill, PrimaryButton, Screen } from "@/components/primitives";
+import { useTrainerClients } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
 const tasks = ["Assigned clients", "Today sessions", "Record PT subscription", "Create plan", "AI plan assistant", "Send notification"];
 
 export default function Trainer() {
+  const clientsQuery = useTrainerClients();
+  const clients = clientsQuery.data?.clients ?? [];
+
   return (
     <Screen title="Trainer">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
@@ -15,6 +19,9 @@ export default function Trainer() {
           </Text>
           <Text style={styles.body} selectable>
             Publish workout and nutrition guidance only to assigned clients unless owner grants broader permissions.
+          </Text>
+          <Text style={styles.body} selectable>
+            {clientsQuery.isLoading ? "Loading assigned clients..." : `${clients.length} assigned clients in the current organization.`}
           </Text>
         </Card>
         {tasks.map((task) => (

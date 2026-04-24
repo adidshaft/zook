@@ -1,25 +1,33 @@
 import { ScrollView, StyleSheet, Text } from "react-native";
 import { Card, Pill, Screen } from "@/components/primitives";
+import { useMyPlans } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
-const plans = [
-  ["Starter Strength Week", "Workout", "Day 2 ready · 50% complete"],
-  ["Nutrition guidance", "Diet", "Protein, hydration, allergy warnings"],
-  ["Machine-use guide", "Guide", "Reviewed by trainer"]
-];
-
 export default function Plans() {
+  const plansQuery = useMyPlans();
+  const plans = (plansQuery.data?.plans ?? []) as Array<{ id: string; audience?: string; planId?: string }>;
+
   return (
     <Screen title="Plans">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        {plans.map(([title, type, detail]) => (
-          <Card key={title}>
-            <Pill tone={type === "Diet" ? "amber" : "lime"}>{type}</Pill>
+        {plansQuery.isLoading ? (
+          <Card>
+            <Text style={styles.body}>Loading assigned plans...</Text>
+          </Card>
+        ) : null}
+        {!plansQuery.isLoading && !plans.length ? (
+          <Card>
+            <Text style={styles.body}>No plans have been assigned yet.</Text>
+          </Card>
+        ) : null}
+        {plans.map((plan) => (
+          <Card key={plan.id}>
+            <Pill tone="lime">Assigned</Pill>
             <Text style={styles.title} selectable>
-              {title}
+              {plan.planId ?? "Plan assignment"}
             </Text>
             <Text style={styles.body} selectable>
-              {detail}
+              Audience: {plan.audience ?? "selected_member"}
             </Text>
           </Card>
         ))}

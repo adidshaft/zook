@@ -8,11 +8,15 @@ import {
   WorkoutLogCard
 } from "@/components/tracking";
 import { useAuth } from "@/lib/auth";
+import { useMemberHome } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
 export default function Home() {
   const { activeOrgId, session } = useAuth();
+  const homeQuery = useMemberHome();
+  const memberHome = homeQuery.data;
   const activeOrganization =
+    memberHome?.activeOrganization ??
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization;
   const initials =
@@ -66,21 +70,23 @@ export default function Home() {
                 Active membership
               </Text>
               <Text style={styles.cardTitle} selectable>
-                Monthly Unlimited
+                {memberHome?.activePlan?.name ?? "No active plan"}
               </Text>
               <Text style={styles.detail} selectable>
-                Expires in 25 days
+                {memberHome?.activeMembership?.endsAt
+                  ? `Ends ${new Date(memberHome.activeMembership.endsAt).toLocaleDateString()}`
+                  : "Choose a membership to get started"}
               </Text>
             </Card>
             <Card style={styles.half}>
               <Text style={styles.muted} selectable>
-                Weekly consistency
+                Notifications
               </Text>
               <Text style={styles.metric} selectable>
-                4/5
+                {memberHome?.unreadNotifications ?? 0}
               </Text>
               <Text style={styles.detail} selectable>
-                7-day streak target
+                {memberHome?.assignedPlans ?? 0} plans · {memberHome?.activeGoals ?? 0} goals
               </Text>
             </Card>
           </View>

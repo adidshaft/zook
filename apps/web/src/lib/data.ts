@@ -1,8 +1,21 @@
 import { dashboardMetrics, demoGyms } from "@zook/core";
 import { prisma } from "@zook/db";
+import { getOrganizationDashboardData } from "@/server/read-models";
 
-export async function getDashboardData() {
+export async function getDashboardData(orgId?: string) {
   try {
+    if (orgId) {
+      const data = await getOrganizationDashboardData(orgId);
+      return {
+        connected: true,
+        metrics: data.metrics.slice(0, 4),
+        orgs: [data.organization],
+        products: data.products,
+        notifications: data.notifications,
+        attendance: data.joinRequests,
+        aiUsage: data.aiUsage
+      };
+    }
     const [orgs, members, payments, products, notifications, attendance, aiUsage] = await Promise.all([
       prisma.organization.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
       prisma.memberProfile.count(),

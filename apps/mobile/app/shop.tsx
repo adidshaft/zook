@@ -1,35 +1,40 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Card, Pill, PrimaryButton, Screen } from "@/components/primitives";
+import { useMyShopOrders, useShopProducts } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
-const products = [
-  ["Water Bottle", "₹399", "24 left"],
-  ["Protein Shake", "₹149", "18 left"],
-  ["Shaker", "₹299", "8 left"]
-];
-
 export default function Shop() {
+  const productsQuery = useShopProducts();
+  const ordersQuery = useMyShopOrders();
+  const latestOrder = ordersQuery.data?.orders?.[0] as { pickupCode?: string; status?: string } | undefined;
+  const products = (productsQuery.data?.products ?? []) as Array<{ id: string; name: string; pricePaise: number; stock: number }>;
+
   return (
     <Screen title="Shop">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <Card>
           <Pill tone="lime">Pay online · pickup at gym</Pill>
           <Text style={styles.title} selectable>
-            Pickup code: IH-PICK-101
+            {latestOrder?.pickupCode ? `Pickup code: ${latestOrder.pickupCode}` : "No pickup waiting"}
           </Text>
           <Text style={styles.body} selectable>
             Mock checkout confirms the order before stock moves.
           </Text>
         </Card>
-        {products.map(([name, price, stock]) => (
-          <Card key={name}>
+        {productsQuery.isLoading ? (
+          <Card>
+            <Text style={styles.body}>Loading products...</Text>
+          </Card>
+        ) : null}
+        {products.map((product) => (
+          <Card key={product.id}>
             <View style={styles.row}>
               <View>
                 <Text style={styles.title} selectable>
-                  {name}
+                  {product.name}
                 </Text>
                 <Text style={styles.body} selectable>
-                  {price} · {stock}
+                  ₹{Math.round(product.pricePaise / 100)} · {product.stock} left
                 </Text>
               </View>
               <PrimaryButton>Buy</PrimaryButton>
