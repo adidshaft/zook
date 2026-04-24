@@ -16,6 +16,7 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@zook/core", "@zook/ui", "@zook/db"],
+  output: "standalone",
   typedRoutes: false,
   allowedDevOrigins: ["127.0.0.1"],
   async headers() {

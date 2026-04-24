@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: zook-web:phase4
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      ENV_PROFILE: staging
+      DATABASE_URL: postgresql://zook:zook@db:5432/zook?schema=public
+      SESSION_SECRET: replace-me-with-a-long-random-secret
+      ZOOK_QR_SECRET: replace-me-with-a-long-random-qr-secret
+      NEXT_PUBLIC_WEB_URL: https://zook.example.com
+      NEXT_PUBLIC_APP_URL: https://zook.example.com
+      MOBILE_API_BASE_URL: https://zook.example.com/api
+      PAYMENT_PROVIDER: mock
+      EMAIL_PROVIDER: mock
+      AI_PROVIDER: mock
+      MAP_PROVIDER: mock
+      PUSH_PROVIDER: mock
+      STORAGE_PROVIDER: local
+      STORAGE_LOCAL_DIR: /app/.local/uploads
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: zook
+      POSTGRES_USER: zook
+      POSTGRES_PASSWORD: zook
+    volumes:
+      - zook-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  zook-db-data:

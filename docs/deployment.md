@@ -2,115 +2,272 @@
 
 Last updated: 24 April 2026
 
-## Recommended Stack
+## Private Pilot Goal
 
-- Web/API: Vercel, Render, Railway, or Fly.io
-- Database: Neon, Supabase Postgres, Railway Postgres, or self-managed Postgres
-- Storage: local for development, S3-compatible object storage or Cloudflare R2 for staging
-- Email: SMTP or Resend
-- Maps: Google Maps optional
-- AI: OpenAI optional
-- Payments: mock by default today; keep Razorpay env reserved for the next rollout
-- Mobile: Expo + EAS for preview and production binaries
+Phase 4 keeps local development mock-first while making staging realistic enough for a controlled gym pilot:
 
-## Environment Matrix
+- web/API can run in a standalone container build
+- `/api/health` is lightweight and safe for liveness checks
+- `/api/ready` checks Prisma, database reachability, and safe provider readiness
+- staging can use real email, storage, maps, AI, Razorpay test mode, and Expo push if env is configured
+- production still requires stricter env validation through `pnpm release:preflight`
+
+## Runtime Profiles
 
 ### Local
 
-- `PAYMENT_PROVIDER=mock`
-- `EMAIL_PROVIDER=mock`
-- `MAP_PROVIDER=mock`
-- `AI_PROVIDER=mock`
-- `PUSH_PROVIDER=mock`
-- `STORAGE_PROVIDER=local`
-- `DATABASE_URL` points at a local Postgres instance
+- `ENV_PROFILE=local`
+- mock providers allowed
+- fixed OTP allowed when `OTP_FIXED_CODE_DEV` is set
+- seeded demo users allowed
+- recommended providers:
+  - `PAYMENT_PROVIDER=mock`
+  - `EMAIL_PROVIDER=mock`
+  - `MAP_PROVIDER=mock`
+  - `AI_PROVIDER=mock`
+  - `PUSH_PROVIDER=mock`
+  - `STORAGE_PROVIDER=local`
 
 ### Staging
 
-- keep `PAYMENT_PROVIDER=mock` unless webhook handling is explicitly finished and tested
-- switch `EMAIL_PROVIDER` to `smtp` or `resend` only when keys are present
-- switch `MAP_PROVIDER=google` only when `GOOGLE_MAPS_API_KEY` is present
-- switch `AI_PROVIDER=openai` only when `OPENAI_API_KEY` is present
-- switch `STORAGE_PROVIDER=s3` or `r2` only when bucket credentials are present
-- use HTTPS and a strong `SESSION_SECRET`
+- `ENV_PROFILE=staging`
+- real database required
+- strong `SESSION_SECRET` required
+- fixed OTP disabled unless `ALLOW_FIXED_OTP_IN_STAGING=1`
+- recommended providers:
+  - `PAYMENT_PROVIDER=razorpay` with test-mode keys, or `mock` for internal-only rollout
+  - `EMAIL_PROVIDER=smtp|resend|mock`
+  - `MAP_PROVIDER=google|mock`
+  - `AI_PROVIDER=openai|mock`
+  - `PUSH_PROVIDER=expo|mock`
+  - `STORAGE_PROVIDER=local|s3|r2`
 
 ### Production
 
-- only promote providers that have already been exercised in staging
-- do not seed demo users unless explicitly required
-- rotate provider keys and verify platform diagnostics after deploy
+- `ENV_PROFILE=production`
+- fixed OTP forbidden
+- mock email forbidden
+- mock payment forbidden unless `MAINTENANCE_MOCK_MODE=1`
+- strong `SESSION_SECRET` required
+- public URLs required
+- seed demo users disabled by default
 
-## Database And Migrations
+## Required Checks
+
+Run these before deploy:
+
+```bash
+pnpm env:check
+pnpm release:preflight
+pnpm lint
+pnpm typecheck
+pnpm test:services
+pnpm test:unit
+pnpm test:web
+```
+
+Database-backed acceptance checks:
+
+```bash
+RUN_DB_WEB_TESTS=1 pnpm test:web
+pnpm test:acceptance:db
+```
+
+## Environment Matrix
+
+Core env:
+
+- `DATABASE_URL`
+- `SESSION_SECRET`
+- `ZOOK_QR_SECRET`
+- `NEXT_PUBLIC_WEB_URL`
+- `NEXT_PUBLIC_APP_URL`
+- `MOBILE_API_BASE_URL`
+- `ENV_PROFILE`
+
+Payments:
+
+- `PAYMENT_PROVIDER=mock|razorpay`
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_WEBHOOK_SECRET`
+- `RAZORPAY_MODE=test|live`
+- `RAZORPAY_CHECKOUT_THEME_COLOR` optional
+
+Push:
+
+- `PUSH_PROVIDER=mock|expo`
+- `EXPO_PROJECT_ID`
+- `EXPO_ACCESS_TOKEN` optional
+- `PUSH_ENVIRONMENT=development|preview|production`
+
+Email:
+
+- `EMAIL_PROVIDER=mock|smtp|resend`
+- `EMAIL_FROM`
+- `RESEND_API_KEY`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+
+Storage:
+
+- `STORAGE_PROVIDER=local|s3|r2`
+- `STORAGE_LOCAL_DIR`
+- `S3_BUCKET`
+- `S3_REGION`
+- `S3_ACCESS_KEY_ID`
+- `S3_SECRET_ACCESS_KEY`
+- `S3_ENDPOINT` optional
+- `S3_PUBLIC_BASE_URL` optional
+- `R2_ACCOUNT_ID` optional
+
+AI:
+
+- `AI_PROVIDER=mock|openai`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+
+Maps:
+
+- `MAP_PROVIDER=mock|google`
+- `GOOGLE_MAPS_API_KEY`
+
+Observability:
+
+- `ERROR_REPORTER=mock|sentry`
+- `SENTRY_DSN`
+- `SENTRY_ENVIRONMENT`
+
+## Database And Seeding
+
+Local/demo setup:
 
 ```bash
 pnpm db:generate
-pnpm db:migrate
-pnpm db:seed
+pnpm db:push
+pnpm seed:demo
+pnpm seed:pilot
 ```
 
-- Use `pnpm db:seed` in local and demo staging only.
-- Skip demo seeding in production unless you intentionally want sample data.
-- `pnpm db:reset` is for local rebuilds and demo refreshes, not shared environments.
+Shared environments:
+
+```bash
+pnpm db:deploy
+```
+
+Notes:
+
+- use `pnpm seed:pilot` only for demo or staging environments meant to hold sample gyms
+- do not run destructive reset or demo seed commands against a real pilot database
+- enable managed Postgres backups at the hosting layer
+- keep a rollback-ready database snapshot before Prisma migrations
+
+## Container Deployment
+
+Phase 4 adds:
+
+- `Dockerfile`
+- `.dockerignore`
+- `docker-compose.prod.example.yml`
+
+The Docker image builds the standalone Next.js server:
+
+```bash
+docker build -t zook-web:phase4 .
+docker run --rm -p 3000:3000 --env-file .env zook-web:phase4
+```
+
+The compose example is a staging-style reference only. Replace placeholder secrets before use.
+
+## Health And Readiness
+
+- `GET /api/health`
+  - no database dependency
+  - returns app alive, version, env profile, timestamp
+- `GET /api/ready`
+  - checks Prisma/database reachability
+  - returns safe provider summaries without leaking secrets
+  - returns `503` when readiness fails
+
+Recommended checks:
+
+```bash
+curl http://localhost:3000/api/health
+curl http://localhost:3000/api/ready
+```
 
 ## Web Runtime
 
-- Set `SESSION_SECRET` to a long random value.
-- Use HTTPS in staging and production.
-- Keep cookie auth on the web side and bearer auth on mobile.
-- The current app already applies hardened response headers in `apps/web/next.config.ts`.
+- `apps/web/next.config.ts` now uses `output: "standalone"`
+- security headers stay enabled through Next config
+- request IDs are included in API responses
+- request logging records method, path, status, duration, and actor context without secrets
 
-## Mobile Runtime
+## Mobile Builds
 
-- `MOBILE_API_BASE_URL` should point to the deployed `/api` origin for preview and production.
-- `NEXT_PUBLIC_WEB_URL` should point to the deployed web origin.
-- `APP_SCHEME=zook` is already used for the app deep link scheme.
-- Expo config currently reads the base URLs from env at build time.
+Phase 4 mobile release config now includes:
 
-Suggested EAS profiles:
+- app name `Zook`
+- slug `zook`
+- scheme `zook`
+- iOS bundle identifier placeholder `com.zook.app`
+- Android package placeholder `com.zook.app`
+- EAS profiles:
+  - `development`
+  - `preview`
+  - `production`
 
-- `development`: simulator/device builds against local or preview API
-- `preview`: internal testing build against staging API
-- `production`: store-ready build against production API
+Build from `apps/mobile`:
 
-## Storage
+```bash
+npx eas-cli@latest build -p ios --profile development
+npx eas-cli@latest build -p android --profile preview
+npx eas-cli@latest build --profile production
+```
 
-- Local storage writes to `STORAGE_LOCAL_DIR`.
-- Private local assets are served through signed internal URLs.
-- Public local assets are served through an internal public file route.
-- S3/R2 storage uses presigned delivery for private files and `S3_PUBLIC_BASE_URL` for stable public assets.
+Local device note:
 
-## Provider Readiness
+- iOS simulator can use `127.0.0.1`
+- Android emulators should use `10.0.2.2`
+- physical devices must use a LAN IP or tunnel host
 
-Live-ready today:
+## Webhooks
 
-- email via SMTP or Resend
-- storage via local, S3-compatible, or R2-style endpoint
-- maps via Google Maps
-- AI via OpenAI
+Razorpay webhook route:
 
-Still mock-first today:
+- `POST /api/payments/webhooks/razorpay`
+- verifies raw-body HMAC signature
+- persists webhook events and attempts
+- handles duplicates idempotently
+- updates payment sessions through server-side activation only
 
-- payments
-- push delivery
+Pilot recommendation:
 
-Use `GET /api/platform/provider-status` as a final safe readiness check after deploy.
+- keep Razorpay in `test` mode first
+- point the provider webhook to staging only after `pnpm release:preflight` is green
 
-## Monitoring And Operations
+## Cookies, Origins, And CORS
 
-- keep request IDs enabled in logs
-- monitor provider setup errors from the API logs
-- review org and platform audit logs regularly
-- ensure database backups are enabled at the hosting layer
-- add bucket lifecycle rules for nonessential file retention when moving past pilot
+- web session cookie remains HTTP-only
+- use HTTPS for staging and production
+- keep `NEXT_PUBLIC_WEB_URL` and `NEXT_PUBLIC_APP_URL` aligned to public origins
+- do not expose provider secrets to browser or mobile clients
 
-## Acceptance Notes
+## Incident And Rollback Notes
 
-- `pnpm preflight` is the fastest local readiness check before starting web/mobile services
-- `pnpm test:acceptance` prints DB-gated instructions when the local database env is not present
-- `RUN_DB_WEB_TESTS=1 pnpm test:web` should only be used when the database is reachable and seeded
+When a deploy goes wrong:
 
-## Current Gaps
+1. stop traffic or roll back the container/platform release
+2. review `/api/ready`, platform provider diagnostics, and application logs
+3. inspect `PaymentEvent`, `PaymentWebhookAttempt`, `PushDelivery`, and `IncidentLog` for operational fallout
+4. roll back to the last known-good image and, if required, restore the pre-migration database snapshot
 
-- Razorpay webhook hardening and real payment activation are not complete in this branch
-- push delivery remains mock-only
-- deployment automation files such as Docker or EAS profile config still need a dedicated rollout pass
+## Current Pilot Limitations
+
+- mobile still opens hosted checkout and does not deep-link back automatically
+- native push registration UI is not yet fully wired into the Expo app
+- Sentry remains a scaffold, not a full SDK integration
+- the Docker example covers the web/API runtime only, not a full managed Postgres or object-storage stack
