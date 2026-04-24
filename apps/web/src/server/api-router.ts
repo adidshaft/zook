@@ -21,6 +21,7 @@ import {
 import { MockAIProvider, MockEmailProvider, MockMapProvider } from "@zook/core/providers";
 import {
   AuthService,
+  calculateShopOrder,
   canReceiveNotification,
   canSendNotification,
   computeSubscriptionWindow,
@@ -32,6 +33,8 @@ import {
   decideAttendanceStatus,
   defaultAIQuotaForRole,
   encodeQrPayload,
+  fulfillShopOrder,
+  markShopOrderPaid,
   normalizeUsername,
   PersonalTrackingService,
   requireManualOverrideReason,
@@ -113,6 +116,37 @@ const notificationPreferenceSchema = z.object({
   promotional: z.boolean().optional(),
   engagement: z.boolean().optional(),
   pushEnabled: z.boolean().optional()
+});
+
+const productInputSchema = z.object({
+  name: z.string().min(2).max(120),
+  description: z.string().max(500).optional(),
+  category: z
+    .enum(["WATER", "PROTEIN_SHAKE", "SHAKER", "TOWEL", "SUPPLEMENT", "OTHER"])
+    .default("OTHER"),
+  pricePaise: z.number().int().nonnegative(),
+  stock: z.number().int().nonnegative(),
+  lowStockThreshold: z.number().int().nonnegative().default(8),
+  imageUrl: z.string().url().optional(),
+  active: z.boolean().default(true)
+});
+
+const shopOrderSchema = z.object({
+  orgId: z.string(),
+  items: z
+    .array(
+      z.object({
+        productId: z.string(),
+        quantity: z.number().int().positive()
+      })
+    )
+    .min(1)
+});
+
+const inventoryAdjustmentSchema = z.object({
+  productId: z.string(),
+  delta: z.number().int().refine((value) => value !== 0, "Inventory delta must be non-zero"),
+  reason: z.string().trim().min(2).max(200)
 });
 
 function clean<T extends Record<string, unknown>>(input: T): any {
@@ -1618,10 +1652,76 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         }
       }
       if (metadata.shopOrderId) {
-        await prisma.shopOrder.update({
-          where: { id: metadata.shopOrderId },
-          data: { status: "READY_FOR_PICKUP", paymentId: payment.id, pickupCode: `ZK-${session.id.slice(-6).toUpperCase()}` }
-        });
+        const existingOrder = await prisma.shopOrder.findUnique({ where: { id: metadata.shopOrderId } });
+        if (existingOrder && payment && existingOrder.status === "PENDING_PAYMENT") {
+          const paymentId = payment.id;
+          const items = await prisma.shopOrderItem.findMany({ where: { orderId: existingOrder.id } });
+          const orderProducts = await prisma.product.findMany({
+            where: { id: { in: items.map((item) => item.productId) } }
+          });
+          const calculation = calculateShopOrder({
+            products: orderProducts.map((product) => ({
+              id: product.id,
+              stock: product.stock,
+              pricePaise: product.pricePaise,
+              active: product.active
+            })),
+            items: items.map((item) => ({ productId: item.productId, quantity: item.quantity }))
+          });
+          const readyOrder = markShopOrderPaid(
+            { id: existingOrder.id, status: existingOrder.status, totalPaise: existingOrder.totalPaise },
+            `ZK-${session.id.slice(-6).toUpperCase()}`
+          );
+          await prisma.$transaction(async (tx) => {
+            await Promise.all(
+              calculation.stockDeltas.map(async (delta) => {
+                await tx.product.update({
+                  where: { id: delta.productId },
+                  data: { stock: { increment: delta.delta } }
+                });
+                await tx.inventoryMovement.create({
+                  data: clean({
+                    orgId: existingOrder.orgId,
+                    productId: delta.productId,
+                    delta: delta.delta,
+                    reason: "shop_order_paid",
+                    orderId: existingOrder.id,
+                    createdById: session.userId ?? undefined
+                  })
+                });
+              })
+            );
+            await tx.shopOrder.update({
+              where: { id: existingOrder.id },
+              data: clean({
+                status: readyOrder.status,
+                paymentId,
+                pickupCode: readyOrder.pickupCode,
+                paymentSessionId: session.id
+              })
+            });
+            await tx.pickupCode.upsert({
+              where: { orderId: existingOrder.id },
+              update: { code: readyOrder.pickupCode ?? `ZK-${session.id.slice(-6).toUpperCase()}`, status: readyOrder.status },
+              create: {
+                orgId: existingOrder.orgId,
+                orderId: existingOrder.id,
+                code: readyOrder.pickupCode ?? `ZK-${session.id.slice(-6).toUpperCase()}`,
+                status: readyOrder.status
+              }
+            });
+          });
+          await createDirectNotification({
+            orgId: existingOrder.orgId,
+            type: "TRANSACTIONAL",
+            title: "Order ready for pickup",
+            body: `Your pickup code is ${readyOrder.pickupCode}. Show it at reception to collect the order.`,
+            audience: "selected_member",
+            userIds: [existingOrder.userId],
+            ...(session.userId ? { createdById: session.userId } : {}),
+            metadata: clean({ orderId: existingOrder.id, pickupCode: readyOrder.pickupCode })
+          });
+        }
       }
     }
     return ok({ session, payment });
@@ -2743,21 +2843,31 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "products"])) {
-    return ok({ products: await prisma.product.findMany({ where: { orgId: path[1]!, active: true } }) });
+    const orgId = path[1]!;
+    return ok({
+      products: await prisma.product.findMany({
+        where: { orgId },
+        orderBy: [{ active: "desc" }, { stock: "asc" }]
+      })
+    });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "products"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
-    const body = (await readJson(request)) as { name: string; pricePaise: number; stock: number; category?: string };
+    const body = productInputSchema.parse(await readJson(request));
     const product = await prisma.product.create({
-      data: {
+      data: clean({
         orgId,
         name: body.name,
+        description: body.description,
         pricePaise: body.pricePaise,
         stock: body.stock,
-        category: (body.category ?? "OTHER") as never
-      }
+        category: body.category,
+        lowStockThreshold: body.lowStockThreshold,
+        imageUrl: body.imageUrl,
+        active: body.active
+      })
     });
     await writeAuditLog({
       request,
@@ -2769,16 +2879,95 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     });
     return ok({ product });
   }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "products", /.+/])) {
+    const orgId = path[1]!;
+    const productId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
+    const body = productInputSchema.partial().parse(await readJson(request));
+    const existingProduct = await prisma.product.findFirst({ where: { id: productId, orgId } });
+    if (!existingProduct) {
+      throw notFoundError("Product not found");
+    }
+    const product = await prisma.product.update({
+      where: { id: existingProduct.id },
+      data: clean({
+        name: body.name,
+        description: body.description,
+        category: body.category,
+        pricePaise: body.pricePaise,
+        stock: body.stock,
+        lowStockThreshold: body.lowStockThreshold,
+        imageUrl: body.imageUrl,
+        active: body.active
+      })
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "product.updated",
+      entityType: "product",
+      entityId: product.id
+    });
+    return ok({ product });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "inventory", "adjust"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
+    const body = inventoryAdjustmentSchema.parse(await readJson(request));
+    const existingProduct = await prisma.product.findFirst({ where: { id: body.productId, orgId } });
+    if (!existingProduct) {
+      throw notFoundError("Product not found");
+    }
+    if (existingProduct.stock + body.delta < 0) {
+      throw conflictError("Inventory adjustment would result in negative stock.");
+    }
+    const [product, movement] = await prisma.$transaction([
+      prisma.product.update({
+        where: { id: existingProduct.id },
+        data: { stock: { increment: body.delta } }
+      }),
+      prisma.inventoryMovement.create({
+        data: {
+          orgId,
+          productId: existingProduct.id,
+          delta: body.delta,
+          reason: body.reason,
+          createdById: userId
+        }
+      })
+    ]);
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "inventory.adjusted",
+      entityType: "inventory_movement",
+      entityId: movement.id,
+      metadata: { productId: existingProduct.id, delta: body.delta, reason: body.reason }
+    });
+    return ok({ product, movement });
+  }
   if (request.method === "POST" && pathMatches(path, ["shop", "orders"])) {
     const userId = requireAuth(await getRequestContext(request));
-    const body = (await readJson(request)) as { orgId: string; items: Array<{ productId: string; quantity: number }> };
-    const products = await prisma.product.findMany({ where: { id: { in: body.items.map((item) => item.productId) }, orgId: body.orgId } });
-    const total = body.items.reduce((sum, item) => {
-      const product = products.find((candidate) => candidate.id === item.productId);
-      if (!product || product.stock < item.quantity) throw new Error("Product out of stock");
-      return sum + product.pricePaise * item.quantity;
-    }, 0);
-    const order = await prisma.shopOrder.create({ data: { orgId: body.orgId, userId, totalPaise: total } });
+    const body = shopOrderSchema.parse(await readJson(request));
+    const products = await prisma.product.findMany({
+      where: { id: { in: body.items.map((item) => item.productId) }, orgId: body.orgId }
+    });
+    const calculation = calculateShopOrder({
+      products: products.map((product) => ({
+        id: product.id,
+        stock: product.stock,
+        pricePaise: product.pricePaise,
+        active: product.active
+      })),
+      items: body.items
+    });
+    const order = await prisma.shopOrder.create({
+      data: { orgId: body.orgId, userId, totalPaise: calculation.totalPaise }
+    });
     await prisma.shopOrderItem.createMany({
       data: body.items.map((item) => ({
         orgId: body.orgId,
@@ -2793,25 +2982,39 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         orgId: body.orgId,
         userId,
         purpose: "SHOP_ORDER",
-        amountPaise: total,
+        amountPaise: calculation.totalPaise,
         checkoutUrl: "/checkout/mock/pending",
         metadata: { shopOrderId: order.id },
         expiresAt: new Date(Date.now() + 30 * 60 * 1000)
       }
     });
-    const updated = await prisma.paymentSession.update({ where: { id: session.id }, data: { checkoutUrl: `/checkout/mock/${session.id}` } });
+    const updated = await prisma.paymentSession.update({
+      where: { id: session.id },
+      data: { checkoutUrl: `/checkout/mock/${session.id}` }
+    });
+    await prisma.shopOrder.update({
+      where: { id: order.id },
+      data: { paymentSessionId: session.id }
+    });
     return ok({ order, checkoutUrl: updated.checkoutUrl });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "shop", "orders"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "SHOP_FULFILL_ORDER");
+    const orders = await prisma.shopOrder.findMany({
+      where: { orgId },
+      orderBy: { createdAt: "desc" },
+      take: 100
+    });
+    const items = await prisma.shopOrderItem.findMany({
+      where: { orderId: { in: orders.map((order) => order.id) } }
+    });
     return ok({
-      orders: await prisma.shopOrder.findMany({
-        where: { orgId },
-        orderBy: { createdAt: "desc" },
-        take: 100
-      })
+      orders: orders.map((order) => ({
+        ...order,
+        items: items.filter((item) => item.orderId === order.id)
+      }))
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "shop", "orders", /.+/, "fulfill"])) {
@@ -2822,9 +3025,19 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     if (!existingOrder) {
       throw notFoundError("Shop order not found");
     }
+    const fulfilled = fulfillShopOrder({
+      id: existingOrder.id,
+      status: existingOrder.status,
+      totalPaise: existingOrder.totalPaise,
+      ...(existingOrder.pickupCode ? { pickupCode: existingOrder.pickupCode } : {})
+    });
     const order = await prisma.shopOrder.update({
       where: { id: existingOrder.id },
-      data: { status: "FULFILLED", fulfilledById: userId, fulfilledAt: new Date() }
+      data: { status: fulfilled.status, fulfilledById: userId, fulfilledAt: new Date() }
+    });
+    await prisma.pickupCode.updateMany({
+      where: { orderId: existingOrder.id },
+      data: { status: fulfilled.status, fulfilledAt: new Date() }
     });
     await writeAuditLog({
       request,
