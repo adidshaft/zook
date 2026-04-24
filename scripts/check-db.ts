@@ -1,4 +1,3 @@
-import { PrismaClient } from "../packages/db/src/index";
 import { env, fail, loadLocalEnvironment, pass, type CheckResult } from "./shared";
 
 export async function runDbCheck(): Promise<CheckResult> {
@@ -12,6 +11,7 @@ export async function runDbCheck(): Promise<CheckResult> {
     );
   }
 
+  const { PrismaClient } = await import("@prisma/client");
   const prisma = new PrismaClient({
     log: ["error"]
   });

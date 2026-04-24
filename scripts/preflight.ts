@@ -1,16 +1,6 @@
 import { runDbCheck } from "./check-db";
 import { runEnvChecks } from "./check-env";
-import type { CheckResult } from "./shared";
-
-function render(result: CheckResult) {
-  const prefix =
-    result.status === "pass" ? "[pass]" : result.status === "warn" ? "[warn]" : "[fail]";
-
-  console.log(`${prefix} ${result.label}: ${result.detail}`);
-  if (result.hint) {
-    console.log(`       ${result.hint}`);
-  }
-}
+import { renderResult } from "./shared";
 
 async function main() {
   console.log("Zook preflight");
@@ -21,7 +11,7 @@ async function main() {
   const results = [...envResults, dbResult];
 
   for (const result of results) {
-    render(result);
+    renderResult(result);
   }
 
   const failureCount = results.filter((result) => result.status === "fail").length;
