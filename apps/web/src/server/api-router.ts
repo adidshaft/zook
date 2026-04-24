@@ -18,7 +18,7 @@ import {
   type AIRequestType,
   type Role
 } from "@zook/core";
-import { getAIProvider, getEmailProvider, getMapProvider } from "@zook/core/providers";
+import { getAIProvider, getEmailProvider, getMapProvider, getProviderRegistryDiagnostics } from "@zook/core/providers";
 import {
   AuthService,
   calculateShopOrder,
@@ -3432,6 +3432,11 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
     return ok({ usage: await prisma.aIUsageLog.findMany({ take: 100, orderBy: { createdAt: "desc" } }) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "provider-status"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    return ok({ providers: getProviderRegistryDiagnostics() });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "abuse-flags"])) {
     const ctx = await getRequestContext(request);

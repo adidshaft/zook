@@ -1,6 +1,6 @@
-import type { AIRequestType } from "../types";
+import type { AIRequestType, DiagnosticProvider, ProviderInstanceDiagnostics } from "../types";
 
-export interface AIProvider {
+export interface AIProvider extends DiagnosticProvider {
   generateText(input: { prompt: string; safeMode?: boolean; resources?: string[] }): Promise<string>;
   generateStructuredPlan(input: { prompt: string; safeMode?: boolean }): Promise<Record<string, unknown>>;
   generateImage(input: { prompt: string }): Promise<{ imageUrl: string; prompt: string }>;
@@ -21,6 +21,20 @@ const risky = [
 ];
 
 export class MockAIProvider implements AIProvider {
+  getDiagnostics(): ProviderInstanceDiagnostics {
+    return {
+      provider: "mock",
+      mode: "mock",
+      configured: true,
+      metadata: {
+        deterministic: true,
+        supportsText: true,
+        supportsStructuredPlan: true,
+        supportsImage: true
+      }
+    };
+  }
+
   async generateText(input: { prompt: string; safeMode?: boolean; resources?: string[] }): Promise<string> {
     const prefix = input.safeMode ? "Minor-safe guidance: " : "";
     const resourceLine = input.resources?.length ? ` Approved resource used: ${input.resources[0]}.` : "";
@@ -78,6 +92,20 @@ export class OpenAIProvider implements AIProvider {
     private readonly apiKey: string,
     private readonly model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
   ) {}
+
+  getDiagnostics(): ProviderInstanceDiagnostics {
+    return {
+      provider: "openai",
+      mode: "live",
+      configured: Boolean(this.apiKey),
+      metadata: {
+        model: this.model,
+        supportsText: true,
+        supportsStructuredPlan: true,
+        supportsImage: true
+      }
+    };
+  }
 
   async generateText(input: { prompt: string; safeMode?: boolean; resources?: string[] }): Promise<string> {
     const resourceLine = input.resources?.length ? `Approved resources: ${input.resources.join(", ")}.` : "";

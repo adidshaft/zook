@@ -106,6 +106,32 @@ export type PlanType =
   | "RECOVERY";
 export type PlanStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 export type AIProviderType = "MOCK" | "OPENAI";
+export type ProviderCategory = "ai" | "email" | "map" | "payment" | "push" | "sms" | "storage";
+export type ProviderMode = "mock" | "live" | "local";
+export type ProviderDiagnosticStatus = "default" | "ready" | "misconfigured" | "unsupported";
+export type ProviderDiagnosticValue = string | number | boolean | null;
+export type ProviderDiagnosticMetadata = Record<string, ProviderDiagnosticValue>;
+
+export interface ProviderInstanceDiagnostics {
+  provider: string;
+  mode: ProviderMode;
+  configured: boolean;
+  metadata?: ProviderDiagnosticMetadata;
+}
+
+export interface ProviderDiagnostics extends ProviderInstanceDiagnostics {
+  category: ProviderCategory;
+  selectedProvider: string;
+  activeProvider: string | null;
+  status: ProviderDiagnosticStatus;
+  missingEnv: string[];
+  env: Record<string, boolean>;
+}
+
+export interface DiagnosticProvider {
+  getDiagnostics(): ProviderInstanceDiagnostics;
+}
+
 export type AIRequestType = "CHAT" | "STRUCTURED_PLAN" | "IMAGE" | "SCOPE_CLASSIFICATION" | "SAFETY_CLASSIFICATION";
 export type ProductCategory = "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
 export type OrderStatus = "PENDING_PAYMENT" | "PAID" | "READY_FOR_PICKUP" | "FULFILLED" | "CANCELLED" | "REFUNDED";

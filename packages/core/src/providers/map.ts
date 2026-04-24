@@ -1,3 +1,5 @@
+import type { DiagnosticProvider, ProviderInstanceDiagnostics } from "../types";
+
 export interface PlaceResult {
   name: string;
   address: string;
@@ -11,7 +13,7 @@ export interface PlaceResult {
   locationSource: "MOCK" | "MANUAL" | "GOOGLE_PLACE" | "GOOGLE_MAPS_LINK";
 }
 
-export interface MapProvider {
+export interface MapProvider extends DiagnosticProvider {
   resolveGoogleMapsLink(url: string): Promise<PlaceResult | null>;
   searchPlaces(query: string, city?: string): Promise<PlaceResult[]>;
   geocodeAddress(input: { address: string; city: string; state: string; pincode: string }): Promise<PlaceResult>;
@@ -27,6 +29,18 @@ const cityCoordinates: Record<string, { latitude: number; longitude: number; sta
 const defaultCoordinates = cityCoordinates.pune!;
 
 export class MockMapProvider implements MapProvider {
+  getDiagnostics(): ProviderInstanceDiagnostics {
+    return {
+      provider: "mock",
+      mode: "mock",
+      configured: true,
+      metadata: {
+        deterministicRegion: "india",
+        cityFixtureCount: Object.keys(cityCoordinates).length
+      }
+    };
+  }
+
   async resolveGoogleMapsLink(url: string): Promise<PlaceResult | null> {
     if (!/^https?:\/\/(maps\.app\.goo\.gl|www\.google\.com\/maps|goo\.gl\/maps)/.test(url)) {
       return null;
@@ -93,6 +107,19 @@ export class MockMapProvider implements MapProvider {
 
 export class GoogleMapProvider implements MapProvider {
   constructor(private readonly apiKey: string) {}
+
+  getDiagnostics(): ProviderInstanceDiagnostics {
+    return {
+      provider: "google",
+      mode: "live",
+      configured: Boolean(this.apiKey),
+      metadata: {
+        supportsSearch: true,
+        supportsReverseGeocode: true,
+        supportsGoogleMapsLinks: true
+      }
+    };
+  }
 
   async resolveGoogleMapsLink(url: string): Promise<PlaceResult | null> {
     if (!/^https?:\/\/(maps\.app\.goo\.gl|www\.google\.com\/maps|goo\.gl\/maps)/.test(url)) {

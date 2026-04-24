@@ -1,10 +1,24 @@
-export interface EmailProvider {
+import type { DiagnosticProvider, ProviderInstanceDiagnostics } from "../types";
+
+export interface EmailProvider extends DiagnosticProvider {
   sendOtp(input: { email: string; code: string; expiresAt: Date }): Promise<void>;
   sendNotificationEmail(input: { email: string; title: string; body: string }): Promise<void>;
 }
 
 export class MockEmailProvider implements EmailProvider {
   sent: Array<{ kind: "otp" | "notification"; email: string; title?: string; body?: string; code?: string }> = [];
+
+  getDiagnostics(): ProviderInstanceDiagnostics {
+    return {
+      provider: "mock",
+      mode: "mock",
+      configured: true,
+      metadata: {
+        delivery: "in-memory",
+        sentCount: this.sent.length
+      }
+    };
+  }
 
   async sendOtp(input: { email: string; code: string; expiresAt: Date }): Promise<void> {
     this.sent.push({ kind: "otp", email: input.email, code: input.code });
@@ -20,6 +34,17 @@ export class MockEmailProvider implements EmailProvider {
 
 export class ResendEmailProvider implements EmailProvider {
   constructor(private readonly apiKey: string, private readonly fromEmail = "Zook <noreply@zook.app>") {}
+
+  getDiagnostics(): ProviderInstanceDiagnostics {
+    return {
+      provider: "resend",
+      mode: "live",
+      configured: Boolean(this.apiKey),
+      metadata: {
+        fromEmail: this.fromEmail
+      }
+    };
+  }
 
   async sendOtp(input: { email: string; code: string; expiresAt: Date }): Promise<void> {
     await this.send({

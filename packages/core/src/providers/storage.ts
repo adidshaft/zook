@@ -1,4 +1,6 @@
-export interface StorageProvider {
+import type { DiagnosticProvider, ProviderInstanceDiagnostics } from "../types";
+
+export interface StorageProvider extends DiagnosticProvider {
   uploadFile(input: { key: string; contentType: string; sizeBytes: number; body?: unknown }): Promise<{ key: string; url: string }>;
   getSignedUrl(input: { key: string; expiresInSeconds?: number }): Promise<string>;
   deleteFile(input: { key: string }): Promise<void>;
@@ -6,6 +8,18 @@ export interface StorageProvider {
 
 export class LocalStorageProvider implements StorageProvider {
   private files = new Map<string, { url: string; contentType: string; sizeBytes: number }>();
+
+  getDiagnostics(): ProviderInstanceDiagnostics {
+    return {
+      provider: "local",
+      mode: "local",
+      configured: true,
+      metadata: {
+        fileCount: this.files.size,
+        pathPrefix: "/uploads"
+      }
+    };
+  }
 
   async uploadFile(input: { key: string; contentType: string; sizeBytes: number }): Promise<{ key: string; url: string }> {
     const url = `/uploads/${input.key}`;

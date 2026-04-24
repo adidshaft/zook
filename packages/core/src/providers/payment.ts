@@ -1,4 +1,4 @@
-import type { PaymentPurpose, PaymentStatus } from "../types";
+import type { DiagnosticProvider, PaymentPurpose, PaymentStatus, ProviderInstanceDiagnostics } from "../types";
 
 export interface CheckoutSessionInput {
   orgId?: string;
@@ -17,7 +17,7 @@ export interface CheckoutSessionResult {
   purpose: PaymentPurpose;
 }
 
-export interface PaymentProvider {
+export interface PaymentProvider extends DiagnosticProvider {
   createCheckoutSession(input: CheckoutSessionInput): Promise<CheckoutSessionResult>;
   verifyWebhook(input: { sessionId: string; payload: unknown; signature?: string }): Promise<PaymentStatus>;
   getPaymentStatus(sessionId: string): Promise<PaymentStatus>;
@@ -28,6 +28,18 @@ export interface PaymentProvider {
 
 export class MockPaymentProvider implements PaymentProvider {
   private sessions = new Map<string, CheckoutSessionResult>();
+
+  getDiagnostics(): ProviderInstanceDiagnostics {
+    return {
+      provider: "mock",
+      mode: "mock",
+      configured: true,
+      metadata: {
+        checkoutMode: "mock-hosted",
+        sessionCount: this.sessions.size
+      }
+    };
+  }
 
   async createCheckoutSession(input: CheckoutSessionInput): Promise<CheckoutSessionResult> {
     const sessionId = `mock_${Math.random().toString(36).slice(2, 12)}`;

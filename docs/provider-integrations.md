@@ -1,8 +1,14 @@
 # Provider Integrations
 
-Zook is mock-first by default. Real providers are selected only through backend factories in `packages/core/src/providers/registry.ts`.
+Zook remains mock-first in Phase 3. Provider selection happens only through `packages/core/src/providers/registry.ts`, and the registry now follows one consistent rule:
 
-## Selection Functions
+- If no live provider is selected, Zook uses the safe default provider for that channel.
+- If a live provider is explicitly selected, the registry must be fully configured or it throws a `ProviderSetupError`.
+- Diagnostics are safe to expose to admins because they report provider names, env presence, and non-secret metadata only. Raw keys and secrets are never returned.
+
+## Selection And Diagnostics
+
+Factory accessors:
 
 - `getEmailProvider()`
 - `getPaymentProvider()`
@@ -11,69 +17,109 @@ Zook is mock-first by default. Real providers are selected only through backend 
 - `getStorageProvider()`
 - `getPushProvider()`
 
-If env configuration is missing, the registry falls back safely to mock or local providers.
+Diagnostics accessors:
+
+- `getEmailProviderDiagnostics()`
+- `getPaymentProviderDiagnostics()`
+- `getMapProviderDiagnostics()`
+- `getAIProviderDiagnostics()`
+- `getStorageProviderDiagnostics()`
+- `getPushProviderDiagnostics()`
+- `getProviderRegistryDiagnostics()`
+
+## Configured-State Rules
+
+Each provider factory reports one of these states:
+
+- `default`: the selector env is unset, so the registry uses the default mock or local provider.
+- `ready`: the selector env is set and the chosen provider is available with the required env in place.
+- `misconfigured`: a live provider was selected, but one or more required env vars are missing. Calling the factory throws `ProviderSetupError`.
+- `unsupported`: a provider value was selected that is not implemented in the current registry. Calling the factory throws `ProviderSetupError`.
+
+Diagnostics include:
+
+- `selectedProvider`: the provider value requested by env, or the implicit default when unset
+- `activeProvider`: the instantiated provider, or `null` when setup is invalid
+- `missingEnv`: required env vars still absent for the selected live provider
+- `env`: boolean presence flags only, never secret values
+- `metadata`: safe provider/factory metadata such as model name, capabilities, or local path prefix
 
 ## Email
 
-Env:
+Selector env:
 
-- `EMAIL_PROVIDER=mock|resend|smtp`
+- `EMAIL_PROVIDER=mock|resend`
+
+Known envs:
+
 - `RESEND_API_KEY`
 - `SMTP_HOST`
 - `SMTP_PORT`
 - `SMTP_USER`
 - `SMTP_PASS`
 
-Current state:
+Current behavior:
 
-- `mock`: fully supported and default
-- `resend`: scaffolded and optional
-- `smtp`: env placeholders documented, implementation still future work
+- `mock`: supported and default
+- `resend`: supported when `RESEND_API_KEY` is present
+- `smtp`: documented as future work only; selecting it is currently `unsupported`
 
 ## Payments
 
-Env:
+Selector env:
 
 - `PAYMENT_PROVIDER=mock`
 
-Current state:
+Current behavior:
 
-- `mock`: fully supported and default
-- real provider classes can be added later behind `PaymentProvider`
+- `mock`: supported and default
+- any other value: `unsupported`
 
-Mock checkout lives at `/checkout/mock/{sessionId}` and drives membership or shop activation through backend payment-session completion.
+Mock checkout still lives at `/checkout/mock/{sessionId}` and remains the safe development path.
 
 ## Maps
 
-Env:
+Selector env:
 
 - `MAP_PROVIDER=mock|google`
+
+Known envs:
+
 - `GOOGLE_MAPS_API_KEY`
 
-Current state:
+Current behavior:
 
-- `mock`: deterministic India-focused responses
-- `google`: scaffolded for geocode/search/link resolution, but falls back safely if no key is present
+- `mock`: supported and default
+- `google`: supported when `GOOGLE_MAPS_API_KEY` is present
+
+If `MAP_PROVIDER=google` is set without a key, the registry reports `misconfigured` and `getMapProvider()` throws instead of silently falling back.
 
 ## AI
 
-Env:
+Selector env:
 
 - `AI_PROVIDER=mock|openai`
+
+Known envs:
+
 - `OPENAI_API_KEY`
+- `OPENAI_MODEL`
 
-Current state:
+Current behavior:
 
-- `mock`: deterministic and default
-- `openai`: scaffolded backend-only provider
+- `mock`: supported and default
+- `openai`: supported when `OPENAI_API_KEY` is present
 
-Guardrails still run before provider execution, regardless of which provider is selected.
+Diagnostics may expose the selected `OPENAI_MODEL`, but never the API key.
 
 ## Storage
 
-Env:
+Selector env:
 
-- `STORAGE_PROVIDER=local|s3|r2`
+- `STORAGE_PROVIDER=local`
+
+Known envs for future live targets:
+
 - `S3_ENDPOINT`
 - `S3_REGION`
 - `S3_BUCKET`
@@ -84,40 +130,25 @@ Env:
 - `R2_ACCESS_KEY_ID`
 - `R2_SECRET_ACCESS_KEY`
 
-Current state:
+Current behavior:
 
-- `local`: default
-- `s3` / `r2`: scaffold placeholders for future upload paths
+- `local`: supported and default
+- `s3` / `r2`: future targets; selecting them is currently `unsupported`
 
 ## Push
 
-Env:
+Selector env:
 
-- `PUSH_PROVIDER=mock|expo`
+- `PUSH_PROVIDER=mock`
 
-Current state:
+Current behavior:
 
-- `mock`: default and safe for local development
-- `expo`: documented target path, not required to run the app
+- `mock`: supported and default
+- `expo`: future target; selecting it is currently `unsupported`
 
-## What Is Live vs Mock
+## Safe Rollout Summary
 
-Live right now:
-
-- registry-based provider selection
-- mock email
-- mock payments
-- mock maps
-- mock AI
-- local storage provider
-- mock push provider
-
-Still scaffold/future-ready:
-
-- OpenAI
-- Resend
-- Google Maps
-- Expo push
-- S3/R2-backed storage
-
-This is intentional: Phase 2 prioritizes real product state and backend integration while keeping runtime cost low.
+- Local development keeps working with no provider env set.
+- Staging and production must opt into live providers explicitly.
+- Partial live setup is treated as a setup error, not a silent fallback.
+- Admin diagnostics can safely inspect provider readiness without exposing secrets.
