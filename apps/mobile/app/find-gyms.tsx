@@ -46,7 +46,7 @@ export default function FindGyms() {
                   <Pill>{gym.amenities[0]}</Pill>
                 </View>
               </View>
-              <PrimaryLink href="/plans">Open</PrimaryLink>
+              <PrimaryLink href={{ pathname: "/gym/[username]", params: { username: gym.username } }}>Open</PrimaryLink>
             </View>
           </Card>
         ))}

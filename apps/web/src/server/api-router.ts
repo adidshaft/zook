@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import {
   bodyProgressEntrySchema,
   attendanceScanSchema,
@@ -20,6 +21,7 @@ import {
 import { MockAIProvider, MockEmailProvider, MockMapProvider } from "@zook/core/providers";
 import {
   AuthService,
+  computeSubscriptionWindow,
   type OtpChallengeRecord,
   applyCoupon,
   createSignedQrToken,
@@ -29,12 +31,14 @@ import {
   encodeQrPayload,
   normalizeUsername,
   PersonalTrackingService,
-  runAIGuardedRequest
+  runAIGuardedRequest,
+  transitionPaymentSession,
+  validateReferralRedemption
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
 import { extractSessionToken, sessionCookieName } from "./context";
 import { getRequestContext, requireAuth, requireOrgPermission, requirePlatformAdmin } from "./access";
-import { forbiddenError, notFoundError, toErrorResponse, unauthorizedError } from "./errors";
+import { conflictError, forbiddenError, notFoundError, toErrorResponse, unauthorizedError, validationError } from "./errors";
 import { fail, ok, readJson } from "./response";
 import { resolveSessionSummaryFromToken } from "./session";
 import { writeAuditLog } from "./audit";
@@ -49,6 +53,34 @@ const emailProvider = new MockEmailProvider();
 const mapProvider = new MockMapProvider();
 const aiProvider = new MockAIProvider();
 const personalTrackingService = new PersonalTrackingService();
+
+const joinRequestSchema = z.object({
+  planId: z.string().optional(),
+  referralCode: z.string().trim().toUpperCase().optional(),
+  message: z.string().max(500).optional()
+});
+
+const subscriptionCheckoutSchema = z.object({
+  planId: z.string(),
+  couponCode: z.string().trim().toUpperCase().optional(),
+  referralCode: z.string().trim().toUpperCase().optional()
+});
+
+const completeMockPaymentSchema = z.object({
+  status: z.enum(["SUCCEEDED", "FAILED", "PENDING"]).optional()
+});
+
+const manualMembershipPaymentSchema = z
+  .object({
+    memberUserId: z.string(),
+    planId: z.string().optional(),
+    subscriptionId: z.string().optional(),
+    amountPaise: z.number().int().positive(),
+    mode: z.enum(["CASH", "DIRECT_UPI", "BANK_TRANSFER", "OTHER"]),
+    receiptNumber: z.string().optional(),
+    notes: z.string().max(500).optional()
+  })
+  .refine((value) => Boolean(value.planId || value.subscriptionId), "A planId or subscriptionId is required");
 
 function clean<T extends Record<string, unknown>>(input: T): any {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
@@ -124,6 +156,190 @@ async function getUserByEmailOrCreate(email: string) {
       emailVerifiedAt: new Date()
     }
   });
+}
+
+async function ensureOrganizationMembership(input: {
+  orgId: string;
+  userId: string;
+  joinedAt?: Date;
+  profilePhotoUrl?: string | null;
+  marketingOptIn?: boolean;
+}) {
+  await prisma.organizationUser.upsert({
+    where: { orgId_userId: { orgId: input.orgId, userId: input.userId } },
+    update: { status: "active", leftAt: null },
+    create: { orgId: input.orgId, userId: input.userId, joinedAt: input.joinedAt ?? new Date(), status: "active" }
+  });
+  await prisma.organizationRoleAssignment.upsert({
+    where: {
+      orgId_userId_role: {
+        orgId: input.orgId,
+        userId: input.userId,
+        role: "MEMBER"
+      }
+    },
+    update: {},
+    create: { orgId: input.orgId, userId: input.userId, role: "MEMBER" }
+  });
+  await prisma.memberProfile.upsert({
+    where: { orgId_userId: { orgId: input.orgId, userId: input.userId } },
+    update: clean({
+      profilePhotoUrl: input.profilePhotoUrl ?? undefined,
+      marketingOptIn: input.marketingOptIn
+    }),
+    create: clean({
+      orgId: input.orgId,
+      userId: input.userId,
+      profilePhotoUrl: input.profilePhotoUrl ?? undefined,
+      marketingOptIn: input.marketingOptIn
+    })
+  });
+}
+
+async function createDirectNotification(input: {
+  orgId?: string;
+  createdById?: string;
+  type: "TRANSACTIONAL" | "OPERATIONAL" | "PROMOTIONAL" | "ENGAGEMENT" | "PLAN" | "SECURITY";
+  title: string;
+  body: string;
+  audience: string;
+  metadata?: Prisma.InputJsonValue;
+  userIds: string[];
+}) {
+  const notification = await prisma.notification.create({
+    data: clean({
+      orgId: input.orgId,
+      createdById: input.createdById,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      audience: input.audience,
+      metadata: input.metadata,
+      status: "SENT",
+      sentAt: new Date()
+    })
+  });
+  if (input.userIds.length) {
+    await prisma.notificationRecipient.createMany({
+      data: input.userIds.map((userId) => ({
+        notificationId: notification.id,
+        userId,
+        deliveryStatus: "in_app",
+        deliveredAt: new Date()
+      })),
+      skipDuplicates: true
+    });
+  }
+  return notification;
+}
+
+function toCouponInput(coupon: {
+  id: string;
+  orgId: string;
+  code: string;
+  type: "FIXED_AMOUNT" | "PERCENTAGE";
+  valuePaise: number | null;
+  valuePercentBps: number | null;
+  active: boolean;
+  validFrom: Date | null;
+  validUntil: Date | null;
+  maxRedemptions: number | null;
+  perUserLimit: number | null;
+  applicablePlanId: string | null;
+}) {
+  return clean({
+    id: coupon.id,
+    orgId: coupon.orgId,
+    code: coupon.code,
+    type: coupon.type,
+    valuePaise: coupon.valuePaise ?? undefined,
+    valuePercentBps: coupon.valuePercentBps ?? undefined,
+    active: coupon.active,
+    validFrom: coupon.validFrom ?? undefined,
+    validUntil: coupon.validUntil ?? undefined,
+    maxRedemptions: coupon.maxRedemptions ?? undefined,
+    perUserLimit: coupon.perUserLimit ?? undefined,
+    applicablePlanId: coupon.applicablePlanId ?? undefined
+  });
+}
+
+async function resolveValidatedReferral(input: {
+  orgId: string;
+  userId: string;
+  referralCode?: string;
+}) {
+  if (!input.referralCode) {
+    return null;
+  }
+  const [referral, user] = await Promise.all([
+    prisma.referralCode.findUnique({ where: { code: input.referralCode } }),
+    prisma.user.findUniqueOrThrow({ where: { id: input.userId } })
+  ]);
+  if (!referral || referral.orgId !== input.orgId) {
+    throw validationError("Referral code is invalid for this gym");
+  }
+  const referrer = await prisma.user.findUnique({ where: { id: referral.referrerUserId } });
+  const existingRedemption = await prisma.referralRedemption.findFirst({
+    where: { orgId: input.orgId, referralCodeId: referral.id, referredUserId: input.userId }
+  });
+  validateReferralRedemption(
+    clean({
+      id: referral.id,
+      orgId: referral.orgId,
+      referrerUserId: referral.referrerUserId,
+      code: referral.code,
+      couponId: referral.couponId ?? undefined,
+      expiresAt: referral.expiresAt ?? undefined,
+      maxUses: referral.maxUses ?? undefined,
+      status: referral.status as "active" | "paused" | "expired",
+      redemptionCount: referral.redemptionCount
+    }),
+    clean({
+      referredUserId: input.userId,
+      referredEmail: user.email,
+      referrerEmail: referrer?.email,
+      existingRedemption: Boolean(existingRedemption)
+    })
+  );
+  return referral;
+}
+
+async function resolveValidatedCoupon(input: {
+  orgId: string;
+  couponCode?: string;
+  fallbackCouponId?: string | null;
+  userId: string;
+  planId: string;
+  amountPaise: number;
+}) {
+  const couponId = input.fallbackCouponId ?? undefined;
+  const coupon =
+    (input.couponCode
+      ? await prisma.coupon.findUnique({
+          where: { orgId_code: { orgId: input.orgId, code: input.couponCode } }
+        })
+      : couponId
+        ? await prisma.coupon.findUnique({ where: { id: couponId } })
+        : null) ?? null;
+
+  if (!coupon) {
+    return { coupon: null, finalAmountPaise: input.amountPaise, discountPaise: 0 };
+  }
+
+  const [totalRedemptions, userRedemptions] = await Promise.all([
+    prisma.couponRedemption.count({ where: { orgId: input.orgId, couponId: coupon.id } }),
+    prisma.couponRedemption.count({
+      where: { orgId: input.orgId, couponId: coupon.id, userId: input.userId }
+    })
+  ]);
+
+  const result = applyCoupon(toCouponInput(coupon), {
+    amountPaise: input.amountPaise,
+    planId: input.planId,
+    redemptionCount: { total: totalRedemptions, byUser: userRedemptions }
+  });
+
+  return { coupon, ...result };
 }
 
 class PrismaAuthRepo {
@@ -629,15 +845,59 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", "public", /.+/])) {
     const username = path[2]!;
+    const ctx = await getRequestContext(request);
+    const viewerUserId = ctx.userId;
+    const referralCode = request.nextUrl.searchParams.get("ref")?.toUpperCase() ?? undefined;
     const org = await prisma.organization.findUnique({ where: { username } });
     if (!org || org.visibility === "HIDDEN") {
       return fail("NOT_FOUND", "Gym not found", 404);
     }
-    const plans = await prisma.membershipPlan.findMany({
-      where: { orgId: org.id, active: true, publicVisible: true },
-      take: 10
+    const [plans, activeMembership, pendingJoinRequest, approvedJoinRequest, referral] = await Promise.all([
+      prisma.membershipPlan.findMany({
+        where: { orgId: org.id, active: true, publicVisible: true },
+        take: 10
+      }),
+      viewerUserId
+        ? prisma.memberSubscription.findFirst({
+            where: { orgId: org.id, memberUserId: viewerUserId, status: "ACTIVE" },
+            orderBy: { createdAt: "desc" }
+          })
+        : Promise.resolve(null),
+      viewerUserId
+        ? prisma.membershipJoinRequest.findFirst({
+            where: { orgId: org.id, userId: viewerUserId, status: "pending" },
+            orderBy: { createdAt: "desc" }
+          })
+        : Promise.resolve(null),
+      viewerUserId
+        ? prisma.membershipJoinRequest.findFirst({
+            where: { orgId: org.id, userId: viewerUserId, status: "approved" },
+            orderBy: { reviewedAt: "desc" }
+          })
+        : Promise.resolve(null),
+      referralCode ? prisma.referralCode.findUnique({ where: { code: referralCode } }) : Promise.resolve(null)
+    ]);
+    return ok({
+      org,
+      plans,
+      viewerState: viewerUserId
+        ? {
+            activeMembership,
+            pendingJoinRequest,
+            approvedJoinRequest
+          }
+        : null,
+      referral:
+        referral && referral.orgId === org.id
+          ? {
+              code: referral.code,
+              couponId: referral.couponId,
+              status: referral.status,
+              maxUses: referral.maxUses,
+              redemptionCount: referral.redemptionCount
+            }
+          : null
     });
-    return ok({ org, plans });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs"])) {
     const ctx = await getRequestContext(request);
@@ -817,7 +1077,40 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
     const orgId = path[1]!;
-    const body = (await readJson(request)) as { planId?: string; referralCode?: string; message?: string };
+    const body = joinRequestSchema.parse(await readJson(request));
+    const organization = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!organization || organization.visibility === "HIDDEN") {
+      throw notFoundError("Gym not found");
+    }
+    if (organization.joinMode === "OPEN_JOIN") {
+      throw conflictError("This gym supports direct join. Start checkout instead of requesting approval.");
+    }
+    if (organization.joinMode === "INVITE_ONLY" && !body.referralCode) {
+      throw forbiddenError("Invite-only gyms require a valid referral or invite code.");
+    }
+    if (body.planId) {
+      const plan = await prisma.membershipPlan.findFirst({ where: { id: body.planId, orgId } });
+      if (!plan) {
+        throw notFoundError("Membership plan not found");
+      }
+    }
+    await resolveValidatedReferral({ orgId, userId, ...(body.referralCode ? { referralCode: body.referralCode } : {}) });
+    const [existingPending, existingSubscription] = await Promise.all([
+      prisma.membershipJoinRequest.findFirst({
+        where: { orgId, userId, status: { in: ["pending", "approved"] } },
+        orderBy: { createdAt: "desc" }
+      }),
+      prisma.memberSubscription.findFirst({
+        where: { orgId, memberUserId: userId, status: { in: ["PENDING_PAYMENT", "ACTIVE"] } },
+        orderBy: { createdAt: "desc" }
+      })
+    ]);
+    if (existingPending) {
+      throw conflictError("You already have a join request in progress for this gym.");
+    }
+    if (existingSubscription) {
+      throw conflictError("You already have a membership in progress for this gym.");
+    }
     const requestRow = await prisma.membershipJoinRequest.create({
       data: clean({ orgId, userId, planId: body.planId, referralCode: body.referralCode, message: body.message })
     });
@@ -849,11 +1142,55 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       where: { id: existingJoinRequest.id },
       data: { status: "approved", reviewedById: userId, reviewedAt: new Date() }
     });
+    await createDirectNotification({
+      orgId,
+      createdById: userId,
+      type: "TRANSACTIONAL",
+      title: "Membership request approved",
+      body: "You can now continue to checkout and activate your membership in Zook.",
+      audience: "selected_member",
+      userIds: [joinRequest.userId],
+      metadata: { joinRequestId: joinRequest.id, orgId }
+    });
     await writeAuditLog({
       request,
       orgId,
       actorUserId: userId,
       action: "membership_join_request.approved",
+      entityType: "membership_join_request",
+      entityId: joinRequest.id
+    });
+    return ok({ joinRequest });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "join-requests", /.+/, "reject"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "MEMBERS_MANAGE");
+    const existingJoinRequest = await prisma.membershipJoinRequest.findFirst({
+      where: { id: path[3]!, orgId }
+    });
+    if (!existingJoinRequest) {
+      throw notFoundError("Join request not found");
+    }
+    const joinRequest = await prisma.membershipJoinRequest.update({
+      where: { id: existingJoinRequest.id },
+      data: { status: "rejected", reviewedById: userId, reviewedAt: new Date() }
+    });
+    await createDirectNotification({
+      orgId,
+      createdById: userId,
+      type: "TRANSACTIONAL",
+      title: "Membership request rejected",
+      body: "Your join request was not approved. Contact the gym for the next step.",
+      audience: "selected_member",
+      userIds: [joinRequest.userId],
+      metadata: { joinRequestId: joinRequest.id, orgId }
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "membership_join_request.rejected",
       entityType: "membership_join_request",
       entityId: joinRequest.id
     });
@@ -886,48 +1223,153 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
   }
   if (request.method === "POST" && pathMatches(path, ["payments", "mock", /.+/, "complete"])) {
     const sessionId = path[2]!;
-    const body = (await readJson(request)) as { status?: "SUCCEEDED" | "FAILED" | "PENDING" };
+    const body = completeMockPaymentSchema.parse(await readJson(request));
     const status = body.status ?? "SUCCEEDED";
+    const currentSession = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
+    if (!currentSession) {
+      throw notFoundError("Payment session not found");
+    }
+    const nextState = transitionPaymentSession(
+      {
+        id: currentSession.id,
+        purpose: currentSession.purpose,
+        amountPaise: currentSession.amountPaise,
+        status: currentSession.status
+      },
+      status
+    );
     const session = await prisma.paymentSession.update({
       where: { id: sessionId },
-      data: clean({ status, completedAt: status === "SUCCEEDED" ? new Date() : undefined })
+      data: clean({
+        status: nextState.status,
+        completedAt: nextState.status === "SUCCEEDED" ? new Date() : undefined
+      })
     });
-    let payment = null;
-    if (status === "SUCCEEDED") {
-      payment = await prisma.payment.create({
-        data: {
-          orgId: session.orgId,
-          userId: session.userId,
-          sessionId: session.id,
-          purpose: session.purpose,
-          amountPaise: session.amountPaise,
-          status: "SUCCEEDED",
-          mode: "MOCK_ONLINE",
-          provider: "mock",
-          providerRef: `mock_${session.id}`,
-          recordedAt: new Date()
-        }
-      });
-      const metadata = session.metadata as { subscriptionId?: string; shopOrderId?: string } | null;
-      if (metadata?.subscriptionId) {
-        const planSub = await prisma.memberSubscription.findUnique({ where: { id: metadata.subscriptionId } });
-        const plan = planSub ? await prisma.membershipPlan.findUnique({ where: { id: planSub.planId } }) : null;
-        const startsAt = new Date();
-        const endsAt = plan?.durationDays || plan?.validityDays
-          ? new Date(startsAt.getTime() + (plan.durationDays ?? plan.validityDays ?? 30) * 24 * 60 * 60 * 1000)
-          : undefined;
-        await prisma.memberSubscription.update({
-          where: { id: metadata.subscriptionId },
-          data: clean({
-            status: "ACTIVE",
-            startsAt,
-            endsAt,
-            remainingVisits: plan?.visitLimit,
-            paymentId: payment.id
+    let payment =
+      session.status === "SUCCEEDED"
+        ? await prisma.payment.findFirst({
+            where: { sessionId: session.id, status: "SUCCEEDED" },
+            orderBy: { createdAt: "desc" }
           })
+        : null;
+    const metadata = (session.metadata ?? {}) as {
+      subscriptionId?: string;
+      shopOrderId?: string;
+      couponId?: string;
+      referralCodeId?: string;
+      joinRequestId?: string;
+    };
+    if (session.status === "SUCCEEDED") {
+      if (!payment) {
+        payment = await prisma.payment.create({
+          data: {
+            orgId: session.orgId,
+            userId: session.userId,
+            sessionId: session.id,
+            purpose: session.purpose,
+            amountPaise: session.amountPaise,
+            status: "SUCCEEDED",
+            mode: "MOCK_ONLINE",
+            provider: "mock",
+            providerRef: `mock_${session.id}`,
+            recordedAt: new Date()
+          }
         });
       }
-      if (metadata?.shopOrderId) {
+      if (metadata.subscriptionId) {
+        const [planSub, user] = await Promise.all([
+          prisma.memberSubscription.findUnique({ where: { id: metadata.subscriptionId } }),
+          session.userId ? prisma.user.findUnique({ where: { id: session.userId } }) : Promise.resolve(null)
+        ]);
+        const plan = planSub ? await prisma.membershipPlan.findUnique({ where: { id: planSub.planId } }) : null;
+        if (planSub && plan && session.userId && user) {
+          const window = computeSubscriptionWindow(
+            clean({
+              id: plan.id,
+              orgId: plan.orgId,
+              branchId: plan.branchId ?? undefined,
+              name: plan.name,
+              type: plan.type,
+              pricePaise: plan.pricePaise,
+              durationDays: plan.durationDays ?? undefined,
+              visitLimit: plan.visitLimit ?? undefined,
+              validityDays: plan.validityDays ?? undefined,
+              startDate: plan.startDate ?? undefined,
+              endDate: plan.endDate ?? undefined,
+              active: plan.active,
+              publicVisible: plan.publicVisible
+            })
+          );
+          await prisma.memberSubscription.update({
+            where: { id: metadata.subscriptionId },
+            data: clean({
+              status: "ACTIVE",
+              startsAt: window.startsAt,
+              endsAt: window.endsAt,
+              remainingVisits: window.remainingVisits,
+              paymentId: payment.id,
+              activatedById: session.userId
+            })
+          });
+          await ensureOrganizationMembership({
+            orgId: planSub.orgId,
+            userId: session.userId,
+            profilePhotoUrl: user.profilePhotoUrl,
+            marketingOptIn: user.isMinor ? false : user.marketingOptIn
+          });
+          if (metadata.couponId) {
+            const existingCouponRedemption = await prisma.couponRedemption.findFirst({
+              where: { paymentSessionId: session.id, couponId: metadata.couponId, userId: session.userId }
+            });
+            if (!existingCouponRedemption) {
+              await prisma.couponRedemption.create({
+                data: {
+                  orgId: planSub.orgId,
+                  couponId: metadata.couponId,
+                  userId: session.userId,
+                  subscriptionId: planSub.id,
+                  paymentSessionId: session.id,
+                  discountPaise: Math.max(plan.pricePaise - session.amountPaise, 0)
+                }
+              });
+            }
+          }
+          if (metadata.referralCodeId) {
+            const existingReferralRedemption = await prisma.referralRedemption.findFirst({
+              where: {
+                orgId: planSub.orgId,
+                referralCodeId: metadata.referralCodeId,
+                referredUserId: session.userId
+              }
+            });
+            if (!existingReferralRedemption) {
+              await prisma.referralRedemption.create({
+                data: {
+                  orgId: planSub.orgId,
+                  referralCodeId: metadata.referralCodeId,
+                  referredUserId: session.userId,
+                  subscriptionId: planSub.id
+                }
+              });
+              await prisma.referralCode.update({
+                where: { id: metadata.referralCodeId },
+                data: { redemptionCount: { increment: 1 } }
+              });
+            }
+          }
+          await createDirectNotification({
+            orgId: planSub.orgId,
+            createdById: session.userId,
+            type: "TRANSACTIONAL",
+            title: "Membership activated",
+            body: `Your ${plan.name} membership is now active.`,
+            audience: "selected_member",
+            userIds: [session.userId],
+            metadata: { subscriptionId: planSub.id, paymentId: payment.id }
+          });
+        }
+      }
+      if (metadata.shopOrderId) {
         await prisma.shopOrder.update({
           where: { id: metadata.shopOrderId },
           data: { status: "READY_FOR_PICKUP", paymentId: payment.id, pickupCode: `ZK-${session.id.slice(-6).toUpperCase()}` }
@@ -940,48 +1382,59 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
     const orgId = path[1]!;
-    const body = (await readJson(request)) as { planId: string; couponCode?: string; referralCode?: string };
-    const [plan, branch] = await Promise.all([
-      prisma.membershipPlan.findUnique({ where: { id: body.planId } }),
-      prisma.branch.findFirst({ where: { orgId, isDefault: true } })
+    const body = subscriptionCheckoutSchema.parse(await readJson(request));
+    const [organization, plan, branch, existingSubscription, approvedJoinRequest, user] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: orgId } }),
+      prisma.membershipPlan.findFirst({ where: { id: body.planId, orgId, active: true } }),
+      prisma.branch.findFirst({ where: { orgId, isDefault: true } }),
+      prisma.memberSubscription.findFirst({
+        where: { orgId, memberUserId: userId, status: { in: ["PENDING_PAYMENT", "ACTIVE"] } },
+        orderBy: { createdAt: "desc" }
+      }),
+      prisma.membershipJoinRequest.findFirst({
+        where: { orgId, userId, status: "approved" },
+        orderBy: { reviewedAt: "desc" }
+      }),
+      prisma.user.findUniqueOrThrow({ where: { id: userId } })
     ]);
-    if (!plan || !branch) {
+    if (!organization || !plan || !branch) {
       return fail("NOT_FOUND", "Plan or branch not found", 404);
     }
-    let amountPaise = plan.pricePaise;
-    let couponId: string | undefined;
-    if (body.couponCode) {
-      const coupon = await prisma.coupon.findUnique({ where: { orgId_code: { orgId, code: body.couponCode.toUpperCase() } } });
-      if (coupon) {
-        const result = applyCoupon(
-          clean({
-            id: coupon.id,
-            orgId,
-            code: coupon.code,
-            type: coupon.type,
-            valuePaise: coupon.valuePaise ?? undefined,
-            valuePercentBps: coupon.valuePercentBps ?? undefined,
-            active: coupon.active,
-            validFrom: coupon.validFrom ?? undefined,
-            validUntil: coupon.validUntil ?? undefined,
-            maxRedemptions: coupon.maxRedemptions ?? undefined,
-            perUserLimit: coupon.perUserLimit ?? undefined,
-            applicablePlanId: coupon.applicablePlanId ?? undefined
-          }),
-          { amountPaise, planId: plan.id },
-        );
-        amountPaise = result.finalAmountPaise;
-        couponId = coupon.id;
-      }
+    if (organization.status === "SUSPENDED" || organization.status === "CANCELLED" || organization.status === "TRIAL_EXPIRED") {
+      throw forbiddenError("This gym is not accepting new membership purchases right now.");
     }
+    if (user.isMinor && user.guardianPending) {
+      throw forbiddenError("Guardian consent is required before purchasing a membership.");
+    }
+    if (existingSubscription) {
+      throw conflictError("You already have a membership in progress for this gym.");
+    }
+    const referral = await resolveValidatedReferral({
+      orgId,
+      userId,
+      ...(body.referralCode ? { referralCode: body.referralCode } : {})
+    });
+    if (organization.joinMode === "APPROVAL_REQUIRED" && !approvedJoinRequest) {
+      throw forbiddenError("This gym requires approval before checkout.");
+    }
+    if (organization.joinMode === "INVITE_ONLY" && !referral) {
+      throw forbiddenError("Invite-only gyms require a valid referral or invite code.");
+    }
+    const pricing = await resolveValidatedCoupon({
+      orgId,
+      userId,
+      planId: plan.id,
+      amountPaise: plan.pricePaise,
+      ...(body.couponCode ? { couponCode: body.couponCode } : {}),
+      ...(referral?.couponId ? { fallbackCouponId: referral.couponId } : {})
+    });
     const subscription = await prisma.memberSubscription.create({
       data: {
         orgId,
         branchId: branch.id,
         memberUserId: userId,
         planId: plan.id,
-        status: "PENDING_PAYMENT",
-        remainingVisits: plan.visitLimit
+        status: "PENDING_PAYMENT"
       }
     });
     const session = await prisma.paymentSession.create({
@@ -989,10 +1442,15 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         orgId,
         userId,
         purpose: "MEMBERSHIP",
-        amountPaise,
+        amountPaise: pricing.finalAmountPaise,
         status: "CREATED",
         checkoutUrl: `/checkout/mock/pending`,
-        metadata: { subscriptionId: subscription.id, couponId, referralCode: body.referralCode },
+        metadata: clean({
+          subscriptionId: subscription.id,
+          couponId: pricing.coupon?.id,
+          referralCodeId: referral?.id,
+          joinRequestId: approvedJoinRequest?.id
+        }) as Prisma.InputJsonValue,
         expiresAt: new Date(Date.now() + 30 * 60 * 1000)
       }
     });
@@ -1004,7 +1462,22 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
   }
   if (request.method === "GET" && pathMatches(path, ["me", "memberships"])) {
     const userId = requireAuth(await getRequestContext(request));
-    return ok({ subscriptions: await prisma.memberSubscription.findMany({ where: { memberUserId: userId } }) });
+    const subscriptions = await prisma.memberSubscription.findMany({
+      where: { memberUserId: userId },
+      orderBy: { createdAt: "desc" },
+      take: 50
+    });
+    const [plans, organizations] = await Promise.all([
+      prisma.membershipPlan.findMany({ where: { id: { in: subscriptions.map((subscription) => subscription.planId) } } }),
+      prisma.organization.findMany({ where: { id: { in: subscriptions.map((subscription) => subscription.orgId) } } })
+    ]);
+    return ok({
+      subscriptions: subscriptions.map((subscription) => ({
+        ...subscription,
+        plan: plans.find((plan) => plan.id === subscription.planId) ?? null,
+        organization: organizations.find((organization) => organization.id === subscription.orgId) ?? null
+      }))
+    });
   }
   return undefined;
 }
@@ -1282,13 +1755,11 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "PAYMENTS_RECORD_OFFLINE");
-    const body = (await readJson(request)) as {
-      memberUserId?: string;
-      amountPaise: number;
-      mode: "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "OTHER";
-      receiptNumber?: string;
-      notes?: string;
-    };
+    const body = manualMembershipPaymentSchema.parse(await readJson(request));
+    const memberUser = await prisma.user.findUnique({ where: { id: body.memberUserId } });
+    if (!memberUser) {
+      throw notFoundError("Member not found");
+    }
     const payment = await prisma.payment.create({
       data: clean({
         orgId,
@@ -1303,6 +1774,111 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         recordedAt: new Date()
       })
     });
+    let subscription = null;
+    if (body.subscriptionId) {
+      const existingSubscription = await prisma.memberSubscription.findFirst({
+        where: { id: body.subscriptionId, orgId, memberUserId: body.memberUserId }
+      });
+      if (!existingSubscription) {
+        throw notFoundError("Subscription not found");
+      }
+      if (existingSubscription.status === "ACTIVE") {
+        throw conflictError("Subscription is already active");
+      }
+      const plan = await prisma.membershipPlan.findFirst({
+        where: { id: existingSubscription.planId, orgId }
+      });
+      if (!plan) {
+        throw notFoundError("Membership plan not found");
+      }
+      const window = computeSubscriptionWindow(
+        clean({
+          id: plan.id,
+          orgId: plan.orgId,
+          branchId: plan.branchId ?? undefined,
+          name: plan.name,
+          type: plan.type,
+          pricePaise: plan.pricePaise,
+          durationDays: plan.durationDays ?? undefined,
+          visitLimit: plan.visitLimit ?? undefined,
+          validityDays: plan.validityDays ?? undefined,
+          startDate: plan.startDate ?? undefined,
+          endDate: plan.endDate ?? undefined,
+          active: plan.active,
+          publicVisible: plan.publicVisible
+        })
+      );
+      subscription = await prisma.memberSubscription.update({
+        where: { id: existingSubscription.id },
+        data: clean({
+          status: "ACTIVE",
+          startsAt: window.startsAt,
+          endsAt: window.endsAt,
+          remainingVisits: window.remainingVisits,
+          paymentId: payment.id,
+          activatedById: userId
+        })
+      });
+    } else {
+      const planId = body.planId;
+      if (!planId) {
+        throw validationError("A plan is required for manual membership activation.");
+      }
+      const [plan, branch] = await Promise.all([
+        prisma.membershipPlan.findFirst({ where: { id: planId, orgId, active: true } }),
+        prisma.branch.findFirst({ where: { orgId, isDefault: true } })
+      ]);
+      if (!plan || !branch) {
+        throw notFoundError("Plan or branch not found");
+      }
+      const window = computeSubscriptionWindow(
+        clean({
+          id: plan.id,
+          orgId: plan.orgId,
+          branchId: plan.branchId ?? undefined,
+          name: plan.name,
+          type: plan.type,
+          pricePaise: plan.pricePaise,
+          durationDays: plan.durationDays ?? undefined,
+          visitLimit: plan.visitLimit ?? undefined,
+          validityDays: plan.validityDays ?? undefined,
+          startDate: plan.startDate ?? undefined,
+          endDate: plan.endDate ?? undefined,
+          active: plan.active,
+          publicVisible: plan.publicVisible
+        })
+      );
+      subscription = await prisma.memberSubscription.create({
+        data: clean({
+          orgId,
+          branchId: branch.id,
+          memberUserId: body.memberUserId,
+          planId: plan.id,
+          status: "ACTIVE",
+          startsAt: window.startsAt,
+          endsAt: window.endsAt,
+          remainingVisits: window.remainingVisits,
+          paymentId: payment.id,
+          activatedById: userId
+        })
+      });
+    }
+    await ensureOrganizationMembership({
+      orgId,
+      userId: body.memberUserId,
+      profilePhotoUrl: memberUser.profilePhotoUrl,
+      marketingOptIn: memberUser.isMinor ? false : memberUser.marketingOptIn
+    });
+    await createDirectNotification({
+      orgId,
+      createdById: userId,
+      type: "TRANSACTIONAL",
+      title: "Membership activated",
+      body: "Your membership has been activated with an offline payment record.",
+      audience: "selected_member",
+      userIds: [body.memberUserId],
+      metadata: clean({ paymentId: payment.id, subscriptionId: subscription?.id })
+    });
     await writeAuditLog({
       request,
       orgId,
@@ -1310,9 +1886,9 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       action: "payment.manual_recorded",
       entityType: "payment",
       entityId: payment.id,
-      metadata: { amountPaise: payment.amountPaise, mode: payment.mode }
+        metadata: { amountPaise: payment.amountPaise, mode: payment.mode }
     });
-    return ok({ payment });
+    return ok({ payment, subscription });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients"])) {
     const orgId = path[1]!;

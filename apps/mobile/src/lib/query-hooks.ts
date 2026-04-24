@@ -98,9 +98,20 @@ export function useGymSearch(input: { query?: string; city?: string } = {}) {
 }
 
 export function useGymProfile(username: string) {
+  const { token } = useAuth();
   return useQuery({
     queryKey: ["gym", username],
-    queryFn: () => mobileApiFetch<{ org: Record<string, unknown>; plans: Array<Record<string, unknown>> }>(`/orgs/public/${username}`),
+    queryFn: () =>
+      mobileApiFetch<{
+        org: Record<string, unknown>;
+        plans: Array<Record<string, unknown>>;
+        viewerState?: {
+          activeMembership?: Record<string, unknown> | null;
+          pendingJoinRequest?: Record<string, unknown> | null;
+          approvedJoinRequest?: Record<string, unknown> | null;
+        } | null;
+        referral?: { code: string; couponId?: string | null; status: string } | null;
+      }>(`/orgs/public/${username}`, { token }),
     enabled: Boolean(username)
   });
 }

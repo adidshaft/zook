@@ -14,6 +14,19 @@ export function getMobileApiBaseUrl() {
   return configured.replace(/\/$/, "");
 }
 
+export function getMobileWebBaseUrl() {
+  const configured =
+    (Constants.expoConfig?.extra?.webUrl as string | undefined) ??
+    process.env.EXPO_PUBLIC_WEB_URL ??
+    getMobileApiBaseUrl().replace(/\/api$/, "");
+
+  return configured.replace(/\/$/, "");
+}
+
+export function toWebUrl(path: string) {
+  return `${getMobileWebBaseUrl()}${normalizePath(path)}`;
+}
+
 export async function mobileApiFetch<T>(
   path: string,
   init: Omit<RequestInit, "body"> & {
