@@ -2,15 +2,15 @@
 
 Zook is an India-first operating system for small and medium gyms. This monorepo contains the mobile app, web dashboard, API backend, Prisma database package, shared core domain logic, and provider abstractions for local-first development.
 
-This repository is currently at **Phase 2: Backend-Integrated Beta Foundation**. The core flows are no longer just scaffolded UI: auth, memberships, attendance, notifications, tracking, and shop operations now use real API/database state while keeping mock providers as the default local runtime.
+This repository is currently at **Phase 3: Operational Beta, Provider Readiness, and Deployment Hardening**. Zook now has deeper web/mobile operational surfaces, stricter provider diagnostics, storage-backed uploads, CSV exports, and better local/staging readiness while keeping mock providers as the default low-cost runtime.
 
 ## What Is Built
 
-- Expo Router mobile app for iOS/Android with member, owner, receptionist, and trainer flows.
-- Next.js App Router web dashboard, public gym pages, referral fallback pages, and mock checkout.
+- Expo Router mobile app for member, owner, receptionist, and trainer operations.
+- Next.js App Router web dashboard, public gym pages, referral fallback pages, provider diagnostics, and mock checkout.
 - Next.js API route handlers backed by a service-layer architecture and Prisma.
 - PostgreSQL schema covering auth, tenancy, RBAC, memberships, payments, coupons, referrals, QR attendance, PT, plans, AI, notifications, goals, shop, privacy, and platform admin.
-- Deterministic mock providers for email OTP, payments, maps, AI, push, SMS, and storage.
+- Deterministic mock providers plus optional live adapters for email, storage, maps, and AI.
 - Unified OTP/session auth across web and mobile.
 - Persistent personal tracking for workouts, exercise entries, body progress, and habits.
 - Real join-mode enforcement for open join, approval-required gyms, invite-only access, and manual/offline activation.
@@ -25,7 +25,7 @@ This repository is currently at **Phase 2: Backend-Integrated Beta Foundation**.
 ```bash
 pnpm install
 cp .env.example .env
-docker compose up -d
+pnpm preflight
 pnpm db:generate
 pnpm db:push
 pnpm db:seed
@@ -47,7 +47,7 @@ Seed accounts:
 | Member | `member@zook.local` |
 | Minor member | `minor@zook.local` |
 
-See [docs/local-development.md](docs/local-development.md) for full run instructions and the manual acceptance checklist. For simulator/device setup details, use [docs/mobile-runtime.md](docs/mobile-runtime.md).
+See [docs/local-development.md](docs/local-development.md), [docs/manual-qa-phase-3.md](docs/manual-qa-phase-3.md), and [docs/mobile-runtime.md](docs/mobile-runtime.md) for full run instructions and QA flows.
 
 ## Key Routes
 
@@ -68,6 +68,8 @@ API:
 - `POST /api/auth/verify-otp`
 - `POST /api/orgs`
 - `GET /api/orgs/public/search`
+- `POST /api/files/upload`
+- `GET /api/files/:fileId/signed-url`
 - `POST /api/orgs/:orgId/membership-plans`
 - `POST /api/orgs/:orgId/subscriptions`
 - `POST /api/payments/checkout`
@@ -77,6 +79,7 @@ API:
 - `POST /api/ai/chat`
 - `POST /api/shop/orders`
 - `GET /api/platform/orgs`
+- `GET /api/platform/provider-status`
 
 Mobile:
 
@@ -95,7 +98,7 @@ Mobile:
 - `/reception`
 - `/trainer`
 
-## Mock Providers Included
+## Provider Defaults
 
 - `MockEmailProvider`: prints/stores OTP delivery.
 - `MockPaymentProvider`: hosted checkout session lifecycle.
@@ -104,6 +107,13 @@ Mobile:
 - `MockPushProvider`: delivery recording.
 - `MockSmsProvider`: future OTP stub.
 - `LocalStorageProvider`: local signed URL/file metadata shape.
+
+Optional live adapters currently available:
+
+- `EMAIL_PROVIDER=smtp|resend`
+- `STORAGE_PROVIDER=s3|r2`
+- `MAP_PROVIDER=google`
+- `AI_PROVIDER=openai`
 
 ## Switching To Real Providers Later
 
@@ -124,6 +134,7 @@ pnpm test:unit
 pnpm test:services
 pnpm typecheck
 pnpm test:web
+pnpm test:acceptance
 ```
 
 Database-backed Playwright login/mutation checks are gated with:
@@ -132,17 +143,34 @@ Database-backed Playwright login/mutation checks are gated with:
 RUN_DB_WEB_TESTS=1 pnpm test:web
 ```
 
-If those DB-gated tests fail before the OTP field appears, restart the web server with `.env` loaded so `DATABASE_URL` is present for the Next.js process.
+If `RUN_DB_WEB_TESTS=1 pnpm test:web` is skipped or fails before the OTP field appears, make sure:
+
+- `.env` exists
+- `DATABASE_URL` is reachable
+- the database is seeded
+- the Playwright-started Next.js server is inheriting the same env
+
+`pnpm test:acceptance` will print clear instructions instead of hard-failing when DB-gated env is missing.
+
+## Mock Checkout And QR Testing
+
+- Start a membership or shop checkout from web or mobile to open `/checkout/mock/{sessionId}`.
+- Complete the mock hosted flow to trigger server-side activation.
+- Use `/dashboard/attendance/qr-display` to render a live QR token.
+- Use the mobile scan surface or the manual token dev path to test attendance scanning.
+
+## Diagnostics
+
+- Platform admins can inspect safe provider readiness at `/api/platform/provider-status`.
+- CSV exports are available at `/api/orgs/{orgId}/reports/*.csv` and `/api/orgs/{orgId}/audit-logs.csv`.
 
 ## Known MVP Limitations
 
-- Mock checkout and provider mocks are intentionally local-only.
-- Major mobile surfaces are API-backed, but trainer/owner tooling is still intentionally lightweight rather than a full operational suite.
-- QR scan UI supports camera scan and pasted token entry; simulator testing still works best with the manual-token path.
-- Multi-branch data model exists, but UI focuses on one branch.
-- Provider switching is env-driven and mock-first; OpenAI, Resend email, and Google Maps scaffolds exist, but paid/live integrations should still be treated as beta.
-- The physical iOS dev build omits the native `expo-notifications` package until an Apple provisioning profile with Push Notifications is configured; the backend push abstraction remains mocked.
-- Database-dependent commands require local PostgreSQL via Docker.
+- Payments are still mock-first in this branch.
+- Push delivery remains mocked.
+- Multi-branch data model exists, but the UI still centers one branch.
+- QR scan simulator testing still works best with the manual-token path.
+- Deployment guidance exists, but automated container/EAS rollout files still need a dedicated pass.
 
 ## Acceptance Checklist
 
