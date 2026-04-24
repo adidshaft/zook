@@ -48,21 +48,23 @@ Diagnostics include:
 
 Selector env:
 
-- `EMAIL_PROVIDER=mock|resend`
+- `EMAIL_PROVIDER=mock|resend|smtp`
 
 Known envs:
 
 - `RESEND_API_KEY`
+- `EMAIL_FROM`
 - `SMTP_HOST`
 - `SMTP_PORT`
 - `SMTP_USER`
 - `SMTP_PASS`
+- `SMTP_FROM`
 
 Current behavior:
 
 - `mock`: supported and default
 - `resend`: supported when `RESEND_API_KEY` is present
-- `smtp`: documented as future work only; selecting it is currently `unsupported`
+- `smtp`: supported when `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM` or `EMAIL_FROM` are present
 
 ## Payments
 

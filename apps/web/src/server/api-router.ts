@@ -53,6 +53,7 @@ import { conflictError, forbiddenError, notFoundError, toErrorResponse, unauthor
 import { fail, ok, readJson } from "./response";
 import { resolveSessionSummaryFromToken } from "./session";
 import { writeAuditLog } from "./audit";
+import { getDevOtpResponseValue } from "./auth-response";
 import {
   getMemberHomeData,
   getMyShopOrders,
@@ -905,10 +906,7 @@ async function handleAuth(request: NextRequest, path: string[]) {
     return ok({
       challengeId: challenge.id,
       expiresAt: challenge.expiresAt,
-      devOtp:
-        process.env.NODE_ENV === "development" && process.env.OTP_FIXED_CODE_DEV
-          ? process.env.OTP_FIXED_CODE_DEV
-          : undefined
+      devOtp: getDevOtpResponseValue()
     });
   }
   if (request.method === "POST" && pathMatches(path, ["auth", "verify-otp"])) {

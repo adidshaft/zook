@@ -7,7 +7,7 @@ import type {
   ProviderMode
 } from "../types";
 import { MockAIProvider, OpenAIProvider, type AIProvider } from "./ai";
-import { MockEmailProvider, ResendEmailProvider, type EmailProvider } from "./email";
+import { MockEmailProvider, ResendEmailProvider, SMTPEmailProvider, type EmailProvider } from "./email";
 import { GoogleMapProvider, MockMapProvider, type MapProvider } from "./map";
 import { MockPaymentProvider, type PaymentProvider } from "./payment";
 import { MockPushProvider, type PushProvider } from "./push";
@@ -219,7 +219,16 @@ function requireProvider<T>(resolution: ProviderResolution<T>): T {
 function resolveEmailProvider(): ProviderResolution<EmailProvider> {
   const selectionValue = env(process.env.EMAIL_PROVIDER);
   const selectedProvider = selectionValue ?? "mock";
-  const envState = envFlags(["EMAIL_PROVIDER", "RESEND_API_KEY", "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS"]);
+  const envState = envFlags([
+    "EMAIL_PROVIDER",
+    "EMAIL_FROM",
+    "RESEND_API_KEY",
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_USER",
+    "SMTP_PASS",
+    "SMTP_FROM"
+  ]);
 
   if (selectedProvider === "mock") {
     return createReadyResolution({
@@ -251,7 +260,49 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new ResendEmailProvider(apiKey)
+      provider: new ResendEmailProvider(apiKey, env(process.env.EMAIL_FROM) ?? "Zook <noreply@zook.app>")
+    });
+  }
+
+  if (selectedProvider === "smtp") {
+    const host = env(process.env.SMTP_HOST);
+    const port = env(process.env.SMTP_PORT);
+    const user = env(process.env.SMTP_USER);
+    const pass = env(process.env.SMTP_PASS);
+    const fromEmail = env(process.env.SMTP_FROM) ?? env(process.env.EMAIL_FROM);
+    const missingEnv = [
+      !host ? "SMTP_HOST" : null,
+      !port ? "SMTP_PORT" : null,
+      !user ? "SMTP_USER" : null,
+      !pass ? "SMTP_PASS" : null,
+      !fromEmail ? "SMTP_FROM or EMAIL_FROM" : null
+    ].filter(Boolean) as string[];
+
+    if (missingEnv.length > 0) {
+      return createMisconfiguredResolution({
+        category: "email",
+        selectionEnv: "EMAIL_PROVIDER",
+        selectedProvider,
+        defaultProvider: "mock",
+        supportedProviders: ["mock", "resend", "smtp"],
+        missingEnv,
+        env: envState,
+        mode: "live"
+      });
+    }
+
+    return createReadyResolution({
+      category: "email",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new SMTPEmailProvider({
+        host: host as string,
+        port: Number(port),
+        user: user as string,
+        pass: pass as string,
+        fromEmail: fromEmail as string
+      })
     });
   }
 
@@ -260,7 +311,7 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
     selectionEnv: "EMAIL_PROVIDER",
     selectedProvider,
     defaultProvider: "mock",
-    supportedProviders: ["mock", "resend"],
+    supportedProviders: ["mock", "resend", "smtp"],
     env: envState,
     mode: "live"
   });

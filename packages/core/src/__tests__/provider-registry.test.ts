@@ -10,7 +10,8 @@ import {
   MockMapProvider,
   OpenAIProvider,
   ProviderSetupError,
-  ResendEmailProvider
+  ResendEmailProvider,
+  SMTPEmailProvider
 } from "../providers";
 
 const originalEnv = { ...process.env };
@@ -29,6 +30,8 @@ function clearProviderEnv() {
   delete process.env.SMTP_PORT;
   delete process.env.SMTP_USER;
   delete process.env.SMTP_PASS;
+  delete process.env.SMTP_FROM;
+  delete process.env.EMAIL_FROM;
   delete process.env.MAP_PROVIDER;
   delete process.env.GOOGLE_MAPS_API_KEY;
   delete process.env.PAYMENT_PROVIDER;
@@ -140,6 +143,26 @@ describe("provider registry", () => {
     });
   });
 
+  it("supports smtp when fully configured", () => {
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_PORT = "587";
+    process.env.SMTP_USER = "mailer";
+    process.env.SMTP_PASS = "secret";
+    process.env.SMTP_FROM = "Zook <hello@example.com>";
+
+    expect(getEmailProvider()).toBeInstanceOf(SMTPEmailProvider);
+    expect(getProviderRegistryDiagnostics().email).toMatchObject({
+      status: "ready",
+      selectedProvider: "smtp",
+      activeProvider: "smtp",
+      metadata: {
+        host: "smtp.example.com",
+        port: 587
+      }
+    });
+  });
+
   it("throws a clear setup error when a live provider is selected without required env", () => {
     process.env.AI_PROVIDER = "openai";
     process.env.EMAIL_PROVIDER = "resend";
@@ -173,6 +196,21 @@ describe("provider registry", () => {
         activeProvider: null,
         missingEnv: ["GOOGLE_MAPS_API_KEY"]
       }
+    });
+  });
+
+  it("throws a clear setup error when smtp is selected without the required env", () => {
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.SMTP_HOST = "smtp.example.com";
+
+    expect(() => getEmailProvider()).toThrowError(ProviderSetupError);
+    expect(() => getEmailProvider()).toThrowError(/SMTP_PORT/);
+    expect(() => getEmailProvider()).toThrowError(/SMTP_FROM or EMAIL_FROM/);
+
+    expect(getProviderRegistryDiagnostics().email).toMatchObject({
+      status: "misconfigured",
+      selectedProvider: "smtp",
+      activeProvider: null
     });
   });
 

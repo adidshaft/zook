@@ -67,7 +67,7 @@ export class AuthService {
         expiresAt,
         ...(input.ipAddress ? { ipAddress: input.ipAddress } : {})
       });
-      await this.emailProvider.sendOtp({ email, code, expiresAt });
+      await this.emailProvider.sendOtpEmail({ to: email, code, expiresAt, purpose: "login" });
       return refreshed;
     }
     const challenge = await this.repo.createOtp({
@@ -78,7 +78,7 @@ export class AuthService {
       createdAt: this.now(),
       ...(input.ipAddress ? { ipAddress: input.ipAddress } : {})
     });
-    await this.emailProvider.sendOtp({ email, code, expiresAt });
+    await this.emailProvider.sendOtpEmail({ to: email, code, expiresAt, purpose: "login" });
     return challenge;
   }
 
