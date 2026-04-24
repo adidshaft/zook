@@ -169,6 +169,39 @@ export function useMyShopOrders() {
   });
 }
 
+export function useMyTracking() {
+  const { status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "tracking", "summary"],
+    queryFn: () =>
+      mobileApiFetch<{
+        summary: { weeklyCount: number; totalDuration: number; recentCount: number };
+        recentWorkouts: Array<Record<string, unknown>>;
+        latestBodyProgress: Record<string, unknown> | null;
+        habits: Array<Record<string, unknown>>;
+      }>("/me/tracking/summary", { token }),
+    enabled: status === "authenticated" && Boolean(token)
+  });
+}
+
+export function useMyTrackingWorkouts() {
+  const { status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "tracking", "workouts"],
+    queryFn: () => mobileApiFetch<{ workouts: Array<Record<string, unknown>> }>("/me/tracking/workouts", { token }),
+    enabled: status === "authenticated" && Boolean(token)
+  });
+}
+
+export function useMyTrackingHabits() {
+  const { status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "tracking", "habits"],
+    queryFn: () => mobileApiFetch<{ habits: Array<Record<string, unknown>> }>("/me/tracking/habits", { token }),
+    enabled: status === "authenticated" && Boolean(token)
+  });
+}
+
 export function useOwnerDashboard(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;

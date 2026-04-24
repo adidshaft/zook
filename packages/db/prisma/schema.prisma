@@ -241,6 +241,25 @@ enum ConsentStatus {
   DENIED
 }
 
+enum TrackingVisibility {
+  PRIVATE
+  TRAINER_VISIBLE
+}
+
+enum HabitCategory {
+  HYDRATION
+  SLEEP
+  STEPS
+  PROTEIN
+  STRETCHING
+  CUSTOM
+}
+
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+}
+
 model User {
   id                 String    @id @default(cuid())
   email              String    @unique
@@ -532,6 +551,100 @@ model ConsentRecord {
 
   @@index([orgId])
   @@index([userId, type])
+}
+
+model WorkoutSession {
+  id                String             @id @default(cuid())
+  userId            String
+  organizationId    String?
+  planAssignmentId  String?
+  attendanceRecordId String?
+  title             String
+  workoutType       String
+  startedAt         DateTime
+  endedAt           DateTime?
+  durationMinutes   Int?
+  intensity         String?
+  notes             String?
+  mood              String?
+  visibility        TrackingVisibility @default(PRIVATE)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?
+
+  @@index([userId, startedAt])
+  @@index([organizationId, userId])
+}
+
+model WorkoutExerciseEntry {
+  id               String   @id @default(cuid())
+  workoutSessionId String
+  exerciseName     String
+  muscleGroup      String?
+  equipment        String?
+  orderIndex       Int
+  setsPlanned      Int?
+  setsCompleted    Int?
+  reps             Int?
+  weightKg         Decimal? @db.Decimal(6, 2)
+  durationSeconds  Int?
+  distanceMeters   Int?
+  notes            String?
+  completed        Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([workoutSessionId, orderIndex])
+}
+
+model BodyProgressEntry {
+  id             String             @id @default(cuid())
+  userId         String
+  organizationId String?
+  measuredAt     DateTime
+  weightKg       Decimal?           @db.Decimal(6, 2)
+  waistCm        Decimal?           @db.Decimal(6, 2)
+  chestCm        Decimal?           @db.Decimal(6, 2)
+  armCm          Decimal?           @db.Decimal(6, 2)
+  bodyFatPercent Decimal?           @db.Decimal(5, 2)
+  photoAssetId   String?
+  notes          String?
+  visibility     TrackingVisibility @default(PRIVATE)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([userId, measuredAt])
+  @@index([organizationId, userId])
+}
+
+model MemberHabit {
+  id             String         @id @default(cuid())
+  userId         String
+  organizationId String?
+  title          String
+  category       HabitCategory
+  targetValue    Int?
+  unit           String?
+  frequency      HabitFrequency @default(DAILY)
+  visibility     TrackingVisibility @default(PRIVATE)
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId, active])
+  @@index([organizationId, userId])
+}
+
+model MemberHabitLog {
+  id          String   @id @default(cuid())
+  habitId     String
+  loggedAt    DateTime @default(now())
+  value       Int?
+  completed   Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@index([habitId, loggedAt])
 }
 
 model MembershipPlan {

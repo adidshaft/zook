@@ -85,6 +85,11 @@ async function clear() {
   await prisma.challengeProgress.deleteMany();
   await prisma.challengeParticipant.deleteMany();
   await prisma.challenge.deleteMany();
+  await prisma.memberHabitLog.deleteMany();
+  await prisma.memberHabit.deleteMany();
+  await prisma.bodyProgressEntry.deleteMany();
+  await prisma.workoutExerciseEntry.deleteMany();
+  await prisma.workoutSession.deleteMany();
   await prisma.userBadge.deleteMany();
   await prisma.badge.deleteMany();
   await prisma.habitCompletion.deleteMany();
@@ -906,6 +911,79 @@ async function main() {
       userId: member.id,
       dateKey: new Date().toISOString().slice(0, 10),
       completedItems: ["Hydration", "8k steps"]
+    }
+  });
+
+  const workoutSession = await prisma.workoutSession.create({
+    data: {
+      userId: member.id,
+      organizationId: ironHouse.id,
+      title: "Upper Body Strength",
+      workoutType: "strength",
+      startedAt: pastDays(1),
+      endedAt: new Date(pastDays(1).getTime() + 75 * 60 * 1000),
+      durationMinutes: 75,
+      intensity: "RPE 7",
+      notes: "Solid pressing day and shoulder warm-up.",
+      visibility: "TRAINER_VISIBLE"
+    }
+  });
+
+  await prisma.workoutExerciseEntry.createMany({
+    data: [
+      {
+        workoutSessionId: workoutSession.id,
+        exerciseName: "Bench Press",
+        orderIndex: 0,
+        setsCompleted: 4,
+        reps: 8,
+        weightKg: new Prisma.Decimal("60"),
+        completed: true
+      },
+      {
+        workoutSessionId: workoutSession.id,
+        exerciseName: "Cable Row",
+        orderIndex: 1,
+        setsCompleted: 4,
+        reps: 10,
+        weightKg: new Prisma.Decimal("40"),
+        completed: true
+      }
+    ]
+  });
+
+  await prisma.bodyProgressEntry.create({
+    data: {
+      userId: member.id,
+      organizationId: ironHouse.id,
+      measuredAt: new Date(),
+      weightKg: new Prisma.Decimal("68.4"),
+      waistCm: new Prisma.Decimal("79.0"),
+      visibility: "PRIVATE",
+      notes: "Post-cut baseline"
+    }
+  });
+
+  const memberHabit = await prisma.memberHabit.create({
+    data: {
+      userId: member.id,
+      organizationId: ironHouse.id,
+      title: "Hydration",
+      category: "HYDRATION",
+      targetValue: 3,
+      unit: "litres",
+      frequency: "DAILY",
+      visibility: "PRIVATE"
+    }
+  });
+
+  await prisma.memberHabitLog.create({
+    data: {
+      habitId: memberHabit.id,
+      loggedAt: new Date(),
+      value: 3,
+      completed: true,
+      notes: "Hit the daily water target."
     }
   });
 

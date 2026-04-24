@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { dashboardMetrics, personalTrackingDashboard } from "@zook/core";
+import { dashboardMetrics } from "@zook/core";
 import { Card, Dock, Pill, PrimaryLink, Screen } from "@/components/primitives";
 import {
   TrackingSectionHeader,
@@ -8,12 +8,14 @@ import {
   WorkoutLogCard
 } from "@/components/tracking";
 import { useAuth } from "@/lib/auth";
-import { useMemberHome } from "@/lib/query-hooks";
+import { useMemberHome, useMyTracking } from "@/lib/query-hooks";
+import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
 import { colors } from "@/lib/theme";
 
 export default function Home() {
   const { activeOrgId, session } = useAuth();
   const homeQuery = useMemberHome();
+  const trackingQuery = useMyTracking();
   const memberHome = homeQuery.data;
   const activeOrganization =
     memberHome?.activeOrganization ??
@@ -26,6 +28,34 @@ export default function Home() {
       .join("")
       .slice(0, 2)
       .toUpperCase() ?? "Z";
+  const trackingSummary = trackingQuery.data?.summary;
+  const recentWorkouts = (trackingQuery.data?.recentWorkouts ?? []) as Array<{
+    id: string;
+    title: string;
+    workoutType: string;
+    startedAt: string;
+    endedAt?: string | null;
+    durationMinutes?: number | null;
+    intensity?: string | null;
+    notes?: string | null;
+    exercises?: Array<{
+      id: string;
+      exerciseName: string;
+      setsCompleted?: number | null;
+      reps?: number | null;
+      weightKg?: string | number | null;
+      completed: boolean;
+    }>;
+  }>;
+  const trackingMetrics = buildTrackingSummaryMetrics({
+    totalDuration: trackingSummary?.totalDuration ?? 0,
+    weeklyCount: trackingSummary?.weeklyCount ?? 0,
+    recentCount: trackingSummary?.recentCount ?? 0,
+    latestWeightKg:
+      (trackingQuery.data?.latestBodyProgress as { weightKg?: string | number | null } | null)?.weightKg,
+    habitsCount: trackingQuery.data?.habits?.length ?? 0
+  });
+  const latestWorkout = recentWorkouts[0] ? workoutToEntry(recentWorkouts[0]) : null;
 
   return (
     <>
@@ -94,16 +124,22 @@ export default function Home() {
           <TrackingSectionHeader title="Personal tracking" href="/tracking" linkLabel="Open" />
 
           <Text style={styles.trackingIntro} selectable>
-            {personalTrackingDashboard.subheadline}
+            Log workout timing, completed exercises, habits, and body progress without leaving your gym routine.
           </Text>
 
           <View style={styles.metricGrid}>
-            {personalTrackingDashboard.summaryMetrics.slice(0, 2).map((metric) => (
+            {trackingMetrics.slice(0, 2).map((metric) => (
               <TrackingSummaryTile key={metric.id} metric={metric} />
             ))}
           </View>
 
-          <WorkoutLogCard entry={personalTrackingDashboard.todayLog} compact />
+          {latestWorkout ? (
+            <WorkoutLogCard entry={latestWorkout} compact />
+          ) : (
+            <Card>
+              <Text style={styles.detail}>No workouts logged yet. Add your first session after you train.</Text>
+            </Card>
+          )}
 
           <Card style={styles.goalCard}>
             <View style={{ flex: 1, gap: 8 }}>
@@ -111,10 +147,10 @@ export default function Home() {
                 This week
               </Text>
               <Text style={styles.goalValue} selectable>
-                {personalTrackingDashboard.weekDurationLabel}
+                {trackingSummary ? `${trackingSummary.weeklyCount} sessions` : "0 sessions"}
               </Text>
               <Text style={styles.detail} selectable>
-                {personalTrackingDashboard.weekSessionsLabel} · {personalTrackingDashboard.streakLabel}
+                {trackingSummary ? `${trackingSummary.totalDuration} minutes logged` : "Start building a habit streak"}
               </Text>
             </View>
             <PrimaryLink href="/tracking-entry">Add exercises</PrimaryLink>

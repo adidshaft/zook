@@ -1,0 +1,141 @@
+import type { TrackingSummaryMetric, WorkoutHistorySeries, WorkoutLogEntry } from "@zook/core";
+
+function formatDateLabel(value: string) {
+  return new Date(value).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function formatTimeLabel(value?: string | null) {
+  if (!value) {
+    return "--";
+  }
+  return new Date(value).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function formatDuration(minutes?: number | null) {
+  const totalMinutes = minutes ?? 0;
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+  if (!hours) {
+    return `${remainingMinutes}m`;
+  }
+  return `${hours}h ${remainingMinutes}m`;
+}
+
+export function workoutToEntry(workout: {
+  id: string;
+  title: string;
+  workoutType: string;
+  startedAt: string;
+  endedAt?: string | null;
+  durationMinutes?: number | null;
+  intensity?: string | null;
+  notes?: string | null;
+  exercises?: Array<{
+    id: string;
+    exerciseName: string;
+    setsCompleted?: number | null;
+    reps?: number | null;
+    weightKg?: string | number | null;
+    completed: boolean;
+  }>;
+}): WorkoutLogEntry {
+  return {
+    id: workout.id,
+    dateLabel: formatDateLabel(workout.startedAt),
+    workoutName: workout.title,
+    startTimeLabel: formatTimeLabel(workout.startedAt),
+    endTimeLabel: formatTimeLabel(workout.endedAt),
+    durationLabel: formatDuration(workout.durationMinutes),
+    focusLabel: workout.workoutType,
+    effortLabel: workout.intensity ?? "Logged",
+    notes: workout.notes ?? "No notes yet.",
+    exercises:
+      workout.exercises?.map((exercise) => ({
+        id: exercise.id,
+        name: exercise.exerciseName,
+        setsLabel: `${exercise.setsCompleted ?? 0} sets`,
+        repsLabel: `${exercise.reps ?? 0} reps`,
+        loadLabel: exercise.weightKg ? `${exercise.weightKg} kg` : undefined,
+        status: exercise.completed ? "DONE" : "SKIPPED"
+      })) ?? []
+  };
+}
+
+export function buildTrackingSummaryMetrics(input: {
+  totalDuration: number;
+  weeklyCount: number;
+  recentCount: number;
+  latestWeightKg?: string | number | null;
+  habitsCount: number;
+}): TrackingSummaryMetric[] {
+  return [
+    {
+      id: "worked-out",
+      label: "Worked out",
+      value: formatDuration(input.totalDuration),
+      detail: `${input.weeklyCount} sessions in the last 7 days`,
+      tone: "lime"
+    },
+    {
+      id: "recent",
+      label: "Recent sessions",
+      value: String(input.recentCount),
+      detail: "Persisted workout logs",
+      tone: "amber"
+    },
+    {
+      id: "weight",
+      label: "Latest weight",
+      value: input.latestWeightKg ? `${input.latestWeightKg} kg` : "--",
+      detail: "Body progress entry",
+      tone: "blue"
+    },
+    {
+      id: "habits",
+      label: "Habits",
+      value: String(input.habitsCount),
+      detail: "Active daily / weekly habits",
+      tone: "violet"
+    }
+  ];
+}
+
+export function buildHistorySeries(
+  workouts: Array<{
+    id: string;
+    title: string;
+    workoutType: string;
+    startedAt: string;
+    endedAt?: string | null;
+    durationMinutes?: number | null;
+    intensity?: string | null;
+    notes?: string | null;
+    exercises?: Array<{
+      id: string;
+      exerciseName: string;
+      setsCompleted?: number | null;
+      reps?: number | null;
+      weightKg?: string | number | null;
+      completed: boolean;
+    }>;
+  }>
+): WorkoutHistorySeries {
+  const entries = workouts.map(workoutToEntry);
+  const totalDuration = workouts.reduce((sum, workout) => sum + (workout.durationMinutes ?? 0), 0);
+
+  return {
+    key: "WEEKLY",
+    label: "Recent",
+    totalDurationLabel: formatDuration(totalDuration),
+    sessionCountLabel: `${workouts.length} sessions`,
+    completionLabel: `${workouts.reduce((sum, workout) => sum + (workout.exercises?.length ?? 0), 0)} exercises logged`,
+    entries
+  };
+}

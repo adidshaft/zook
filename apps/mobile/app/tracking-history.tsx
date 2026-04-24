@@ -2,23 +2,40 @@ import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { TrackingWindow } from "@zook/core";
-import { personalTrackingDashboard } from "@zook/core";
 import { Card, PrimaryLink, Screen } from "@/components/primitives";
 import {
   TrackingSectionHeader,
   WorkoutHistorySummary,
   WorkoutLogCard
 } from "@/components/tracking";
+import { useMyTrackingWorkouts } from "@/lib/query-hooks";
+import { buildHistorySeries, workoutToEntry } from "@/lib/tracking-view";
 import { colors, radii } from "@/lib/theme";
 
 const windows: TrackingWindow[] = ["TODAY", "WEEKLY", "MONTHLY", "YEARLY"];
 
 export default function TrackingHistory() {
   const [selectedWindow, setSelectedWindow] = useState<TrackingWindow>("WEEKLY");
-  const series = useMemo(
-    () => personalTrackingDashboard.history.find((item) => item.key === selectedWindow) ?? personalTrackingDashboard.history[0],
-    [selectedWindow]
-  );
+  const workoutsQuery = useMyTrackingWorkouts();
+  const workouts = (workoutsQuery.data?.workouts ?? []) as Array<{
+    id: string;
+    title: string;
+    workoutType: string;
+    startedAt: string;
+    endedAt?: string | null;
+    durationMinutes?: number | null;
+    intensity?: string | null;
+    notes?: string | null;
+    exercises?: Array<{
+      id: string;
+      exerciseName: string;
+      setsCompleted?: number | null;
+      reps?: number | null;
+      weightKg?: string | number | null;
+      completed: boolean;
+    }>;
+  }>;
+  const series = useMemo(() => buildHistorySeries(workouts), [workouts, selectedWindow]);
 
   return (
     <>
@@ -62,6 +79,11 @@ export default function TrackingHistory() {
 
           <TrackingSectionHeader title="Logged sessions" />
           <View style={styles.logList}>
+            {workoutsQuery.isLoading ? (
+              <Card>
+                <Text style={styles.calloutBody}>Loading workout history...</Text>
+              </Card>
+            ) : null}
             {series.entries.map((entry) => (
               <WorkoutLogCard key={entry.id} entry={entry} compact />
             ))}

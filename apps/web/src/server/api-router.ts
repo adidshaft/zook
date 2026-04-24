@@ -2,13 +2,17 @@ import { randomBytes } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import {
+  bodyProgressEntrySchema,
   attendanceScanSchema,
   checkoutSchema,
   couponSchema,
   createOrganizationSchema,
+  memberHabitLogSchema,
+  memberHabitSchema,
   membershipPlanSchema,
   notificationSchema,
   requestOtpSchema,
+  workoutSessionSchema,
   verifyOtpSchema,
   type AIRequestType,
   type Role
@@ -24,6 +28,7 @@ import {
   defaultAIQuotaForRole,
   encodeQrPayload,
   normalizeUsername,
+  PersonalTrackingService,
   runAIGuardedRequest
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
@@ -43,6 +48,7 @@ import {
 const emailProvider = new MockEmailProvider();
 const mapProvider = new MockMapProvider();
 const aiProvider = new MockAIProvider();
+const personalTrackingService = new PersonalTrackingService();
 
 function clean<T extends Record<string, unknown>>(input: T): any {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
@@ -59,6 +65,53 @@ function pathMatches(path: string[], pattern: Array<string | RegExp>) {
   return pattern.every((part, index) =>
     typeof part === "string" ? part === path[index] : part.test(path[index] ?? ""),
   );
+}
+
+async function listTrackingWorkouts(userId: string) {
+  const workouts = await prisma.workoutSession.findMany({
+    where: { userId, deletedAt: null },
+    orderBy: { startedAt: "desc" },
+    take: 100
+  });
+  const exercises = await prisma.workoutExerciseEntry.findMany({
+    where: { workoutSessionId: { in: workouts.map((workout) => workout.id) } },
+    orderBy: [{ workoutSessionId: "asc" }, { orderIndex: "asc" }]
+  });
+
+  return workouts.map((workout) => ({
+    ...workout,
+    exercises: exercises.filter((exercise) => exercise.workoutSessionId === workout.id)
+  }));
+}
+
+function toTrackingWorkoutRecord(input: {
+  id: string;
+  userId: string;
+  organizationId: string | null;
+  title: string;
+  workoutType: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  durationMinutes: number | null;
+  intensity: string | null;
+  notes: string | null;
+  mood: string | null;
+  visibility: "PRIVATE" | "TRAINER_VISIBLE";
+}) {
+  return {
+    id: input.id,
+    userId: input.userId,
+    ...(input.organizationId ? { organizationId: input.organizationId } : {}),
+    title: input.title,
+    workoutType: input.workoutType,
+    startedAt: input.startedAt,
+    ...(input.endedAt ? { endedAt: input.endedAt } : {}),
+    ...(input.durationMinutes !== null ? { durationMinutes: input.durationMinutes } : {}),
+    ...(input.intensity ? { intensity: input.intensity } : {}),
+    ...(input.notes ? { notes: input.notes } : {}),
+    ...(input.mood ? { mood: input.mood } : {}),
+    visibility: input.visibility
+  };
 }
 
 async function getUserByEmailOrCreate(email: string) {
@@ -264,6 +317,291 @@ async function handleMeData(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["me", "shop-orders"])) {
     const userId = requireAuth(await getRequestContext(request));
     return ok({ orders: await getMyShopOrders(userId) });
+  }
+  return undefined;
+}
+
+async function handleTracking(request: NextRequest, path: string[]) {
+  if (request.method === "GET" && pathMatches(path, ["me", "tracking", "summary"])) {
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const [workouts, bodyProgress, habits] = await Promise.all([
+      listTrackingWorkouts(userId),
+      prisma.bodyProgressEntry.findMany({ where: { userId }, orderBy: { measuredAt: "desc" }, take: 10 }),
+      prisma.memberHabit.findMany({ where: { userId, active: true }, orderBy: { createdAt: "desc" }, take: 20 })
+    ]);
+
+    return ok({
+      summary: personalTrackingService.getTrackingSummary(
+        workouts.map((workout) => toTrackingWorkoutRecord(workout))
+      ),
+      recentWorkouts: workouts.slice(0, 5),
+      latestBodyProgress: bodyProgress[0] ?? null,
+      habits
+    });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "tracking", "workouts"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    return ok({ workouts: await listTrackingWorkouts(userId) });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "tracking", "workouts"])) {
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const body = workoutSessionSchema.parse(await readJson(request));
+    const visibility = personalTrackingService.normalizeVisibility({
+      isMinor: user.isMinor,
+      guardianConsentGranted: !user.guardianPending,
+      ...(body.visibility ? { requestedVisibility: body.visibility } : {})
+    });
+    const baseWorkout = personalTrackingService.createWorkoutSession({
+      title: body.title,
+      workoutType: body.workoutType,
+      startedAt: new Date(body.startedAt),
+      ...(body.endedAt ? { endedAt: new Date(body.endedAt) } : {}),
+      ...(body.intensity ? { intensity: body.intensity } : {}),
+      ...(body.notes ? { notes: body.notes } : {}),
+      ...(body.mood ? { mood: body.mood } : {}),
+      visibility
+    });
+
+    const workout = await prisma.workoutSession.create({
+      data: {
+        userId,
+        ...(body.organizationId ? { organizationId: body.organizationId } : {}),
+        ...(body.planAssignmentId ? { planAssignmentId: body.planAssignmentId } : {}),
+        ...(body.attendanceRecordId ? { attendanceRecordId: body.attendanceRecordId } : {}),
+        title: baseWorkout.title,
+        workoutType: baseWorkout.workoutType,
+        startedAt: baseWorkout.startedAt,
+        ...(baseWorkout.endedAt ? { endedAt: baseWorkout.endedAt } : {}),
+        ...(baseWorkout.durationMinutes !== undefined ? { durationMinutes: baseWorkout.durationMinutes } : {}),
+        ...(baseWorkout.intensity ? { intensity: baseWorkout.intensity } : {}),
+        ...(baseWorkout.notes ? { notes: baseWorkout.notes } : {}),
+        ...(baseWorkout.mood ? { mood: baseWorkout.mood } : {}),
+        visibility
+      }
+    });
+
+    if (body.exercises.length) {
+      await prisma.workoutExerciseEntry.createMany({
+        data: body.exercises.map((exercise) => ({
+          workoutSessionId: workout.id,
+          exerciseName: exercise.exerciseName,
+          orderIndex: exercise.orderIndex,
+          ...(exercise.muscleGroup ? { muscleGroup: exercise.muscleGroup } : {}),
+          ...(exercise.equipment ? { equipment: exercise.equipment } : {}),
+          ...(exercise.setsPlanned !== undefined ? { setsPlanned: exercise.setsPlanned } : {}),
+          ...(exercise.setsCompleted !== undefined ? { setsCompleted: exercise.setsCompleted } : {}),
+          ...(exercise.reps !== undefined ? { reps: exercise.reps } : {}),
+          ...(exercise.weightKg !== undefined ? { weightKg: new Prisma.Decimal(exercise.weightKg) } : {}),
+          ...(exercise.durationSeconds !== undefined ? { durationSeconds: exercise.durationSeconds } : {}),
+          ...(exercise.distanceMeters !== undefined ? { distanceMeters: exercise.distanceMeters } : {}),
+          ...(exercise.notes ? { notes: exercise.notes } : {}),
+          completed: exercise.completed
+        }))
+      });
+    }
+
+    return ok({ workout });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "tracking", "workouts", /.+/])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const workout = await prisma.workoutSession.findFirst({
+      where: { id: path[3]!, userId, deletedAt: null }
+    });
+    if (!workout) {
+      throw notFoundError("Workout not found");
+    }
+    const exercises = await prisma.workoutExerciseEntry.findMany({
+      where: { workoutSessionId: workout.id },
+      orderBy: { orderIndex: "asc" }
+    });
+    return ok({ workout: { ...workout, exercises } });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["me", "tracking", "workouts", /.+/])) {
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const existingWorkout = await prisma.workoutSession.findFirst({
+      where: { id: path[3]!, userId, deletedAt: null }
+    });
+    if (!existingWorkout) {
+      throw notFoundError("Workout not found");
+    }
+    const body = workoutSessionSchema.partial().parse(await readJson(request));
+    const visibility = personalTrackingService.normalizeVisibility({
+      isMinor: user.isMinor,
+      guardianConsentGranted: !user.guardianPending,
+      ...(body.visibility ? { requestedVisibility: body.visibility } : {})
+    });
+    const updated = personalTrackingService.updateWorkoutSession(
+      toTrackingWorkoutRecord(existingWorkout),
+      {
+        ...(body.title ? { title: body.title } : {}),
+        ...(body.workoutType ? { workoutType: body.workoutType } : {}),
+        ...(body.startedAt ? { startedAt: new Date(body.startedAt) } : {}),
+        ...(body.endedAt ? { endedAt: new Date(body.endedAt) } : {}),
+        ...(body.intensity ? { intensity: body.intensity } : {}),
+        ...(body.notes ? { notes: body.notes } : {}),
+        ...(body.mood ? { mood: body.mood } : {}),
+        visibility
+      }
+    );
+
+    const workout = await prisma.workoutSession.update({
+      where: { id: existingWorkout.id },
+      data: {
+        title: updated.title,
+        workoutType: updated.workoutType,
+        startedAt: updated.startedAt,
+        ...(updated.endedAt ? { endedAt: updated.endedAt } : {}),
+        ...(updated.durationMinutes !== undefined ? { durationMinutes: updated.durationMinutes } : {}),
+        ...(updated.intensity ? { intensity: updated.intensity } : {}),
+        ...(updated.notes ? { notes: updated.notes } : {}),
+        ...(updated.mood ? { mood: updated.mood } : {}),
+        visibility
+      }
+    });
+
+    if (body.exercises) {
+      await prisma.workoutExerciseEntry.deleteMany({ where: { workoutSessionId: workout.id } });
+      if (body.exercises.length) {
+        await prisma.workoutExerciseEntry.createMany({
+          data: body.exercises.map((exercise) => ({
+            workoutSessionId: workout.id,
+            exerciseName: exercise.exerciseName,
+            orderIndex: exercise.orderIndex,
+            ...(exercise.muscleGroup ? { muscleGroup: exercise.muscleGroup } : {}),
+            ...(exercise.equipment ? { equipment: exercise.equipment } : {}),
+            ...(exercise.setsPlanned !== undefined ? { setsPlanned: exercise.setsPlanned } : {}),
+            ...(exercise.setsCompleted !== undefined ? { setsCompleted: exercise.setsCompleted } : {}),
+            ...(exercise.reps !== undefined ? { reps: exercise.reps } : {}),
+            ...(exercise.weightKg !== undefined ? { weightKg: new Prisma.Decimal(exercise.weightKg) } : {}),
+            ...(exercise.durationSeconds !== undefined ? { durationSeconds: exercise.durationSeconds } : {}),
+            ...(exercise.distanceMeters !== undefined ? { distanceMeters: exercise.distanceMeters } : {}),
+            ...(exercise.notes ? { notes: exercise.notes } : {}),
+            completed: exercise.completed
+          }))
+        });
+      }
+    }
+
+    return ok({ workout });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["me", "tracking", "workouts", /.+/])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const workout = await prisma.workoutSession.findFirst({
+      where: { id: path[3]!, userId, deletedAt: null }
+    });
+    if (!workout) {
+      throw notFoundError("Workout not found");
+    }
+    await prisma.workoutSession.update({
+      where: { id: workout.id },
+      data: { deletedAt: new Date() }
+    });
+    return ok({ deleted: true });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "tracking", "body-progress"])) {
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const body = bodyProgressEntrySchema.parse(await readJson(request));
+    const visibility = personalTrackingService.normalizeVisibility({
+      isMinor: user.isMinor,
+      guardianConsentGranted: !user.guardianPending,
+      ...(body.visibility ? { requestedVisibility: body.visibility } : {})
+    });
+    const entry = await prisma.bodyProgressEntry.create({
+      data: {
+        userId,
+        ...(body.organizationId ? { organizationId: body.organizationId } : {}),
+        measuredAt: new Date(body.measuredAt),
+        ...(body.weightKg !== undefined ? { weightKg: new Prisma.Decimal(body.weightKg) } : {}),
+        ...(body.waistCm !== undefined ? { waistCm: new Prisma.Decimal(body.waistCm) } : {}),
+        ...(body.chestCm !== undefined ? { chestCm: new Prisma.Decimal(body.chestCm) } : {}),
+        ...(body.armCm !== undefined ? { armCm: new Prisma.Decimal(body.armCm) } : {}),
+        ...(body.bodyFatPercent !== undefined ? { bodyFatPercent: new Prisma.Decimal(body.bodyFatPercent) } : {}),
+        ...(body.photoAssetId ? { photoAssetId: body.photoAssetId } : {}),
+        ...(body.notes ? { notes: body.notes } : {}),
+        visibility
+      }
+    });
+    return ok({ entry });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "tracking", "body-progress"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    return ok({
+      entries: await prisma.bodyProgressEntry.findMany({
+        where: { userId },
+        orderBy: { measuredAt: "desc" },
+        take: 50
+      })
+    });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "tracking", "habits"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const habits = await prisma.memberHabit.findMany({
+      where: { userId, active: true },
+      orderBy: { createdAt: "desc" },
+      take: 50
+    });
+    const logs = await prisma.memberHabitLog.findMany({
+      where: { habitId: { in: habits.map((habit) => habit.id) } },
+      orderBy: { loggedAt: "desc" },
+      take: 100
+    });
+    return ok({
+      habits: habits.map((habit) => ({
+        ...habit,
+        logs: logs.filter((log) => log.habitId === habit.id)
+      }))
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "tracking", "habits"])) {
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const body = memberHabitSchema.parse(await readJson(request));
+    const visibility = personalTrackingService.normalizeVisibility({
+      isMinor: user.isMinor,
+      guardianConsentGranted: !user.guardianPending,
+      ...(body.visibility ? { requestedVisibility: body.visibility } : {})
+    });
+    const habit = await prisma.memberHabit.create({
+      data: {
+        userId,
+        ...(body.organizationId ? { organizationId: body.organizationId } : {}),
+        title: body.title,
+        category: body.category,
+        ...(body.targetValue !== undefined ? { targetValue: body.targetValue } : {}),
+        ...(body.unit ? { unit: body.unit } : {}),
+        frequency: body.frequency,
+        visibility
+      }
+    });
+    return ok({ habit });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "tracking", "habits", /.+/, "log"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const habit = await prisma.memberHabit.findFirst({
+      where: { id: path[3]!, userId, active: true }
+    });
+    if (!habit) {
+      throw notFoundError("Habit not found");
+    }
+    const body = memberHabitLogSchema.parse(await readJson(request));
+    const log = await prisma.memberHabitLog.create({
+      data: {
+        habitId: habit.id,
+        ...(body.loggedAt ? { loggedAt: new Date(body.loggedAt) } : {}),
+        ...(body.value !== undefined ? { value: body.value } : {}),
+        ...(body.notes ? { notes: body.notes } : {}),
+        completed: body.completed
+      }
+    });
+    return ok({ log });
   }
   return undefined;
 }
@@ -1432,6 +1770,7 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
     for (const handler of [
       handleAuth,
       handleMeData,
+      handleTracking,
       handleOrganizations,
       handleMembershipPayments,
       handleCouponsReferrals,

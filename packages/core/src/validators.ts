@@ -126,3 +126,63 @@ export const privacyConsentSchema = z.object({
   ]),
   status: z.enum(["PENDING", "GRANTED", "REVOKED", "DENIED"])
 });
+
+export const workoutExerciseEntrySchema = z.object({
+  exerciseName: z.string().min(2).max(120),
+  muscleGroup: z.string().max(80).optional(),
+  equipment: z.string().max(80).optional(),
+  orderIndex: z.number().int().min(0),
+  setsPlanned: z.number().int().positive().optional(),
+  setsCompleted: z.number().int().nonnegative().optional(),
+  reps: z.number().int().nonnegative().optional(),
+  weightKg: z.number().nonnegative().optional(),
+  durationSeconds: z.number().int().nonnegative().optional(),
+  distanceMeters: z.number().int().nonnegative().optional(),
+  notes: z.string().max(500).optional(),
+  completed: z.boolean().default(true)
+});
+
+export const workoutSessionSchema = z.object({
+  organizationId: z.string().optional(),
+  planAssignmentId: z.string().optional(),
+  attendanceRecordId: z.string().optional(),
+  title: z.string().min(2).max(120),
+  workoutType: z.string().min(2).max(80),
+  startedAt: z.string().datetime(),
+  endedAt: z.string().datetime().optional(),
+  intensity: z.string().max(50).optional(),
+  notes: z.string().max(1000).optional(),
+  mood: z.string().max(80).optional(),
+  visibility: z.enum(["PRIVATE", "TRAINER_VISIBLE"]).default("PRIVATE"),
+  exercises: z.array(workoutExerciseEntrySchema).default([])
+});
+
+export const bodyProgressEntrySchema = z.object({
+  organizationId: z.string().optional(),
+  measuredAt: z.string().datetime(),
+  weightKg: z.number().nonnegative().optional(),
+  waistCm: z.number().nonnegative().optional(),
+  chestCm: z.number().nonnegative().optional(),
+  armCm: z.number().nonnegative().optional(),
+  bodyFatPercent: z.number().nonnegative().max(100).optional(),
+  photoAssetId: z.string().optional(),
+  notes: z.string().max(500).optional(),
+  visibility: z.enum(["PRIVATE", "TRAINER_VISIBLE"]).default("PRIVATE")
+});
+
+export const memberHabitSchema = z.object({
+  organizationId: z.string().optional(),
+  title: z.string().min(2).max(120),
+  category: z.enum(["HYDRATION", "SLEEP", "STEPS", "PROTEIN", "STRETCHING", "CUSTOM"]),
+  targetValue: z.number().int().positive().optional(),
+  unit: z.string().max(30).optional(),
+  frequency: z.enum(["DAILY", "WEEKLY"]).default("DAILY"),
+  visibility: z.enum(["PRIVATE", "TRAINER_VISIBLE"]).default("PRIVATE")
+});
+
+export const memberHabitLogSchema = z.object({
+  loggedAt: z.string().datetime().optional(),
+  value: z.number().int().nonnegative().optional(),
+  completed: z.boolean().default(true),
+  notes: z.string().max(500).optional()
+});
