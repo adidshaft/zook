@@ -43,29 +43,47 @@ Last updated: 24 April 2026
   - `minor@zook.local`
 - Preview and production should use pilot-issued accounts and real OTP delivery. Do not expect the fixed dev code outside local.
 
+## Push Device Setup
+
+- Native push validation should happen on a physical iPhone or Android device.
+- Expo Go is not the target build for pilot push validation. Use an EAS development client or preview build.
+- Confirm `EXPO_PROJECT_ID` is present before testing push registration on local or development builds.
+- Open `Profile` and verify:
+  - push sync status
+  - OS permission state
+  - build type
+  - project ID readiness
+  - registered device list
+
 ## Deep Links
 
 - Scheme: `zook://`
 - Smoke routes to verify:
   - `zook://login`
   - `zook://find-gyms`
-  - `zook://gym/<gym-username>`
-  - `zook://gym/<gym-username>?ref=<referral-code>`
+  - `zook://g/<gym-username>`
+  - `zook://join/<gym-username>?ref=<referral-code>`
+  - `zook://r/<referral-code>`
+  - `zook://plan/<assignment-id>`
+  - `zook://order/<order-id>`
+  - `zook://membership`
+  - `zook://notifications/<notification-id>`
   - `zook://scan`
-  - `zook://notifications`
 - iOS simulator example:
 
 ```bash
 cd apps/mobile
-npx uri-scheme open "zook://gym/<gym-username>?ref=<referral-code>" --ios
+npx uri-scheme open "zook://join/<gym-username>?ref=<referral-code>" --ios
 ```
 
 - Android emulator example:
 
 ```bash
 cd apps/mobile
-npx uri-scheme open "zook://notifications" --android
+npx uri-scheme open "zook://notifications/<notification-id>" --android
 ```
+
+- If you open a protected route while signed out, confirm the app lands on login first and then returns to the requested route after OTP verification.
 
 ## Member And Checkout Flow
 
@@ -90,9 +108,17 @@ npx uri-scheme open "zook://notifications" --android
 ## Push And Notifications
 
 1. Sign in as `owner@zook.local` on web and send a notification, or use the trainer action below to create one.
-2. On mobile, open `Notifications`.
-3. Confirm the new notification appears and can be marked read.
-4. Do not expect native push banners or Expo push-token registration yet.
+2. On mobile, open `Profile` and enable push if the device build supports it.
+3. Confirm permission prompts, Expo token registration, and backend device registration all complete without exposing provider secrets.
+4. Open `Notifications`.
+5. Confirm the new notification appears and can be marked read.
+6. Tap a push banner or notification card and verify routing:
+   - plan assigned -> `Plans`
+   - shop pickup -> `Shop`
+   - membership expiring -> `Membership`
+   - attendance result -> `Attendance`
+   - generic alert -> `Notifications`
+7. Toggle transactional, operational, promotional, and goal/reminder settings in `Profile`, then confirm the server-side preference state refreshes.
 
 ## Receptionist Flow
 
@@ -122,7 +148,8 @@ npx uri-scheme open "zook://notifications" --android
 
 ## Known Limitations
 
-- Native push remains mock-only. Use the in-app inbox for pilot verification.
+- Native push still depends on the selected backend provider and a physical device build. The in-app inbox remains the fallback verification path.
 - Hosted checkout opens the web flow and does not return to the app automatically.
 - Preview and production builds both use `com.zook.app`, so installing one will replace the other on the same device.
 - Local device and Android emulator testing require explicit API and web URL overrides; the localhost defaults are only safe for the iOS simulator.
+- iOS simulators and Android emulators are useful for route and UI checks, but they should not be treated as the final push-validation environment.

@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Card, Pill, PrimaryButton, Screen } from "@/components/primitives";
@@ -24,10 +25,25 @@ type AssignedPlan = {
 };
 
 export default function Plans() {
+  const routeParams = useLocalSearchParams<{
+    assignmentId?: string;
+    focus?: string;
+    notificationId?: string;
+    planId?: string;
+  }>();
   const { activeOrgId, token } = useAuth();
   const queryClient = useQueryClient();
   const plansQuery = useMyPlans();
   const plans = (plansQuery.data?.plans ?? []) as AssignedPlan[];
+  const sortedPlans = [...plans].sort((left, right) => {
+    if (left.id === routeParams.assignmentId) {
+      return -1;
+    }
+    if (right.id === routeParams.assignmentId) {
+      return 1;
+    }
+    return 0;
+  });
   const [assistantPrompt, setAssistantPrompt] = useState("How should I approach today's assigned workout?");
   const [assistantReply, setAssistantReply] = useState("Ask a backend AI question about your assigned plan.");
   const [busyAssignmentId, setBusyAssignmentId] = useState<string | null>(null);
@@ -82,6 +98,23 @@ export default function Plans() {
   return (
     <Screen title="Plans">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+        {routeParams.focus ? (
+          <Card style={styles.calloutCard}>
+            <Pill tone={routeParams.focus === "pt-update" ? "amber" : "blue"}>
+              {routeParams.focus === "pt-update" ? "PT update" : "Opened from push"}
+            </Pill>
+            <Text style={styles.calloutTitle} selectable>
+              {routeParams.focus === "pt-update"
+                ? "Personal training context landed in plans."
+                : "Assigned plan context is active."}
+            </Text>
+            <Text style={styles.body} selectable>
+              {routeParams.assignmentId
+                ? `Assignment ${routeParams.assignmentId} was included in the notification payload.`
+                : "The plans screen is acting as the safest fallback for workout and PT related notifications."}
+            </Text>
+          </Card>
+        ) : null}
         {plansQuery.isLoading ? (
           <Card>
             <Text style={styles.body}>Loading assigned plans...</Text>
@@ -92,12 +125,19 @@ export default function Plans() {
             <Text style={styles.body}>No plans have been assigned yet.</Text>
           </Card>
         ) : null}
-        {plans.map((assignment) => {
+        {sortedPlans.map((assignment) => {
           const completion = assignment.progress?.completionPct ?? 0;
           return (
-            <Card key={assignment.id}>
+            <Card
+              key={assignment.id}
+              style={assignment.id === routeParams.assignmentId ? styles.cardHighlighted : undefined}
+            >
               <View style={styles.rowBetween}>
-                <Pill tone="lime">{assignment.plan?.status ?? "Assigned"}</Pill>
+                <Pill tone={assignment.id === routeParams.assignmentId ? "blue" : "lime"}>
+                  {assignment.id === routeParams.assignmentId
+                    ? "Opened from notification"
+                    : assignment.plan?.status ?? "Assigned"}
+                </Pill>
                 <Text style={styles.meta}>{completion}% complete</Text>
               </View>
               <Text style={styles.title} selectable>
@@ -157,6 +197,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between"
+  },
+  calloutCard: {
+    gap: 10
+  },
+  calloutTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "800"
+  },
+  cardHighlighted: {
+    borderColor: "rgba(96,165,250,0.4)",
+    backgroundColor: "rgba(96,165,250,0.07)"
   },
   title: { color: colors.text, fontSize: 20, fontWeight: "900", marginTop: 14 },
   body: { color: colors.muted, lineHeight: 20, marginTop: 8 },

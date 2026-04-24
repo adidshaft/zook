@@ -2,6 +2,7 @@ import type { ExpoConfig } from "expo/config";
 import appJson from "./app.json";
 
 type MobileReleaseProfile = "local" | "staging" | "production";
+type MobilePushEnvironment = "development" | "preview" | "production";
 
 const baseConfig = appJson as { expo: ExpoConfig & { extra?: Record<string, unknown> } };
 const appVersion = baseConfig.expo.version ?? "0.1.0";
@@ -57,8 +58,22 @@ function resolveUrl(
   return explicitValue?.trim() || defaults[profile];
 }
 
+function resolvePushEnvironment(profile: MobileReleaseProfile): MobilePushEnvironment {
+  if (profile === "production") {
+    return "production";
+  }
+  if (profile === "staging") {
+    return "preview";
+  }
+  return "development";
+}
+
 export default (): ExpoConfig => {
   const releaseProfile = resolveReleaseProfile();
+  const expoProjectId =
+    process.env.EXPO_PROJECT_ID ??
+    process.env.EAS_PROJECT_ID ??
+    ((baseConfig.expo.extra?.eas as { projectId?: string } | undefined)?.projectId ?? undefined);
 
   return {
     ...baseConfig.expo,
@@ -82,6 +97,12 @@ export default (): ExpoConfig => {
       appVersion,
       runtimeVersion,
       easBuildProfile: process.env.EAS_BUILD_PROFILE ?? "local",
+      pushEnvironment: resolvePushEnvironment(releaseProfile),
+      ...(expoProjectId ? { expoProjectId } : {}),
+      eas: {
+        ...((baseConfig.expo.extra?.eas as Record<string, unknown> | undefined) ?? {}),
+        ...(expoProjectId ? { projectId: expoProjectId } : {})
+      },
       mobileApiBaseUrl: resolveUrl(
         process.env.MOBILE_API_BASE_URL ?? process.env.EXPO_PUBLIC_API_BASE_URL,
         releaseProfile,

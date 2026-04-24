@@ -1,44 +1,13 @@
-import * as SecureStore from "expo-secure-store";
 import type { AuthSessionSummary, Role } from "@zook/core";
 import { ApiError } from "@zook/core";
 import type { ReactNode } from "react";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { mobileApiFetch } from "./api";
+import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const SESSION_STORAGE_KEY = "zook_session";
 const ACTIVE_ORG_STORAGE_KEY = "zook_active_org";
-const inMemoryStorage = new Map<string, string>();
-
-async function secureStoreAvailable() {
-  try {
-    return await SecureStore.isAvailableAsync();
-  } catch {
-    return false;
-  }
-}
-
-async function getStoredValue(key: string) {
-  if (await secureStoreAvailable()) {
-    return SecureStore.getItemAsync(key);
-  }
-  return inMemoryStorage.get(key) ?? null;
-}
-
-async function setStoredValue(key: string, value: string) {
-  if (await secureStoreAvailable()) {
-    await SecureStore.setItemAsync(key, value);
-    return;
-  }
-  inMemoryStorage.set(key, value);
-}
-
-async function deleteStoredValue(key: string) {
-  if (await secureStoreAvailable()) {
-    await SecureStore.deleteItemAsync(key);
-    return;
-  }
-  inMemoryStorage.delete(key);
-}
+type LogoutCleanup = () => Promise<void> | void;
 
 interface RequestOtpResult {
   challengeId: string;
@@ -64,6 +33,7 @@ interface AuthContextValue {
   refresh: () => Promise<void>;
   setActiveOrgId: (orgId: string) => Promise<void>;
   hasAnyRole: (...roles: Role[]) => boolean;
+  registerLogoutCleanup: (cleanup: LogoutCleanup) => () => void;
   error?: string;
 }
 
@@ -89,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSessionSummary | undefined>();
   const [activeOrgId, setActiveOrgIdState] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const logoutCleanupsRef = useRef(new Set<LogoutCleanup>());
 
   const hydrate = useCallback(
     async (tokenValue: string, preferredOrgId?: string) => {
@@ -164,8 +135,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [activeOrgId, hydrate]
   );
 
+  const registerLogoutCleanup = useCallback((cleanup: LogoutCleanup) => {
+    logoutCleanupsRef.current.add(cleanup);
+    return () => {
+      logoutCleanupsRef.current.delete(cleanup);
+    };
+  }, []);
+
   const logout = useCallback(async () => {
     try {
+      for (const cleanup of logoutCleanupsRef.current) {
+        try {
+          await cleanup();
+        } catch {
+          // Best-effort cleanup keeps logout resilient when device unregister fails.
+        }
+      }
       if (token) {
         await mobileApiFetch("/auth/logout", { method: "POST", token });
       }
@@ -206,9 +191,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refresh,
       setActiveOrgId,
       hasAnyRole,
+      registerLogoutCleanup,
       error
     }),
-    [activeOrgId, error, hasAnyRole, logout, refresh, requestOtp, session, setActiveOrgId, status, token, verifyOtp]
+    [
+      activeOrgId,
+      error,
+      hasAnyRole,
+      logout,
+      refresh,
+      registerLogoutCleanup,
+      requestOtp,
+      session,
+      setActiveOrgId,
+      status,
+      token,
+      verifyOtp
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

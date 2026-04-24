@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from "expo-router";
 import { useDeferredValue, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
@@ -18,6 +19,8 @@ import { colors } from "@/lib/theme";
 const featuredCities = ["Pune", "Bengaluru", "Mumbai", "Delhi"];
 
 export default function FindGyms() {
+  const routeParams = useLocalSearchParams<{ focus?: string; ref?: string }>();
+  const referralCode = Array.isArray(routeParams.ref) ? routeParams.ref[0] : routeParams.ref;
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
   const deferredQuery = useDeferredValue(query.trim());
@@ -36,6 +39,19 @@ export default function FindGyms() {
           title="Find the right floor before you commit."
           subtitle="Search public gyms, compare join modes, and open the membership flow that matches how you want to start."
         />
+
+        {referralCode ? (
+          <Card style={styles.referralCard}>
+            <Pill tone="lime">Referral ready</Pill>
+            <Text style={styles.referralTitle} selectable>
+              Referral code {referralCode} is attached to this mobile session.
+            </Text>
+            <Text style={styles.referralBody} selectable>
+              Open any supported gym profile below and Zook will carry the code into the join or
+              checkout flow.
+            </Text>
+          </Card>
+        ) : null}
 
         <Card style={styles.searchCard}>
           <GlassInput
@@ -153,7 +169,13 @@ export default function FindGyms() {
                 </View>
               </View>
               <PrimaryLink
-                href={{ pathname: "/gym/[username]", params: { username: gym.username } }}
+                href={{
+                  pathname: "/gym/[username]",
+                  params: {
+                    username: gym.username,
+                    ...(referralCode ? { ref: referralCode } : {}),
+                  },
+                }}
               >
                 Open gym profile
               </PrimaryLink>
@@ -186,6 +208,18 @@ const styles = StyleSheet.create({
   },
   searchCard: {
     gap: 14,
+  },
+  referralCard: {
+    gap: 10,
+  },
+  referralTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  referralBody: {
+    color: colors.muted,
+    lineHeight: 21,
   },
   cityRow: {
     flexDirection: "row",

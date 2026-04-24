@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
@@ -22,6 +22,11 @@ import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view
 import { colors } from "@/lib/theme";
 
 export default function Home() {
+  const routeParams = useLocalSearchParams<{
+    attendanceRecordId?: string;
+    focus?: string;
+    notificationId?: string;
+  }>();
   const { activeOrgId, hasAnyRole, session } = useAuth();
   const homeQuery = useMemberHome();
   const trackingQuery = useMyTracking();
@@ -172,6 +177,20 @@ export default function Home() {
               />
             </View>
           </Card>
+
+          {routeParams.focus === "attendance" ? (
+            <Card style={styles.routeCalloutCard}>
+              <Pill tone="blue">Opened from attendance notification</Pill>
+              <Text style={styles.routeCalloutTitle} selectable>
+                Attendance context is active.
+              </Text>
+              <Text style={styles.cardBody} selectable>
+                {routeParams.attendanceRecordId
+                  ? `Attendance record ${routeParams.attendanceRecordId} came through the push payload.`
+                  : "This route falls back to member home when attendance metadata is partial."}
+              </Text>
+            </Card>
+          ) : null}
 
           {homeQuery.isLoading && !memberHome ? (
             <LoadingState
@@ -432,6 +451,14 @@ const styles = StyleSheet.create({
   },
   heroMeta: {
     gap: 12,
+  },
+  routeCalloutCard: {
+    gap: 10,
+  },
+  routeCalloutTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "800",
   },
   metricGrid: {
     flexDirection: "row",

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { AuthSessionSummary } from "@zook/core";
 import { mobileApiFetch } from "./api";
 import { useAuth } from "./auth";
+import type { NotificationPreferenceRecord } from "./notification-preferences";
 
 export interface MemberHomeData {
   activeOrganization: {
@@ -189,6 +190,25 @@ export interface OwnerDashboardData {
   auditLogCount?: number;
 }
 
+export interface PushDeviceRecord {
+  id: string;
+  orgId?: string | null;
+  platform?: string | null;
+  provider?: string | null;
+  status?: string | null;
+  deviceLabel?: string | null;
+  deviceFingerprint?: string | null;
+  appVersion?: string | null;
+  lastSeenAt?: string | null;
+  lastRegisteredAt?: string | null;
+  lastFailureAt?: string | null;
+  failureReason?: string | null;
+  revokedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
 function queryString(input: Record<string, string | undefined>) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(input)) {
@@ -324,6 +344,30 @@ export function useMyNotifications() {
     queryKey: ["me", "notifications"],
     queryFn: () =>
       mobileApiFetch<{ notifications: Array<Record<string, unknown>> }>("/me/notifications", {
+        token,
+      }),
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function useMyNotificationPreferences() {
+  const { status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "notification-preferences"],
+    queryFn: () =>
+      mobileApiFetch<{ preferences: NotificationPreferenceRecord[] }>("/me/notification-preferences", {
+        token,
+      }),
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function useMyPushDevices() {
+  const { status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "push-devices"],
+    queryFn: () =>
+      mobileApiFetch<{ devices: PushDeviceRecord[] }>("/me/push-devices", {
         token,
       }),
     enabled: status === "authenticated" && Boolean(token),

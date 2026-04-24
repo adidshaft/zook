@@ -44,13 +44,16 @@ Expo env:
 
 ## Mobile Status
 
-Backend readiness is in place for Expo push.
+Phase 5 mobile readiness now includes:
 
-Current client limitations:
+- permission prompts and denied-state handling
+- Expo push token registration through the backend `/api/push/register-device` route
+- device unregister on logout when practical
+- notification preference toggles in the mobile profile
+- device registry visibility for QA
+- tap routing for plan, order, membership, attendance, and generic inbox flows
 
-- the Expo app configuration is pilot-ready
-- full native permission and token registration UX is still incomplete in the mobile client
-- the mobile inbox remains the reliable verification path today
+The in-app notification center remains canonical if native push is unavailable.
 
 ## Local Development
 
@@ -67,14 +70,16 @@ Current client limitations:
 
 ## Tap Routing
 
-Phase 4 stores payload context so mobile tap routing can eventually target:
+Current tap routing targets:
 
 - assigned plans
 - shop orders
 - membership status
-- notification center context
+- attendance result context
+- generic notification center context
 
 ## Known Limitations
 
 - receipt polling for Expo tickets is not fully implemented yet
 - the current pilot prioritizes persistence and invalid-token handling over advanced delivery analytics
+- Expo Go should not be used as the final push-validation environment for the private pilot

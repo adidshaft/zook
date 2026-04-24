@@ -1,4 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect } from "react";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
@@ -14,6 +16,7 @@ import {
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatDateTime, formatRelativeDate, titleCaseFromCode } from "@/lib/formatting";
+import { mapNotificationPayloadToHref } from "@/lib/notification-routing";
 import { useMyNotifications } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
@@ -22,15 +25,19 @@ type InboxNotification = {
   readAt?: string | null;
   deliveredAt?: string | null;
   notification?: {
+    id?: string | null;
     title?: string | null;
     body?: string | null;
     type?: string | null;
     status?: string | null;
     createdAt?: string | null;
+    metadata?: Record<string, unknown> | null;
   } | null;
 };
 
 export default function NotificationsScreen() {
+  const routeParams = useLocalSearchParams<{ focus?: string; notificationId?: string }>();
+  const router = useRouter();
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const notificationsQuery = useMyNotifications();
@@ -58,6 +65,27 @@ export default function NotificationsScreen() {
     }
   }
 
+  async function openNotification(item: InboxNotification) {
+    await markRead(item.id);
+    const href = mapNotificationPayloadToHref({
+      notificationId: item.notification?.id,
+      type: item.notification?.type,
+      ...(item.notification?.metadata ?? {}),
+    });
+    if (!href.startsWith("/notifications")) {
+      router.push(href as never);
+    }
+  }
+
+  useEffect(() => {
+    const matchingUnread = notifications.find(
+      (item) => item.notification?.id === routeParams.notificationId && !item.readAt,
+    );
+    if (matchingUnread) {
+      void markRead(matchingUnread.id);
+    }
+  }, [notifications, routeParams.notificationId]);
+
   return (
     <Screen>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
@@ -66,6 +94,20 @@ export default function NotificationsScreen() {
           title="Every gym signal, without the clutter."
           subtitle="Membership updates, operational notices, plan nudges, and security messages live in one calm feed."
         />
+
+        {routeParams.notificationId ? (
+          <Card style={styles.calloutCard}>
+            <Pill tone="blue">
+              {routeParams.focus === "attendance" ? "Attendance alert" : "Opened from push"}
+            </Pill>
+            <Text style={styles.calloutTitle} selectable>
+              Notification context is active.
+            </Text>
+            <Text style={styles.body} selectable>
+              Matching inbox cards are highlighted below so QA can confirm the push payload and in-app record stay aligned.
+            </Text>
+          </Card>
+        ) : null}
 
         <View style={styles.metricGrid}>
           <MetricTile
@@ -117,7 +159,8 @@ export default function NotificationsScreen() {
                   key={item.id}
                   item={item}
                   busy={busyId === item.id}
-                  onPress={() => void markRead(item.id)}
+                  highlighted={item.notification?.id === routeParams.notificationId}
+                  onPress={() => void openNotification(item)}
                 />
               ))}
             </View>
@@ -137,7 +180,8 @@ export default function NotificationsScreen() {
                   key={item.id}
                   item={item}
                   busy={busyId === item.id}
-                  onPress={() => void markRead(item.id)}
+                  highlighted={item.notification?.id === routeParams.notificationId}
+                  onPress={() => void openNotification(item)}
                 />
               ))}
             </View>
@@ -151,10 +195,12 @@ export default function NotificationsScreen() {
 function NotificationCard({
   item,
   busy,
+  highlighted,
   onPress,
 }: {
   item: InboxNotification;
   busy: boolean;
+  highlighted: boolean;
   onPress: () => void;
 }) {
   const notification = item.notification;
@@ -162,7 +208,13 @@ function NotificationCard({
 
   return (
     <Pressable onPress={onPress}>
-      <Card style={[styles.card, unread ? styles.cardUnread : null]}>
+      <Card
+        style={[
+          styles.card,
+          unread ? styles.cardUnread : null,
+          highlighted ? styles.cardHighlighted : null,
+        ]}
+      >
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderCopy}>
             <View style={styles.titleRow}>
@@ -229,6 +281,10 @@ const styles = StyleSheet.create({
   cardUnread: {
     borderColor: "rgba(185,244,85,0.24)",
   },
+  cardHighlighted: {
+    borderColor: "rgba(94,234,212,0.4)",
+    backgroundColor: "rgba(94,234,212,0.06)",
+  },
   cardHeader: {
     flexDirection: "row",
     gap: 12,
@@ -256,5 +312,13 @@ const styles = StyleSheet.create({
   meta: {
     color: colors.muted,
     fontSize: 12,
+  },
+  calloutCard: {
+    gap: 10,
+  },
+  calloutTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "800",
   },
 });
