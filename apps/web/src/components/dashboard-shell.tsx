@@ -161,16 +161,24 @@ export function DashboardShell({
                     </tr>
                   </thead>
                   <tbody>
-                    {data.orgs.map((org) => (
-                      <tr key={org.id} className="border-t border-white/10">
-                        <td className="px-4 py-3 font-medium">{org.name}</td>
-                        <td className="px-4 py-3 text-white/55">{org.city}</td>
-                        <td className="px-4 py-3 text-white/55">{org.joinMode}</td>
-                        <td className="px-4 py-3">
-                          <Pill tone="lime">{org.status}</Pill>
+                    {data.orgs.length ? (
+                      data.orgs.map((org) => (
+                        <tr key={org.id} className="border-t border-white/10">
+                          <td className="px-4 py-3 font-medium">{org.name}</td>
+                          <td className="px-4 py-3 text-white/55">{org.city}</td>
+                          <td className="px-4 py-3 text-white/55">{org.joinMode}</td>
+                          <td className="px-4 py-3">
+                            <Pill tone="lime">{org.status}</Pill>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr className="border-t border-white/10">
+                        <td className="px-4 py-6 text-white/45" colSpan={4}>
+                          No organizations are available yet.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -179,15 +187,19 @@ export function DashboardShell({
             <GlassCard>
               <h2 className="text-xl font-semibold">Low Stock</h2>
               <div className="mt-4 grid gap-3">
-                {data.products.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 p-3">
-                    <div>
-                      <p className="font-medium">{product.name}</p>
-                      <p className="text-xs text-white/45">{formatInr(product.pricePaise ?? 0)}</p>
+                {data.products.length ? (
+                  data.products.map((product) => (
+                    <div key={product.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <div>
+                        <p className="font-medium">{product.name}</p>
+                        <p className="text-xs text-white/45">{formatInr(product.pricePaise ?? 0)}</p>
+                      </div>
+                      <Pill tone={(product.stock ?? 0) <= 8 ? "amber" : "neutral"}>{product.stock} left</Pill>
                     </div>
-                    <Pill tone={(product.stock ?? 0) <= 8 ? "amber" : "neutral"}>{product.stock} left</Pill>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-white/45">No low-stock products in the current organization.</p>
+                )}
               </div>
             </GlassCard>
           </div>
@@ -196,30 +208,38 @@ export function DashboardShell({
             <GlassCard>
               <h2 className="text-xl font-semibold">Notifications</h2>
               <div className="mt-4 grid gap-3">
-                {data.notifications.map((notification) => (
-                  <div key={notification.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium">{notification.title}</p>
-                      <Pill>{notification.status}</Pill>
+                {data.notifications.length ? (
+                  data.notifications.map((notification) => (
+                    <div key={notification.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-medium">{notification.title}</p>
+                        <Pill>{notification.status}</Pill>
+                      </div>
+                      <p className="mt-2 text-xs text-white/45">{notification.type}</p>
                     </div>
-                    <p className="mt-2 text-xs text-white/45">{notification.type}</p>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-white/45">No notifications have been sent from this organization yet.</p>
+                )}
               </div>
             </GlassCard>
 
             <GlassCard>
               <h2 className="text-xl font-semibold">AI Usage</h2>
               <div className="mt-4 grid gap-3">
-                {data.aiUsage.map((usage) => (
-                  <div key={usage.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium">{usage.promptSummary}</p>
-                      <Pill tone="lime">{usage.role}</Pill>
+                {data.aiUsage.length ? (
+                  data.aiUsage.map((usage) => (
+                    <div key={usage.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-medium">{usage.promptSummary}</p>
+                        <Pill tone="lime">{usage.role}</Pill>
+                      </div>
+                      <p className="mt-2 text-xs text-white/45">{usage.requestType}</p>
                     </div>
-                    <p className="mt-2 text-xs text-white/45">{usage.requestType}</p>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-white/45">No AI usage has been logged for this organization yet.</p>
+                )}
               </div>
             </GlassCard>
           </div>

@@ -28,9 +28,11 @@ export async function getOrganizationDashboardData(orgId: string) {
     pendingAttendanceApprovals,
     manualPaymentsToday,
     successfulPaymentsToday,
-    lowStockProducts,
+    lowStockProductsRaw,
     notifications,
     aiUsage,
+    aiUsageThisMonth,
+    failedNotifications,
     members,
     auditLogCount
   ] = await Promise.all([
@@ -55,16 +57,18 @@ export async function getOrganizationDashboardData(orgId: string) {
       where: { orgId, status: "SUCCEEDED", createdAt: { gte: today } },
       _sum: { amountPaise: true }
     }),
-    prisma.product.findMany({
-      where: { orgId, active: true, stock: { lte: 8 } },
-      take: 8,
-      orderBy: { stock: "asc" }
-    }),
+    prisma.product.findMany({ where: { orgId, active: true }, orderBy: { stock: "asc" }, take: 20 }),
     prisma.notification.findMany({ where: { orgId }, take: 8, orderBy: { createdAt: "desc" } }),
     prisma.aIUsageLog.findMany({ where: { orgId }, take: 8, orderBy: { createdAt: "desc" } }),
+    prisma.aIUsageLog.count({ where: { orgId, createdAt: { gte: monthStart } } }),
+    prisma.notification.count({ where: { orgId, status: { in: ["FAILED", "SCHEDULED"] } } }),
     prisma.memberProfile.count({ where: { orgId } }),
     prisma.auditLog.count({ where: { orgId } })
   ]);
+
+  const lowStockProducts = lowStockProductsRaw
+    .filter((product) => product.stock <= product.lowStockThreshold)
+    .slice(0, 8);
 
   const trialDaysRemaining = Math.max(
     0,
@@ -88,14 +92,56 @@ export async function getOrganizationDashboardData(orgId: string) {
         delta: "successful payments today"
       },
       { label: "Low stock", value: String(lowStockProducts.length), delta: "pickup inventory" },
-      { label: "AI usage", value: String(aiUsage.length), delta: "this month snapshot" },
+      { label: "Notification queue", value: String(failedNotifications), delta: "failed or scheduled" },
+      { label: "AI usage", value: String(aiUsageThisMonth), delta: "this month" },
       { label: "Trial days", value: String(trialDaysRemaining), delta: organization.status }
     ],
     joinRequests,
     products: lowStockProducts,
     notifications,
     aiUsage,
-    auditLogCount
+    auditLogCount,
+    summary: {
+      activeMembers,
+      joinRequests: joinRequests.length,
+      expiringMemberships,
+      todayAttendance,
+      pendingAttendanceApprovals,
+      cashCollectedPaise: manualPaymentsToday._sum.amountPaise ?? 0,
+      revenuePaise: successfulPaymentsToday._sum.amountPaise ?? 0,
+      lowStockProducts: lowStockProducts.length,
+      notificationQueueCount: failedNotifications,
+      aiUsageThisMonth,
+      trialDaysRemaining
+    }
+  };
+}
+
+export async function getPlatformDashboardData() {
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const [orgs, aiUsageThisMonth, abuseFlags, statusGroups] = await Promise.all([
+    prisma.organization.findMany({ take: 20, orderBy: { createdAt: "desc" } }),
+    prisma.aIUsageLog.count({ where: { createdAt: { gte: monthStart } } }),
+    prisma.organizationAbuseFlag.findMany({ take: 20, orderBy: { createdAt: "desc" } }),
+    prisma.organization.groupBy({ by: ["status"], _count: { _all: true } })
+  ]);
+
+  const counts = new Map(statusGroups.map((group) => [group.status, group._count._all]));
+
+  return {
+    orgs,
+    aiUsageThisMonth,
+    abuseFlags,
+    metrics: [
+      { label: "Organizations", value: String(orgs.length), delta: `${counts.get("ACTIVE") ?? 0} active` },
+      { label: "Trial gyms", value: String((counts.get("TRIAL_ACTIVE") ?? 0) + (counts.get("TRIAL_EXPIRING") ?? 0)), delta: "free trial window" },
+      { label: "Suspended", value: String(counts.get("SUSPENDED") ?? 0), delta: "platform action required" },
+      { label: "AI usage", value: String(aiUsageThisMonth), delta: "this month" },
+      { label: "Abuse flags", value: String(abuseFlags.length), delta: "recent signals" }
+    ]
   };
 }
 

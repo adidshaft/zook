@@ -1,6 +1,5 @@
-import { dashboardMetrics, demoGyms } from "@zook/core";
 import { prisma } from "@zook/db";
-import { getOrganizationDashboardData } from "@/server/read-models";
+import { getOrganizationDashboardData, getPlatformDashboardData } from "@/server/read-models";
 
 export async function getDashboardData(orgId?: string) {
   try {
@@ -8,63 +7,57 @@ export async function getDashboardData(orgId?: string) {
       const data = await getOrganizationDashboardData(orgId);
       return {
         connected: true,
-        metrics: data.metrics.slice(0, 4),
+        metrics: data.metrics,
         orgs: [data.organization],
         products: data.products,
         notifications: data.notifications,
         attendance: data.joinRequests,
-        aiUsage: data.aiUsage
+        aiUsage: data.aiUsage,
+        summary: data.summary
       };
     }
-    const [orgs, members, payments, products, notifications, attendance, aiUsage] = await Promise.all([
-      prisma.organization.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
-      prisma.memberProfile.count(),
-      prisma.payment.findMany({ take: 6, orderBy: { createdAt: "desc" } }),
-      prisma.product.findMany({ take: 6, orderBy: { stock: "asc" } }),
-      prisma.notification.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
-      prisma.attendanceRecord.findMany({ take: 8, orderBy: { checkedInAt: "desc" } }),
-      prisma.aIUsageLog.findMany({ take: 6, orderBy: { createdAt: "desc" } })
-    ]);
+    const data = await getPlatformDashboardData();
     return {
       connected: true,
-      metrics: [
-        { label: "Today attendance", value: String(attendance.length || 84), delta: "+12%" },
-        { label: "Active members", value: String(members || 642), delta: "+28" },
-        { label: "Payments tracked", value: String(payments.length), delta: "latest" },
-        { label: "AI logs", value: String(aiUsage.length), delta: "guarded" }
-      ],
-      orgs,
-      products,
-      notifications,
-      attendance,
-      aiUsage
+      metrics: data.metrics,
+      orgs: data.orgs,
+      products: [],
+      notifications: [],
+      attendance: [],
+      aiUsage: [],
+      platform: {
+        aiUsageThisMonth: data.aiUsageThisMonth,
+        abuseFlags: data.abuseFlags
+      }
     };
   } catch {
+    const zeroMetrics = orgId
+      ? [
+          { label: "Today attendance", value: "0", delta: "database unavailable" },
+          { label: "Active members", value: "0", delta: "database unavailable" },
+          { label: "Expiring soon", value: "0", delta: "database unavailable" },
+          { label: "Cash collected", value: "₹0", delta: "database unavailable" },
+          { label: "Revenue", value: "₹0", delta: "database unavailable" },
+          { label: "Low stock", value: "0", delta: "database unavailable" },
+          { label: "Notification queue", value: "0", delta: "database unavailable" },
+          { label: "AI usage", value: "0", delta: "database unavailable" },
+          { label: "Trial days", value: "0", delta: "database unavailable" }
+        ]
+      : [
+          { label: "Organizations", value: "0", delta: "database unavailable" },
+          { label: "Trial gyms", value: "0", delta: "database unavailable" },
+          { label: "Suspended", value: "0", delta: "database unavailable" },
+          { label: "AI usage", value: "0", delta: "database unavailable" },
+          { label: "Abuse flags", value: "0", delta: "database unavailable" }
+        ];
     return {
       connected: false,
-      metrics: dashboardMetrics,
-      orgs: demoGyms.map((gym) => ({
-        id: gym.id,
-        name: gym.name,
-        username: gym.username,
-        city: gym.city,
-        status: "TRIAL_ACTIVE",
-        joinMode: gym.joinMode
-      })),
-      products: [
-        { id: "water", name: "Water Bottle", stock: 24, pricePaise: 39900 },
-        { id: "shake", name: "Protein Shake", stock: 18, pricePaise: 14900 },
-        { id: "shaker", name: "Shaker", stock: 8, pricePaise: 29900 }
-      ],
-      notifications: [
-        { id: "n1", title: "Evening floor maintenance", type: "OPERATIONAL", status: "SENT" }
-      ],
-      attendance: [
-        { id: "a1", status: "APPROVED", source: "QR_SCAN", dateKey: "2026-04-24" }
-      ],
-      aiUsage: [
-        { id: "ai1", role: "TRAINER", requestType: "STRUCTURED_PLAN", promptSummary: "Starter plan" }
-      ]
+      metrics: zeroMetrics,
+      orgs: [],
+      products: [],
+      notifications: [],
+      attendance: [],
+      aiUsage: []
     };
   }
 }

@@ -14,20 +14,15 @@ export default async function PlatformPage() {
           <ZookLogo />
           <Pill tone="amber">Platform super-admin</Pill>
         </header>
-        <div className="grid gap-4 md:grid-cols-3">
-          <GlassCard>
-            <ShieldAlert className="text-amber-100" />
-            <p className="mt-4 text-sm text-white/45">Organizations</p>
-            <p className="metric mt-2 text-4xl font-semibold">{data.orgs.length}</p>
-          </GlassCard>
-          <GlassCard>
-            <p className="text-sm text-white/45">AI usage rows</p>
-            <p className="metric mt-2 text-4xl font-semibold">{data.aiUsage.length}</p>
-          </GlassCard>
-          <GlassCard>
-            <p className="text-sm text-white/45">Abuse controls</p>
-            <p className="mt-2 text-xl font-semibold">Suspend, reactivate, inspect</p>
-          </GlassCard>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {data.metrics.map((metric) => (
+            <GlassCard key={metric.label}>
+              {metric.label === "Organizations" ? <ShieldAlert className="text-amber-100" /> : null}
+              <p className="mt-4 text-sm text-white/45">{metric.label}</p>
+              <p className="metric mt-2 text-4xl font-semibold">{metric.value}</p>
+              <p className="mt-2 text-xs text-lime-200">{metric.delta}</p>
+            </GlassCard>
+          ))}
         </div>
         <GlassCard>
           <h1 className="text-2xl font-semibold">All Organizations</h1>
@@ -56,6 +51,35 @@ export default async function PlatformPage() {
             </table>
           </div>
         </GlassCard>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <GlassCard>
+            <h2 className="text-xl font-semibold">Recent abuse signals</h2>
+            <div className="mt-4 grid gap-3">
+              {(data.platform?.abuseFlags ?? []).length ? (
+                (data.platform?.abuseFlags ?? []).map((flag) => (
+                  <div key={flag.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium">{flag.type}</p>
+                      <Pill tone="amber">{flag.severity}</Pill>
+                    </div>
+                    <p className="mt-2 text-xs text-white/45">{flag.orgId}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-white/45">No abuse flags in the current seed snapshot.</p>
+              )}
+            </div>
+          </GlassCard>
+          <GlassCard>
+            <h2 className="text-xl font-semibold">Platform notes</h2>
+            <p className="mt-4 text-sm leading-6 text-white/55">
+              Organization status changes, AI usage inspection, and abuse review are now backed by the database and the same auth/session layer used by the rest of the product.
+            </p>
+            <p className="mt-4 text-sm leading-6 text-white/55">
+              Use the platform APIs to suspend or reactivate gyms; the seeded UI intentionally keeps those actions visible as explicit operational steps.
+            </p>
+          </GlassCard>
+        </div>
       </div>
     </main>
   );
