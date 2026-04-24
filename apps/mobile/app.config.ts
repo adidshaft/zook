@@ -1,16 +1,97 @@
 import type { ExpoConfig } from "expo/config";
 import appJson from "./app.json";
 
-const baseConfig = appJson as { expo: ExpoConfig & { extra?: Record<string, unknown> } };
+type MobileReleaseProfile = "local" | "staging" | "production";
 
-export default (): ExpoConfig => ({
-  ...baseConfig.expo,
-  extra: {
-    ...(baseConfig.expo.extra ?? {}),
-    mobileApiBaseUrl:
-      process.env.MOBILE_API_BASE_URL ??
-      process.env.EXPO_PUBLIC_API_BASE_URL ??
-      "http://127.0.0.1:3000/api",
-    webUrl: process.env.NEXT_PUBLIC_WEB_URL ?? "http://localhost:3000"
+const baseConfig = appJson as { expo: ExpoConfig & { extra?: Record<string, unknown> } };
+const appVersion = baseConfig.expo.version ?? "0.1.0";
+const runtimeVersion = appVersion;
+
+const apiBaseUrlByProfile: Record<MobileReleaseProfile, string> = {
+  local: "http://127.0.0.1:3000/api",
+  staging: "https://staging.zook.app/api",
+  production: "https://zook.app/api"
+};
+
+const webUrlByProfile: Record<MobileReleaseProfile, string> = {
+  local: "http://localhost:3000",
+  staging: "https://staging.zook.app",
+  production: "https://zook.app"
+};
+
+function normalizeProfile(value?: string | null): MobileReleaseProfile | undefined {
+  switch (value?.trim().toLowerCase()) {
+    case "local":
+    case "development":
+    case "dev":
+      return "local";
+    case "staging":
+    case "stage":
+    case "preview":
+      return "staging";
+    case "production":
+    case "prod":
+      return "production";
+    default:
+      return undefined;
   }
-});
+}
+
+function resolveReleaseProfile(): MobileReleaseProfile {
+  return (
+    normalizeProfile(process.env.MOBILE_ENV_PROFILE) ??
+    normalizeProfile(process.env.EXPO_PUBLIC_ENV_PROFILE) ??
+    normalizeProfile(process.env.ENV_PROFILE) ??
+    normalizeProfile(process.env.APP_ENV) ??
+    normalizeProfile(process.env.EXPO_PUBLIC_APP_ENV) ??
+    normalizeProfile(process.env.EAS_BUILD_PROFILE) ??
+    "local"
+  );
+}
+
+function resolveUrl(
+  explicitValue: string | undefined,
+  profile: MobileReleaseProfile,
+  defaults: Record<MobileReleaseProfile, string>
+) {
+  return explicitValue?.trim() || defaults[profile];
+}
+
+export default (): ExpoConfig => {
+  const releaseProfile = resolveReleaseProfile();
+
+  return {
+    ...baseConfig.expo,
+    scheme: "zook",
+    version: appVersion,
+    runtimeVersion: {
+      policy: "appVersion"
+    },
+    ios: {
+      ...baseConfig.expo.ios,
+      bundleIdentifier: "com.zook.app"
+    },
+    android: {
+      ...baseConfig.expo.android,
+      package: "com.zook.app"
+    },
+    extra: {
+      ...(baseConfig.expo.extra ?? {}),
+      releaseProfile,
+      appScheme: "zook",
+      appVersion,
+      runtimeVersion,
+      easBuildProfile: process.env.EAS_BUILD_PROFILE ?? "local",
+      mobileApiBaseUrl: resolveUrl(
+        process.env.MOBILE_API_BASE_URL ?? process.env.EXPO_PUBLIC_API_BASE_URL,
+        releaseProfile,
+        apiBaseUrlByProfile
+      ),
+      webUrl: resolveUrl(
+        process.env.EXPO_PUBLIC_WEB_URL ?? process.env.NEXT_PUBLIC_WEB_URL,
+        releaseProfile,
+        webUrlByProfile
+      )
+    }
+  };
+};

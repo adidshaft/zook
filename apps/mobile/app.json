@@ -8,10 +8,10 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.zook.mobile"
+      "bundleIdentifier": "com.zook.app"
     },
     "android": {
-      "package": "app.zook.mobile",
+      "package": "com.zook.app",
       "adaptiveIcon": {
         "backgroundColor": "#070908"
       }
