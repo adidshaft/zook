@@ -1,7 +1,6 @@
-import { Link } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { demoGyms } from "@zook/core";
-import { Card, Pill, PrimaryButton, Screen } from "@/components/primitives";
+import { Card, Pill, PrimaryLink, Screen } from "@/components/primitives";
 import { colors } from "@/lib/theme";
 
 export default function FindGyms() {
@@ -34,9 +33,7 @@ export default function FindGyms() {
                   <Pill>{gym.amenities[0]}</Pill>
                 </View>
               </View>
-              <Link href="/plans" asChild>
-                <PrimaryButton>Open</PrimaryButton>
-              </Link>
+              <PrimaryLink href="/plans">Open</PrimaryLink>
             </View>
           </Card>
         ))}

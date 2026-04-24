@@ -1,0 +1,361 @@
+import { Link } from "expo-router";
+import type { Href } from "expo-router";
+import type { TrackingSummaryMetric, WorkoutHistorySeries, WorkoutLogEntry } from "@zook/core";
+import { StyleSheet, Text, View } from "react-native";
+import { colors, radii } from "@/lib/theme";
+
+const tonePalette = {
+  lime: { surface: "#ecf7db", ink: "#12200a" },
+  amber: { surface: "#fff1dc", ink: "#2d1b03" },
+  blue: { surface: "#e7f6fb", ink: "#08202b" },
+  violet: { surface: "#efe8ff", ink: "#1c1233" }
+} as const;
+
+export function TrackingSectionHeader({
+  title,
+  href,
+  linkLabel = "See all"
+}: {
+  title: string;
+  href?: Href;
+  linkLabel?: string;
+}) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle} selectable>
+        {title}
+      </Text>
+      {href ? (
+        <Link href={href}>
+          <Text style={styles.sectionLink} selectable>
+            {linkLabel}
+          </Text>
+        </Link>
+      ) : null}
+    </View>
+  );
+}
+
+export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric }) {
+  const palette = tonePalette[metric.tone];
+
+  return (
+    <View style={[styles.summaryTile, { backgroundColor: palette.surface }]}>
+      <Text style={[styles.summaryLabel, { color: palette.ink }]} selectable>
+        {metric.label}
+      </Text>
+      <Text style={[styles.summaryValue, { color: palette.ink }]} selectable>
+        {metric.value}
+      </Text>
+      <Text style={[styles.summaryDetail, { color: palette.ink }]} selectable>
+        {metric.detail}
+      </Text>
+    </View>
+  );
+}
+
+export function WorkoutLogCard({
+  entry,
+  compact = false
+}: {
+  entry: WorkoutLogEntry;
+  compact?: boolean;
+}) {
+  const visibleExercises = compact ? entry.exercises.slice(0, 3) : entry.exercises;
+
+  return (
+    <View style={styles.logCard}>
+      <View style={styles.logHeader}>
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={styles.logDate} selectable>
+            {entry.dateLabel}
+          </Text>
+          <Text style={styles.logTitle} selectable>
+            {entry.workoutName}
+          </Text>
+        </View>
+        <View style={styles.effortPill}>
+          <Text style={styles.effortText} selectable>
+            {entry.effortLabel}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.metaRow}>
+        <MetaPill label="Start" value={entry.startTimeLabel} />
+        <MetaPill label="End" value={entry.endTimeLabel} />
+        <MetaPill label="Duration" value={entry.durationLabel} />
+      </View>
+
+      <Text style={styles.focusText} selectable>
+        Focus: {entry.focusLabel}
+      </Text>
+
+      <View style={styles.exerciseList}>
+        {visibleExercises.map((exercise) => (
+          <View key={exercise.id} style={styles.exerciseRow}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.exerciseName} selectable>
+                {exercise.name}
+              </Text>
+              <Text style={styles.exerciseMeta} selectable>
+                {exercise.setsLabel} · {exercise.repsLabel}
+                {exercise.loadLabel ? ` · ${exercise.loadLabel}` : ""}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.statusPill,
+                exercise.status === "DONE"
+                  ? styles.statusDone
+                  : exercise.status === "OPTIONAL"
+                    ? styles.statusOptional
+                    : styles.statusSkipped
+              ]}
+            >
+              <Text style={styles.statusText} selectable>
+                {exercise.status}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      <Text style={styles.notesText} selectable>
+        {entry.notes}
+      </Text>
+    </View>
+  );
+}
+
+export function WorkoutHistorySummary({ series }: { series: WorkoutHistorySeries }) {
+  return (
+    <View style={styles.historyCard}>
+      <Text style={styles.historyLabel} selectable>
+        {series.label}
+      </Text>
+      <View style={styles.historyMetrics}>
+        <View style={styles.historyMetricBlock}>
+          <Text style={styles.historyMetricValue} selectable>
+            {series.totalDurationLabel}
+          </Text>
+          <Text style={styles.historyMetricLabel} selectable>
+            Total duration
+          </Text>
+        </View>
+        <View style={styles.historyMetricBlock}>
+          <Text style={styles.historyMetricValue} selectable>
+            {series.sessionCountLabel}
+          </Text>
+          <Text style={styles.historyMetricLabel} selectable>
+            Sessions
+          </Text>
+        </View>
+      </View>
+      <View style={styles.historyCallout}>
+        <Text style={styles.historyCalloutText} selectable>
+          {series.completionLabel}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function MetaPill({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metaPill}>
+      <Text style={styles.metaLabel} selectable>
+        {label}
+      </Text>
+      <Text style={styles.metaValue} selectable>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: "900"
+  },
+  sectionLink: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "700"
+  },
+  summaryTile: {
+    width: "48%",
+    borderRadius: 26,
+    padding: 16,
+    minHeight: 148,
+    gap: 10
+  },
+  summaryLabel: {
+    fontSize: 13,
+    fontWeight: "800"
+  },
+  summaryValue: {
+    fontSize: 32,
+    fontWeight: "900",
+    lineHeight: 34
+  },
+  summaryDetail: {
+    fontSize: 13,
+    lineHeight: 19
+  },
+  logCard: {
+    borderRadius: 30,
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 18,
+    gap: 14
+  },
+  logHeader: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "flex-start"
+  },
+  logDate: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  logTitle: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: "900",
+    lineHeight: 28
+  },
+  effortPill: {
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "rgba(185,244,85,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.28)"
+  },
+  effortText: {
+    color: colors.lime,
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  metaRow: {
+    flexDirection: "row",
+    gap: 10
+  },
+  metaPill: {
+    flex: 1,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    padding: 12,
+    gap: 4
+  },
+  metaLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "700"
+  },
+  metaValue: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "800"
+  },
+  focusText: {
+    color: colors.amber,
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  exerciseList: {
+    gap: 10
+  },
+  exerciseRow: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center"
+  },
+  exerciseName: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "800"
+  },
+  exerciseMeta: {
+    color: colors.muted,
+    fontSize: 12
+  },
+  statusPill: {
+    borderRadius: radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1
+  },
+  statusDone: {
+    backgroundColor: "rgba(185,244,85,0.12)",
+    borderColor: "rgba(185,244,85,0.26)"
+  },
+  statusOptional: {
+    backgroundColor: "rgba(255,182,80,0.12)",
+    borderColor: "rgba(255,182,80,0.26)"
+  },
+  statusSkipped: {
+    backgroundColor: "rgba(255,93,93,0.12)",
+    borderColor: "rgba(255,93,93,0.26)"
+  },
+  statusText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: "800"
+  },
+  notesText: {
+    color: colors.muted,
+    lineHeight: 20
+  },
+  historyCard: {
+    borderRadius: 30,
+    backgroundColor: colors.paper,
+    padding: 18,
+    gap: 14
+  },
+  historyLabel: {
+    color: colors.inkSoft,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  historyMetrics: {
+    flexDirection: "row",
+    gap: 12
+  },
+  historyMetricBlock: {
+    flex: 1,
+    gap: 4
+  },
+  historyMetricValue: {
+    color: colors.ink,
+    fontSize: 28,
+    fontWeight: "900",
+    lineHeight: 30
+  },
+  historyMetricLabel: {
+    color: colors.inkSoft,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  historyCallout: {
+    borderRadius: radii.pill,
+    backgroundColor: "#ddd3ff",
+    paddingHorizontal: 16,
+    paddingVertical: 14
+  },
+  historyCalloutText: {
+    color: "#3d2d73",
+    fontSize: 13,
+    fontWeight: "700"
+  }
+});

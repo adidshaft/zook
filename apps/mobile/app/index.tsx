@@ -1,107 +1,125 @@
-import { Link } from "expo-router";
+import { Stack } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { dashboardMetrics, demoGyms } from "@zook/core";
-import { Card, Dock, Pill, PrimaryButton, Screen } from "@/components/primitives";
+import { dashboardMetrics, personalTrackingDashboard } from "@zook/core";
+import { Card, Dock, Pill, PrimaryLink, Screen } from "@/components/primitives";
+import {
+  TrackingSectionHeader,
+  TrackingSummaryTile,
+  WorkoutLogCard
+} from "@/components/tracking";
 import { colors } from "@/lib/theme";
 
 export default function Home() {
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <View style={styles.topbar}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>N</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.muted} selectable>
-              Current gym
-            </Text>
-            <Text style={styles.gymName} selectable>
-              Iron House Fitness
-            </Text>
-          </View>
-          <Pill tone="lime">Active</Pill>
-        </View>
-
-        <Card style={styles.hero}>
-          <Text style={styles.heroEyebrow} selectable>
-            Member home
-          </Text>
-          <Text style={styles.heroTitle} selectable>
-            Ready for today?
-          </Text>
-          <Link href="/scan" asChild>
-            <PrimaryButton>Scan QR</PrimaryButton>
-          </Link>
-        </Card>
-
-        <View style={styles.grid}>
-          <Card style={styles.half}>
-            <Text style={styles.muted} selectable>
-              Active membership
-            </Text>
-            <Text style={styles.cardTitle} selectable>
-              Monthly Unlimited
-            </Text>
-            <Text style={styles.detail} selectable>
-              Expires in 25 days
-            </Text>
-          </Card>
-          <Card style={styles.half}>
-            <Text style={styles.muted} selectable>
-              Weekly consistency
-            </Text>
-            <Text style={styles.metric} selectable>
-              4/5
-            </Text>
-            <Text style={styles.detail} selectable>
-              7-day streak target
-            </Text>
-          </Card>
-        </View>
-
-        <Card>
-          <Text style={styles.cardTitle} selectable>
-            Today&apos;s goal
-          </Text>
-          <Text style={styles.detail} selectable>
-            Starter Strength Week: Day 2, hydration, and sleep reminder.
-          </Text>
-        </Card>
-
-        <Card>
-          <View style={styles.row}>
-            <View>
-              <Text style={styles.cardTitle} selectable>
-                Nearby gyms
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <Screen>
+        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+          <View style={styles.topbar}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>N</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.muted} selectable>
+                Current gym
               </Text>
-              <Text style={styles.detail} selectable>
-                {demoGyms.map((gym) => gym.city).join(" · ")}
+              <Text style={styles.gymName} selectable>
+                Iron House Fitness
               </Text>
             </View>
-            <Link href="/find-gyms" asChild>
-              <PrimaryButton>Find</PrimaryButton>
-            </Link>
+            <Pill tone="lime">Active</Pill>
           </View>
-        </Card>
 
-        <View style={styles.metrics}>
-          {dashboardMetrics.map((metric) => (
-            <Card key={metric.label} style={styles.metricCard}>
-              <Text style={styles.muted} selectable>
-                {metric.label}
+          <Card style={styles.hero}>
+            <View style={{ gap: 8 }}>
+              <Text style={styles.heroEyebrow} selectable>
+                Member home
               </Text>
-              <Text style={styles.metricSmall} selectable>
-                {metric.value}
+              <Text style={styles.heroTitle} selectable>
+                Ready for today?
+              </Text>
+              <Text style={styles.heroBody} selectable>
+                Scan attendance, keep your membership in view, and track movement without leaving the gym flow.
+              </Text>
+            </View>
+            <PrimaryLink href="/scan">Scan QR</PrimaryLink>
+          </Card>
+
+          <View style={styles.grid}>
+            <Card style={styles.half}>
+              <Text style={styles.muted} selectable>
+                Active membership
+              </Text>
+              <Text style={styles.cardTitle} selectable>
+                Monthly Unlimited
+              </Text>
+              <Text style={styles.detail} selectable>
+                Expires in 25 days
               </Text>
             </Card>
-          ))}
-        </View>
+            <Card style={styles.half}>
+              <Text style={styles.muted} selectable>
+                Weekly consistency
+              </Text>
+              <Text style={styles.metric} selectable>
+                4/5
+              </Text>
+              <Text style={styles.detail} selectable>
+                7-day streak target
+              </Text>
+            </Card>
+          </View>
 
-        <View style={{ height: 96 }} />
-      </ScrollView>
-      <Dock />
-    </Screen>
+          <TrackingSectionHeader title="Personal tracking" href="/tracking" linkLabel="Open" />
+
+          <Text style={styles.trackingIntro} selectable>
+            {personalTrackingDashboard.subheadline}
+          </Text>
+
+          <View style={styles.metricGrid}>
+            {personalTrackingDashboard.summaryMetrics.slice(0, 2).map((metric) => (
+              <TrackingSummaryTile key={metric.id} metric={metric} />
+            ))}
+          </View>
+
+          <WorkoutLogCard entry={personalTrackingDashboard.todayLog} compact />
+
+          <Card style={styles.goalCard}>
+            <View style={{ flex: 1, gap: 8 }}>
+              <Text style={styles.goalEyebrow} selectable>
+                This week
+              </Text>
+              <Text style={styles.goalValue} selectable>
+                {personalTrackingDashboard.weekDurationLabel}
+              </Text>
+              <Text style={styles.detail} selectable>
+                {personalTrackingDashboard.weekSessionsLabel} · {personalTrackingDashboard.streakLabel}
+              </Text>
+            </View>
+            <PrimaryLink href="/tracking-entry">Add exercises</PrimaryLink>
+          </Card>
+
+          <View style={styles.metrics}>
+            {dashboardMetrics.map((metric) => (
+              <Card key={metric.label} style={styles.metricCard}>
+                <Text style={styles.muted} selectable>
+                  {metric.label}
+                </Text>
+                <Text style={styles.metricSmall} selectable>
+                  {metric.value}
+                </Text>
+                <Text style={styles.detail} selectable>
+                  {metric.delta}
+                </Text>
+              </Card>
+            ))}
+          </View>
+
+          <View style={{ height: 96 }} />
+        </ScrollView>
+        <Dock />
+      </Screen>
+    </>
   );
 }
 
@@ -139,8 +157,8 @@ const styles = StyleSheet.create({
     fontSize: 18
   },
   hero: {
-    gap: 16,
-    minHeight: 210,
+    gap: 20,
+    minHeight: 236,
     justifyContent: "space-between"
   },
   heroEyebrow: {
@@ -152,6 +170,16 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: "900",
     lineHeight: 44
+  },
+  heroBody: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 22
+  },
+  trackingIntro: {
+    color: colors.muted,
+    fontSize: 14,
+    lineHeight: 20
   },
   grid: {
     flexDirection: "row",
@@ -176,22 +204,35 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginTop: 8
   },
-  metricSmall: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: "900",
-    marginTop: 8
+  metricGrid: {
+    flexDirection: "row",
+    gap: 12
   },
-  row: {
+  goalCard: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 16
+    gap: 14
+  },
+  goalEyebrow: {
+    color: colors.amber,
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  goalValue: {
+    color: colors.text,
+    fontSize: 30,
+    fontWeight: "900"
   },
   metrics: {
     gap: 12
   },
   metricCard: {
-    minHeight: 92
+    minHeight: 96
+  },
+  metricSmall: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: "900",
+    marginTop: 8
   }
 });

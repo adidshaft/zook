@@ -47,6 +47,16 @@ export function PrimaryButton({ children, onPress }: { children: ReactNode; onPr
   );
 }
 
+export function PrimaryLink({ href, children }: { href: Href; children: ReactNode }) {
+  return (
+    <Link href={href} asChild>
+      <Pressable style={styles.primaryButton}>
+        <Text style={styles.primaryButtonText}>{children}</Text>
+      </Pressable>
+    </Link>
+  );
+}
+
 export function Dock() {
   const items: Array<[Href, string]> = [
     ["/", "Home"],

@@ -1,6 +1,5 @@
-import { Link } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Card, Pill, PrimaryButton, Screen } from "@/components/primitives";
+import { Card, Pill, PrimaryLink, Screen } from "@/components/primitives";
 import { colors } from "@/lib/theme";
 
 export default function Profile() {
@@ -26,9 +25,7 @@ export default function Profile() {
           <Text style={styles.body} selectable>
             Marketing preferences, AI personalization consent, data export request, deletion request, guardian state.
           </Text>
-          <Link href="/login" asChild>
-            <PrimaryButton>Switch role / account</PrimaryButton>
-          </Link>
+          <PrimaryLink href="/login">Switch role / account</PrimaryLink>
         </Card>
       </ScrollView>
     </Screen>

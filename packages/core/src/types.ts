@@ -215,3 +215,57 @@ export interface UserSafetyState {
   aiConsent: boolean;
   hasProfilePhoto: boolean;
 }
+
+export type TrackingWindow = "TODAY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+export type TrackingTone = "lime" | "amber" | "blue" | "violet";
+
+export interface TrackingSummaryMetric {
+  id: string;
+  label: string;
+  value: string;
+  detail: string;
+  tone: TrackingTone;
+}
+
+export interface WorkoutExercise {
+  id: string;
+  name: string;
+  setsLabel: string;
+  repsLabel: string;
+  loadLabel?: string;
+  status: "DONE" | "OPTIONAL" | "SKIPPED";
+}
+
+export interface WorkoutLogEntry {
+  id: string;
+  dateLabel: string;
+  workoutName: string;
+  startTimeLabel: string;
+  endTimeLabel: string;
+  durationLabel: string;
+  focusLabel: string;
+  effortLabel: string;
+  notes: string;
+  exercises: WorkoutExercise[];
+}
+
+export interface WorkoutHistorySeries {
+  key: TrackingWindow;
+  label: string;
+  totalDurationLabel: string;
+  sessionCountLabel: string;
+  completionLabel: string;
+  entries: WorkoutLogEntry[];
+}
+
+export interface PersonalTrackingDashboard {
+  headline: string;
+  subheadline: string;
+  weekDurationLabel: string;
+  weekSessionsLabel: string;
+  streakLabel: string;
+  summaryMetrics: TrackingSummaryMetric[];
+  todayLog: WorkoutLogEntry;
+  recentLogs: WorkoutLogEntry[];
+  history: WorkoutHistorySeries[];
+}
