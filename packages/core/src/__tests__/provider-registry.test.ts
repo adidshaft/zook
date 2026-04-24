@@ -3,15 +3,21 @@ import {
   getAIProvider,
   getEmailProvider,
   getMapProvider,
+  getPaymentProvider,
+  getPushProvider,
   getProviderRegistryDiagnostics,
+  ExpoPushProvider,
   getStorageProvider,
   GoogleMapProvider,
   LocalStorageProvider,
   MockAIProvider,
   MockEmailProvider,
   MockMapProvider,
+  MockPaymentProvider,
+  MockPushProvider,
   OpenAIProvider,
   ProviderSetupError,
+  RazorpayPaymentProvider,
   ResendEmailProvider,
   S3CompatibleStorageProvider,
   SMTPEmailProvider
@@ -38,7 +44,14 @@ function clearProviderEnv() {
   delete process.env.MAP_PROVIDER;
   delete process.env.GOOGLE_MAPS_API_KEY;
   delete process.env.PAYMENT_PROVIDER;
+  delete process.env.RAZORPAY_KEY_ID;
+  delete process.env.RAZORPAY_KEY_SECRET;
+  delete process.env.RAZORPAY_WEBHOOK_SECRET;
+  delete process.env.RAZORPAY_MODE;
   delete process.env.PUSH_PROVIDER;
+  delete process.env.EXPO_ACCESS_TOKEN;
+  delete process.env.EXPO_PROJECT_ID;
+  delete process.env.PUSH_ENVIRONMENT;
   delete process.env.STORAGE_PROVIDER;
   delete process.env.S3_ENDPOINT;
   delete process.env.S3_REGION;
@@ -58,6 +71,8 @@ describe("provider registry", () => {
     expect(getAIProvider()).toBeInstanceOf(MockAIProvider);
     expect(getEmailProvider()).toBeInstanceOf(MockEmailProvider);
     expect(getMapProvider()).toBeInstanceOf(MockMapProvider);
+    expect(getPaymentProvider()).toBeInstanceOf(MockPaymentProvider);
+    expect(getPushProvider()).toBeInstanceOf(MockPushProvider);
     expect(getStorageProvider()).toBeInstanceOf(LocalStorageProvider);
 
     expect(getProviderRegistryDiagnostics()).toMatchObject({
@@ -114,6 +129,13 @@ describe("provider registry", () => {
     process.env.RESEND_API_KEY = "re_test";
     process.env.MAP_PROVIDER = "google";
     process.env.GOOGLE_MAPS_API_KEY = "gm_test";
+    process.env.PAYMENT_PROVIDER = "razorpay";
+    process.env.RAZORPAY_KEY_ID = "rzp_test";
+    process.env.RAZORPAY_KEY_SECRET = "secret";
+    process.env.RAZORPAY_WEBHOOK_SECRET = "webhook";
+    process.env.RAZORPAY_MODE = "test";
+    process.env.PUSH_PROVIDER = "expo";
+    process.env.EXPO_PROJECT_ID = "expo-project-id";
     process.env.STORAGE_PROVIDER = "s3";
     process.env.S3_BUCKET = "zook-stage";
     process.env.S3_REGION = "ap-south-1";
@@ -123,6 +145,8 @@ describe("provider registry", () => {
     expect(getAIProvider()).toBeInstanceOf(OpenAIProvider);
     expect(getEmailProvider()).toBeInstanceOf(ResendEmailProvider);
     expect(getMapProvider()).toBeInstanceOf(GoogleMapProvider);
+    expect(getPaymentProvider()).toBeInstanceOf(RazorpayPaymentProvider);
+    expect(getPushProvider()).toBeInstanceOf(ExpoPushProvider);
     expect(getStorageProvider()).toBeInstanceOf(S3CompatibleStorageProvider);
 
     expect(getProviderRegistryDiagnostics()).toMatchObject({
@@ -148,6 +172,20 @@ describe("provider registry", () => {
         selectedProvider: "google",
         activeProvider: "google",
         provider: "google",
+        mode: "live"
+      },
+      payment: {
+        status: "ready",
+        selectedProvider: "razorpay",
+        activeProvider: "razorpay",
+        provider: "razorpay",
+        mode: "test"
+      },
+      push: {
+        status: "ready",
+        selectedProvider: "expo",
+        activeProvider: "expo",
+        provider: "expo",
         mode: "live"
       },
       storage: {
@@ -184,6 +222,8 @@ describe("provider registry", () => {
     process.env.AI_PROVIDER = "openai";
     process.env.EMAIL_PROVIDER = "resend";
     process.env.MAP_PROVIDER = "google";
+    process.env.PAYMENT_PROVIDER = "razorpay";
+    process.env.PUSH_PROVIDER = "expo";
     process.env.STORAGE_PROVIDER = "s3";
 
     expect(() => getAIProvider()).toThrowError(ProviderSetupError);
@@ -202,6 +242,14 @@ describe("provider registry", () => {
     expect(() => getStorageProvider()).toThrowError(/S3_BUCKET/);
     expect(() => getStorageProvider()).toThrowError(/STORAGE_PROVIDER=local/);
 
+    expect(() => getPaymentProvider()).toThrowError(ProviderSetupError);
+    expect(() => getPaymentProvider()).toThrowError(/RAZORPAY_KEY_ID/);
+    expect(() => getPaymentProvider()).toThrowError(/PAYMENT_PROVIDER=mock/);
+
+    expect(() => getPushProvider()).toThrowError(ProviderSetupError);
+    expect(() => getPushProvider()).toThrowError(/EXPO_PROJECT_ID/);
+    expect(() => getPushProvider()).toThrowError(/PUSH_PROVIDER=mock/);
+
     expect(getProviderRegistryDiagnostics()).toMatchObject({
       ai: {
         status: "misconfigured",
@@ -217,6 +265,16 @@ describe("provider registry", () => {
         status: "misconfigured",
         activeProvider: null,
         missingEnv: ["GOOGLE_MAPS_API_KEY"]
+      },
+      payment: {
+        status: "misconfigured",
+        activeProvider: null,
+        missingEnv: ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"]
+      },
+      push: {
+        status: "misconfigured",
+        activeProvider: null,
+        missingEnv: ["EXPO_PROJECT_ID"]
       },
       storage: {
         status: "misconfigured",

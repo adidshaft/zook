@@ -9,8 +9,8 @@ import type {
 import { MockAIProvider, OpenAIProvider, type AIProvider } from "./ai";
 import { MockEmailProvider, ResendEmailProvider, SMTPEmailProvider, type EmailProvider } from "./email";
 import { GoogleMapProvider, MockMapProvider, type MapProvider } from "./map";
-import { MockPaymentProvider, type PaymentProvider } from "./payment";
-import { MockPushProvider, type PushProvider } from "./push";
+import { MockPaymentProvider, RazorpayPaymentProvider, type PaymentProvider } from "./payment";
+import { ExpoPushProvider, MockPushProvider, type PushProvider } from "./push";
 import { LocalStorageProvider, S3CompatibleStorageProvider, type StorageProvider } from "./storage";
 
 type ProviderSetupErrorKind = "misconfigured" | "unsupported";
@@ -320,7 +320,14 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
 function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
   const selectionValue = env(process.env.PAYMENT_PROVIDER);
   const selectedProvider = selectionValue ?? "mock";
-  const envState = envFlags(["PAYMENT_PROVIDER"]);
+  const envState = envFlags([
+    "PAYMENT_PROVIDER",
+    "RAZORPAY_KEY_ID",
+    "RAZORPAY_KEY_SECRET",
+    "RAZORPAY_WEBHOOK_SECRET",
+    "RAZORPAY_MODE",
+    "RAZORPAY_CHECKOUT_THEME_COLOR"
+  ]);
 
   if (selectedProvider === "mock") {
     return createReadyResolution({
@@ -332,12 +339,56 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
     });
   }
 
+  if (selectedProvider === "razorpay") {
+    const keyId = env(process.env.RAZORPAY_KEY_ID);
+    const keySecret = env(process.env.RAZORPAY_KEY_SECRET);
+    const webhookSecret = env(process.env.RAZORPAY_WEBHOOK_SECRET);
+    const missingEnv = [
+      ...(keyId ? [] : ["RAZORPAY_KEY_ID"]),
+      ...(keySecret ? [] : ["RAZORPAY_KEY_SECRET"]),
+      ...(webhookSecret ? [] : ["RAZORPAY_WEBHOOK_SECRET"])
+    ];
+
+    if (missingEnv.length > 0) {
+      return createMisconfiguredResolution({
+        category: "payment",
+        selectionEnv: "PAYMENT_PROVIDER",
+        selectedProvider,
+        defaultProvider: "mock",
+        supportedProviders: ["mock", "razorpay"],
+        missingEnv,
+        env: envState,
+        mode: "test",
+        metadata: {
+          mode: env(process.env.RAZORPAY_MODE) ?? "test"
+        }
+      });
+    }
+
+    const mode = env(process.env.RAZORPAY_MODE) === "live" ? "live" : "test";
+    return createReadyResolution({
+      category: "payment",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new RazorpayPaymentProvider({
+        keyId: keyId as string,
+        keySecret: keySecret as string,
+        webhookSecret: webhookSecret as string,
+        mode,
+        ...(env(process.env.RAZORPAY_CHECKOUT_THEME_COLOR)
+          ? { themeColor: env(process.env.RAZORPAY_CHECKOUT_THEME_COLOR) as string }
+          : {})
+      })
+    });
+  }
+
   return createUnsupportedResolution({
     category: "payment",
     selectionEnv: "PAYMENT_PROVIDER",
     selectedProvider,
     defaultProvider: "mock",
-    supportedProviders: ["mock"],
+    supportedProviders: ["mock", "razorpay"],
     env: envState,
     mode: "live"
   });
@@ -583,7 +634,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
 function resolvePushProvider(): ProviderResolution<PushProvider> {
   const selectionValue = env(process.env.PUSH_PROVIDER);
   const selectedProvider = selectionValue ?? "mock";
-  const envState = envFlags(["PUSH_PROVIDER"]);
+  const envState = envFlags(["PUSH_PROVIDER", "EXPO_ACCESS_TOKEN", "EXPO_PROJECT_ID", "PUSH_ENVIRONMENT"]);
 
   if (selectedProvider === "mock") {
     return createReadyResolution({
@@ -595,12 +646,47 @@ function resolvePushProvider(): ProviderResolution<PushProvider> {
     });
   }
 
+  if (selectedProvider === "expo") {
+    const projectId = env(process.env.EXPO_PROJECT_ID);
+    if (!projectId) {
+      return createMisconfiguredResolution({
+        category: "push",
+        selectionEnv: "PUSH_PROVIDER",
+        selectedProvider,
+        defaultProvider: "mock",
+        supportedProviders: ["mock", "expo"],
+        missingEnv: ["EXPO_PROJECT_ID"],
+        env: envState,
+        mode: "live"
+      });
+    }
+
+    return createReadyResolution({
+      category: "push",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new ExpoPushProvider({
+        projectId,
+        environment:
+          env(process.env.PUSH_ENVIRONMENT) === "production"
+            ? "production"
+            : env(process.env.PUSH_ENVIRONMENT) === "preview"
+              ? "preview"
+              : "development",
+        ...(env(process.env.EXPO_ACCESS_TOKEN)
+          ? { accessToken: env(process.env.EXPO_ACCESS_TOKEN) as string }
+          : {})
+      })
+    });
+  }
+
   return createUnsupportedResolution({
     category: "push",
     selectionEnv: "PUSH_PROVIDER",
     selectedProvider,
     defaultProvider: "mock",
-    supportedProviders: ["mock"],
+    supportedProviders: ["mock", "expo"],
     env: envState,
     mode: "live"
   });

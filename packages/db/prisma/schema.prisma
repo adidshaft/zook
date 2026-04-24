@@ -116,8 +116,10 @@ enum PaymentStatus {
   SUCCEEDED
   FAILED
   CANCELLED
+  EXPIRED
   REFUNDED
   PARTIALLY_REFUNDED
+  DISPUTED
 }
 
 enum PaymentMode {

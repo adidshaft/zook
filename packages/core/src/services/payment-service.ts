@@ -7,7 +7,18 @@ export interface PaymentSessionState {
   status: PaymentStatus;
 }
 
-const terminalStatuses: PaymentStatus[] = ["SUCCEEDED", "FAILED", "CANCELLED", "REFUNDED"];
+const allowedTransitions: Record<PaymentStatus, PaymentStatus[]> = {
+  CREATED: ["PENDING", "REQUIRES_ACTION", "SUCCEEDED", "FAILED", "CANCELLED", "EXPIRED"],
+  PENDING: ["REQUIRES_ACTION", "SUCCEEDED", "FAILED", "CANCELLED", "EXPIRED"],
+  REQUIRES_ACTION: ["PENDING", "SUCCEEDED", "FAILED", "CANCELLED", "EXPIRED"],
+  SUCCEEDED: ["PARTIALLY_REFUNDED", "REFUNDED", "DISPUTED"],
+  FAILED: [],
+  CANCELLED: [],
+  EXPIRED: [],
+  REFUNDED: [],
+  PARTIALLY_REFUNDED: ["REFUNDED", "DISPUTED"],
+  DISPUTED: ["PARTIALLY_REFUNDED", "REFUNDED"]
+};
 
 export function transitionPaymentSession(
   session: PaymentSessionState,
@@ -17,13 +28,13 @@ export function transitionPaymentSession(
   if (input.expectedAmountPaise !== undefined && input.expectedAmountPaise !== session.amountPaise) {
     throw new Error("Payment amount mismatch");
   }
-  if (terminalStatuses.includes(session.status) && session.status !== nextStatus) {
-    throw new Error("Payment session already completed");
+  if (session.status === nextStatus) {
+    return session;
   }
-  if (session.status === "CREATED" && !["PENDING", "SUCCEEDED", "FAILED", "CANCELLED"].includes(nextStatus)) {
-    throw new Error("Invalid payment transition");
-  }
-  if (session.status === "PENDING" && !["SUCCEEDED", "FAILED", "CANCELLED"].includes(nextStatus)) {
+  if (!allowedTransitions[session.status].includes(nextStatus)) {
+    if (["SUCCEEDED", "FAILED", "CANCELLED", "EXPIRED", "REFUNDED", "PARTIALLY_REFUNDED", "DISPUTED"].includes(session.status)) {
+      throw new Error("Payment session already completed");
+    }
     throw new Error("Invalid payment transition");
   }
   return { ...session, status: nextStatus };

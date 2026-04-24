@@ -14,7 +14,8 @@ export const storageFileCategories = [
   "org_logo",
   "org_cover",
   "ai_generated_image",
-  "body_progress_photo"
+  "body_progress_photo",
+  "privacy_export"
 ] as const;
 
 export type StorageFileCategory = (typeof storageFileCategories)[number];
@@ -136,6 +137,13 @@ const fileRules: Record<
     defaultVisibility: "private",
     allowedVisibilities: ["private"],
     defaultExtension: "jpg"
+  },
+  privacy_export: {
+    maxSizeBytes: 12 * megabyte,
+    contentTypes: ["application/json"],
+    defaultVisibility: "private",
+    allowedVisibilities: ["private"],
+    defaultExtension: "json"
   }
 };
 

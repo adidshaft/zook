@@ -19,6 +19,7 @@ const privateReadPermissionsByCategory: Partial<Record<StorageFileCategory, Perm
   trainer_upi_qr: ["PT_RECORD", "TRAINERS_MANAGE"],
   profile_photo: ["MEMBERS_VIEW", "ATTENDANCE_APPROVE"],
   body_progress_photo: ["MEMBERS_VIEW"],
+  privacy_export: ["PRIVACY_VIEW_AUDIT"],
   org_logo: ["ORG_MANAGE_PROFILE"],
   org_cover: ["ORG_MANAGE_PROFILE"]
 };
@@ -41,7 +42,8 @@ const allowedVisibilityByCategory: Record<StorageFileCategory, StorageFileVisibi
   org_logo: ["public"],
   org_cover: ["public"],
   ai_generated_image: ["org", "public"],
-  body_progress_photo: ["private"]
+  body_progress_photo: ["private"],
+  privacy_export: ["private"]
 };
 
 const defaultVisibilityByCategory: Record<StorageFileCategory, StorageFileVisibility> = {
@@ -53,7 +55,8 @@ const defaultVisibilityByCategory: Record<StorageFileCategory, StorageFileVisibi
   org_logo: "public",
   org_cover: "public",
   ai_generated_image: "org",
-  body_progress_photo: "private"
+  body_progress_photo: "private",
+  privacy_export: "private"
 };
 
 export function buildFileAssetUrl(fileId: string) {

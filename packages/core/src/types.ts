@@ -82,8 +82,10 @@ export type PaymentStatus =
   | "SUCCEEDED"
   | "FAILED"
   | "CANCELLED"
+  | "EXPIRED"
   | "REFUNDED"
-  | "PARTIALLY_REFUNDED";
+  | "PARTIALLY_REFUNDED"
+  | "DISPUTED";
 export type PaymentMode = "MOCK_ONLINE" | "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER";
 export type PaymentPurpose =
   | "SAAS_BILLING"
@@ -115,7 +117,7 @@ export type PlanType =
 export type PlanStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 export type AIProviderType = "MOCK" | "OPENAI";
 export type ProviderCategory = "ai" | "email" | "map" | "payment" | "push" | "sms" | "storage";
-export type ProviderMode = "mock" | "live" | "local";
+export type ProviderMode = "mock" | "test" | "live" | "local";
 export type ProviderDiagnosticStatus = "default" | "ready" | "misconfigured" | "unsupported";
 export type ProviderDiagnosticValue = string | number | boolean | null;
 export type ProviderDiagnosticMetadata = Record<string, ProviderDiagnosticValue>;
@@ -144,11 +146,17 @@ export type AIRequestType = "CHAT" | "STRUCTURED_PLAN" | "IMAGE" | "SCOPE_CLASSI
 export type ProductCategory = "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
 export type OrderStatus = "PENDING_PAYMENT" | "PAID" | "READY_FOR_PICKUP" | "FULFILLED" | "CANCELLED" | "REFUNDED";
 export type ConsentType =
+  | "TERMS"
+  | "PRIVACY_POLICY"
   | "MARKETING"
   | "AI_PERSONALIZATION"
   | "PROFILE_PHOTO_ATTENDANCE"
   | "GUARDIAN"
+  | "GUARDIAN_CONSENT"
   | "NOTIFICATION_PUSH"
+  | "PUSH_NOTIFICATIONS"
+  | "TRAINER_VISIBLE_TRACKING"
+  | "PLAN_ASSIGNMENT"
   | "DATA_EXPORT"
   | "ACCOUNT_DELETION";
 export type ConsentStatus = "PENDING" | "GRANTED" | "REVOKED" | "DENIED";

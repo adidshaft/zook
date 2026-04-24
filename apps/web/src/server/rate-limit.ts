@@ -26,6 +26,9 @@ export const defaultRateLimitRules = {
   aiRequestByUser: { limit: 20, windowMs: 10 * 60 * 1000 },
   notificationSendByActor: { limit: 12, windowMs: 10 * 60 * 1000 },
   paymentSessionByActor: { limit: 12, windowMs: 10 * 60 * 1000 },
+  pushRegisterByActor: { limit: 10, windowMs: 10 * 60 * 1000 },
+  guardianConsentByActor: { limit: 6, windowMs: 30 * 60 * 1000 },
+  privacyRequestByActor: { limit: 6, windowMs: 60 * 60 * 1000 },
   fileUploadByActor: { limit: 24, windowMs: 10 * 60 * 1000 },
   qrScanByActor: { limit: 20, windowMs: 5 * 60 * 1000 }
 } as const satisfies Record<string, RateLimitRule>;

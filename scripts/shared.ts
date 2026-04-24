@@ -56,7 +56,7 @@ export const providerSelections = [
     label: "Payment provider",
     envKey: "PAYMENT_PROVIDER",
     defaultValue: "mock",
-    implementedProviders: ["mock"],
+    implementedProviders: ["mock", "razorpay"],
     liveProviders: {
       razorpay: ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"]
     }
@@ -93,9 +93,9 @@ export const providerSelections = [
     label: "Push provider",
     envKey: "PUSH_PROVIDER",
     defaultValue: "mock",
-    implementedProviders: ["mock"],
+    implementedProviders: ["mock", "expo"],
     liveProviders: {
-      expo: ["EXPO_ACCESS_TOKEN"]
+      expo: ["EXPO_PROJECT_ID"]
     }
   }
 ] as const;
