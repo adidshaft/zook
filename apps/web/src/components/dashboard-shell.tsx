@@ -16,6 +16,7 @@ import { GlassCard, Pill } from "./glass-card";
 import { ZookLogo } from "./zook-logo";
 import { AttendanceQrPanel } from "./attendance-qr-panel";
 import { AttendanceApprovalsPanel } from "./attendance-approvals-panel";
+import { NotificationComposerPanel } from "./notification-composer-panel";
 import { formatInr, titleFromSection } from "@/lib/format";
 
 const nav = [
@@ -144,6 +145,7 @@ export function DashboardShell({
           </div>
 
           {sectionKey === "attendance/approvals" && activeOrgId ? <AttendanceApprovalsPanel orgId={activeOrgId} /> : null}
+          {sectionKey === "notifications" && activeOrgId ? <NotificationComposerPanel orgId={activeOrgId} /> : null}
 
           <div className="grid gap-4 xl:grid-cols-3">
             <GlassCard className="xl:col-span-2">

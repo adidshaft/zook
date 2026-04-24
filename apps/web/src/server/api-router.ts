@@ -21,6 +21,8 @@ import {
 import { MockAIProvider, MockEmailProvider, MockMapProvider } from "@zook/core/providers";
 import {
   AuthService,
+  canReceiveNotification,
+  canSendNotification,
   computeSubscriptionWindow,
   consumeVisit,
   type OtpChallengeRecord,
@@ -95,6 +97,22 @@ const manualAttendanceSchema = z.object({
   branchId: z.string().optional(),
   reason: z.string().trim().min(2).max(200),
   notes: z.string().max(500).optional()
+});
+
+const notificationComposerSchema = notificationSchema.extend({
+  audience: z.enum(["selected_members", "all_active_members", "expiring_soon", "assigned_clients", "membership_plan"]),
+  selectedUserIds: z.array(z.string()).default([]),
+  planId: z.string().optional(),
+  excludeMinors: z.boolean().default(false)
+});
+
+const notificationPreferenceSchema = z.object({
+  orgId: z.string().optional(),
+  transactional: z.boolean().optional(),
+  operational: z.boolean().optional(),
+  promotional: z.boolean().optional(),
+  engagement: z.boolean().optional(),
+  pushEnabled: z.boolean().optional()
 });
 
 function clean<T extends Record<string, unknown>>(input: T): any {
@@ -246,6 +264,116 @@ async function createDirectNotification(input: {
     });
   }
   return notification;
+}
+
+function notificationPreferenceAllowsType(
+  preference: {
+    transactional: boolean;
+    operational: boolean;
+    promotional: boolean;
+    engagement: boolean;
+  } | null | undefined,
+  type: "TRANSACTIONAL" | "OPERATIONAL" | "PROMOTIONAL" | "ENGAGEMENT" | "PLAN" | "SECURITY"
+) {
+  if (!preference) {
+    return true;
+  }
+  if (type === "TRANSACTIONAL" || type === "SECURITY" || type === "PLAN") {
+    return true;
+  }
+  if (type === "OPERATIONAL") {
+    return preference.operational;
+  }
+  if (type === "PROMOTIONAL") {
+    return preference.promotional;
+  }
+  if (type === "ENGAGEMENT") {
+    return preference.engagement;
+  }
+  return true;
+}
+
+async function resolveNotificationRecipients(input: {
+  orgId: string;
+  senderUserId: string;
+  audience: "selected_members" | "all_active_members" | "expiring_soon" | "assigned_clients" | "membership_plan";
+  type: "TRANSACTIONAL" | "OPERATIONAL" | "PROMOTIONAL" | "ENGAGEMENT" | "PLAN" | "SECURITY";
+  selectedUserIds?: string[];
+  planId?: string;
+  excludeMinors?: boolean;
+}) {
+  const today = new Date();
+  const nextWeek = new Date();
+  nextWeek.setDate(today.getDate() + 7);
+
+  let candidateUserIds: string[] = [];
+  if (input.audience === "selected_members") {
+    candidateUserIds = input.selectedUserIds ?? [];
+  } else if (input.audience === "assigned_clients") {
+    const assignments = await prisma.trainerAssignment.findMany({
+      where: { orgId: input.orgId, trainerUserId: input.senderUserId, active: true },
+      select: { memberUserId: true }
+    });
+    candidateUserIds = assignments.map((assignment) => assignment.memberUserId);
+  } else if (input.audience === "membership_plan") {
+    if (!input.planId) {
+      throw validationError("A planId is required for membership-plan audiences.");
+    }
+    const subscriptions = await prisma.memberSubscription.findMany({
+      where: { orgId: input.orgId, planId: input.planId, status: "ACTIVE" },
+      select: { memberUserId: true }
+    });
+    candidateUserIds = subscriptions.map((subscription) => subscription.memberUserId);
+  } else {
+    const subscriptions = await prisma.memberSubscription.findMany({
+      where: {
+        orgId: input.orgId,
+        status: "ACTIVE",
+        ...(input.audience === "expiring_soon"
+          ? { endsAt: { gte: today, lte: nextWeek } }
+          : {})
+      },
+      select: { memberUserId: true }
+    });
+    candidateUserIds = subscriptions.map((subscription) => subscription.memberUserId);
+  }
+
+  const uniqueUserIds = Array.from(new Set(candidateUserIds));
+  if (!uniqueUserIds.length) {
+    return [];
+  }
+
+  const [users, preferences] = await Promise.all([
+    prisma.user.findMany({ where: { id: { in: uniqueUserIds } } }),
+    prisma.userNotificationPreference.findMany({
+      where: { userId: { in: uniqueUserIds }, OR: [{ orgId: input.orgId }, { orgId: null }] }
+    })
+  ]);
+  const preferenceByUserId = new Map<string, (typeof preferences)[number]>();
+  for (const preference of preferences) {
+    if (!preferenceByUserId.has(preference.userId) || preference.orgId === input.orgId) {
+      preferenceByUserId.set(preference.userId, preference);
+    }
+  }
+
+  return users
+    .filter((user) => {
+      if (input.excludeMinors && user.isMinor) {
+        return false;
+      }
+      const preference = preferenceByUserId.get(user.id);
+      if (!notificationPreferenceAllowsType(preference, input.type)) {
+        return false;
+      }
+      return canReceiveNotification(input.type, {
+        isMinor: user.isMinor,
+        guardianConsentGranted: !user.guardianPending,
+        marketingOptIn: preference ? preference.promotional && user.marketingOptIn : user.marketingOptIn,
+        aiConsent: user.aiConsent,
+        hasProfilePhoto: Boolean(user.profilePhotoUrl)
+      });
+    })
+    .map((user) => user.id);
 }
 
 function toCouponInput(coupon: {
@@ -2456,7 +2584,32 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
-    const body = notificationSchema.parse(await readJson(request));
+    const body = notificationComposerSchema.parse(await readJson(request));
+    const permissionAudience =
+      body.audience === "selected_members"
+        ? "selected"
+        : body.audience === "membership_plan"
+          ? "plan"
+          : body.audience;
+    if (
+      !canSendNotification({
+        roles: ctx.roles,
+        permissions: ctx.permissions,
+        type: body.type,
+        audience: permissionAudience
+      })
+    ) {
+      throw forbiddenError("You do not have permission to send this notification.");
+    }
+    const recipientUserIds = await resolveNotificationRecipients({
+      orgId,
+      senderUserId: userId,
+      audience: body.audience,
+      type: body.type,
+      selectedUserIds: body.selectedUserIds,
+      ...(body.planId ? { planId: body.planId } : {}),
+      excludeMinors: body.excludeMinors
+    });
     const notification = await prisma.notification.create({
       data: clean({
         orgId,
@@ -2468,19 +2621,35 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         pushEnabled: body.pushEnabled,
         scheduledAt: body.scheduleAt ? new Date(body.scheduleAt) : undefined,
         status: body.scheduleAt ? "SCHEDULED" : "SENT",
-        sentAt: body.scheduleAt ? undefined : new Date()
+        sentAt: body.scheduleAt ? undefined : new Date(),
+        metadata: clean({
+          selectedUserIds: body.selectedUserIds.length ? body.selectedUserIds : undefined,
+          planId: body.planId,
+          excludeMinors: body.excludeMinors
+        }) as Prisma.InputJsonValue
       })
     });
+    if (recipientUserIds.length) {
+      await prisma.notificationRecipient.createMany({
+        data: recipientUserIds.map((recipientUserId) => ({
+          notificationId: notification.id,
+          userId: recipientUserId,
+          deliveryStatus: body.scheduleAt ? "scheduled" : "in_app",
+          ...(body.scheduleAt ? {} : { deliveredAt: new Date() })
+        })),
+        skipDuplicates: true
+      });
+    }
     await writeAuditLog({
       request,
       orgId,
       actorUserId: userId,
-      action: "notification.created",
+      action: "notification.sent",
       entityType: "notification",
       entityId: notification.id,
-      metadata: { type: notification.type, audience: notification.audience }
+      metadata: { type: notification.type, audience: notification.audience, recipients: recipientUserIds.length }
     });
-    return ok({ notification });
+    return ok({ notification, recipientCount: recipientUserIds.length });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "notifications"])) {
     const orgId = path[1]!;
@@ -2496,7 +2665,74 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   }
   if (request.method === "GET" && pathMatches(path, ["me", "notifications"])) {
     const userId = requireAuth(await getRequestContext(request));
-    return ok({ notifications: await prisma.notificationRecipient.findMany({ where: { userId }, take: 30 }) });
+    const recipients = await prisma.notificationRecipient.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 50
+    });
+    const notifications = await prisma.notification.findMany({
+      where: { id: { in: recipients.map((recipient) => recipient.notificationId) } }
+    });
+    return ok({
+      notifications: recipients.map((recipient) => ({
+        ...recipient,
+        notification: notifications.find((notification) => notification.id === recipient.notificationId) ?? null
+      }))
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "notifications", /.+/, "read"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const record = await prisma.notificationRecipient.findFirst({
+      where: { id: path[2]!, userId }
+    });
+    if (!record) {
+      throw notFoundError("Notification not found");
+    }
+    return ok({
+      recipient: await prisma.notificationRecipient.update({
+        where: { id: record.id },
+        data: { readAt: record.readAt ?? new Date() }
+      })
+    });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["me", "notification-preferences"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const body = notificationPreferenceSchema.parse(await readJson(request));
+    const existingPreference = await prisma.userNotificationPreference.findFirst({
+      where: { userId, ...(body.orgId ? { orgId: body.orgId } : { orgId: null }) }
+    });
+    const preference = existingPreference
+      ? await prisma.userNotificationPreference.update({
+          where: { id: existingPreference.id },
+          data: clean({
+            transactional: body.transactional,
+            operational: body.operational,
+            promotional: body.promotional,
+            engagement: body.engagement,
+            pushEnabled: body.pushEnabled
+          })
+        })
+      : await prisma.userNotificationPreference.create({
+          data: clean({
+            orgId: body.orgId ?? null,
+            userId,
+            transactional: body.transactional ?? true,
+            operational: body.operational ?? true,
+            promotional: body.promotional ?? true,
+            engagement: body.engagement ?? true,
+            pushEnabled: body.pushEnabled ?? false
+          })
+        });
+    return ok({ preference });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "notification-preferences"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    return ok({
+      preferences: await prisma.userNotificationPreference.findMany({
+        where: { userId },
+        orderBy: { updatedAt: "desc" }
+      })
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "audit-logs"])) {
     const orgId = path[1]!;

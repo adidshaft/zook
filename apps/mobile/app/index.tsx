@@ -118,6 +118,7 @@ export default function Home() {
               <Text style={styles.detail} selectable>
                 {memberHome?.assignedPlans ?? 0} plans · {memberHome?.activeGoals ?? 0} goals
               </Text>
+              <PrimaryLink href="/notifications">Open Center</PrimaryLink>
             </Card>
           </View>
 
