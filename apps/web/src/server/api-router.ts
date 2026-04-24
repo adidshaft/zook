@@ -76,6 +76,7 @@ import {
   buildFileAssetUrl,
   resolveFileVisibility
 } from "./files";
+import { ReportsService, canExportOrgReport, parseReportFilters, renderCsv, type OrgReportType } from "./reports-service";
 import {
   getMemberHomeData,
   getMyShopOrders,
@@ -87,6 +88,7 @@ const emailProvider = getEmailProvider();
 const mapProvider = getMapProvider();
 const aiProvider = getAIProvider();
 const storageProvider = getStorageProvider();
+const reportsService = new ReportsService();
 const personalTrackingService = new PersonalTrackingService();
 
 const joinRequestSchema = z.object({
@@ -1896,6 +1898,107 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     });
     return ok({ org });
   }
+  return undefined;
+}
+
+async function handleReports(request: NextRequest, path: string[]) {
+  const csvHeaders = (fileName: string) => ({
+    "content-type": "text/csv; charset=utf-8",
+    "content-disposition": `attachment; filename="${fileName}"`
+  });
+
+  const reportRoutes: Record<string, OrgReportType> = {
+    "attendance.csv": "attendance",
+    "revenue.csv": "revenue",
+    "manual-cash.csv": "manual-cash",
+    "expiring-members.csv": "expiring-members",
+    "referrals.csv": "referrals",
+    "shop.csv": "shop",
+    "ai-usage.csv": "ai-usage"
+  };
+
+  if (request.method === "GET" && path.length === 4 && path[0] === "orgs" && path[2] === "reports" && path[3]) {
+    const orgId = path[1]!;
+    const report = reportRoutes[path[3]!];
+    if (!report) {
+      return undefined;
+    }
+
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    const filters = parseReportFilters(request.nextUrl.searchParams);
+
+    if (
+      !canExportOrgReport({
+        report,
+        ctx,
+        actorUserId: userId,
+        ...(filters.trainerId ? { trainerId: filters.trainerId } : {})
+      })
+    ) {
+      throw forbiddenError("You do not have permission to export this report.");
+    }
+
+    const rows =
+      report === "attendance"
+        ? await reportsService.attendanceReport(orgId, filters)
+        : report === "revenue"
+          ? await reportsService.revenueReport(orgId, filters)
+          : report === "manual-cash"
+            ? await reportsService.manualCashReport(orgId, filters)
+            : report === "expiring-members"
+              ? await reportsService.membershipExpiryReport(orgId, filters)
+              : report === "referrals"
+                ? await reportsService.referralReport(orgId, filters)
+                : report === "shop"
+                  ? await reportsService.shopReport(orgId, filters)
+                  : await reportsService.aiUsageReport(orgId, filters);
+
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "report.exported",
+      entityType: "report",
+      entityId: report,
+      metadata: {
+        format: "csv",
+        rowCount: rows.length,
+        filters: Object.fromEntries(request.nextUrl.searchParams.entries())
+      }
+    });
+
+    return new NextResponse(renderCsv({ report, generatedBy: userId, rows }), {
+      headers: csvHeaders(`zook-${report}.csv`)
+    });
+  }
+
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "audit-logs.csv"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    if (!canExportOrgReport({ report: "audit-logs", ctx, actorUserId: userId })) {
+      throw forbiddenError("You do not have permission to export audit logs.");
+    }
+    const rows = await reportsService.auditLogReport(orgId, parseReportFilters(request.nextUrl.searchParams));
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "report.exported",
+      entityType: "report",
+      entityId: "audit-logs",
+      metadata: {
+        format: "csv",
+        rowCount: rows.length,
+        filters: Object.fromEntries(request.nextUrl.searchParams.entries())
+      }
+    });
+    return new NextResponse(renderCsv({ report: "audit-logs", generatedBy: userId, rows }), {
+      headers: csvHeaders("zook-audit-logs.csv")
+    });
+  }
+
   return undefined;
 }
 
@@ -4010,6 +4113,7 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
         handleTracking,
         handleFiles,
         handleOrganizations,
+        handleReports,
         handleMembershipPayments,
         handleCouponsReferrals,
         handleAttendance,
