@@ -34,7 +34,6 @@ import {
   createSignedQrToken,
   createTrialWindow,
   decideAttendanceStatus,
-  defaultAIQuotaForRole,
   encodeQrPayload,
   fulfillShopOrder,
   markShopOrderPaid,
@@ -2634,7 +2633,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "pt-plans"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
-    const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
+    requireOrgPermission(ctx, orgId, "PT_RECORD");
     const body = (await readJson(request)) as { name: string; description?: string; sessionCount?: number; durationDays?: number; pricePaise: number };
     const plan = await prisma.personalTrainingPlan.create({
       data: clean({

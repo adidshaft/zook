@@ -4,8 +4,8 @@
 
 - Node.js 22+
 - pnpm 10+
-- Docker Desktop or a local PostgreSQL 16 database
-- Expo Go for mobile testing
+- Docker Desktop or another PostgreSQL 16 instance
+- Expo Go or a simulator/emulator for mobile
 
 ## Setup
 
@@ -16,15 +16,23 @@ docker compose up -d
 pnpm db:generate
 pnpm db:push
 pnpm db:seed
+```
+
+## Run The Apps
+
+```bash
 pnpm dev:web
 pnpm dev:mobile
 ```
 
-Web runs at [http://localhost:3000](http://localhost:3000). Expo prints a QR code for iOS/Android via Expo Go.
+- Web defaults to [http://localhost:3000](http://localhost:3000)
+- Mobile reads `MOBILE_API_BASE_URL` / `EXPO_PUBLIC_API_BASE_URL`
+- For simulator/device specifics, see [docs/mobile-runtime.md](./mobile-runtime.md)
+- If you change `.env`, restart the web dev server so `DATABASE_URL`, provider envs, and session secrets are picked up.
 
 ## Seed Logins
 
-Use development OTP `000000`.
+Development OTP: `000000`
 
 - `platform@zook.local`
 - `owner@zook.local`
@@ -34,32 +42,44 @@ Use development OTP `000000`.
 - `member@zook.local`
 - `minor@zook.local`
 
-## Mock Checkout
+## Common Local Flows
 
-1. Start from a membership or shop checkout.
-2. The API creates a `PaymentSession` and returns `/checkout/mock/{sessionId}`.
-3. Choose success, failure, or pending.
-4. The server updates payment state and activates membership or confirms stock/order only after success.
+### Membership checkout
 
-## QR Attendance
+1. Open a gym from `/find-gyms` on mobile or `/g/{username}` on web.
+2. Create a membership checkout.
+3. Finish the mock hosted payment at `/checkout/mock/{sessionId}`.
+4. Subscription activation happens only after the server marks the session successful.
+
+### QR attendance
 
 1. Open `/dashboard/attendance/qr-display`.
-2. A rolling signed token refreshes every few minutes.
-3. In mobile, open `Scan`.
-4. Scan or paste the token.
-5. Attendance is auto-approved, exception-approved, or queued depending on org settings.
+2. Copy the live QR token.
+3. On mobile, open `Scan`.
+4. Scan it with the camera or paste it into the manual token field.
+5. The backend validates the signed token and returns approved / pending / rejected status.
 
-## Role Switching
+### Shop order
 
-Seed users are role-specific. The dashboard role selector can also switch active organization role contexts when a user has multiple roles.
+1. Open `/shop` on mobile.
+2. Choose a product.
+3. Finish mock checkout.
+4. The order moves to ready-for-pickup and inventory is reduced only after success.
 
-## Enabling Future Real Providers
+## Commands
 
-Set provider env vars in `.env`:
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test:unit
+pnpm test:services
+pnpm test:web
+```
 
-- `AI_PROVIDER=openai` and `OPENAI_API_KEY=...`
-- `MAP_PROVIDER=google` and `GOOGLE_MAPS_API_KEY=...`
-- `PAYMENT_PROVIDER=razorpay|cashfree|phonepe|payu` with provider credentials
-- `STORAGE_PROVIDER=s3` with S3/R2-compatible credentials
+Database-backed Playwright flows:
 
-Mocks remain the default and are required to keep local development free.
+```bash
+RUN_DB_WEB_TESTS=1 pnpm test:web
+```
+
+If the OTP form does not advance during DB-gated tests, confirm the Next.js process was started with `DATABASE_URL` in its environment.

@@ -4,66 +4,61 @@
 
 ```text
 apps/
-  mobile/  Expo Router mobile app
-  web/     Next.js App Router dashboard and API host
+  mobile/  Expo Router app for members + staff
+  web/     Next.js App Router dashboard, public pages, API host
 packages/
-  core/    shared types, validators, permissions, service logic, providers
+  core/    shared types, validators, policies, services, providers
   db/      Prisma schema, client, seed
-  ui/      design tokens and reusable primitives
-  config/  shared TypeScript, ESLint, Prettier config
+  ui/      shared tokens and web primitives
+  config/  shared TS / ESLint / Prettier config
 docs/
 ```
 
 ## Runtime Shape
 
-The web app hosts API route handlers under `/api`. Route handlers parse Zod input, build a request context, call service-layer functions, and return typed JSON. Business rules live in `@zook/core`, which keeps service tests fast and mostly database-free.
+- `apps/web` hosts the API through a centralized catch-all adapter at `/api`.
+- Route handlers validate input with Zod, build request context, enforce RBAC, call service/policy helpers, and return a typed JSON envelope.
+- `packages/core` contains policy logic and provider abstractions so most business-rule tests stay database-light.
+- `packages/db` owns Prisma schema and seed data.
 
-Prisma is the database layer for local PostgreSQL. The seed script creates realistic users, organizations, plans, coupons, attendance, notifications, products, AI logs, and shop orders.
+## Request Context
 
-## Provider Boundaries
+The request context resolves:
 
-Provider factories choose mocks by default:
+- current session from cookie or bearer token
+- current user
+- active organization context
+- org-scoped roles and permission overrides
+- platform-admin capability
 
-- `EmailProvider`: mock OTP and notification email.
-- `SmsProvider`: future OTP/SMS integration stub.
-- `PaymentProvider`: mock hosted checkout with simulated completion.
-- `MapProvider`: mock geocoding and Google Maps link resolution.
-- `AIProvider`: deterministic mock; OpenAI-ready when `OPENAI_API_KEY` exists.
-- `PushProvider`: mock push delivery logs.
-- `StorageProvider`: local storage with S3/R2-compatible interface.
+Every org-scoped mutation now requires explicit `orgId` and permission checks.
 
-## Service Layer
+## Provider Boundary
 
-Core services:
+`packages/core/src/providers/registry.ts` is the provider seam for backend runtime selection.
 
-- `AuthService`
-- `OrganizationService`
-- `PermissionService`
-- `StaffService`
-- `MembershipService`
-- `PaymentService`
-- `CouponService`
-- `ReferralService`
-- `MapService`
-- `AttendanceService`
-- `TrainerService`
-- `PTService`
-- `PlanService`
-- `AIService`
-- `NotificationService`
-- `GoalService`
-- `GamificationService`
-- `ShopService`
-- `PrivacyService`
-- `AuditLogService`
-- `PlatformAdminService`
+Current selection behavior:
 
-Services receive repositories and providers through dependency injection. Tests use in-memory repositories and deterministic providers.
+- email: mock by default, Resend when configured
+- AI: mock by default, OpenAI when configured
+- maps: mock by default, Google Maps when configured
+- payment: mock default
+- push: mock default
+- storage: local default
+
+This keeps local development cheap while making paid providers a backend-only swap later.
+
+## Data Flow Highlights
+
+- **Auth**: OTP challenge -> hashed session token -> web cookie or mobile SecureStore token -> `/api/auth/me`
+- **Memberships**: join request or direct checkout -> `PaymentSession` -> mock checkout -> confirmed server-side activation
+- **Attendance**: QR token generation -> signed token validation -> attendance record -> approval queue -> membership usage
+- **Notifications**: sender permission check -> recipient expansion -> `Notification` + `NotificationRecipient`
+- **Shop**: order -> mock checkout -> stock decrement + inventory movement + pickup code on success
+- **Tracking**: workout/habit/body progress entries persist directly through `/api/me/tracking/*`
 
 ## UI Architecture
 
-The dashboard is dark-first and data-friendly: sidebar navigation, glass cards, responsive tables, filters, and primary-action panels. The mobile app uses Expo Router with role-based route groups and a floating dock pattern. Shared Zook tokens live in `@zook/ui`.
-
-## Data Isolation
-
-All tenant-scoped models include `orgId` and are indexed by organization. Service methods reject org-scoped operations without a matching membership, role, or platform-admin context. Platform routes are separate and require `PLATFORM_ADMIN`.
+- Web is still a single dark glass dashboard shell, but key sections now host real operational panels (QR token, approvals, notifications).
+- Mobile uses lightweight query-driven screens instead of a heavy global state store.
+- Seed data is kept so the product remains demoable after `pnpm db:seed`.

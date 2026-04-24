@@ -1,4 +1,3 @@
-import { prisma } from "@zook/db";
 import { getOrganizationDashboardData, getPlatformDashboardData } from "@/server/read-models";
 
 export async function getDashboardData(orgId?: string) {

@@ -2,6 +2,8 @@
 
 Zook is an India-first operating system for small and medium gyms. This monorepo contains the mobile app, web dashboard, API backend, Prisma database package, shared core domain logic, and provider abstractions for local-first development.
 
+This repository is currently at **Phase 2: Backend-Integrated Beta Foundation**. The core flows are no longer just scaffolded UI: auth, memberships, attendance, notifications, tracking, and shop operations now use real API/database state while keeping mock providers as the default local runtime.
+
 ## What Is Built
 
 - Expo Router mobile app for iOS/Android with member, owner, receptionist, and trainer flows.
@@ -9,6 +11,12 @@ Zook is an India-first operating system for small and medium gyms. This monorepo
 - Next.js API route handlers backed by a service-layer architecture and Prisma.
 - PostgreSQL schema covering auth, tenancy, RBAC, memberships, payments, coupons, referrals, QR attendance, PT, plans, AI, notifications, goals, shop, privacy, and platform admin.
 - Deterministic mock providers for email OTP, payments, maps, AI, push, SMS, and storage.
+- Unified OTP/session auth across web and mobile.
+- Persistent personal tracking for workouts, exercise entries, body progress, and habits.
+- Real join-mode enforcement for open join, approval-required gyms, invite-only access, and manual/offline activation.
+- Real QR attendance validation, approval queue actions, visit consumption, and manual override logging.
+- Persisted in-app notifications with recipient fanout, read state, and preference records.
+- Shop stock movement, pickup code creation, and inventory adjustment records tied to mock payment success.
 - Seed data for Iron House Fitness and PeakLab Gym.
 - Vitest unit tests for core business rules and Playwright smoke tests for web flows.
 
@@ -39,7 +47,7 @@ Seed accounts:
 | Member | `member@zook.local` |
 | Minor member | `minor@zook.local` |
 
-See [docs/local-development.md](docs/local-development.md) for full run instructions and the manual acceptance checklist.
+See [docs/local-development.md](docs/local-development.md) for full run instructions and the manual acceptance checklist. For simulator/device setup details, use [docs/mobile-runtime.md](docs/mobile-runtime.md).
 
 ## Key Routes
 
@@ -74,10 +82,15 @@ Mobile:
 
 - `/` member home with dominant Scan QR action
 - `/find-gyms`
+- `/gym/[username]`
 - `/scan`
 - `/plans`
+- `/notifications`
 - `/shop`
 - `/profile`
+- `/tracking`
+- `/tracking-history`
+- `/tracking-entry`
 - `/owner`
 - `/reception`
 - `/trainer`
@@ -107,9 +120,9 @@ AI, payments, maps, push, and storage are never called directly from the mobile 
 ## Testing
 
 ```bash
-pnpm --filter @zook/core test
-pnpm --filter @zook/web typecheck
-pnpm --filter @zook/mobile typecheck
+pnpm test:unit
+pnpm test:services
+pnpm typecheck
 pnpm test:web
 ```
 
@@ -119,13 +132,15 @@ Database-backed Playwright login/mutation checks are gated with:
 RUN_DB_WEB_TESTS=1 pnpm test:web
 ```
 
+If those DB-gated tests fail before the OTP field appears, restart the web server with `.env` loaded so `DATABASE_URL` is present for the Next.js process.
+
 ## Known MVP Limitations
 
 - Mock checkout and provider mocks are intentionally local-only.
-- Mobile screens are functional MVP surfaces with mocked local state; production API sync can be wired through TanStack Query.
-- QR scan UI uses Expo Camera; simulator testing may require a physical device or pasted QR payload.
+- Major mobile surfaces are API-backed, but trainer/owner tooling is still intentionally lightweight rather than a full operational suite.
+- QR scan UI supports camera scan and pasted token entry; simulator testing still works best with the manual-token path.
 - Multi-branch data model exists, but UI focuses on one branch.
-- OpenAI, Google Maps, real payments, SMS, production push, and S3/R2 are prepared but not implemented with live credentials.
+- Provider switching is env-driven and mock-first; OpenAI, Resend email, and Google Maps scaffolds exist, but paid/live integrations should still be treated as beta.
 - The physical iOS dev build omits the native `expo-notifications` package until an Apple provisioning profile with Push Notifications is configured; the backend push abstraction remains mocked.
 - Database-dependent commands require local PostgreSQL via Docker.
 

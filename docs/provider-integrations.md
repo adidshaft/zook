@@ -1,47 +1,123 @@
 # Provider Integrations
 
-All paid or external services are abstracted and mocked by default.
+Zook is mock-first by default. Real providers are selected only through backend factories in `packages/core/src/providers/registry.ts`.
 
-## Payment
+## Selection Functions
 
-`PaymentProvider`:
+- `getEmailProvider()`
+- `getPaymentProvider()`
+- `getMapProvider()`
+- `getAIProvider()`
+- `getStorageProvider()`
+- `getPushProvider()`
 
-- `createCheckoutSession()`
-- `verifyWebhook()`
-- `getPaymentStatus()`
-- `refundPayment()`
-- `createMandate()`
-- `cancelMandate()`
+If env configuration is missing, the registry falls back safely to mock or local providers.
 
-Mock sessions live under `/checkout/mock/{sessionId}`. Future provider modules can map Razorpay, Cashfree, PhonePe, PayU, UPI AutoPay, cards, or mandates into the same interface.
+## Email
+
+Env:
+
+- `EMAIL_PROVIDER=mock|resend|smtp`
+- `RESEND_API_KEY`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+
+Current state:
+
+- `mock`: fully supported and default
+- `resend`: scaffolded and optional
+- `smtp`: env placeholders documented, implementation still future work
+
+## Payments
+
+Env:
+
+- `PAYMENT_PROVIDER=mock`
+
+Current state:
+
+- `mock`: fully supported and default
+- real provider classes can be added later behind `PaymentProvider`
+
+Mock checkout lives at `/checkout/mock/{sessionId}` and drives membership or shop activation through backend payment-session completion.
 
 ## Maps
 
-`MapProvider`:
+Env:
 
-- `resolveGoogleMapsLink()`
-- `searchPlaces()`
-- `geocodeAddress()`
-- `reverseGeocode()`
+- `MAP_PROVIDER=mock|google`
+- `GOOGLE_MAPS_API_KEY`
 
-The mock provider returns deterministic Indian city coordinates and stores original map URLs. The UI falls back to list and map-placeholder panels when no SDK/API key exists.
+Current state:
+
+- `mock`: deterministic India-focused responses
+- `google`: scaffolded for geocode/search/link resolution, but falls back safely if no key is present
 
 ## AI
 
-`AIProvider`:
+Env:
 
-- `generateText()`
-- `generateStructuredPlan()`
-- `generateImage()`
-- `classifyScope()`
-- `classifySafety()`
+- `AI_PROVIDER=mock|openai`
+- `OPENAI_API_KEY`
 
-OpenAI can be enabled backend-side only with `OPENAI_API_KEY`, after quotas and guardrails run.
+Current state:
 
-## Push
+- `mock`: deterministic and default
+- `openai`: scaffolded backend-only provider
 
-`PushProvider` records mock delivery and is Expo/FCM/APNs-ready.
+Guardrails still run before provider execution, regardless of which provider is selected.
 
 ## Storage
 
-`StorageProvider` supports local upload metadata and S3/R2-compatible future signed URLs.
+Env:
+
+- `STORAGE_PROVIDER=local|s3|r2`
+- `S3_ENDPOINT`
+- `S3_REGION`
+- `S3_BUCKET`
+- `S3_ACCESS_KEY_ID`
+- `S3_SECRET_ACCESS_KEY`
+- `R2_ACCOUNT_ID`
+- `R2_BUCKET`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+
+Current state:
+
+- `local`: default
+- `s3` / `r2`: scaffold placeholders for future upload paths
+
+## Push
+
+Env:
+
+- `PUSH_PROVIDER=mock|expo`
+
+Current state:
+
+- `mock`: default and safe for local development
+- `expo`: documented target path, not required to run the app
+
+## What Is Live vs Mock
+
+Live right now:
+
+- registry-based provider selection
+- mock email
+- mock payments
+- mock maps
+- mock AI
+- local storage provider
+- mock push provider
+
+Still scaffold/future-ready:
+
+- OpenAI
+- Resend
+- Google Maps
+- Expo push
+- S3/R2-backed storage
+
+This is intentional: Phase 2 prioritizes real product state and backend integration while keeping runtime cost low.
