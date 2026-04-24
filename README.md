@@ -2,22 +2,22 @@
 
 Zook is an India-first operating system for small and medium gyms. This monorepo contains the mobile app, web dashboard, API backend, Prisma database package, shared core domain logic, and provider abstractions for local-first development.
 
-This repository is currently at **Phase 3: Operational Beta, Provider Readiness, and Deployment Hardening**. Zook now has deeper web/mobile operational surfaces, stricter provider diagnostics, storage-backed uploads, CSV exports, and better local/staging readiness while keeping mock providers as the default low-cost runtime.
+This repository is currently at **Phase 4: Private Pilot Release Candidate**. Zook now has provider-backed payment and push readiness, health/readiness deployment checks, deeper privacy workflows, stronger release preflight checks, and private-pilot mobile/deployment baselines while keeping mock providers as the default low-cost runtime.
 
 ## What Is Built
 
 - Expo Router mobile app for member, owner, receptionist, and trainer operations.
-- Next.js App Router web dashboard, public gym pages, referral fallback pages, provider diagnostics, and mock checkout.
+- Next.js App Router web dashboard, public gym pages, referral fallback pages, provider diagnostics, mock checkout, and provider-backed checkout handoff.
 - Next.js API route handlers backed by a service-layer architecture and Prisma.
 - PostgreSQL schema covering auth, tenancy, RBAC, memberships, payments, coupons, referrals, QR attendance, PT, plans, AI, notifications, goals, shop, privacy, and platform admin.
-- Deterministic mock providers plus optional live adapters for email, storage, maps, and AI.
+- Deterministic mock providers plus optional live adapters for email, storage, maps, AI, Razorpay, and Expo push.
 - Unified OTP/session auth across web and mobile.
 - Persistent personal tracking for workouts, exercise entries, body progress, and habits.
 - Real join-mode enforcement for open join, approval-required gyms, invite-only access, and manual/offline activation.
 - Real QR attendance validation, approval queue actions, visit consumption, and manual override logging.
-- Persisted in-app notifications with recipient fanout, read state, and preference records.
+- Persisted in-app notifications with recipient fanout, read state, preference records, push devices, and push delivery tracking.
 - Shop stock movement, pickup code creation, and inventory adjustment records tied to mock payment success.
-- Seed data for Iron House Fitness and PeakLab Gym.
+- Seed data for Iron House Fitness and PeakLab Gym, plus Phase 4 pilot operations records.
 - Vitest unit tests for core business rules and Playwright smoke tests for web flows.
 
 ## Quick Start
@@ -26,9 +26,11 @@ This repository is currently at **Phase 3: Operational Beta, Provider Readiness,
 pnpm install
 cp .env.example .env
 pnpm preflight
+pnpm env:check
+pnpm release:preflight
 pnpm db:generate
 pnpm db:push
-pnpm db:seed
+pnpm seed:demo
 pnpm dev:web
 pnpm dev:mobile
 ```
@@ -47,7 +49,7 @@ Seed accounts:
 | Member | `member@zook.local` |
 | Minor member | `minor@zook.local` |
 
-See [docs/local-development.md](docs/local-development.md), [docs/manual-qa-phase-3.md](docs/manual-qa-phase-3.md), and [docs/mobile-runtime.md](docs/mobile-runtime.md) for full run instructions and QA flows.
+See [docs/local-development.md](docs/local-development.md), [docs/mobile-private-pilot-qa.md](docs/mobile-private-pilot-qa.md), [docs/deployment.md](docs/deployment.md), and [docs/phase-4-results.md](docs/phase-4-results.md) for current run, QA, and rollout guidance.
 
 ## Key Routes
 
@@ -61,6 +63,7 @@ Web:
 - `/join/iron-house?ref=NISHAFIT`
 - `/r/NISHAFIT`
 - `/checkout/mock/{sessionId}`
+- `/checkout/{sessionId}`
 
 API:
 
@@ -74,6 +77,14 @@ API:
 - `POST /api/orgs/:orgId/subscriptions`
 - `POST /api/payments/checkout`
 - `POST /api/payments/mock/:sessionId/complete`
+- `POST /api/payments/webhooks/razorpay`
+- `POST /api/push/register-device`
+- `POST /api/push/unregister-device`
+- `GET /api/me/push-devices`
+- `POST /api/me/guardian-consent/request`
+- `POST /api/me/guardian-consent/verify`
+- `GET /api/health`
+- `GET /api/ready`
 - `POST /api/orgs/:orgId/attendance/qr-token`
 - `POST /api/attendance/scan`
 - `POST /api/ai/chat`
@@ -114,6 +125,8 @@ Optional live adapters currently available:
 - `STORAGE_PROVIDER=s3|r2`
 - `MAP_PROVIDER=google`
 - `AI_PROVIDER=openai`
+- `PAYMENT_PROVIDER=razorpay`
+- `PUSH_PROVIDER=expo`
 
 ## Switching To Real Providers Later
 
@@ -135,6 +148,7 @@ pnpm test:services
 pnpm typecheck
 pnpm test:web
 pnpm test:acceptance
+pnpm test:acceptance:db
 ```
 
 Database-backed Playwright login/mutation checks are gated with:
@@ -164,13 +178,13 @@ If `RUN_DB_WEB_TESTS=1 pnpm test:web` is skipped or fails before the OTP field a
 - Platform admins can inspect safe provider readiness at `/api/platform/provider-status`.
 - CSV exports are available at `/api/orgs/{orgId}/reports/*.csv` and `/api/orgs/{orgId}/audit-logs.csv`.
 
-## Known MVP Limitations
+## Known Pilot Limitations
 
-- Payments are still mock-first in this branch.
-- Push delivery remains mocked.
+- Razorpay is webhook-ready and test-mode ready, but the web/mobile handoff is still a controlled pilot flow rather than a full embedded hosted checkout integration.
+- Expo push is backend-ready, but the native mobile client still needs fuller permission/token wiring for real-device pilot use.
 - Multi-branch data model exists, but the UI still centers one branch.
 - QR scan simulator testing still works best with the manual-token path.
-- Deployment guidance exists, but automated container/EAS rollout files still need a dedicated pass.
+- Sentry remains a scaffold rather than a full production SDK integration.
 
 ## Acceptance Checklist
 

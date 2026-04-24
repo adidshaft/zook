@@ -1,6 +1,6 @@
 # Provider Integrations
 
-Zook remains mock-first in Phase 3. Provider selection happens only through `packages/core/src/providers/registry.ts`, and the registry now follows one consistent rule:
+Zook remains mock-first in Phase 4, but the registry now supports pilot-ready payment and push selections in addition to email, storage, maps, and AI. Provider selection happens only through `packages/core/src/providers/registry.ts`, and the registry follows one consistent rule:
 
 - If no live provider is selected, Zook uses the safe default provider for that channel.
 - If a live provider is explicitly selected, the registry must be fully configured or it throws a `ProviderSetupError`.
@@ -70,14 +70,29 @@ Current behavior:
 
 Selector env:
 
-- `PAYMENT_PROVIDER=mock`
+- `PAYMENT_PROVIDER=mock|razorpay`
+
+Known envs:
+
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_WEBHOOK_SECRET`
+- `RAZORPAY_MODE=test|live`
+- `RAZORPAY_CHECKOUT_THEME_COLOR`
 
 Current behavior:
 
 - `mock`: supported and default
-- any other value: `unsupported`
+- `razorpay`: supported when the required Razorpay env is present
 
-Mock checkout still lives at `/checkout/mock/{sessionId}` and remains the safe development path.
+Phase 4 payment readiness now includes:
+
+- provider-backed checkout session creation
+- raw-body Razorpay webhook verification
+- persisted `PaymentEvent` and `PaymentWebhookAttempt`
+- idempotent session activation for memberships and shop orders
+
+Mock checkout still lives at `/checkout/mock/{sessionId}` and remains the safest development path.
 
 ## Maps
 
@@ -162,6 +177,7 @@ Supported file categories:
 - `org_cover`
 - `ai_generated_image`
 - `body_progress_photo`
+- `privacy_export`
 
 Local storage writes to `STORAGE_LOCAL_DIR` and returns signed internal URLs for private assets. S3-compatible storage uses presigned object URLs for private assets and `S3_PUBLIC_BASE_URL` when you want stable public delivery for public-facing files like gym logos, cover images, or product images.
 
@@ -169,12 +185,27 @@ Local storage writes to `STORAGE_LOCAL_DIR` and returns signed internal URLs for
 
 Selector env:
 
-- `PUSH_PROVIDER=mock`
+- `PUSH_PROVIDER=mock|expo`
+
+Known envs:
+
+- `EXPO_PROJECT_ID`
+- `EXPO_ACCESS_TOKEN`
+- `PUSH_ENVIRONMENT=development|preview|production`
 
 Current behavior:
 
 - `mock`: supported and default
-- `expo`: future target; selecting it is currently `unsupported`
+- `expo`: supported when `EXPO_PROJECT_ID` is present
+
+Phase 4 push readiness now includes:
+
+- push device registration APIs
+- persisted `PushDevice` records
+- persisted `PushDelivery` records
+- invalid-token handling and device invalidation
+
+The mobile client is still finishing the native permission/token UX, so Expo push should be treated as pilot-ready backend infrastructure rather than a fully polished client rollout.
 
 ## Safe Rollout Summary
 

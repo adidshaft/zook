@@ -34,8 +34,9 @@ Privileged mutations now write audit entries for:
 
 - Zook does not store raw card data.
 - Mock checkout redirects are not trusted on their own.
-- Subscription activation and shop fulfillment happen only after backend payment-session completion.
+- Subscription activation and shop fulfillment happen only after backend payment-session completion or verified webhook processing.
 - Manual payment corrections use adjustments and reversals instead of silent deletion.
+- Razorpay webhook handling persists provider events and attempts for reconciliation.
 
 ## Attendance Safety
 
@@ -66,6 +67,23 @@ Privileged mutations now write audit entries for:
 - Promotional and engagement notifications respect preference records.
 - Minor users are excluded from promotional messaging by default.
 - Consent records cover marketing, AI personalization, guardian state, profile photo attendance, export, and deletion requests.
+- Push device registration and delivery outcomes are persisted server-side.
+
+## Guardian, Export, And Deletion Flow
+
+- Minor guardian consent challenges are stored with hashed OTP values.
+- `guardianPending` remains the live session-level gate for restricted minor actions.
+- Data export requests create `DataExportRequest` plus `DataExportJob`.
+- Successful export generation stores a private JSON artifact through the storage provider and returns a signed URL.
+- Account deletion requests create `AccountDeletionRequest` plus `AccountDeletionJob`.
+- Deletion remains request-driven and does not hard-delete user data immediately in Phase 4.
+
+## Observability
+
+- Every API response includes a request ID.
+- Request logs record method, path, status, duration, and actor context without leaking secrets.
+- Health and readiness checks are available at `/api/health` and `/api/ready`.
+- Error reporting supports a mock console reporter and a Sentry scaffold selected by env.
 
 ## Provider Boundary
 
