@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 import { parseApiResponse } from "@zook/core";
 
 function normalizePath(path: string) {
@@ -6,10 +7,12 @@ function normalizePath(path: string) {
 }
 
 export function getMobileApiBaseUrl() {
+  const platformDefault =
+    Platform.OS === "android" ? "http://10.0.2.2:3000/api" : "http://127.0.0.1:3000/api";
   const configured =
     (Constants.expoConfig?.extra?.mobileApiBaseUrl as string | undefined) ??
     process.env.EXPO_PUBLIC_API_BASE_URL ??
-    "http://127.0.0.1:3000/api";
+    platformDefault;
 
   return configured.replace(/\/$/, "");
 }

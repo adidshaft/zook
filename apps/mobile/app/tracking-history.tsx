@@ -9,7 +9,7 @@ import {
   WorkoutLogCard
 } from "@/components/tracking";
 import { useMyTrackingWorkouts } from "@/lib/query-hooks";
-import { buildHistorySeries, workoutToEntry } from "@/lib/tracking-view";
+import { buildHistorySeries } from "@/lib/tracking-view";
 import { colors, radii } from "@/lib/theme";
 
 const windows: TrackingWindow[] = ["TODAY", "WEEKLY", "MONTHLY", "YEARLY"];

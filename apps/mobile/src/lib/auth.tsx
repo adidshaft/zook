@@ -7,6 +7,38 @@ import { mobileApiFetch } from "./api";
 
 const SESSION_STORAGE_KEY = "zook_session";
 const ACTIVE_ORG_STORAGE_KEY = "zook_active_org";
+const inMemoryStorage = new Map<string, string>();
+
+async function secureStoreAvailable() {
+  try {
+    return await SecureStore.isAvailableAsync();
+  } catch {
+    return false;
+  }
+}
+
+async function getStoredValue(key: string) {
+  if (await secureStoreAvailable()) {
+    return SecureStore.getItemAsync(key);
+  }
+  return inMemoryStorage.get(key) ?? null;
+}
+
+async function setStoredValue(key: string, value: string) {
+  if (await secureStoreAvailable()) {
+    await SecureStore.setItemAsync(key, value);
+    return;
+  }
+  inMemoryStorage.set(key, value);
+}
+
+async function deleteStoredValue(key: string) {
+  if (await secureStoreAvailable()) {
+    await SecureStore.deleteItemAsync(key);
+    return;
+  }
+  inMemoryStorage.delete(key);
+}
 
 interface RequestOtpResult {
   challengeId: string;
@@ -66,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       const resolvedOrgId = currentSession.activeOrgId ?? preferredOrgId;
       if (resolvedOrgId) {
-        await SecureStore.setItemAsync(ACTIVE_ORG_STORAGE_KEY, resolvedOrgId);
+        await setStoredValue(ACTIVE_ORG_STORAGE_KEY, resolvedOrgId);
       }
       setToken(tokenValue);
       setSession(currentSession);
@@ -78,10 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const clearSession = useCallback(async () => {
-    await Promise.all([
-      SecureStore.deleteItemAsync(SESSION_STORAGE_KEY),
-      SecureStore.deleteItemAsync(ACTIVE_ORG_STORAGE_KEY)
-    ]);
+    await Promise.all([deleteStoredValue(SESSION_STORAGE_KEY), deleteStoredValue(ACTIVE_ORG_STORAGE_KEY)]);
     setToken(undefined);
     setSession(undefined);
     setActiveOrgIdState(undefined);
@@ -91,8 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setStatus("loading");
     const [storedToken, storedOrgId] = await Promise.all([
-      SecureStore.getItemAsync(SESSION_STORAGE_KEY),
-      SecureStore.getItemAsync(ACTIVE_ORG_STORAGE_KEY)
+      getStoredValue(SESSION_STORAGE_KEY),
+      getStoredValue(ACTIVE_ORG_STORAGE_KEY)
     ]);
 
     if (!storedToken) {
@@ -129,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body: { email, code }
       });
-      await SecureStore.setItemAsync(SESSION_STORAGE_KEY, result.token);
+      await setStoredValue(SESSION_STORAGE_KEY, result.token);
       await hydrate(result.token, activeOrgId);
     },
     [activeOrgId, hydrate]
@@ -150,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!token) {
         return;
       }
-      await SecureStore.setItemAsync(ACTIVE_ORG_STORAGE_KEY, orgId);
+      await setStoredValue(ACTIVE_ORG_STORAGE_KEY, orgId);
       await hydrate(token, orgId);
     },
     [hydrate, token]

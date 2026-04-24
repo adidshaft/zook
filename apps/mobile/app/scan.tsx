@@ -15,6 +15,9 @@ export default function Scan() {
   const [manualToken, setManualToken] = useState("");
   const [statusMessage, setStatusMessage] = useState("Scan a live QR token or paste one in development.");
   const [submitting, setSubmitting] = useState(false);
+  const permissionReady = permission !== null;
+  const canUseCamera = permission?.granted ?? false;
+  const needsManualFallback = permissionReady && !canUseCamera;
 
   async function submitScan(qrPayload: string) {
     if (!token || !qrPayload || submitting) {
@@ -62,9 +65,20 @@ export default function Scan() {
           <Text style={styles.body} selectable>
             Rolling signed QR tokens are validated by the backend. Profile photo and membership checks run before approval.
           </Text>
-          {!permission?.granted ? (
-            <PrimaryButton onPress={requestPermission}>Allow camera</PrimaryButton>
-          ) : (
+          {!permissionReady ? <Text style={styles.body}>Checking camera permission…</Text> : null}
+          {needsManualFallback ? (
+            <View style={styles.permissionState}>
+              <Text style={styles.body} selectable>
+                {permission?.canAskAgain === false
+                  ? "Camera access is unavailable here. Use the manual token entry path for simulator or restricted-device testing."
+                  : "Allow camera access to scan directly, or keep using the manual token field below."}
+              </Text>
+              {permission?.canAskAgain !== false ? (
+                <PrimaryButton onPress={requestPermission}>Allow camera</PrimaryButton>
+              ) : null}
+            </View>
+          ) : null}
+          {canUseCamera ? (
             <View style={styles.cameraWrap}>
               <CameraView
                 style={styles.camera}
@@ -72,7 +86,7 @@ export default function Scan() {
                 onBarcodeScanned={(event) => void submitScan(event.data)}
               />
             </View>
-          )}
+          ) : null}
         </Card>
         <Card>
           <Text style={styles.body} selectable>
@@ -115,6 +129,7 @@ const styles = StyleSheet.create({
   hero: { gap: 16 },
   title: { color: colors.text, fontSize: 28, fontWeight: "900" },
   body: { color: colors.muted, lineHeight: 20 },
+  permissionState: { gap: 12 },
   cameraWrap: { height: 340, borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: colors.border },
   camera: { flex: 1 },
   input: {
