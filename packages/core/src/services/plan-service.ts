@@ -6,12 +6,14 @@ export function createPlanVersionSnapshot(input: {
   content: Record<string, unknown>;
   aiGenerated?: boolean;
   visibility?: string;
+  attachments?: Record<string, unknown>;
 }) {
   return {
     title: input.title,
     ...(input.description ? { description: input.description } : {}),
     ...(input.aiGenerated ? { aiGenerated: true } : {}),
     ...(input.visibility ? { visibility: input.visibility } : {}),
+    ...(input.attachments ? { attachments: input.attachments } : {}),
     content: input.content
   };
 }

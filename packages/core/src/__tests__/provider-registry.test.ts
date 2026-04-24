@@ -4,13 +4,16 @@ import {
   getEmailProvider,
   getMapProvider,
   getProviderRegistryDiagnostics,
+  getStorageProvider,
   GoogleMapProvider,
+  LocalStorageProvider,
   MockAIProvider,
   MockEmailProvider,
   MockMapProvider,
   OpenAIProvider,
   ProviderSetupError,
   ResendEmailProvider,
+  S3CompatibleStorageProvider,
   SMTPEmailProvider
 } from "../providers";
 
@@ -55,6 +58,7 @@ describe("provider registry", () => {
     expect(getAIProvider()).toBeInstanceOf(MockAIProvider);
     expect(getEmailProvider()).toBeInstanceOf(MockEmailProvider);
     expect(getMapProvider()).toBeInstanceOf(MockMapProvider);
+    expect(getStorageProvider()).toBeInstanceOf(LocalStorageProvider);
 
     expect(getProviderRegistryDiagnostics()).toMatchObject({
       ai: {
@@ -110,10 +114,16 @@ describe("provider registry", () => {
     process.env.RESEND_API_KEY = "re_test";
     process.env.MAP_PROVIDER = "google";
     process.env.GOOGLE_MAPS_API_KEY = "gm_test";
+    process.env.STORAGE_PROVIDER = "s3";
+    process.env.S3_BUCKET = "zook-stage";
+    process.env.S3_REGION = "ap-south-1";
+    process.env.S3_ACCESS_KEY_ID = "akid";
+    process.env.S3_SECRET_ACCESS_KEY = "secret";
 
     expect(getAIProvider()).toBeInstanceOf(OpenAIProvider);
     expect(getEmailProvider()).toBeInstanceOf(ResendEmailProvider);
     expect(getMapProvider()).toBeInstanceOf(GoogleMapProvider);
+    expect(getStorageProvider()).toBeInstanceOf(S3CompatibleStorageProvider);
 
     expect(getProviderRegistryDiagnostics()).toMatchObject({
       ai: {
@@ -138,6 +148,13 @@ describe("provider registry", () => {
         selectedProvider: "google",
         activeProvider: "google",
         provider: "google",
+        mode: "live"
+      },
+      storage: {
+        status: "ready",
+        selectedProvider: "s3",
+        activeProvider: "s3",
+        provider: "s3",
         mode: "live"
       }
     });
@@ -167,6 +184,7 @@ describe("provider registry", () => {
     process.env.AI_PROVIDER = "openai";
     process.env.EMAIL_PROVIDER = "resend";
     process.env.MAP_PROVIDER = "google";
+    process.env.STORAGE_PROVIDER = "s3";
 
     expect(() => getAIProvider()).toThrowError(ProviderSetupError);
     expect(() => getAIProvider()).toThrowError(/OPENAI_API_KEY/);
@@ -179,6 +197,10 @@ describe("provider registry", () => {
     expect(() => getMapProvider()).toThrowError(ProviderSetupError);
     expect(() => getMapProvider()).toThrowError(/GOOGLE_MAPS_API_KEY/);
     expect(() => getMapProvider()).toThrowError(/MAP_PROVIDER=mock/);
+
+    expect(() => getStorageProvider()).toThrowError(ProviderSetupError);
+    expect(() => getStorageProvider()).toThrowError(/S3_BUCKET/);
+    expect(() => getStorageProvider()).toThrowError(/STORAGE_PROVIDER=local/);
 
     expect(getProviderRegistryDiagnostics()).toMatchObject({
       ai: {
@@ -195,6 +217,11 @@ describe("provider registry", () => {
         status: "misconfigured",
         activeProvider: null,
         missingEnv: ["GOOGLE_MAPS_API_KEY"]
+      },
+      storage: {
+        status: "misconfigured",
+        activeProvider: null,
+        missingEnv: ["S3_BUCKET", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"]
       }
     });
   });

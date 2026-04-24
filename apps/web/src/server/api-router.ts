@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -18,7 +18,18 @@ import {
   type AIRequestType,
   type Role
 } from "@zook/core";
-import { getAIProvider, getEmailProvider, getMapProvider, getProviderRegistryDiagnostics } from "@zook/core/providers";
+import {
+  LocalStorageProvider,
+  buildStorageKey,
+  getAIProvider,
+  getEmailProvider,
+  getMapProvider,
+  getProviderRegistryDiagnostics,
+  getStorageProvider,
+  storageFileCategories,
+  verifyLocalStorageSignature,
+  type StorageFileCategory
+} from "@zook/core/providers";
 import {
   AuthService,
   calculateShopOrder,
@@ -58,6 +69,14 @@ import { assertRateLimit } from "./rate-limit";
 import { createRequestId, currentRequestId, runWithRequestState } from "./request-state";
 import { assertSafeMutationRequest, getClientIp } from "./security";
 import {
+  assertCanAccessFileAsset,
+  assertFileAssetBelongsToOrg,
+  assertFileAssetOwnedByUser,
+  assertFileUploadPermission,
+  buildFileAssetUrl,
+  resolveFileVisibility
+} from "./files";
+import {
   getMemberHomeData,
   getMyShopOrders,
   getOrganizationDashboardData,
@@ -67,6 +86,7 @@ import {
 const emailProvider = getEmailProvider();
 const mapProvider = getMapProvider();
 const aiProvider = getAIProvider();
+const storageProvider = getStorageProvider();
 const personalTrackingService = new PersonalTrackingService();
 
 const joinRequestSchema = z.object({
@@ -92,6 +112,7 @@ const manualMembershipPaymentSchema = z
     subscriptionId: z.string().optional(),
     amountPaise: z.number().int().positive(),
     mode: z.enum(["CASH", "DIRECT_UPI", "BANK_TRANSFER", "OTHER"]),
+    proofAssetId: z.string().optional(),
     receiptNumber: z.string().optional(),
     notes: z.string().max(500).optional()
   })
@@ -133,6 +154,7 @@ const productInputSchema = z.object({
   pricePaise: z.number().int().nonnegative(),
   stock: z.number().int().nonnegative(),
   lowStockThreshold: z.number().int().nonnegative().default(8),
+  imageAssetId: z.string().optional(),
   imageUrl: z.string().url().optional(),
   active: z.boolean().default(true)
 });
@@ -171,8 +193,41 @@ const planContentInputSchema = z.object({
     .default("WORKOUT"),
   description: z.string().max(500).optional(),
   content: z.record(z.string(), z.any()).default({ blocks: [] }),
+  imageAssetId: z.string().optional(),
   visibility: z.string().default("selected"),
   aiGenerated: z.boolean().default(false)
+});
+
+const uploadCategorySchema = z.enum(storageFileCategories);
+
+const profilePhotoAssetSchema = z.object({
+  fileAssetId: z.string(),
+  orgId: z.string().optional(),
+  consentToAttendanceUse: z.boolean().optional()
+});
+
+const organizationAssetSchema = z
+  .object({
+    logoAssetId: z.string().optional(),
+    coverAssetId: z.string().optional()
+  })
+  .refine((value) => Boolean(value.logoAssetId || value.coverAssetId), "Provide at least one file asset.");
+
+const trainerProfileAssetSchema = z.object({
+  upiId: z.string().trim().max(120).optional(),
+  upiQrAssetId: z.string().optional(),
+  bio: z.string().max(500).optional()
+});
+
+const ptSubscriptionSchema = z.object({
+  memberUserId: z.string(),
+  trainerUserId: z.string(),
+  ptPlanId: z.string().optional(),
+  amountPaise: z.number().int().positive(),
+  paymentMode: z.enum(["CASH", "DIRECT_UPI", "OTHER"]),
+  totalSessions: z.number().int().positive().optional(),
+  notes: z.string().max(500).optional(),
+  proofAssetId: z.string().optional()
 });
 
 const planAssignSchema = z.object({
@@ -218,6 +273,87 @@ function clean<T extends Record<string, unknown>>(input: T): any {
 
 function dateKey(date = new Date()) {
   return date.toISOString().slice(0, 10);
+}
+
+async function findFileAssetOrThrow(fileId: string) {
+  const asset = await prisma.fileAsset.findUnique({ where: { id: fileId } });
+  if (!asset || asset.deletedAt) {
+    throw notFoundError("File not found");
+  }
+  return asset;
+}
+
+async function getOrganizationScopedFileAsset(
+  fileAssetId: string | undefined,
+  orgId: string,
+  allowedCategories: StorageFileCategory[]
+) {
+  if (!fileAssetId) {
+    return null;
+  }
+  const asset = await findFileAssetOrThrow(fileAssetId);
+  assertFileAssetBelongsToOrg({ asset, orgId, allowedCategories });
+  return asset;
+}
+
+async function getUserScopedFileAsset(input: {
+  fileAssetId?: string;
+  userId: string;
+  allowedCategories: StorageFileCategory[];
+  orgId?: string;
+}) {
+  if (!input.fileAssetId) {
+    return null;
+  }
+  const asset = await findFileAssetOrThrow(input.fileAssetId);
+  assertFileAssetOwnedByUser({
+    asset,
+    userId: input.userId,
+    allowedCategories: input.allowedCategories,
+    ...(input.orgId ? { orgId: input.orgId } : {})
+  });
+  return asset;
+}
+
+async function resolveFileUrl(asset: { storageKey: string; visibility: string | null }, signed = false) {
+  if (!signed && asset.visibility === "public") {
+    return storageProvider.getPublicUrl({ key: asset.storageKey });
+  }
+  return storageProvider.getSignedUrl({ key: asset.storageKey, expiresInSeconds: 10 * 60 });
+}
+
+async function parseFileUploadRequest(request: NextRequest) {
+  const formData = await request.formData();
+  const category = uploadCategorySchema.parse(formData.get("category"));
+  const rawOrgId = formData.get("orgId")?.toString().trim();
+  const rawVisibility = formData.get("visibility")?.toString().trim() ?? undefined;
+  const file = formData.get("file");
+
+  if (!(file instanceof File)) {
+    throw validationError("Upload requires a file field.");
+  }
+
+  const visibility = resolveFileVisibility(category, rawVisibility);
+  let validated;
+  try {
+    validated = storageProvider.validateFile({
+      category,
+      contentType: file.type || "application/octet-stream",
+      sizeBytes: file.size,
+      originalName: file.name,
+      visibility
+    });
+  } catch (error) {
+    throw validationError(error instanceof Error ? error.message : "Invalid upload.");
+  }
+
+  return {
+    file,
+    category,
+    visibility,
+    orgId: rawOrgId || undefined,
+    validated
+  };
 }
 
 function startOfDay(date = new Date()) {
@@ -986,6 +1122,56 @@ async function handleMeData(request: NextRequest, path: string[]) {
     const userId = requireAuth(ctx);
     return ok(await getMemberHomeData(userId, ctx.orgId));
   }
+  if (request.method === "PATCH" && pathMatches(path, ["me", "profile-photo"])) {
+    const body = profilePhotoAssetSchema.parse(await readJson(request));
+    const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
+    const userId = requireAuth(ctx);
+    const asset = await getUserScopedFileAsset({
+      fileAssetId: body.fileAssetId,
+      userId,
+      allowedCategories: ["profile_photo"],
+      ...(body.orgId ? { orgId: body.orgId } : {})
+    });
+    if (!asset) {
+      throw validationError("Profile photo asset is required.");
+    }
+    const [user, profile] = await prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: { profilePhotoUrl: asset.url }
+      });
+      const updatedProfile = body.orgId
+        ? await tx.memberProfile.upsert({
+            where: { orgId_userId: { orgId: body.orgId, userId } },
+            update: clean({
+              profilePhotoUrl: asset.url,
+              profilePhotoConsentAt: body.consentToAttendanceUse ? new Date() : undefined
+            }),
+            create: clean({
+              orgId: body.orgId,
+              userId,
+              profilePhotoUrl: asset.url,
+              marketingOptIn: updatedUser.isMinor ? false : updatedUser.marketingOptIn,
+              profilePhotoConsentAt: body.consentToAttendanceUse ? new Date() : undefined
+            })
+          })
+        : null;
+      if (body.consentToAttendanceUse !== undefined) {
+        await tx.consentRecord.create({
+          data: clean({
+            orgId: body.orgId,
+            userId,
+            type: "PROFILE_PHOTO_ATTENDANCE",
+            status: body.consentToAttendanceUse ? "GRANTED" : "REVOKED",
+            metadata: { fileAssetId: asset.id } as Prisma.InputJsonValue,
+            recordedById: userId
+          })
+        });
+      }
+      return [updatedUser, updatedProfile] as const;
+    });
+    return ok({ user, profile, file: asset });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "attendance"])) {
     const userId = requireAuth(await getRequestContext(request));
     return ok({
@@ -1190,6 +1376,12 @@ async function handleTracking(request: NextRequest, path: string[]) {
     const userId = requireAuth(ctx);
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const body = bodyProgressEntrySchema.parse(await readJson(request));
+    const photoAsset = await getUserScopedFileAsset({
+      userId,
+      allowedCategories: ["body_progress_photo", "profile_photo"],
+      ...(body.photoAssetId ? { fileAssetId: body.photoAssetId } : {}),
+      ...(body.organizationId ? { orgId: body.organizationId } : {})
+    });
     const visibility = personalTrackingService.normalizeVisibility({
       isMinor: user.isMinor,
       guardianConsentGranted: !user.guardianPending,
@@ -1205,7 +1397,7 @@ async function handleTracking(request: NextRequest, path: string[]) {
         ...(body.chestCm !== undefined ? { chestCm: new Prisma.Decimal(body.chestCm) } : {}),
         ...(body.armCm !== undefined ? { armCm: new Prisma.Decimal(body.armCm) } : {}),
         ...(body.bodyFatPercent !== undefined ? { bodyFatPercent: new Prisma.Decimal(body.bodyFatPercent) } : {}),
-        ...(body.photoAssetId ? { photoAssetId: body.photoAssetId } : {}),
+        ...(photoAsset ? { photoAssetId: photoAsset.id } : {}),
         ...(body.notes ? { notes: body.notes } : {}),
         visibility
       }
@@ -1284,6 +1476,183 @@ async function handleTracking(request: NextRequest, path: string[]) {
       }
     });
     return ok({ log });
+  }
+  return undefined;
+}
+
+async function handleFiles(request: NextRequest, path: string[]) {
+  if (request.method === "GET" && pathMatches(path, ["files", "local"])) {
+    if (!(storageProvider instanceof LocalStorageProvider)) {
+      throw notFoundError("Local storage route is unavailable for the active provider.");
+    }
+    const key = request.nextUrl.searchParams.get("key") ?? "";
+    const expiresAt = Number(request.nextUrl.searchParams.get("expires"));
+    const signature = request.nextUrl.searchParams.get("signature") ?? "";
+    if (!verifyLocalStorageSignature({ key, expiresAt, signature })) {
+      throw forbiddenError("Invalid or expired file signature.");
+    }
+    const file = await storageProvider.readObject({ key });
+    return new NextResponse(new Uint8Array(file.body), {
+      headers: {
+        "content-type": file.contentType,
+        "content-length": String(file.sizeBytes),
+        "cache-control": "private, max-age=0, no-store"
+      }
+    });
+  }
+  if (request.method === "GET" && pathMatches(path, ["files", "local", "public"])) {
+    if (!(storageProvider instanceof LocalStorageProvider)) {
+      throw notFoundError("Local storage route is unavailable for the active provider.");
+    }
+    const key = request.nextUrl.searchParams.get("key") ?? "";
+    if (!key) {
+      throw validationError("Missing file key.");
+    }
+    const file = await storageProvider.readObject({ key });
+    return new NextResponse(new Uint8Array(file.body), {
+      headers: {
+        "content-type": file.contentType,
+        "content-length": String(file.sizeBytes),
+        "cache-control": "public, max-age=3600, immutable"
+      }
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["files", "upload"])) {
+    const upload = await parseFileUploadRequest(request);
+    const ctx = await getRequestContext(request, upload.orgId ? { orgId: upload.orgId } : {});
+    const userId = requireAuth(ctx);
+    assertRateLimit("fileUploadByActor", `${upload.orgId ?? "global"}:${userId}`, "Too many file uploads requested.");
+    assertFileUploadPermission({
+      category: upload.category,
+      ctx,
+      actorUserId: userId,
+      ...(upload.orgId ? { orgId: upload.orgId } : {})
+    });
+
+    const fileBytes = new Uint8Array(await upload.file.arrayBuffer());
+    const checksum = createHash("sha256").update(fileBytes).digest("hex");
+    const storageKey = buildStorageKey({
+      category: upload.category,
+      ...(upload.orgId ? { orgId: upload.orgId } : {}),
+      ownerUserId: userId,
+      ...(upload.validated.originalName ? { originalName: upload.validated.originalName } : {})
+    });
+
+    let uploaded = false;
+    try {
+      await storageProvider.uploadFile({
+        key: storageKey,
+        contentType: upload.validated.contentType,
+        sizeBytes: upload.validated.sizeBytes,
+        category: upload.category,
+        ...(upload.validated.originalName ? { originalName: upload.validated.originalName } : {}),
+        visibility: upload.visibility,
+        body: fileBytes,
+        cacheControl:
+          upload.visibility === "public" ? "public, max-age=31536000, immutable" : "private, max-age=0, no-store"
+      });
+      uploaded = true;
+
+      const created = await prisma.fileAsset.create({
+        data: {
+          orgId: upload.orgId ?? null,
+          ownerUserId: userId,
+          originalName: upload.validated.originalName ?? null,
+          storageKey,
+          url: "pending",
+          mimeType: upload.validated.contentType,
+          sizeBytes: upload.validated.sizeBytes,
+          purpose: upload.category,
+          category: upload.category,
+          visibility: upload.visibility,
+          storageProvider: storageProvider.getDiagnostics().provider,
+          checksum,
+          metadata: {
+            normalizedBaseName: upload.validated.normalizedBaseName,
+            extension: upload.validated.extension
+          } as Prisma.InputJsonValue
+        }
+      });
+      const asset = await prisma.fileAsset.update({
+        where: { id: created.id },
+        data: { url: buildFileAssetUrl(created.id) }
+      });
+      await writeAuditLog({
+        request,
+        ...(upload.orgId ? { orgId: upload.orgId } : {}),
+        actorUserId: userId,
+        action: "file.uploaded",
+        entityType: "file_asset",
+        entityId: asset.id,
+        metadata: { category: upload.category, visibility: upload.visibility, sizeBytes: upload.validated.sizeBytes }
+      });
+      return ok({
+        file: asset,
+        deliveryUrl: asset.url,
+        signedUrl: await resolveFileUrl(asset, true)
+      });
+    } catch (error) {
+      if (uploaded) {
+        await storageProvider.deleteFile({ key: storageKey }).catch(() => undefined);
+      }
+      throw error;
+    }
+  }
+  if (request.method === "GET" && pathMatches(path, ["files", /.+/, "signed-url"])) {
+    const asset = await findFileAssetOrThrow(path[1]!);
+    const ctx = await getRequestContext(request, asset.orgId ? { orgId: asset.orgId } : {});
+    assertCanAccessFileAsset(asset, ctx);
+    return ok({
+      file: asset,
+      url: await resolveFileUrl(asset, true)
+    });
+  }
+  if (request.method === "GET" && pathMatches(path, ["files", /.+/, "content"])) {
+    const asset = await findFileAssetOrThrow(path[1]!);
+    const ctx = await getRequestContext(request, asset.orgId ? { orgId: asset.orgId } : {});
+    assertCanAccessFileAsset(asset, ctx);
+    return redirectTo(await resolveFileUrl(asset));
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["files", /.+/])) {
+    const asset = await findFileAssetOrThrow(path[1]!);
+    const ctx = await getRequestContext(request, asset.orgId ? { orgId: asset.orgId } : {});
+    const userId = requireAuth(ctx);
+    const category = (asset.category ?? "profile_photo") as StorageFileCategory;
+    const orgDeletePermissions: Partial<Record<StorageFileCategory, string[]>> = {
+      payment_proof: ["PAYMENTS_VIEW", "PAYMENTS_RECORD_OFFLINE"],
+      product_image: ["SHOP_MANAGE_PRODUCTS"],
+      plan_image: ["PLANS_CREATE"],
+      ai_generated_image: ["AI_GENERATE_IMAGE", "PLANS_CREATE"],
+      trainer_upi_qr: ["PT_RECORD", "TRAINERS_MANAGE"],
+      org_logo: ["ORG_MANAGE_PROFILE"],
+      org_cover: ["ORG_MANAGE_PROFILE"]
+    };
+
+    const canDeleteOwn = asset.ownerUserId === userId;
+    const canDeleteOrg =
+      Boolean(asset.orgId) &&
+      ctx.orgId === asset.orgId &&
+      (orgDeletePermissions[category] ?? []).some((permission) => ctx.permissions.includes(permission as never));
+
+    if (!canDeleteOwn && !canDeleteOrg) {
+      throw forbiddenError("You do not have permission to delete this file.");
+    }
+
+    await storageProvider.deleteFile({ key: asset.storageKey });
+    const deleted = await prisma.fileAsset.update({
+      where: { id: asset.id },
+      data: { deletedAt: new Date() }
+    });
+    await writeAuditLog({
+      request,
+      ...(asset.orgId ? { orgId: asset.orgId } : {}),
+      actorUserId: userId,
+      action: "file.deleted",
+      entityType: "file_asset",
+      entityId: asset.id,
+      metadata: { category }
+    });
+    return ok({ file: deleted, deleted: true });
   }
   return undefined;
 }
@@ -1479,6 +1848,36 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       metadata: body
     });
     return ok({ location: result });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "assets"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_PROFILE");
+    const body = organizationAssetSchema.parse(await readJson(request));
+    const [logoAsset, coverAsset] = await Promise.all([
+      getOrganizationScopedFileAsset(body.logoAssetId, orgId, ["org_logo"]),
+      getOrganizationScopedFileAsset(body.coverAssetId, orgId, ["org_cover"])
+    ]);
+    const org = await prisma.organization.update({
+      where: { id: orgId },
+      data: clean({
+        ...(logoAsset ? { logoUrl: logoAsset.url } : {}),
+        ...(coverAsset ? { coverImageUrl: coverAsset.url } : {})
+      })
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "organization.assets_updated",
+      entityType: "organization",
+      entityId: org.id,
+      metadata: clean({
+        logoAssetId: logoAsset?.id,
+        coverAssetId: coverAsset?.id
+      })
+    });
+    return ok({ org, assets: clean({ logoAsset, coverAsset }) });
   }
   if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "join-mode"])) {
     const orgId = path[1]!;
@@ -2523,6 +2922,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const userId = requireOrgPermission(ctx, orgId, "PAYMENTS_RECORD_OFFLINE");
     const body = manualMembershipPaymentSchema.parse(await readJson(request));
     const memberUser = await prisma.user.findUnique({ where: { id: body.memberUserId } });
+    const proofAsset = await getOrganizationScopedFileAsset(body.proofAssetId, orgId, ["payment_proof"]);
     if (!memberUser) {
       throw notFoundError("Member not found");
     }
@@ -2534,6 +2934,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         amountPaise: body.amountPaise,
         status: "SUCCEEDED",
         mode: body.mode,
+        proofAssetId: proofAsset?.id,
         receiptNumber: body.receiptNumber,
         notes: body.notes,
         recordedById: userId,
@@ -2656,6 +3057,35 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     });
     return ok({ payment, subscription });
   }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "profile"])) {
+    const orgId = path[1]!;
+    const trainerUserId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const actorUserId = requireAuth(ctx);
+    if (actorUserId === trainerUserId) {
+      requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    } else {
+      requireOrgPermission(ctx, orgId, "TRAINERS_MANAGE");
+    }
+    const body = trainerProfileAssetSchema.parse(await readJson(request));
+    const upiQrAsset = await getOrganizationScopedFileAsset(body.upiQrAssetId, orgId, ["trainer_upi_qr"]);
+    const profile = await prisma.trainerProfile.upsert({
+      where: { orgId_userId: { orgId, userId: trainerUserId } },
+      update: clean({
+        ...(body.bio !== undefined ? { bio: body.bio } : {}),
+        ...(body.upiId !== undefined ? { upiId: body.upiId } : {}),
+        ...(upiQrAsset ? { upiQrAssetId: upiQrAsset.id } : {})
+      }),
+      create: clean({
+        orgId,
+        userId: trainerUserId,
+        ...(body.bio ? { bio: body.bio } : {}),
+        ...(body.upiId ? { upiId: body.upiId } : {}),
+        ...(upiQrAsset ? { upiQrAssetId: upiQrAsset.id } : {})
+      })
+    });
+    return ok({ profile, upiQrFile: upiQrAsset });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients"])) {
     const orgId = path[1]!;
     const trainerId = path[3]!;
@@ -2706,15 +3136,8 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
-    const body = (await readJson(request)) as {
-      memberUserId: string;
-      trainerUserId: string;
-      ptPlanId?: string;
-      amountPaise: number;
-      paymentMode: "CASH" | "DIRECT_UPI" | "OTHER";
-      totalSessions?: number;
-      notes?: string;
-    };
+    const body = ptSubscriptionSchema.parse(await readJson(request));
+    const proofAsset = await getOrganizationScopedFileAsset(body.proofAssetId, orgId, ["payment_proof"]);
     const sub = await prisma.personalTrainingSubscription.create({
       data: clean({
         orgId,
@@ -2727,6 +3150,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         remainingSessions: body.totalSessions,
         amountPaise: body.amountPaise,
         paymentMode: body.paymentMode,
+        proofAssetId: proofAsset?.id,
         notes: body.notes,
         recordedById: userId
       })
@@ -2757,6 +3181,15 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "PLANS_CREATE");
     const body = planContentInputSchema.parse(await readJson(request));
+    const imageAsset = await getOrganizationScopedFileAsset(body.imageAssetId, orgId, ["plan_image", "ai_generated_image"]);
+    const attachments = imageAsset
+      ? ({
+          coverImage: {
+            fileAssetId: imageAsset.id,
+            url: imageAsset.url
+          }
+        } as Prisma.InputJsonValue)
+      : undefined;
     const plan = await prisma.planContent.create({
       data: clean({
         orgId,
@@ -2765,6 +3198,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         title: body.title,
         description: body.description,
         content: body.content as Prisma.InputJsonValue,
+        attachments,
         aiGenerated: body.aiGenerated,
         visibility: body.visibility
       })
@@ -2779,7 +3213,8 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
           ...clean({
             description: body.description,
             aiGenerated: body.aiGenerated,
-            visibility: body.visibility
+            visibility: body.visibility,
+            attachments
           }),
           content: body.content
         }) as Prisma.InputJsonValue,
@@ -3259,6 +3694,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
     const body = productInputSchema.parse(await readJson(request));
+    const imageAsset = await getOrganizationScopedFileAsset(body.imageAssetId, orgId, ["product_image"]);
     const product = await prisma.product.create({
       data: clean({
         orgId,
@@ -3268,7 +3704,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         stock: body.stock,
         category: body.category,
         lowStockThreshold: body.lowStockThreshold,
-        imageUrl: body.imageUrl,
+        imageUrl: imageAsset?.url ?? body.imageUrl,
         active: body.active
       })
     });
@@ -3289,6 +3725,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
     const body = productInputSchema.partial().parse(await readJson(request));
     const existingProduct = await prisma.product.findFirst({ where: { id: productId, orgId } });
+    const imageAsset = await getOrganizationScopedFileAsset(body.imageAssetId, orgId, ["product_image"]);
     if (!existingProduct) {
       throw notFoundError("Product not found");
     }
@@ -3301,7 +3738,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         pricePaise: body.pricePaise,
         stock: body.stock,
         lowStockThreshold: body.lowStockThreshold,
-        imageUrl: body.imageUrl,
+        imageUrl: imageAsset?.url ?? body.imageUrl,
         active: body.active
       })
     });
@@ -3571,6 +4008,7 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
         handleAuth,
         handleMeData,
         handleTracking,
+        handleFiles,
         handleOrganizations,
         handleMembershipPayments,
         handleCouponsReferrals,

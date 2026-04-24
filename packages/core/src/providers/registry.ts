@@ -11,7 +11,7 @@ import { MockEmailProvider, ResendEmailProvider, SMTPEmailProvider, type EmailPr
 import { GoogleMapProvider, MockMapProvider, type MapProvider } from "./map";
 import { MockPaymentProvider, type PaymentProvider } from "./payment";
 import { MockPushProvider, type PushProvider } from "./push";
-import { LocalStorageProvider, type StorageProvider } from "./storage";
+import { LocalStorageProvider, S3CompatibleStorageProvider, type StorageProvider } from "./storage";
 
 type ProviderSetupErrorKind = "misconfigured" | "unsupported";
 
@@ -456,15 +456,15 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
   const selectedProvider = selectionValue ?? "local";
   const envState = envFlags([
     "STORAGE_PROVIDER",
+    "STORAGE_LOCAL_DIR",
     "S3_ENDPOINT",
     "S3_REGION",
     "S3_BUCKET",
     "S3_ACCESS_KEY_ID",
     "S3_SECRET_ACCESS_KEY",
+    "S3_PUBLIC_BASE_URL",
     "R2_ACCOUNT_ID",
-    "R2_BUCKET",
-    "R2_ACCESS_KEY_ID",
-    "R2_SECRET_ACCESS_KEY"
+    "STORAGE_URL_SIGNING_SECRET"
   ]);
 
   if (selectedProvider === "local") {
@@ -477,12 +477,104 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
     });
   }
 
+  if (selectedProvider === "s3") {
+    const bucket = env(process.env.S3_BUCKET);
+    const region = env(process.env.S3_REGION);
+    const accessKeyId = env(process.env.S3_ACCESS_KEY_ID);
+    const secretAccessKey = env(process.env.S3_SECRET_ACCESS_KEY);
+    const missingEnv = [
+      bucket ? null : "S3_BUCKET",
+      region ? null : "S3_REGION",
+      accessKeyId ? null : "S3_ACCESS_KEY_ID",
+      secretAccessKey ? null : "S3_SECRET_ACCESS_KEY"
+    ].filter(Boolean) as string[];
+
+    if (missingEnv.length) {
+      return createMisconfiguredResolution({
+        category: "storage",
+        selectionEnv: "STORAGE_PROVIDER",
+        selectedProvider,
+        defaultProvider: "local",
+        supportedProviders: ["local", "s3", "r2"],
+        missingEnv,
+        env: envState,
+        mode: "live",
+        metadata: {
+          hasEndpoint: Boolean(env(process.env.S3_ENDPOINT)),
+          hasPublicBaseUrl: Boolean(env(process.env.S3_PUBLIC_BASE_URL))
+        }
+      });
+    }
+
+    return createReadyResolution({
+      category: "storage",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new S3CompatibleStorageProvider({
+        provider: "s3",
+        bucket: bucket as string,
+        region: region as string,
+        accessKeyId: accessKeyId as string,
+        secretAccessKey: secretAccessKey as string,
+        ...(env(process.env.S3_ENDPOINT) ? { endpoint: env(process.env.S3_ENDPOINT) as string } : {}),
+        ...(env(process.env.S3_PUBLIC_BASE_URL) ? { publicBaseUrl: env(process.env.S3_PUBLIC_BASE_URL) as string } : {})
+      })
+    });
+  }
+
+  if (selectedProvider === "r2") {
+    const bucket = env(process.env.S3_BUCKET);
+    const accessKeyId = env(process.env.S3_ACCESS_KEY_ID);
+    const secretAccessKey = env(process.env.S3_SECRET_ACCESS_KEY);
+    const endpoint = env(process.env.S3_ENDPOINT) ?? (env(process.env.R2_ACCOUNT_ID) ? `https://${env(process.env.R2_ACCOUNT_ID)}.r2.cloudflarestorage.com` : undefined);
+    const missingEnv = [
+      bucket ? null : "S3_BUCKET",
+      accessKeyId ? null : "S3_ACCESS_KEY_ID",
+      secretAccessKey ? null : "S3_SECRET_ACCESS_KEY",
+      endpoint ? null : "S3_ENDPOINT or R2_ACCOUNT_ID"
+    ].filter(Boolean) as string[];
+
+    if (missingEnv.length) {
+      return createMisconfiguredResolution({
+        category: "storage",
+        selectionEnv: "STORAGE_PROVIDER",
+        selectedProvider,
+        defaultProvider: "local",
+        supportedProviders: ["local", "s3", "r2"],
+        missingEnv,
+        env: envState,
+        mode: "live",
+        metadata: {
+          hasPublicBaseUrl: Boolean(env(process.env.S3_PUBLIC_BASE_URL))
+        }
+      });
+    }
+
+    return createReadyResolution({
+      category: "storage",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new S3CompatibleStorageProvider({
+        provider: "r2",
+        bucket: bucket as string,
+        region: env(process.env.S3_REGION) ?? "auto",
+        endpoint: endpoint as string,
+        accessKeyId: accessKeyId as string,
+        secretAccessKey: secretAccessKey as string,
+        forcePathStyle: true,
+        ...(env(process.env.S3_PUBLIC_BASE_URL) ? { publicBaseUrl: env(process.env.S3_PUBLIC_BASE_URL) as string } : {})
+      })
+    });
+  }
+
   return createUnsupportedResolution({
     category: "storage",
     selectionEnv: "STORAGE_PROVIDER",
     selectedProvider,
     defaultProvider: "local",
-    supportedProviders: ["local"],
+    supportedProviders: ["local", "s3", "r2"],
     env: envState,
     mode: "live"
   });

@@ -118,24 +118,46 @@ Diagnostics may expose the selected `OPENAI_MODEL`, but never the API key.
 
 Selector env:
 
-- `STORAGE_PROVIDER=local`
+- `STORAGE_PROVIDER=local|s3|r2`
 
-Known envs for future live targets:
+Known envs:
 
+- `STORAGE_LOCAL_DIR`
+- `STORAGE_URL_SIGNING_SECRET`
 - `S3_ENDPOINT`
 - `S3_REGION`
 - `S3_BUCKET`
 - `S3_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY`
+- `S3_PUBLIC_BASE_URL`
 - `R2_ACCOUNT_ID`
-- `R2_BUCKET`
-- `R2_ACCESS_KEY_ID`
-- `R2_SECRET_ACCESS_KEY`
 
 Current behavior:
 
 - `local`: supported and default
-- `s3` / `r2`: future targets; selecting them is currently `unsupported`
+- `s3`: supported when `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` are present
+- `r2`: supported when `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and either `S3_ENDPOINT` or `R2_ACCOUNT_ID` are present
+
+Storage-backed upload routes now exist for the operational beta:
+
+- `POST /api/files/upload`
+- `GET /api/files/{fileId}/signed-url`
+- `GET /api/files/{fileId}/content`
+- `DELETE /api/files/{fileId}`
+
+Supported file categories:
+
+- `profile_photo`
+- `payment_proof`
+- `product_image`
+- `plan_image`
+- `trainer_upi_qr`
+- `org_logo`
+- `org_cover`
+- `ai_generated_image`
+- `body_progress_photo`
+
+Local storage writes to `STORAGE_LOCAL_DIR` and returns signed internal URLs for private assets. S3-compatible storage uses presigned object URLs for private assets and `S3_PUBLIC_BASE_URL` when you want stable public delivery for public-facing files like gym logos, cover images, or product images.
 
 ## Push
 
