@@ -6,10 +6,13 @@ import {
   applyCoupon,
   assertAIAllowed,
   assertMinorCanUseFeature,
+  buildAIQuotaState,
   calculateShopOrder,
   canReceiveNotification,
+  canAssignPlanToUser,
   canSendNotification,
   chooseRenewalStart,
+  createPlanVersionSnapshot,
   consumeVisit,
   createManualPaymentAdjustment,
   createSignedQrToken,
@@ -291,6 +294,67 @@ describe("minor and AI restrictions", () => {
       user: adult
     });
     expect(result.tokenEstimate).toBeGreaterThan(0);
+  });
+
+  it("builds quota state from persisted usage", () => {
+    expect(
+      buildAIQuotaState("TRAINER", { usedTextDaily: 2, usedTextMonth: 10, usedImagesMonth: 1 }),
+    ).toMatchObject({
+      textDailyLimit: 25,
+      textMonthLimit: 300,
+      imageMonthLimit: 10,
+      usedTextDaily: 2,
+      usedTextMonth: 10,
+      usedImagesMonth: 1
+    });
+  });
+});
+
+describe("plans", () => {
+  it("lets trainers assign only to their own clients unless elevated", () => {
+    expect(
+      canAssignPlanToUser({
+        actorRoles: ["TRAINER"],
+        actorPermissions: ["PLANS_PUBLISH_ASSIGNED"],
+        audience: "selected_member",
+        targetUserId: "member_1",
+        assignedClientUserIds: ["member_1"]
+      }),
+    ).toBe(true);
+    expect(
+      canAssignPlanToUser({
+        actorRoles: ["TRAINER"],
+        actorPermissions: ["PLANS_PUBLISH_ASSIGNED"],
+        audience: "selected_member",
+        targetUserId: "member_2",
+        assignedClientUserIds: ["member_1"]
+      }),
+    ).toBe(false);
+    expect(
+      canAssignPlanToUser({
+        actorRoles: ["OWNER"],
+        actorPermissions: ["PLANS_PUBLISH_ALL"],
+        audience: "all_active_members"
+      }),
+    ).toBe(true);
+  });
+
+  it("creates a version snapshot with useful metadata", () => {
+    expect(
+      createPlanVersionSnapshot({
+        title: "Starter Strength",
+        description: "Week one",
+        aiGenerated: true,
+        visibility: "assigned",
+        content: { days: 3 }
+      }),
+    ).toMatchObject({
+      title: "Starter Strength",
+      description: "Week one",
+      aiGenerated: true,
+      visibility: "assigned",
+      content: { days: 3 }
+    });
   });
 });
 

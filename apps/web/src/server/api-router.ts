@@ -22,10 +22,13 @@ import { getAIProvider, getEmailProvider, getMapProvider } from "@zook/core/prov
 import {
   AuthService,
   calculateShopOrder,
+  buildAIQuotaState,
   canReceiveNotification,
+  canAssignPlanToUser,
   canSendNotification,
   computeSubscriptionWindow,
   consumeVisit,
+  createPlanVersionSnapshot,
   type OtpChallengeRecord,
   applyCoupon,
   createSignedQrToken,
@@ -149,12 +152,82 @@ const inventoryAdjustmentSchema = z.object({
   reason: z.string().trim().min(2).max(200)
 });
 
+const planContentInputSchema = z.object({
+  title: z.string().trim().min(2).max(120),
+  type: z
+    .enum([
+      "WORKOUT",
+      "DIET",
+      "EXERCISE_ROUTINE",
+      "TRANSFORMATION_PROGRAM",
+      "TRAINER_NOTE",
+      "GYM_ADVISORY",
+      "MACHINE_GUIDE",
+      "RECOVERY"
+    ])
+    .default("WORKOUT"),
+  description: z.string().max(500).optional(),
+  content: z.record(z.string(), z.any()).default({ blocks: [] }),
+  visibility: z.string().default("selected"),
+  aiGenerated: z.boolean().default(false)
+});
+
+const planAssignSchema = z.object({
+  assignedToUserId: z.string().optional(),
+  audience: z.string().default("selected_member")
+});
+
+const planProgressInputSchema = z.object({
+  orgId: z.string().optional(),
+  progressJson: z.record(z.string(), z.any()).default({}),
+  completionPct: z.number().int().min(0).max(100).default(0),
+  feedback: z.string().max(500).optional()
+});
+
+const aiChatSchema = z.object({
+  prompt: z.string().trim().min(2).max(2_000),
+  orgId: z.string().optional(),
+  conversationId: z.string().optional()
+});
+
+const aiGenerateSchema = z.object({
+  prompt: z.string().trim().min(2).max(2_000),
+  orgId: z.string().optional(),
+  title: z.string().trim().min(2).max(120).optional(),
+  type: z
+    .enum([
+      "WORKOUT",
+      "DIET",
+      "EXERCISE_ROUTINE",
+      "TRANSFORMATION_PROGRAM",
+      "TRAINER_NOTE",
+      "GYM_ADVISORY",
+      "MACHINE_GUIDE",
+      "RECOVERY"
+    ])
+    .optional(),
+  persistDraft: z.boolean().default(true)
+});
+
 function clean<T extends Record<string, unknown>>(input: T): any {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
 }
 
 function dateKey(date = new Date()) {
   return date.toISOString().slice(0, 10);
+}
+
+function startOfDay(date = new Date()) {
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+  return value;
+}
+
+function startOfMonth(date = new Date()) {
+  const value = new Date(date);
+  value.setDate(1);
+  value.setHours(0, 0, 0, 0);
+  return value;
 }
 
 function pathMatches(path: string[], pattern: Array<string | RegExp>) {
@@ -180,6 +253,31 @@ async function listTrackingWorkouts(userId: string) {
   return workouts.map((workout) => ({
     ...workout,
     exercises: exercises.filter((exercise) => exercise.workoutSessionId === workout.id)
+  }));
+}
+
+async function listPlanAssignmentsForUser(userId: string, assignmentId?: string) {
+  const assignments = await prisma.planAssignment.findMany({
+    where: clean({
+      assignedToUserId: userId,
+      active: true,
+      ...(assignmentId ? { id: assignmentId } : {})
+    }),
+    orderBy: { createdAt: "desc" }
+  });
+  const [plans, progress] = await Promise.all([
+    prisma.planContent.findMany({
+      where: { id: { in: assignments.map((assignment) => assignment.planId) } }
+    }),
+    prisma.planProgress.findMany({
+      where: { assignmentId: { in: assignments.map((assignment) => assignment.id) }, userId }
+    })
+  ]);
+
+  return assignments.map((assignment) => ({
+    ...assignment,
+    plan: plans.find((plan) => plan.id === assignment.planId) ?? null,
+    progress: progress.find((entry) => entry.assignmentId === assignment.id) ?? null
   }));
 }
 
@@ -298,6 +396,87 @@ async function createDirectNotification(input: {
     });
   }
   return notification;
+}
+
+function currentAIProviderType(): "MOCK" | "OPENAI" {
+  return process.env.AI_PROVIDER === "openai" && Boolean(process.env.OPENAI_API_KEY) ? "OPENAI" : "MOCK";
+}
+
+function summarizeAIResponse(response: string | Record<string, unknown>) {
+  return (typeof response === "string" ? response : JSON.stringify(response)).slice(0, 120);
+}
+
+async function resolveAIQuotaState(input: {
+  userId: string;
+  role: Exclude<Role, "PLATFORM_ADMIN">;
+}) {
+  const today = startOfDay();
+  const monthStart = startOfMonth();
+  const [usedTextDaily, usedTextMonth, usedImagesMonth] = await Promise.all([
+    prisma.aIUsageLog.count({
+      where: {
+        userId: input.userId,
+        requestType: { in: ["CHAT", "STRUCTURED_PLAN"] },
+        createdAt: { gte: today }
+      }
+    }),
+    prisma.aIUsageLog.count({
+      where: {
+        userId: input.userId,
+        requestType: { in: ["CHAT", "STRUCTURED_PLAN"] },
+        createdAt: { gte: monthStart }
+      }
+    }),
+    prisma.aIUsageLog.count({
+      where: {
+        userId: input.userId,
+        requestType: "IMAGE",
+        createdAt: { gte: monthStart }
+      }
+    })
+  ]);
+  return buildAIQuotaState(input.role, { usedTextDaily, usedTextMonth, usedImagesMonth });
+}
+
+async function persistAiConversation(input: {
+  conversationId?: string;
+  userId: string;
+  orgId?: string;
+  prompt: string;
+  response: string | Record<string, unknown>;
+  safetyFlags?: Prisma.InputJsonValue;
+}) {
+  const conversation =
+    (input.conversationId
+      ? await prisma.aIConversation.findFirst({
+          where: { id: input.conversationId, userId: input.userId }
+        })
+      : null) ??
+    (await prisma.aIConversation.create({
+      data: clean({
+        userId: input.userId,
+        orgId: input.orgId,
+        title: input.prompt.slice(0, 80)
+      })
+    }));
+
+  await prisma.aIMessage.createMany({
+    data: [
+      {
+        conversationId: conversation.id,
+        role: "user",
+        content: input.prompt
+      },
+      clean({
+        conversationId: conversation.id,
+        role: "assistant",
+        content: typeof input.response === "string" ? input.response : JSON.stringify(input.response),
+        safetyFlags: input.safetyFlags
+      })
+    ]
+  });
+
+  return conversation;
 }
 
 function notificationPreferenceAllowsType(
@@ -2427,10 +2606,29 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients"])) {
     const orgId = path[1]!;
     const trainerId = path[3]!;
-    return ok({
-      clients: await prisma.trainerAssignment.findMany({
-        where: { orgId, trainerUserId: trainerId, active: true }
+    const ctx = await getRequestContext(request, { orgId });
+    const requesterId = requireAuth(ctx);
+    if (requesterId === trainerId) {
+      requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    } else {
+      requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    }
+    const assignments = await prisma.trainerAssignment.findMany({
+      where: { orgId, trainerUserId: trainerId, active: true },
+      orderBy: { createdAt: "desc" }
+    });
+    const [users, profiles] = await Promise.all([
+      prisma.user.findMany({ where: { id: { in: assignments.map((assignment) => assignment.memberUserId) } } }),
+      prisma.memberProfile.findMany({
+        where: { orgId, userId: { in: assignments.map((assignment) => assignment.memberUserId) } }
       })
+    ]);
+    return ok({
+      clients: assignments.map((assignment) => ({
+        ...assignment,
+        user: users.find((user) => user.id === assignment.memberUserId) ?? null,
+        profile: profiles.find((profile) => profile.userId === assignment.memberUserId) ?? null
+      }))
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "pt-plans"])) {
@@ -2482,21 +2680,58 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     });
     return ok({ subscription: sub });
   }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "plans"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    const plans = await prisma.planContent.findMany({
+      where: { orgId },
+      orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+      take: 100
+    });
+    const assignments = await prisma.planAssignment.findMany({
+      where: { orgId, planId: { in: plans.map((plan) => plan.id) } }
+    });
+    return ok({
+      plans: plans.map((plan) => ({
+        ...plan,
+        assignmentCount: assignments.filter((assignment) => assignment.planId === plan.id).length
+      }))
+    });
+  }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plans"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "PLANS_CREATE");
-    const body = (await readJson(request)) as { title: string; type?: string; description?: string; content?: Record<string, unknown>; aiGenerated?: boolean };
+    const body = planContentInputSchema.parse(await readJson(request));
     const plan = await prisma.planContent.create({
       data: clean({
         orgId,
         creatorUserId: userId,
-        type: (body.type ?? "WORKOUT") as never,
+        type: body.type as never,
         title: body.title,
         description: body.description,
-        content: (body.content ?? { blocks: [] }) as Prisma.InputJsonValue,
-        aiGenerated: body.aiGenerated ?? false
+        content: body.content as Prisma.InputJsonValue,
+        aiGenerated: body.aiGenerated,
+        visibility: body.visibility
       })
+    });
+    await prisma.planVersion.create({
+      data: {
+        orgId,
+        planId: plan.id,
+        versionNo: 1,
+        content: createPlanVersionSnapshot({
+          title: body.title,
+          ...clean({
+            description: body.description,
+            aiGenerated: body.aiGenerated,
+            visibility: body.visibility
+          }),
+          content: body.content
+        }) as Prisma.InputJsonValue,
+        createdById: userId
+      }
     });
     await writeAuditLog({
       request,
@@ -2539,16 +2774,47 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     if (!existingPlan) {
       throw notFoundError("Plan not found");
     }
-    const body = (await readJson(request)) as { assignedToUserId?: string; audience?: string };
+    const body = planAssignSchema.parse(await readJson(request));
+    const assignedClientUserIds = ctx.roles.includes("TRAINER")
+      ? (
+          await prisma.trainerAssignment.findMany({
+            where: { orgId, trainerUserId: userId, active: true },
+            select: { memberUserId: true }
+          })
+        ).map((assignment) => assignment.memberUserId)
+      : [];
+    if (
+      !canAssignPlanToUser({
+        actorRoles: ctx.roles,
+        actorPermissions: ctx.permissions,
+        audience: body.audience,
+        assignedClientUserIds,
+        ...(body.assignedToUserId ? { targetUserId: body.assignedToUserId } : {})
+      })
+    ) {
+      throw forbiddenError("You can only assign plans to your own clients or within your granted scope.");
+    }
     const assignment = await prisma.planAssignment.create({
       data: clean({
         orgId,
         planId: existingPlan.id,
         assignedById: userId,
         assignedToUserId: body.assignedToUserId,
-        audience: body.audience ?? "selected_member"
+        audience: body.audience
       })
     });
+    if (body.assignedToUserId) {
+      await createDirectNotification({
+        orgId,
+        createdById: userId,
+        type: "PLAN",
+        title: `New plan assigned: ${existingPlan.title}`,
+        body: "Open Zook to review the plan, ask follow-up questions, and track progress.",
+        audience: "selected_member",
+        userIds: [body.assignedToUserId],
+        metadata: { assignmentId: assignment.id, planId: existingPlan.id }
+      });
+    }
     await writeAuditLog({
       request,
       orgId,
@@ -2562,24 +2828,39 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
   }
   if (request.method === "GET" && pathMatches(path, ["me", "plans"])) {
     const userId = requireAuth(await getRequestContext(request));
-    return ok({ plans: await prisma.planAssignment.findMany({ where: { assignedToUserId: userId, active: true } }) });
+    return ok({ plans: await listPlanAssignmentsForUser(userId) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "plans", /.+/])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const plans = await listPlanAssignmentsForUser(userId, path[2]!);
+    const assignment = plans[0];
+    if (!assignment) {
+      throw notFoundError("Plan assignment not found");
+    }
+    return ok({ assignment });
   }
   if (request.method === "POST" && pathMatches(path, ["me", "plans", /.+/, "progress"])) {
     const userId = requireAuth(await getRequestContext(request));
-    const body = (await readJson(request)) as { orgId: string; progressJson?: Record<string, unknown>; completionPct?: number; feedback?: string };
+    const body = planProgressInputSchema.parse(await readJson(request));
+    const assignment = await prisma.planAssignment.findFirst({
+      where: { id: path[2]!, assignedToUserId: userId, active: true }
+    });
+    if (!assignment) {
+      throw notFoundError("Plan assignment not found");
+    }
     const progress = await prisma.planProgress.upsert({
       where: { assignmentId_userId: { assignmentId: path[2]!, userId } },
       update: clean({
-        progressJson: (body.progressJson ?? {}) as Prisma.InputJsonValue,
-        completionPct: body.completionPct ?? 0,
+        progressJson: body.progressJson as Prisma.InputJsonValue,
+        completionPct: body.completionPct,
         feedback: body.feedback
       }),
       create: clean({
-        orgId: body.orgId,
+        orgId: body.orgId ?? assignment.orgId,
         assignmentId: path[2]!,
         userId,
-        progressJson: (body.progressJson ?? {}) as Prisma.InputJsonValue,
-        completionPct: body.completionPct ?? 0,
+        progressJson: body.progressJson as Prisma.InputJsonValue,
+        completionPct: body.completionPct,
         feedback: body.feedback
       })
     });
@@ -2609,7 +2890,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
 
 async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["ai", "chat"])) {
-    const body = (await readJson(request)) as { prompt: string; orgId?: string };
+    const body = aiChatSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
@@ -2617,7 +2898,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       requireOrgPermission(ctx, body.orgId, "AI_USE_TEXT");
     }
     const role = (ctx.roles.find((candidate) => candidate !== "PLATFORM_ADMIN") ?? "MEMBER") as Exclude<Role, "PLATFORM_ADMIN">;
-    const quota = defaultAIQuotaForRole(role);
+    const quota = await resolveAIQuotaState({ userId, role });
     const result = await runAIGuardedRequest({
       provider: aiProvider,
       prompt: body.prompt,
@@ -2632,24 +2913,32 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         hasProfilePhoto: Boolean(user.profilePhotoUrl)
       }
     });
+    const conversation = await persistAiConversation({
+      userId,
+      prompt: body.prompt,
+      response: result.response,
+      ...(body.conversationId ? { conversationId: body.conversationId } : {}),
+      ...(body.orgId ? { orgId: body.orgId } : {}),
+      safetyFlags: result.safetyFlags as Prisma.InputJsonValue
+    });
     await prisma.aIUsageLog.create({
       data: clean({
         orgId: body.orgId,
         userId,
         role,
-        provider: "MOCK",
+        provider: currentAIProviderType(),
         requestType: "CHAT",
         promptSummary: body.prompt.slice(0, 120),
-        responseSummary: typeof result.response === "string" ? result.response.slice(0, 120) : "structured",
+        responseSummary: summarizeAIResponse(result.response),
         tokenEstimate: result.tokenEstimate,
         quotaConsumed: result.quotaConsumed,
         safetyFlags: result.safetyFlags
       })
     });
-    return ok(result);
+    return ok({ ...result, conversationId: conversation.id });
   }
   if (request.method === "POST" && (pathMatches(path, ["ai", "generate-plan"]) || pathMatches(path, ["ai", "generate-image"]))) {
-    const body = (await readJson(request)) as { prompt: string; orgId?: string };
+    const body = aiGenerateSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
@@ -2658,12 +2947,13 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       requireOrgPermission(ctx, body.orgId, requestType === "IMAGE" ? "AI_GENERATE_IMAGE" : "AI_GENERATE_PLAN");
     }
     const role = (ctx.roles.find((candidate) => candidate !== "PLATFORM_ADMIN") ?? "TRAINER") as Exclude<Role, "PLATFORM_ADMIN">;
+    const quota = await resolveAIQuotaState({ userId, role });
     const result = await runAIGuardedRequest({
       provider: aiProvider,
       prompt: body.prompt,
       role,
       requestType,
-      quota: defaultAIQuotaForRole(role),
+      quota,
       user: {
         isMinor: user.isMinor,
         guardianConsentGranted: !user.guardianPending,
@@ -2672,7 +2962,64 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         hasProfilePhoto: Boolean(user.profilePhotoUrl)
       }
     });
-    return ok(result);
+    let createdPlan: Prisma.PlanContentGetPayload<object> | undefined;
+    if (requestType === "STRUCTURED_PLAN" && body.orgId && body.persistDraft) {
+      const planType = body.type ?? "WORKOUT";
+      const title = body.title ?? `${planType === "DIET" ? "Nutrition" : "Workout"} AI draft`;
+      createdPlan = await prisma.planContent.create({
+        data: {
+          orgId: body.orgId,
+          creatorUserId: userId,
+          type: planType as never,
+          title,
+          description: "AI-generated draft. Review before publishing.",
+          content: result.response as Prisma.InputJsonValue,
+          aiGenerated: true,
+          visibility: "assigned"
+        }
+      });
+      await prisma.planVersion.create({
+        data: {
+          orgId: body.orgId,
+          planId: createdPlan.id,
+          versionNo: 1,
+          content: createPlanVersionSnapshot({
+            title,
+            description: "AI-generated draft. Review before publishing.",
+            aiGenerated: true,
+            visibility: "assigned",
+            content: result.response as Record<string, unknown>
+          }) as Prisma.InputJsonValue,
+          createdById: userId
+        }
+      });
+      await writeAuditLog({
+        request,
+        orgId: body.orgId,
+        actorUserId: userId,
+        action: "plan.ai_draft_created",
+        entityType: "plan_content",
+        entityId: createdPlan.id,
+        metadata: { type: planType }
+      });
+    }
+    await prisma.aIUsageLog.create({
+      data: clean({
+        orgId: body.orgId,
+        userId,
+        role,
+        provider: currentAIProviderType(),
+        requestType,
+        promptSummary: body.prompt.slice(0, 120),
+        responseSummary: summarizeAIResponse(result.response),
+        tokenEstimate: result.tokenEstimate,
+        quotaConsumed: result.quotaConsumed,
+        imageCount: requestType === "IMAGE" ? 1 : 0,
+        createdPlanId: createdPlan?.id,
+        safetyFlags: result.safetyFlags
+      })
+    });
+    return ok({ ...result, ...(createdPlan ? { createdPlan } : {}) });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "ai", "usage"])) {
     const orgId = path[1]!;

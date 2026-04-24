@@ -12,3 +12,4 @@ export * from "./organization-service";
 export * from "./audit-log-service";
 export * from "./platform-admin-service";
 export * from "./personal-tracking-service";
+export * from "./plan-service";

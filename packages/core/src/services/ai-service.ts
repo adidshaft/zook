@@ -15,6 +15,16 @@ export function defaultAIQuotaForRole(role: Exclude<Role, "PLATFORM_ADMIN">): AI
   return { ...limits, usedTextDaily: 0, usedTextMonth: 0, usedImagesMonth: 0 };
 }
 
+export function buildAIQuotaState(
+  role: Exclude<Role, "PLATFORM_ADMIN">,
+  usage?: Partial<Pick<AIQuotaState, "usedTextDaily" | "usedTextMonth" | "usedImagesMonth">>
+): AIQuotaState {
+  return {
+    ...defaultAIQuotaForRole(role),
+    ...(usage ?? {})
+  };
+}
+
 export function assertAIAllowed(input: {
   role: Exclude<Role, "PLATFORM_ADMIN">;
   requestType: AIRequestType;
