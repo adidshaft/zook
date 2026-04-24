@@ -17,12 +17,18 @@ importers:
       '@types/node':
         specifier: ^22.10.7
         version: 22.19.17
+      dotenv:
+        specifier: ^16.6.1
+        version: 16.6.1
       eslint:
         specifier: ^9.18.0
         version: 9.39.4(jiti@2.6.1)
       prettier:
         specifier: ^3.4.2
         version: 3.8.3
+      tsx:
+        specifier: ^4.20.6
+        version: 4.21.0
       turbo:
         specifier: ^2.3.3
         version: 2.9.6
@@ -8190,7 +8196,7 @@ snapshots:
 
   dotenv-expand@11.0.7:
     dependencies:
-      dotenv: 16.4.7
+      dotenv: 16.6.1
 
   dotenv@16.4.7: {}
 

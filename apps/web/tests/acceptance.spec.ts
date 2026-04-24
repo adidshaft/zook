@@ -9,7 +9,10 @@ async function loginWithOtp(page: Page, email: string) {
 }
 
 function requireDb() {
-  test.skip(process.env.RUN_DB_WEB_TESTS !== "1", "Requires local PostgreSQL seed data.");
+  test.skip(
+    process.env.RUN_DB_WEB_TESTS !== "1" || !process.env.DATABASE_URL,
+    "Requires local PostgreSQL seed data and DATABASE_URL in the Playwright web server environment."
+  );
 }
 
 test("dashboard routes redirect unauthenticated users to login", async ({ page }) => {
