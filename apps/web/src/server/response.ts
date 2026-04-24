@@ -4,8 +4,11 @@ export function ok<T>(data: T, init?: ResponseInit) {
   return NextResponse.json({ ok: true, data }, init);
 }
 
-export function fail(code: string, message: string, status = 400) {
-  return NextResponse.json({ ok: false, error: { code, message } }, { status });
+export function fail(code: string, message: string, status = 400, details?: unknown) {
+  return NextResponse.json(
+    { ok: false, error: { code, message, ...(details !== undefined ? { details } : {}) } },
+    { status }
+  );
 }
 
 export async function readJson<T = unknown>(request: Request): Promise<T> {

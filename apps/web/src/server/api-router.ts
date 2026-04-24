@@ -6,7 +6,6 @@ import {
   checkoutSchema,
   couponSchema,
   createOrganizationSchema,
-  hasPermission,
   membershipPlanSchema,
   notificationSchema,
   requestOtpSchema,
@@ -28,9 +27,12 @@ import {
   runAIGuardedRequest
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
-import { createRequestContext, extractSessionToken, requireUser, sessionCookieName } from "./context";
+import { extractSessionToken, sessionCookieName } from "./context";
+import { getRequestContext, requireAuth, requireOrgPermission, requirePlatformAdmin } from "./access";
+import { forbiddenError, notFoundError, toErrorResponse } from "./errors";
 import { fail, ok, readJson } from "./response";
 import { resolveSessionSummaryFromToken } from "./session";
+import { writeAuditLog } from "./audit";
 
 const emailProvider = new MockEmailProvider();
 const mapProvider = new MockMapProvider();
@@ -51,18 +53,6 @@ function pathMatches(path: string[], pattern: Array<string | RegExp>) {
   return pattern.every((part, index) =>
     typeof part === "string" ? part === path[index] : part.test(path[index] ?? ""),
   );
-}
-
-async function ensureOrgRole(orgId: string, userId: string, permission?: string) {
-  const roles = await prisma.organizationRoleAssignment.findMany({ where: { orgId, userId } });
-  const roleNames = roles.map((role) => role.role) as Role[];
-  if (!roleNames.length) {
-    throw new Error("No organization access");
-  }
-  if (permission && !hasPermission(roleNames, permission as never)) {
-    throw new Error(`Permission denied: ${permission}`);
-  }
-  return roleNames;
 }
 
 async function getUserByEmailOrCreate(email: string) {
@@ -272,8 +262,8 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     return ok({ org, plans });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs"])) {
-    const ctx = await createRequestContext(request);
-    const userId = requireUser(ctx);
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
     const body = createOrganizationSchema.parse(await readJson(request));
     const username = normalizeUsername(body.username);
     const trial = createTrialWindow();
@@ -324,11 +314,20 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       });
       return created;
     });
+    await writeAuditLog({
+      request,
+      orgId: org.id,
+      actorUserId: userId,
+      action: "organization.created",
+      entityType: "organization",
+      entityId: org.id,
+      metadata: { username: org.username }
+    });
     return ok({ org });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", "current"])) {
-    const ctx = await createRequestContext(request);
-    const userId = requireUser(ctx);
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
     const membership = await prisma.organizationUser.findFirst({ where: { userId, status: "active" } });
     if (!membership) {
       return ok({ org: null });
@@ -336,9 +335,9 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     return ok({ org: await prisma.organization.findUnique({ where: { id: membership.orgId } }) });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "location", "resolve"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "ORG_MANAGE_LOCATION");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_LOCATION");
     const body = (await readJson(request)) as { googleMapsUrl?: string; address?: string; city?: string; state?: string; pincode?: string };
     const result = body.googleMapsUrl
       ? await mapProvider.resolveGoogleMapsLink(body.googleMapsUrl)
@@ -348,14 +347,32 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           state: body.state ?? "Maharashtra",
           pincode: body.pincode ?? "411001"
         });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "organization.location_resolved",
+      entityType: "organization",
+      entityId: orgId,
+      metadata: body
+    });
     return ok({ location: result });
   }
   if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "join-mode"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "ORG_MANAGE_PROFILE");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_PROFILE");
     const body = (await readJson(request)) as { joinMode: "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY" };
     const org = await prisma.organization.update({ where: { id: orgId }, data: { joinMode: body.joinMode } });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "organization.join_mode_updated",
+      entityType: "organization",
+      entityId: org.id,
+      metadata: { joinMode: body.joinMode }
+    });
     return ok({ org });
   }
   return undefined;
@@ -364,12 +381,14 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
 async function handleMembershipPayments(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "membership-plans"])) {
     const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "MEMBERSHIP_PLAN_MANAGE");
     return ok({ plans: await prisma.membershipPlan.findMany({ where: { orgId }, orderBy: { createdAt: "desc" } }) });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "membership-plans"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "MEMBERSHIP_PLAN_MANAGE");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_PLAN_MANAGE");
     const body = membershipPlanSchema.parse(await readJson(request));
     const branch = await prisma.branch.findFirst({ where: { orgId, isDefault: true } });
     const plan = await prisma.membershipPlan.create({
@@ -387,11 +406,20 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         createdById: userId
       })
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "membership_plan.created",
+      entityType: "membership_plan",
+      entityId: plan.id,
+      metadata: { name: plan.name, type: plan.type }
+    });
     return ok({ plan });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "join-requests"])) {
-    const ctx = await createRequestContext(request);
-    const userId = requireUser(ctx);
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
     const orgId = path[1]!;
     const body = (await readJson(request)) as { planId?: string; referralCode?: string; message?: string };
     const requestRow = await prisma.membershipJoinRequest.create({
@@ -400,17 +428,31 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     return ok({ joinRequest: requestRow });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "join-requests", /.+/, "approve"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "MEMBERS_MANAGE");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "MEMBERS_MANAGE");
+    const existingJoinRequest = await prisma.membershipJoinRequest.findFirst({
+      where: { id: path[3]!, orgId }
+    });
+    if (!existingJoinRequest) {
+      throw notFoundError("Join request not found");
+    }
     const joinRequest = await prisma.membershipJoinRequest.update({
-      where: { id: path[3]! },
+      where: { id: existingJoinRequest.id },
       data: { status: "approved", reviewedById: userId, reviewedAt: new Date() }
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "membership_join_request.approved",
+      entityType: "membership_join_request",
+      entityId: joinRequest.id
     });
     return ok({ joinRequest });
   }
   if (request.method === "POST" && pathMatches(path, ["payments", "checkout"])) {
-    const ctx = await createRequestContext(request);
+    const ctx = await getRequestContext(request);
     const userId = ctx.userId;
     const body = checkoutSchema.parse(await readJson(request));
     const session = await prisma.paymentSession.create({
@@ -487,8 +529,8 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     return ok({ session, payment });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "subscriptions"])) {
-    const ctx = await createRequestContext(request);
-    const userId = requireUser(ctx);
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
     const orgId = path[1]!;
     const body = (await readJson(request)) as { planId: string; couponCode?: string; referralCode?: string };
     const [plan, branch] = await Promise.all([
@@ -553,7 +595,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     return ok({ subscription, checkoutUrl: updated.checkoutUrl, session: updated });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "memberships"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     return ok({ subscriptions: await prisma.memberSubscription.findMany({ where: { memberUserId: userId } }) });
   }
   return undefined;
@@ -562,12 +604,14 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
 async function handleCouponsReferrals(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "coupons"])) {
     const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "COUPONS_MANAGE");
     return ok({ coupons: await prisma.coupon.findMany({ where: { orgId } }) });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "coupons"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "COUPONS_MANAGE");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "COUPONS_MANAGE");
     const body = couponSchema.parse(await readJson(request));
     const coupon = await prisma.coupon.create({
       data: clean({
@@ -582,10 +626,19 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
         createdById: userId
       })
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "coupon.created",
+      entityType: "coupon",
+      entityId: coupon.id,
+      metadata: { code: coupon.code }
+    });
     return ok({ coupon });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "referrals"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     const orgId = path[1]!;
     const code = `ZK${randomBytes(4).toString("hex").toUpperCase()}`;
     const referral = await prisma.referralCode.create({
@@ -604,9 +657,9 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
 
 async function handleAttendance(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "attendance", "qr-token"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "ATTENDANCE_QR_DISPLAY");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ATTENDANCE_QR_DISPLAY");
     const branch = await prisma.branch.findFirst({ where: { orgId, isDefault: true } });
     if (!branch) return fail("NOT_FOUND", "Default branch not found", 404);
     const payload = createSignedQrToken({
@@ -628,8 +681,8 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     return ok({ qrPayload: encodeQrPayload(payload), expiresAt: new Date(payload.expiry) });
   }
   if (request.method === "POST" && pathMatches(path, ["attendance", "scan"])) {
-    const ctx = await createRequestContext(request);
-    const userId = requireUser(ctx);
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
     const body = attendanceScanSchema.parse(await readJson(request));
     const decoded = JSON.parse(Buffer.from(body.qrPayload, "base64url").toString("utf8")) as { orgId: string; branchId: string; expiry: number; nonce: string };
     if (decoded.expiry < Date.now()) {
@@ -685,25 +738,40 @@ async function handleAttendance(request: NextRequest, path: string[]) {
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "attendance", "live"])) {
     const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ATTENDANCE_APPROVE");
     return ok({
       records: await prisma.attendanceRecord.findMany({ where: { orgId }, take: 20, orderBy: { checkedInAt: "desc" } })
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "attendance", /.+/, "approve"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "ATTENDANCE_APPROVE");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ATTENDANCE_APPROVE");
+    const existingRecord = await prisma.attendanceRecord.findFirst({ where: { id: path[3]!, orgId } });
+    if (!existingRecord) {
+      throw notFoundError("Attendance record not found");
+    }
+    const record = await prisma.attendanceRecord.update({
+      where: { id: existingRecord.id },
+      data: { status: "APPROVED", approvedById: userId, approvedAt: new Date() }
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "attendance.approved",
+      entityType: "attendance_record",
+      entityId: record.id
+    });
     return ok({
-      record: await prisma.attendanceRecord.update({
-        where: { id: path[3]! },
-        data: { status: "APPROVED", approvedById: userId, approvedAt: new Date() }
-      })
+      record
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "attendance", "manual"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "ATTENDANCE_MANUAL_OVERRIDE");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ATTENDANCE_MANUAL_OVERRIDE");
     const body = (await readJson(request)) as { memberUserId: string; branchId?: string; reason?: string };
     if (!body.reason?.trim()) return fail("REASON_REQUIRED", "Manual override reason required", 400);
     const branch = body.branchId
@@ -726,6 +794,15 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     await prisma.attendanceOverride.create({
       data: { orgId, attendanceRecordId: record.id, userId: body.memberUserId, reason: body.reason, createdById: userId }
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "attendance.manual_override",
+      entityType: "attendance_record",
+      entityId: record.id,
+      metadata: { memberUserId: body.memberUserId, reason: body.reason }
+    });
     return ok({ record });
   }
   return undefined;
@@ -734,14 +811,16 @@ async function handleAttendance(request: NextRequest, path: string[]) {
 async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "staff"])) {
     const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ORG_MANAGE_STAFF");
     const staff = await prisma.organizationRoleAssignment.findMany({ where: { orgId, role: { not: "MEMBER" } } });
     const users = await prisma.user.findMany({ where: { id: { in: staff.map((row) => row.userId) } } });
     return ok({ staff, users });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "staff", "invite"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "ORG_MANAGE_STAFF");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_STAFF");
     const body = (await readJson(request)) as { email: string; role: Role };
     const invite = await prisma.staffInvitation.create({
       data: {
@@ -753,27 +832,48 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       }
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "staff.invited",
+      entityType: "staff_invitation",
+      entityId: invite.id,
+      metadata: { email: body.email, role: body.role }
+    });
     return ok({ invite });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "permissions"])) {
-    return ok({ permissions: await prisma.organizationRolePermission.findMany({ where: { orgId: path[1]! } }) });
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ORG_MANAGE_PERMISSIONS");
+    return ok({ permissions: await prisma.organizationRolePermission.findMany({ where: { orgId } }) });
   }
   if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "permissions"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "ORG_MANAGE_PERMISSIONS");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_PERMISSIONS");
     const body = (await readJson(request)) as { role: Role; permission: string; enabled: boolean };
     const permission = await prisma.organizationRolePermission.upsert({
       where: { orgId_role_permission: { orgId, role: body.role, permission: body.permission as never } },
       update: { enabled: body.enabled, overriddenByUserId: userId },
       create: { orgId, role: body.role, permission: body.permission as never, enabled: body.enabled, overriddenByUserId: userId }
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "permissions.updated",
+      entityType: "organization_role_permission",
+      entityId: permission.id,
+      metadata: body
+    });
     return ok({ permission });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "manual-payments"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "PAYMENTS_RECORD_OFFLINE");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PAYMENTS_RECORD_OFFLINE");
     const body = (await readJson(request)) as {
       memberUserId?: string;
       amountPaise: number;
@@ -795,6 +895,15 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         recordedAt: new Date()
       })
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "payment.manual_recorded",
+      entityType: "payment",
+      entityId: payment.id,
+      metadata: { amountPaise: payment.amountPaise, mode: payment.mode }
+    });
     return ok({ payment });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients"])) {
@@ -807,9 +916,9 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "pt-plans"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "PT_RECORD");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
     const body = (await readJson(request)) as { name: string; description?: string; sessionCount?: number; durationDays?: number; pricePaise: number };
     const plan = await prisma.personalTrainingPlan.create({
       data: clean({
@@ -825,9 +934,9 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     return ok({ plan });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "pt-subscriptions"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "PT_RECORD");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
     const body = (await readJson(request)) as {
       memberUserId: string;
       trainerUserId: string;
@@ -856,9 +965,9 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     return ok({ subscription: sub });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plans"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "PLANS_CREATE");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PLANS_CREATE");
     const body = (await readJson(request)) as { title: string; type?: string; description?: string; content?: Record<string, unknown>; aiGenerated?: boolean };
     const plan = await prisma.planContent.create({
       data: clean({
@@ -871,40 +980,74 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         aiGenerated: body.aiGenerated ?? false
       })
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "plan.created",
+      entityType: "plan_content",
+      entityId: plan.id,
+      metadata: { title: plan.title, type: plan.type }
+    });
     return ok({ plan });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plans", /.+/, "publish"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "PLANS_PUBLISH_ALL");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PLANS_PUBLISH_ALL");
+    const existingPlan = await prisma.planContent.findFirst({ where: { id: path[3]!, orgId } });
+    if (!existingPlan) {
+      throw notFoundError("Plan not found");
+    }
     const plan = await prisma.planContent.update({
-      where: { id: path[3]! },
+      where: { id: existingPlan.id },
       data: { status: "PUBLISHED", reviewed: true, reviewedById: userId }
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "plan.published",
+      entityType: "plan_content",
+      entityId: plan.id
     });
     return ok({ plan });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plans", /.+/, "assign"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "PLANS_PUBLISH_ASSIGNED");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PLANS_PUBLISH_ASSIGNED");
+    const existingPlan = await prisma.planContent.findFirst({ where: { id: path[3]!, orgId } });
+    if (!existingPlan) {
+      throw notFoundError("Plan not found");
+    }
     const body = (await readJson(request)) as { assignedToUserId?: string; audience?: string };
     const assignment = await prisma.planAssignment.create({
       data: clean({
         orgId,
-        planId: path[3]!,
+        planId: existingPlan.id,
         assignedById: userId,
         assignedToUserId: body.assignedToUserId,
         audience: body.audience ?? "selected_member"
       })
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "plan.assigned",
+      entityType: "plan_assignment",
+      entityId: assignment.id,
+      metadata: { assignedToUserId: body.assignedToUserId, audience: body.audience ?? "selected_member" }
+    });
     return ok({ assignment });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "plans"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     return ok({ plans: await prisma.planAssignment.findMany({ where: { assignedToUserId: userId, active: true } }) });
   }
   if (request.method === "POST" && pathMatches(path, ["me", "plans", /.+/, "progress"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     const body = (await readJson(request)) as { orgId: string; progressJson?: Record<string, unknown>; completionPct?: number; feedback?: string };
     const progress = await prisma.planProgress.upsert({
       where: { assignmentId_userId: { assignmentId: path[2]!, userId } },
@@ -925,11 +1068,11 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     return ok({ progress });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "goals"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     return ok({ goals: await prisma.userGoal.findMany({ where: { userId, active: true } }) });
   }
   if (request.method === "POST" && pathMatches(path, ["me", "goals"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     const body = (await readJson(request)) as { orgId?: string; type: string; title: string; targetValue?: number; period?: string };
     const goal = await prisma.userGoal.create({
       data: clean({ orgId: body.orgId, userId, type: body.type, title: body.title, targetValue: body.targetValue, period: body.period })
@@ -937,7 +1080,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     return ok({ goal });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "badges"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     return ok({ badges: await prisma.userBadge.findMany({ where: { userId } }) });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "challenges"])) {
@@ -948,11 +1091,14 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
 
 async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["ai", "chat"])) {
-    const ctx = await createRequestContext(request);
-    const userId = requireUser(ctx);
-    const body = (await readJson(request)) as { prompt: string; role?: Role; orgId?: string };
+    const body = (await readJson(request)) as { prompt: string; orgId?: string };
+    const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
+    const userId = requireAuth(ctx);
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    const role = (body.role ?? ctx.roles.find((candidate) => candidate !== "PLATFORM_ADMIN") ?? "MEMBER") as Exclude<Role, "PLATFORM_ADMIN">;
+    if (body.orgId) {
+      requireOrgPermission(ctx, body.orgId, "AI_USE_TEXT");
+    }
+    const role = (ctx.roles.find((candidate) => candidate !== "PLATFORM_ADMIN") ?? "MEMBER") as Exclude<Role, "PLATFORM_ADMIN">;
     const quota = defaultAIQuotaForRole(role);
     const result = await runAIGuardedRequest({
       provider: aiProvider,
@@ -985,12 +1131,15 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     return ok(result);
   }
   if (request.method === "POST" && (pathMatches(path, ["ai", "generate-plan"]) || pathMatches(path, ["ai", "generate-image"]))) {
-    const ctx = await createRequestContext(request);
-    const userId = requireUser(ctx);
+    const body = (await readJson(request)) as { prompt: string; orgId?: string };
+    const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
+    const userId = requireAuth(ctx);
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    const body = (await readJson(request)) as { prompt: string; role?: Role; orgId?: string };
     const requestType: AIRequestType = path[1] === "generate-image" ? "IMAGE" : "STRUCTURED_PLAN";
-    const role = (body.role ?? "TRAINER") as Exclude<Role, "PLATFORM_ADMIN">;
+    if (body.orgId) {
+      requireOrgPermission(ctx, body.orgId, requestType === "IMAGE" ? "AI_GENERATE_IMAGE" : "AI_GENERATE_PLAN");
+    }
+    const role = (ctx.roles.find((candidate) => candidate !== "PLATFORM_ADMIN") ?? "TRAINER") as Exclude<Role, "PLATFORM_ADMIN">;
     const result = await runAIGuardedRequest({
       provider: aiProvider,
       prompt: body.prompt,
@@ -1008,12 +1157,15 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     return ok(result);
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "ai", "usage"])) {
-    return ok({ usage: await prisma.aIUsageLog.findMany({ where: { orgId: path[1]! }, take: 50, orderBy: { createdAt: "desc" } }) });
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "AI_MANAGE_SETTINGS");
+    return ok({ usage: await prisma.aIUsageLog.findMany({ where: { orgId }, take: 50, orderBy: { createdAt: "desc" } }) });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "notifications"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "NOTIFICATION_CREATE_DRAFT");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
     const body = notificationSchema.parse(await readJson(request));
     const notification = await prisma.notification.create({
       data: clean({
@@ -1029,19 +1181,36 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         sentAt: body.scheduleAt ? undefined : new Date()
       })
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "notification.created",
+      entityType: "notification",
+      entityId: notification.id,
+      metadata: { type: notification.type, audience: notification.audience }
+    });
     return ok({ notification });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "notifications"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     return ok({ notifications: await prisma.notificationRecipient.findMany({ where: { userId }, take: 30 }) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "audit-logs"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "PRIVACY_VIEW_AUDIT");
+    return ok({
+      auditLogs: await prisma.auditLog.findMany({ where: { orgId }, orderBy: { createdAt: "desc" }, take: 100 })
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "products"])) {
     return ok({ products: await prisma.product.findMany({ where: { orgId: path[1]!, active: true } }) });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "products"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "SHOP_MANAGE_PRODUCTS");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
     const body = (await readJson(request)) as { name: string; pricePaise: number; stock: number; category?: string };
     const product = await prisma.product.create({
       data: {
@@ -1052,10 +1221,18 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         category: (body.category ?? "OTHER") as never
       }
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "product.created",
+      entityType: "product",
+      entityId: product.id
+    });
     return ok({ product });
   }
   if (request.method === "POST" && pathMatches(path, ["shop", "orders"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     const body = (await readJson(request)) as { orgId: string; items: Array<{ productId: string; quantity: number }> };
     const products = await prisma.product.findMany({ where: { id: { in: body.items.map((item) => item.productId) }, orgId: body.orgId } });
     const total = body.items.reduce((sum, item) => {
@@ -1088,46 +1265,68 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     return ok({ order, checkoutUrl: updated.checkoutUrl });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "shop", "orders", /.+/, "fulfill"])) {
-    const userId = requireUser(await createRequestContext(request));
     const orgId = path[1]!;
-    await ensureOrgRole(orgId, userId, "SHOP_FULFILL_ORDER");
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "SHOP_FULFILL_ORDER");
+    const existingOrder = await prisma.shopOrder.findFirst({ where: { id: path[4]!, orgId } });
+    if (!existingOrder) {
+      throw notFoundError("Shop order not found");
+    }
     const order = await prisma.shopOrder.update({
-      where: { id: path[4]! },
+      where: { id: existingOrder.id },
       data: { status: "FULFILLED", fulfilledById: userId, fulfilledAt: new Date() }
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "shop_order.fulfilled",
+      entityType: "shop_order",
+      entityId: order.id
     });
     return ok({ order });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "consents"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     return ok({ consents: await prisma.consentRecord.findMany({ where: { userId } }) });
   }
   if (request.method === "POST" && pathMatches(path, ["me", "data-export-request"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     return ok({ request: await prisma.consentRecord.create({ data: { userId, type: "DATA_EXPORT", status: "PENDING" } }) });
   }
   if (request.method === "POST" && pathMatches(path, ["me", "account-deletion-request"])) {
-    const userId = requireUser(await createRequestContext(request));
+    const userId = requireAuth(await getRequestContext(request));
     return ok({ request: await prisma.consentRecord.create({ data: { userId, type: "ACCOUNT_DELETION", status: "PENDING" } }) });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "orgs"])) {
-    const ctx = await createRequestContext(request);
-    if (!ctx.isPlatformAdmin) return fail("FORBIDDEN", "Platform admin required", 403);
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
     return ok({ orgs: await prisma.organization.findMany({ orderBy: { createdAt: "desc" } }) });
   }
   if (request.method === "PATCH" && pathMatches(path, ["platform", "orgs", /.+/, "status"])) {
-    const ctx = await createRequestContext(request);
-    if (!ctx.isPlatformAdmin) return fail("FORBIDDEN", "Platform admin required", 403);
+    const ctx = await getRequestContext(request);
+    const userId = requirePlatformAdmin(ctx);
     const body = (await readJson(request)) as { status: "ACTIVE" | "SUSPENDED" | "CANCELLED" };
-    return ok({ org: await prisma.organization.update({ where: { id: path[2]! }, data: { status: body.status } }) });
+    const org = await prisma.organization.update({ where: { id: path[2]! }, data: { status: body.status } });
+    await writeAuditLog({
+      request,
+      orgId: org.id,
+      actorUserId: userId,
+      action: "platform.organization_status_updated",
+      entityType: "organization",
+      entityId: org.id,
+      metadata: { status: body.status }
+    });
+    return ok({ org });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "ai-usage"])) {
-    const ctx = await createRequestContext(request);
-    if (!ctx.isPlatformAdmin) return fail("FORBIDDEN", "Platform admin required", 403);
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
     return ok({ usage: await prisma.aIUsageLog.findMany({ take: 100, orderBy: { createdAt: "desc" } }) });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "abuse-flags"])) {
-    const ctx = await createRequestContext(request);
-    if (!ctx.isPlatformAdmin) return fail("FORBIDDEN", "Platform admin required", 403);
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
     return ok({ flags: await prisma.organizationAbuseFlag.findMany({ take: 100, orderBy: { createdAt: "desc" } }) });
   }
   return undefined;
@@ -1150,11 +1349,9 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
         return response;
       }
     }
-    return fail("NOT_FOUND", `No API route matched /api/${path.join("/")}`, 404);
+    return fail("not_found", `No API route matched /api/${path.join("/")}`, 404);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unexpected error";
-    const status = message.includes("Authentication") ? 401 : message.includes("Permission denied") ? 403 : 400;
-    return fail("BAD_REQUEST", message, status);
+    return toErrorResponse(error);
   }
 }
 

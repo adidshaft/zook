@@ -10,7 +10,10 @@ export function extractSessionToken(request: Pick<NextRequest, "headers" | "cook
   return bearer || cookieToken || undefined;
 }
 
-export async function createRequestContext(request: NextRequest): Promise<RequestContext> {
+export async function createRequestContext(
+  request: NextRequest,
+  input: { orgId?: string } = {},
+): Promise<RequestContext> {
   const token = extractSessionToken(request);
   if (!token) {
     return {
@@ -23,6 +26,7 @@ export async function createRequestContext(request: NextRequest): Promise<Reques
   }
 
   const preferredOrgId =
+    input.orgId ??
     request.headers.get("x-zook-org-id") ??
     request.nextUrl.searchParams.get("orgId") ??
     undefined;
@@ -57,6 +61,8 @@ export async function createRequestContext(request: NextRequest): Promise<Reques
     ...(request.headers.get("user-agent") ? { userAgent: request.headers.get("user-agent") as string } : {})
   };
 }
+
+export const getRequestContext = createRequestContext;
 
 export function requireUser(ctx: RequestContext): string {
   if (!ctx.userId) {
