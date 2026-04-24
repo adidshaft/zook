@@ -1,85 +1,73 @@
 import { ShieldAlert } from "lucide-react";
+import { MetricCard } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
+import { PlatformOperationsPanel } from "@/components/platform-operations-panel";
 import { requirePlatformSession } from "@/lib/server-auth";
 import { ZookLogo } from "@/components/zook-logo";
 import { getDashboardData } from "@/lib/data";
 
+function metricTone(label: string) {
+  if (label.includes("Suspended") || label.includes("Abuse")) {
+    return "amber" as const;
+  }
+  if (label.includes("AI")) {
+    return "blue" as const;
+  }
+  if (label.includes("Organizations")) {
+    return "lime" as const;
+  }
+  return "neutral" as const;
+}
+
 export default async function PlatformPage() {
   await requirePlatformSession();
   const data = await getDashboardData();
+
   return (
     <main className="min-h-screen px-5 py-5">
-      <div className="mx-auto grid max-w-7xl gap-5">
-        <header className="glass-panel flex items-center justify-between rounded-[28px] p-5">
-          <ZookLogo />
-          <Pill tone="amber">Platform super-admin</Pill>
-        </header>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {data.metrics.map((metric) => (
-            <GlassCard key={metric.label}>
-              {metric.label === "Organizations" ? <ShieldAlert className="text-amber-100" /> : null}
-              <p className="mt-4 text-sm text-white/45">{metric.label}</p>
-              <p className="metric mt-2 text-4xl font-semibold">{metric.value}</p>
-              <p className="mt-2 text-xs text-lime-200">{metric.delta}</p>
-            </GlassCard>
-          ))}
-        </div>
-        <GlassCard>
-          <h1 className="text-2xl font-semibold">All Organizations</h1>
-          <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-white/8 text-white/45">
-                <tr>
-                  <th className="px-4 py-3">Gym</th>
-                  <th className="px-4 py-3">City</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.orgs.map((org) => (
-                  <tr key={org.id} className="border-t border-white/10">
-                    <td className="px-4 py-3 font-medium">{org.name}</td>
-                    <td className="px-4 py-3 text-white/55">{org.city}</td>
-                    <td className="px-4 py-3">
-                      <Pill>{org.status}</Pill>
-                    </td>
-                    <td className="px-4 py-3 text-white/55">PATCH /api/platform/orgs/{org.id}/status</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="mx-auto grid max-w-[1500px] gap-5">
+        <GlassCard variant="strong">
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill tone={data.connected ? "lime" : "amber"}>
+                  {data.connected ? "Platform database online" : "Demo fallback"}
+                </Pill>
+                <Pill tone="amber">Platform super-admin</Pill>
+              </div>
+              <div className="mt-4 flex items-center gap-3">
+                <ShieldAlert className="text-amber-100" />
+                <div>
+                  <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Platform operations</h1>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
+                    Registry health, org interventions, AI activity, and abuse review in a single glass control room.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end">
+              <ZookLogo />
+            </div>
           </div>
         </GlassCard>
-        <div className="grid gap-4 xl:grid-cols-2">
-          <GlassCard>
-            <h2 className="text-xl font-semibold">Recent abuse signals</h2>
-            <div className="mt-4 grid gap-3">
-              {(data.platform?.abuseFlags ?? []).length ? (
-                (data.platform?.abuseFlags ?? []).map((flag) => (
-                  <div key={flag.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium">{flag.type}</p>
-                      <Pill tone="amber">{flag.severity}</Pill>
-                    </div>
-                    <p className="mt-2 text-xs text-white/45">{flag.orgId}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-white/45">No abuse flags in the current seed snapshot.</p>
-              )}
-            </div>
-          </GlassCard>
-          <GlassCard>
-            <h2 className="text-xl font-semibold">Platform notes</h2>
-            <p className="mt-4 text-sm leading-6 text-white/55">
-              Organization status changes, AI usage inspection, and abuse review are now backed by the database and the same auth/session layer used by the rest of the product.
-            </p>
-            <p className="mt-4 text-sm leading-6 text-white/55">
-              Use the platform APIs to suspend or reactivate gyms; the seeded UI intentionally keeps those actions visible as explicit operational steps.
-            </p>
-          </GlassCard>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {data.metrics.map((metric) => (
+            <MetricCard
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+              delta={metric.delta}
+              tone={metricTone(metric.label)}
+              icon={metric.label === "Organizations" ? <ShieldAlert size={18} className="text-amber-100" /> : undefined}
+            />
+          ))}
         </div>
+
+        <PlatformOperationsPanel
+          initialOrgs={data.orgs}
+          initialFlags={data.platform.abuseFlags}
+        />
       </div>
     </main>
   );

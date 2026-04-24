@@ -12,12 +12,11 @@ import {
   Store,
   Users
 } from "lucide-react";
-import { GlassCard, Pill } from "./glass-card";
+import { DashboardOperationalPanel } from "./dashboard-operational-panel";
+import { EmptyState, MetricCard, ReadoutGrid, SectionHeader, StatusPill } from "./dashboard-primitives";
+import { GlassCard, Pill, type PillTone } from "./glass-card";
 import { ZookLogo } from "./zook-logo";
-import { AttendanceQrPanel } from "./attendance-qr-panel";
-import { AttendanceApprovalsPanel } from "./attendance-approvals-panel";
-import { NotificationComposerPanel } from "./notification-composer-panel";
-import { formatInr, titleFromSection } from "@/lib/format";
+import { formatDate, formatDaysRemaining, formatEnumLabel, titleFromSection } from "@/lib/format";
 
 const nav = [
   ["Dashboard", "/dashboard", Dumbbell],
@@ -33,14 +32,26 @@ const nav = [
   ["Reports", "/dashboard/reports", Package]
 ] as const;
 
-const workflows: Array<[string, string, string]> = [
-  ["Create membership plan", "/dashboard/membership-plans", "Plans, visits, hybrid validity"],
-  ["Approve check-ins", "/dashboard/attendance/approvals", "Suspicious scans and manual overrides"],
-  ["Record PT", "/dashboard/pt", "Offline trainer subscriptions"],
-  ["Mock checkout", "/checkout/mock/demo", "Hosted payment simulator"],
-  ["Broadcast notification", "/dashboard/notifications", "Operational and promotional guardrails"],
-  ["Fulfill pickup", "/dashboard/shop/orders", "Pay-online-and-pickup shop"]
-];
+function isActiveNav(href: string, sectionKey: string) {
+  if (href === "/dashboard") {
+    return sectionKey === "";
+  }
+  const hrefKey = href.replace("/dashboard/", "");
+  return sectionKey === hrefKey || sectionKey.startsWith(`${hrefKey}/`);
+}
+
+function metricTone(label: string) {
+  if (label.includes("Revenue") || label.includes("attendance")) {
+    return "lime" as const;
+  }
+  if (label.includes("Low stock") || label.includes("queue") || label.includes("Trial")) {
+    return "amber" as const;
+  }
+  if (label.includes("AI")) {
+    return "blue" as const;
+  }
+  return "neutral" as const;
+}
 
 export function DashboardShell({
   section,
@@ -51,198 +62,255 @@ export function DashboardShell({
 }) {
   const title = titleFromSection(section);
   const sectionKey = section?.join("/") ?? "";
-  const activeOrgId = data.orgs[0]?.id;
+  const activeOrg = data.orgs[0];
+
+  if (!activeOrg) {
+    return (
+      <main className="min-h-screen px-4 py-4 lg:px-6">
+        <div className="mx-auto max-w-[1100px]">
+          <GlassCard variant="strong">
+            <EmptyState
+              title="No active organization is available"
+              description="The dashboard session is live, but there is no current organization bound to this view. Re-select the org or re-seed local data."
+            />
+          </GlassCard>
+        </div>
+      </main>
+    );
+  }
+
+  const workflowCards: Array<{
+    label: string;
+    href: string;
+    detail: string;
+    tone: PillTone;
+  }> = [
+    {
+      label: "Review attendance",
+      href: "/dashboard/attendance/approvals",
+      detail: `${data.summary.pendingAttendanceApprovals} approvals waiting`,
+      tone: data.summary.pendingAttendanceApprovals > 0 ? "amber" : "lime"
+    },
+    {
+      label: "Process join requests",
+      href: "/dashboard/members",
+      detail: `${data.summary.joinRequests} membership handoffs`,
+      tone: data.summary.joinRequests > 0 ? "amber" : "lime"
+    },
+    {
+      label: "Check inventory risk",
+      href: "/dashboard/shop/products",
+      detail: `${data.summary.lowStockProducts} low-stock SKUs`,
+      tone: data.summary.lowStockProducts > 0 ? "amber" : "blue"
+    },
+    {
+      label: "Inspect audit and AI",
+      href: "/dashboard/audit",
+      detail: `${data.auditLogCount} audit entries`,
+      tone: data.auditLogCount > 0 ? "blue" : "neutral"
+    }
+  ];
+
   return (
     <main className="min-h-screen px-4 py-4 lg:px-6">
-      <div className="mx-auto grid max-w-[1500px] gap-4 lg:grid-cols-[280px_1fr]">
-        <aside className="glass-panel sticky top-4 h-fit rounded-[28px] p-4">
-          <ZookLogo />
-          <nav className="mt-8 grid gap-1">
-            {nav.map(([label, href, Icon]) => (
-              <Link
-                key={href}
-                href={href}
-                className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-white/62 transition hover:bg-white/10 hover:text-white"
-              >
-                <Icon size={18} />
-                {label}
-              </Link>
-            ))}
-          </nav>
-          <Link href="/platform" className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 px-3 py-3 text-sm text-white/60">
-            <Shield size={18} />
-            Platform admin
-          </Link>
+      <div className="mx-auto grid max-w-[1500px] gap-4 lg:grid-cols-[300px_1fr]">
+        <aside className="sticky top-4 h-fit">
+          <GlassCard variant="strong" className="p-4">
+            <ZookLogo />
+            <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">Live organization</p>
+              <p className="mt-3 text-lg font-semibold text-white">{activeOrg.name}</p>
+              <p className="mt-1 text-sm text-white/48">
+                {activeOrg.city}
+                {activeOrg.state ? `, ${activeOrg.state}` : ""}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <StatusPill value={formatEnumLabel(activeOrg.status)} />
+                <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />
+              </div>
+            </div>
+
+            <nav className="mt-6 grid gap-1">
+              {nav.map(([label, href, Icon]) => {
+                const active = isActiveNav(href, sectionKey);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition ${
+                      active
+                        ? "bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]"
+                        : "text-white/62 hover:bg-white/8 hover:text-white"
+                    }`}
+                  >
+                    <Icon size={18} />
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <Link
+              href="/platform"
+              className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white/62 transition hover:bg-white/8 hover:text-white"
+            >
+              <Shield size={18} />
+              Platform admin
+            </Link>
+
+            <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">Ops posture</p>
+              <ReadoutGrid
+                className="mt-4"
+                columns={1}
+                items={[
+                  {
+                    label: "Attendance mode",
+                    value: formatEnumLabel(activeOrg.attendanceMode),
+                    meta: `${data.summary.pendingAttendanceApprovals} approvals waiting`
+                  },
+                  {
+                    label: "Trial runway",
+                    value: formatDaysRemaining(data.summary.trialDaysRemaining),
+                    meta: formatDate(activeOrg.trialEndAt)
+                  },
+                  {
+                    label: "Escalation lane",
+                    value: activeOrg.contactEmail ?? activeOrg.contactPhone ?? "Desk-owned",
+                    meta: "Primary contact for ops issues"
+                  }
+                ]}
+              />
+            </div>
+          </GlassCard>
         </aside>
 
         <section className="grid gap-4">
-          <header className="glass-panel flex flex-col justify-between gap-4 rounded-[28px] p-5 md:flex-row md:items-center">
-            <div>
-              <div className="flex items-center gap-2">
-                <Pill tone={data.connected ? "lime" : "amber"}>
-                  {data.connected ? "Postgres connected" : "Demo fallback"}
-                </Pill>
-                <Pill>Trial active</Pill>
+          <GlassCard variant="strong" className="overflow-hidden">
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Pill tone={data.connected ? "lime" : "amber"}>
+                    {data.connected ? "Postgres connected" : "Demo fallback"}
+                  </Pill>
+                  <StatusPill value={formatEnumLabel(activeOrg.status)} />
+                  <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />
+                </div>
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">{title}</h1>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
+                  Premium operating surface for ownership, reception, trainers, and admins. This view stays tied to the same persisted org data and auth boundaries as the API.
+                </p>
               </div>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">{title}</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">
-                Role-aware command center for owners, admins, receptionists, trainers, and Zook platform operations.
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href="/dashboard/attendance/qr-display"
+                  className="zook-focus inline-flex items-center justify-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+                >
+                  <QrCode size={18} />
+                  Display QR
+                </Link>
+                <Link
+                  href="/dashboard/reports"
+                  className="zook-focus inline-flex items-center justify-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm text-white/72 transition hover:bg-white/8"
+                >
+                  Open reports
+                </Link>
+              </div>
             </div>
-            <Link href="/dashboard/attendance/qr-display" className="zook-focus inline-flex items-center justify-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black">
-              <QrCode size={18} />
-              Display QR
-            </Link>
-          </header>
+          </GlassCard>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {data.metrics.map((metric) => (
-              <GlassCard key={metric.label}>
-                <p className="text-sm text-white/45">{metric.label}</p>
-                <div className="metric mt-3 text-4xl font-semibold">{metric.value}</div>
-                <p className="mt-2 text-xs text-lime-200">{metric.delta}</p>
-              </GlassCard>
+              <MetricCard
+                key={metric.label}
+                label={metric.label}
+                value={metric.value}
+                delta={metric.delta}
+                tone={metricTone(metric.label)}
+              />
             ))}
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+          <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
             <GlassCard>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold">Operational Workflows</h2>
-                  <p className="mt-1 text-sm text-white/45">Fast paths for the MVP acceptance flows.</p>
-                </div>
-                <Pill tone="lime">Live</Pill>
-              </div>
+              <SectionHeader
+                eyebrow="Operator lane"
+                title="Immediate workflow queue"
+                description="Fast paths into the surfaces that usually need attention before the next rush, shift change, or member callback."
+              />
               <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {workflows.map(([label, href, body]) => (
-                  <Link key={label} href={href} className="rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:bg-white/10">
-                    <h3 className="font-medium">{label}</h3>
-                    <p className="mt-2 text-sm text-white/45">{body}</p>
+                {workflowCards.map((card) => (
+                  <Link
+                    key={card.label}
+                    href={card.href}
+                    className="rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/6"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-white">{card.label}</p>
+                      <Pill tone={card.tone}>{card.detail}</Pill>
+                    </div>
                   </Link>
                 ))}
               </div>
             </GlassCard>
 
-            {sectionKey === "attendance/qr-display" && activeOrgId ? (
-              <AttendanceQrPanel orgId={activeOrgId} />
-            ) : (
-              <GlassCard className="overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">QR Check-in</h2>
-                  <QrCode className="text-lime-200" />
-                </div>
-                <div className="mt-5 grid aspect-square place-items-center rounded-[22px] border border-white/10 bg-black/30">
-                  <div className="grid h-44 w-44 grid-cols-5 gap-2 rounded-2xl bg-white p-4">
-                    {Array.from({ length: 25 }).map((_, index) => (
-                      <div key={index} className={index % 3 === 0 || index % 7 === 0 ? "rounded bg-black" : "rounded bg-black/15"} />
-                    ))}
-                  </div>
-                </div>
-                <p className="mt-4 text-sm leading-6 text-white/50">Rolling signed tokens refresh every 2-5 minutes and are validated server-side.</p>
-              </GlassCard>
-            )}
-          </div>
-
-          {sectionKey === "attendance/approvals" && activeOrgId ? <AttendanceApprovalsPanel orgId={activeOrgId} /> : null}
-          {sectionKey === "notifications" && activeOrgId ? <NotificationComposerPanel orgId={activeOrgId} /> : null}
-
-          <div className="grid gap-4 xl:grid-cols-3">
-            <GlassCard className="xl:col-span-2">
-              <h2 className="text-xl font-semibold">Organizations</h2>
-              <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-white/8 text-white/45">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">Gym</th>
-                      <th className="px-4 py-3 font-medium">City</th>
-                      <th className="px-4 py-3 font-medium">Join mode</th>
-                      <th className="px-4 py-3 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.orgs.length ? (
-                      data.orgs.map((org) => (
-                        <tr key={org.id} className="border-t border-white/10">
-                          <td className="px-4 py-3 font-medium">{org.name}</td>
-                          <td className="px-4 py-3 text-white/55">{org.city}</td>
-                          <td className="px-4 py-3 text-white/55">{org.joinMode}</td>
-                          <td className="px-4 py-3">
-                            <Pill tone="lime">{org.status}</Pill>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr className="border-t border-white/10">
-                        <td className="px-4 py-6 text-white/45" colSpan={4}>
-                          No organizations are available yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </GlassCard>
-
             <GlassCard>
-              <h2 className="text-xl font-semibold">Low Stock</h2>
-              <div className="mt-4 grid gap-3">
-                {data.products.length ? (
-                  data.products.map((product) => (
-                    <div key={product.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 p-3">
-                      <div>
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-xs text-white/45">{formatInr(product.pricePaise ?? 0)}</p>
-                      </div>
-                      <Pill tone={(product.stock ?? 0) <= 8 ? "amber" : "neutral"}>{product.stock} left</Pill>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-white/45">No low-stock products in the current organization.</p>
-                )}
-              </div>
+              <SectionHeader
+                eyebrow="Org posture"
+                title="Current run-state"
+                description="This keeps the org’s posture readable without needing to leave the current section."
+              />
+              <ReadoutGrid
+                className="mt-5"
+                items={[
+                  {
+                    label: "Location",
+                    value: `${activeOrg.city}${activeOrg.state ? `, ${activeOrg.state}` : ""}`,
+                    meta: "Current operating geography"
+                  },
+                  {
+                    label: "Join mode",
+                    value: formatEnumLabel(activeOrg.joinMode),
+                    meta: `${data.summary.joinRequests} inbound requests`
+                  },
+                  {
+                    label: "Attendance mode",
+                    value: formatEnumLabel(activeOrg.attendanceMode),
+                    meta: `${data.summary.todayAttendance} check-ins today`
+                  },
+                  {
+                    label: "Trial end",
+                    value: formatDate(activeOrg.trialEndAt),
+                    meta: formatDaysRemaining(data.summary.trialDaysRemaining)
+                  }
+                ]}
+                columns={2}
+              />
             </GlassCard>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
-            <GlassCard>
-              <h2 className="text-xl font-semibold">Notifications</h2>
-              <div className="mt-4 grid gap-3">
-                {data.notifications.length ? (
-                  data.notifications.map((notification) => (
-                    <div key={notification.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="font-medium">{notification.title}</p>
-                        <Pill>{notification.status}</Pill>
-                      </div>
-                      <p className="mt-2 text-xs text-white/45">{notification.type}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-white/45">No notifications have been sent from this organization yet.</p>
-                )}
-              </div>
-            </GlassCard>
-
-            <GlassCard>
-              <h2 className="text-xl font-semibold">AI Usage</h2>
-              <div className="mt-4 grid gap-3">
-                {data.aiUsage.length ? (
-                  data.aiUsage.map((usage) => (
-                    <div key={usage.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="font-medium">{usage.promptSummary}</p>
-                        <Pill tone="lime">{usage.role}</Pill>
-                      </div>
-                      <p className="mt-2 text-xs text-white/45">{usage.requestType}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-white/45">No AI usage has been logged for this organization yet.</p>
-                )}
-              </div>
-            </GlassCard>
-          </div>
+          <DashboardOperationalPanel
+            orgId={activeOrg.id}
+            sectionKey={sectionKey}
+            organization={{
+              id: activeOrg.id,
+              name: activeOrg.name,
+              city: activeOrg.city,
+              state: activeOrg.state,
+              status: activeOrg.status,
+              joinMode: activeOrg.joinMode,
+              attendanceMode: activeOrg.attendanceMode,
+              trialEndAt: activeOrg.trialEndAt,
+              contactEmail: activeOrg.contactEmail,
+              contactPhone: activeOrg.contactPhone
+            }}
+            summary={data.summary}
+            auditLogCount={data.auditLogCount}
+            initialJoinRequests={data.joinRequests}
+            initialNotifications={data.notifications}
+            initialProducts={data.products}
+            initialAiUsage={data.aiUsage}
+          />
         </section>
       </div>
     </main>
