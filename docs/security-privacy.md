@@ -73,10 +73,18 @@ Privileged mutations now write audit entries for:
 
 - Minor guardian consent challenges are stored with hashed OTP values.
 - `guardianPending` remains the live session-level gate for restricted minor actions.
+- Guardian fallback links now resolve to a public web route that can review, verify, and resend a challenge without requiring the minor to stay logged in.
 - Data export requests create `DataExportRequest` plus `DataExportJob`.
 - Successful export generation stores a private JSON artifact through the storage provider and returns a signed URL.
 - Account deletion requests create `AccountDeletionRequest` plus `AccountDeletionJob`.
 - Deletion remains request-driven and does not hard-delete user data immediately in Phase 4.
+
+## Phase 5 Minor Enforcement Notes
+
+- membership activation re-checks guardian consent when a payment is processed, not only when checkout is created
+- attendance scan and manual attendance overrides reject pending-consent minor check-ins
+- plan assignment and PT subscription activation reject pending-consent minor actions
+- promotional delivery still excludes minors by default even after guardian consent unless explicit marketing consent is recorded
 
 ## Observability
 

@@ -91,6 +91,7 @@ describe("razorpay payment provider", () => {
     expect(captured?.paymentStatus).toBe("SUCCEEDED");
     expect(captured?.providerOrderId).toBe("order_123");
     expect(refunded?.paymentStatus).toBe("REFUNDED");
-    expect(refunded?.providerEventId).toBe("pay_123");
+    expect(captured?.providerEventId).toBe("payment.captured:pay_123:1710000000");
+    expect(refunded?.providerEventId).toBe("refund.processed:pay_123:1710000001");
   });
 });

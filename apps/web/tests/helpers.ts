@@ -5,7 +5,11 @@ export async function expectApiOk<T = unknown>(response: APIResponse) {
   const payload = (await response.json()) as { ok?: boolean; data?: T; error?: { message?: string } };
   expect(response.ok(), payload.error?.message ?? `Expected ${response.status()} to be OK.`).toBeTruthy();
   expect(payload.ok).toBe(true);
-  return payload;
+  expect(payload.data).toBeDefined();
+  return {
+    ...payload,
+    data: payload.data as T
+  };
 }
 
 export function expectNoConsoleErrors(page: Page) {

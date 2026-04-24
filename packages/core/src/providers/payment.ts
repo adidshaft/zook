@@ -334,10 +334,7 @@ export class RazorpayPaymentProvider implements PaymentProvider {
       (paymentEntity.notes as Record<string, unknown> | undefined) ??
       (orderEntity.notes as Record<string, unknown> | undefined) ??
       undefined;
-    const providerEventId =
-      providerPaymentId ||
-      String(refundEntity.id ?? "") ||
-      `${eventType}:${providerOrderId || "unknown"}:${payload.created_at ?? "unknown"}`;
+    const providerEventId = `${eventType}:${providerPaymentId || String(refundEntity.id ?? "") || providerOrderId || "unknown"}:${payload.created_at ?? "unknown"}`;
 
     let paymentStatus: PaymentStatus = "PENDING";
     if (eventType === "payment.captured" || eventType === "order.paid") {

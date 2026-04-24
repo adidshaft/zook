@@ -9,12 +9,24 @@ Last updated: 24 April 2026
 - AI and marketing stay restricted for minors until consent and safety checks allow them
 - promotional messaging stays off by default for minors
 
+## Phase 5 Additions
+
+- guardian emails now link to a public fallback route at `/guardian/consent/[challengeId]`
+- guardian consent can be reviewed, verified, and resent from the web fallback route without requiring a minor session
+- issuing a fresh guardian challenge supersedes older pending challenges instead of leaving multiple live pending OTPs
+- membership activation now re-checks minor consent at payment-activation time, not only at checkout creation time
+- attendance scan and manual attendance override now block minors while guardian consent is still pending
+- plan assignment and PT subscription activation now block minors while guardian consent is still pending
+
 ## Guardian Consent Endpoints
 
 - `GET /api/me/guardian-consent`
 - `POST /api/me/guardian-consent/request`
 - `POST /api/me/guardian-consent/resend`
 - `POST /api/me/guardian-consent/verify`
+- `GET /api/guardian-consent/:challengeId`
+- `POST /api/guardian-consent/:challengeId/verify`
+- `POST /api/guardian-consent/:challengeId/resend`
 
 ## Current Flow
 
@@ -42,5 +54,6 @@ Last updated: 24 April 2026
 
 ## Known Limitations
 
-- the web guardian fallback page is still minimal
-- more granular feature-gate UI for trainer-visible tracking and plan assignment remains future work
+- the public guardian page is now functional, but still intentionally simple and optimized for pilot clarity over full branded polish
+- more granular feature-gate UI for trainer-visible tracking and broader dashboard/admin warnings remains future work
+- export and deletion flows remain job-backed pilot operations rather than background-worker production pipelines

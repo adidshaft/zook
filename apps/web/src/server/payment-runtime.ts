@@ -6,6 +6,7 @@ import {
   transitionPaymentSession
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
+import { assertMinorConsentGranted } from "./minor-gates";
 
 function clean<T extends Record<string, unknown>>(input: T): Record<string, unknown> {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
@@ -157,6 +158,11 @@ export async function applyPaymentSessionStatus(input: {
       const plan = planSub ? await prisma.membershipPlan.findUnique({ where: { id: planSub.planId } }) : null;
 
       if (planSub && plan && session.userId && user && planSub.status !== "ACTIVE") {
+        assertMinorConsentGranted({
+          isMinor: user.isMinor,
+          guardianPending: user.guardianPending,
+          action: "membership activation"
+        });
         const window = computeSubscriptionWindow(toMembershipPlanInput(plan));
         await prisma.memberSubscription.update({
           where: { id: metadata.subscriptionId },
