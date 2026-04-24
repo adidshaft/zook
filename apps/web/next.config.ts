@@ -1,9 +1,40 @@
 import type { NextConfig } from "next";
 
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data: https:",
+  "connect-src 'self' https: ws: wss:",
+  "frame-src 'self' https:",
+  "object-src 'none'"
+].join("; ");
+
 const nextConfig: NextConfig = {
   transpilePackages: ["@zook/core", "@zook/ui", "@zook/db"],
   typedRoutes: false,
-  allowedDevOrigins: ["127.0.0.1"]
+  allowedDevOrigins: ["127.0.0.1"],
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: contentSecurityPolicy },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), geolocation=(self), microphone=(), payment=(), browsing-topics=()"
+          }
+        ]
+      }
+    ];
+  }
 };
 
 export default nextConfig;

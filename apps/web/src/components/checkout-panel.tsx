@@ -16,7 +16,7 @@ export function CheckoutPanel({
     if (!session) return;
     const response = await fetch(`/api/payments/mock/${session.id}/complete`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
       body: JSON.stringify({ status: nextStatus })
     });
     const payload = await response.json();

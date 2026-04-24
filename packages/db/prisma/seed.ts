@@ -77,6 +77,8 @@ const trainerPermissions = [
 async function clear() {
   await prisma.organizationAbuseFlag.deleteMany();
   await prisma.platformSetting.deleteMany();
+  await prisma.accountDeletionRequest.deleteMany();
+  await prisma.dataExportRequest.deleteMany();
   await prisma.pickupCode.deleteMany();
   await prisma.shopOrderItem.deleteMany();
   await prisma.shopOrder.deleteMany();
@@ -123,6 +125,7 @@ async function clear() {
   await prisma.manualPaymentAdjustment.deleteMany();
   await prisma.invoice.deleteMany();
   await prisma.payment.deleteMany();
+  await prisma.paymentEvent.deleteMany();
   await prisma.paymentSession.deleteMany();
   await prisma.membershipJoinRequest.deleteMany();
   await prisma.membershipUsage.deleteMany();

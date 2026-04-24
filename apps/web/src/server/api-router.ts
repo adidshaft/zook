@@ -54,6 +54,9 @@ import { fail, ok, readJson } from "./response";
 import { resolveSessionSummaryFromToken } from "./session";
 import { writeAuditLog } from "./audit";
 import { getDevOtpResponseValue } from "./auth-response";
+import { assertRateLimit } from "./rate-limit";
+import { createRequestId, currentRequestId, runWithRequestState } from "./request-state";
+import { assertSafeMutationRequest, getClientIp } from "./security";
 import {
   getMemberHomeData,
   getMyShopOrders,
@@ -900,9 +903,11 @@ async function handleAuth(request: NextRequest, path: string[]) {
   const auth = new AuthService(new PrismaAuthRepo(), emailProvider);
   if (request.method === "POST" && pathMatches(path, ["auth", "request-otp"])) {
     const body = requestOtpSchema.parse(await readJson(request));
+    const ipAddress = getClientIp(request);
+    assertRateLimit("otpRequestByEmail", body.email, "Too many OTP requests for this email.");
+    assertRateLimit("otpRequestByIp", ipAddress, "Too many OTP requests from this IP.");
     await getUserByEmailOrCreate(body.email);
-    const ipAddress = request.headers.get("x-forwarded-for") ?? undefined;
-    const challenge = await auth.requestOtp(body.email, ipAddress ? { ipAddress } : {});
+    const challenge = await auth.requestOtp(body.email, ipAddress !== "unknown" ? { ipAddress } : {});
     return ok({
       challengeId: challenge.id,
       expiresAt: challenge.expiresAt,
@@ -911,6 +916,9 @@ async function handleAuth(request: NextRequest, path: string[]) {
   }
   if (request.method === "POST" && pathMatches(path, ["auth", "verify-otp"])) {
     const body = verifyOtpSchema.parse(await readJson(request));
+    const ipAddress = getClientIp(request);
+    assertRateLimit("otpVerifyByEmail", body.email, "Too many OTP verification attempts for this email.");
+    assertRateLimit("otpVerifyByIp", ipAddress, "Too many OTP verification attempts from this IP.");
     const user = await getUserByEmailOrCreate(body.email);
     const session = await auth.verifyOtp(clean({
       email: body.email,
@@ -1657,6 +1665,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["payments", "checkout"])) {
     const ctx = await getRequestContext(request);
     const userId = ctx.userId;
+    assertRateLimit("paymentSessionByActor", userId ?? getClientIp(request), "Too many payment sessions requested.");
     const body = checkoutSchema.parse(await readJson(request));
     const session = await prisma.paymentSession.create({
       data: clean({
@@ -1686,6 +1695,34 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const currentSession = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
     if (!currentSession) {
       throw notFoundError("Payment session not found");
+    }
+    const providerEventId = `mock:${sessionId}:${status}`;
+    const existingEvent = await prisma.paymentEvent.findUnique({
+      where: {
+        provider_providerEventId: {
+          provider: "mock",
+          providerEventId
+        }
+      }
+    });
+    if (existingEvent?.processedAt) {
+      const existingPayment = await prisma.payment.findFirst({
+        where: { sessionId: currentSession.id, status: "SUCCEEDED" },
+        orderBy: { createdAt: "desc" }
+      });
+      return ok({ session: currentSession, payment: existingPayment, duplicateEvent: true });
+    }
+    if (!existingEvent) {
+      await prisma.paymentEvent.create({
+        data: {
+          paymentId: null,
+          provider: "mock",
+          providerEventId,
+          eventType: `payment.${status.toLowerCase()}`,
+          payload: body as Prisma.InputJsonValue,
+          signatureVerified: true
+        }
+      });
     }
     const nextState = transitionPaymentSession(
       {
@@ -1900,11 +1937,25 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         }
       }
     }
+    await prisma.paymentEvent.update({
+      where: {
+        provider_providerEventId: {
+          provider: "mock",
+          providerEventId
+        }
+      },
+      data: clean({
+        paymentId: payment?.id,
+        processedAt: new Date(),
+        processingError: null
+      })
+    });
     return ok({ session, payment });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "subscriptions"])) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
+    assertRateLimit("paymentSessionByActor", `${path[1]!}:${userId}`, "Too many membership checkout attempts.");
     const orgId = path[1]!;
     const body = subscriptionCheckoutSchema.parse(await readJson(request));
     const [organization, plan, branch, existingSubscription, approvedJoinRequest, user] = await Promise.all([
@@ -2089,6 +2140,11 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
     const body = attendanceScanSchema.parse(await readJson(request));
+    assertRateLimit(
+      "qrScanByActor",
+      `${userId}:${body.deviceId ?? "unknown-device"}`,
+      "Too many attendance scans. Please wait before trying again."
+    );
     const now = new Date();
     const decoded = validateSignedQrToken({
       encoded: body.qrPayload,
@@ -2890,6 +2946,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const body = aiChatSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
+    assertRateLimit("aiRequestByUser", userId, "Too many AI requests. Please slow down and try again shortly.");
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (body.orgId) {
       requireOrgPermission(ctx, body.orgId, "AI_USE_TEXT");
@@ -2938,6 +2995,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const body = aiGenerateSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
+    assertRateLimit("aiRequestByUser", userId, "Too many AI requests. Please slow down and try again shortly.");
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const requestType: AIRequestType = path[1] === "generate-image" ? "IMAGE" : "STRUCTURED_PLAN";
     if (body.orgId) {
@@ -3028,6 +3086,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
+    assertRateLimit("notificationSendByActor", `${orgId}:${userId}`, "Too many notification sends from this account.");
     const body = notificationComposerSchema.parse(await readJson(request));
     const permissionAudience =
       body.audience === "selected_members"
@@ -3395,15 +3454,72 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   }
   if (request.method === "GET" && pathMatches(path, ["me", "consents"])) {
     const userId = requireAuth(await getRequestContext(request));
-    return ok({ consents: await prisma.consentRecord.findMany({ where: { userId } }) });
+    const [consents, exportRequests, deletionRequests] = await Promise.all([
+      prisma.consentRecord.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
+      prisma.dataExportRequest.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
+      prisma.accountDeletionRequest.findMany({ where: { userId }, orderBy: { createdAt: "desc" } })
+    ]);
+    return ok({ consents, exportRequests, deletionRequests });
   }
   if (request.method === "POST" && pathMatches(path, ["me", "data-export-request"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    return ok({ request: await prisma.consentRecord.create({ data: { userId, type: "DATA_EXPORT", status: "PENDING" } }) });
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const exportRequest = await prisma.dataExportRequest.create({
+      data: clean({
+        orgId: ctx.orgId,
+        userId,
+        requestId: currentRequestId()
+      })
+    });
+    await prisma.consentRecord.create({
+      data: clean({
+        orgId: ctx.orgId,
+        userId,
+        type: "DATA_EXPORT",
+        status: "PENDING",
+        recordedById: userId,
+        metadata: { exportRequestId: exportRequest.id } as Prisma.InputJsonValue
+      })
+    });
+    await writeAuditLog({
+      request,
+      actorUserId: userId,
+      action: "privacy.data_export_requested",
+      entityType: "data_export_request",
+      entityId: exportRequest.id,
+      ...(ctx.orgId ? { orgId: ctx.orgId } : {})
+    });
+    return ok({ request: exportRequest });
   }
   if (request.method === "POST" && pathMatches(path, ["me", "account-deletion-request"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    return ok({ request: await prisma.consentRecord.create({ data: { userId, type: "ACCOUNT_DELETION", status: "PENDING" } }) });
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const deletionRequest = await prisma.accountDeletionRequest.create({
+      data: clean({
+        orgId: ctx.orgId,
+        userId,
+        requestId: currentRequestId()
+      })
+    });
+    await prisma.consentRecord.create({
+      data: clean({
+        orgId: ctx.orgId,
+        userId,
+        type: "ACCOUNT_DELETION",
+        status: "PENDING",
+        recordedById: userId,
+        metadata: { accountDeletionRequestId: deletionRequest.id } as Prisma.InputJsonValue
+      })
+    });
+    await writeAuditLog({
+      request,
+      actorUserId: userId,
+      action: "privacy.account_deletion_requested",
+      entityType: "account_deletion_request",
+      entityId: deletionRequest.id,
+      ...(ctx.orgId ? { orgId: ctx.orgId } : {})
+    });
+    return ok({ request: deletionRequest });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "orgs"])) {
     const ctx = await getRequestContext(request);
@@ -3445,28 +3561,47 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
 }
 
 export async function handleApi(request: NextRequest, rawPath: string[] = []) {
-  try {
-    const path = rawPath.filter(Boolean);
-    for (const handler of [
-      handleAuth,
-      handleMeData,
-      handleTracking,
-      handleOrganizations,
-      handleMembershipPayments,
-      handleCouponsReferrals,
-      handleAttendance,
-      handleStaffPlansGoals,
-      handleAiNotificationsShopPrivacyPlatform
-    ]) {
-      const response = await handler(request, path);
-      if (response) {
-        return response;
+  const requestId = request.headers.get("x-request-id") ?? createRequestId();
+
+  return runWithRequestState({ requestId }, async () => {
+    try {
+      assertSafeMutationRequest(request);
+      const path = rawPath.filter(Boolean);
+      for (const handler of [
+        handleAuth,
+        handleMeData,
+        handleTracking,
+        handleOrganizations,
+        handleMembershipPayments,
+        handleCouponsReferrals,
+        handleAttendance,
+        handleStaffPlansGoals,
+        handleAiNotificationsShopPrivacyPlatform
+      ]) {
+        const response = await handler(request, path);
+        if (response) {
+          response.headers.set("x-request-id", requestId);
+          return response;
+        }
       }
+      const response = fail("not_found", `No API route matched /api/${path.join("/")}`, 404);
+      response.headers.set("x-request-id", requestId);
+      return response;
+    } catch (error) {
+      console.error("zook.api.error", {
+        requestId,
+        method: request.method,
+        path: rawPath.join("/"),
+        message: error instanceof Error ? error.message : "Unexpected error",
+        ...(process.env.NODE_ENV === "development" && error instanceof Error && error.stack
+          ? { stack: error.stack }
+          : {})
+      });
+      const response = toErrorResponse(error);
+      response.headers.set("x-request-id", requestId);
+      return response;
     }
-    return fail("not_found", `No API route matched /api/${path.join("/")}`, 404);
-  } catch (error) {
-    return toErrorResponse(error);
-  }
+  });
 }
 
 export function redirectTo(url: string) {

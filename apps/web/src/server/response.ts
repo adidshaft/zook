@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
+import { currentRequestId } from "./request-state";
+
+function buildMeta() {
+  const requestId = currentRequestId();
+  return requestId ? { meta: { requestId } } : {};
+}
 
 export function ok<T>(data: T, init?: ResponseInit) {
-  return NextResponse.json({ ok: true, data }, init);
+  return NextResponse.json({ ok: true, data, ...buildMeta() }, init);
 }
 
 export function fail(code: string, message: string, status = 400, details?: unknown) {
   return NextResponse.json(
-    { ok: false, error: { code, message, ...(details !== undefined ? { details } : {}) } },
+    {
+      ok: false,
+      error: { code, message, ...(details !== undefined ? { details } : {}) },
+      ...buildMeta()
+    },
     { status }
   );
 }

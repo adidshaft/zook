@@ -54,7 +54,11 @@ export function toErrorResponse(error: unknown) {
     return fail("validation_error", "Invalid JSON body", 400);
   }
   if (error instanceof Error) {
-    return fail("internal_error", error.message || "Unexpected error", 500);
+    return fail(
+      "internal_error",
+      process.env.NODE_ENV === "development" ? error.message || "Unexpected error" : "Unexpected error",
+      500
+    );
   }
   return fail("internal_error", "Unexpected error", 500);
 }

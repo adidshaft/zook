@@ -75,7 +75,15 @@ export type SubscriptionStatus =
   | "EXPIRED"
   | "CANCELLED"
   | "REFUNDED";
-export type PaymentStatus = "CREATED" | "PENDING" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "REFUNDED";
+export type PaymentStatus =
+  | "CREATED"
+  | "PENDING"
+  | "REQUIRES_ACTION"
+  | "SUCCEEDED"
+  | "FAILED"
+  | "CANCELLED"
+  | "REFUNDED"
+  | "PARTIALLY_REFUNDED";
 export type PaymentMode = "MOCK_ONLINE" | "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER";
 export type PaymentPurpose =
   | "SAAS_BILLING"

@@ -111,10 +111,12 @@ enum SubscriptionStatus {
 enum PaymentStatus {
   CREATED
   PENDING
+  REQUIRES_ACTION
   SUCCEEDED
   FAILED
   CANCELLED
   REFUNDED
+  PARTIALLY_REFUNDED
 }
 
 enum PaymentMode {
@@ -320,11 +322,15 @@ model FileAsset {
   id            String   @id @default(cuid())
   orgId         String?
   ownerUserId   String?
+  originalName  String?
   storageKey    String
   url           String
   mimeType      String
   sizeBytes     Int
   purpose       String
+  category      String?
+  visibility    String?  @default("private")
+  storageProvider String? @default("local")
   checksum      String?
   metadata      Json?
   deletedAt     DateTime?
@@ -338,6 +344,7 @@ model AuditLog {
   id          String   @id @default(cuid())
   orgId       String?
   actorUserId String?
+  requestId   String?
   action      String
   entityType  String
   entityId    String?
@@ -551,6 +558,40 @@ model ConsentRecord {
 
   @@index([orgId])
   @@index([userId, type])
+}
+
+model DataExportRequest {
+  id            String   @id @default(cuid())
+  orgId         String?
+  userId        String
+  status        String   @default("requested")
+  requestId     String?
+  exportFormat  String   @default("json")
+  exportUrl     String?
+  notes         String?
+  processedById String?
+  processedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([orgId, status])
+}
+
+model AccountDeletionRequest {
+  id            String   @id @default(cuid())
+  orgId         String?
+  userId        String
+  status        String   @default("requested")
+  requestId     String?
+  notes         String?
+  processedById String?
+  processedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([orgId, status])
 }
 
 model WorkoutSession {
@@ -778,6 +819,23 @@ model Payment {
   @@index([orgId, status])
   @@index([userId])
   @@index([sessionId])
+}
+
+model PaymentEvent {
+  id                String   @id @default(cuid())
+  paymentId         String?
+  provider          String
+  providerEventId   String
+  eventType         String
+  payload           Json
+  signatureVerified Boolean  @default(false)
+  processedAt       DateTime?
+  processingError   String?
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerEventId])
+  @@index([paymentId, createdAt])
+  @@index([provider, createdAt])
 }
 
 model Invoice {
