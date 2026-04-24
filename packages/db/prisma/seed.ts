@@ -1,28 +1,43 @@
 import { createHash } from "node:crypto";
 import {
+  AccountDeletionJobStatus,
   AIProviderType,
   AIRequestType,
+  AuditRiskLevel,
   AttendanceSource,
   AttendanceStatus,
   ConsentStatus,
   ConsentType,
   CouponType,
+  DataExportFormat,
+  DataExportJobStatus,
   GymJoinMode,
   GymVisibility,
+  GuardianConsentChallengeChannel,
+  GuardianConsentChallengeStatus,
+  IncidentSeverity,
+  IncidentStatus,
   LocationSource,
   MembershipPlanType,
   NotificationStatus,
   NotificationType,
   OrderStatus,
   PaymentMode,
+  PaymentEventStatus,
   PaymentPurpose,
   PaymentStatus,
+  PaymentWebhookAttemptStatus,
   Permission,
   PlanStatus,
   PlanType,
   Prisma,
   PrismaClient,
   ProductCategory,
+  ProviderHealthCheckStatus,
+  ProviderHealthDomain,
+  PushDeliveryStatus,
+  PushDeviceStatus,
+  PushPlatform,
   Role,
   SubscriptionStatus
 } from "@prisma/client";
@@ -32,6 +47,7 @@ const prisma = new PrismaClient();
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const days = (count: number) => new Date(Date.now() + count * 24 * 60 * 60 * 1000);
 const pastDays = (count: number) => days(-count);
+const minutesFromNow = (count: number) => new Date(Date.now() + count * 60 * 1000);
 const paise = (rupees: number) => Math.round(rupees * 100);
 const must = <T>(value: T | undefined, label: string): T => {
   if (!value) {
@@ -77,8 +93,14 @@ const trainerPermissions = [
 async function clear() {
   await prisma.organizationAbuseFlag.deleteMany();
   await prisma.platformSetting.deleteMany();
+  await prisma.incidentLog.deleteMany();
+  await prisma.providerHealthCheck.deleteMany();
+  await prisma.accountDeletionJob.deleteMany();
   await prisma.accountDeletionRequest.deleteMany();
+  await prisma.dataExportJob.deleteMany();
   await prisma.dataExportRequest.deleteMany();
+  await prisma.pushDelivery.deleteMany();
+  await prisma.pushDevice.deleteMany();
   await prisma.pickupCode.deleteMany();
   await prisma.shopOrderItem.deleteMany();
   await prisma.shopOrder.deleteMany();
@@ -124,6 +146,7 @@ async function clear() {
   await prisma.coupon.deleteMany();
   await prisma.manualPaymentAdjustment.deleteMany();
   await prisma.invoice.deleteMany();
+  await prisma.paymentWebhookAttempt.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.paymentEvent.deleteMany();
   await prisma.paymentSession.deleteMany();
@@ -132,6 +155,7 @@ async function clear() {
   await prisma.memberSubscription.deleteMany();
   await prisma.membershipPlan.deleteMany();
   await prisma.consentRecord.deleteMany();
+  await prisma.guardianConsentChallenge.deleteMany();
   await prisma.guardianConsent.deleteMany();
   await prisma.memberProfile.deleteMany();
   await prisma.organizationSetting.deleteMany();
@@ -367,14 +391,61 @@ async function main() {
     ]
   });
 
-  await prisma.guardianConsent.create({
+  const guardianOtpChallenge = await prisma.otpChallenge.create({
+    data: {
+      email: "guardian@zook.local",
+      codeHash: hash("111111"),
+      purpose: "guardian_consent",
+      attempts: 1,
+      maxAttempts: 3,
+      ipAddress: "203.0.113.24",
+      expiresAt: days(2)
+    }
+  });
+
+  const guardianConsent = await prisma.guardianConsent.create({
     data: {
       minorUserId: minor.id,
       guardianName: "Neha Guardian",
       guardianEmail: "guardian@zook.local",
       guardianPhone: "+91 91111 11111",
       relationship: "Parent",
-      status: ConsentStatus.PENDING
+      status: ConsentStatus.PENDING,
+      otpChallengeId: guardianOtpChallenge.id,
+      challengeStatus: GuardianConsentChallengeStatus.PENDING,
+      challengedAt: new Date(),
+      metadata: {
+        reviewQueue: "private-pilot-guardians",
+        challengePurpose: "parental_approval"
+      }
+    }
+  });
+
+  const guardianConsentChallenge = await prisma.guardianConsentChallenge.create({
+    data: {
+      guardianConsentId: guardianConsent.id,
+      minorUserId: minor.id,
+      otpChallengeId: guardianOtpChallenge.id,
+      channel: GuardianConsentChallengeChannel.EMAIL_OTP,
+      status: GuardianConsentChallengeStatus.PENDING,
+      challengeTokenHash: hash("guardian-magic-link"),
+      attempts: 1,
+      maxAttempts: 3,
+      lastSentAt: new Date(),
+      expiresAt: days(2),
+      ipAddress: "203.0.113.24",
+      userAgent: "Pilot guardian mailbox",
+      metadata: {
+        reminderScheduledAt: days(1).toISOString(),
+        escalationOwner: owner.email
+      }
+    }
+  });
+
+  await prisma.guardianConsent.update({
+    where: { id: guardianConsent.id },
+    data: {
+      activeChallengeId: guardianConsentChallenge.id
     }
   });
 
@@ -400,8 +471,138 @@ async function main() {
         type: ConsentType.MARKETING,
         status: ConsentStatus.DENIED,
         recordedById: minor.id
+      },
+      {
+        orgId: ironHouse.id,
+        userId: minor.id,
+        type: ConsentType.GUARDIAN,
+        status: ConsentStatus.PENDING,
+        recordedById: owner.id,
+        metadata: {
+          guardianConsentId: guardianConsent.id,
+          challengeId: guardianConsentChallenge.id
+        }
+      },
+      {
+        orgId: ironHouse.id,
+        userId: member.id,
+        type: ConsentType.DATA_EXPORT,
+        status: ConsentStatus.GRANTED,
+        recordedById: member.id
+      },
+      {
+        orgId: ironHouse.id,
+        userId: member.id,
+        type: ConsentType.ACCOUNT_DELETION,
+        status: ConsentStatus.PENDING,
+        recordedById: member.id
       }
     ]
+  });
+
+  const exportAsset = await prisma.fileAsset.create({
+    data: {
+      orgId: ironHouse.id,
+      ownerUserId: member.id,
+      originalName: "member-private-export.json",
+      storageKey: "exports/member-private-export-2026-04-24.json",
+      url: "https://cdn.zook.local/exports/member-private-export-2026-04-24.json",
+      mimeType: "application/json",
+      sizeBytes: 16384,
+      purpose: "data_export",
+      category: "privacy",
+      metadata: {
+        source: "private_pilot_seed"
+      }
+    }
+  });
+
+  const exportRequest = await prisma.dataExportRequest.create({
+    data: {
+      orgId: ironHouse.id,
+      userId: member.id,
+      status: "completed",
+      requestId: "exp_member_private_pilot_001",
+      exportFormat: "json",
+      exportUrl: exportAsset.url,
+      notes: "Private pilot self-serve export example.",
+      processedById: owner.id,
+      processedAt: minutesFromNow(-30),
+      completedAt: minutesFromNow(-30)
+    }
+  });
+
+  const exportJob = await prisma.dataExportJob.create({
+    data: {
+      requestId: exportRequest.id,
+      orgId: ironHouse.id,
+      userId: member.id,
+      status: DataExportJobStatus.SUCCEEDED,
+      format: DataExportFormat.JSON,
+      storageProvider: "local",
+      fileAssetId: exportAsset.id,
+      exportUrl: exportAsset.url,
+      checksum: hash("member-private-export-2026-04-24"),
+      recordCount: 42,
+      requestedById: member.id,
+      processedById: owner.id,
+      startedAt: minutesFromNow(-45),
+      completedAt: minutesFromNow(-30),
+      expiresAt: days(7),
+      metadata: {
+        includes: ["profile", "payments", "attendance", "consents"],
+        piiReview: "complete"
+      }
+    }
+  });
+
+  await prisma.dataExportRequest.update({
+    where: { id: exportRequest.id },
+    data: {
+      latestJobId: exportJob.id
+    }
+  });
+
+  const deletionRequest = await prisma.accountDeletionRequest.create({
+    data: {
+      orgId: ironHouse.id,
+      userId: member.id,
+      status: "scheduled",
+      requestId: "del_member_private_pilot_001",
+      notes: "Dry-run deletion retained for pilot validation.",
+      processedById: platform.id,
+      processedAt: minutesFromNow(-10),
+      scheduledFor: days(14)
+    }
+  });
+
+  const deletionJob = await prisma.accountDeletionJob.create({
+    data: {
+      requestId: deletionRequest.id,
+      orgId: ironHouse.id,
+      userId: member.id,
+      status: AccountDeletionJobStatus.QUEUED,
+      requestedById: member.id,
+      processedById: platform.id,
+      scheduledFor: days(14),
+      retentionUntil: days(44),
+      dryRunReport: {
+        delete: ["member_profile", "attendance_records", "notifications"],
+        retain: ["audit_logs", "billing_records"],
+        anonymize: ["payment_notes"]
+      },
+      metadata: {
+        mode: "pilot_rehearsal",
+        approvalTicket: "PRIV-204"
+      }
+    }
+  });
+
+  await prisma.accountDeletionRequest.update({
+    where: { id: deletionRequest.id },
+    data: {
+      latestJobId: deletionJob.id
+    }
   });
 
   const monthly = await prisma.membershipPlan.create({
@@ -512,18 +713,173 @@ async function main() {
     }
   });
 
+  const paymentSession = await prisma.paymentSession.create({
+    data: {
+      provider: "mock",
+      orgId: ironHouse.id,
+      userId: member.id,
+      purpose: PaymentPurpose.MEMBERSHIP,
+      amountPaise: paise(1799),
+      currency: "INR",
+      status: PaymentStatus.SUCCEEDED,
+      checkoutUrl: "https://pilot.zook.local/checkout/mock-membership",
+      providerRef: "sess_mock_membership_seed",
+      metadata: {
+        planName: monthly.name,
+        cohort: "private_pilot_rc"
+      },
+      expiresAt: days(1),
+      completedAt: minutesFromNow(-75)
+    }
+  });
+
   const payment = await prisma.payment.create({
     data: {
       orgId: ironHouse.id,
       userId: member.id,
+      sessionId: paymentSession.id,
       purpose: PaymentPurpose.MEMBERSHIP,
       amountPaise: paise(1799),
       status: PaymentStatus.SUCCEEDED,
       mode: PaymentMode.MOCK_ONLINE,
       provider: "mock",
       providerRef: "mock_seed_membership",
+      receiptNumber: "IH-REC-240424-001",
+      notes: "Private pilot online payment linked to hardened webhook examples.",
       recordedAt: new Date()
     }
+  });
+
+  const paymentCapturedPayload = {
+    paymentId: payment.id,
+    sessionId: paymentSession.id,
+    status: "captured",
+    amountPaise: payment.amountPaise,
+    currency: payment.currency
+  };
+  const paymentCapturedHeaders = {
+    "x-zook-signature": "sig_mock_membership_paid",
+    "x-zook-delivery": "pilot-seed-1"
+  };
+
+  const paymentCapturedEvent = await prisma.paymentEvent.create({
+    data: {
+      orgId: ironHouse.id,
+      userId: member.id,
+      sessionId: paymentSession.id,
+      paymentId: payment.id,
+      status: PaymentEventStatus.PROCESSED,
+      provider: "mock",
+      providerEventId: "evt_mock_membership_paid",
+      eventType: "payment.captured",
+      eventVersion: "2026-04-24",
+      payload: paymentCapturedPayload,
+      headers: paymentCapturedHeaders,
+      rawPayloadHash: hash(JSON.stringify(paymentCapturedPayload)),
+      sourceIpAddress: "198.51.100.45",
+      signature: paymentCapturedHeaders["x-zook-signature"],
+      signatureVerified: true,
+      signatureVerifiedAt: minutesFromNow(-74),
+      receivedAt: minutesFromNow(-74),
+      processedAt: minutesFromNow(-73),
+      lastAttemptAt: minutesFromNow(-73),
+      attemptCount: 1,
+      riskFlags: {
+        replayDetected: false,
+        manualReview: false
+      }
+    }
+  });
+
+  const paymentRefundPayload = {
+    paymentId: payment.id,
+    refundRequestId: "refund_req_private_pilot_001",
+    status: "pending_review",
+    amountPaise: paise(500)
+  };
+  const paymentRefundHeaders = {
+    "x-zook-signature": "sig_mock_membership_refund",
+    "x-zook-delivery": "pilot-seed-2"
+  };
+
+  const paymentRefundEvent = await prisma.paymentEvent.create({
+    data: {
+      orgId: ironHouse.id,
+      userId: member.id,
+      sessionId: paymentSession.id,
+      paymentId: payment.id,
+      status: PaymentEventStatus.QUARANTINED,
+      provider: "mock",
+      providerEventId: "evt_mock_membership_refund",
+      eventType: "payment.refund.requested",
+      eventVersion: "2026-04-24",
+      payload: paymentRefundPayload,
+      headers: paymentRefundHeaders,
+      rawPayloadHash: hash(JSON.stringify(paymentRefundPayload)),
+      sourceIpAddress: "198.51.100.46",
+      signature: paymentRefundHeaders["x-zook-signature"],
+      signatureVerified: true,
+      signatureVerifiedAt: minutesFromNow(-16),
+      receivedAt: minutesFromNow(-15),
+      processedAt: minutesFromNow(-8),
+      lastAttemptAt: minutesFromNow(-8),
+      attemptCount: 2,
+      nextRetryAt: minutesFromNow(30),
+      processingError: "Refund reference missing from pilot ledger, manual review required.",
+      riskFlags: {
+        manualReview: true,
+        reason: "missing_refund_reference"
+      }
+    }
+  });
+
+  await prisma.paymentWebhookAttempt.createMany({
+    data: [
+      {
+        paymentEventId: paymentCapturedEvent.id,
+        attemptNo: 1,
+        status: PaymentWebhookAttemptStatus.SUCCEEDED,
+        processor: "payment-webhook-worker",
+        startedAt: minutesFromNow(-74),
+        completedAt: minutesFromNow(-73),
+        durationMs: 184,
+        httpStatusCode: 200,
+        result: {
+          sideEffects: ["payment_confirmed", "subscription_activation_ready"]
+        }
+      },
+      {
+        paymentEventId: paymentRefundEvent.id,
+        attemptNo: 1,
+        status: PaymentWebhookAttemptStatus.FAILED,
+        processor: "payment-webhook-worker",
+        startedAt: minutesFromNow(-14),
+        completedAt: minutesFromNow(-13),
+        durationMs: 241,
+        httpStatusCode: 422,
+        errorCode: "MISSING_REFUND_REFERENCE",
+        errorMessage: "Refund reference not found in pilot ledger.",
+        result: {
+          retryable: true
+        }
+      },
+      {
+        paymentEventId: paymentRefundEvent.id,
+        attemptNo: 2,
+        status: PaymentWebhookAttemptStatus.FAILED,
+        processor: "payment-webhook-worker",
+        startedAt: minutesFromNow(-9),
+        completedAt: minutesFromNow(-8),
+        durationMs: 227,
+        httpStatusCode: 422,
+        errorCode: "MISSING_REFUND_REFERENCE",
+        errorMessage: "Manual review requested after second failed attempt.",
+        result: {
+          retryable: true,
+          escalated: true
+        }
+      }
+    ]
   });
 
   const subscription = await prisma.memberSubscription.create({
@@ -824,12 +1180,37 @@ async function main() {
     }
   });
 
-  await prisma.notificationRecipient.create({
+  const memberRecipient = await prisma.notificationRecipient.create({
     data: {
       notificationId: notification.id,
       userId: member.id,
       deliveredAt: new Date(),
-      deliveryStatus: "mock_push"
+      deliveryStatus: "push_delivered"
+    }
+  });
+
+  const guardianReminderNotification = await prisma.notification.create({
+    data: {
+      orgId: ironHouse.id,
+      createdById: owner.id,
+      type: NotificationType.SECURITY,
+      status: NotificationStatus.SENT,
+      title: "Guardian approval still pending",
+      body: "Ask your guardian to complete approval before your next coached session.",
+      audience: "minor_members_pending_guardian",
+      sentAt: minutesFromNow(-12),
+      pushEnabled: true,
+      metadata: {
+        guardianConsentId: guardianConsent.id
+      }
+    }
+  });
+
+  const minorRecipient = await prisma.notificationRecipient.create({
+    data: {
+      notificationId: guardianReminderNotification.id,
+      userId: minor.id,
+      deliveryStatus: "push_failed"
     }
   });
 
@@ -866,6 +1247,105 @@ async function main() {
         pushEnabled: false
       }
     ]
+  });
+
+  const pushDevices = await prisma.pushDevice.createManyAndReturn({
+    data: [
+      {
+        orgId: ironHouse.id,
+        userId: member.id,
+        platform: PushPlatform.IOS,
+        provider: "expo",
+        token: "ExponentPushToken[member-private-pilot-ios]",
+        status: PushDeviceStatus.ACTIVE,
+        deviceLabel: "Nisha iPhone 15",
+        deviceFingerprint: hash("member-private-pilot-ios"),
+        appVersion: "1.4.0-pilot.2",
+        osVersion: "iOS 17.4",
+        locale: "en-IN",
+        timezone: "Asia/Kolkata",
+        lastSeenAt: new Date(),
+        lastRegisteredAt: pastDays(2),
+        metadata: {
+          buildChannel: "private-pilot",
+          notificationsEnabled: true
+        }
+      },
+      {
+        orgId: ironHouse.id,
+        userId: minor.id,
+        platform: PushPlatform.ANDROID,
+        provider: "expo",
+        token: "ExponentPushToken[minor-private-pilot-android]",
+        status: PushDeviceStatus.INVALIDATED,
+        deviceLabel: "Isha Pixel 8",
+        deviceFingerprint: hash("minor-private-pilot-android"),
+        appVersion: "1.4.0-pilot.2",
+        osVersion: "Android 15",
+        locale: "en-IN",
+        timezone: "Asia/Kolkata",
+        lastSeenAt: minutesFromNow(-180),
+        lastRegisteredAt: pastDays(3),
+        lastFailureAt: minutesFromNow(-10),
+        failureReason: "Expo reported DeviceNotRegistered after beta reinstall.",
+        metadata: {
+          buildChannel: "private-pilot",
+          notificationsEnabled: false
+        }
+      }
+    ]
+  });
+
+  const memberPushDevice = must(pushDevices[0], "member push device");
+  const minorPushDevice = must(pushDevices[1], "minor push device");
+
+  await prisma.pushDelivery.create({
+    data: {
+      orgId: ironHouse.id,
+      notificationId: notification.id,
+      notificationRecipientId: memberRecipient.id,
+      userId: member.id,
+      deviceId: memberPushDevice.id,
+      provider: "expo",
+      providerMessageId: "expo_seed_member_delivery_001",
+      status: PushDeliveryStatus.DELIVERED,
+      attemptCount: 1,
+      scheduledAt: minutesFromNow(-21),
+      sentAt: minutesFromNow(-20),
+      deliveredAt: minutesFromNow(-19),
+      payload: {
+        title: notification.title,
+        audience: notification.audience
+      },
+      response: {
+        ticketStatus: "ok"
+      }
+    }
+  });
+
+  const failedPushDelivery = await prisma.pushDelivery.create({
+    data: {
+      orgId: ironHouse.id,
+      notificationId: guardianReminderNotification.id,
+      notificationRecipientId: minorRecipient.id,
+      userId: minor.id,
+      deviceId: minorPushDevice.id,
+      provider: "expo",
+      providerMessageId: "expo_seed_minor_delivery_001",
+      status: PushDeliveryStatus.FAILED,
+      attemptCount: 2,
+      scheduledAt: minutesFromNow(-13),
+      sentAt: minutesFromNow(-12),
+      failureCode: "DeviceNotRegistered",
+      failureReason: "Push token invalidated after app reinstall.",
+      payload: {
+        title: guardianReminderNotification.title,
+        audience: guardianReminderNotification.audience
+      },
+      response: {
+        error: "DeviceNotRegistered"
+      }
+    }
   });
 
   await prisma.badge.createMany({
@@ -1147,6 +1627,87 @@ async function main() {
     }
   });
 
+  const paymentHealthCheck = await prisma.providerHealthCheck.create({
+    data: {
+      orgId: ironHouse.id,
+      providerType: ProviderHealthDomain.PAYMENT,
+      provider: "mock_payments",
+      status: ProviderHealthCheckStatus.HEALTHY,
+      checkedAt: minutesFromNow(-6),
+      latencyMs: 182,
+      statusCode: 200,
+      message: "Webhook verification and capture flow healthy.",
+      metadata: {
+        queueDepth: 0,
+        source: "private_pilot_monitor"
+      }
+    }
+  });
+
+  const pushHealthCheck = await prisma.providerHealthCheck.create({
+    data: {
+      orgId: ironHouse.id,
+      providerType: ProviderHealthDomain.PUSH,
+      provider: "expo_push",
+      status: ProviderHealthCheckStatus.DEGRADED,
+      checkedAt: minutesFromNow(-5),
+      latencyMs: 1340,
+      statusCode: 207,
+      errorCode: "TOKEN_INVALIDATION_SPIKE",
+      message: "Invalid token rate above pilot threshold.",
+      consecutiveFailures: 2,
+      metadata: {
+        invalidTokenRate: 0.18,
+        cohort: "private_pilot_rc"
+      }
+    }
+  });
+
+  await prisma.incidentLog.createMany({
+    data: [
+      {
+        orgId: ironHouse.id,
+        reportedById: platform.id,
+        status: IncidentStatus.ACKNOWLEDGED,
+        severity: IncidentSeverity.HIGH,
+        category: "payment_webhook",
+        title: "Refund webhook held for manual review",
+        summary:
+          "A refund event entered quarantine because the pilot ledger had no matching refund reference.",
+        provider: paymentHealthCheck.provider,
+        relatedEntityType: "PaymentEvent",
+        relatedEntityId: paymentRefundEvent.id,
+        detectionSource: "payment_webhook_worker",
+        firstSeenAt: minutesFromNow(-15),
+        acknowledgedAt: minutesFromNow(-8),
+        metadata: {
+          providerHealthCheckId: paymentHealthCheck.id,
+          nextRetryAt: minutesFromNow(30).toISOString()
+        }
+      },
+      {
+        orgId: ironHouse.id,
+        reportedById: owner.id,
+        status: IncidentStatus.MONITORING,
+        severity: IncidentSeverity.MEDIUM,
+        category: "push_delivery",
+        title: "Push token invalidation spike on beta builds",
+        summary:
+          "Expo push returned DeviceNotRegistered for one private-pilot device after the latest beta reinstall.",
+        provider: pushHealthCheck.provider,
+        relatedEntityType: "PushDelivery",
+        relatedEntityId: failedPushDelivery.id,
+        detectionSource: "provider_health_check",
+        firstSeenAt: minutesFromNow(-12),
+        resolutionSummary: "Monitoring after in-app re-registration prompt shipped.",
+        metadata: {
+          providerHealthCheckId: pushHealthCheck.id,
+          guardianConsentId: guardianConsent.id
+        }
+      }
+    ]
+  });
+
   await prisma.auditLog.createMany({
     data: [
       {
@@ -1155,6 +1716,11 @@ async function main() {
         action: "organization.seeded",
         entityType: "Organization",
         entityId: ironHouse.id,
+        after: {
+          status: "TRIAL_ACTIVE",
+          visibility: "PUBLIC"
+        },
+        riskLevel: AuditRiskLevel.LOW,
         metadata: { seed: true }
       },
       {
@@ -1163,7 +1729,30 @@ async function main() {
         action: "manual_payment.recorded",
         entityType: "Payment",
         entityId: payment.id,
+        before: {
+          status: "PENDING"
+        },
+        after: {
+          status: "SUCCEEDED",
+          notes: payment.notes
+        },
+        riskLevel: AuditRiskLevel.MEDIUM,
         metadata: { mode: "mock_online" }
+      },
+      {
+        orgId: ironHouse.id,
+        actorUserId: platform.id,
+        action: "privacy.export.completed",
+        entityType: "DataExportJob",
+        entityId: exportJob.id,
+        after: {
+          status: "SUCCEEDED",
+          format: "JSON"
+        },
+        riskLevel: AuditRiskLevel.HIGH,
+        metadata: {
+          requestId: exportRequest.id
+        }
       }
     ]
   });

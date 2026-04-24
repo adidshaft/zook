@@ -137,6 +137,22 @@ enum PaymentPurpose {
   MANUAL_ADJUSTMENT
 }
 
+enum PaymentEventStatus {
+  RECEIVED
+  VERIFIED
+  PROCESSING
+  PROCESSED
+  FAILED
+  QUARANTINED
+}
+
+enum PaymentWebhookAttemptStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  ABANDONED
+}
+
 enum CouponType {
   FIXED_AMOUNT
   PERCENTAGE
@@ -244,6 +260,102 @@ enum ConsentStatus {
   DENIED
 }
 
+enum AuditRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum PushPlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+enum PushDeviceStatus {
+  ACTIVE
+  MUTED
+  INVALIDATED
+  REVOKED
+}
+
+enum PushDeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  FAILED
+  SUPPRESSED
+}
+
+enum GuardianConsentChallengeStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+  FAILED
+  CANCELLED
+}
+
+enum GuardianConsentChallengeChannel {
+  EMAIL_OTP
+  SMS_OTP
+  MAGIC_LINK
+}
+
+enum DataExportFormat {
+  JSON
+  CSV
+  PDF
+}
+
+enum DataExportJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum AccountDeletionJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  MONITORING
+  RESOLVED
+}
+
+enum ProviderHealthDomain {
+  PAYMENT
+  PUSH
+  EMAIL
+  AI
+  STORAGE
+  AUTH
+}
+
+enum ProviderHealthCheckStatus {
+  HEALTHY
+  DEGRADED
+  OUTAGE
+  UNKNOWN
+}
+
 enum TrackingVisibility {
   PRIVATE
   TRAINER_VISIBLE
@@ -264,85 +376,85 @@ enum HabitFrequency {
 }
 
 model User {
-  id                 String    @id @default(cuid())
-  email              String    @unique
-  emailVerifiedAt    DateTime?
-  name               String
-  phone              String?
-  dateOfBirth        DateTime?
-  profilePhotoUrl    String?
-  gender             String?
-  fitnessGoal        String?
-  emergencyContact   Json?
-  isMinor            Boolean   @default(false)
-  guardianPending    Boolean   @default(false)
-  isPlatformAdmin    Boolean   @default(false)
-  marketingOptIn     Boolean   @default(true)
-  aiConsent          Boolean   @default(false)
-  deletedAt          DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  email            String    @unique
+  emailVerifiedAt  DateTime?
+  name             String
+  phone            String?
+  dateOfBirth      DateTime?
+  profilePhotoUrl  String?
+  gender           String?
+  fitnessGoal      String?
+  emergencyContact Json?
+  isMinor          Boolean   @default(false)
+  guardianPending  Boolean   @default(false)
+  isPlatformAdmin  Boolean   @default(false)
+  marketingOptIn   Boolean   @default(true)
+  aiConsent        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([email])
   @@index([isPlatformAdmin])
 }
 
 model UserSession {
-  id             String    @id @default(cuid())
-  userId         String
-  tokenHash      String    @unique
-  userAgent      String?
-  ipAddress      String?
-  deviceLabel    String?
-  revokedAt      DateTime?
-  expiresAt      DateTime
-  createdAt      DateTime  @default(now())
+  id          String    @id @default(cuid())
+  userId      String
+  tokenHash   String    @unique
+  userAgent   String?
+  ipAddress   String?
+  deviceLabel String?
+  revokedAt   DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
 
   @@index([userId])
   @@index([expiresAt])
 }
 
 model OtpChallenge {
-  id           String    @id @default(cuid())
-  email        String
-  codeHash     String
-  purpose      String    @default("login")
-  attempts     Int       @default(0)
-  maxAttempts  Int       @default(5)
-  resendCount  Int       @default(0)
-  ipAddress    String?
-  consumedAt   DateTime?
-  expiresAt    DateTime
-  createdAt    DateTime  @default(now())
+  id          String    @id @default(cuid())
+  email       String
+  codeHash    String
+  purpose     String    @default("login")
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  resendCount Int       @default(0)
+  ipAddress   String?
+  consumedAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
 
   @@index([email, purpose])
   @@index([expiresAt])
 }
 
 model FileAsset {
-  id            String   @id @default(cuid())
-  orgId         String?
-  ownerUserId   String?
-  originalName  String?
-  storageKey    String
-  url           String
-  mimeType      String
-  sizeBytes     Int
-  purpose       String
-  category      String?
-  visibility    String?  @default("private")
-  storageProvider String? @default("local")
-  checksum      String?
-  metadata      Json?
-  deletedAt     DateTime?
-  createdAt     DateTime @default(now())
+  id              String    @id @default(cuid())
+  orgId           String?
+  ownerUserId     String?
+  originalName    String?
+  storageKey      String
+  url             String
+  mimeType        String
+  sizeBytes       Int
+  purpose         String
+  category        String?
+  visibility      String?   @default("private")
+  storageProvider String?   @default("local")
+  checksum        String?
+  metadata        Json?
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
 
   @@index([orgId])
   @@index([ownerUserId])
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
+  id          String         @id @default(cuid())
   orgId       String?
   actorUserId String?
   requestId   String?
@@ -351,11 +463,15 @@ model AuditLog {
   entityId    String?
   ipAddress   String?
   userAgent   String?
+  before      Json?
+  after       Json?
+  riskLevel   AuditRiskLevel @default(LOW)
   metadata    Json?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime       @default(now())
 
   @@index([orgId, createdAt])
   @@index([actorUserId, createdAt])
+  @@index([riskLevel, createdAt])
 }
 
 model Organization {
@@ -426,8 +542,8 @@ model Branch {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  @@index([orgId])
   @@unique([orgId, name])
+  @@index([orgId])
 }
 
 model OrganizationUser {
@@ -459,30 +575,30 @@ model OrganizationRoleAssignment {
 }
 
 model OrganizationRolePermission {
-  id          String     @id @default(cuid())
-  orgId       String
-  role        Role
-  permission  Permission
-  enabled     Boolean    @default(true)
+  id                 String     @id @default(cuid())
+  orgId              String
+  role               Role
+  permission         Permission
+  enabled            Boolean    @default(true)
   overriddenByUserId String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   @@unique([orgId, role, permission])
   @@index([orgId])
 }
 
 model StaffInvitation {
-  id            String   @id @default(cuid())
-  orgId         String
-  email         String
-  role          Role
-  token         String   @unique
-  invitedById   String
-  acceptedById  String?
-  acceptedAt    DateTime?
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
+  id           String    @id @default(cuid())
+  orgId        String
+  email        String
+  role         Role
+  token        String    @unique
+  invitedById  String
+  acceptedById String?
+  acceptedAt   DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
 
   @@index([orgId, email])
 }
@@ -512,18 +628,18 @@ model OrganizationSetting {
 }
 
 model MemberProfile {
-  id                      String   @id @default(cuid())
+  id                      String    @id @default(cuid())
   orgId                   String
   userId                  String
-  profilePhotoUrl          String?
-  profilePhotoConsentAt    DateTime?
-  marketingOptIn           Boolean  @default(true)
-  publicVisibility         Boolean  @default(false)
-  joinedViaReferralCodeId  String?
-  emergencyContact         Json?
-  notes                    String?
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  profilePhotoUrl         String?
+  profilePhotoConsentAt   DateTime?
+  marketingOptIn          Boolean   @default(true)
+  publicVisibility        Boolean   @default(false)
+  joinedViaReferralCodeId String?
+  emergencyContact        Json?
+  notes                   String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   @@unique([orgId, userId])
   @@index([orgId])
@@ -531,88 +647,177 @@ model MemberProfile {
 }
 
 model GuardianConsent {
-  id             String        @id @default(cuid())
-  minorUserId    String
-  guardianName   String
-  guardianEmail  String
-  guardianPhone  String
-  relationship   String
-  status         ConsentStatus @default(PENDING)
-  otpChallengeId String?
-  consentedAt    DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                String                          @id @default(cuid())
+  minorUserId       String
+  guardianName      String
+  guardianEmail     String
+  guardianPhone     String
+  relationship      String
+  status            ConsentStatus                   @default(PENDING)
+  otpChallengeId    String?
+  activeChallengeId String?
+  challengeStatus   GuardianConsentChallengeStatus?
+  challengedAt      DateTime?
+  verifiedAt        DateTime?
+  consentedAt       DateTime?
+  metadata          Json?
+  createdAt         DateTime                        @default(now())
+  updatedAt         DateTime                        @updatedAt
 
   @@index([minorUserId])
   @@index([guardianEmail])
 }
 
+model GuardianConsentChallenge {
+  id                 String                          @id @default(cuid())
+  guardianConsentId  String
+  minorUserId        String
+  otpChallengeId     String?
+  channel            GuardianConsentChallengeChannel @default(EMAIL_OTP)
+  status             GuardianConsentChallengeStatus  @default(PENDING)
+  challengeTokenHash String?
+  attempts           Int                             @default(0)
+  maxAttempts        Int                             @default(3)
+  lastSentAt         DateTime?
+  verifiedAt         DateTime?
+  expiresAt          DateTime
+  ipAddress          String?
+  userAgent          String?
+  failureReason      String?
+  metadata           Json?
+  createdAt          DateTime                        @default(now())
+  updatedAt          DateTime                        @updatedAt
+
+  @@index([guardianConsentId, status])
+  @@index([minorUserId, status])
+}
+
 model ConsentRecord {
-  id          String        @id @default(cuid())
-  orgId       String?
-  userId      String
-  type        ConsentType
-  status      ConsentStatus
-  metadata    Json?
+  id           String        @id @default(cuid())
+  orgId        String?
+  userId       String
+  type         ConsentType
+  status       ConsentStatus
+  metadata     Json?
   recordedById String?
-  createdAt   DateTime     @default(now())
+  createdAt    DateTime      @default(now())
 
   @@index([orgId])
   @@index([userId, type])
 }
 
 model DataExportRequest {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   orgId         String?
   userId        String
-  status        String   @default("requested")
+  status        String    @default("requested")
   requestId     String?
-  exportFormat  String   @default("json")
+  latestJobId   String?
+  exportFormat  String    @default("json")
   exportUrl     String?
   notes         String?
   processedById String?
   processedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  completedAt   DateTime?
+  failureReason String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([userId, status])
   @@index([orgId, status])
+}
+
+model DataExportJob {
+  id              String              @id @default(cuid())
+  requestId       String
+  orgId           String?
+  userId          String
+  status          DataExportJobStatus @default(QUEUED)
+  format          DataExportFormat    @default(JSON)
+  storageProvider String?             @default("local")
+  fileAssetId     String?
+  exportUrl       String?
+  checksum        String?
+  recordCount     Int?
+  requestedById   String?
+  processedById   String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  expiresAt       DateTime?
+  errorCode       String?
+  errorMessage    String?
+  metadata        Json?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([requestId, status])
+  @@index([userId, status, createdAt])
+  @@index([orgId, status, createdAt])
 }
 
 model AccountDeletionRequest {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   orgId         String?
   userId        String
-  status        String   @default("requested")
+  status        String    @default("requested")
   requestId     String?
+  latestJobId   String?
   notes         String?
   processedById String?
   processedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  scheduledFor  DateTime?
+  completedAt   DateTime?
+  failureReason String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([userId, status])
   @@index([orgId, status])
 }
 
+model AccountDeletionJob {
+  id             String                   @id @default(cuid())
+  requestId      String
+  orgId          String?
+  userId         String
+  status         AccountDeletionJobStatus @default(QUEUED)
+  requestedById  String?
+  processedById  String?
+  scheduledFor   DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  anonymizedAt   DateTime?
+  retentionUntil DateTime?
+  errorCode      String?
+  errorMessage   String?
+  dryRunReport   Json?
+  metadata       Json?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  @@index([requestId, status])
+  @@index([userId, status, createdAt])
+  @@index([orgId, status, createdAt])
+}
+
 model WorkoutSession {
-  id                String             @id @default(cuid())
-  userId            String
-  organizationId    String?
-  planAssignmentId  String?
+  id                 String             @id @default(cuid())
+  userId             String
+  organizationId     String?
+  planAssignmentId   String?
   attendanceRecordId String?
-  title             String
-  workoutType       String
-  startedAt         DateTime
-  endedAt           DateTime?
-  durationMinutes   Int?
-  intensity         String?
-  notes             String?
-  mood              String?
-  visibility        TrackingVisibility @default(PRIVATE)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  deletedAt         DateTime?
+  title              String
+  workoutType        String
+  startedAt          DateTime
+  endedAt            DateTime?
+  durationMinutes    Int?
+  intensity          String?
+  notes              String?
+  mood               String?
+  visibility         TrackingVisibility @default(PRIVATE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  deletedAt          DateTime?
 
   @@index([userId, startedAt])
   @@index([organizationId, userId])
@@ -660,31 +865,31 @@ model BodyProgressEntry {
 }
 
 model MemberHabit {
-  id             String         @id @default(cuid())
+  id             String             @id @default(cuid())
   userId         String
   organizationId String?
   title          String
   category       HabitCategory
   targetValue    Int?
   unit           String?
-  frequency      HabitFrequency @default(DAILY)
+  frequency      HabitFrequency     @default(DAILY)
   visibility     TrackingVisibility @default(PRIVATE)
-  active         Boolean        @default(true)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  active         Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   @@index([userId, active])
   @@index([organizationId, userId])
 }
 
 model MemberHabitLog {
-  id          String   @id @default(cuid())
-  habitId     String
-  loggedAt    DateTime @default(now())
-  value       Int?
-  completed   Boolean  @default(true)
-  notes       String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  habitId   String
+  loggedAt  DateTime @default(now())
+  value     Int?
+  completed Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
 
   @@index([habitId, loggedAt])
 }
@@ -749,48 +954,48 @@ model MembershipUsage {
   orgId          String
   subscriptionId String
   attendanceId   String?
-  usedVisits      Int      @default(1)
-  usageDate       DateTime @default(now())
-  metadata        Json?
-  createdAt       DateTime @default(now())
+  usedVisits     Int      @default(1)
+  usageDate      DateTime @default(now())
+  metadata       Json?
+  createdAt      DateTime @default(now())
 
   @@index([orgId, subscriptionId])
 }
 
 model MembershipJoinRequest {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   orgId        String
   branchId     String?
   userId       String
   planId       String?
   referralCode String?
-  status       String   @default("pending")
+  status       String    @default("pending")
   message      String?
   reviewedById String?
   reviewedAt   DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([orgId, status])
   @@index([userId])
 }
 
 model PaymentSession {
-  id              String         @id @default(cuid())
-  provider        String         @default("mock")
-  orgId           String?
-  userId          String?
-  purpose         PaymentPurpose
-  amountPaise     Int
-  currency        String         @default("INR")
-  status          PaymentStatus  @default(CREATED)
-  checkoutUrl     String
-  providerRef     String?
-  metadata        Json?
-  expiresAt       DateTime
-  completedAt     DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id          String         @id @default(cuid())
+  provider    String         @default("mock")
+  orgId       String?
+  userId      String?
+  purpose     PaymentPurpose
+  amountPaise Int
+  currency    String         @default("INR")
+  status      PaymentStatus  @default(CREATED)
+  checkoutUrl String
+  providerRef String?
+  metadata    Json?
+  expiresAt   DateTime
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@index([orgId, status])
   @@index([userId, status])
@@ -798,24 +1003,25 @@ model PaymentSession {
 }
 
 model Payment {
-  id               String         @id @default(cuid())
-  orgId            String?
-  userId           String?
-  sessionId        String?
-  purpose          PaymentPurpose
-  amountPaise      Int
-  currency         String         @default("INR")
-  status           PaymentStatus
-  mode             PaymentMode
-  provider         String?
-  providerRef      String?
-  receiptNumber    String?
-  proofAssetId     String?
-  recordedById     String?
-  recordedAt       DateTime?
-  metadata         Json?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  orgId         String?
+  userId        String?
+  sessionId     String?
+  purpose       PaymentPurpose
+  amountPaise   Int
+  currency      String         @default("INR")
+  status        PaymentStatus
+  mode          PaymentMode
+  provider      String?
+  providerRef   String?
+  receiptNumber String?
+  notes         String?
+  proofAssetId  String?
+  recordedById  String?
+  recordedAt    DateTime?
+  metadata      Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([orgId, status])
   @@index([userId])
@@ -823,33 +1029,70 @@ model Payment {
 }
 
 model PaymentEvent {
-  id                String   @id @default(cuid())
-  paymentId         String?
-  provider          String
-  providerEventId   String
-  eventType         String
-  payload           Json
-  signatureVerified Boolean  @default(false)
-  processedAt       DateTime?
-  processingError   String?
-  createdAt         DateTime @default(now())
+  id                  String             @id @default(cuid())
+  orgId               String?
+  userId              String?
+  sessionId           String?
+  paymentId           String?
+  status              PaymentEventStatus @default(RECEIVED)
+  provider            String
+  providerEventId     String
+  eventType           String
+  eventVersion        String?
+  payload             Json
+  headers             Json?
+  rawPayloadHash      String?
+  sourceIpAddress     String?
+  signature           String?
+  signatureVerified   Boolean            @default(false)
+  signatureVerifiedAt DateTime?
+  receivedAt          DateTime           @default(now())
+  processedAt         DateTime?
+  lastAttemptAt       DateTime?
+  attemptCount        Int                @default(0)
+  nextRetryAt         DateTime?
+  processingError     String?
+  riskFlags           Json?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   @@unique([provider, providerEventId])
   @@index([paymentId, createdAt])
-  @@index([provider, createdAt])
+  @@index([provider, status, createdAt])
+  @@index([orgId, status, createdAt])
+}
+
+model PaymentWebhookAttempt {
+  id             String                      @id @default(cuid())
+  paymentEventId String
+  attemptNo      Int
+  status         PaymentWebhookAttemptStatus @default(PENDING)
+  processor      String?
+  startedAt      DateTime                    @default(now())
+  completedAt    DateTime?
+  durationMs     Int?
+  httpStatusCode Int?
+  errorCode      String?
+  errorMessage   String?
+  result         Json?
+  createdAt      DateTime                    @default(now())
+
+  @@unique([paymentEventId, attemptNo])
+  @@index([paymentEventId, startedAt])
+  @@index([status, createdAt])
 }
 
 model Invoice {
-  id           String        @id @default(cuid())
-  orgId        String?
-  userId       String?
-  paymentId    String
-  invoiceNo    String        @unique
-  amountPaise  Int
-  taxPaise     Int           @default(0)
-  status       PaymentStatus
-  issuedAt     DateTime      @default(now())
-  metadata     Json?
+  id          String        @id @default(cuid())
+  orgId       String?
+  userId      String?
+  paymentId   String
+  invoiceNo   String        @unique
+  amountPaise Int
+  taxPaise    Int           @default(0)
+  status      PaymentStatus
+  issuedAt    DateTime      @default(now())
+  metadata    Json?
 
   @@index([orgId])
   @@index([userId])
@@ -869,53 +1112,53 @@ model ManualPaymentAdjustment {
 }
 
 model Coupon {
-  id                String     @id @default(cuid())
-  orgId             String
-  code              String
-  type              CouponType
-  valuePaise        Int?
-  valuePercentBps   Int?
-  active            Boolean    @default(true)
-  validFrom         DateTime?
-  validUntil        DateTime?
-  maxRedemptions    Int?
-  perUserLimit      Int?
-  applicablePlanId  String?
-  createdById       String
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  id               String     @id @default(cuid())
+  orgId            String
+  code             String
+  type             CouponType
+  valuePaise       Int?
+  valuePercentBps  Int?
+  active           Boolean    @default(true)
+  validFrom        DateTime?
+  validUntil       DateTime?
+  maxRedemptions   Int?
+  perUserLimit     Int?
+  applicablePlanId String?
+  createdById      String
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
   @@unique([orgId, code])
   @@index([orgId, active])
 }
 
 model CouponRedemption {
-  id              String   @id @default(cuid())
-  orgId           String
-  couponId        String
-  userId          String
-  subscriptionId  String?
+  id               String   @id @default(cuid())
+  orgId            String
+  couponId         String
+  userId           String
+  subscriptionId   String?
   paymentSessionId String?
-  discountPaise   Int
-  createdAt       DateTime @default(now())
+  discountPaise    Int
+  createdAt        DateTime @default(now())
 
   @@index([orgId, couponId])
   @@index([orgId, userId])
 }
 
 model ReferralCode {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   orgId           String
   referrerUserId  String
-  code            String   @unique
+  code            String    @unique
   couponId        String?
   createdByRole   Role
   expiresAt       DateTime?
   maxUses         Int?
-  status          String   @default("active")
-  redemptionCount Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  status          String    @default("active")
+  redemptionCount Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([orgId])
   @@index([referrerUserId])
@@ -936,14 +1179,14 @@ model ReferralRedemption {
 }
 
 model AttendanceQrToken {
-  id        String    @id @default(cuid())
-  orgId     String
-  branchId  String
-  nonce     String    @unique
-  issuedAt  DateTime  @default(now())
-  expiresAt DateTime
-  usedAt    DateTime?
-  signature String
+  id          String    @id @default(cuid())
+  orgId       String
+  branchId    String
+  nonce       String    @unique
+  issuedAt    DateTime  @default(now())
+  expiresAt   DateTime
+  usedAt      DateTime?
+  signature   String
   createdById String?
 
   @@index([orgId, branchId, expiresAt])
@@ -988,17 +1231,17 @@ model AttendanceOverride {
 }
 
 model TrainerProfile {
-  id              String   @id @default(cuid())
-  orgId           String
-  userId          String
-  bio             String?
-  specialties     Json?
-  availability    Json?
-  upiId           String?
-  upiQrAssetId    String?
-  visibleToMembers Boolean @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  orgId            String
+  userId           String
+  bio              String?
+  specialties      Json?
+  availability     Json?
+  upiId            String?
+  upiQrAssetId     String?
+  visibleToMembers Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@unique([orgId, userId])
   @@index([orgId])
@@ -1019,39 +1262,39 @@ model TrainerAssignment {
 }
 
 model PersonalTrainingPlan {
-  id              String   @id @default(cuid())
-  orgId           String
-  trainerUserId   String
-  name            String
-  description     String?
-  durationDays    Int?
-  sessionCount    Int?
-  pricePaise      Int
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  orgId         String
+  trainerUserId String
+  name          String
+  description   String?
+  durationDays  Int?
+  sessionCount  Int?
+  pricePaise    Int
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([orgId, trainerUserId])
 }
 
 model PersonalTrainingSubscription {
-  id                 String             @id @default(cuid())
-  orgId              String
-  memberUserId       String
-  trainerUserId      String
-  ptPlanId           String?
-  status             SubscriptionStatus @default(PENDING_PAYMENT)
-  startsAt           DateTime?
-  endsAt             DateTime?
-  totalSessions      Int?
-  remainingSessions  Int?
-  amountPaise        Int
-  paymentMode        PaymentMode
-  proofAssetId       String?
-  notes              String?
-  recordedById       String
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id                String             @id @default(cuid())
+  orgId             String
+  memberUserId      String
+  trainerUserId     String
+  ptPlanId          String?
+  status            SubscriptionStatus @default(PENDING_PAYMENT)
+  startsAt          DateTime?
+  endsAt            DateTime?
+  totalSessions     Int?
+  remainingSessions Int?
+  amountPaise       Int
+  paymentMode       PaymentMode
+  proofAssetId      String?
+  notes             String?
+  recordedById      String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   @@index([orgId, trainerUserId, status])
   @@index([orgId, memberUserId])
@@ -1071,65 +1314,65 @@ model PersonalTrainingSessionLog {
 }
 
 model PlanContent {
-  id             String     @id @default(cuid())
-  orgId          String
-  creatorUserId  String
-  type           PlanType
-  title          String
-  description    String?
-  content        Json
-  attachments    Json?
-  aiGenerated    Boolean    @default(false)
-  reviewed       Boolean    @default(false)
-  reviewedById   String?
-  status         PlanStatus @default(DRAFT)
-  visibility     String     @default("selected")
-  versionNumber  Int        @default(1)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  id            String     @id @default(cuid())
+  orgId         String
+  creatorUserId String
+  type          PlanType
+  title         String
+  description   String?
+  content       Json
+  attachments   Json?
+  aiGenerated   Boolean    @default(false)
+  reviewed      Boolean    @default(false)
+  reviewedById  String?
+  status        PlanStatus @default(DRAFT)
+  visibility    String     @default("selected")
+  versionNumber Int        @default(1)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   @@index([orgId, status])
   @@index([creatorUserId])
 }
 
 model PlanVersion {
-  id           String   @id @default(cuid())
-  orgId        String
-  planId       String
-  versionNo    Int
-  content      Json
-  createdById  String
-  createdAt    DateTime @default(now())
+  id          String   @id @default(cuid())
+  orgId       String
+  planId      String
+  versionNo   Int
+  content     Json
+  createdById String
+  createdAt   DateTime @default(now())
 
   @@unique([planId, versionNo])
   @@index([orgId, planId])
 }
 
 model PlanAssignment {
-  id             String   @id @default(cuid())
-  orgId          String
-  planId         String
-  assignedById   String
+  id               String   @id @default(cuid())
+  orgId            String
+  planId           String
+  assignedById     String
   assignedToUserId String?
-  audience       String
-  metadata       Json?
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now())
+  audience         String
+  metadata         Json?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
 
   @@index([orgId, assignedToUserId])
   @@index([orgId, planId])
 }
 
 model PlanProgress {
-  id             String   @id @default(cuid())
-  orgId          String
-  assignmentId   String
-  userId         String
-  progressJson   Json
-  completionPct  Int      @default(0)
-  feedback       String?
-  updatedAt      DateTime @updatedAt
-  createdAt      DateTime @default(now())
+  id            String   @id @default(cuid())
+  orgId         String
+  assignmentId  String
+  userId        String
+  progressJson  Json
+  completionPct Int      @default(0)
+  feedback      String?
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
 
   @@unique([assignmentId, userId])
   @@index([orgId, userId])
@@ -1173,73 +1416,73 @@ model AIMessage {
 }
 
 model AIUsageLog {
-  id              String         @id @default(cuid())
-  orgId           String?
-  userId          String
-  role            Role
-  provider        AIProviderType
-  requestType     AIRequestType
-  promptSummary   String
-  responseSummary String?
-  tokenEstimate   Int            @default(0)
-  costEstimatePaise Int          @default(0)
-  imageCount      Int            @default(0)
-  safetyFlags     Json?
-  quotaConsumed   Int            @default(1)
-  createdPlanId   String?
-  createdAt       DateTime       @default(now())
+  id                String         @id @default(cuid())
+  orgId             String?
+  userId            String
+  role              Role
+  provider          AIProviderType
+  requestType       AIRequestType
+  promptSummary     String
+  responseSummary   String?
+  tokenEstimate     Int            @default(0)
+  costEstimatePaise Int            @default(0)
+  imageCount        Int            @default(0)
+  safetyFlags       Json?
+  quotaConsumed     Int            @default(1)
+  createdPlanId     String?
+  createdAt         DateTime       @default(now())
 
   @@index([orgId, createdAt])
   @@index([userId, createdAt])
 }
 
 model AIQuota {
-  id             String   @id @default(cuid())
-  orgId          String?
-  userId         String?
-  role           Role?
-  textDailyLimit Int
-  textMonthLimit Int
-  imageMonthLimit Int   @default(0)
-  usedTextDaily  Int    @default(0)
-  usedTextMonth  Int    @default(0)
-  usedImagesMonth Int   @default(0)
-  resetDailyAt   DateTime
-  resetMonthAt   DateTime
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  orgId           String?
+  userId          String?
+  role            Role?
+  textDailyLimit  Int
+  textMonthLimit  Int
+  imageMonthLimit Int      @default(0)
+  usedTextDaily   Int      @default(0)
+  usedTextMonth   Int      @default(0)
+  usedImagesMonth Int      @default(0)
+  resetDailyAt    DateTime
+  resetMonthAt    DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([orgId])
   @@index([userId])
 }
 
 model Notification {
-  id            String             @id @default(cuid())
-  orgId         String?
-  createdById   String?
-  type          NotificationType
-  status        NotificationStatus @default(DRAFT)
-  title         String
-  body          String
-  audience      String
-  scheduledAt   DateTime?
-  sentAt        DateTime?
-  pushEnabled   Boolean            @default(false)
-  metadata      Json?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id          String             @id @default(cuid())
+  orgId       String?
+  createdById String?
+  type        NotificationType
+  status      NotificationStatus @default(DRAFT)
+  title       String
+  body        String
+  audience    String
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  pushEnabled Boolean            @default(false)
+  metadata    Json?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   @@index([orgId, status])
 }
 
 model NotificationRecipient {
-  id              String   @id @default(cuid())
-  notificationId  String
-  userId          String
-  readAt          DateTime?
-  deliveryStatus  String   @default("in_app")
-  deliveredAt     DateTime?
-  createdAt       DateTime @default(now())
+  id             String    @id @default(cuid())
+  notificationId String
+  userId         String
+  readAt         DateTime?
+  deliveryStatus String    @default("in_app")
+  deliveredAt    DateTime?
+  createdAt      DateTime  @default(now())
 
   @@unique([notificationId, userId])
   @@index([userId, readAt])
@@ -1261,32 +1504,88 @@ model NotificationTemplate {
 }
 
 model UserNotificationPreference {
-  id              String   @id @default(cuid())
-  orgId           String?
-  userId          String
-  transactional   Boolean  @default(true)
-  operational     Boolean  @default(true)
-  promotional     Boolean  @default(true)
-  engagement      Boolean  @default(true)
-  pushEnabled     Boolean  @default(false)
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  orgId         String?
+  userId        String
+  transactional Boolean  @default(true)
+  operational   Boolean  @default(true)
+  promotional   Boolean  @default(true)
+  engagement    Boolean  @default(true)
+  pushEnabled   Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
 
   @@unique([orgId, userId])
   @@index([userId])
 }
 
+model PushDevice {
+  id                String           @id @default(cuid())
+  orgId             String?
+  userId            String
+  platform          PushPlatform
+  provider          String           @default("expo")
+  token             String
+  status            PushDeviceStatus @default(ACTIVE)
+  deviceLabel       String?
+  deviceFingerprint String?
+  appVersion        String?
+  osVersion         String?
+  locale            String?
+  timezone          String?
+  lastSeenAt        DateTime?
+  lastRegisteredAt  DateTime?
+  lastFailureAt     DateTime?
+  failureReason     String?
+  metadata          Json?
+  revokedAt         DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([provider, token])
+  @@index([orgId, userId])
+  @@index([userId, status])
+  @@index([status, updatedAt])
+}
+
+model PushDelivery {
+  id                      String             @id @default(cuid())
+  orgId                   String?
+  notificationId          String?
+  notificationRecipientId String?
+  userId                  String?
+  deviceId                String?
+  provider                String             @default("expo")
+  providerMessageId       String?
+  status                  PushDeliveryStatus @default(QUEUED)
+  attemptCount            Int                @default(0)
+  scheduledAt             DateTime?
+  sentAt                  DateTime?
+  deliveredAt             DateTime?
+  openedAt                DateTime?
+  failureCode             String?
+  failureReason           String?
+  payload                 Json?
+  response                Json?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+
+  @@index([notificationId, status])
+  @@index([deviceId, status, createdAt])
+  @@index([userId, status, createdAt])
+}
+
 model UserGoal {
-  id          String   @id @default(cuid())
-  orgId       String?
-  userId      String
-  type        String
-  title       String
-  targetValue Int?
-  currentValue Int   @default(0)
-  period      String?
-  active      Boolean @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  orgId        String?
+  userId       String
+  type         String
+  title        String
+  targetValue  Int?
+  currentValue Int      @default(0)
+  period       String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([orgId, userId])
 }
@@ -1305,12 +1604,12 @@ model HabitChecklist {
 }
 
 model HabitCompletion {
-  id          String   @id @default(cuid())
-  habitId     String
-  userId      String
-  dateKey     String
+  id             String   @id @default(cuid())
+  habitId        String
+  userId         String
+  dateKey        String
   completedItems Json
-  createdAt   DateTime @default(now())
+  createdAt      DateTime @default(now())
 
   @@unique([habitId, userId, dateKey])
 }
@@ -1337,29 +1636,29 @@ model UserBadge {
 }
 
 model Challenge {
-  id          String   @id @default(cuid())
-  orgId       String
-  createdById String
-  title       String
-  description String?
-  startsAt    DateTime
-  endsAt      DateTime
-  optInOnly   Boolean  @default(true)
-  leaderboardEnabled Boolean @default(false)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  orgId              String
+  createdById        String
+  title              String
+  description        String?
+  startsAt           DateTime
+  endsAt             DateTime
+  optInOnly          Boolean  @default(true)
+  leaderboardEnabled Boolean  @default(false)
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([orgId, active])
 }
 
 model ChallengeParticipant {
-  id          String   @id @default(cuid())
-  orgId       String
-  challengeId String
-  userId      String
-  optedInAt   DateTime @default(now())
-  visibleOnLeaderboard Boolean @default(false)
+  id                   String   @id @default(cuid())
+  orgId                String
+  challengeId          String
+  userId               String
+  optedInAt            DateTime @default(now())
+  visibleOnLeaderboard Boolean  @default(false)
 
   @@unique([challengeId, userId])
   @@index([orgId, userId])
@@ -1378,19 +1677,19 @@ model ChallengeProgress {
 }
 
 model Product {
-  id                 String          @id @default(cuid())
-  orgId              String
-  name               String
-  description        String?
-  category           ProductCategory
-  pricePaise         Int
-  stock              Int
-  lowStockThreshold  Int             @default(5)
-  imageUrl           String?
-  active             Boolean         @default(true)
-  taxRateBps         Int?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  id                String          @id @default(cuid())
+  orgId             String
+  name              String
+  description       String?
+  category          ProductCategory
+  pricePaise        Int
+  stock             Int
+  lowStockThreshold Int             @default(5)
+  imageUrl          String?
+  active            Boolean         @default(true)
+  taxRateBps        Int?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@index([orgId, active])
 }
@@ -1427,13 +1726,13 @@ model ShopOrder {
 }
 
 model ShopOrderItem {
-  id          String   @id @default(cuid())
-  orgId       String
-  orderId     String
-  productId   String
-  quantity    Int
-  unitPaise   Int
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  orgId     String
+  orderId   String
+  productId String
+  quantity  Int
+  unitPaise Int
+  createdAt DateTime @default(now())
 
   @@index([orgId, orderId])
 }
@@ -1452,25 +1751,69 @@ model PickupCode {
 }
 
 model PlatformSetting {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  value     Json
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
   updatedById String?
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 }
 
 model OrganizationAbuseFlag {
-  id          String   @id @default(cuid())
-  orgId       String
-  userId      String?
-  type        String
-  severity    String
-  status      String   @default("open")
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  resolvedAt  DateTime?
+  id           String    @id @default(cuid())
+  orgId        String
+  userId       String?
+  type         String
+  severity     String
+  status       String    @default("open")
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
   resolvedById String?
 
   @@index([orgId, status])
+}
+
+model IncidentLog {
+  id                String           @id @default(cuid())
+  orgId             String?
+  reportedById      String?
+  status            IncidentStatus   @default(OPEN)
+  severity          IncidentSeverity @default(MEDIUM)
+  category          String
+  title             String
+  summary           String?
+  provider          String?
+  relatedEntityType String?
+  relatedEntityId   String?
+  detectionSource   String?
+  firstSeenAt       DateTime         @default(now())
+  acknowledgedAt    DateTime?
+  resolvedAt        DateTime?
+  resolutionSummary String?
+  metadata          Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([orgId, status, severity])
+  @@index([provider, status, createdAt])
+}
+
+model ProviderHealthCheck {
+  id                  String                    @id @default(cuid())
+  orgId               String?
+  providerType        ProviderHealthDomain
+  provider            String
+  status              ProviderHealthCheckStatus @default(UNKNOWN)
+  checkedAt           DateTime                  @default(now())
+  latencyMs           Int?
+  statusCode          Int?
+  errorCode           String?
+  message             String?
+  consecutiveFailures Int                       @default(0)
+  metadata            Json?
+  createdAt           DateTime                  @default(now())
+
+  @@index([providerType, provider, checkedAt])
+  @@index([status, checkedAt])
 }
