@@ -72,3 +72,75 @@ export function estimateTokens(prompt: string, response = ""): number {
 export function isImageRequest(type: AIRequestType): boolean {
   return type === "IMAGE";
 }
+
+export class OpenAIProvider implements AIProvider {
+  constructor(
+    private readonly apiKey: string,
+    private readonly model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
+  ) {}
+
+  async generateText(input: { prompt: string; safeMode?: boolean; resources?: string[] }): Promise<string> {
+    const resourceLine = input.resources?.length ? `Approved resources: ${input.resources.join(", ")}.` : "";
+    const instruction = input.safeMode
+      ? "Respond with minor-safe fitness guidance only. Avoid aggressive dieting, body shaming, or supplement advice."
+      : "Respond with concise gym and fitness guidance only.";
+    const payload = await this.createResponse(`${instruction}\n${resourceLine}\n${input.prompt}`);
+    return payload.output_text?.trim() || "OpenAI provider returned no text.";
+  }
+
+  async generateStructuredPlan(input: { prompt: string; safeMode?: boolean }): Promise<Record<string, unknown>> {
+    const text = await this.generateText({
+      prompt: `${input.prompt}\nReturn a JSON-ready workout or nutrition draft with title, type, days, and notes.`,
+      ...(input.safeMode !== undefined ? { safeMode: input.safeMode } : {})
+    });
+    return {
+      title: "OpenAI Draft",
+      type: "WORKOUT",
+      source: "openai",
+      notes: text
+    };
+  }
+
+  async generateImage(input: { prompt: string }): Promise<{ imageUrl: string; prompt: string }> {
+    return {
+      imageUrl: `https://api.openai.com/v1/images?prompt=${encodeURIComponent(input.prompt)}`,
+      prompt: input.prompt
+    };
+  }
+
+  async classifyScope(prompt: string): Promise<{ inScope: boolean; reason?: string }> {
+    return /(gym|fitness|workout|diet|nutrition|exercise|recovery|membership|attendance|trainer|plan)/i.test(prompt)
+      ? { inScope: true }
+      : { inScope: false, reason: "Query is outside gym, fitness, or gym-ops scope." };
+  }
+
+  async classifySafety(prompt: string): Promise<{ allowed: boolean; flags: string[]; redirect?: string }> {
+    const normalized = prompt.toLowerCase();
+    const flags = risky.filter((term) => normalized.includes(term));
+    return flags.length
+      ? {
+          allowed: false,
+          flags,
+          redirect: "This request needs a qualified professional."
+        }
+      : { allowed: true, flags: [] };
+  }
+
+  private async createResponse(input: string): Promise<{ output_text?: string }> {
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: this.model,
+        input
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`OpenAI request failed with status ${response.status}`);
+    }
+    return (await response.json()) as { output_text?: string };
+  }
+}

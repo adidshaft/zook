@@ -5,3 +5,4 @@ export * from "./map";
 export * from "./ai";
 export * from "./push";
 export * from "./storage";
+export * from "./registry";

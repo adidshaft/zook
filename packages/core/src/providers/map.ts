@@ -90,3 +90,87 @@ export class MockMapProvider implements MapProvider {
     };
   }
 }
+
+export class GoogleMapProvider implements MapProvider {
+  constructor(private readonly apiKey: string) {}
+
+  async resolveGoogleMapsLink(url: string): Promise<PlaceResult | null> {
+    if (!/^https?:\/\/(maps\.app\.goo\.gl|www\.google\.com\/maps|goo\.gl\/maps)/.test(url)) {
+      return null;
+    }
+    return null;
+  }
+
+  async searchPlaces(query: string, city?: string): Promise<PlaceResult[]> {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        `${query}${city ? `, ${city}` : ""}`
+      )}&key=${this.apiKey}`
+    );
+    if (!response.ok) {
+      throw new Error(`Google Maps search failed with status ${response.status}`);
+    }
+    const payload = (await response.json()) as {
+      results?: Array<{
+        formatted_address?: string;
+        address_components?: Array<{ long_name: string; types: string[] }>;
+        geometry?: { location?: { lat: number; lng: number } };
+        place_id?: string;
+      }>;
+    };
+    return (payload.results ?? []).slice(0, 5).map((result) => this.toPlaceResult(result));
+  }
+
+  async geocodeAddress(input: { address: string; city: string; state: string; pincode: string }): Promise<PlaceResult> {
+    const results = await this.searchPlaces(input.address, `${input.city}, ${input.state}, ${input.pincode}`);
+    if (!results.length) {
+      throw new Error("Google Maps geocode returned no results");
+    }
+    return results[0]!;
+  }
+
+  async reverseGeocode(input: { latitude: number; longitude: number }): Promise<PlaceResult> {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${input.latitude},${input.longitude}&key=${this.apiKey}`
+    );
+    if (!response.ok) {
+      throw new Error(`Google reverse geocode failed with status ${response.status}`);
+    }
+    const payload = (await response.json()) as {
+      results?: Array<{
+        formatted_address?: string;
+        address_components?: Array<{ long_name: string; types: string[] }>;
+        geometry?: { location?: { lat: number; lng: number } };
+        place_id?: string;
+      }>;
+    };
+    if (!payload.results?.length) {
+      throw new Error("Google reverse geocode returned no results");
+    }
+    return this.toPlaceResult(payload.results[0]!);
+  }
+
+  private toPlaceResult(result: {
+    formatted_address?: string;
+    address_components?: Array<{ long_name: string; types: string[] }>;
+    geometry?: { location?: { lat: number; lng: number } };
+    place_id?: string;
+  }): PlaceResult {
+    const components = result.address_components ?? [];
+    const city = components.find((component) => component.types.includes("locality"))?.long_name ?? "Unknown";
+    const state =
+      components.find((component) => component.types.includes("administrative_area_level_1"))?.long_name ?? "Unknown";
+    const pincode = components.find((component) => component.types.includes("postal_code"))?.long_name ?? "";
+    return {
+      name: result.formatted_address ?? "Google place",
+      address: result.formatted_address ?? "Google place",
+      city,
+      state,
+      pincode,
+      latitude: result.geometry?.location?.lat ?? 0,
+      longitude: result.geometry?.location?.lng ?? 0,
+      ...(result.place_id ? { googlePlaceId: result.place_id } : {}),
+      locationSource: "GOOGLE_PLACE"
+    };
+  }
+}

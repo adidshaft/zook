@@ -18,7 +18,7 @@ import {
   type AIRequestType,
   type Role
 } from "@zook/core";
-import { MockAIProvider, MockEmailProvider, MockMapProvider } from "@zook/core/providers";
+import { getAIProvider, getEmailProvider, getMapProvider } from "@zook/core/providers";
 import {
   AuthService,
   calculateShopOrder,
@@ -58,9 +58,9 @@ import {
   getOrganizationMembers
 } from "./read-models";
 
-const emailProvider = new MockEmailProvider();
-const mapProvider = new MockMapProvider();
-const aiProvider = new MockAIProvider();
+const emailProvider = getEmailProvider();
+const mapProvider = getMapProvider();
+const aiProvider = getAIProvider();
 const personalTrackingService = new PersonalTrackingService();
 
 const joinRequestSchema = z.object({
