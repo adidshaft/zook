@@ -7,9 +7,22 @@ import {
   TrackingSummaryTile,
   WorkoutLogCard
 } from "@/components/tracking";
+import { useAuth } from "@/lib/auth";
 import { colors } from "@/lib/theme";
 
 export default function Home() {
+  const { activeOrgId, session } = useAuth();
+  const activeOrganization =
+    session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
+    session?.activeOrganization;
+  const initials =
+    session?.user.name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() ?? "Z";
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -17,17 +30,19 @@ export default function Home() {
         <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
           <View style={styles.topbar}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>N</Text>
+              <Text style={styles.avatarText}>{initials}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.muted} selectable>
                 Current gym
               </Text>
               <Text style={styles.gymName} selectable>
-                Iron House Fitness
+                {activeOrganization?.name ?? "Choose your gym"}
               </Text>
             </View>
-            <Pill tone="lime">Active</Pill>
+            <Pill tone={session?.user.guardianPending ? "amber" : "lime"}>
+              {session?.user.guardianPending ? "Consent pending" : "Active"}
+            </Pill>
           </View>
 
           <Card style={styles.hero}>

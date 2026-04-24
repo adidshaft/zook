@@ -1,9 +1,11 @@
 import { ShieldAlert } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
+import { requirePlatformSession } from "@/lib/server-auth";
 import { ZookLogo } from "@/components/zook-logo";
 import { getDashboardData } from "@/lib/data";
 
 export default async function PlatformPage() {
+  await requirePlatformSession();
   const data = await getDashboardData();
   return (
     <main className="min-h-screen px-5 py-5">

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { ArrowRight, Mail } from "lucide-react";
+import { ApiError } from "@zook/core";
+import { webApiFetch } from "@/lib/api-client";
 
 export function LoginPanel() {
   const [email, setEmail] = useState("owner@zook.local");
@@ -10,27 +12,27 @@ export function LoginPanel() {
   const [message, setMessage] = useState("Use the seeded accounts with development OTP 000000.");
 
   async function requestOtp() {
-    const response = await fetch("/api/auth/request-otp", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email })
-    });
-    const payload = await response.json();
-    setMessage(payload.ok ? `OTP sent to ${email}. Dev code is 000000.` : payload.error.message);
-    if (payload.ok) setStage("otp");
+    try {
+      const payload = await webApiFetch<{ devOtp?: string }>("/api/auth/request-otp", {
+        method: "POST",
+        body: { email }
+      });
+      setMessage(payload.devOtp ? `OTP sent to ${email}. Dev code is ${payload.devOtp}.` : `OTP sent to ${email}.`);
+      setStage("otp");
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Unable to send OTP.");
+    }
   }
 
   async function verifyOtp() {
-    const response = await fetch("/api/auth/verify-otp", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, code })
-    });
-    const payload = await response.json();
-    if (payload.ok) {
+    try {
+      await webApiFetch("/api/auth/verify-otp", {
+        method: "POST",
+        body: { email, code }
+      });
       window.location.href = email.startsWith("platform") ? "/platform" : "/dashboard";
-    } else {
-      setMessage(payload.error.message);
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Unable to verify OTP.");
     }
   }
 

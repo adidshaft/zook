@@ -1,17 +1,37 @@
-import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
 import { Card, Screen } from "@/components/primitives";
+import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { colors } from "@/lib/theme";
 
 export default function Login() {
+  const { requestOtp, verifyOtp } = useAuth();
   const [email, setEmail] = useState("member@zook.local");
   const [code, setCode] = useState("000000");
+  const [stage, setStage] = useState<"email" | "otp">("email");
+  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("Development OTP is 000000.");
 
-  async function mockLogin() {
-    await SecureStore.setItemAsync("zook_session", `dev-${email}-${code}`);
-    setMessage(`Signed in locally as ${email}. API login uses /api/auth/verify-otp.`);
+  async function handleContinue() {
+    setBusy(true);
+    try {
+      if (stage === "email") {
+        const result = await requestOtp(email);
+        setStage("otp");
+        setMessage(
+          result.devOtp
+            ? `OTP sent to ${email}. Development code is ${result.devOtp}.`
+            : `OTP sent to ${email}.`
+        );
+      } else {
+        await verifyOtp(email, code);
+        setMessage(`Signed in as ${email}.`);
+      }
+    } catch (error) {
+      setMessage(getApiErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -22,12 +42,14 @@ export default function Login() {
             Email OTP
           </Text>
           <Text style={styles.body} selectable>
-            Mocks keep local development free. Real email/SMS providers can be enabled later server-side.
+            Email OTP is backed by the real Zook auth API. Mocks keep local development free and safe.
           </Text>
           <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" style={styles.input} />
-          <TextInput value={code} onChangeText={setCode} keyboardType="number-pad" style={styles.input} />
-          <Pressable onPress={mockLogin} style={styles.button}>
-            <Text style={styles.buttonText}>Store secure session</Text>
+          {stage === "otp" ? (
+            <TextInput value={code} onChangeText={setCode} keyboardType="number-pad" style={styles.input} />
+          ) : null}
+          <Pressable onPress={handleContinue} style={[styles.button, busy ? styles.buttonDisabled : undefined]} disabled={busy}>
+            <Text style={styles.buttonText}>{busy ? "Working..." : stage === "email" ? "Send OTP" : "Verify and continue"}</Text>
           </Pressable>
           <Text style={styles.body} selectable>
             {message}
@@ -57,6 +79,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lime,
     padding: 16,
     alignItems: "center"
+  },
+  buttonDisabled: {
+    opacity: 0.7
   },
   buttonText: { color: colors.bg, fontWeight: "900" }
 });

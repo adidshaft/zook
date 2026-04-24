@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomInt } from "node:crypto";
 import type { EmailProvider } from "../providers/email";
 
 export interface OtpChallengeRecord {
@@ -8,14 +8,17 @@ export interface OtpChallengeRecord {
   attempts: number;
   maxAttempts: number;
   resendCount: number;
+  ipAddress?: string;
   consumedAt?: Date;
   expiresAt: Date;
+  createdAt: Date;
 }
 
 export interface AuthRepository {
   createOtp(input: Omit<OtpChallengeRecord, "id" | "attempts" | "resendCount">): Promise<OtpChallengeRecord>;
   findLatestOtp(email: string): Promise<OtpChallengeRecord | undefined>;
   incrementOtpAttempt(id: string): Promise<void>;
+  refreshOtp(input: { id: string; codeHash: string; expiresAt: Date; ipAddress?: string }): Promise<OtpChallengeRecord>;
   consumeOtp(id: string): Promise<void>;
   createSession(input: { userId: string; tokenHash: string; expiresAt: Date; userAgent?: string; ipAddress?: string }): Promise<void>;
   revokeSession(tokenHash: string): Promise<void>;
@@ -36,14 +39,44 @@ export class AuthService {
     return randomBytes(32).toString("base64url");
   }
 
-  async requestOtp(email: string): Promise<OtpChallengeRecord> {
-    const code = process.env.NODE_ENV === "development" ? (process.env.ZOOK_MOCK_OTP ?? "000000") : randomBytes(3).toString("hex").slice(0, 6);
+  private createOtpCode(): string {
+    const fixedCode =
+      process.env.NODE_ENV === "development" && process.env.OTP_FIXED_CODE_DEV
+        ? process.env.OTP_FIXED_CODE_DEV
+        : undefined;
+    if (fixedCode) {
+      return fixedCode;
+    }
+    return String(randomInt(0, 1_000_000)).padStart(6, "0");
+  }
+
+  async requestOtp(email: string, input: { ipAddress?: string } = {}): Promise<OtpChallengeRecord> {
+    const code = this.createOtpCode();
     const expiresAt = new Date(this.now().getTime() + 10 * 60 * 1000);
+    const latest = await this.repo.findLatestOtp(email);
+    if (latest && !latest.consumedAt && latest.expiresAt > this.now()) {
+      if (latest.resendCount >= 3) {
+        throw new Error("OTP resend limit reached");
+      }
+      if (latest.createdAt.getTime() + 30_000 > this.now().getTime()) {
+        throw new Error("OTP resend available in a few seconds");
+      }
+      const refreshed = await this.repo.refreshOtp({
+        id: latest.id,
+        codeHash: AuthService.hash(code),
+        expiresAt,
+        ...(input.ipAddress ? { ipAddress: input.ipAddress } : {})
+      });
+      await this.emailProvider.sendOtp({ email, code, expiresAt });
+      return refreshed;
+    }
     const challenge = await this.repo.createOtp({
       email,
       codeHash: AuthService.hash(code),
       maxAttempts: 5,
-      expiresAt
+      expiresAt,
+      createdAt: this.now(),
+      ...(input.ipAddress ? { ipAddress: input.ipAddress } : {})
     });
     await this.emailProvider.sendOtp({ email, code, expiresAt });
     return challenge;
@@ -63,7 +96,10 @@ export class AuthService {
     if (challenge.attempts >= challenge.maxAttempts) {
       throw new Error("OTP attempts exceeded");
     }
-    const devCodeAllowed = process.env.NODE_ENV === "development" && input.code === (process.env.ZOOK_MOCK_OTP ?? "000000");
+    const devCodeAllowed =
+      process.env.NODE_ENV === "development" &&
+      Boolean(process.env.OTP_FIXED_CODE_DEV) &&
+      input.code === process.env.OTP_FIXED_CODE_DEV;
     const matches = challenge.codeHash === AuthService.hash(input.code) || devCodeAllowed;
     if (!matches) {
       await this.repo.incrementOtpAttempt(challenge.id);

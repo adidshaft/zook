@@ -28,8 +28,9 @@ import {
   runAIGuardedRequest
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
-import { createRequestContext, requireUser, sessionCookieName } from "./context";
+import { createRequestContext, extractSessionToken, requireUser, sessionCookieName } from "./context";
 import { fail, ok, readJson } from "./response";
+import { resolveSessionSummaryFromToken } from "./session";
 
 const emailProvider = new MockEmailProvider();
 const mapProvider = new MockMapProvider();
@@ -84,8 +85,10 @@ class PrismaAuthRepo {
     attempts: number;
     maxAttempts: number;
     resendCount: number;
+    ipAddress: string | null;
     consumedAt: Date | null;
     expiresAt: Date;
+    createdAt: Date;
   }): OtpChallengeRecord {
     return clean({
       id: row.id,
@@ -94,8 +97,10 @@ class PrismaAuthRepo {
       attempts: row.attempts,
       maxAttempts: row.maxAttempts,
       resendCount: row.resendCount,
+      ipAddress: row.ipAddress ?? undefined,
       consumedAt: row.consumedAt ?? undefined,
-      expiresAt: row.expiresAt
+      expiresAt: row.expiresAt,
+      createdAt: row.createdAt
     }) as OtpChallengeRecord;
   }
 
@@ -105,6 +110,8 @@ class PrismaAuthRepo {
     maxAttempts: number;
     expiresAt: Date;
     consumedAt?: Date;
+    ipAddress?: string;
+    createdAt: Date;
   }): Promise<OtpChallengeRecord> {
     const row = await prisma.otpChallenge.create({
       data: {
@@ -112,6 +119,8 @@ class PrismaAuthRepo {
         codeHash: input.codeHash,
         maxAttempts: input.maxAttempts,
         expiresAt: input.expiresAt,
+        createdAt: input.createdAt,
+        ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
         ...(input.consumedAt ? { consumedAt: input.consumedAt } : {})
       }
     });
@@ -125,6 +134,21 @@ class PrismaAuthRepo {
 
   async incrementOtpAttempt(id: string) {
     await prisma.otpChallenge.update({ where: { id }, data: { attempts: { increment: 1 } } });
+  }
+
+  async refreshOtp(input: { id: string; codeHash: string; expiresAt: Date; ipAddress?: string }) {
+    const row = await prisma.otpChallenge.update({
+      where: { id: input.id },
+      data: {
+        codeHash: input.codeHash,
+        expiresAt: input.expiresAt,
+        attempts: 0,
+        resendCount: { increment: 1 },
+        createdAt: new Date(),
+        ...(input.ipAddress ? { ipAddress: input.ipAddress } : {})
+      }
+    });
+    return this.toOtpRecord(row);
   }
 
   async consumeOtp(id: string) {
@@ -151,8 +175,16 @@ async function handleAuth(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["auth", "request-otp"])) {
     const body = requestOtpSchema.parse(await readJson(request));
     await getUserByEmailOrCreate(body.email);
-    const challenge = await auth.requestOtp(body.email);
-    return ok({ challengeId: challenge.id, expiresAt: challenge.expiresAt, devOtp: process.env.NODE_ENV === "development" ? "000000" : undefined });
+    const ipAddress = request.headers.get("x-forwarded-for") ?? undefined;
+    const challenge = await auth.requestOtp(body.email, ipAddress ? { ipAddress } : {});
+    return ok({
+      challengeId: challenge.id,
+      expiresAt: challenge.expiresAt,
+      devOtp:
+        process.env.NODE_ENV === "development" && process.env.OTP_FIXED_CODE_DEV
+          ? process.env.OTP_FIXED_CODE_DEV
+          : undefined
+    });
   }
   if (request.method === "POST" && pathMatches(path, ["auth", "verify-otp"])) {
     const body = verifyOtpSchema.parse(await readJson(request));
@@ -164,7 +196,13 @@ async function handleAuth(request: NextRequest, path: string[]) {
       userAgent: request.headers.get("user-agent") ?? undefined,
       ipAddress: request.headers.get("x-forwarded-for") ?? undefined
     }));
-    const response = ok({ user, token: session.token, expiresAt: session.expiresAt });
+    const sessionSummary = await resolveSessionSummaryFromToken(session.token);
+    const response = ok({
+      user,
+      token: session.token,
+      expiresAt: session.expiresAt,
+      ...(sessionSummary ? { session: sessionSummary } : {})
+    });
     response.cookies.set(sessionCookieName, session.token, {
       httpOnly: true,
       sameSite: "lax",
@@ -175,7 +213,7 @@ async function handleAuth(request: NextRequest, path: string[]) {
     return response;
   }
   if (request.method === "POST" && pathMatches(path, ["auth", "logout"])) {
-    const token = request.cookies.get(sessionCookieName)?.value;
+    const token = extractSessionToken(request);
     if (token) {
       await auth.logout(token);
     }
@@ -183,17 +221,19 @@ async function handleAuth(request: NextRequest, path: string[]) {
     response.cookies.delete(sessionCookieName);
     return response;
   }
-  if (request.method === "GET" && pathMatches(path, ["auth", "me"])) {
-    const ctx = await createRequestContext(request);
-    if (!ctx.userId) {
-      return ok({ user: null, organizations: [] });
+  if (
+    request.method === "GET" &&
+    (pathMatches(path, ["auth", "me"]) || pathMatches(path, ["auth", "session"]))
+  ) {
+    const token = extractSessionToken(request);
+    const summary = await resolveSessionSummaryFromToken(
+      token,
+      request.headers.get("x-zook-org-id") ?? request.nextUrl.searchParams.get("orgId") ?? undefined
+    );
+    if (!summary) {
+      return fail("UNAUTHORIZED", "Authentication required", 401);
     }
-    const [user, orgUsers] = await Promise.all([
-      prisma.user.findUnique({ where: { id: ctx.userId } }),
-      prisma.organizationUser.findMany({ where: { userId: ctx.userId } })
-    ]);
-    const orgs = await prisma.organization.findMany({ where: { id: { in: orgUsers.map((row) => row.orgId) } } });
-    return ok({ user, organizations: orgs, context: ctx });
+    return ok(summary);
   }
   return undefined;
 }

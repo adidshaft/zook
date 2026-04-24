@@ -1,14 +1,17 @@
 import type { NextRequest } from "next/server";
 import { permissionsForRoles, type RequestContext, type Role } from "@zook/core";
-import { AuthService } from "@zook/core/services";
-import { prisma } from "@zook/db";
+import { resolveSessionSummaryFromToken } from "./session";
 
 export const sessionCookieName = "zook_session";
 
-export async function createRequestContext(request: NextRequest): Promise<RequestContext> {
+export function extractSessionToken(request: Pick<NextRequest, "headers" | "cookies">): string | undefined {
   const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   const cookieToken = request.cookies.get(sessionCookieName)?.value;
-  const token = bearer || cookieToken;
+  return bearer || cookieToken || undefined;
+}
+
+export async function createRequestContext(request: NextRequest): Promise<RequestContext> {
+  const token = extractSessionToken(request);
   if (!token) {
     return {
       roles: [],
@@ -18,30 +21,36 @@ export async function createRequestContext(request: NextRequest): Promise<Reques
         : {})
     };
   }
-  const session = await prisma.userSession.findUnique({
-    where: { tokenHash: AuthService.hash(token) }
-  });
-  if (!session || session.revokedAt || session.expiresAt <= new Date()) {
-    return { roles: [], permissions: [] };
-  }
-  const user = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!user) {
-    return { roles: [], permissions: [] };
-  }
-  const orgId =
+
+  const preferredOrgId =
     request.headers.get("x-zook-org-id") ??
     request.nextUrl.searchParams.get("orgId") ??
     undefined;
-  const assignments = orgId
-    ? await prisma.organizationRoleAssignment.findMany({ where: { orgId, userId: user.id } })
-    : [];
-  const roles = (user.isPlatformAdmin ? ["PLATFORM_ADMIN"] : assignments.map((assignment) => assignment.role)) as Role[];
+  const session = await resolveSessionSummaryFromToken(token, preferredOrgId);
+  if (!session) {
+    return { roles: [], permissions: [] };
+  }
+
+  const activeOrganization =
+    session.organizations.find((organization) => organization.orgId === preferredOrgId) ??
+    session.activeOrganization;
+  const roles = [
+    ...(activeOrganization?.roles ?? []),
+    ...(session.user.isPlatformAdmin ? (["PLATFORM_ADMIN"] as const) : [])
+  ] as Role[];
+  const permissions = Array.from(
+    new Set([
+      ...(activeOrganization?.permissions ?? []),
+      ...permissionsForRoles(session.user.isPlatformAdmin ? ["PLATFORM_ADMIN"] : [])
+    ])
+  );
+
   return {
-    userId: user.id,
-    ...(orgId ? { orgId } : {}),
+    userId: session.user.id,
+    ...(activeOrganization ? { orgId: activeOrganization.orgId } : {}),
     roles,
-    permissions: permissionsForRoles(roles),
-    isPlatformAdmin: user.isPlatformAdmin,
+    permissions,
+    isPlatformAdmin: session.user.isPlatformAdmin,
     ...(request.headers.get("x-forwarded-for")
       ? { ipAddress: request.headers.get("x-forwarded-for") as string }
       : {}),

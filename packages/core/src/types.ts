@@ -130,6 +130,38 @@ export interface RequestContext {
   userAgent?: string;
 }
 
+export interface AuthOrganizationSummary {
+  orgId: string;
+  name: string;
+  username: string;
+  status: OrganizationStatus;
+  city: string;
+  state: string;
+  roles: Role[];
+  permissions: Permission[];
+  joinedAt: Date;
+}
+
+export interface AuthSessionUser {
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+  profilePhotoUrl?: string;
+  isMinor: boolean;
+  guardianPending: boolean;
+  isPlatformAdmin: boolean;
+  marketingOptIn: boolean;
+  aiConsent: boolean;
+}
+
+export interface AuthSessionSummary {
+  user: AuthSessionUser;
+  organizations: AuthOrganizationSummary[];
+  activeOrgId?: string;
+  activeOrganization?: AuthOrganizationSummary;
+}
+
 export interface GymPublicProfile {
   id: string;
   name: string;
