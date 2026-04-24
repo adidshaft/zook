@@ -68,6 +68,7 @@ import { getDevOtpResponseValue } from "./auth-response";
 import { assertRateLimit } from "./rate-limit";
 import { createRequestId, currentRequestId, runWithRequestState } from "./request-state";
 import { assertSafeMutationRequest, getClientIp } from "./security";
+import { buildGymDiscoveryResults } from "./gym-discovery";
 import {
   assertCanAccessFileAsset,
   assertFileAssetBelongsToOrg,
@@ -214,6 +215,20 @@ const organizationAssetSchema = z
     coverAssetId: z.string().optional()
   })
   .refine((value) => Boolean(value.logoAssetId || value.coverAssetId), "Provide at least one file asset.");
+
+const organizationLocationSchema = z.object({
+  address: z.string().trim().min(3).max(200),
+  city: z.string().trim().min(2).max(120),
+  state: z.string().trim().min(2).max(120),
+  pincode: z.string().trim().min(4).max(12),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  googleMapsUrl: z.string().url().optional(),
+  googlePlaceId: z.string().optional()
+}).refine(
+  (value) => Boolean(value.googleMapsUrl || (value.latitude !== undefined && value.longitude !== undefined)),
+  "Provide manual latitude/longitude or a Google Maps link."
+);
 
 const trainerProfileAssetSchema = z.object({
   upiId: z.string().trim().max(120).optional(),
@@ -1663,9 +1678,10 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", "public", "search"])) {
     const query = request.nextUrl.searchParams.get("q") ?? "";
     const city = request.nextUrl.searchParams.get("city") ?? undefined;
+    const nearLat = request.nextUrl.searchParams.get("nearLat");
+    const nearLng = request.nextUrl.searchParams.get("nearLng");
     const gyms = await prisma.organization.findMany({
       where: {
-        visibility: "PUBLIC",
         ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
         ...(query
           ? {
@@ -1678,7 +1694,24 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       },
       take: 25
     });
-    return ok({ gyms });
+    const results = buildGymDiscoveryResults({
+      gyms: gyms.map((gym) => ({
+        id: gym.id,
+        name: gym.name,
+        username: gym.username,
+        city: gym.city,
+        state: gym.state,
+        visibility: gym.visibility,
+        joinMode: gym.joinMode,
+        latitude: gym.latitude ? Number(gym.latitude) : null,
+        longitude: gym.longitude ? Number(gym.longitude) : null
+      })),
+      ...(query ? { query } : {}),
+      ...(city ? { city } : {}),
+      ...(nearLat && nearLng ? { near: { latitude: Number(nearLat), longitude: Number(nearLng) } } : {}),
+      mapProvider
+    });
+    return ok({ gyms: results });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", "public", /.+/])) {
     const username = path[2]!;
@@ -1840,6 +1873,9 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           state: body.state ?? "Maharashtra",
           pincode: body.pincode ?? "411001"
         });
+    if (!result) {
+      throw validationError("Unable to resolve the provided Google Maps link.");
+    }
     await writeAuditLog({
       request,
       orgId,
@@ -1850,6 +1886,56 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       metadata: body
     });
     return ok({ location: result });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "location"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_LOCATION");
+    const body = organizationLocationSchema.parse(await readJson(request));
+    const resolvedFromLink = body.googleMapsUrl ? await mapProvider.resolveGoogleMapsLink(body.googleMapsUrl) : null;
+    if (body.googleMapsUrl && !resolvedFromLink) {
+      throw validationError("Unable to resolve the provided Google Maps link.");
+    }
+    const location = resolvedFromLink ?? {
+      address: body.address,
+      city: body.city,
+      state: body.state,
+      pincode: body.pincode,
+      latitude: body.latitude ?? 0,
+      longitude: body.longitude ?? 0,
+      locationSource: "MANUAL" as const,
+      ...(body.googlePlaceId ? { googlePlaceId: body.googlePlaceId } : {}),
+      ...(body.googleMapsUrl ? { originalGoogleMapsUrl: body.googleMapsUrl } : {}),
+      name: body.address
+    };
+    const org = await prisma.organization.update({
+      where: { id: orgId },
+      data: clean({
+        address: location.address,
+        city: location.city,
+        state: location.state,
+        pincode: location.pincode,
+        latitude: new Prisma.Decimal(location.latitude),
+        longitude: new Prisma.Decimal(location.longitude),
+        googlePlaceId: location.googlePlaceId,
+        originalGoogleMapsUrl: location.originalGoogleMapsUrl,
+        locationSource: location.locationSource as never
+      })
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "organization.location_updated",
+      entityType: "organization",
+      entityId: org.id,
+      metadata: clean({
+        googleMapsUrl: body.googleMapsUrl,
+        googlePlaceId: location.googlePlaceId,
+        locationSource: location.locationSource
+      })
+    });
+    return ok({ org });
   }
   if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "assets"])) {
     const orgId = path[1]!;

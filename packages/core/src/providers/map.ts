@@ -13,11 +13,18 @@ export interface PlaceResult {
   locationSource: "MOCK" | "MANUAL" | "GOOGLE_PLACE" | "GOOGLE_MAPS_LINK";
 }
 
+export interface LocationBias {
+  city?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
 export interface MapProvider extends DiagnosticProvider {
   resolveGoogleMapsLink(url: string): Promise<PlaceResult | null>;
-  searchPlaces(query: string, city?: string): Promise<PlaceResult[]>;
+  searchPlaces(query: string, locationBias?: string | LocationBias): Promise<PlaceResult[]>;
   geocodeAddress(input: { address: string; city: string; state: string; pincode: string }): Promise<PlaceResult>;
   reverseGeocode(input: { latitude: number; longitude: number }): Promise<PlaceResult>;
+  calculateDistanceMeters(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }): number;
 }
 
 const cityCoordinates: Record<string, { latitude: number; longitude: number; state: string; pincode: string }> = {
@@ -27,6 +34,39 @@ const cityCoordinates: Record<string, { latitude: number; longitude: number; sta
   delhi: { latitude: 28.6139, longitude: 77.209, state: "Delhi", pincode: "110001" }
 };
 const defaultCoordinates = cityCoordinates.pune!;
+
+function normalizeLocationBias(locationBias?: string | LocationBias) {
+  if (!locationBias) {
+    return {};
+  }
+  return typeof locationBias === "string" ? { city: locationBias } : locationBias;
+}
+
+function parseCoordinatesFromGoogleMapsLink(url: string) {
+  const decoded = decodeURIComponent(url);
+  const atMatch = /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(decoded);
+  if (atMatch) {
+    return { latitude: Number(atMatch[1]), longitude: Number(atMatch[2]) };
+  }
+  const queryMatch = /[?&](?:q|query|ll)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(decoded);
+  if (queryMatch) {
+    return { latitude: Number(queryMatch[1]), longitude: Number(queryMatch[2]) };
+  }
+  return null;
+}
+
+function haversineMeters(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) {
+  const earthRadiusMeters = 6_371_000;
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const dLat = toRadians(b.latitude - a.latitude);
+  const dLng = toRadians(b.longitude - a.longitude);
+  const latA = toRadians(a.latitude);
+  const latB = toRadians(b.latitude);
+  const sinLat = Math.sin(dLat / 2);
+  const sinLng = Math.sin(dLng / 2);
+  const h = sinLat * sinLat + Math.cos(latA) * Math.cos(latB) * sinLng * sinLng;
+  return Math.round(2 * earthRadiusMeters * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
+}
 
 export class MockMapProvider implements MapProvider {
   getDiagnostics(): ProviderInstanceDiagnostics {
@@ -45,21 +85,23 @@ export class MockMapProvider implements MapProvider {
     if (!/^https?:\/\/(maps\.app\.goo\.gl|www\.google\.com\/maps|goo\.gl\/maps)/.test(url)) {
       return null;
     }
+    const coordinates = parseCoordinatesFromGoogleMapsLink(url);
     return {
       name: "Mock imported gym location",
       address: "Imported Google Maps location",
       city: "Pune",
       state: "Maharashtra",
       pincode: "411001",
-      latitude: 18.5362,
-      longitude: 73.893,
+      latitude: coordinates?.latitude ?? 18.5362,
+      longitude: coordinates?.longitude ?? 73.893,
       googlePlaceId: "mock-place-iron-house",
       originalGoogleMapsUrl: url,
       locationSource: "GOOGLE_MAPS_LINK"
     };
   }
 
-  async searchPlaces(query: string, city = "Pune"): Promise<PlaceResult[]> {
+  async searchPlaces(query: string, locationBias?: string | LocationBias): Promise<PlaceResult[]> {
+    const { city = "Pune", latitude, longitude } = normalizeLocationBias(locationBias);
     const normalizedCity = city.toLowerCase();
     const coords = cityCoordinates[normalizedCity] ?? defaultCoordinates;
     return [
@@ -69,8 +111,8 @@ export class MockMapProvider implements MapProvider {
         city,
         state: coords.state,
         pincode: coords.pincode,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
+        latitude: latitude ?? coords.latitude,
+        longitude: longitude ?? coords.longitude,
         googlePlaceId: `mock-${normalizedCity}`,
         locationSource: "MOCK"
       }
@@ -103,6 +145,10 @@ export class MockMapProvider implements MapProvider {
       locationSource: "MANUAL"
     };
   }
+
+  calculateDistanceMeters(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }): number {
+    return haversineMeters(a, b);
+  }
 }
 
 export class GoogleMapProvider implements MapProvider {
@@ -125,10 +171,20 @@ export class GoogleMapProvider implements MapProvider {
     if (!/^https?:\/\/(maps\.app\.goo\.gl|www\.google\.com\/maps|goo\.gl\/maps)/.test(url)) {
       return null;
     }
-    return null;
+    const coordinates = parseCoordinatesFromGoogleMapsLink(url);
+    if (!coordinates) {
+      return null;
+    }
+    const result = await this.reverseGeocode(coordinates);
+    return {
+      ...result,
+      originalGoogleMapsUrl: url,
+      locationSource: "GOOGLE_MAPS_LINK"
+    };
   }
 
-  async searchPlaces(query: string, city?: string): Promise<PlaceResult[]> {
+  async searchPlaces(query: string, locationBias?: string | LocationBias): Promise<PlaceResult[]> {
+    const { city } = normalizeLocationBias(locationBias);
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
         `${query}${city ? `, ${city}` : ""}`
@@ -149,7 +205,9 @@ export class GoogleMapProvider implements MapProvider {
   }
 
   async geocodeAddress(input: { address: string; city: string; state: string; pincode: string }): Promise<PlaceResult> {
-    const results = await this.searchPlaces(input.address, `${input.city}, ${input.state}, ${input.pincode}`);
+    const results = await this.searchPlaces(input.address, {
+      city: `${input.city}, ${input.state}, ${input.pincode}`
+    });
     if (!results.length) {
       throw new Error("Google Maps geocode returned no results");
     }
@@ -199,5 +257,9 @@ export class GoogleMapProvider implements MapProvider {
       ...(result.place_id ? { googlePlaceId: result.place_id } : {}),
       locationSource: "GOOGLE_PLACE"
     };
+  }
+
+  calculateDistanceMeters(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }): number {
+    return haversineMeters(a, b);
   }
 }

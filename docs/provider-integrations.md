@@ -96,6 +96,12 @@ Current behavior:
 
 If `MAP_PROVIDER=google` is set without a key, the registry reports `misconfigured` and `getMapProvider()` throws instead of silently falling back.
 
+Operational beta map support now includes:
+
+- Google Maps link resolution for owner location setup
+- distance calculation for nearby gym sorting
+- public gym discovery that can return `distanceMeters` when the client provides `nearLat` and `nearLng`
+
 ## AI
 
 Selector env:
