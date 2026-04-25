@@ -10,14 +10,19 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   version: "0.1.0",
   orientation: "portrait",
   userInterfaceStyle: "dark",
+  icon: "./assets/icons/AppIcon-1024.png",
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
-    bundleIdentifier: "com.zook.app"
+    bundleIdentifier: "com.zook.app",
+    icon: "./assets/icons/AppIcon-1024.png"
   },
   android: {
     package: "com.zook.app",
     adaptiveIcon: {
+      foregroundImage: "./assets/icons/ic_launcher_foreground.png",
+      backgroundImage: "./assets/icons/ic_launcher_background.png",
+      monochromeImage: "./assets/icons/ic_launcher_monochrome.png",
       backgroundColor: "#070908"
     }
   },
@@ -115,7 +120,8 @@ export default (): ExpoConfig => {
     },
     ios: {
       ...baseConfig.ios,
-      bundleIdentifier: "com.zook.app"
+      bundleIdentifier: "com.zook.app",
+      icon: "./assets/icons/AppIcon-1024.png"
     },
     android: {
       ...baseConfig.android,

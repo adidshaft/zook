@@ -3,7 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Zook",
-  description: "India-first operating system for gyms"
+  description: "India-first operating system for gyms",
+  icons: {
+    icon: "/icons/favicon.png",
+    apple: "/icons/apple-touch-icon.png"
+  },
+  manifest: "/manifest.webmanifest"
 };
 
 export const viewport: Viewport = {

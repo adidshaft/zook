@@ -28,6 +28,7 @@
     "db:deploy": "pnpm --filter @zook/db exec prisma migrate deploy --schema prisma/schema.prisma",
     "db:studio": "pnpm --filter @zook/db exec prisma studio --schema prisma/schema.prisma",
     "db:seed": "pnpm --filter @zook/db db:seed",
+    "icons:generate": "node scripts/generate-zook-icons.mjs",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:pilot": "tsx scripts/seed-pilot.ts",
     "db:reset": "tsx scripts/seed-reset.ts",
