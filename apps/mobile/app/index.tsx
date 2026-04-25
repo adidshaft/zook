@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
+  BrandMark,
   Card,
   Dock,
   EmptyState,
@@ -200,7 +201,7 @@ export default function Home() {
             return (
               <Card style={styles.streakCard}>
                 <View style={styles.streakRow}>
-                  <Text style={styles.streakEmoji}>🔥</Text>
+                  <BrandMark size="sm" framed />
                   <View>
                     <Text style={styles.streakTitle}>
                       {streak} Day Streak
@@ -371,9 +372,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-  },
-  streakEmoji: {
-    fontSize: 28,
   },
   streakTitle: {
     color: colors.text,

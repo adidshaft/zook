@@ -15,6 +15,7 @@ import {
   Animated,
 } from "react-native";
 import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,6 +26,14 @@ import { colors, radii, typography } from "@/lib/theme";
 
 type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
+type BrandMarkSize = "sm" | "md" | "lg";
+
+const zookMarkSource = require("../../assets/icons/ic_launcher_foreground.png");
+const brandMarkSizes: Record<BrandMarkSize, number> = {
+  sm: 32,
+  md: 44,
+  lg: 56,
+};
 
 const pillPalettes: Record<
   PillTone,
@@ -200,6 +209,33 @@ export function SectionHeader({
 
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return <View style={[styles.card, style]}>{children}</View>;
+}
+
+export function BrandMark({
+  size = "md",
+  framed = false,
+  style,
+}: {
+  size?: BrandMarkSize;
+  framed?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const dimension = brandMarkSizes[size];
+
+  return (
+    <View
+      accessibilityRole="image"
+      accessibilityLabel="Zook"
+      style={[
+        styles.brandMark,
+        framed ? styles.brandMarkFramed : null,
+        { width: dimension, height: dimension },
+        style,
+      ]}
+    >
+      <Image source={zookMarkSource} style={styles.brandMarkImage} contentFit="contain" />
+    </View>
+  );
 }
 
 export function MetricTile({
@@ -631,6 +667,20 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     padding: 18,
     overflow: "hidden",
+  },
+  brandMark: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandMarkFramed: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  brandMarkImage: {
+    width: "100%",
+    height: "100%",
   },
   metricTile: {
     flex: 1,

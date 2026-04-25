@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Card, GlassInput, PrimaryButton, Screen, ScreenHeader, SecondaryButton } from "@/components/primitives";
-import { Ionicons } from "@expo/vector-icons";
+import { BrandMark, Card, GlassInput, PrimaryButton, Screen, ScreenHeader, SecondaryButton } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { colors, typography } from "@/lib/theme";
 
@@ -55,7 +54,7 @@ export default function Login() {
             <View style={styles.heroGlow} />
             <Text style={styles.heroEyebrow}>Fitness Operating System</Text>
             <View style={styles.logoRow}>
-              <Ionicons name="flash" size={42} color={colors.lime} />
+              <BrandMark size="lg" />
               <Text style={styles.heroTitle}>Zook</Text>
             </View>
             <Text style={styles.heroBody}>
