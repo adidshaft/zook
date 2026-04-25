@@ -243,6 +243,15 @@ importers:
         specifier: ^3.0.5
         version: 3.2.4(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3)
 
+  packages/figma-icon-builder:
+    devDependencies:
+      '@figma/plugin-typings':
+        specifier: ^1.117.0
+        version: 1.125.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   packages/ui:
     devDependencies:
       typescript:
@@ -1250,6 +1259,9 @@ packages:
   '@expo/xcpretty@4.4.3':
     resolution: {integrity: sha512-wC562eD3gS6vO2tWHToFhlFnmHKfKHgF1oyvojeSkLK/ZYop1bMU+7cOMiF9Sq70CzcsLy/EMRy/uRc76QmNRw==}
     hasBin: true
+
+  '@figma/plugin-typings@1.125.0':
+    resolution: {integrity: sha512-8cXB4iKyRFl+/DryImvTngkFtgnowZUeFu/dt/jSaFL04mOKhGoZE1d1Vz+sUKUdZWXibGIWexCCdFK5gH5zxg==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -6750,6 +6762,8 @@ snapshots:
       '@babel/code-frame': 7.29.0
       chalk: 4.1.2
       js-yaml: 4.1.1
+
+  '@figma/plugin-typings@1.125.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

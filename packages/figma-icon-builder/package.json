@@ -1,0 +1,14 @@
+{
+  "name": "@zook/figma-icon-builder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Figma plugin that creates the Zook app icon system and export-ready frames.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.117.0",
+    "typescript": "^5.7.3"
+  }
+}

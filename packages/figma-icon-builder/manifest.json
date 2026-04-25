@@ -1,0 +1,7 @@
+{
+  "name": "Zook Icon Builder",
+  "id": "zook-icon-builder",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "editorType": ["figma"]
+}
