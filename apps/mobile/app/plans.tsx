@@ -181,8 +181,7 @@ export default function Plans() {
             {assistantReply}
           </Text>
         </Card>
-      <View style={{ height: 110 }} />
-      </ScrollView>
+
       <Dock />
     </Screen>
   );
@@ -193,7 +192,7 @@ function cleanOrgBody(orgId: string | undefined, body: Record<string, unknown>) 
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, gap: 14, paddingBottom: 40 },
+  content: { padding: 20, gap: 14, paddingBottom: 120 },
   rowBetween: {
     flexDirection: "row",
     alignItems: "center",

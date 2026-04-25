@@ -94,8 +94,7 @@ export default function TrackingDashboard() {
               <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact />
             ))}
           </View>
-          <View style={{ height: 110 }} />
-        </ScrollView>
+
         <Dock />
       </Screen>
     </>
@@ -106,7 +105,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
-    paddingBottom: 40
+    paddingBottom: 120
   },
   heroHeader: {
     gap: 8

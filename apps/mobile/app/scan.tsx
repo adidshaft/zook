@@ -10,12 +10,14 @@ import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { colors } from "@/lib/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 export default function Scan() {
   const [permission, requestPermission] = useCameraPermissions();
   const queryClient = useQueryClient();
   const { token } = useAuth();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   
   const [manualToken, setManualToken] = useState("");
   const [showManual, setShowManual] = useState(false);
@@ -140,7 +142,10 @@ export default function Scan() {
            </View>
         ) : null}
         
-        <View style={styles.headerAbsolute}>
+        <View style={[styles.headerAbsolute, { top: Math.max(insets.top, 60) }]}>
+           <Pressable onPress={() => router.back()} style={styles.closeButton}>
+             <Ionicons name="close" size={28} color="white" />
+           </Pressable>
            <Text style={styles.headerTitle}>Scan In</Text>
         </View>
 
@@ -204,7 +209,8 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   overlayBottom: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)" },
-  headerAbsolute: { position: "absolute", top: 60, left: 0, right: 0, alignItems: "center" },
+  headerAbsolute: { position: "absolute", left: 0, right: 0, alignItems: "center", flexDirection: "row", justifyContent: "center" },
+  closeButton: { position: "absolute", left: 20, padding: 8, zIndex: 10 },
   headerTitle: { color: "white", fontSize: 24, fontWeight: "900", letterSpacing: 1 },
   statusAbsolute: { position: "absolute", left: 0, right: 0, alignItems: "center", gap: 16 },
   statusPill: { borderRadius: 999, paddingHorizontal: 24, paddingVertical: 14, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },

@@ -4,9 +4,14 @@ import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from '@expo-google-fonts/inter';
+import * as SplashScreen from 'expo-splash-screen';
+
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { colors } from "@/lib/theme";
+
+SplashScreen.preventAutoHideAsync();
 
 function encodeRedirectTarget(
   pathname: string,
@@ -108,6 +113,23 @@ function LayoutContent() {
 
 export default function Layout() {
   const [queryClient] = useState(() => new QueryClient());
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+    Inter_900Black,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

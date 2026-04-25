@@ -21,20 +21,7 @@ import type { ReceptionQueueRecord } from "@/lib/query-hooks";
 import { useReceptionQueue } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
-const operations = [
-  {
-    title: "Member search",
-    body: "Handle edge cases, manual lookups, and membership clarifications at the desk.",
-  },
-  {
-    title: "Manual payment",
-    body: "Cash and direct UPI still audit through the current backend workflow.",
-  },
-  {
-    title: "Shop pickup",
-    body: "Coordinate paid pickup orders and product handoff without leaving mobile.",
-  },
-];
+
 
 export default function Reception() {
   const queryClient = useQueryClient();
@@ -155,28 +142,7 @@ export default function Reception() {
           ))}
         </View>
 
-        <SectionHeader
-          eyebrow="Desk flow"
-          title="Operational shortcuts"
-          subtitle="Quick access to common tasks."
-        />
 
-        <View style={styles.recordList}>
-          {operations.map((operation) => (
-            <Card key={operation.title} style={styles.operationCard}>
-              <View style={styles.operationHeader}>
-                <Text style={styles.operationTitle}>
-                  {operation.title}
-                </Text>
-                <Pill tone="blue">Live next</Pill>
-              </View>
-              <Text style={styles.operationBody}>
-                {operation.body}
-              </Text>
-            </Card>
-          ))}
-        </View>
-      <View style={{ height: 110 }} />
       </ScrollView>
       <Dock />
     </Screen>
@@ -267,7 +233,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   metricGrid: {
     flexDirection: "row",
@@ -312,25 +278,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: colors.red,
-    lineHeight: 20,
-  },
-  operationCard: {
-    gap: 10,
-  },
-  operationHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  operationTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "800",
-    flex: 1,
-  },
-  operationBody: {
-    color: colors.muted,
     lineHeight: 20,
   },
 });

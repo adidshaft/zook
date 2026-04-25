@@ -234,8 +234,7 @@ export default function Owner() {
             )}
           </View>
         </Card>
-      <View style={{ height: 110 }} />
-      </ScrollView>
+
       <Dock />
     </Screen>
   );
@@ -299,7 +298,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   metricGrid: {
     flexDirection: "row",

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Card, GlassInput, PrimaryButton, Screen, ScreenHeader, SecondaryButton } from "@/components/primitives";
+import { Ionicons } from "@expo/vector-icons";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
-import { colors } from "@/lib/theme";
+import { colors, typography } from "@/lib/theme";
 
 export default function Login() {
   const { requestOtp, verifyOtp } = useAuth();
@@ -16,13 +17,17 @@ export default function Login() {
     setBusy(true);
     try {
       if (stage === "email") {
+        if (!email.includes("@")) {
+          setMessage("Please enter a valid email address.");
+          setBusy(false);
+          return;
+        }
         const result = await requestOtp(email);
         setStage("otp");
-        setMessage(
-          __DEV__ && result.devOtp
-            ? `Code sent to ${email}. Dev code: ${result.devOtp}.`
-            : `Code sent to ${email}.`
-        );
+        setMessage(`Code sent to ${email}.`);
+        if (__DEV__ && result.devOtp) {
+          setMessage(`Dev code: ${result.devOtp}. Code sent to ${email}.`);
+        }
       } else {
         await verifyOtp(email, code);
         setMessage(`Signed in as ${email}.`);
@@ -48,8 +53,11 @@ export default function Login() {
         >
           <View style={styles.heroSection}>
             <View style={styles.heroGlow} />
-            <Text style={styles.heroEyebrow}>Welcome to</Text>
-            <Text style={styles.heroTitle}>Zook</Text>
+            <Text style={styles.heroEyebrow}>Fitness Operating System</Text>
+            <View style={styles.logoRow}>
+              <Ionicons name="flash" size={42} color={colors.lime} />
+              <Text style={styles.heroTitle}>Zook</Text>
+            </View>
             <Text style={styles.heroBody}>
               Your gym, your membership, your rhythm. Sign in to get started.
             </Text>
@@ -133,21 +141,23 @@ const styles = StyleSheet.create({
   },
   heroEyebrow: {
     color: colors.lime,
-    fontSize: 14,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    ...typography.eyebrow,
+  },
+  logoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: -4,
   },
   heroTitle: {
     color: colors.text,
     fontSize: 54,
-    fontWeight: "900",
+    fontFamily: "Inter_900Black",
     lineHeight: 60,
   },
   heroBody: {
     color: colors.muted,
-    fontSize: 16,
-    lineHeight: 24,
+    ...typography.body,
     marginTop: 8,
   },
   card: {
@@ -159,7 +169,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     color: colors.muted,
+    ...typography.body,
     textAlign: "center",
-    fontSize: 14,
   },
 });

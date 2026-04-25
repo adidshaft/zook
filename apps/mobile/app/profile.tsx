@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   profileCard: {
     gap: 16,

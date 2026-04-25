@@ -241,9 +241,7 @@ export default function Home() {
               <Text style={styles.cardBody}>Open Plans to see your training updates.</Text>
             </Card>
           ) : null}
-          
-          <View style={{ height: 110 }} />
-        </ScrollView>
+
         <Dock />
       </Screen>
     </>
@@ -254,7 +252,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   topbar: {
     flexDirection: "row",

@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 import { useAuth } from "@/lib/auth";
 import { useMyNotifications } from "@/lib/query-hooks";
-import { colors, radii } from "@/lib/theme";
+import { colors, radii, typography } from "@/lib/theme";
 
 type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
@@ -576,8 +576,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 28,
-    fontWeight: "700",
+    ...typography.headline,
     paddingHorizontal: 20,
     paddingTop: 16,
   },
@@ -593,21 +592,15 @@ const styles = StyleSheet.create({
   },
   headerEyebrow: {
     color: colors.amber,
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
+    ...typography.eyebrow,
   },
   headerTitle: {
     color: colors.text,
-    fontSize: 34,
-    fontWeight: "900",
-    lineHeight: 38,
+    ...typography.display,
   },
   headerSubtitle: {
     color: colors.muted,
-    fontSize: 14,
-    lineHeight: 21,
+    ...typography.body,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -621,20 +614,15 @@ const styles = StyleSheet.create({
   },
   sectionEyebrow: {
     color: colors.muted,
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
+    ...typography.eyebrow,
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 24,
-    fontWeight: "900",
+    ...typography.headline,
   },
   sectionSubtitle: {
     color: colors.muted,
-    fontSize: 13,
-    lineHeight: 19,
+    ...typography.body,
   },
   card: {
     backgroundColor: colors.panel,
@@ -654,18 +642,14 @@ const styles = StyleSheet.create({
   },
   metricTileLabel: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: "700",
+    ...typography.caption,
   },
   metricTileValue: {
-    fontSize: 30,
-    fontWeight: "900",
-    lineHeight: 34,
+    ...typography.display,
   },
   metricTileDetail: {
     color: colors.muted,
-    fontSize: 13,
-    lineHeight: 18,
+    ...typography.caption,
   },
   infoRow: {
     flexDirection: "row",
@@ -675,7 +659,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     color: colors.muted,
-    fontSize: 13,
+    ...typography.caption,
     flex: 1,
   },
   pill: {
@@ -686,8 +670,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   pillText: {
-    fontSize: 12,
-    fontWeight: "700",
+    ...typography.caption,
   },
   button: {
     minHeight: 56,
@@ -705,16 +688,14 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    fontWeight: "800",
-    fontSize: 16,
+    ...typography.titleSmall,
   },
   inputGroup: {
     gap: 8,
   },
   inputLabel: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: "700",
+    ...typography.caption,
   },
   inputWrapper: {
     borderRadius: 20,
@@ -734,8 +715,7 @@ const styles = StyleSheet.create({
   },
   inputHint: {
     color: colors.muted,
-    fontSize: 12,
-    lineHeight: 17,
+    ...typography.caption,
   },
   emptyState: {
     padding: 32,
@@ -755,13 +735,12 @@ const styles = StyleSheet.create({
   },
   stateTitle: {
     color: colors.text,
-    fontSize: 20,
-    fontWeight: "800",
+    ...typography.title,
     textAlign: "center",
   },
   stateBody: {
     color: colors.muted,
-    lineHeight: 20,
+    ...typography.body,
     marginTop: 4,
     textAlign: "center",
   },

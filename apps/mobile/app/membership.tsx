@@ -203,6 +203,7 @@ export default function MembershipScreen() {
           body="Once you make payments for memberships or renewals, your transaction history will appear here."
         />
       </ScrollView>
+      <Dock />
     </Screen>
   );
 }
@@ -222,6 +223,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   metricGrid: {
+    flexDirection: "row",
     gap: 12,
   },
   featuredCard: {

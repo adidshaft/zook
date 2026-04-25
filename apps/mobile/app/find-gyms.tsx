@@ -9,7 +9,6 @@ import {
   GlassInput,
   LoadingState,
   Pill,
-  PrimaryLink,
   Screen,
   ScreenHeader,
   SectionHeader,
@@ -107,59 +106,59 @@ export default function FindGyms() {
 
         <View style={styles.results}>
           {gyms.map((gym) => (
-            <Card key={gym.username} style={styles.gymCard}>
-              <View style={styles.gymHeader}>
-                <Image
-                  source={{ uri: gym.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=400&h=400&fit=crop" }}
-                  style={styles.gymThumbnail}
-                  contentFit="cover"
-                />
-                <View style={styles.gymCopy}>
-                  <Text style={styles.gymTitle}>
-                    {gym.name}
-                  </Text>
-                  <Text style={styles.gymBody}>
-                    {gym.city}, {gym.state}
-                  </Text>
+            <Link
+              key={gym.username}
+              href={{
+                pathname: "/gym/[username]",
+                params: {
+                  username: gym.username,
+                  ...(referralCode ? { ref: referralCode } : {}),
+                },
+              }}
+              asChild
+            >
+              <Pressable style={({ pressed }) => [styles.gymCard, pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}>
+                <View style={styles.gymHeader}>
+                  <Image
+                    source={{ uri: gym.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=400&h=400&fit=crop" }}
+                    style={styles.gymThumbnail}
+                    contentFit="cover"
+                  />
+                  <View style={styles.gymCopy}>
+                    <Text style={styles.gymTitle}>
+                      {gym.name}
+                    </Text>
+                    <Text style={styles.gymBody}>
+                      {gym.city}, {gym.state}
+                    </Text>
+                  </View>
+                  <Pill tone={toneForJoinMode(gym.joinMode)}>{titleCaseFromCode(gym.joinMode)}</Pill>
                 </View>
-                <Pill tone={toneForJoinMode(gym.joinMode)}>{titleCaseFromCode(gym.joinMode)}</Pill>
-              </View>
-              <Text style={styles.gymBody}>
-                {gym.coverImageUrl
-                  ? "Membership flow available."
-                  : "View membership plans and apply referral codes."}
-              </Text>
-              <View style={styles.tags}>
-                {(gym.amenities ?? []).slice(0, 4).map((amenity) => (
-                  <Pill key={amenity} tone="blue">
-                    {amenity}
-                  </Pill>
-                ))}
-              </View>
-              <View style={styles.gymFooter}>
-                <View style={styles.metricChip}>
-                  <Text style={styles.metricChipLabel}>Profile</Text>
-                  <Text style={styles.metricChipValue}>
-                    {titleCaseFromCode(gym.visibility ?? "PUBLIC")}
-                  </Text>
+                <Text style={styles.gymBody}>
+                  {gym.coverImageUrl
+                    ? "Membership flow available."
+                    : "View membership plans and apply referral codes."}
+                </Text>
+                <View style={styles.tags}>
+                  {(gym.amenities ?? []).slice(0, 4).map((amenity) => (
+                    <Pill key={amenity} tone="blue">
+                      {amenity}
+                    </Pill>
+                  ))}
                 </View>
-              </View>
-              <PrimaryLink
-                href={{
-                  pathname: "/gym/[username]",
-                  params: {
-                    username: gym.username,
-                    ...(referralCode ? { ref: referralCode } : {}),
-                  },
-                }}
-              >
-                Open gym profile
-              </PrimaryLink>
-            </Card>
+                <View style={styles.gymFooter}>
+                  <View style={styles.metricChip}>
+                    <Text style={styles.metricChipLabel}>Profile</Text>
+                    <Text style={styles.metricChipValue}>
+                      {titleCaseFromCode(gym.visibility ?? "PUBLIC")}
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
+            </Link>
           ))}
         </View>
-        <View style={{ height: 110 }} />
-      </ScrollView>
+
       <Dock />
     </Screen>
   );
@@ -182,7 +181,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   searchCard: {
     gap: 14,
@@ -284,6 +283,12 @@ const styles = StyleSheet.create({
   },
   gymCard: {
     gap: 14,
+    backgroundColor: colors.panel,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 24,
+    padding: 18,
+    overflow: "hidden",
   },
   gymHeader: {
     flexDirection: "row",

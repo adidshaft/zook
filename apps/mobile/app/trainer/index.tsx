@@ -71,7 +71,7 @@ export default function Trainer() {
         <View style={styles.clientList}>
           {clients.map((client) => (
             <Link key={client.memberUserId} href={`/trainer/client/${client.memberUserId}`} asChild>
-              <Pressable style={styles.clientCard}>
+              <Pressable style={({ pressed }) => [styles.clientCard, pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}>
                 <View style={styles.clientHeader}>
                   <View style={styles.clientCopy}>
                     <Text style={styles.clientName}>
@@ -90,8 +90,7 @@ export default function Trainer() {
             </Link>
           ))}
         </View>
-      <View style={{ height: 110 }} />
-      </ScrollView>
+
       <Dock />
     </Screen>
   );
@@ -101,7 +100,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   metricGrid: {
     flexDirection: "row",

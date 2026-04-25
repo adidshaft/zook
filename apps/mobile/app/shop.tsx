@@ -179,15 +179,14 @@ export default function Shop() {
             </View>
           </Card>
         ))}
-        <View style={{ height: 110 }} />
-      </ScrollView>
+
       <Dock />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, gap: 14 },
+  content: { padding: 20, gap: 14, paddingBottom: 120 },
   calloutCard: { gap: 10 },
   calloutTitle: { color: colors.text, fontSize: 18, fontWeight: "800" },
   title: { color: colors.text, fontSize: 18, fontWeight: "800" },

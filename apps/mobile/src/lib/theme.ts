@@ -21,13 +21,13 @@ export const radii = {
 };
 
 export const typography = {
-  display: { fontSize: 36, fontWeight: "900" as const, lineHeight: 40 },
-  headline: { fontSize: 28, fontWeight: "900" as const, lineHeight: 32 },
-  title: { fontSize: 22, fontWeight: "900" as const, lineHeight: 26 },
-  titleSmall: { fontSize: 18, fontWeight: "800" as const, lineHeight: 22 },
-  body: { fontSize: 15, fontWeight: "400" as const, lineHeight: 22 },
-  caption: { fontSize: 13, fontWeight: "700" as const, lineHeight: 18 },
-  eyebrow: { fontSize: 12, fontWeight: "800" as const, letterSpacing: 0.3, textTransform: "uppercase" as const },
+  display: { fontSize: 36, fontFamily: "Inter_900Black", lineHeight: 40 },
+  headline: { fontSize: 28, fontFamily: "Inter_900Black", lineHeight: 32 },
+  title: { fontSize: 22, fontFamily: "Inter_900Black", lineHeight: 26 },
+  titleSmall: { fontSize: 18, fontFamily: "Inter_800ExtraBold", lineHeight: 22 },
+  body: { fontSize: 15, fontFamily: "Inter_400Regular", lineHeight: 22 },
+  caption: { fontSize: 13, fontFamily: "Inter_700Bold", lineHeight: 18 },
+  eyebrow: { fontSize: 12, fontFamily: "Inter_800ExtraBold", letterSpacing: 0.3, textTransform: "uppercase" as const },
 };
 
 export const spacing = {
