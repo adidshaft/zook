@@ -20,13 +20,15 @@ export function useOperationalResource<T>({
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
 
+  const initialDataString = JSON.stringify(initialData);
+
   useEffect(() => {
-    if (initialData === undefined) {
+    if (!initialDataString) {
       return;
     }
     hasLoadedRef.current = true;
-    setData(initialData);
-  }, [initialData]);
+    setData(JSON.parse(initialDataString));
+  }, [initialDataString]);
 
   useEffect(() => {
     const resourcePath = path;

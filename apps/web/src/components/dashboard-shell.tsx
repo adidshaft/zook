@@ -191,14 +191,14 @@ export function DashboardShell({
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Pill tone={data.connected ? "lime" : "amber"}>
-                    {data.connected ? "Postgres connected" : "Demo fallback"}
+                    {data.connected ? "Live environment" : "Demo Mode"}
                   </Pill>
                   <StatusPill value={formatEnumLabel(activeOrg.status)} />
                   <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />
                 </div>
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">{title}</h1>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
-                  Premium operating surface for ownership, reception, trainers, and admins. This view stays tied to the same persisted org data and auth boundaries as the API.
+                  Premium operating surface for ownership, reception, trainers, and admins. Monitor your gym's pulse and manage daily operations.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -219,75 +219,79 @@ export function DashboardShell({
             </div>
           </GlassCard>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {data.metrics.map((metric) => (
-              <MetricCard
-                key={metric.label}
-                label={metric.label}
-                value={metric.value}
-                delta={metric.delta}
-                tone={metricTone(metric.label)}
-              />
-            ))}
-          </div>
+          {sectionKey === "" && (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {data.metrics.map((metric) => (
+                <MetricCard
+                  key={metric.label}
+                  label={metric.label}
+                  value={metric.value}
+                  delta={metric.delta}
+                  tone={metricTone(metric.label)}
+                />
+              ))}
+            </div>
+          )}
 
-          <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-            <GlassCard>
-              <SectionHeader
-                eyebrow="Operator lane"
-                title="Immediate workflow queue"
-                description="Fast paths into the surfaces that usually need attention before the next rush, shift change, or member callback."
-              />
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {workflowCards.map((card) => (
-                  <Link
-                    key={card.label}
-                    href={card.href}
-                    className="rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/6"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium text-white">{card.label}</p>
-                      <Pill tone={card.tone}>{card.detail}</Pill>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </GlassCard>
+          {sectionKey === "" && (
+            <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+              <GlassCard>
+                <SectionHeader
+                  eyebrow="Operator lane"
+                  title="Immediate workflow queue"
+                  description="Fast paths into the surfaces that usually need attention before the next rush, shift change, or member callback."
+                />
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  {workflowCards.map((card) => (
+                    <Link
+                      key={card.label}
+                      href={card.href}
+                      className="rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/6"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-medium text-white">{card.label}</p>
+                        <Pill tone={card.tone}>{card.detail}</Pill>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </GlassCard>
 
-            <GlassCard>
-              <SectionHeader
-                eyebrow="Org posture"
-                title="Current run-state"
-                description="This keeps the org’s posture readable without needing to leave the current section."
-              />
-              <ReadoutGrid
-                className="mt-5"
-                items={[
-                  {
-                    label: "Location",
-                    value: `${activeOrg.city}${activeOrg.state ? `, ${activeOrg.state}` : ""}`,
-                    meta: "Current operating geography"
-                  },
-                  {
-                    label: "Join mode",
-                    value: formatEnumLabel(activeOrg.joinMode),
-                    meta: `${data.summary.joinRequests} inbound requests`
-                  },
-                  {
-                    label: "Attendance mode",
-                    value: formatEnumLabel(activeOrg.attendanceMode),
-                    meta: `${data.summary.todayAttendance} check-ins today`
-                  },
-                  {
-                    label: "Trial end",
-                    value: formatDate(activeOrg.trialEndAt),
-                    meta: formatDaysRemaining(data.summary.trialDaysRemaining)
-                  }
-                ]}
-                columns={2}
-              />
-            </GlassCard>
-          </div>
+              <GlassCard>
+                <SectionHeader
+                  eyebrow="Org posture"
+                  title="Current run-state"
+                  description="This keeps the org’s posture readable without needing to leave the current section."
+                />
+                <ReadoutGrid
+                  className="mt-5"
+                  items={[
+                    {
+                      label: "Location",
+                      value: `${activeOrg.city}${activeOrg.state ? `, ${activeOrg.state}` : ""}`,
+                      meta: "Current operating geography"
+                    },
+                    {
+                      label: "Join mode",
+                      value: formatEnumLabel(activeOrg.joinMode),
+                      meta: `${data.summary.joinRequests} inbound requests`
+                    },
+                    {
+                      label: "Attendance mode",
+                      value: formatEnumLabel(activeOrg.attendanceMode),
+                      meta: `${data.summary.todayAttendance} check-ins today`
+                    },
+                    {
+                      label: "Trial end",
+                      value: formatDate(activeOrg.trialEndAt),
+                      meta: formatDaysRemaining(data.summary.trialDaysRemaining)
+                    }
+                  ]}
+                  columns={2}
+                />
+              </GlassCard>
+            </div>
+          )}
 
           <DashboardOperationalPanel
             orgId={activeOrg.id}

@@ -6,8 +6,8 @@ import { ZookLogo } from "@/components/zook-logo";
 export default function HomePage() {
   const featureCards: Array<[LucideIcon, string, string]> = [
     [Dumbbell, "Active plan", "Monthly Unlimited"],
-    [MapPin, "Nearby gyms", "Map/list fallback"],
-    [ShieldCheck, "Minor-safe", "Consent first"]
+    [MapPin, "Nearby gyms", "Discover spaces"],
+    [ShieldCheck, "Secure Access", "Verified Check-ins"]
   ];
 
   return (
@@ -29,18 +29,18 @@ export default function HomePage() {
           <div>
             <Pill tone="lime">India-first Gym OS</Pill>
             <h1 className="mt-5 max-w-3xl text-5xl font-semibold leading-[1.02] tracking-tight md:text-7xl">
-              Zook runs memberships, check-ins, trainers, AI, and pickup sales.
+              The operating system for modern gyms.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/58">
-              A low-cost MVP monorepo with mocked providers for OTP, payments, maps, AI, push, and storage.
+              Seamlessly manage memberships, automate check-ins, coordinate personal trainers, and handle retail sales—all from one premium dashboard.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/login" className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black">
-                Sign in with OTP
+                Sign in to Dashboard
                 <ArrowRight size={18} />
               </Link>
               <Link href="/g/iron-house" className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-5 py-3 text-white/75">
-                Public gym page
+                View gym profile
               </Link>
             </div>
           </div>

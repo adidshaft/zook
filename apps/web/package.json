@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "node ../../scripts/run-next-web.mjs dev",
+    "build": "node ../../scripts/run-next-web.mjs build",
+    "start": "node ../../scripts/run-next-web.mjs start",
     "lint": "eslint app src tests next.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests --exclude tests/**"
