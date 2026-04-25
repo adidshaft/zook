@@ -45,7 +45,7 @@ export default function TrackingDashboard() {
   return (
     <>
       <Stack.Screen options={{ title: "Tracking" }} />
-      <Screen title="Tracking">
+      <Screen>
         <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
           <View style={styles.heroHeader}>
             <Text style={styles.headline}>

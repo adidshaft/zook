@@ -78,7 +78,7 @@ export async function getOrganizationDashboardData(orgId: string) {
   return {
     organization,
     metrics: [
-      { label: "Today attendance", value: String(todayAttendance), delta: `${pendingAttendanceApprovals} pending approvals` },
+      { label: "Today attendance", value: String(todayAttendance), delta: "QR scans and entry codes" },
       { label: "Active members", value: String(activeMembers || members), delta: `${joinRequests.length} join requests` },
       { label: "Expiring soon", value: String(expiringMemberships), delta: "next 7 days" },
       {

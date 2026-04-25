@@ -243,6 +243,18 @@ const profilePhotoAssetSchema = z.object({
   consentToAttendanceUse: z.boolean().optional()
 });
 
+const memberWellnessProfileSchema = z.object({
+  orgId: z.string().optional(),
+  name: z.string().trim().min(2).max(120).optional(),
+  phone: z.string().trim().min(6).max(24).optional(),
+  dateOfBirth: z.string().trim().optional(),
+  fitnessGoal: z.string().trim().max(240).optional(),
+  weightKg: z.number().positive().max(500).optional(),
+  dietPreference: z.string().trim().max(120).optional(),
+  allergies: z.string().trim().max(240).optional(),
+  summaryNote: z.string().trim().max(500).optional()
+});
+
 const organizationAssetSchema = z
   .object({
     logoAssetId: z.string().optional(),
@@ -320,6 +332,18 @@ const aiGenerateSchema = z.object({
 
 function clean<T extends Record<string, unknown>>(input: T): any {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
+}
+
+function parseMemberProfileNotes(notes?: string | null) {
+  if (!notes) {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(notes);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : { summaryNote: notes };
+  } catch {
+    return { summaryNote: notes };
+  }
 }
 
 function dateKey(date = new Date()) {
@@ -1698,6 +1722,96 @@ async function handleMeData(request: NextRequest, path: string[]) {
     const userId = requireAuth(ctx);
     return ok(await getMemberHomeData(userId, ctx.orgId));
   }
+  if (request.method === "GET" && pathMatches(path, ["me", "profile"])) {
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const orgId = ctx.orgId ?? request.nextUrl.searchParams.get("orgId") ?? undefined;
+    const [user, profile, latestBodyProgress] = await Promise.all([
+      prisma.user.findUniqueOrThrow({ where: { id: userId } }),
+      orgId ? prisma.memberProfile.findUnique({ where: { orgId_userId: { orgId, userId } } }) : Promise.resolve(null),
+      prisma.bodyProgressEntry.findFirst({
+        where: { userId, ...(orgId ? { organizationId: orgId } : {}) },
+        orderBy: { measuredAt: "desc" }
+      })
+    ]);
+    return ok({
+      user,
+      profile,
+      wellness: {
+        ...parseMemberProfileNotes(profile?.notes),
+        weightKg: latestBodyProgress?.weightKg ? Number(latestBodyProgress.weightKg) : undefined,
+        latestMeasurementAt: latestBodyProgress?.measuredAt ?? undefined
+      }
+    });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["me", "profile"])) {
+    const body = memberWellnessProfileSchema.parse(await readJson(request));
+    const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
+    const userId = requireAuth(ctx);
+    const orgId = body.orgId ?? ctx.orgId;
+    const dateOfBirth = body.dateOfBirth ? new Date(body.dateOfBirth) : undefined;
+    if (dateOfBirth && Number.isNaN(dateOfBirth.getTime())) {
+      throw validationError("Date of birth must be a valid date.");
+    }
+    const [user, profile, latestBodyProgress] = await prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: clean({
+          name: body.name,
+          phone: body.phone,
+          dateOfBirth,
+          fitnessGoal: body.fitnessGoal
+        })
+      });
+      const currentProfile =
+        orgId ? await tx.memberProfile.findUnique({ where: { orgId_userId: { orgId, userId } } }) : null;
+      const existingNotes = parseMemberProfileNotes(currentProfile?.notes);
+      const nextNotes = {
+        ...existingNotes,
+        ...(body.dietPreference !== undefined ? { dietPreference: body.dietPreference } : {}),
+        ...(body.allergies !== undefined ? { allergies: body.allergies } : {}),
+        ...(body.summaryNote !== undefined ? { summaryNote: body.summaryNote } : {})
+      };
+      const updatedProfile = orgId
+        ? await tx.memberProfile.upsert({
+            where: { orgId_userId: { orgId, userId } },
+            update: { notes: JSON.stringify(nextNotes) },
+            create: {
+              orgId,
+              userId,
+              marketingOptIn: updatedUser.isMinor ? false : updatedUser.marketingOptIn,
+              notes: JSON.stringify(nextNotes)
+            }
+          })
+        : null;
+      const progress =
+        body.weightKg !== undefined
+          ? await tx.bodyProgressEntry.create({
+              data: clean({
+                userId,
+                ...(orgId ? { organizationId: orgId } : {}),
+                measuredAt: new Date(),
+                weightKg: new Prisma.Decimal(body.weightKg),
+                notes: "Updated from profile summary.",
+                visibility: "TRAINER_VISIBLE"
+              })
+            })
+          : await tx.bodyProgressEntry.findFirst({
+              where: { userId, ...(orgId ? { organizationId: orgId } : {}) },
+              orderBy: { measuredAt: "desc" }
+            });
+      return [updatedUser, updatedProfile, progress] as const;
+    });
+    return ok({
+      user,
+      profile,
+      wellness: {
+        ...parseMemberProfileNotes(profile?.notes),
+        weightKg: latestBodyProgress?.weightKg ? Number(latestBodyProgress.weightKg) : undefined,
+        latestMeasurementAt: latestBodyProgress?.measuredAt ?? undefined
+      }
+    });
+  }
   if (request.method === "PATCH" && pathMatches(path, ["me", "profile-photo"])) {
     const body = profilePhotoAssetSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
@@ -2263,7 +2377,10 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
         visibility: gym.visibility,
         joinMode: gym.joinMode,
         latitude: gym.latitude ? Number(gym.latitude) : null,
-        longitude: gym.longitude ? Number(gym.longitude) : null
+        longitude: gym.longitude ? Number(gym.longitude) : null,
+        amenities: Array.isArray(gym.amenities) ? gym.amenities.filter((item): item is string => typeof item === "string") : [],
+        coverImageUrl: gym.coverImageUrl,
+        logoUrl: gym.logoUrl
       })),
       ...(query ? { query } : {}),
       ...(city ? { city } : {}),
@@ -2281,7 +2398,16 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     if (!org || org.visibility === "HIDDEN") {
       return fail("NOT_FOUND", "Gym not found", 404);
     }
-    const [plans, activeMembership, pendingJoinRequest, approvedJoinRequest, referral] = await Promise.all([
+    const [
+      plans,
+      activeMembership,
+      pendingJoinRequest,
+      approvedJoinRequest,
+      referral,
+      trainerAssignments,
+      branches,
+      settings
+    ] = await Promise.all([
       prisma.membershipPlan.findMany({
         where: { orgId: org.id, active: true, publicVisible: true },
         take: 10
@@ -2304,10 +2430,41 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
             orderBy: { reviewedAt: "desc" }
           })
         : Promise.resolve(null),
-      referralCode ? prisma.referralCode.findUnique({ where: { code: referralCode } }) : Promise.resolve(null)
+      referralCode ? prisma.referralCode.findUnique({ where: { code: referralCode } }) : Promise.resolve(null),
+      prisma.organizationRoleAssignment.findMany({ where: { orgId: org.id, role: "TRAINER" }, take: 8 }),
+      prisma.branch.findMany({ where: { orgId: org.id, active: true }, take: 5 }),
+      prisma.organizationSetting.findUnique({ where: { orgId: org.id } })
     ]);
+    const [trainerUsers, trainerProfiles] = await Promise.all([
+      prisma.user.findMany({ where: { id: { in: trainerAssignments.map((assignment) => assignment.userId) } } }),
+      prisma.trainerProfile.findMany({ where: { orgId: org.id, userId: { in: trainerAssignments.map((assignment) => assignment.userId) } } })
+    ]);
+    const settingValues =
+      settings?.keyValues && typeof settings.keyValues === "object" && !Array.isArray(settings.keyValues)
+        ? (settings.keyValues as Record<string, unknown>)
+        : {};
     return ok({
-      org,
+      org: {
+        ...org,
+        tagline: typeof settingValues.tagline === "string" ? settingValues.tagline : null,
+        gallery:
+          Array.isArray(settingValues.gallery) && settingValues.gallery.every((item) => typeof item === "string")
+            ? settingValues.gallery
+            : []
+      },
+      branches,
+      trainers: trainerAssignments.map((assignment) => {
+        const user = trainerUsers.find((candidate) => candidate.id === assignment.userId) ?? null;
+        const profile = trainerProfiles.find((candidate) => candidate.userId === assignment.userId) ?? null;
+        return {
+          userId: assignment.userId,
+          name: user?.name ?? "Trainer",
+          profilePhotoUrl: user?.profilePhotoUrl ?? null,
+          bio: profile?.bio ?? null,
+          specialties: profile?.specialties ?? null,
+          visibleToMembers: profile?.visibleToMembers ?? true
+        };
+      }),
       plans,
       viewerState: viewerUserId
         ? {
@@ -3401,7 +3558,9 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     if (!validation.allowed) {
       return fail(validation.reason?.toUpperCase() ?? "ATTENDANCE_BLOCKED", validation.reason ?? "Attendance blocked", 400);
     }
-    const status = decideAttendanceStatus({ mode: org.attendanceMode, suspiciousFlags: validation.suspiciousFlags });
+    const status = validation.suspiciousFlags.length
+      ? decideAttendanceStatus({ mode: "AUTOMATIC", suspiciousFlags: validation.suspiciousFlags })
+      : "APPROVED";
     const record = await prisma.attendanceRecord.create({
       data: clean({
         orgId: decoded.orgId,
@@ -3898,18 +4057,39 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       where: { orgId, trainerUserId: trainerId, active: true },
       orderBy: { createdAt: "desc" }
     });
-    const [users, profiles] = await Promise.all([
+    const [users, profiles, bodyProgressEntries, planAssignments] = await Promise.all([
       prisma.user.findMany({ where: { id: { in: assignments.map((assignment) => assignment.memberUserId) } } }),
       prisma.memberProfile.findMany({
         where: { orgId, userId: { in: assignments.map((assignment) => assignment.memberUserId) } }
+      }),
+      prisma.bodyProgressEntry.findMany({
+        where: { organizationId: orgId, userId: { in: assignments.map((assignment) => assignment.memberUserId) } },
+        orderBy: { measuredAt: "desc" },
+        take: Math.max(assignments.length * 3, 10)
+      }),
+      prisma.planAssignment.findMany({
+        where: { orgId, assignedToUserId: { in: assignments.map((assignment) => assignment.memberUserId) }, active: true }
       })
     ]);
     return ok({
-      clients: assignments.map((assignment) => ({
-        ...assignment,
-        user: users.find((user) => user.id === assignment.memberUserId) ?? null,
-        profile: profiles.find((profile) => profile.userId === assignment.memberUserId) ?? null
-      }))
+      clients: assignments.map((assignment) => {
+        const user = users.find((candidate) => candidate.id === assignment.memberUserId) ?? null;
+        const profile = profiles.find((candidate) => candidate.userId === assignment.memberUserId) ?? null;
+        const latestBodyProgress =
+          bodyProgressEntries.find((entry) => entry.userId === assignment.memberUserId) ?? null;
+        return {
+          ...assignment,
+          user,
+          profile,
+          summary: {
+            ...parseMemberProfileNotes(profile?.notes),
+            fitnessGoal: user?.fitnessGoal ?? null,
+            dateOfBirth: user?.dateOfBirth ?? null,
+            weightKg: latestBodyProgress?.weightKg ? Number(latestBodyProgress.weightKg) : undefined,
+            activePlans: planAssignments.filter((plan) => plan.assignedToUserId === assignment.memberUserId).length
+          }
+        };
+      })
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "pt-plans"])) {

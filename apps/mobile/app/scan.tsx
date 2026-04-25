@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { StyleSheet, Text, View, Pressable, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -24,6 +24,7 @@ export default function Scan() {
   
   const [statusState, setStatusState] = useState<"idle" | "success" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("Point at the QR code.");
+  const [entryCode, setEntryCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const successScale = useRef(new Animated.Value(0)).current;
   
@@ -41,6 +42,7 @@ export default function Scan() {
         status: string;
         duplicate?: boolean;
         suspiciousFlags?: string[];
+        attendance?: { id?: string };
       }>("/attendance/scan", {
         method: "POST",
         token,
@@ -61,14 +63,16 @@ export default function Scan() {
       }
 
       if (result.duplicate) {
-        setStatusMessage("Already checked in.");
+        setStatusMessage("Already checked in. Show your entry code.");
       } else if (result.status === "APPROVED") {
-        setStatusMessage("You're in! ✓");
+        setStatusMessage("Approved. Show this at entry.");
       } else if (result.status === "PENDING_APPROVAL") {
-        setStatusMessage("Pending approval.");
+        setStatusMessage("Code created. Staff can visually verify it.");
       } else {
         setStatusMessage(`Scan result: ${result.status}`);
       }
+      const source = result.attendance?.id ?? `${Date.now()}`;
+      setEntryCode(source.slice(-6).toUpperCase());
       
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
@@ -78,6 +82,7 @@ export default function Scan() {
       setTimeout(() => {
         setStatusState("idle");
         setStatusMessage("Point at the QR code.");
+        setEntryCode("");
         Animated.timing(successScale, {
           toValue: 0,
           duration: 200,
@@ -93,6 +98,7 @@ export default function Scan() {
       setTimeout(() => {
         setStatusState("idle");
         setStatusMessage("Point at the QR code.");
+        setEntryCode("");
       }, 3000);
     } finally {
       setSubmitting(false);
@@ -155,6 +161,12 @@ export default function Scan() {
                 {statusMessage}
               </Text>
            </BlurView>
+           {entryCode ? (
+             <View style={styles.entryCodeCard}>
+               <Text style={styles.entryCodeLabel}>Entry code</Text>
+               <Text style={styles.entryCode}>{entryCode}</Text>
+             </View>
+           ) : null}
 
            {__DEV__ ? (
              <Pressable onPress={() => setShowManual(!showManual)} style={styles.devToggle}>
@@ -217,6 +229,29 @@ const styles = StyleSheet.create({
   statusText: { color: "white", fontSize: 16, fontWeight: "700" },
   statusTextSuccess: { color: colors.lime },
   statusTextError: { color: colors.red },
+  entryCodeCard: {
+    minWidth: 190,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.35)",
+    backgroundColor: "rgba(7,9,8,0.86)",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    alignItems: "center",
+    gap: 6,
+  },
+  entryCodeLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  entryCode: {
+    color: colors.text,
+    fontSize: 34,
+    letterSpacing: 2,
+    fontWeight: "900",
+  },
   devToggle: { padding: 10 },
   devToggleText: { color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: "600" },
   manualOverlay: { padding: 24, gap: 16 },

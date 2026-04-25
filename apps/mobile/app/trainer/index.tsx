@@ -1,11 +1,13 @@
 import { Link } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Dock,
   EmptyState,
   LoadingState,
   MetricTile,
   Pill,
+  PrimaryLink,
   Screen,
   ScreenHeader,
   SectionHeader,
@@ -24,10 +26,24 @@ export default function Trainer() {
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <ScreenHeader
           eyebrow="Trainer desk"
-          title={session?.user.name ?? "Trainer"}
-          subtitle="Assigned roster and command center."
+          title="Coach cockpit"
+          subtitle={session?.user.name ?? "Trainer workspace"}
           trailing={<Pill tone="lime">Assigned only</Pill>}
         />
+
+        <View style={styles.profileCard}>
+          <View style={styles.profileAvatar}>
+            <Ionicons name="person" size={30} color={colors.bg} />
+          </View>
+          <View style={styles.profileCopy}>
+            <Text style={styles.profileName}>{session?.user.name ?? "Trainer profile"}</Text>
+            <Text style={styles.profileBody}>Strength coaching · habit building · beginner form checks</Text>
+            <View style={styles.profileTags}>
+              <Pill tone="lime">Profile visible</Pill>
+              <Pill tone="blue">Expertise ready</Pill>
+            </View>
+          </View>
+        </View>
 
         <View style={styles.metricGrid}>
           <MetricTile
@@ -47,6 +63,8 @@ export default function Trainer() {
             tone="amber"
           />
         </View>
+
+        <PrimaryLink href="/assistant">Open AI coach chat</PrimaryLink>
 
         <SectionHeader
           eyebrow="Roster"
@@ -107,6 +125,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
+  },
+  profileCard: {
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.2)",
+    backgroundColor: "rgba(185,244,85,0.08)",
+    padding: 18,
+    flexDirection: "row",
+    gap: 14,
+  },
+  profileAvatar: {
+    width: 62,
+    height: 62,
+    borderRadius: 22,
+    backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileCopy: {
+    flex: 1,
+    gap: 8,
+  },
+  profileName: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "900",
+  },
+  profileBody: {
+    color: colors.muted,
+    lineHeight: 20,
+  },
+  profileTags: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
   clientList: {
     gap: 12,

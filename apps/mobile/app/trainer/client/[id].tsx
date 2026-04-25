@@ -5,7 +5,10 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
   GlassInput,
+  InfoRow,
+  Pill,
   PrimaryButton,
+  PrimaryLink,
   Screen,
   ScreenHeader,
   SectionHeader,
@@ -30,6 +33,7 @@ export default function TrainerClientDetail() {
   const [planPrompt, setPlanPrompt] = useState(
     "Create a safe 3-day strength plan for a beginner gym member.",
   );
+  const [importedSummary, setImportedSummary] = useState("");
   const [messageDraft, setMessageDraft] = useState(
     "Plan update: open Zook to review your latest workout draft.",
   );
@@ -51,7 +55,14 @@ export default function TrainerClientDetail() {
             orgId: activeOrgId,
             title: planTitle,
             type: "WORKOUT",
-            prompt: planPrompt,
+            prompt: [
+              selectedClient?.summary?.fitnessGoal ? `Client goal: ${selectedClient.summary.fitnessGoal}` : null,
+              selectedClient?.summary?.weightKg ? `Weight: ${selectedClient.summary.weightKg} kg` : null,
+              selectedClient?.summary?.dietPreference ? `Diet: ${selectedClient.summary.dietPreference}` : null,
+              selectedClient?.summary?.allergies ? `Allergies: ${selectedClient.summary.allergies}` : null,
+              importedSummary ? `Imported client summary: ${importedSummary}` : null,
+              `Trainer request: ${planPrompt}`,
+            ].filter(Boolean).join("\n"),
             persistDraft: true,
           },
         },
@@ -163,13 +174,44 @@ export default function TrainerClientDetail() {
         />
 
         <Card style={styles.selectedCard}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <Text style={styles.sectionBody}>Record an offline PT subscription or send a direct notification.</Text>
+          <View style={styles.clientTopRow}>
+            <Pill tone="lime">Trainer visible</Pill>
+            <Pill tone="blue">{selectedClient.summary?.activePlans ?? 0} active plans</Pill>
+          </View>
+          <Text style={styles.sectionTitle}>Client summary</Text>
+          <Text style={styles.sectionBody}>
+            {selectedClient.summary?.summaryNote ?? "Import or write context before generating a plan."}
+          </Text>
+          <View style={styles.infoStack}>
+            <InfoRow label="Goal" value={selectedClient.summary?.fitnessGoal ?? selectedClient.profile?.fitnessGoal ?? "General fitness"} tone="lime" />
+            <InfoRow label="Weight" value={selectedClient.summary?.weightKg ? `${selectedClient.summary.weightKg} kg` : "Not added"} tone="blue" />
+            <InfoRow label="Diet" value={selectedClient.summary?.dietPreference ?? "Not added"} tone="amber" />
+            <InfoRow label="Allergies" value={selectedClient.summary?.allergies ?? "None added"} tone="neutral" />
+          </View>
           <View style={styles.quickActions}>
             <SecondaryButton onPress={() => void recordPtSubscription()} style={styles.quickAction}>
               {busy === "pt" ? "Recording..." : "Record PT pack"}
             </SecondaryButton>
+            <PrimaryLink href="/assistant" style={styles.quickAction}>
+              AI chat
+            </PrimaryLink>
           </View>
+        </Card>
+
+        <SectionHeader
+          eyebrow="Import"
+          title="Client data"
+          subtitle="Paste a body-composition result, WhatsApp summary, or intake note."
+        />
+
+        <Card style={styles.formCard}>
+          <GlassInput
+            label="Imported summary"
+            value={importedSummary}
+            onChangeText={setImportedSummary}
+            multiline
+            placeholder="Example: sleeps late, vegetarian, knee pain, wants fat loss..."
+          />
         </Card>
 
         <SectionHeader
@@ -239,6 +281,8 @@ const styles = StyleSheet.create({
   sectionBody: { color: colors.muted, lineHeight: 21 },
   quickActions: { flexDirection: "row", gap: 10 },
   quickAction: { flex: 1 },
+  clientTopRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  infoStack: { gap: 10 },
   formCard: { gap: 14 },
   statusTitle: { color: colors.text, fontSize: 16, fontWeight: "800" },
   statusMessage: { color: colors.lime, marginTop: 4, lineHeight: 21 },

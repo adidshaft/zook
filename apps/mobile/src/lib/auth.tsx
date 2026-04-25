@@ -41,12 +41,6 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function sessionDefaultRoute(session?: AuthSessionSummary) {
   const roles = new Set(session?.organizations.flatMap((organization) => organization.roles) ?? []);
-  if (roles.has("OWNER") || roles.has("ADMIN")) {
-    return "/owner";
-  }
-  if (roles.has("RECEPTIONIST")) {
-    return "/reception";
-  }
   if (roles.has("TRAINER")) {
     return "/trainer";
   }

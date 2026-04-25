@@ -131,7 +131,12 @@ export default function Home() {
             <Card style={styles.heroCard}>
               <View style={styles.heroGlow} />
               <ScreenHeader
-                title={memberHome?.activeMembership ? "Ready to train." : "Find your gym."}
+                title={memberHome?.activeMembership ? "Scan, train, show code." : "Find your gym."}
+                subtitle={
+                  memberHome?.activeMembership
+                    ? "QR check-in creates a unique entry code for the floor team."
+                    : "Discover gyms, compare plans, and join from mobile."
+                }
               />
               
               <View style={styles.primaryActionWrapper}>
@@ -152,6 +157,9 @@ export default function Home() {
                 </SecondaryLink>
                 <SecondaryLink href="/tracking" style={styles.heroAction}>
                   Log Workout
+                </SecondaryLink>
+                <SecondaryLink href="/profile" style={styles.heroAction}>
+                  Profile
                 </SecondaryLink>
               </View>
 

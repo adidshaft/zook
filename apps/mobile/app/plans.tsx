@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Card, Dock, GlassInput, Pill, PrimaryButton, Screen } from "@/components/primitives";
+import { Card, Dock, Pill, PrimaryButton, PrimaryLink, Screen } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth, getApiErrorMessage } from "@/lib/auth";
 import { useMyPlans } from "@/lib/query-hooks";
@@ -44,10 +44,8 @@ export default function Plans() {
     }
     return 0;
   });
-  const [assistantPrompt, setAssistantPrompt] = useState("How should I approach today's assigned workout?");
-  const [assistantReply, setAssistantReply] = useState("Ask a backend AI question about your assigned plan.");
   const [busyAssignmentId, setBusyAssignmentId] = useState<string | null>(null);
-  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
 
   async function updateProgress(assignmentId: string, currentCompletionPct = 0) {
     if (!token) {
@@ -66,38 +64,27 @@ export default function Plans() {
           progressJson: { lastMarkedAt: new Date().toISOString(), source: "mobile_plan_screen" }
         }
       });
-      setAssistantReply(nextCompletion === 100 ? "Nice. That assignment is now marked complete." : `Progress updated to ${nextCompletion}%.`);
+      setStatusMessage(nextCompletion === 100 ? "Nice. That assignment is now marked complete." : `Progress updated to ${nextCompletion}%.`);
       await queryClient.invalidateQueries({ queryKey: ["me", "plans"] });
     } catch (error) {
-      setAssistantReply(getApiErrorMessage(error));
+      setStatusMessage(getApiErrorMessage(error));
     } finally {
       setBusyAssignmentId(null);
     }
   }
 
-  async function askAssistant() {
-    if (!token) {
-      return;
-    }
-    setAssistantLoading(true);
-    try {
-      const result = await mobileApiFetch<{ response: string | Record<string, unknown> }>("/ai/chat", {
-        method: "POST",
-        token,
-        ...(activeOrgId ? { orgId: activeOrgId } : {}),
-        body: cleanOrgBody(activeOrgId, { prompt: assistantPrompt })
-      });
-      setAssistantReply(typeof result.response === "string" ? result.response : JSON.stringify(result.response));
-    } catch (error) {
-      setAssistantReply(getApiErrorMessage(error));
-    } finally {
-      setAssistantLoading(false);
-    }
-  }
-
   return (
-    <Screen title="Plans">
+    <Screen>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+        <Card style={styles.heroCard}>
+          <Pill tone="lime">Training</Pill>
+          <Text style={styles.heroTitle}>Assigned plans</Text>
+          <Text style={styles.body}>
+            Review progress here. Coaching questions now live in the separate AI chat.
+          </Text>
+          <PrimaryLink href="/assistant">Open AI assistant</PrimaryLink>
+        </Card>
+
         {routeParams.focus ? (
           <Card style={styles.calloutCard}>
             <Pill tone={routeParams.focus === "pt-update" ? "amber" : "blue"}>
@@ -160,27 +147,11 @@ export default function Plans() {
             </Card>
           );
         })}
-        <Card>
-          <Text style={styles.title}>
-            AI plan assistant
-          </Text>
-          <Text style={styles.body}>
-            Ask about your workout, recovery, or plan details.
-          </Text>
-          <GlassInput
-            label="Your question"
-            value={assistantPrompt}
-            onChangeText={setAssistantPrompt}
-            multiline
-            placeholder="Ask about recovery, pacing, or workout sequencing"
-          />
-          <PrimaryButton onPress={() => void askAssistant()}>
-            {assistantLoading ? "Thinking..." : "Ask about my plan"}
-          </PrimaryButton>
-          <Text style={styles.reply}>
-            {assistantReply}
-          </Text>
-        </Card>
+        {statusMessage ? (
+          <Card>
+            <Text style={styles.reply}>{statusMessage}</Text>
+          </Card>
+        ) : null}
 
       </ScrollView>
       <Dock />
@@ -188,12 +159,20 @@ export default function Plans() {
   );
 }
 
-function cleanOrgBody(orgId: string | undefined, body: Record<string, unknown>) {
-  return orgId ? { ...body, orgId } : body;
-}
-
 const styles = StyleSheet.create({
   content: { padding: 20, gap: 14, paddingBottom: 120 },
+  heroCard: {
+    gap: 12,
+    padding: 20,
+    backgroundColor: "rgba(185,244,85,0.08)",
+    borderColor: "rgba(185,244,85,0.2)",
+  },
+  heroTitle: {
+    color: colors.text,
+    fontSize: 34,
+    lineHeight: 38,
+    fontWeight: "900",
+  },
   rowBetween: {
     flexDirection: "row",
     alignItems: "center",

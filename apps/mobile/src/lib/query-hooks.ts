@@ -96,7 +96,26 @@ export interface GymProfileData {
     longitude?: number | null;
     amenities?: string[] | null;
     coverImageUrl?: string | null;
+    logoUrl?: string | null;
+    address?: string | null;
+    tagline?: string | null;
+    gallery?: string[];
   } | null;
+  branches?: Array<{
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+  }>;
+  trainers?: Array<{
+    userId: string;
+    name: string;
+    profilePhotoUrl?: string | null;
+    bio?: string | null;
+    specialties?: unknown;
+    visibleToMembers?: boolean;
+  }>;
   plans: PublicPlanSummary[];
   viewerState?: GymViewerState | null;
   referral?: { code: string; couponId?: string | null; status: string } | null;
@@ -108,8 +127,42 @@ export interface TrainerClientRecord {
   trainerUserId?: string;
   active?: boolean;
   createdAt?: string;
-  user?: { name?: string; email?: string } | null;
-  profile?: { fitnessGoal?: string | null } | null;
+  user?: { name?: string; email?: string; phone?: string | null; dateOfBirth?: string | null; fitnessGoal?: string | null; profilePhotoUrl?: string | null } | null;
+  profile?: { fitnessGoal?: string | null; notes?: string | null; profilePhotoUrl?: string | null } | null;
+  summary?: {
+    fitnessGoal?: string | null;
+    dateOfBirth?: string | null;
+    weightKg?: number;
+    dietPreference?: string;
+    allergies?: string;
+    summaryNote?: string;
+    activePlans?: number;
+  };
+}
+
+export interface MyProfileData {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    phone?: string | null;
+    dateOfBirth?: string | null;
+    fitnessGoal?: string | null;
+    profilePhotoUrl?: string | null;
+  };
+  profile?: {
+    id: string;
+    notes?: string | null;
+    profilePhotoUrl?: string | null;
+    publicVisibility?: boolean | null;
+  } | null;
+  wellness?: {
+    weightKg?: number;
+    dietPreference?: string;
+    allergies?: string;
+    summaryNote?: string;
+    latestMeasurementAt?: string;
+  };
 }
 
 export interface ReceptionQueueRecord {
@@ -247,6 +300,19 @@ export function useMyOrganizations() {
       }>("/me/orgs", { token, ...(activeOrgId ? { orgId: activeOrgId } : {}) });
       return session.organizations;
     },
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function useMyProfile() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "profile", activeOrgId],
+    queryFn: () =>
+      mobileApiFetch<MyProfileData>("/me/profile", {
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+      }),
     enabled: status === "authenticated" && Boolean(token),
   });
 }

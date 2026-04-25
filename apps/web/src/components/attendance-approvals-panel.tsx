@@ -27,7 +27,7 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
       const payload = await webApiFetch<{ records: AttendanceQueueRecord[] }>(`/api/orgs/${orgId}/attendance/live`);
       setRecords(payload.records);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to load attendance approvals.");
+      setError(cause instanceof Error ? cause.message : "Unable to load attendance exceptions.");
     }
   }, [orgId]);
 
@@ -44,7 +44,7 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
       setBusyId(recordId);
       await webApiFetch(`/api/orgs/${orgId}/attendance/${recordId}/${action}`, {
         method: "POST",
-        ...(action === "reject" ? { body: { reason: "Reception review rejected this check-in." } } : {})
+        ...(action === "reject" ? { body: { reason: "Operator rejected this check-in exception." } } : {})
       });
       await loadRecords();
     } catch (cause) {
@@ -58,16 +58,16 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
     <GlassCard>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Approval queue</h2>
-          <p className="mt-1 text-sm text-white/45">Pending and flagged scans from the real attendance feed.</p>
+          <h2 className="text-xl font-semibold">Exception feed</h2>
+          <p className="mt-1 text-sm text-white/45">QR entry is self-approved; unusual scans appear here only when flagged.</p>
         </div>
-        <Pill tone="lime">{records.length} waiting</Pill>
+        <Pill tone="lime">{records.length} exceptions</Pill>
       </div>
       {error ? <p className="mt-4 text-sm text-red-200">{error}</p> : null}
       <div className="mt-5 grid gap-3">
         {!records.length ? (
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/45">
-            No pending or flagged check-ins right now.
+            No flagged check-ins right now.
           </div>
         ) : null}
         {records.map((record) => (

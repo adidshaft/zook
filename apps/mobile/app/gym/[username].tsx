@@ -32,6 +32,14 @@ export default function GymProfileScreen() {
 
   const gym = gymQuery.data?.org ?? null;
   const plans = gymQuery.data?.plans ?? [];
+  const trainers = gymQuery.data?.trainers ?? [];
+  const gallery = gym?.gallery?.length
+    ? gym.gallery
+    : [
+        gym?.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&h=500&fit=crop",
+        "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800&h=500&fit=crop",
+        "https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=800&h=500&fit=crop",
+      ];
   const viewerState = gymQuery.data?.viewerState;
   const effectiveReferral = referralCode ?? gymQuery.data?.referral?.code ?? undefined;
 
@@ -147,13 +155,13 @@ export default function GymProfileScreen() {
                 />
                 <View style={styles.coverGlow} />
                 <Text style={styles.coverEyebrow}>
-                  {gym.name}
+                  {gym.tagline ?? gym.name}
                 </Text>
                 <Text style={styles.coverTitle}>
                   {plans.length} plans available
                 </Text>
                 <Text style={styles.coverBody}>
-                  Review membership options and join directly from your phone.
+                  {gym.address ?? `${gym.city}, ${gym.state}`}
                 </Text>
               </View>
 
@@ -200,6 +208,62 @@ export default function GymProfileScreen() {
                 ) : null}
               </View>
             </Card>
+
+            <SectionHeader
+              eyebrow="Inside"
+              title="Gym profile"
+              subtitle="Facility, trainers, access, and location details."
+            />
+
+            <Card style={styles.profileDetailsCard}>
+              <InfoRow label="Address" value={gym.address ?? `${gym.city}, ${gym.state}`} tone="blue" />
+              <InfoRow label="Entry" value="Scan QR and show entry code" tone="lime" />
+              <InfoRow label="Trial flow" value="Tour + optional body check" tone="amber" />
+            </Card>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryRow}>
+              {gallery.map((imageUrl, index) => (
+                <Image
+                  key={`${imageUrl}-${index}`}
+                  source={{ uri: imageUrl }}
+                  style={styles.galleryImage}
+                  contentFit="cover"
+                />
+              ))}
+            </ScrollView>
+
+            <SectionHeader
+              eyebrow="Coaches"
+              title="Trainer team"
+              subtitle="Visible trainer profiles for this gym."
+            />
+
+            <View style={styles.trainerStack}>
+              {trainers.length ? (
+                trainers.filter((trainer) => trainer.visibleToMembers !== false).map((trainer) => (
+                  <Card key={trainer.userId} style={styles.trainerCard}>
+                    <Image
+                      source={{ uri: trainer.profilePhotoUrl || "https://images.unsplash.com/photo-1594381898411-846e7d193883?q=80&w=300&h=300&fit=crop" }}
+                      style={styles.trainerImage}
+                      contentFit="cover"
+                    />
+                    <View style={styles.trainerCopy}>
+                      <Text style={styles.trainerName}>{trainer.name}</Text>
+                      <Text style={styles.sectionBody} numberOfLines={2}>
+                        {trainer.bio ?? "Strength, conditioning, and member onboarding."}
+                      </Text>
+                      <View style={styles.planBenefits}>
+                        {normalizeSpecialties(trainer.specialties).slice(0, 3).map((specialty) => (
+                          <Pill key={`${trainer.userId}-${specialty}`} tone="blue">{specialty}</Pill>
+                        ))}
+                      </View>
+                    </View>
+                  </Card>
+                ))
+              ) : (
+                <EmptyState title="Trainer profiles coming soon" body="The gym can publish coach bios, expertise, and photos from the owner dashboard." />
+              )}
+            </View>
 
             <View style={styles.metricRow}>
               <Card style={styles.metricCard}>
@@ -270,7 +334,7 @@ export default function GymProfileScreen() {
                 </Text>
                 <Text style={styles.sectionBody}>
                   This gym reviews new members before payment. Submit your request and the
-                  receptionist or owner can approve it.
+                  owner can approve it from the web dashboard.
                 </Text>
                 <PrimaryButton onPress={() => void requestMembership()}>
                   {busyAction === "join-request" ? "Submitting..." : "Send membership request"}
@@ -361,11 +425,11 @@ function buildJoinSteps(
     return [
       {
         title: "Submit request",
-        body: "Send your membership intent so staff can review the fit before payment.",
+        body: "Send your membership intent before payment if the gym keeps approvals on.",
       },
       {
         title: "Staff review",
-        body: "Reception or ownership approves the request in the live dashboard.",
+        body: "Ownership can clear the commercial membership request in the web app.",
       },
       {
         title: "Activate plan",
@@ -396,7 +460,7 @@ function buildJoinSteps(
   return [
     {
       title: "Browse public plans",
-      body: "Compare price, structure, and plan format without waiting for staff.",
+      body: "Compare price, access, trainer support, and plan format without waiting for staff.",
     },
     {
       title: "Checkout instantly",
@@ -404,9 +468,19 @@ function buildJoinSteps(
     },
     {
       title: "Start training",
-      body: "Membership, attendance, plans, and notifications flow back into your member home.",
+      body: "Scan the gym QR, get a unique entry code, and show it at the floor or desk.",
     },
   ];
+}
+
+function normalizeSpecialties(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+  if (value && typeof value === "object") {
+    return Object.values(value).filter((item): item is string => typeof item === "string");
+  }
+  return ["Strength", "Mobility", "Nutrition"];
 }
 
 function buildPlanHighlights(plan: {
@@ -492,6 +566,42 @@ const styles = StyleSheet.create({
   },
   viewerStateStack: {
     gap: 10,
+  },
+  profileDetailsCard: {
+    gap: 10,
+  },
+  galleryRow: {
+    gap: 12,
+    paddingRight: 20,
+  },
+  galleryImage: {
+    width: 210,
+    height: 126,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  trainerStack: {
+    gap: 12,
+  },
+  trainerCard: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+  },
+  trainerImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  trainerCopy: {
+    flex: 1,
+    gap: 6,
+  },
+  trainerName: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "900",
   },
   metricRow: {
     flexDirection: "row",

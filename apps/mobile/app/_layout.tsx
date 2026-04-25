@@ -79,7 +79,7 @@ function LayoutContent() {
       router.replace(defaultRoute as never);
       return;
     }
-    if (pathname.startsWith("/reception") && !hasAnyRole("RECEPTIONIST", "OWNER", "ADMIN")) {
+    if (pathname.startsWith("/reception")) {
       router.replace(defaultRoute as never);
       return;
     }
@@ -102,6 +102,7 @@ function LayoutContent() {
       <StatusBar style="light" />
       <Stack
         screenOptions={{
+          headerShown: false,
           headerStyle: { backgroundColor: "#070908" },
           headerTintColor: "#f4f7ef",
           contentStyle: { backgroundColor: "#070908" },

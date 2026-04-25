@@ -57,7 +57,7 @@ const must = <T>(value: T | undefined, label: string): T => {
 };
 
 const ownerPermissions = Object.values(Permission).filter(
-  (permission) => !permission.startsWith("PLATFORM_"),
+  (permission) => !permission.startsWith("PLATFORM_") && !permission.startsWith("AI_"),
 );
 
 const adminPermissions = ownerPermissions.filter(

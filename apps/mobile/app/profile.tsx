@@ -1,10 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import {
   Card,
   Dock,
+  GlassInput,
   InfoRow,
   Pill,
   PrimaryButton,
@@ -18,7 +19,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { titleCaseFromCode } from "@/lib/formatting";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
 import { usePushNotifications } from "@/lib/push-notifications";
-import { useMyNotificationPreferences } from "@/lib/query-hooks";
+import { useMyNotificationPreferences, useMyProfile } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
 export default function Profile() {
@@ -32,6 +33,7 @@ export default function Profile() {
   } = usePushNotifications();
   const queryClient = useQueryClient();
   const preferencesQuery = useMyNotificationPreferences();
+  const profileQuery = useMyProfile();
   const routeParams = useLocalSearchParams<{
     focus?: string;
     notificationId?: string;
@@ -39,6 +41,14 @@ export default function Profile() {
   }>();
   const [busyPreferenceKey, setBusyPreferenceKey] = useState<string | null>(null);
   const [preferenceError, setPreferenceError] = useState<string | undefined>();
+  const [detailsBusy, setDetailsBusy] = useState(false);
+  const [detailsStatus, setDetailsStatus] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [fitnessGoal, setFitnessGoal] = useState("");
+  const [dietPreference, setDietPreference] = useState("");
+  const [allergies, setAllergies] = useState("");
+  const [summaryNote, setSummaryNote] = useState("");
   const activeOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization;
@@ -56,6 +66,19 @@ export default function Profile() {
     preferencesQuery.data?.preferences,
     activeOrgId,
   );
+
+  useEffect(() => {
+    const data = profileQuery.data;
+    if (!data) {
+      return;
+    }
+    setWeightKg(data.wellness?.weightKg ? String(data.wellness.weightKg) : "");
+    setDateOfBirth(data.user.dateOfBirth ? data.user.dateOfBirth.slice(0, 10) : "");
+    setFitnessGoal(data.user.fitnessGoal ?? "");
+    setDietPreference(data.wellness?.dietPreference ?? "");
+    setAllergies(data.wellness?.allergies ?? "");
+    setSummaryNote(data.wellness?.summaryNote ?? "");
+  }, [profileQuery.data]);
 
   async function updateNotificationPreference(
     key: "transactional" | "operational" | "promotional" | "engagement",
@@ -103,6 +126,56 @@ export default function Profile() {
       setBusyPreferenceKey(null);
     }
   }
+
+  async function saveMemberDetails() {
+    if (!token) {
+      return;
+    }
+    setDetailsBusy(true);
+    setDetailsStatus("");
+    try {
+      await mobileApiFetch("/me/profile", {
+        method: "PATCH",
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        body: {
+          ...(activeOrgId ? { orgId: activeOrgId } : {}),
+          dateOfBirth: dateOfBirth || undefined,
+          fitnessGoal: fitnessGoal || undefined,
+          weightKg: weightKg ? Number(weightKg) : undefined,
+          dietPreference: dietPreference || undefined,
+          allergies: allergies || undefined,
+          summaryNote: summaryNote || undefined,
+        },
+      });
+      setDetailsStatus("Profile summary updated.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "profile", activeOrgId] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home", activeOrgId] }),
+      ]);
+    } catch (error) {
+      setDetailsStatus(getApiErrorMessage(error));
+    } finally {
+      setDetailsBusy(false);
+    }
+  }
+
+  const ageLabel = (() => {
+    if (!dateOfBirth) {
+      return "Not added";
+    }
+    const birthDate = new Date(dateOfBirth);
+    if (Number.isNaN(birthDate.getTime())) {
+      return "Check date";
+    }
+    const today = new Date();
+    let years = today.getFullYear() - birthDate.getFullYear();
+    const monthDelta = today.getMonth() - birthDate.getMonth();
+    if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
+      years -= 1;
+    }
+    return `${years} years`;
+  })();
 
   return (
     <Screen>
@@ -212,6 +285,61 @@ export default function Profile() {
             );
           })}
         </View>
+
+        <SectionHeader
+          eyebrow="Member details"
+          title="Health summary"
+          action={<Pill tone="blue">{ageLabel}</Pill>}
+        />
+
+        <Card style={styles.detailsCard}>
+          <View style={styles.detailGrid}>
+            <GlassInput
+              label="Weight kg"
+              value={weightKg}
+              onChangeText={setWeightKg}
+              keyboardType="decimal-pad"
+              placeholder="72"
+              style={styles.detailInput}
+            />
+            <GlassInput
+              label="Birth date"
+              value={dateOfBirth}
+              onChangeText={setDateOfBirth}
+              placeholder="1998-04-26"
+              style={styles.detailInput}
+            />
+          </View>
+          <GlassInput
+            label="Fitness goal"
+            value={fitnessGoal}
+            onChangeText={setFitnessGoal}
+            placeholder="Strength, fat loss, mobility..."
+          />
+          <GlassInput
+            label="Diet preference"
+            value={dietPreference}
+            onChangeText={setDietPreference}
+            placeholder="Vegetarian, high-protein, Jain..."
+          />
+          <GlassInput
+            label="Allergies"
+            value={allergies}
+            onChangeText={setAllergies}
+            placeholder="Peanuts, lactose, none..."
+          />
+          <GlassInput
+            label="Summary visible to trainer"
+            value={summaryNote}
+            onChangeText={setSummaryNote}
+            multiline
+            placeholder="Injuries, schedule, food constraints, coaching notes..."
+          />
+          {detailsStatus ? <Text style={styles.detailsStatus}>{detailsStatus}</Text> : null}
+          <PrimaryButton onPress={() => void saveMemberDetails()} disabled={detailsBusy}>
+            {detailsBusy ? "Saving..." : "Save summary"}
+          </PrimaryButton>
+        </Card>
 
         <SectionHeader
           eyebrow="Notifications"
@@ -383,6 +511,20 @@ const styles = StyleSheet.create({
   },
   toggleCard: {
     gap: 14,
+  },
+  detailsCard: {
+    gap: 14,
+  },
+  detailGrid: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  detailInput: {
+    flex: 1,
+  },
+  detailsStatus: {
+    color: colors.lime,
+    lineHeight: 20,
   },
   toggleRow: {
     flexDirection: "row",

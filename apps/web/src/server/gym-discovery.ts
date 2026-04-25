@@ -10,6 +10,9 @@ export type DiscoveryGym = {
   joinMode: string;
   latitude?: number | null;
   longitude?: number | null;
+  amenities?: string[];
+  coverImageUrl?: string | null;
+  logoUrl?: string | null;
 };
 
 export function buildGymDiscoveryResults(input: {

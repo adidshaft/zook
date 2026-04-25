@@ -3,6 +3,7 @@ import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
+  CollapsibleSection,
   Dock,
   EmptyState,
   LoadingState,
@@ -11,7 +12,6 @@ import {
   PrimaryButton,
   Screen,
   ScreenHeader,
-  SectionHeader,
   SecondaryButton,
 } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
@@ -67,8 +67,8 @@ export default function Owner() {
       >
         <ScreenHeader
           eyebrow="Owner desk"
-          title="Command center"
-          subtitle="Your gym at a glance."
+          title="Web command center"
+          subtitle="Mobile preview of owner queues. Full setup lives in the web dashboard."
           trailing={
             <Pill tone="lime">
               {titleCaseFromCode(dashboard?.organization?.status ?? "loading")}
@@ -82,24 +82,28 @@ export default function Owner() {
             value={String(summary?.activeMembers ?? 0)}
             detail={`${summary?.joinRequests ?? 0} join requests still waiting`}
             tone="lime"
+            style={styles.metricHalf}
           />
           <MetricTile
             label="Today attendance"
             value={String(summary?.todayAttendance ?? 0)}
-            detail={`${summary?.pendingAttendanceApprovals ?? 0} pending approvals`}
+            detail="QR check-ins create visible entry codes"
             tone="blue"
+            style={styles.metricHalf}
           />
           <MetricTile
             label="Revenue today"
             value={formatInr(summary?.revenuePaise ?? 0)}
             detail={`${formatInr(summary?.cashCollectedPaise ?? 0)} recorded offline`}
             tone="amber"
+            style={styles.metricHalf}
           />
           <MetricTile
-            label="AI this month"
+            label="Trainer AI logs"
             value={String(summary?.aiUsageThisMonth ?? 0)}
-            detail={`${summary?.notificationQueueCount ?? 0} notifications failed or scheduled`}
+            detail={`${summary?.notificationQueueCount ?? 0} notification jobs`}
             tone="violet"
+            style={styles.metricHalf}
           />
         </View>
 
@@ -110,36 +114,41 @@ export default function Owner() {
           />
         ) : null}
 
-        <SectionHeader
+        <Card style={styles.webCard}>
+          <Text style={styles.cardTitle}>Owner web app focus</Text>
+          <Text style={styles.rowBody}>
+            Use web for multi-gym profiles, referral discounts, trainer attendance summaries, inventory, staff roles, and broadcasts.
+          </Text>
+        </Card>
+
+        <CollapsibleSection
           eyebrow="Membership funnel"
           title="Join requests"
-          subtitle="Approve or reject new members."
-        />
+          subtitle="Approval-required gyms only."
+          count={joinRequests.length}
+          defaultOpen={joinRequests.length > 0}
+        >
+          {!dashboardQuery.isLoading && !joinRequests.length ? (
+            <EmptyState
+              title="No join requests waiting"
+              body="Open-join memberships can skip this queue."
+            />
+          ) : (
+            <View style={styles.stack}>
+              {joinRequests.map((request) => (
+                <JoinRequestCard key={request.id} request={request} onUpdate={updateJoinRequest} />
+              ))}
+            </View>
+          )}
+        </CollapsibleSection>
 
-        {!dashboardQuery.isLoading && !joinRequests.length ? (
-          <EmptyState
-            title="No join requests waiting"
-            body="When new members request approval, they’ll appear here with quick action controls."
-          />
-        ) : null}
-
-        <View style={styles.stack}>
-          {joinRequests.map((request) => (
-            <JoinRequestCard key={request.id} request={request} onUpdate={updateJoinRequest} />
-          ))}
-        </View>
-
-        <SectionHeader
+        <CollapsibleSection
           eyebrow="Watchlist"
-          title="Stock and messaging"
-          subtitle="Products and recent messages."
-        />
-
-        <View style={styles.splitStack}>
-          <Card style={styles.splitCard}>
-            <Text style={styles.cardTitle}>
-              Low stock
-            </Text>
+          title="Stock"
+          subtitle="Low inventory and gym shop pressure."
+          count={products.length}
+          defaultOpen={products.length > 0}
+        >
             <View style={styles.stack}>
               {products.length ? (
                 products.map((product) => (
@@ -164,12 +173,15 @@ export default function Owner() {
                 </Text>
               )}
             </View>
-          </Card>
+        </CollapsibleSection>
 
-          <Card style={styles.splitCard}>
-            <Text style={styles.cardTitle}>
-              Notifications
-            </Text>
+        <CollapsibleSection
+          eyebrow="Messaging"
+          title="Recent notifications"
+          subtitle="Limited sends and automatic triggers belong in web."
+          count={notifications.length}
+          defaultOpen={false}
+        >
             <View style={styles.stack}>
               {notifications.length ? (
                 notifications.map((notification) => (
@@ -202,16 +214,15 @@ export default function Owner() {
                 </Text>
               )}
             </View>
-          </Card>
-        </View>
+        </CollapsibleSection>
 
-        <SectionHeader
-          eyebrow="AI activity"
+        <CollapsibleSection
+          eyebrow="AI oversight"
           title="Recent usage"
-          subtitle="Recent AI requests in your gym."
-        />
-
-        <Card style={styles.splitCard}>
+          subtitle="AI use remains member and trainer facing."
+          count={aiUsage.length}
+          defaultOpen={false}
+        >
           <View style={styles.stack}>
             {aiUsage.length ? (
               aiUsage.map((usage) => (
@@ -233,7 +244,7 @@ export default function Owner() {
               </Text>
             )}
           </View>
-        </Card>
+        </CollapsibleSection>
 
       </ScrollView>
       <Dock />
@@ -305,6 +316,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
+  },
+  metricHalf: {
+    flexBasis: "47%",
+    flexGrow: 1,
+  },
+  webCard: {
+    gap: 10,
+    backgroundColor: "rgba(125,211,252,0.08)",
+    borderColor: "rgba(125,211,252,0.18)",
   },
   stack: {
     gap: 12,

@@ -24,7 +24,7 @@ const nav = [
   ["Staff", "/dashboard/staff", Shield],
   ["Members", "/dashboard/members", Users],
   ["Plans", "/dashboard/membership-plans", CreditCard],
-  ["Attendance", "/dashboard/attendance", QrCode],
+  ["QR Entry", "/dashboard/attendance", QrCode],
   ["Trainers", "/dashboard/trainers", CalendarCheck],
   ["AI", "/dashboard/ai", Brain],
   ["Notifications", "/dashboard/notifications", Bell],
@@ -86,10 +86,10 @@ export function DashboardShell({
     tone: PillTone;
   }> = [
     {
-      label: "Review attendance",
+      label: "Display QR entry",
       href: "/dashboard/attendance/approvals",
-      detail: `${data.summary.pendingAttendanceApprovals} approvals waiting`,
-      tone: data.summary.pendingAttendanceApprovals > 0 ? "amber" : "lime"
+      detail: `${data.summary.todayAttendance} scans today`,
+      tone: "lime"
     },
     {
       label: "Process join requests",
@@ -167,7 +167,7 @@ export function DashboardShell({
                   {
                     label: "Attendance mode",
                     value: formatEnumLabel(activeOrg.attendanceMode),
-                    meta: `${data.summary.pendingAttendanceApprovals} approvals waiting`
+                    meta: `${data.summary.todayAttendance} QR entry scans today`
                   },
                   {
                     label: "Trial runway",
@@ -198,7 +198,7 @@ export function DashboardShell({
                 </div>
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">{title}</h1>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
-                  Premium operating surface for ownership, reception, trainers, and admins. Monitor your gym's pulse and manage daily operations.
+                  Premium operating surface for ownership and admins. Manage gym profiles, memberships, referrals, inventory, trainers, and daily performance.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

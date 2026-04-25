@@ -351,10 +351,10 @@ export function DashboardOperationalPanel({
     tone: PillTone;
   }> = [
     {
-      label: "Approve attendance exceptions",
+      label: "Display QR entry",
       href: "/dashboard/attendance/approvals",
-      detail: `${summary.pendingAttendanceApprovals} records need review`,
-      tone: summary.pendingAttendanceApprovals > 0 ? "amber" : "lime"
+      detail: `${summary.todayAttendance} scans today`,
+      tone: "lime"
     },
     {
       label: "Clear join requests",
@@ -401,10 +401,10 @@ export function DashboardOperationalPanel({
             <AttendanceQrPanel orgId={orgId} />
             <GlassCard>
               <SectionHeader
-                eyebrow="Reception Protocol"
-                title="Floor controls"
-                description="The scanner is running in exception-approval mode, so anything suspicious waits for reception review before it affects access."
-                badge={<StatusPill value={formatEnumLabel(organization.attendanceMode)} tone="blue" />}
+                eyebrow="Entry Protocol"
+                title="QR code and entry codes"
+                description="Members scan the displayed gym QR, receive a unique entry code, and show it at the floor or desk."
+                badge={<StatusPill value="Self-approved QR" tone="lime" />}
               />
               <ReadoutGrid
                 className="mt-5"
@@ -412,7 +412,7 @@ export function DashboardOperationalPanel({
                   {
                     label: "Today scans",
                     value: formatCompactNumber(summary.todayAttendance),
-                    meta: `${summary.pendingAttendanceApprovals} waiting in review`
+                    meta: "Members receive visible entry codes"
                   },
                   {
                     label: "Join mode",
@@ -516,7 +516,7 @@ export function DashboardOperationalPanel({
             <SectionHeader
               eyebrow="Members"
               title="Roster and contact posture"
-              description="Profiles here come from the persisted membership directory, so reception and owners are reading the same book."
+              description="Profiles here come from the persisted membership directory, so owners and admins are reading the same book."
               badge={<Pill tone="lime">{members.length} profiles</Pill>}
             />
             <div className="mt-5">
@@ -575,7 +575,7 @@ export function DashboardOperationalPanel({
             <SectionHeader
               eyebrow="Pipeline"
               title="Join request queue"
-              description="Approval-required flows surface here so reception can clear or stop memberships before payment."
+              description="Approval-required flows surface here so ownership can clear or stop memberships before payment."
               badge={<Pill tone={joinRequests.length ? "amber" : "lime"}>{joinRequests.length} pending</Pill>}
             />
             {queueError ? <div className="mt-5"><ErrorNotice message={queueError} /></div> : null}
@@ -1144,7 +1144,7 @@ export function DashboardOperationalPanel({
               {
                 label: "Attendance today",
                 value: formatCompactNumber(summary.todayAttendance),
-                meta: `${summary.pendingAttendanceApprovals} approvals waiting`
+                meta: "QR scans with entry codes"
               },
               {
                 label: "Revenue today",
@@ -1209,8 +1209,8 @@ export function DashboardOperationalPanel({
             <div className="mt-5 grid gap-3">
               {[
                 "Cross-check expiring memberships with the membership ladder before the evening rush.",
-                "If attendance approvals spike, send an operational notification before the queue becomes member-visible.",
-                "Use the audit and AI surfaces together when policy-sensitive actions happen at the desk."
+                "If flagged attendance exceptions spike, send an operational notification before it becomes member-visible.",
+                "Use the audit and AI surfaces together when policy-sensitive trainer or member actions happen."
               ].map((note) => (
                 <div key={note} className="rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-sm leading-6 text-white/58">
                   {note}
@@ -1435,7 +1435,7 @@ export function DashboardOperationalPanel({
               {
                 label: "Attendance today",
                 value: formatCompactNumber(summary.todayAttendance),
-                meta: `${summary.pendingAttendanceApprovals} approvals pending`
+                meta: "QR scans with entry codes"
               },
               {
                 label: "Revenue",
@@ -1481,6 +1481,36 @@ export function DashboardOperationalPanel({
               </Link>
             ))}
           </div>
+        </GlassCard>
+
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Growth"
+            title="Referral and discount controls"
+            description="Owner-managed referral links can grant member discounts while trainer/admin/member sharing stays permissioned."
+            badge={<Pill tone="lime">Owner managed</Pill>}
+          />
+          <ReadoutGrid
+            className="mt-5"
+            columns={1}
+            items={[
+              {
+                label: "Referral links",
+                value: "Enabled by owner",
+                meta: "Toggle discounts through coupon and referral settings"
+              },
+              {
+                label: "Share permissions",
+                value: "Role controlled",
+                meta: "Trainer/admin/member referral abilities follow permissions"
+              },
+              {
+                label: "Cult-style path",
+                value: "Friend discount + reward",
+                meta: "Track discount, referrer, and redemption count"
+              }
+            ]}
+          />
         </GlassCard>
       </div>
 

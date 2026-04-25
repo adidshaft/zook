@@ -85,7 +85,7 @@ export default function TrackingEntry() {
   return (
     <>
       <Stack.Screen options={{ title: "Workout entry" }} />
-      <Screen title="Workout entry">
+      <Screen>
         <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
           <Card style={styles.hero}>
             <Text style={styles.heroEyebrow}>

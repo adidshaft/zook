@@ -40,7 +40,7 @@ export default function TrackingHistory() {
   return (
     <>
       <Stack.Screen options={{ title: "Tracking history" }} />
-      <Screen title="Tracking history">
+      <Screen>
         <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
           <View style={styles.segmented}>
             {windows.map((windowKey) => {

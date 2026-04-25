@@ -1,6 +1,6 @@
 import { Link, usePathname } from "expo-router";
 import type { Href } from "expo-router";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -28,6 +28,8 @@ type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
 type BrandMarkSize = "sm" | "md" | "lg";
 
+// Metro resolves static image requires at build time.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const zookMarkSource = require("../../assets/icons/ic_launcher_foreground.png");
 const brandMarkSizes: Record<BrandMarkSize, number> = {
   sm: 32,
@@ -133,8 +135,6 @@ const buttonPalettes: Record<
 export function Screen({ children, title }: { children: ReactNode; title?: string }) {
   return (
     <View style={styles.screen}>
-      <View pointerEvents="none" style={styles.screenGlowTop} />
-      <View pointerEvents="none" style={styles.screenGlowBottom} />
       {title ? <Text style={styles.title}>{title}</Text> : null}
       {children}
     </View>
@@ -471,44 +471,65 @@ export function EmptyState({
   );
 }
 
+export function CollapsibleSection({
+  title,
+  eyebrow,
+  subtitle,
+  count,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  eyebrow?: string;
+  subtitle?: string;
+  count?: number | string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card style={styles.collapsibleCard}>
+      <Pressable
+        onPress={() => setOpen((value) => !value)}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        style={({ pressed }) => [styles.collapsibleHeader, pressed ? styles.buttonPressed : null]}
+      >
+        <View style={styles.collapsibleCopy}>
+          {eyebrow ? <Text style={styles.sectionEyebrow}>{eyebrow}</Text> : null}
+          <Text style={styles.collapsibleTitle}>{title}</Text>
+          {subtitle ? <Text style={styles.collapsibleSubtitle}>{subtitle}</Text> : null}
+        </View>
+        <View style={styles.collapsibleTrailing}>
+          {count !== undefined ? <Pill tone={open ? "lime" : "neutral"}>{count}</Pill> : null}
+          <Ionicons name={open ? "chevron-up" : "chevron-down"} size={22} color={colors.muted} />
+        </View>
+      </Pressable>
+      {open ? <View style={styles.collapsibleBody}>{children}</View> : null}
+    </Card>
+  );
+}
+
 type DockTab = { href: Href; label: string; icon: keyof typeof Ionicons.glyphMap; activeIcon: keyof typeof Ionicons.glyphMap };
 
 const memberTabs: DockTab[] = [
   { href: "/", label: "Home", icon: "home-outline", activeIcon: "home" },
-  { href: "/plans", label: "Plans", icon: "barbell-outline", activeIcon: "barbell" },
+  { href: "/find-gyms", label: "Gyms", icon: "business-outline", activeIcon: "business" },
   { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
   { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag" },
-  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
-];
-
-const ownerTabs: DockTab[] = [
-  { href: "/owner", label: "Dashboard", icon: "grid-outline", activeIcon: "grid" },
-  { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble" },
-  { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
-  { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag" },
-  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
+  { href: "/assistant", label: "AI", icon: "sparkles-outline", activeIcon: "sparkles" },
 ];
 
 const trainerTabs: DockTab[] = [
   { href: "/trainer", label: "Clients", icon: "people-outline", activeIcon: "people" },
-  { href: "/plans", label: "Plans", icon: "barbell-outline", activeIcon: "barbell" },
+  { href: "/assistant", label: "AI", icon: "sparkles-outline", activeIcon: "sparkles" },
   { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
   { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble" },
-  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
-];
-
-const receptionTabs: DockTab[] = [
-  { href: "/reception", label: "Queue", icon: "list-outline", activeIcon: "list" },
-  { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble" },
-  { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
-  { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag" },
   { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
 function getTabsForRole(hasAnyRole: (...roles: Role[]) => boolean): DockTab[] {
-  if (hasAnyRole("OWNER", "ADMIN")) return ownerTabs;
   if (hasAnyRole("TRAINER")) return trainerTabs;
-  if (hasAnyRole("RECEPTIONIST")) return receptionTabs;
   return memberTabs;
 }
 
@@ -591,24 +612,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.bg,
-  },
-  screenGlowTop: {
-    position: "absolute",
-    top: -100,
-    right: -80,
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: "rgba(185,244,85,0.08)",
-  },
-  screenGlowBottom: {
-    position: "absolute",
-    bottom: 60,
-    left: -120,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: "rgba(125,211,252,0.06)",
   },
   title: {
     color: colors.text,
@@ -796,6 +799,40 @@ const styles = StyleSheet.create({
   },
   stateAction: {
     marginTop: 14,
+  },
+  collapsibleCard: {
+    gap: 0,
+    padding: 0,
+  },
+  collapsibleHeader: {
+    minHeight: 76,
+    padding: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  collapsibleCopy: {
+    flex: 1,
+    gap: 6,
+  },
+  collapsibleTitle: {
+    color: colors.text,
+    ...typography.title,
+  },
+  collapsibleSubtitle: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  collapsibleTrailing: {
+    alignItems: "flex-end",
+    gap: 8,
+  },
+  collapsibleBody: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    padding: 16,
+    gap: 12,
   },
   dock: {
     position: "absolute",
