@@ -11,9 +11,10 @@ export function trainerClientDetail(ctx: DesignContext): FrameNode {
   const avatar = fixedFrame("AM Avatar", 58, 58);
   avatar.cornerRadius = TOKENS.radius.round;
   avatar.fills = [solid(TOKENS.color.accent, 0.16)];
-  avatar.appendChild(text("AM", ctx.styles.text.h3, TOKENS.color.accent));
-  avatar.children[0].x = 15;
-  avatar.children[0].y = 18;
+  const initials = text("AM", ctx.styles.text.h3, TOKENS.color.accent);
+  avatar.appendChild(initials);
+  initials.x = 15;
+  initials.y = 18;
   top.appendChild(avatar);
   const copy = stack("Client copy", "VERTICAL", 5);
   copy.appendChild(text("Aarav Mehta", ctx.styles.text.h2));

@@ -8,7 +8,7 @@ export interface DesignContext {
 
 type Direction = "HORIZONTAL" | "VERTICAL";
 
-export function stack(name: string, direction: Direction, gap = TOKENS.space.md): FrameNode {
+export function stack(name: string, direction: Direction, gap: number = TOKENS.space.md): FrameNode {
   const node = figma.createFrame();
   node.name = name;
   node.layoutMode = direction;
@@ -32,7 +32,7 @@ export function fixedFrame(name: string, width: number, height: number): FrameNo
 export function text(
   value: string,
   style: TextStyle,
-  color = TOKENS.color.primaryText,
+  color: string = TOKENS.color.primaryText,
   name = "Text"
 ): TextNode {
   const node = figma.createText();
@@ -53,8 +53,8 @@ export function spacer(width: number, height = 1): FrameNode {
 export function glassCard(
   name: string,
   width: number,
-  padding = TOKENS.space.lg,
-  radius = TOKENS.radius.xl
+  padding: number = TOKENS.space.lg,
+  radius: number = TOKENS.radius.xl
 ): FrameNode {
   const node = stack(name, "VERTICAL", TOKENS.space.md);
   node.resize(width, 10);
@@ -77,12 +77,12 @@ export function glassCard(
       visible: true,
       blendMode: "NORMAL"
     },
-    { type: "BACKGROUND_BLUR", radius: 18, visible: true }
+    { type: "BACKGROUND_BLUR", radius: 18, visible: true, blurType: "NORMAL" }
   ];
   return node;
 }
 
-export function row(name: string, gap = TOKENS.space.sm): FrameNode {
+export function row(name: string, gap: number = TOKENS.space.sm): FrameNode {
   const node = stack(name, "HORIZONTAL", gap);
   node.counterAxisAlignItems = "CENTER";
   return node;
@@ -134,7 +134,7 @@ export function button(
   label: string,
   variant: "primary" | "secondary" | "danger" = "primary",
   icon?: IconName,
-  width = 160
+  width: number = 160
 ): FrameNode {
   const node = row(`Button / ${variant} / ${label}`, TOKENS.space.sm);
   node.resize(width, 48);
@@ -184,7 +184,7 @@ export function statusBar(ctx: DesignContext): FrameNode {
   indicators.appendChild(fixedFrame("Battery", 22, 10));
   for (const child of indicators.children) {
     if ("fills" in child) child.fills = [solid(TOKENS.color.primaryText, 0.72)];
-    if ("cornerRadius" in child) child.cornerRadius = 3;
+    if (child.type === "FRAME") child.cornerRadius = 3;
   }
   node.appendChild(indicators);
   return node;
@@ -205,7 +205,8 @@ export function mobileShell(ctx: DesignContext, name: string): FrameNode {
   const glow = fixedFrame("Lime ambient glow", 220, 220);
   glow.fills = [solid(TOKENS.color.accent, 0.09)];
   glow.cornerRadius = TOKENS.radius.round;
-  glow.effects = [{ type: "LAYER_BLUR", radius: 70, visible: true }];
+  glow.effects = [{ type: "LAYER_BLUR", radius: 70, visible: true, blurType: "NORMAL" }];
+  glow.layoutPositioning = "ABSOLUTE";
   frame.appendChild(glow);
   glow.x = 210;
   glow.y = -94;
@@ -258,7 +259,7 @@ export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], se
   node.fills = [glassFill()];
   node.strokes = [glassStroke()];
   node.strokeWeight = 1;
-  node.effects = [{ type: "BACKGROUND_BLUR", radius: 18, visible: true }];
+  node.effects = [{ type: "BACKGROUND_BLUR", radius: 18, visible: true, blurType: "NORMAL" }];
   for (const item of items) {
     const active = item.label === selected;
     const entry = stack(`Nav Item / ${item.label}`, "VERTICAL", 3);
@@ -349,9 +350,10 @@ export function productCard(
   const visual = fixedFrame("Product silhouette", 138, 72);
   visual.cornerRadius = TOKENS.radius.md;
   visual.fills = [solid(TOKENS.color.accent, 0.1)];
-  visual.appendChild(createIcon("bag", 28, TOKENS.color.accent));
-  visual.children[0].x = 55;
-  visual.children[0].y = 22;
+  const bag = createIcon("bag", 28, TOKENS.color.accent);
+  visual.appendChild(bag);
+  bag.x = 55;
+  bag.y = 22;
   node.appendChild(visual);
   node.appendChild(text(product, ctx.styles.text.bodyStrong, TOKENS.color.primaryText, "Name"));
   node.appendChild(text(price, ctx.styles.text.h3, TOKENS.color.primaryText, "Price"));

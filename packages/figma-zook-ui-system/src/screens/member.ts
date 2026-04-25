@@ -21,7 +21,7 @@ import {
 import { createIcon } from "../icons";
 import { TOKENS, glassFill, glassStroke, solid } from "../tokens";
 
-function progressRing(ctx: DesignContext, label: string, color = TOKENS.color.accent): FrameNode {
+function progressRing(ctx: DesignContext, label: string, color: string = TOKENS.color.accent): FrameNode {
   const wrap = fixedFrame(`Progress Ring / ${label}`, 82, 82);
   const base = figma.createEllipse();
   base.name = "Ring base";

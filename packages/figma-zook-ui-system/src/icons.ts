@@ -43,7 +43,7 @@ const paths: Record<IconName, string> = {
   more: '<path d="M5 12a2 2 0 1 0 0 .1V12Zm7 0a2 2 0 1 0 0 .1V12Zm7 0a2 2 0 1 0 0 .1V12Z"/>'
 };
 
-export function createIcon(name: IconName, size = 20, color = TOKENS.color.mutedText): FrameNode {
+export function createIcon(name: IconName, size = 20, color: string = TOKENS.color.mutedText): FrameNode {
   const svg = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">${paths[name]}</svg>`;
   const node = figma.createNodeFromSvg(svg) as FrameNode;
   node.name = `Icon / ${name}`;

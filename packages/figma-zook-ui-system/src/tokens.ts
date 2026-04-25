@@ -1,4 +1,4 @@
-export type Hex = `#${string}`;
+export type Hex = string;
 
 export const TOKENS = {
   brand: {
@@ -87,11 +87,11 @@ export function solid(hex: Hex, opacity = 1): SolidPaint {
   return { type: "SOLID", color: hexToRgb(hex), opacity };
 }
 
-export function glassFill(opacity = TOKENS.opacity.glassHigh): SolidPaint {
+export function glassFill(opacity: number = TOKENS.opacity.glassHigh): SolidPaint {
   return solid(TOKENS.color.white, opacity);
 }
 
-export function glassStroke(opacity = TOKENS.opacity.glassStroke): SolidPaint {
+export function glassStroke(opacity: number = TOKENS.opacity.glassStroke): SolidPaint {
   return solid(TOKENS.color.white, opacity);
 }
 

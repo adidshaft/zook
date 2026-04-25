@@ -105,7 +105,7 @@ export function createStyles(): StyleRegistry {
 
   const backgroundBlur = figma.createEffectStyle();
   backgroundBlur.name = "Effect / Glass Background Blur";
-  backgroundBlur.effects = [{ type: "BACKGROUND_BLUR", radius: 18, visible: true }];
+  backgroundBlur.effects = [{ type: "BACKGROUND_BLUR", radius: 18, visible: true, blurType: "NORMAL" }];
 
   const glassCard = figma.createEffectStyle();
   glassCard.name = "Effect / Glass Card Composite";
