@@ -91,6 +91,7 @@ export default function Trainer() {
           ))}
         </View>
 
+      </ScrollView>
       <Dock />
     </Screen>
   );

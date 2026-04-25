@@ -180,6 +180,7 @@ export default function Shop() {
           </Card>
         ))}
 
+      </ScrollView>
       <Dock />
     </Screen>
   );

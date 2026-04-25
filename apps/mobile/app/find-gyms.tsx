@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 import { useDeferredValue, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
@@ -159,6 +159,7 @@ export default function FindGyms() {
           ))}
         </View>
 
+      </ScrollView>
       <Dock />
     </Screen>
   );

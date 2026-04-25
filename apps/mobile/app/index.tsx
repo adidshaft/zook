@@ -242,6 +242,7 @@ export default function Home() {
             </Card>
           ) : null}
 
+        </ScrollView>
         <Dock />
       </Screen>
     </>

@@ -235,6 +235,7 @@ export default function Owner() {
           </View>
         </Card>
 
+      </ScrollView>
       <Dock />
     </Screen>
   );

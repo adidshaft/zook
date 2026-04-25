@@ -2,6 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
+  Dock,
   EmptyState,
   LoadingState,
   MetricTile,

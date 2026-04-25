@@ -95,6 +95,7 @@ export default function TrackingDashboard() {
             ))}
           </View>
 
+        </ScrollView>
         <Dock />
       </Screen>
     </>

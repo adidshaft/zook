@@ -182,6 +182,7 @@ export default function Plans() {
           </Text>
         </Card>
 
+      </ScrollView>
       <Dock />
     </Screen>
   );
