@@ -31,6 +31,15 @@ function makeSolidPaint(hex, opacity = 1) {
         opacity
     };
 }
+function makeRgba(hex, alpha) {
+    const color = hexToRgb(hex);
+    return {
+        r: color.r,
+        g: color.g,
+        b: color.b,
+        a: alpha
+    };
+}
 function createText(text, fontSize, color) {
     const node = figma.createText();
     node.fontName = fontSize >= 44 ? activeBoldFont : activeRegularFont;
@@ -99,7 +108,7 @@ function createPathShape(name, points, radius, fill) {
     vector.effects = [
         {
             type: "DROP_SHADOW",
-            color: { ...hexToRgb(TOKENS.brandAccent), a: fill.opacity ? fill.opacity * 0.18 : 0.18 },
+            color: makeRgba(TOKENS.brandAccent, fill.opacity ? fill.opacity * 0.18 : 0.18),
             offset: { x: 0, y: 18 },
             radius: 42,
             spread: 0,
@@ -197,7 +206,7 @@ function buildIconComposition(parent, size, options = {}) {
         panel.effects = [
             {
                 type: "INNER_SHADOW",
-                color: { ...hexToRgb("#ffffff"), a: 0.08 },
+                color: makeRgba("#ffffff", 0.08),
                 offset: { x: 0, y: 1 * scale },
                 radius: 34 * scale,
                 spread: 0,
@@ -206,7 +215,7 @@ function buildIconComposition(parent, size, options = {}) {
             },
             {
                 type: "DROP_SHADOW",
-                color: { ...hexToRgb("#000000"), a: 0.34 },
+                color: makeRgba("#000000", 0.34),
                 offset: { x: 0, y: 34 * scale },
                 radius: 80 * scale,
                 spread: 0,
