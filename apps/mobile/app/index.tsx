@@ -177,6 +177,24 @@ export default function Home() {
           ) : null}
 
           {memberHome?.activeMembership ? (
+            <Card style={{ backgroundColor: "rgba(255, 182, 80, 0.05)", borderColor: "rgba(255, 182, 80, 0.2)", marginBottom: -8, marginTop: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  <Text style={{ fontSize: 28 }}>🔥</Text>
+                  <View>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: "800" }}>
+                      {Math.max(memberHome.recentAttendance.length, 1)} Day Streak
+                    </Text>
+                    <Text style={{ color: colors.muted, fontSize: 13 }}>
+                      Keep the momentum going.
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </Card>
+          ) : null}
+
+          {memberHome?.activeMembership ? (
             <Card style={styles.membershipCard}>
               <View style={styles.membershipHeader}>
                 <Text style={styles.cardLabel}>Membership</Text>

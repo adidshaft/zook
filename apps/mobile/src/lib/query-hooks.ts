@@ -158,6 +158,8 @@ export interface OwnerDashboardData {
   joinRequests?: Array<{
     id: string;
     userId: string;
+    userName?: string | null;
+    userEmail?: string | null;
     planId?: string | null;
     referralCode?: string | null;
     status?: string | null;

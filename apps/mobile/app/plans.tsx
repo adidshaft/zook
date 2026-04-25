@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Card, GlassInput, Pill, PrimaryButton, Screen } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth, getApiErrorMessage } from "@/lib/auth";

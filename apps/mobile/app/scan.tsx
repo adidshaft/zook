@@ -1,7 +1,8 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import { useState, useRef, useEffect } from "react";
+import { StyleSheet, Text, View, Pressable, Animated } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { PrimaryButton, Screen, SecondaryButton, GlassInput, ScreenHeader } from "@/components/primitives";
@@ -22,6 +23,7 @@ export default function Scan() {
   const [statusState, setStatusState] = useState<"idle" | "success" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("Point at the QR code.");
   const [submitting, setSubmitting] = useState(false);
+  const successScale = useRef(new Animated.Value(0)).current;
   
   const permissionReady = permission !== null;
   const canUseCamera = permission?.granted ?? false;
@@ -46,6 +48,11 @@ export default function Scan() {
       if (result.duplicate || result.status === "APPROVED" || result.status === "PENDING_APPROVAL") {
         setStatusState("success");
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Animated.spring(successScale, {
+          toValue: 1,
+          friction: 4,
+          useNativeDriver: true,
+        }).start();
       } else {
         setStatusState("error");
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -69,6 +76,11 @@ export default function Scan() {
       setTimeout(() => {
         setStatusState("idle");
         setStatusMessage("Point at the QR code.");
+        Animated.timing(successScale, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
       }, 3000);
       
     } catch (error) {
@@ -114,6 +126,9 @@ export default function Scan() {
                  <View style={styles.overlaySide} />
                </View>
                <View style={styles.overlayBottom} />
+               <Animated.View style={[styles.successOverlay, { transform: [{ scale: successScale }], opacity: successScale }]}>
+                 <Ionicons name="checkmark-circle" size={100} color={colors.lime} />
+               </Animated.View>
             </View>
           </View>
         ) : null}
@@ -180,6 +195,14 @@ const styles = StyleSheet.create({
   cutout: { width: 280, height: 280, borderRadius: 24, borderWidth: 2, borderColor: "rgba(255,255,255,0.2)", backgroundColor: "transparent" },
   cutoutSuccess: { borderColor: colors.lime, borderWidth: 4 },
   cutoutError: { borderColor: colors.red, borderWidth: 4 },
+  successOverlay: {
+    position: "absolute",
+    top: "35%",
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 50,
+    padding: 10,
+  },
   overlayBottom: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)" },
   headerAbsolute: { position: "absolute", top: 60, left: 0, right: 0, alignItems: "center" },
   headerTitle: { color: "white", fontSize: 24, fontWeight: "900", letterSpacing: 1 },

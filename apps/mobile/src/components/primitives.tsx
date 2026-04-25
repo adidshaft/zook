@@ -1,6 +1,6 @@
 import { Link, usePathname } from "expo-router";
 import type { Href } from "expo-router";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -11,13 +11,18 @@ import {
   type TextStyle,
   type ViewStyle,
   View,
+  View,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { Role } from "@zook/core";
 import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
+import { useMyNotifications } from "@/lib/query-hooks";
 import { colors, radii } from "@/lib/theme";
 
 type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
@@ -275,6 +280,7 @@ export function PrimaryButton({
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  accessibilityLabel?: string;
 }) {
   const palette = buttonPalettes[tone];
 
@@ -287,6 +293,9 @@ export function PrimaryButton({
         }
       }}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? (typeof children === 'string' ? children : undefined)}
+      accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.button,
         {
@@ -313,18 +322,22 @@ export function PrimaryLink({
   tone = "lime",
   style,
   textStyle,
+  accessibilityLabel,
 }: {
   href: Href;
   children: ReactNode;
   tone?: ButtonTone;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  accessibilityLabel?: string;
 }) {
   const palette = buttonPalettes[tone];
   return (
     <Link href={href} asChild>
       <Pressable
         onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+        accessibilityRole="link"
+        accessibilityLabel={accessibilityLabel ?? (typeof children === 'string' ? children : undefined)}
         style={({ pressed }) => [
           styles.button,
           {
@@ -457,7 +470,7 @@ const receptionTabs: DockTab[] = [
   { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
-function getTabsForRole(hasAnyRole: (...roles: string[]) => boolean): DockTab[] {
+function getTabsForRole(hasAnyRole: (...roles: Role[]) => boolean): DockTab[] {
   if (hasAnyRole("OWNER", "ADMIN")) return ownerTabs;
   if (hasAnyRole("TRAINER")) return trainerTabs;
   if (hasAnyRole("RECEPTIONIST")) return receptionTabs;
@@ -467,12 +480,15 @@ function getTabsForRole(hasAnyRole: (...roles: string[]) => boolean): DockTab[] 
 export function Dock() {
   const pathname = usePathname();
   const { hasAnyRole } = useAuth();
+  const notificationsQuery = useMyNotifications();
+  const unreadCount = notificationsQuery.data?.notifications?.filter(n => !n.readAt)?.length ?? 0;
   const tabs = getTabsForRole(hasAnyRole);
   const insets = useSafeAreaInsets();
   return (
     <BlurView intensity={80} tint="dark" style={[styles.dock, { bottom: Math.max(insets.bottom, 18) }]}>
       {tabs.map((tab) => {
         const active = pathname === tab.href;
+        const showBadge = unreadCount > 0 && (tab.label === "Inbox" || (tab.label === "Profile" && !tabs.find(t => t.label === "Inbox")));
         return (
           <Link key={String(tab.href)} href={tab.href} asChild>
             <Pressable 
@@ -481,11 +497,14 @@ export function Dock() {
               accessibilityLabel={tab.label}
               accessibilityRole="tab"
             >
-              <Ionicons
-                name={active ? tab.activeIcon : tab.icon}
-                size={22}
-                color={active ? colors.lime : colors.muted}
-              />
+              <View>
+                <Ionicons
+                  name={active ? tab.activeIcon : tab.icon}
+                  size={22}
+                  color={active ? colors.lime : colors.muted}
+                />
+                {showBadge && <View style={styles.dockBadge} />}
+              </View>
               <Text style={[styles.dockText, active ? styles.dockTextActive : null]}>
                 {tab.label}
               </Text>
@@ -494,6 +513,42 @@ export function Dock() {
         );
       })}
     </BlurView>
+  );
+}
+
+export function Skeleton({ style, width, height, borderRadius = 8 }: { style?: StyleProp<ViewStyle>, width?: number | string, height?: number | string, borderRadius?: number }) {
+  const anim = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: 0.7,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [anim]);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: "rgba(255,255,255,0.1)",
+          opacity: anim,
+        },
+        style,
+      ]}
+    />
   );
 }
 

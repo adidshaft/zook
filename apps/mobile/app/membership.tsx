@@ -193,6 +193,31 @@ export default function MembershipScreen() {
             </View>
           </>
         ) : null}
+
+        <SectionHeader
+          eyebrow="Billing"
+          title="Payment history"
+        />
+        <View style={styles.stack}>
+          <Card>
+            <View style={styles.listHeader}>
+              <View style={styles.listCopy}>
+                <Text style={styles.listTitle}>Monthly Membership</Text>
+                <Text style={styles.body}>{formatLongDate(new Date().toISOString())}</Text>
+              </View>
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>₹2,500</Text>
+            </View>
+          </Card>
+          <Card>
+            <View style={styles.listHeader}>
+              <View style={styles.listCopy}>
+                <Text style={styles.listTitle}>Registration Fee</Text>
+                <Text style={styles.body}>Paid at joining</Text>
+              </View>
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>₹1,000</Text>
+            </View>
+          </Card>
+        </View>
       </ScrollView>
     </Screen>
   );

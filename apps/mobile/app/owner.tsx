@@ -95,6 +95,7 @@ export default function Owner() {
           eyebrow="Membership funnel"
           title="Join requests"
           subtitle="Approve or reject new members."
+        />
 
         {!dashboardQuery.isLoading && !joinRequests.length ? (
           <EmptyState

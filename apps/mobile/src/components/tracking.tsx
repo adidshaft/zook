@@ -5,10 +5,10 @@ import { StyleSheet, Text, View } from "react-native";
 import { colors, radii } from "@/lib/theme";
 
 const tonePalette = {
-  lime: { surface: "#ecf7db", ink: "#12200a" },
-  amber: { surface: "#fff1dc", ink: "#2d1b03" },
-  blue: { surface: "#e7f6fb", ink: "#08202b" },
-  violet: { surface: "#efe8ff", ink: "#1c1233" }
+  lime: { surface: "rgba(185,244,85,0.1)", ink: colors.lime },
+  amber: { surface: "rgba(255,182,80,0.1)", ink: colors.amber },
+  blue: { surface: "rgba(125,211,252,0.1)", ink: colors.blue },
+  violet: { surface: "rgba(185,169,255,0.1)", ink: colors.violet }
 } as const;
 
 export function TrackingSectionHeader({
@@ -319,12 +319,14 @@ const styles = StyleSheet.create({
   },
   historyCard: {
     borderRadius: 30,
-    backgroundColor: colors.paper,
+    backgroundColor: colors.panel,
+    borderColor: colors.border,
+    borderWidth: 1,
     padding: 18,
     gap: 14
   },
   historyLabel: {
-    color: colors.inkSoft,
+    color: colors.text,
     fontSize: 12,
     fontWeight: "700"
   },
@@ -337,24 +339,24 @@ const styles = StyleSheet.create({
     gap: 4
   },
   historyMetricValue: {
-    color: colors.ink,
+    color: colors.text,
     fontSize: 28,
     fontWeight: "900",
     lineHeight: 30
   },
   historyMetricLabel: {
-    color: colors.inkSoft,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "700"
   },
   historyCallout: {
     borderRadius: radii.pill,
-    backgroundColor: "#ddd3ff",
+    backgroundColor: "rgba(185,169,255,0.12)",
     paddingHorizontal: 16,
     paddingVertical: 14
   },
   historyCalloutText: {
-    color: "#3d2d73",
+    color: colors.violet,
     fontSize: 13,
     fontWeight: "700"
   }

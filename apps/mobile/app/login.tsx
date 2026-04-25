@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Card, GlassInput, PrimaryButton, Screen, ScreenHeader, SecondaryButton } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { colors } from "@/lib/theme";
@@ -36,75 +36,91 @@ export default function Login() {
 
   return (
     <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <View style={styles.heroSection}>
-          <View style={styles.heroGlow} />
-          <Text style={styles.heroEyebrow}>Welcome to</Text>
-          <Text style={styles.heroTitle}>Zook</Text>
-          <Text style={styles.heroBody}>
-            Your gym, your membership, your rhythm. Sign in to get started.
-          </Text>
-        </View>
-
-        <Card style={styles.card}>
-          <ScreenHeader
-            title={stage === "email" ? "Enter Email" : "Verify Code"}
-            subtitle={stage === "email" ? "We'll send a one-time code." : "Check your inbox."}
-          />
-
-          <View style={styles.form}>
-            {stage === "email" ? (
-              <GlassInput
-                label="Email Address"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                placeholder="you@example.com"
-                editable={!busy}
-              />
-            ) : (
-              <GlassInput
-                label="One-Time Code"
-                value={code}
-                onChangeText={setCode}
-                keyboardType="number-pad"
-                maxLength={6}
-                placeholder="000000"
-                editable={!busy}
-              />
-            )}
-
-            <PrimaryButton onPress={handleContinue} disabled={busy}>
-              {busy ? "Working..." : stage === "email" ? "Send Code" : "Verify & Sign In"}
-            </PrimaryButton>
-            
-            {stage === "otp" ? (
-              <SecondaryButton onPress={() => setStage("email")} disabled={busy}>
-                Use a different email
-              </SecondaryButton>
-            ) : null}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
+      >
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.heroSection}>
+            <View style={styles.heroGlow} />
+            <Text style={styles.heroEyebrow}>Welcome to</Text>
+            <Text style={styles.heroTitle}>Zook</Text>
+            <Text style={styles.heroBody}>
+              Your gym, your membership, your rhythm. Sign in to get started.
+            </Text>
           </View>
-        </Card>
 
-        {message ? (
-          <Text style={styles.messageText}>{message}</Text>
-        ) : null}
-      </ScrollView>
+          <Card style={styles.card}>
+            <ScreenHeader
+              title={stage === "email" ? "Enter Email" : "Verify Code"}
+              subtitle={stage === "email" ? "We'll send a one-time code." : "Check your inbox."}
+            />
+
+            <View style={styles.form}>
+              {stage === "email" ? (
+                <GlassInput
+                  label="Email Address"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  placeholder="you@example.com"
+                  editable={!busy}
+                />
+              ) : (
+                <GlassInput
+                  label="One-Time Code"
+                  value={code}
+                  onChangeText={setCode}
+                  autoComplete="one-time-code"
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  placeholder="000000"
+                  editable={!busy}
+                />
+              )}
+
+              <PrimaryButton onPress={handleContinue} disabled={busy}>
+                {busy ? "Working..." : stage === "email" ? "Send Code" : "Verify & Sign In"}
+              </PrimaryButton>
+
+              {stage === "otp" ? (
+                <SecondaryButton onPress={() => setStage("email")} disabled={busy}>
+                  Use a different email
+                </SecondaryButton>
+              ) : null}
+            </View>
+          </Card>
+
+          {message ? (
+            <Text style={styles.messageText}>{message}</Text>
+          ) : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   content: {
     padding: 20,
-    paddingTop: 80,
-    gap: 24,
+    paddingTop: 48,
+    paddingBottom: 40,
+    gap: 18,
   },
   heroSection: {
     gap: 8,
     position: "relative",
-    paddingVertical: 40,
+    paddingVertical: 24,
   },
   heroGlow: {
     position: "absolute",

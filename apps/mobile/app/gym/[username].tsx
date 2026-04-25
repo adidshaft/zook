@@ -2,6 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
 import {
   Card,
   EmptyState,
@@ -139,6 +140,11 @@ export default function GymProfileScreen() {
           <>
             <Card style={styles.heroCard}>
               <View style={styles.coverPlaceholder}>
+                <Image
+                  source={{ uri: gym.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&h=400&fit=crop" }}
+                  style={[StyleSheet.absoluteFill, { opacity: 0.6 }]}
+                  contentFit="cover"
+                />
                 <View style={styles.coverGlow} />
                 <Text style={styles.coverEyebrow}>
                   {gym.name}

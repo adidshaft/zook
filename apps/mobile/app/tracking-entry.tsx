@@ -11,14 +11,14 @@ import { colors } from "@/lib/theme";
 function defaultStartedAt() {
   const date = new Date();
   date.setMinutes(0, 0, 0);
-  return date.toISOString();
+  return date;
 }
 
 function defaultEndedAt() {
   const date = new Date();
   date.setHours(date.getHours() + 1);
   date.setMinutes(0, 0, 0);
-  return date.toISOString();
+  return date;
 }
 
 export default function TrackingEntry() {
@@ -29,6 +29,8 @@ export default function TrackingEntry() {
   const [workoutType, setWorkoutType] = useState("strength");
   const [startedAt, setStartedAt] = useState(defaultStartedAt());
   const [endedAt, setEndedAt] = useState(defaultEndedAt());
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("Record each session to track your progress.");
   const [saving, setSaving] = useState(false);
@@ -51,8 +53,8 @@ export default function TrackingEntry() {
           ...(activeOrgId ? { organizationId: activeOrgId } : {}),
           title,
           workoutType,
-          startedAt,
-          endedAt,
+          startedAt: startedAt.toISOString(),
+          endedAt: endedAt.toISOString(),
           notes,
           visibility: "PRIVATE",
           exercises: exercises
@@ -104,7 +106,7 @@ export default function TrackingEntry() {
             
             <View style={styles.datePickerContainer}>
               <Text style={styles.dateLabel}>Start Time</Text>
-              {Platform.OS === 'ios' ? (
+              {Platform.OS === "ios" ? (
                 <DateTimePicker
                   value={startedAt}
                   mode="datetime"
@@ -117,7 +119,7 @@ export default function TrackingEntry() {
               ) : (
                 <>
                   <Pressable style={styles.input} onPress={() => setShowStartPicker(true)}>
-                    <Text style={{ color: colors.text }}>{startedAt.toLocaleString()}</Text>
+                    <Text style={styles.dateValue}>{startedAt.toLocaleString()}</Text>
                   </Pressable>
                   {showStartPicker && (
                     <DateTimePicker
@@ -136,7 +138,7 @@ export default function TrackingEntry() {
 
             <View style={styles.datePickerContainer}>
               <Text style={styles.dateLabel}>End Time</Text>
-              {Platform.OS === 'ios' ? (
+              {Platform.OS === "ios" ? (
                 <DateTimePicker
                   value={endedAt}
                   mode="datetime"
@@ -149,7 +151,7 @@ export default function TrackingEntry() {
               ) : (
                 <>
                   <Pressable style={styles.input} onPress={() => setShowEndPicker(true)}>
-                    <Text style={{ color: colors.text }}>{endedAt.toLocaleString()}</Text>
+                    <Text style={styles.dateValue}>{endedAt.toLocaleString()}</Text>
                   </Pressable>
                   {showEndPicker && (
                     <DateTimePicker
@@ -289,6 +291,17 @@ const styles = StyleSheet.create({
   },
   formCard: {
     gap: 12
+  },
+  datePickerContainer: {
+    gap: 8
+  },
+  dateLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  dateValue: {
+    color: colors.text
   },
   exerciseCard: {
     gap: 12

@@ -1,8 +1,6 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
-  Card,
   EmptyState,
   LoadingState,
   MetricTile,

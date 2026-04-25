@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
 import { useDeferredValue, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
 import {
   Card,
   EmptyState,
@@ -12,7 +13,7 @@ import {
   ScreenHeader,
   SectionHeader,
 } from "@/components/primitives";
-import { formatCompactNumber, titleCaseFromCode } from "@/lib/formatting";
+import { titleCaseFromCode } from "@/lib/formatting";
 import { useGymSearch } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
@@ -107,6 +108,11 @@ export default function FindGyms() {
           {gyms.map((gym) => (
             <Card key={gym.username} style={styles.gymCard}>
               <View style={styles.gymHeader}>
+                <Image
+                  source={{ uri: gym.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=400&h=400&fit=crop" }}
+                  style={styles.gymThumbnail}
+                  contentFit="cover"
+                />
                 <View style={styles.gymCopy}>
                   <Text style={styles.gymTitle}>
                     {gym.name}
@@ -278,8 +284,15 @@ const styles = StyleSheet.create({
   },
   gymHeader: {
     flexDirection: "row",
-    gap: 12,
+    justifyContent: "space-between",
     alignItems: "flex-start",
+    gap: 12,
+  },
+  gymThumbnail: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.05)",
   },
   gymCopy: {
     flex: 1,
