@@ -377,7 +377,7 @@ export function GlassInput({
         </Text>
       ) : null}
       <View style={styles.inputWrapper}>
-        <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+        <BlurView intensity={20} tint="dark" style={StyleSheet.flatten(StyleSheet.absoluteFill)} />
         <TextInput
           {...props}
           placeholderTextColor={colors.muted}
@@ -484,7 +484,7 @@ export function Dock() {
   const tabs = getTabsForRole(hasAnyRole);
   const insets = useSafeAreaInsets();
   return (
-    <BlurView intensity={80} tint="dark" style={[styles.dock, { bottom: Math.max(insets.bottom, 18) }]}>
+    <BlurView intensity={80} tint="dark" style={StyleSheet.flatten([styles.dock, { bottom: Math.max(insets.bottom, 18) }])}>
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         const showBadge = unreadCount > 0 && (tab.label === "Inbox" || (tab.label === "Profile" && !tabs.find(t => t.label === "Inbox")));

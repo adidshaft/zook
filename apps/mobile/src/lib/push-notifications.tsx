@@ -398,18 +398,22 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
   }, [registerExpoPushToken])
 
   useEffect(() => {
+    if (Platform.OS === "web") {
+      return;
+    }
+
     const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      void handleNotificationResponse(response)
-    })
+      void handleNotificationResponse(response);
+    });
 
     void Notifications.getLastNotificationResponseAsync().then((response) => {
-      void handleNotificationResponse(response)
-    })
+      void handleNotificationResponse(response);
+    });
 
     return () => {
-      responseSubscription.remove()
-    }
-  }, [handleNotificationResponse])
+      responseSubscription.remove();
+    };
+  }, [handleNotificationResponse]);
 
   useEffect(() => {
     if (status === "authenticated" && pendingHref) {
