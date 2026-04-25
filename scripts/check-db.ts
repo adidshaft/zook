@@ -11,7 +11,7 @@ export async function runDbCheck(): Promise<CheckResult> {
     );
   }
 
-  const { PrismaClient } = await import("@prisma/client");
+  const { PrismaClient } = await import("../packages/db/src/index");
   const prisma = new PrismaClient({
     log: ["error"]
   });

@@ -19,7 +19,7 @@ export default function Login() {
         const result = await requestOtp(email);
         setStage("otp");
         setMessage(
-          result.devOtp
+          __DEV__ && result.devOtp
             ? `Code sent to ${email}. Dev code: ${result.devOtp}.`
             : `Code sent to ${email}.`
         );

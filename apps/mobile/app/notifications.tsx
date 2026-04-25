@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
+  Dock,
   EmptyState,
   LoadingState,
   MetricTile,
@@ -200,6 +201,7 @@ export default function NotificationsScreen() {
           </>
         ) : null}
       </ScrollView>
+      <Dock />
     </Screen>
   );
 }

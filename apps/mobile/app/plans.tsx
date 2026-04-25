@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Card, GlassInput, Pill, PrimaryButton, Screen } from "@/components/primitives";
+import { Card, Dock, GlassInput, Pill, PrimaryButton, Screen } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth, getApiErrorMessage } from "@/lib/auth";
 import { useMyPlans } from "@/lib/query-hooks";
@@ -181,7 +181,9 @@ export default function Plans() {
             {assistantReply}
           </Text>
         </Card>
+      <View style={{ height: 110 }} />
       </ScrollView>
+      <Dock />
     </Screen>
   );
 }

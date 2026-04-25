@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Card, PrimaryLink, Screen } from "@/components/primitives";
+import { Card, Dock, PrimaryLink, Screen } from "@/components/primitives";
 import {
   TrackingSectionHeader,
   TrackingSummaryTile,
@@ -94,7 +94,9 @@ export default function TrackingDashboard() {
               <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact />
             ))}
           </View>
+          <View style={{ height: 110 }} />
         </ScrollView>
+        <Dock />
       </Screen>
     </>
   );

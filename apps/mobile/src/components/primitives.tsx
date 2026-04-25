@@ -447,7 +447,7 @@ const memberTabs: DockTab[] = [
 
 const ownerTabs: DockTab[] = [
   { href: "/owner", label: "Dashboard", icon: "grid-outline", activeIcon: "grid" },
-  { href: "/find-gyms", label: "Members", icon: "people-outline", activeIcon: "people" },
+  { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble" },
   { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
   { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag" },
   { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
@@ -463,7 +463,7 @@ const trainerTabs: DockTab[] = [
 
 const receptionTabs: DockTab[] = [
   { href: "/reception", label: "Queue", icon: "list-outline", activeIcon: "list" },
-  { href: "/find-gyms", label: "Members", icon: "people-outline", activeIcon: "people" },
+  { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble" },
   { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
   { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag" },
   { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },

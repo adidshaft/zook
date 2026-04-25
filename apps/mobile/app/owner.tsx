@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
+  Dock,
   EmptyState,
   LoadingState,
   MetricTile,
@@ -30,6 +31,13 @@ export default function Owner() {
   const products = dashboard?.products ?? [];
   const notifications = dashboard?.notifications ?? [];
   const aiUsage = dashboard?.aiUsage ?? [];
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "dashboard"] });
+    setRefreshing(false);
+  };
 
   async function updateJoinRequest(joinRequestId: string, action: "approve" | "reject") {
     if (!token || !activeOrgId) {
@@ -45,7 +53,18 @@ export default function Owner() {
 
   return (
     <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.lime}
+            colors={[colors.lime]}
+          />
+        }
+      >
         <ScreenHeader
           eyebrow="Owner desk"
           title="Command center"
@@ -215,7 +234,9 @@ export default function Owner() {
             )}
           </View>
         </Card>
+      <View style={{ height: 110 }} />
       </ScrollView>
+      <Dock />
     </Screen>
   );
 }

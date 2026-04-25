@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
+  Dock,
   EmptyState,
   LoadingState,
   MetricTile,
@@ -72,9 +73,28 @@ export default function Reception() {
     }
   }
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "attendance", "live"] });
+    setRefreshing(false);
+  };
+
   return (
     <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.lime}
+            colors={[colors.lime]}
+          />
+        }
+      >
         <ScreenHeader
           eyebrow="Reception desk"
           title="Live front-desk control"
@@ -156,7 +176,9 @@ export default function Reception() {
             </Card>
           ))}
         </View>
+      <View style={{ height: 110 }} />
       </ScrollView>
+      <Dock />
     </Screen>
   );
 }

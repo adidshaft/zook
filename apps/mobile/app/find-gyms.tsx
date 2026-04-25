@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
   Card,
+  Dock,
   EmptyState,
   GlassInput,
   LoadingState,
@@ -157,7 +158,9 @@ export default function FindGyms() {
             </Card>
           ))}
         </View>
+        <View style={{ height: 110 }} />
       </ScrollView>
+      <Dock />
     </Screen>
   );
 }

@@ -1,6 +1,7 @@
 import { Link } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
+  Dock,
   EmptyState,
   LoadingState,
   MetricTile,
@@ -89,7 +90,9 @@ export default function Trainer() {
             </Link>
           ))}
         </View>
+      <View style={{ height: 110 }} />
       </ScrollView>
+      <Dock />
     </Screen>
   );
 }

@@ -176,23 +176,43 @@ export default function Home() {
             </Card>
           ) : null}
 
-          {memberHome?.activeMembership ? (
-            <Card style={{ backgroundColor: "rgba(255, 182, 80, 0.05)", borderColor: "rgba(255, 182, 80, 0.2)", marginBottom: -8, marginTop: 8 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                  <Text style={{ fontSize: 28 }}>🔥</Text>
+          {memberHome?.activeMembership && memberHome.recentAttendance.length > 0 ? (() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const attendanceDays = new Set(
+              memberHome.recentAttendance.map((a) => {
+                const d = new Date(a.checkedInAt);
+                d.setHours(0, 0, 0, 0);
+                return d.getTime();
+              })
+            );
+            let streak = 0;
+            for (let i = 0; i < 60; i++) {
+              const check = new Date(today);
+              check.setDate(check.getDate() - i);
+              if (attendanceDays.has(check.getTime())) {
+                streak++;
+              } else if (i > 0) {
+                break;
+              }
+            }
+            if (streak === 0) return null;
+            return (
+              <Card style={styles.streakCard}>
+                <View style={styles.streakRow}>
+                  <Text style={styles.streakEmoji}>🔥</Text>
                   <View>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: "800" }}>
-                      {Math.max(memberHome.recentAttendance.length, 1)} Day Streak
+                    <Text style={styles.streakTitle}>
+                      {streak} Day Streak
                     </Text>
-                    <Text style={{ color: colors.muted, fontSize: 13 }}>
+                    <Text style={styles.streakBody}>
                       Keep the momentum going.
                     </Text>
                   </View>
                 </View>
-              </View>
-            </Card>
-          ) : null}
+              </Card>
+            );
+          })() : null}
 
           {memberHome?.activeMembership ? (
             <Card style={styles.membershipCard}>
@@ -343,5 +363,26 @@ const styles = StyleSheet.create({
     color: colors.lime,
     fontSize: 14,
     fontWeight: "800",
+  },
+  streakCard: {
+    backgroundColor: "rgba(255, 182, 80, 0.05)",
+    borderColor: "rgba(255, 182, 80, 0.2)",
+  },
+  streakRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  streakEmoji: {
+    fontSize: 28,
+  },
+  streakTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  streakBody: {
+    color: colors.muted,
+    fontSize: 13,
   },
 });

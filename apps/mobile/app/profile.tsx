@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import {
   Card,
+  Dock,
   InfoRow,
   Pill,
   PrimaryButton,
@@ -279,6 +280,7 @@ export default function Profile() {
           Logout
         </PrimaryButton>
       </ScrollView>
+      <Dock />
     </Screen>
   );
 }

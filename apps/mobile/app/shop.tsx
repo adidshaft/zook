@@ -3,7 +3,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
-import { Card, Pill, PrimaryButton, Screen, Skeleton } from "@/components/primitives";
+import { Card, Dock, Pill, PrimaryButton, Screen, Skeleton } from "@/components/primitives";
 import { mobileApiFetch, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatInr } from "@/lib/formatting";
@@ -25,7 +25,20 @@ export default function Shop() {
     createdAt?: string | null;
   }>;
   const latestOrder = orders[0];
-  const products = (productsQuery.data?.products ?? []) as Array<{ id: string; name: string; pricePaise: number; stock: number }>;
+  const products = (productsQuery.data?.products ?? []) as Array<{ id: string; name: string; pricePaise: number; stock: number; category?: string; imageUrl?: string | null }>;
+
+  const categoryImageFallbacks: Record<string, string> = {
+    SUPPLEMENT: "https://images.unsplash.com/photo-1594882645126-14020914d58d?q=80&w=400&h=400&fit=crop",
+    APPAREL: "https://images.unsplash.com/photo-1556906781-9a412961c28c?q=80&w=400&h=400&fit=crop",
+    BEVERAGE: "https://images.unsplash.com/photo-1622597467836-f3285f2131b8?q=80&w=400&h=400&fit=crop",
+    EQUIPMENT: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?q=80&w=400&h=400&fit=crop",
+    DEFAULT: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=400&h=400&fit=crop",
+  };
+
+  function getProductImage(product: { imageUrl?: string | null; category?: string }) {
+    if (product.imageUrl) return product.imageUrl;
+    return categoryImageFallbacks[product.category ?? ""] ?? categoryImageFallbacks.DEFAULT;
+  }
 
   async function buyProduct(productId: string) {
     if (!token || !activeOrgId) {
@@ -148,7 +161,7 @@ export default function Shop() {
           <Card key={product.id} style={{ padding: 12 }}>
             <View style={styles.row}>
               <Image
-                source={{ uri: "https://images.unsplash.com/photo-1594882645126-14020914d58d?q=80&w=400&h=400&fit=crop" }}
+                source={{ uri: getProductImage(product) }}
                 style={styles.productThumbnail}
                 contentFit="cover"
               />
@@ -166,7 +179,9 @@ export default function Shop() {
             </View>
           </Card>
         ))}
+        <View style={{ height: 110 }} />
       </ScrollView>
+      <Dock />
     </Screen>
   );
 }
