@@ -18,6 +18,8 @@ const REGISTERED_PUSH_TOKEN_STORAGE_KEY = "zook_registered_push_token";
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: false,
     shouldSetBadge: false
   })
@@ -102,7 +104,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
   const authTokenRef = useRef<string | undefined>(token)
   const activeOrgIdRef = useRef<string | undefined>(activeOrgId)
   const handledResponseIdsRef = useRef(new Set<string>())
-  const registeredSignatureRef = useRef<string | undefined>()
+  const registeredSignatureRef = useRef<string | undefined>(undefined)
   const [permissionState, setPermissionState] = useState<PushPermissionState>("unknown")
   const [syncStatus, setSyncStatus] = useState<PushSyncStatus>("idle")
   const [pushToken, setPushToken] = useState<string | undefined>()

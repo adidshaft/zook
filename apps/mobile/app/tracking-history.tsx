@@ -51,7 +51,7 @@ export default function TrackingHistory() {
                   onPress={() => setSelectedWindow(windowKey)}
                   style={[styles.segment, active ? styles.segmentActive : undefined]}
                 >
-                  <Text style={[styles.segmentText, active ? styles.segmentTextActive : undefined]} selectable>
+                  <Text style={[styles.segmentText, active ? styles.segmentTextActive : undefined]}>
                     {windowKey === "TODAY"
                       ? "Today"
                       : windowKey === "WEEKLY"
@@ -68,11 +68,11 @@ export default function TrackingHistory() {
           <WorkoutHistorySummary series={series} />
 
           <Card style={styles.callout}>
-            <Text style={styles.calloutTitle} selectable>
-              Keep it simple
+            <Text style={styles.calloutTitle}>
+              Simple and focused
             </Text>
-            <Text style={styles.calloutBody} selectable>
-              This MVP is intentionally focused on gym sessions only: when you worked out, how long you trained, and which exercises you finished.
+            <Text style={styles.calloutBody}>
+              Track when you worked out, how long, and which exercises you completed.
             </Text>
             <PrimaryLink href="/tracking-entry">Add today's workout</PrimaryLink>
           </Card>

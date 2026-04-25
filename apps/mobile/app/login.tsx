@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
-import { Card, Screen } from "@/components/primitives";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Card, GlassInput, PrimaryButton, Screen, ScreenHeader, SecondaryButton } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { colors } from "@/lib/theme";
 
 export default function Login() {
   const { requestOtp, verifyOtp } = useAuth();
-  const [email, setEmail] = useState("member@zook.local");
-  const [code, setCode] = useState("000000");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [stage, setStage] = useState<"email" | "otp">("email");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("Development OTP is 000000.");
+  const [message, setMessage] = useState("");
 
   async function handleContinue() {
     setBusy(true);
@@ -20,8 +20,8 @@ export default function Login() {
         setStage("otp");
         setMessage(
           result.devOtp
-            ? `OTP sent to ${email}. Development code is ${result.devOtp}.`
-            : `OTP sent to ${email}.`
+            ? `Code sent to ${email}. Dev code: ${result.devOtp}.`
+            : `Code sent to ${email}.`
         );
       } else {
         await verifyOtp(email, code);
@@ -35,53 +35,115 @@ export default function Login() {
   }
 
   return (
-    <Screen title="Sign in">
+    <Screen>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+        <View style={styles.heroSection}>
+          <View style={styles.heroGlow} />
+          <Text style={styles.heroEyebrow}>Welcome to</Text>
+          <Text style={styles.heroTitle}>Zook</Text>
+          <Text style={styles.heroBody}>
+            Your gym, your membership, your rhythm. Sign in to get started.
+          </Text>
+        </View>
+
         <Card style={styles.card}>
-          <Text style={styles.title} selectable>
-            Email OTP
-          </Text>
-          <Text style={styles.body} selectable>
-            Email OTP is backed by the real Zook auth API. Mocks keep local development free and safe.
-          </Text>
-          <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" style={styles.input} />
-          {stage === "otp" ? (
-            <TextInput value={code} onChangeText={setCode} keyboardType="number-pad" style={styles.input} />
-          ) : null}
-          <Pressable onPress={handleContinue} style={[styles.button, busy ? styles.buttonDisabled : undefined]} disabled={busy}>
-            <Text style={styles.buttonText}>{busy ? "Working..." : stage === "email" ? "Send OTP" : "Verify and continue"}</Text>
-          </Pressable>
-          <Text style={styles.body} selectable>
-            {message}
-          </Text>
+          <ScreenHeader
+            title={stage === "email" ? "Enter Email" : "Verify Code"}
+            subtitle={stage === "email" ? "We'll send a one-time code." : "Check your inbox."}
+          />
+
+          <View style={styles.form}>
+            {stage === "email" ? (
+              <GlassInput
+                label="Email Address"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                placeholder="you@example.com"
+                editable={!busy}
+              />
+            ) : (
+              <GlassInput
+                label="One-Time Code"
+                value={code}
+                onChangeText={setCode}
+                keyboardType="number-pad"
+                maxLength={6}
+                placeholder="000000"
+                editable={!busy}
+              />
+            )}
+
+            <PrimaryButton onPress={handleContinue} disabled={busy}>
+              {busy ? "Working..." : stage === "email" ? "Send Code" : "Verify & Sign In"}
+            </PrimaryButton>
+            
+            {stage === "otp" ? (
+              <SecondaryButton onPress={() => setStage("email")} disabled={busy}>
+                Use a different email
+              </SecondaryButton>
+            ) : null}
+          </View>
         </Card>
+
+        {message ? (
+          <Text style={styles.messageText}>{message}</Text>
+        ) : null}
       </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20 },
-  card: { gap: 14 },
-  title: { color: colors.text, fontSize: 28, fontWeight: "900" },
-  body: { color: colors.muted, lineHeight: 20 },
-  input: {
-    minHeight: 52,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
+  content: {
+    padding: 20,
+    paddingTop: 80,
+    gap: 24,
+  },
+  heroSection: {
+    gap: 8,
+    position: "relative",
+    paddingVertical: 40,
+  },
+  heroGlow: {
+    position: "absolute",
+    top: -20,
+    left: -40,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: "rgba(185,244,85,0.08)",
+  },
+  heroEyebrow: {
+    color: colors.lime,
+    fontSize: 14,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  heroTitle: {
     color: colors.text,
-    paddingHorizontal: 14,
-    backgroundColor: "rgba(0,0,0,0.25)"
+    fontSize: 54,
+    fontWeight: "900",
+    lineHeight: 60,
   },
-  button: {
-    borderRadius: 999,
-    backgroundColor: colors.lime,
-    padding: 16,
-    alignItems: "center"
+  heroBody: {
+    color: colors.muted,
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 8,
   },
-  buttonDisabled: {
-    opacity: 0.7
+  card: {
+    gap: 24,
+    padding: 24,
   },
-  buttonText: { color: colors.bg, fontWeight: "900" }
+  form: {
+    gap: 16,
+  },
+  messageText: {
+    color: colors.muted,
+    textAlign: "center",
+    fontSize: 14,
+  },
 });

@@ -49,7 +49,7 @@ export default function Owner() {
         <ScreenHeader
           eyebrow="Owner desk"
           title="Command center"
-          subtitle="A mobile-first snapshot of member growth, join friction, stock pressure, communication, and AI activity."
+          subtitle="Your gym at a glance."
           trailing={
             <Pill tone="lime">
               {titleCaseFromCode(dashboard?.organization?.status ?? "loading")}
@@ -94,8 +94,7 @@ export default function Owner() {
         <SectionHeader
           eyebrow="Membership funnel"
           title="Join requests"
-          subtitle="Approve or reject requests directly from mobile so the gym can keep moving even away from a desktop."
-        />
+          subtitle="Approve or reject new members."
 
         {!dashboardQuery.isLoading && !joinRequests.length ? (
           <EmptyState
@@ -113,12 +112,12 @@ export default function Owner() {
         <SectionHeader
           eyebrow="Watchlist"
           title="Stock and messaging"
-          subtitle="Keep an eye on low-stock products and recent org-wide notifications without leaving the dashboard."
+          subtitle="Products and recent messages."
         />
 
         <View style={styles.splitStack}>
           <Card style={styles.splitCard}>
-            <Text style={styles.cardTitle} selectable>
+            <Text style={styles.cardTitle}>
               Low stock
             </Text>
             <View style={styles.stack}>
@@ -126,10 +125,10 @@ export default function Owner() {
                 products.map((product) => (
                   <View key={product.id} style={styles.rowCard}>
                     <View style={styles.rowCopy}>
-                      <Text style={styles.rowTitle} selectable>
+                      <Text style={styles.rowTitle}>
                         {product.name}
                       </Text>
-                      <Text style={styles.rowBody} selectable>
+                      <Text style={styles.rowBody}>
                         {formatInr(product.pricePaise ?? 0)} ·{" "}
                         {titleCaseFromCode(product.category ?? "OTHER")}
                       </Text>
@@ -140,7 +139,7 @@ export default function Owner() {
                   </View>
                 ))
               ) : (
-                <Text style={styles.rowBody} selectable>
+                <Text style={styles.rowBody}>
                   No low-stock products in the current organization.
                 </Text>
               )}
@@ -148,7 +147,7 @@ export default function Owner() {
           </Card>
 
           <Card style={styles.splitCard}>
-            <Text style={styles.cardTitle} selectable>
+            <Text style={styles.cardTitle}>
               Notifications
             </Text>
             <View style={styles.stack}>
@@ -156,10 +155,10 @@ export default function Owner() {
                 notifications.map((notification) => (
                   <View key={notification.id} style={styles.rowCard}>
                     <View style={styles.rowCopy}>
-                      <Text style={styles.rowTitle} selectable>
+                      <Text style={styles.rowTitle}>
                         {notification.title ?? "Notification"}
                       </Text>
-                      <Text style={styles.rowBody} selectable>
+                      <Text style={styles.rowBody}>
                         {titleCaseFromCode(notification.type)} ·{" "}
                         {formatRelativeDate(notification.createdAt)}
                       </Text>
@@ -178,7 +177,7 @@ export default function Owner() {
                   </View>
                 ))
               ) : (
-                <Text style={styles.rowBody} selectable>
+                <Text style={styles.rowBody}>
                   No notifications have been sent from this organization yet.
                 </Text>
               )}
@@ -189,7 +188,7 @@ export default function Owner() {
         <SectionHeader
           eyebrow="AI activity"
           title="Recent usage"
-          subtitle="Keep visibility into which role is using AI and what kind of requests are landing in the organization."
+          subtitle="Recent AI requests in your gym."
         />
 
         <Card style={styles.splitCard}>
@@ -198,10 +197,10 @@ export default function Owner() {
               aiUsage.map((usage) => (
                 <View key={usage.id} style={styles.rowCard}>
                   <View style={styles.rowCopy}>
-                    <Text style={styles.rowTitle} selectable>
+                    <Text style={styles.rowTitle}>
                       {usage.promptSummary ?? "AI request"}
                     </Text>
-                    <Text style={styles.rowBody} selectable>
+                    <Text style={styles.rowBody}>
                       {titleCaseFromCode(usage.requestType)} · {formatRelativeDate(usage.createdAt)}
                     </Text>
                   </View>
@@ -209,7 +208,7 @@ export default function Owner() {
                 </View>
               ))
             ) : (
-              <Text style={styles.rowBody} selectable>
+              <Text style={styles.rowBody}>
                 No AI usage has been logged for this organization yet.
               </Text>
             )}
@@ -246,10 +245,10 @@ function JoinRequestCard({
     <Card style={styles.requestCard}>
       <View style={styles.requestHeader}>
         <View style={styles.rowCopy}>
-          <Text style={styles.cardTitle} selectable>
-            Member {request.userId.slice(0, 8)}
+          <Text style={styles.cardTitle}>
+            Member {request.userName ?? request.userEmail ?? request.userId.slice(0, 8)}
           </Text>
-          <Text style={styles.rowBody} selectable>
+          <Text style={styles.rowBody}>
             Requested {formatRelativeDate(request.createdAt)}
             {request.planId ? " · plan selected" : ""}
           </Text>
@@ -258,7 +257,7 @@ function JoinRequestCard({
       </View>
       {request.referralCode ? <Pill tone="blue">Referral {request.referralCode}</Pill> : null}
       {errorMessage ? (
-        <Text style={styles.errorText} selectable>
+        <Text style={styles.errorText}>
           {errorMessage}
         </Text>
       ) : null}

@@ -78,7 +78,7 @@ export default function Reception() {
         <ScreenHeader
           eyebrow="Reception desk"
           title="Live front-desk control"
-          subtitle="Handle attendance approvals, monitor expiring memberships, and keep the entry queue calm from one screen."
+          subtitle="Approve check-ins and manage the queue."
           trailing={<Pill tone="lime">{records.length} waiting</Pill>}
         />
 
@@ -112,7 +112,7 @@ export default function Reception() {
         <SectionHeader
           eyebrow="Queue"
           title="Approval queue"
-          subtitle="Pending and flagged scans arrive here with membership context so the desk can decide fast."
+          subtitle="Pending and flagged scans."
         />
 
         {queueQuery.isLoading ? (
@@ -138,19 +138,19 @@ export default function Reception() {
         <SectionHeader
           eyebrow="Desk flow"
           title="Operational shortcuts"
-          subtitle="The rest of the reception workload stays visible even while deeper flows are still expanding."
+          subtitle="Quick access to common tasks."
         />
 
         <View style={styles.recordList}>
           {operations.map((operation) => (
             <Card key={operation.title} style={styles.operationCard}>
               <View style={styles.operationHeader}>
-                <Text style={styles.operationTitle} selectable>
+                <Text style={styles.operationTitle}>
                   {operation.title}
                 </Text>
                 <Pill tone="blue">Live next</Pill>
               </View>
-              <Text style={styles.operationBody} selectable>
+              <Text style={styles.operationBody}>
                 {operation.body}
               </Text>
             </Card>
@@ -187,10 +187,10 @@ function ReceptionRecordCard({
     <Card style={styles.recordCard}>
       <View style={styles.recordHeader}>
         <View style={styles.recordCopy}>
-          <Text style={styles.recordTitle} selectable>
+          <Text style={styles.recordTitle}>
             {record.user?.name ?? record.user?.email ?? "Member"}
           </Text>
-          <Text style={styles.recordBody} selectable>
+          <Text style={styles.recordBody}>
             {record.plan?.name ?? "Membership"} · checked in{" "}
             {formatRelativeDate(record.checkedInAt)}
           </Text>
@@ -224,7 +224,7 @@ function ReceptionRecordCard({
       ) : null}
 
       {errorMessage ? (
-        <Text style={styles.errorText} selectable>
+        <Text style={styles.errorText}>
           {errorMessage}
         </Text>
       ) : null}

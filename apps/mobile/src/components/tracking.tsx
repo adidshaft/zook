@@ -22,12 +22,12 @@ export function TrackingSectionHeader({
 }) {
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle} selectable>
+      <Text style={styles.sectionTitle}>
         {title}
       </Text>
       {href ? (
         <Link href={href}>
-          <Text style={styles.sectionLink} selectable>
+          <Text style={styles.sectionLink}>
             {linkLabel}
           </Text>
         </Link>
@@ -41,13 +41,13 @@ export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric 
 
   return (
     <View style={[styles.summaryTile, { backgroundColor: palette.surface }]}>
-      <Text style={[styles.summaryLabel, { color: palette.ink }]} selectable>
+      <Text style={[styles.summaryLabel, { color: palette.ink }]}>
         {metric.label}
       </Text>
-      <Text style={[styles.summaryValue, { color: palette.ink }]} selectable>
+      <Text style={[styles.summaryValue, { color: palette.ink }]}>
         {metric.value}
       </Text>
-      <Text style={[styles.summaryDetail, { color: palette.ink }]} selectable>
+      <Text style={[styles.summaryDetail, { color: palette.ink }]}>
         {metric.detail}
       </Text>
     </View>
@@ -67,15 +67,15 @@ export function WorkoutLogCard({
     <View style={styles.logCard}>
       <View style={styles.logHeader}>
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={styles.logDate} selectable>
+          <Text style={styles.logDate}>
             {entry.dateLabel}
           </Text>
-          <Text style={styles.logTitle} selectable>
+          <Text style={styles.logTitle}>
             {entry.workoutName}
           </Text>
         </View>
         <View style={styles.effortPill}>
-          <Text style={styles.effortText} selectable>
+          <Text style={styles.effortText}>
             {entry.effortLabel}
           </Text>
         </View>
@@ -87,7 +87,7 @@ export function WorkoutLogCard({
         <MetaPill label="Duration" value={entry.durationLabel} />
       </View>
 
-      <Text style={styles.focusText} selectable>
+      <Text style={styles.focusText}>
         Focus: {entry.focusLabel}
       </Text>
 
@@ -95,10 +95,10 @@ export function WorkoutLogCard({
         {visibleExercises.map((exercise) => (
           <View key={exercise.id} style={styles.exerciseRow}>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.exerciseName} selectable>
+              <Text style={styles.exerciseName}>
                 {exercise.name}
               </Text>
-              <Text style={styles.exerciseMeta} selectable>
+              <Text style={styles.exerciseMeta}>
                 {exercise.setsLabel} · {exercise.repsLabel}
                 {exercise.loadLabel ? ` · ${exercise.loadLabel}` : ""}
               </Text>
@@ -113,7 +113,7 @@ export function WorkoutLogCard({
                     : styles.statusSkipped
               ]}
             >
-              <Text style={styles.statusText} selectable>
+              <Text style={styles.statusText}>
                 {exercise.status}
               </Text>
             </View>
@@ -121,7 +121,7 @@ export function WorkoutLogCard({
         ))}
       </View>
 
-      <Text style={styles.notesText} selectable>
+      <Text style={styles.notesText}>
         {entry.notes}
       </Text>
     </View>
@@ -131,29 +131,29 @@ export function WorkoutLogCard({
 export function WorkoutHistorySummary({ series }: { series: WorkoutHistorySeries }) {
   return (
     <View style={styles.historyCard}>
-      <Text style={styles.historyLabel} selectable>
+      <Text style={styles.historyLabel}>
         {series.label}
       </Text>
       <View style={styles.historyMetrics}>
         <View style={styles.historyMetricBlock}>
-          <Text style={styles.historyMetricValue} selectable>
+          <Text style={styles.historyMetricValue}>
             {series.totalDurationLabel}
           </Text>
-          <Text style={styles.historyMetricLabel} selectable>
+          <Text style={styles.historyMetricLabel}>
             Total duration
           </Text>
         </View>
         <View style={styles.historyMetricBlock}>
-          <Text style={styles.historyMetricValue} selectable>
+          <Text style={styles.historyMetricValue}>
             {series.sessionCountLabel}
           </Text>
-          <Text style={styles.historyMetricLabel} selectable>
+          <Text style={styles.historyMetricLabel}>
             Sessions
           </Text>
         </View>
       </View>
       <View style={styles.historyCallout}>
-        <Text style={styles.historyCalloutText} selectable>
+        <Text style={styles.historyCalloutText}>
           {series.completionLabel}
         </Text>
       </View>
@@ -164,10 +164,10 @@ export function WorkoutHistorySummary({ series }: { series: WorkoutHistorySeries
 function MetaPill({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.metaPill}>
-      <Text style={styles.metaLabel} selectable>
+      <Text style={styles.metaLabel}>
         {label}
       </Text>
-      <Text style={styles.metaValue} selectable>
+      <Text style={styles.metaValue}>
         {value}
       </Text>
     </View>

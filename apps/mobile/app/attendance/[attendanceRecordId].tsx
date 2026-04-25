@@ -63,20 +63,19 @@ export default function AttendanceResultScreen() {
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <ScreenHeader
           eyebrow="Attendance"
-          title="Track the last scan, approval, and desk outcome."
-          subtitle="Push attendance alerts land here so pilot testers can verify the mobile result against the backend record."
+          title="Your check-in history."
         />
 
         {routeParams.focus === "attendance" ? (
           <Card style={styles.calloutCard}>
             <Pill tone="blue">Opened from push</Pill>
-            <Text style={styles.calloutTitle} selectable>
-              Attendance notification context is active.
+            <Text style={styles.calloutTitle}>
+              Check-in recorded.
             </Text>
-            <Text style={styles.body} selectable>
+            <Text style={styles.body}>
               {highlightedId
-                ? `Attendance record ${highlightedId} is highlighted below.`
-                : "The app routed to the attendance screen without a specific record ID."}
+                ? "Your latest attendance is highlighted below."
+                : "Showing your attendance history."}
             </Text>
           </Card>
         ) : null}
@@ -99,17 +98,16 @@ export default function AttendanceResultScreen() {
         {highlightedRecord ? (
           <>
             <SectionHeader
-              eyebrow="Latest focus"
-              title="Highlighted attendance result"
-              subtitle="This card is promoted when a push payload carries a specific attendance record."
+              eyebrow="Latest"
+              title="Recent check-in"
             />
             <Card style={styles.featuredCard}>
               <View style={styles.row}>
                 <View style={styles.copy}>
-                  <Text style={styles.title} selectable>
+                  <Text style={styles.title}>
                     {formatRelativeDate(highlightedRecord.checkedInAt)}
                   </Text>
-                  <Text style={styles.body} selectable>
+                  <Text style={styles.body}>
                     {formatDateTime(highlightedRecord.checkedInAt)}
                   </Text>
                 </View>
@@ -117,16 +115,16 @@ export default function AttendanceResultScreen() {
                   {titleCaseFromCode(highlightedRecord.status ?? "RECORDED")}
                 </Pill>
               </View>
-              <Text style={styles.body} selectable>
+              <Text style={styles.body}>
                 Source: {titleCaseFromCode(highlightedRecord.source ?? "QR")}
               </Text>
               {highlightedRecord.rejectionReason ? (
-                <Text style={styles.alertText} selectable>
+                <Text style={styles.alertText}>
                   Rejection reason: {highlightedRecord.rejectionReason}
                 </Text>
               ) : null}
               {highlightedRecord.suspiciousFlags?.length ? (
-                <Text style={styles.alertText} selectable>
+                <Text style={styles.alertText}>
                   Flags: {highlightedRecord.suspiciousFlags.join(", ")}
                 </Text>
               ) : null}
@@ -138,18 +136,17 @@ export default function AttendanceResultScreen() {
           <>
             <SectionHeader
               eyebrow="History"
-              title="Recent check-ins"
-              subtitle="Operators can compare the highlighted record with the rest of the recent attendance trail."
+              title="Earlier check-ins"
             />
             <View style={styles.stack}>
               {sortedRecords.slice(1, 6).map((record) => (
                 <Card key={record.id}>
                   <View style={styles.row}>
                     <View style={styles.copy}>
-                      <Text style={styles.listTitle} selectable>
+                      <Text style={styles.listTitle}>
                         {formatRelativeDate(record.checkedInAt)}
                       </Text>
-                      <Text style={styles.body} selectable>
+                      <Text style={styles.body}>
                         {formatDateTime(record.checkedInAt)}
                       </Text>
                     </View>

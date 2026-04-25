@@ -35,20 +35,18 @@ export default function FindGyms() {
     <Screen>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <ScreenHeader
-          eyebrow="Public discovery"
-          title="Find the right floor before you commit."
-          subtitle="Search public gyms, compare join modes, and open the membership flow that matches how you want to start."
+          eyebrow="Discovery"
+          title="Find your next gym."
         />
 
         {referralCode ? (
           <Card style={styles.referralCard}>
             <Pill tone="lime">Referral ready</Pill>
-            <Text style={styles.referralTitle} selectable>
+            <Text style={styles.referralTitle}>
               Referral code {referralCode} is attached to this mobile session.
             </Text>
-            <Text style={styles.referralBody} selectable>
-              Open any supported gym profile below and Zook will carry the code into the join or
-              checkout flow.
+            <Text style={styles.referralBody}>
+              Open any supported gym below to use your referral code.
             </Text>
           </Card>
         ) : null}
@@ -84,29 +82,6 @@ export default function FindGyms() {
           </View>
         </Card>
 
-        <Card style={styles.mapCard}>
-          <View style={styles.mapGlow} />
-          <Text style={styles.mapEyebrow} selectable>
-            Search pulse
-          </Text>
-          <Text style={styles.mapTitle} selectable>
-            {gymsQuery.isLoading
-              ? "Scanning public gyms..."
-              : `${formatCompactNumber(gyms.length)} gyms in view`}
-          </Text>
-          <Text style={styles.mapBody} selectable>
-            {deferredQuery || deferredCity
-              ? `Showing results for ${deferredQuery ? `"${deferredQuery}"` : "all gyms"}${deferredCity ? ` in ${deferredCity}` : ""}.`
-              : "Start broad, then tighten by city to find a gym that matches your join preference and amenities."}
-          </Text>
-          <View style={styles.mapMarkers}>
-            {featuredCities.map((featuredCity) => (
-              <View key={featuredCity} style={styles.markerBubble}>
-                <Text style={styles.markerText}>{featuredCity}</Text>
-              </View>
-            ))}
-          </View>
-        </Card>
 
         <SectionHeader
           eyebrow="Results"
@@ -133,19 +108,19 @@ export default function FindGyms() {
             <Card key={gym.username} style={styles.gymCard}>
               <View style={styles.gymHeader}>
                 <View style={styles.gymCopy}>
-                  <Text style={styles.gymTitle} selectable>
+                  <Text style={styles.gymTitle}>
                     {gym.name}
                   </Text>
-                  <Text style={styles.gymBody} selectable>
+                  <Text style={styles.gymBody}>
                     {gym.city}, {gym.state}
                   </Text>
                 </View>
                 <Pill tone={toneForJoinMode(gym.joinMode)}>{titleCaseFromCode(gym.joinMode)}</Pill>
               </View>
-              <Text style={styles.gymBody} selectable>
+              <Text style={styles.gymBody}>
                 {gym.coverImageUrl
-                  ? "Public cover and membership flow available."
-                  : "Premium dark glass profile with live plan and referral state."}
+                  ? "Membership flow available."
+                  : "View membership plans and apply referral codes."}
               </Text>
               <View style={styles.tags}>
                 {(gym.amenities ?? []).slice(0, 4).map((amenity) => (
@@ -159,12 +134,6 @@ export default function FindGyms() {
                   <Text style={styles.metricChipLabel}>Profile</Text>
                   <Text style={styles.metricChipValue}>
                     {titleCaseFromCode(gym.visibility ?? "PUBLIC")}
-                  </Text>
-                </View>
-                <View style={styles.metricChip}>
-                  <Text style={styles.metricChipLabel}>Best for</Text>
-                  <Text style={styles.metricChipValue}>
-                    {gym.amenities?.[0] ?? "General fitness"}
                   </Text>
                 </View>
               </View>
@@ -250,6 +219,13 @@ const styles = StyleSheet.create({
     minHeight: 220,
     gap: 12,
     position: "relative",
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(125,211,252,0.03)",
   },
   mapGlow: {
     position: "absolute",

@@ -1,20 +1,28 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { Card, PrimaryButton, Screen } from "@/components/primitives";
+import { StyleSheet, Text, View, Pressable } from "react-native";
+import { BlurView } from "expo-blur";
+import * as Haptics from "expo-haptics";
+import { PrimaryButton, Screen, SecondaryButton, GlassInput, ScreenHeader } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { colors } from "@/lib/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Scan() {
   const [permission, requestPermission] = useCameraPermissions();
   const queryClient = useQueryClient();
   const { token } = useAuth();
-  const [lastScan, setLastScan] = useState("No scan yet");
+  const insets = useSafeAreaInsets();
+  
   const [manualToken, setManualToken] = useState("");
-  const [statusMessage, setStatusMessage] = useState("Scan a live QR token or paste one in development.");
+  const [showManual, setShowManual] = useState(false);
+  
+  const [statusState, setStatusState] = useState<"idle" | "success" | "error">("idle");
+  const [statusMessage, setStatusMessage] = useState("Point at the QR code.");
   const [submitting, setSubmitting] = useState(false);
+  
   const permissionReady = permission !== null;
   const canUseCamera = permission?.granted ?? false;
   const needsManualFallback = permissionReady && !canUseCamera;
@@ -24,7 +32,6 @@ export default function Scan() {
       return;
     }
     setSubmitting(true);
-    setLastScan(qrPayload);
     try {
       const result = await mobileApiFetch<{
         status: string;
@@ -35,114 +42,153 @@ export default function Scan() {
         token,
         body: { qrPayload }
       });
+      
+      if (result.duplicate || result.status === "APPROVED" || result.status === "PENDING_APPROVAL") {
+        setStatusState("success");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        setStatusState("error");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+
       if (result.duplicate) {
-        setStatusMessage("You are already checked in for today. Re-entry did not create another attendance record.");
+        setStatusMessage("Already checked in.");
       } else if (result.status === "APPROVED") {
-        setStatusMessage("Checked in successfully.");
+        setStatusMessage("You're in! ✓");
       } else if (result.status === "PENDING_APPROVAL") {
-        setStatusMessage("Scan submitted. Reception can review it in the approval queue.");
+        setStatusMessage("Pending approval.");
       } else {
         setStatusMessage(`Scan result: ${result.status}`);
       }
+      
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] })
       ]);
+      
+      setTimeout(() => {
+        setStatusState("idle");
+        setStatusMessage("Point at the QR code.");
+      }, 3000);
+      
     } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : "Unable to validate the QR token.");
+      setStatusState("error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setStatusMessage(error instanceof Error ? error.message : "Unable to validate.");
+      
+      setTimeout(() => {
+        setStatusState("idle");
+        setStatusMessage("Point at the QR code.");
+      }, 3000);
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <Screen title="Scan QR">
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <Card style={styles.hero}>
-          <Text style={styles.title} selectable>
-            Attendance scanner
-          </Text>
-          <Text style={styles.body} selectable>
-            Rolling signed QR tokens are validated by the backend. Profile photo and membership checks run before approval.
-          </Text>
-          {!permissionReady ? <Text style={styles.body}>Checking camera permission…</Text> : null}
-          {needsManualFallback ? (
-            <View style={styles.permissionState}>
-              <Text style={styles.body} selectable>
-                {permission?.canAskAgain === false
-                  ? "Camera access is unavailable here. Use the manual token entry path for simulator or restricted-device testing."
-                  : "Allow camera access to scan directly, or keep using the manual token field below."}
+    <Screen>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {!permissionReady ? (
+          <View style={styles.centerBox}>
+            <Text style={styles.body}>Checking camera permission…</Text>
+          </View>
+        ) : null}
+
+        {canUseCamera ? (
+          <View style={StyleSheet.absoluteFill}>
+            <CameraView
+              style={StyleSheet.absoluteFill}
+              barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+              onBarcodeScanned={(event) => {
+                if (statusState === "idle" && !submitting && !showManual) {
+                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                   void submitScan(event.data);
+                }
+              }}
+            />
+            <View style={styles.overlayWrapper}>
+               <View style={styles.overlayTop} />
+               <View style={styles.overlayMiddleRow}>
+                 <View style={styles.overlaySide} />
+                 <View style={[styles.cutout, statusState === "success" && styles.cutoutSuccess, statusState === "error" && styles.cutoutError]} />
+                 <View style={styles.overlaySide} />
+               </View>
+               <View style={styles.overlayBottom} />
+            </View>
+          </View>
+        ) : null}
+
+        {needsManualFallback ? (
+           <View style={styles.permissionState}>
+             <ScreenHeader title="Camera Access" subtitle="Allow camera to scan QR codes." />
+             <PrimaryButton onPress={requestPermission}>Allow Camera</PrimaryButton>
+           </View>
+        ) : null}
+        
+        <View style={styles.headerAbsolute}>
+           <Text style={styles.headerTitle}>Scan In</Text>
+        </View>
+
+        <View style={[styles.statusAbsolute, { bottom: insets.bottom + 80 }]}>
+           <BlurView intensity={60} tint="dark" style={styles.statusPill}>
+              <Text style={[styles.statusText, statusState === "success" && styles.statusTextSuccess, statusState === "error" && styles.statusTextError]}>
+                {statusMessage}
               </Text>
-              {permission?.canAskAgain !== false ? (
-                <PrimaryButton onPress={requestPermission}>Allow camera</PrimaryButton>
-              ) : null}
-            </View>
-          ) : null}
-          {canUseCamera ? (
-            <View style={styles.cameraWrap}>
-              <CameraView
-                style={styles.camera}
-                barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-                onBarcodeScanned={(event) => void submitScan(event.data)}
-              />
-            </View>
-          ) : null}
-        </Card>
-        <Card>
-          <Text style={styles.body} selectable>
-            Manual token entry
-          </Text>
-          <TextInput
-            placeholder="Paste QR token for simulator / development"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-            value={manualToken}
-            onChangeText={setManualToken}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <PrimaryButton onPress={() => void submitScan(manualToken)}>
-            {submitting ? "Validating..." : "Submit token"}
-          </PrimaryButton>
-        </Card>
-        <Card>
-          <Text style={styles.body} selectable>
-            Scan result
-          </Text>
-          <Text style={styles.status} selectable>
-            {statusMessage}
-          </Text>
-          <Text style={styles.body} selectable>
-            Last token
-          </Text>
-          <Text style={styles.token} selectable>
-            {lastScan}
-          </Text>
-        </Card>
-      </ScrollView>
+           </BlurView>
+
+           {__DEV__ ? (
+             <Pressable onPress={() => setShowManual(!showManual)} style={styles.devToggle}>
+               <Text style={styles.devToggleText}>Dev: Manual Entry</Text>
+             </Pressable>
+           ) : null}
+        </View>
+
+        {__DEV__ && showManual ? (
+          <BlurView intensity={90} tint="dark" style={[StyleSheet.absoluteFill, styles.manualOverlay, { paddingTop: insets.top + 40 }]}>
+            <ScreenHeader title="Manual Token" subtitle="Paste QR payload." />
+            <GlassInput
+              placeholder="Paste QR token"
+              value={manualToken}
+              onChangeText={setManualToken}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <PrimaryButton onPress={() => {
+               setShowManual(false);
+               void submitScan(manualToken);
+            }}>
+              {submitting ? "Validating..." : "Submit token"}
+            </PrimaryButton>
+            <SecondaryButton onPress={() => setShowManual(false)}>Cancel</SecondaryButton>
+          </BlurView>
+        ) : null}
+
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, gap: 14 },
-  hero: { gap: 16 },
-  title: { color: colors.text, fontSize: 28, fontWeight: "900" },
+  container: { flex: 1, backgroundColor: colors.bg },
+  centerBox: { flex: 1, alignItems: "center", justifyContent: "center" },
   body: { color: colors.muted, lineHeight: 20 },
-  permissionState: { gap: 12 },
-  cameraWrap: { height: 340, borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: colors.border },
-  camera: { flex: 1 },
-  input: {
-    marginTop: 14,
-    minHeight: 52,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    color: colors.text,
-    paddingHorizontal: 14,
-    paddingVertical: 12
-  },
-  status: { color: colors.text, marginTop: 8, lineHeight: 20 },
-  token: { color: colors.lime, marginTop: 8, lineHeight: 20 }
+  permissionState: { padding: 40, gap: 20, justifyContent: "center", flex: 1 },
+  overlayWrapper: { ...StyleSheet.absoluteFillObject },
+  overlayTop: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)" },
+  overlayMiddleRow: { flexDirection: "row", height: 280 },
+  overlaySide: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)" },
+  cutout: { width: 280, height: 280, borderRadius: 24, borderWidth: 2, borderColor: "rgba(255,255,255,0.2)", backgroundColor: "transparent" },
+  cutoutSuccess: { borderColor: colors.lime, borderWidth: 4 },
+  cutoutError: { borderColor: colors.red, borderWidth: 4 },
+  overlayBottom: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)" },
+  headerAbsolute: { position: "absolute", top: 60, left: 0, right: 0, alignItems: "center" },
+  headerTitle: { color: "white", fontSize: 24, fontWeight: "900", letterSpacing: 1 },
+  statusAbsolute: { position: "absolute", left: 0, right: 0, alignItems: "center", gap: 16 },
+  statusPill: { borderRadius: 999, paddingHorizontal: 24, paddingVertical: 14, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  statusText: { color: "white", fontSize: 16, fontWeight: "700" },
+  statusTextSuccess: { color: colors.lime },
+  statusTextError: { color: colors.red },
+  devToggle: { padding: 10 },
+  devToggleText: { color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: "600" },
+  manualOverlay: { padding: 24, gap: 16 },
 });

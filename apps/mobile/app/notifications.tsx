@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
   EmptyState,
@@ -42,6 +42,7 @@ export default function NotificationsScreen() {
   const queryClient = useQueryClient();
   const notificationsQuery = useMyNotifications();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const notifications = (notificationsQuery.data?.notifications ?? []) as InboxNotification[];
   const unread = notifications.filter((item) => !item.readAt);
   const read = notifications.filter((item) => item.readAt);
@@ -86,13 +87,29 @@ export default function NotificationsScreen() {
     }
   }, [notifications, routeParams.notificationId]);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ["me", "notifications"] });
+    setRefreshing(false);
+  };
+
   return (
     <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.lime}
+            colors={[colors.lime]}
+          />
+        }
+      >
         <ScreenHeader
-          eyebrow="Member inbox"
-          title="Every gym signal, without the clutter."
-          subtitle="Membership updates, operational notices, plan nudges, and security messages live in one calm feed."
+          eyebrow="Inbox"
+          title="Notifications"
         />
 
         {routeParams.notificationId ? (
@@ -100,11 +117,8 @@ export default function NotificationsScreen() {
             <Pill tone="blue">
               {routeParams.focus === "attendance" ? "Attendance alert" : "Opened from push"}
             </Pill>
-            <Text style={styles.calloutTitle} selectable>
-              Notification context is active.
-            </Text>
-            <Text style={styles.body} selectable>
-              Matching inbox cards are highlighted below so QA can confirm the push payload and in-app record stay aligned.
+            <Text style={styles.calloutTitle}>
+              You have a new notification.
             </Text>
           </Card>
         ) : null}
@@ -149,9 +163,8 @@ export default function NotificationsScreen() {
         {unread.length ? (
           <>
             <SectionHeader
-              eyebrow="Needs attention"
-              title="Unread now"
-              subtitle="Unread cards stay highlighted until you open them."
+              eyebrow="New"
+              title="Unread"
             />
             <View style={styles.list}>
               {unread.map((item) => (
@@ -170,9 +183,8 @@ export default function NotificationsScreen() {
         {read.length ? (
           <>
             <SectionHeader
-              eyebrow="History"
-              title="Read recently"
-              subtitle="Recent alerts remain visible so members can revisit key details without asking the front desk."
+              eyebrow="Earlier"
+              title="Read"
             />
             <View style={styles.list}>
               {read.map((item) => (
@@ -218,14 +230,14 @@ function NotificationCard({
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderCopy}>
             <View style={styles.titleRow}>
-              <Text style={styles.title} selectable>
+              <Text style={styles.title}>
                 {notification?.title ?? "Notification"}
               </Text>
               <Pill tone={toneForNotification(notification?.type)}>
                 {titleCaseFromCode(notification?.type ?? "INFO")}
               </Pill>
             </View>
-            <Text style={styles.body} selectable>
+            <Text style={styles.body}>
               {notification?.body ?? "No body available."}
             </Text>
           </View>
@@ -234,10 +246,10 @@ function NotificationCard({
           </Pill>
         </View>
         <View style={styles.metaRow}>
-          <Text style={styles.meta} selectable>
+          <Text style={styles.meta}>
             {notification?.createdAt ? formatDateTime(notification.createdAt) : "No timestamp"}
           </Text>
-          <Text style={styles.meta} selectable>
+          <Text style={styles.meta}>
             {item.readAt ? `Read ${formatRelativeDate(item.readAt)}` : "Tap to mark opened"}
           </Text>
         </View>

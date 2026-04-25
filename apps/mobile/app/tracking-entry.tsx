@@ -1,6 +1,7 @@
 import { useRouter, Stack } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, View, Platform, Pressable } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, PrimaryButton, Screen } from "@/components/primitives";
 import { useAuth, getApiErrorMessage } from "@/lib/auth";
@@ -29,7 +30,7 @@ export default function TrackingEntry() {
   const [startedAt, setStartedAt] = useState(defaultStartedAt());
   const [endedAt, setEndedAt] = useState(defaultEndedAt());
   const [notes, setNotes] = useState("");
-  const [message, setMessage] = useState("Save a session after each workout. ISO time works best in local development.");
+  const [message, setMessage] = useState("Record each session to track your progress.");
   const [saving, setSaving] = useState(false);
   const [exercises, setExercises] = useState([
     { exerciseName: "Bench Press", setsCompleted: "4", reps: "8", weightKg: "60" },
@@ -85,14 +86,14 @@ export default function TrackingEntry() {
       <Screen title="Workout entry">
         <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
           <Card style={styles.hero}>
-            <Text style={styles.heroEyebrow} selectable>
-              Persisted session log
+            <Text style={styles.heroEyebrow}>
+              New session
             </Text>
-            <Text style={styles.heroTitle} selectable>
-              Add today's workout
+            <Text style={styles.heroTitle}>
+              Log your workout
             </Text>
-            <Text style={styles.heroBody} selectable>
-              Store start and end time, notes, and the exercises you actually completed.
+            <Text style={styles.heroBody}>
+              Add exercises, time, and notes for today's session.
             </Text>
           </Card>
 
@@ -100,8 +101,71 @@ export default function TrackingEntry() {
             <Text style={styles.sectionTitle}>Workout</Text>
             <TextInput value={title} onChangeText={setTitle} style={styles.input} placeholder="Workout title" placeholderTextColor={colors.muted} />
             <TextInput value={workoutType} onChangeText={setWorkoutType} style={styles.input} placeholder="Workout type" placeholderTextColor={colors.muted} />
-            <TextInput value={startedAt} onChangeText={setStartedAt} style={styles.input} autoCapitalize="none" placeholder="Started at (ISO datetime)" placeholderTextColor={colors.muted} />
-            <TextInput value={endedAt} onChangeText={setEndedAt} style={styles.input} autoCapitalize="none" placeholder="Ended at (ISO datetime)" placeholderTextColor={colors.muted} />
+            
+            <View style={styles.datePickerContainer}>
+              <Text style={styles.dateLabel}>Start Time</Text>
+              {Platform.OS === 'ios' ? (
+                <DateTimePicker
+                  value={startedAt}
+                  mode="datetime"
+                  display="default"
+                  themeVariant="dark"
+                  onChange={(_, date) => {
+                    if (date) setStartedAt(date);
+                  }}
+                />
+              ) : (
+                <>
+                  <Pressable style={styles.input} onPress={() => setShowStartPicker(true)}>
+                    <Text style={{ color: colors.text }}>{startedAt.toLocaleString()}</Text>
+                  </Pressable>
+                  {showStartPicker && (
+                    <DateTimePicker
+                      value={startedAt}
+                      mode="datetime"
+                      display="default"
+                      onChange={(_, date) => {
+                        setShowStartPicker(false);
+                        if (date) setStartedAt(date);
+                      }}
+                    />
+                  )}
+                </>
+              )}
+            </View>
+
+            <View style={styles.datePickerContainer}>
+              <Text style={styles.dateLabel}>End Time</Text>
+              {Platform.OS === 'ios' ? (
+                <DateTimePicker
+                  value={endedAt}
+                  mode="datetime"
+                  display="default"
+                  themeVariant="dark"
+                  onChange={(_, date) => {
+                    if (date) setEndedAt(date);
+                  }}
+                />
+              ) : (
+                <>
+                  <Pressable style={styles.input} onPress={() => setShowEndPicker(true)}>
+                    <Text style={{ color: colors.text }}>{endedAt.toLocaleString()}</Text>
+                  </Pressable>
+                  {showEndPicker && (
+                    <DateTimePicker
+                      value={endedAt}
+                      mode="datetime"
+                      display="default"
+                      onChange={(_, date) => {
+                        setShowEndPicker(false);
+                        if (date) setEndedAt(date);
+                      }}
+                    />
+                  )}
+                </>
+              )}
+            </View>
+
             <TextInput
               value={notes}
               onChangeText={setNotes}

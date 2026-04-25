@@ -1,11 +1,42 @@
 import type { ExpoConfig } from "expo/config";
-import appJson from "./app.json";
 
 type MobileReleaseProfile = "local" | "staging" | "production";
 type MobilePushEnvironment = "development" | "preview" | "production";
 
-const baseConfig = appJson as { expo: ExpoConfig & { extra?: Record<string, unknown> } };
-const appVersion = baseConfig.expo.version ?? "0.1.0";
+const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
+  name: "Zook",
+  slug: "zook",
+  scheme: "zook",
+  version: "0.1.0",
+  orientation: "portrait",
+  userInterfaceStyle: "dark",
+  newArchEnabled: true,
+  ios: {
+    supportsTablet: true,
+    bundleIdentifier: "com.zook.app"
+  },
+  android: {
+    package: "com.zook.app",
+    adaptiveIcon: {
+      backgroundColor: "#070908"
+    }
+  },
+  plugins: [
+    "expo-router",
+    "expo-notifications",
+    "expo-secure-store",
+    [
+      "expo-camera",
+      {
+        cameraPermission: "Zook uses the camera to scan gym attendance QR codes."
+      }
+    ]
+  ],
+  experiments: {
+    typedRoutes: true
+  }
+};
+const appVersion = baseConfig.version ?? "0.1.0";
 const runtimeVersion = appVersion;
 
 const apiBaseUrlByProfile: Record<MobileReleaseProfile, string> = {
@@ -73,25 +104,25 @@ export default (): ExpoConfig => {
   const expoProjectId =
     process.env.EXPO_PROJECT_ID ??
     process.env.EAS_PROJECT_ID ??
-    ((baseConfig.expo.extra?.eas as { projectId?: string } | undefined)?.projectId ?? undefined);
+    ((baseConfig.extra?.eas as { projectId?: string } | undefined)?.projectId ?? undefined);
 
   return {
-    ...baseConfig.expo,
+    ...baseConfig,
     scheme: "zook",
     version: appVersion,
     runtimeVersion: {
       policy: "appVersion"
     },
     ios: {
-      ...baseConfig.expo.ios,
+      ...baseConfig.ios,
       bundleIdentifier: "com.zook.app"
     },
     android: {
-      ...baseConfig.expo.android,
+      ...baseConfig.android,
       package: "com.zook.app"
     },
     extra: {
-      ...(baseConfig.expo.extra ?? {}),
+      ...(baseConfig.extra ?? {}),
       releaseProfile,
       appScheme: "zook",
       appVersion,
@@ -100,7 +131,7 @@ export default (): ExpoConfig => {
       pushEnvironment: resolvePushEnvironment(releaseProfile),
       ...(expoProjectId ? { expoProjectId } : {}),
       eas: {
-        ...((baseConfig.expo.extra?.eas as Record<string, unknown> | undefined) ?? {}),
+        ...((baseConfig.extra?.eas as Record<string, unknown> | undefined) ?? {}),
         ...(expoProjectId ? { projectId: expoProjectId } : {})
       },
       mobileApiBaseUrl: resolveUrl(

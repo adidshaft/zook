@@ -1,17 +1,21 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Card, Pill, PrimaryButton, Screen } from "@/components/primitives";
 import { mobileApiFetch, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { formatInr } from "@/lib/formatting";
 import { useMyShopOrders, useShopProducts } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Shop() {
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
   const routeParams = useLocalSearchParams<{ focus?: string; notificationId?: string; orderId?: string }>();
   const { activeOrgId, token } = useAuth();
-  const queryClient = useQueryClient();
   const productsQuery = useShopProducts();
   const ordersQuery = useMyShopOrders();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -48,29 +52,49 @@ export default function Shop() {
     }
   }
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
+      queryClient.invalidateQueries({ queryKey: ["shop", "products", activeOrgId] })
+    ]);
+    setRefreshing(false);
+  };
+
   return (
     <Screen title="Shop">
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.lime}
+            colors={[colors.lime]}
+          />
+        }
+      >
         {routeParams.focus === "shop-order" ? (
           <Card style={styles.calloutCard}>
             <Pill tone="blue">Opened from order notification</Pill>
-            <Text style={styles.calloutTitle} selectable>
+            <Text style={styles.calloutTitle}>
               Shop order context is active.
             </Text>
-            <Text style={styles.body} selectable>
+            <Text style={styles.body}>
               {routeParams.orderId
-                ? `Order ${routeParams.orderId} was carried through the notification payload.`
-                : "The shop screen is acting as the safest pickup fallback for this push notification."}
+                ? "Your order details are below."
+                : "View your recent orders."}
             </Text>
           </Card>
         ) : null}
         <Card>
           <Pill tone="lime">Pay online · pickup at gym</Pill>
-          <Text style={styles.title} selectable>
+          <Text style={styles.title}>
             {latestOrder?.pickupCode ? `Pickup code: ${latestOrder.pickupCode}` : "No pickup waiting"}
           </Text>
-          <Text style={styles.body} selectable>
-            Mock checkout confirms the order before stock moves.
+          <Text style={styles.body}>
+            Show your pickup code at the gym counter.
           </Text>
         </Card>
         {orders.length ? (
@@ -82,10 +106,10 @@ export default function Shop() {
               >
                 <View style={styles.row}>
                   <View style={styles.orderCopy}>
-                    <Text style={styles.orderTitle} selectable>
+                    <Text style={styles.orderTitle}>
                       {order.pickupCode ? `Pickup ${order.pickupCode}` : "Order pending"}
                     </Text>
-                    <Text style={styles.body} selectable>
+                    <Text style={styles.body}>
                       {order.status ?? "Pending"}
                     </Text>
                   </View>
@@ -106,11 +130,11 @@ export default function Shop() {
           <Card key={product.id}>
             <View style={styles.row}>
               <View>
-                <Text style={styles.title} selectable>
+                <Text style={styles.title}>
                   {product.name}
                 </Text>
-                <Text style={styles.body} selectable>
-                  ₹{Math.round(product.pricePaise / 100)} · {product.stock} left
+                <Text style={styles.body}>
+                  {formatInr(product.pricePaise)} · {product.stock} left
                 </Text>
               </View>
               <PrimaryButton onPress={() => void buyProduct(product.id)}>

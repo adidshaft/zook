@@ -48,11 +48,11 @@ export default function TrackingDashboard() {
       <Screen title="Tracking">
         <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
           <View style={styles.heroHeader}>
-            <Text style={styles.headline} selectable>
-              Keep your training consistent.
+            <Text style={styles.headline}>
+              Your training.
             </Text>
-            <Text style={styles.subheadline} selectable>
-              Real workout timing, completed exercises, habits, and body progress now persist to the backend.
+            <Text style={styles.subheadline}>
+              Sessions, exercises, and progress — all in one place.
             </Text>
           </View>
 
@@ -76,13 +76,13 @@ export default function TrackingDashboard() {
           )}
 
           <Card style={styles.weekCard}>
-            <Text style={styles.weekEyebrow} selectable>
+            <Text style={styles.weekEyebrow}>
               Weekly summary
             </Text>
-            <Text style={styles.weekValue} selectable>
+            <Text style={styles.weekValue}>
               {summary ? `${summary.weeklyCount} sessions` : "0 sessions"}
             </Text>
-            <Text style={styles.weekBody} selectable>
+            <Text style={styles.weekBody}>
               {summary ? `${summary.totalDuration} minutes logged` : "Start logging workouts and habits."}
             </Text>
             <PrimaryLink href="/tracking-history">View history</PrimaryLink>

@@ -140,15 +140,14 @@ export default function GymProfileScreen() {
             <Card style={styles.heroCard}>
               <View style={styles.coverPlaceholder}>
                 <View style={styles.coverGlow} />
-                <Text style={styles.coverEyebrow} selectable>
-                  {gym.coverImageUrl ? "Public brand cover" : "Premium discovery surface"}
+                <Text style={styles.coverEyebrow}>
+                  {gym.name}
                 </Text>
-                <Text style={styles.coverTitle} selectable>
-                  {titleCaseFromCode(gym.visibility)} access with {plans.length} visible plans
+                <Text style={styles.coverTitle}>
+                  {plans.length} plans available
                 </Text>
-                <Text style={styles.coverBody} selectable>
-                  Compare join rules, available amenities, and whether you can move straight to
-                  checkout or need staff approval first.
+                <Text style={styles.coverBody}>
+                  Review membership options and join directly from your phone.
                 </Text>
               </View>
 
@@ -198,13 +197,13 @@ export default function GymProfileScreen() {
 
             <View style={styles.metricRow}>
               <Card style={styles.metricCard}>
-                <Text style={styles.metricLabel} selectable>
+                <Text style={styles.metricLabel}>
                   Join flow
                 </Text>
-                <Text style={styles.metricValue} selectable>
+                <Text style={styles.metricValue}>
                   {needsApproval ? "Reviewed" : inviteOnlyLocked ? "Invite only" : "Instant"}
                 </Text>
-                <Text style={styles.metricBody} selectable>
+                <Text style={styles.metricBody}>
                   {needsApproval
                     ? "Staff approval happens before payment."
                     : inviteOnlyLocked
@@ -213,17 +212,17 @@ export default function GymProfileScreen() {
                 </Text>
               </Card>
               <Card style={styles.metricCard}>
-                <Text style={styles.metricLabel} selectable>
+                <Text style={styles.metricLabel}>
                   Membership state
                 </Text>
-                <Text style={styles.metricValue} selectable>
+                <Text style={styles.metricValue}>
                   {viewerState?.activeMembership
                     ? "Active"
                     : viewerState?.pendingJoinRequest
                       ? "Pending"
                       : "New"}
                 </Text>
-                <Text style={styles.metricBody} selectable>
+                <Text style={styles.metricBody}>
                   {viewerState?.activeMembership?.remainingVisits !== null &&
                   viewerState?.activeMembership?.remainingVisits !== undefined
                     ? `${viewerState.activeMembership.remainingVisits} visits remaining`
@@ -234,8 +233,8 @@ export default function GymProfileScreen() {
 
             <SectionHeader
               eyebrow="Join path"
-              title="How this gym onboarding works"
-              subtitle="The join flow stays visible so members know whether they need a referral, approval, or direct payment."
+              title="How to join"
+              subtitle="Follow these steps to start your membership."
             />
 
             <Card style={styles.timelineCard}>
@@ -245,10 +244,10 @@ export default function GymProfileScreen() {
                     <Text style={styles.timelineMarkerText}>{index + 1}</Text>
                   </View>
                   <View style={styles.timelineCopy}>
-                    <Text style={styles.timelineTitle} selectable>
+                    <Text style={styles.timelineTitle}>
                       {step.title}
                     </Text>
-                    <Text style={styles.timelineBody} selectable>
+                    <Text style={styles.timelineBody}>
                       {step.body}
                     </Text>
                   </View>
@@ -260,10 +259,10 @@ export default function GymProfileScreen() {
             !viewerState?.pendingJoinRequest &&
             !viewerState?.approvedJoinRequest ? (
               <Card style={styles.ctaCard}>
-                <Text style={styles.sectionTitle} selectable>
+                <Text style={styles.sectionTitle}>
                   Request membership first
                 </Text>
-                <Text style={styles.sectionBody} selectable>
+                <Text style={styles.sectionBody}>
                   This gym reviews new members before payment. Submit your request and the
                   receptionist or owner can approve it.
                 </Text>
@@ -275,10 +274,10 @@ export default function GymProfileScreen() {
 
             {inviteOnlyLocked ? (
               <Card style={styles.ctaCard}>
-                <Text style={styles.sectionTitle} selectable>
+                <Text style={styles.sectionTitle}>
                   Invite or referral required
                 </Text>
-                <Text style={styles.sectionBody} selectable>
+                <Text style={styles.sectionBody}>
                   Open this gym from a referral link or ask the gym team for a code to continue.
                 </Text>
               </Card>
@@ -286,8 +285,7 @@ export default function GymProfileScreen() {
 
             <SectionHeader
               eyebrow="Plans"
-              title="Visible membership options"
-              subtitle="Public plans are shown here with just enough detail to help someone choose before checkout."
+              title="Membership options"
             />
 
             {!plans.length ? (
@@ -302,18 +300,17 @@ export default function GymProfileScreen() {
                 <Card key={plan.id} style={styles.planCard}>
                   <View style={styles.planHeader}>
                     <View style={styles.planCopy}>
-                      <Text style={styles.planName} selectable>
+                      <Text style={styles.planName}>
                         {plan.name}
                       </Text>
-                      <Text style={styles.planPrice} selectable>
+                      <Text style={styles.planPrice}>
                         {formatInr(plan.pricePaise)}
                       </Text>
                     </View>
                     <Pill tone="lime">{titleCaseFromCode(plan.type ?? "MEMBERSHIP")}</Pill>
                   </View>
-                  <Text style={styles.sectionBody} selectable>
-                    {plan.description ??
-                      "Mobile-friendly membership plan with hosted checkout support."}
+                  <Text style={styles.sectionBody}>
+                    {plan.description ?? "Standard membership plan."}
                   </Text>
                   <View style={styles.planBenefits}>
                     {buildPlanHighlights(plan).map((item) => (
@@ -338,7 +335,7 @@ export default function GymProfileScreen() {
 
             {statusMessage ? (
               <Card>
-                <Text style={styles.statusMessage} selectable>
+                <Text style={styles.statusMessage}>
                   {statusMessage}
                 </Text>
               </Card>

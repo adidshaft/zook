@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { Card, Pill, PrimaryButton, Screen } from "@/components/primitives";
+import { Card, GlassInput, Pill, PrimaryButton, Screen } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth, getApiErrorMessage } from "@/lib/auth";
 import { useMyPlans } from "@/lib/query-hooks";
@@ -103,15 +103,15 @@ export default function Plans() {
             <Pill tone={routeParams.focus === "pt-update" ? "amber" : "blue"}>
               {routeParams.focus === "pt-update" ? "PT update" : "Opened from push"}
             </Pill>
-            <Text style={styles.calloutTitle} selectable>
+            <Text style={styles.calloutTitle}>
               {routeParams.focus === "pt-update"
                 ? "Personal training context landed in plans."
                 : "Assigned plan context is active."}
             </Text>
-            <Text style={styles.body} selectable>
+            <Text style={styles.body}>
               {routeParams.assignmentId
-                ? `Assignment ${routeParams.assignmentId} was included in the notification payload.`
-                : "The plans screen is acting as the safest fallback for workout and PT related notifications."}
+                ? "Your plan has been updated."
+                : "Check your assigned plans below."}
             </Text>
           </Card>
         ) : null}
@@ -140,17 +140,17 @@ export default function Plans() {
                 </Pill>
                 <Text style={styles.meta}>{completion}% complete</Text>
               </View>
-              <Text style={styles.title} selectable>
+              <Text style={styles.title}>
                 {assignment.plan?.title ?? "Plan assignment"}
               </Text>
-              <Text style={styles.body} selectable>
+              <Text style={styles.body}>
                 {assignment.plan?.description ?? `Audience: ${assignment.audience ?? "selected_member"}`}
               </Text>
-              <Text style={styles.meta} selectable>
+              <Text style={styles.meta}>
                 {assignment.plan?.type ?? "WORKOUT"}
               </Text>
               {assignment.progress?.feedback ? (
-                <Text style={styles.feedback} selectable>
+                <Text style={styles.feedback}>
                   Latest feedback: {assignment.progress.feedback}
                 </Text>
               ) : null}
@@ -161,24 +161,23 @@ export default function Plans() {
           );
         })}
         <Card>
-          <Text style={styles.title} selectable>
+          <Text style={styles.title}>
             AI plan assistant
           </Text>
-          <Text style={styles.body} selectable>
-            This goes through the backend AI guardrails and respects role, consent, and minor protections.
+          <Text style={styles.body}>
+            Ask about your workout, recovery, or plan details.
           </Text>
-          <TextInput
+          <GlassInput
+            label="Your question"
             value={assistantPrompt}
             onChangeText={setAssistantPrompt}
-            style={[styles.input, styles.notesInput]}
             multiline
-            placeholder="Ask about recovery, pacing, workout sequencing, or assigned plan details"
-            placeholderTextColor={colors.muted}
+            placeholder="Ask about recovery, pacing, or workout sequencing"
           />
           <PrimaryButton onPress={() => void askAssistant()}>
             {assistantLoading ? "Thinking..." : "Ask about my plan"}
           </PrimaryButton>
-          <Text style={styles.reply} selectable>
+          <Text style={styles.reply}>
             {assistantReply}
           </Text>
         </Card>

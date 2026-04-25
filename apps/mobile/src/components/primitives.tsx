@@ -11,7 +11,13 @@ import {
   type TextStyle,
   type ViewStyle,
   View,
+  ActivityIndicator,
 } from "react-native";
+import { BlurView } from "expo-blur";
+import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/lib/auth";
 import { colors, radii } from "@/lib/theme";
 
 type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
@@ -138,15 +144,15 @@ export function ScreenHeader({
     <View style={styles.screenHeader}>
       <View style={styles.screenHeaderCopy}>
         {eyebrow ? (
-          <Text style={styles.headerEyebrow} selectable>
+          <Text style={styles.headerEyebrow}>
             {eyebrow}
           </Text>
         ) : null}
-        <Text style={styles.headerTitle} selectable>
+        <Text style={styles.headerTitle}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={styles.headerSubtitle} selectable>
+          <Text style={styles.headerSubtitle}>
             {subtitle}
           </Text>
         ) : null}
@@ -171,15 +177,15 @@ export function SectionHeader({
     <View style={styles.sectionHeader}>
       <View style={styles.sectionHeaderCopy}>
         {eyebrow ? (
-          <Text style={styles.sectionEyebrow} selectable>
+          <Text style={styles.sectionEyebrow}>
             {eyebrow}
           </Text>
         ) : null}
-        <Text style={styles.sectionTitle} selectable>
+        <Text style={styles.sectionTitle}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={styles.sectionSubtitle} selectable>
+          <Text style={styles.sectionSubtitle}>
             {subtitle}
           </Text>
         ) : null}
@@ -210,14 +216,14 @@ export function MetricTile({
 
   return (
     <View style={[styles.metricTile, palette, style]}>
-      <Text style={styles.metricTileLabel} selectable>
+      <Text style={styles.metricTileLabel}>
         {label}
       </Text>
-      <Text style={[styles.metricTileValue, { color: palette.valueColor }]} selectable>
+      <Text style={[styles.metricTileValue, { color: palette.valueColor }]}>
         {value}
       </Text>
       {detail ? (
-        <Text style={styles.metricTileDetail} selectable>
+        <Text style={styles.metricTileDetail}>
           {detail}
         </Text>
       ) : null}
@@ -236,7 +242,7 @@ export function InfoRow({
 }) {
   return (
     <View style={styles.infoRow}>
-      <Text style={styles.infoLabel} selectable>
+      <Text style={styles.infoLabel}>
         {label}
       </Text>
       <Pill tone={tone}>{value}</Pill>
@@ -248,7 +254,7 @@ export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone
   const palette = pillPalettes[tone];
   return (
     <View style={[styles.pill, palette]}>
-      <Text style={[styles.pillText, { color: palette.color }]} selectable>
+      <Text style={[styles.pillText, { color: palette.color }]}>
         {children}
       </Text>
     </View>
@@ -274,7 +280,12 @@ export function PrimaryButton({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        if (!disabled) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onPress?.();
+        }
+      }}
       disabled={disabled}
       style={({ pressed }) => [
         styles.button,
@@ -313,6 +324,7 @@ export function PrimaryLink({
   return (
     <Link href={href} asChild>
       <Pressable
+        onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
         style={({ pressed }) => [
           styles.button,
           {
@@ -348,17 +360,20 @@ export function GlassInput({
   return (
     <View style={[styles.inputGroup, style]}>
       {label ? (
-        <Text style={styles.inputLabel} selectable>
+        <Text style={styles.inputLabel}>
           {label}
         </Text>
       ) : null}
-      <TextInput
-        {...props}
-        placeholderTextColor={colors.muted}
-        style={[styles.input, props.multiline ? styles.inputMultiline : null, inputStyle]}
-      />
+      <View style={styles.inputWrapper}>
+        <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+        <TextInput
+          {...props}
+          placeholderTextColor={colors.muted}
+          style={[styles.input, props.multiline ? styles.inputMultiline : null, inputStyle]}
+        />
+      </View>
       {hint ? (
-        <Text style={styles.inputHint} selectable>
+        <Text style={styles.inputHint}>
           {hint}
         </Text>
       ) : null}
@@ -374,14 +389,15 @@ export function LoadingState({
   body?: string;
 }) {
   return (
-    <Card>
-      <Text style={styles.stateTitle} selectable>
+    <View style={styles.loadingState}>
+      <ActivityIndicator size="large" color={colors.lime} />
+      <Text style={styles.stateTitle}>
         {title}
       </Text>
-      <Text style={styles.stateBody} selectable>
+      <Text style={styles.stateBody}>
         {body}
       </Text>
-    </Card>
+    </View>
   );
 }
 
@@ -395,39 +411,89 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <Card style={styles.stateCard}>
-      <Text style={styles.stateTitle} selectable>
+    <View style={styles.emptyState}>
+      <Text style={styles.stateTitle}>
         {title}
       </Text>
-      <Text style={styles.stateBody} selectable>
+      <Text style={styles.stateBody}>
         {body}
       </Text>
       {action ? <View style={styles.stateAction}>{action}</View> : null}
-    </Card>
+    </View>
   );
+}
+
+type DockTab = { href: Href; label: string; icon: keyof typeof Ionicons.glyphMap; activeIcon: keyof typeof Ionicons.glyphMap };
+
+const memberTabs: DockTab[] = [
+  { href: "/", label: "Home", icon: "home-outline", activeIcon: "home" },
+  { href: "/plans", label: "Plans", icon: "barbell-outline", activeIcon: "barbell" },
+  { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
+  { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag" },
+  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
+];
+
+const ownerTabs: DockTab[] = [
+  { href: "/owner", label: "Dashboard", icon: "grid-outline", activeIcon: "grid" },
+  { href: "/find-gyms", label: "Members", icon: "people-outline", activeIcon: "people" },
+  { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
+  { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag" },
+  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
+];
+
+const trainerTabs: DockTab[] = [
+  { href: "/trainer", label: "Clients", icon: "people-outline", activeIcon: "people" },
+  { href: "/plans", label: "Plans", icon: "barbell-outline", activeIcon: "barbell" },
+  { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
+  { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble" },
+  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
+];
+
+const receptionTabs: DockTab[] = [
+  { href: "/reception", label: "Queue", icon: "list-outline", activeIcon: "list" },
+  { href: "/find-gyms", label: "Members", icon: "people-outline", activeIcon: "people" },
+  { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
+  { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag" },
+  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
+];
+
+function getTabsForRole(hasAnyRole: (...roles: string[]) => boolean): DockTab[] {
+  if (hasAnyRole("OWNER", "ADMIN")) return ownerTabs;
+  if (hasAnyRole("TRAINER")) return trainerTabs;
+  if (hasAnyRole("RECEPTIONIST")) return receptionTabs;
+  return memberTabs;
 }
 
 export function Dock() {
   const pathname = usePathname();
-  const items: Array<[Href, string]> = [
-    ["/", "Home"],
-    ["/plans", "Plans"],
-    ["/scan", "Scan"],
-    ["/shop", "Shop"],
-    ["/profile", "Profile"],
-  ];
+  const { hasAnyRole } = useAuth();
+  const tabs = getTabsForRole(hasAnyRole);
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.dock}>
-      {items.map(([href, label]) => (
-        <Link key={String(href)} href={href} asChild>
-          <Pressable style={[styles.dockItem, pathname === href ? styles.dockItemActive : null]}>
-            <Text style={[styles.dockText, pathname === href ? styles.dockTextActive : null]}>
-              {label}
-            </Text>
-          </Pressable>
-        </Link>
-      ))}
-    </View>
+    <BlurView intensity={80} tint="dark" style={[styles.dock, { bottom: Math.max(insets.bottom, 18) }]}>
+      {tabs.map((tab) => {
+        const active = pathname === tab.href;
+        return (
+          <Link key={String(tab.href)} href={tab.href} asChild>
+            <Pressable 
+              onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+              style={[styles.dockItem, active ? styles.dockItemActive : null]}
+              accessibilityLabel={tab.label}
+              accessibilityRole="tab"
+            >
+              <Ionicons
+                name={active ? tab.activeIcon : tab.icon}
+                size={22}
+                color={active ? colors.lime : colors.muted}
+              />
+              <Text style={[styles.dockText, active ? styles.dockTextActive : null]}>
+                {tab.label}
+              </Text>
+            </Pressable>
+          </Link>
+        );
+      })}
+    </BlurView>
   );
 }
 
@@ -596,12 +662,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
-  input: {
-    minHeight: 54,
+  inputWrapper: {
     borderRadius: 20,
+    overflow: "hidden",
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  input: {
+    minHeight: 54,
     color: colors.text,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -615,18 +683,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
   },
-  stateCard: {
-    gap: 6,
+  emptyState: {
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: "dashed",
+    borderRadius: radii.card,
+    gap: 8,
+  },
+  loadingState: {
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
   },
   stateTitle: {
     color: colors.text,
     fontSize: 20,
     fontWeight: "800",
+    textAlign: "center",
   },
   stateBody: {
     color: colors.muted,
     lineHeight: 20,
     marginTop: 4,
+    textAlign: "center",
   },
   stateAction: {
     marginTop: 14,
@@ -639,8 +722,9 @@ const styles = StyleSheet.create({
     minHeight: 64,
     borderRadius: 28,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(10,12,10,0.92)",
+    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(10,12,10,0.5)",
+    overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
@@ -650,14 +734,16 @@ const styles = StyleSheet.create({
     minWidth: 58,
     borderRadius: 20,
     paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingVertical: 8,
+    alignItems: "center" as const,
+    gap: 2,
   },
   dockItemActive: {
     backgroundColor: "rgba(185,244,85,0.12)",
   },
   dockText: {
-    color: colors.text,
-    fontSize: 12,
+    color: colors.muted,
+    fontSize: 10,
     fontWeight: "700",
   },
   dockTextActive: {

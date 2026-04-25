@@ -5,7 +5,6 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-nat
 import {
   Card,
   InfoRow,
-  MetricTile,
   Pill,
   PrimaryButton,
   Screen,
@@ -15,10 +14,10 @@ import {
 } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
-import { formatDateTime, formatRelativeDate, titleCaseFromCode } from "@/lib/formatting";
+import { titleCaseFromCode } from "@/lib/formatting";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
 import { usePushNotifications } from "@/lib/push-notifications";
-import { useMyNotificationPreferences, useMyPushDevices } from "@/lib/query-hooks";
+import { useMyNotificationPreferences } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
 export default function Profile() {
@@ -26,17 +25,12 @@ export default function Profile() {
   const {
     disablePush,
     error: pushError,
-    isExpoGo,
     openSystemSettings,
-    permissionState,
-    projectIdConfigured,
-    refreshRegistration,
     requestEnablePush,
     syncStatus,
   } = usePushNotifications();
   const queryClient = useQueryClient();
   const preferencesQuery = useMyNotificationPreferences();
-  const devicesQuery = useMyPushDevices();
   const routeParams = useLocalSearchParams<{
     focus?: string;
     notificationId?: string;
@@ -61,7 +55,6 @@ export default function Profile() {
     preferencesQuery.data?.preferences,
     activeOrgId,
   );
-  const devices = devicesQuery.data?.devices ?? [];
 
   async function updateNotificationPreference(
     key: "transactional" | "operational" | "promotional" | "engagement",
@@ -97,7 +90,7 @@ export default function Profile() {
       if (nextValue) {
         const enabled = await requestEnablePush();
         if (!enabled) {
-          setPreferenceError(pushError ?? "Push permission was not granted or device registration failed.");
+          setPreferenceError(pushError ?? "Push permission was not granted.");
         }
       } else {
         await disablePush();
@@ -116,19 +109,13 @@ export default function Profile() {
         <ScreenHeader
           eyebrow="Account"
           title={session?.user.name ?? "Zook member"}
-          subtitle="Switch gyms, review consent state, and keep your account controls visible without leaving the mobile flow."
         />
 
         {routeParams.focus === "membership" ? (
           <Card style={styles.calloutCard}>
-            <Pill tone="blue">Opened from membership notification</Pill>
-            <Text style={styles.calloutTitle} selectable>
-              Membership context is ready here.
-            </Text>
-            <Text style={styles.profileBody} selectable>
-              {routeParams.subscriptionId
-                ? `Subscription ${routeParams.subscriptionId} was included with the notification payload.`
-                : "This alert did not include a subscription ID, so the profile screen is acting as the safest fallback."}
+            <Pill tone="blue">Membership update</Pill>
+            <Text style={styles.calloutTitle}>
+              Your membership details are below.
             </Text>
           </Card>
         ) : null}
@@ -139,11 +126,11 @@ export default function Profile() {
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
             <View style={styles.profileCopy}>
-              <Text style={styles.profileName} selectable>
+              <Text style={styles.profileName}>
                 {session?.user.email ?? "No email"}
               </Text>
-              <Text style={styles.profileBody} selectable>
-                {session?.user.phone ?? "Phone not added yet"}
+              <Text style={styles.profileBody}>
+                {session?.user.phone ?? "Phone not added"}
               </Text>
             </View>
           </View>
@@ -158,64 +145,18 @@ export default function Profile() {
               <Pill tone="neutral">Member</Pill>
             )}
           </View>
-          <Text style={styles.profileBody} selectable>
-            Profile photo consent is used for attendance verification only. Face recognition stays
-            out of scope in the current mobile build.
-          </Text>
         </Card>
-
-        <View style={styles.metricGrid}>
-          <MetricTile
-            label="Organizations"
-            value={String(session?.organizations.length ?? 0)}
-            detail={
-              activeOrganization
-                ? `${activeOrganization.name} is active now.`
-                : "Switch into a gym to personalize the app."
-            }
-            tone="blue"
-          />
-          <MetricTile
-            label="AI consent"
-            value={session?.user.aiConsent ? "Granted" : "Pending"}
-            detail={
-              session?.user.aiConsent
-                ? "Plan assistant and mobile AI flows are available."
-                : "Grant consent to unlock personalized AI help."
-            }
-            tone={session?.user.aiConsent ? "lime" : "amber"}
-          />
-          <MetricTile
-            label="Marketing"
-            value={session?.user.marketingOptIn ? "Opted in" : "Quiet mode"}
-            detail="Marketing preference is reflected across membership and promotional messaging."
-            tone={session?.user.marketingOptIn ? "violet" : "neutral"}
-          />
-          <MetricTile
-            label="Guardian state"
-            value={session?.user.guardianPending ? "Pending" : "Clear"}
-            detail={
-              session?.user.isMinor
-                ? session.user.guardianPending
-                  ? "Guardian approval is still required."
-                  : "Minor safety requirements are satisfied."
-                : "Adult account"
-            }
-            tone={session?.user.guardianPending ? "amber" : "lime"}
-          />
-        </View>
 
         <SectionHeader
           eyebrow="Current gym"
-          title="Organization context"
-          subtitle="Multi-gym members and staff can switch context here without breaking the member experience."
-          action={<SecondaryLink href="/find-gyms">Discover more</SecondaryLink>}
+          title="Switch gym"
+          action={<SecondaryLink href="/find-gyms">Discover</SecondaryLink>}
         />
 
         <Card style={styles.infoCard}>
           <InfoRow
             label="Active gym"
-            value={activeOrganization?.name ?? "No active organization selected"}
+            value={activeOrganization?.name ?? "None selected"}
             tone={activeOrganization ? "lime" : "neutral"}
           />
           <InfoRow
@@ -223,7 +164,7 @@ export default function Profile() {
             value={
               activeOrganization
                 ? `${activeOrganization.city}, ${activeOrganization.state}`
-                : "Switch an organization to personalize this surface"
+                : "Select a gym"
             }
             tone="blue"
           />
@@ -242,13 +183,15 @@ export default function Profile() {
                 key={organization.orgId}
                 onPress={() => void setActiveOrgId(organization.orgId)}
                 style={[styles.orgButton, selected ? styles.orgButtonActive : null]}
+                accessibilityLabel={`Switch to ${organization.name}`}
+                accessibilityRole="button"
               >
                 <View style={styles.orgButtonHeader}>
                   <View style={styles.orgButtonCopy}>
-                    <Text style={styles.orgName} selectable>
+                    <Text style={styles.orgName}>
                       {organization.name}
                     </Text>
-                    <Text style={styles.orgMeta} selectable>
+                    <Text style={styles.orgMeta}>
                       {organization.city}, {organization.state}
                     </Text>
                   </View>
@@ -270,33 +213,8 @@ export default function Profile() {
         </View>
 
         <SectionHeader
-          eyebrow="Controls"
-          title="Privacy and account actions"
-          subtitle="These cards keep the current privacy posture visible even before full preference management lands."
-        />
-
-        <Card style={styles.infoCard}>
-          <InfoRow
-            label="Marketing preferences"
-            value={session?.user.marketingOptIn ? "Allowed" : "Disabled"}
-            tone={session?.user.marketingOptIn ? "violet" : "neutral"}
-          />
-          <InfoRow
-            label="AI personalization"
-            value={session?.user.aiConsent ? "Allowed" : "Pending"}
-            tone={session?.user.aiConsent ? "lime" : "amber"}
-          />
-          <InfoRow
-            label="Guardian review"
-            value={session?.user.guardianPending ? "Pending" : "Not required"}
-            tone={session?.user.guardianPending ? "amber" : "neutral"}
-          />
-        </Card>
-
-        <SectionHeader
           eyebrow="Notifications"
-          title="Push readiness"
-          subtitle="Pilot members can manage device registration, permission state, and message categories from one place."
+          title="Push preferences"
         />
 
         <Card style={styles.infoCard}>
@@ -311,37 +229,8 @@ export default function Profile() {
                   : "neutral"
             }
           />
-          <InfoRow
-            label="Permission"
-            value={titleCaseFromCode(permissionState)}
-            tone={permissionState === "granted" ? "lime" : permissionState === "denied" ? "amber" : "neutral"}
-          />
-          <InfoRow
-            label="Preference scope"
-            value={
-              effectivePreferences.scope === "organization"
-                ? "Active gym override"
-                : effectivePreferences.scope === "global"
-                  ? "Global default"
-                  : "App default"
-            }
-            tone="blue"
-          />
-          <InfoRow
-            label="Build mode"
-            value={isExpoGo ? "Expo Go" : "Development / standalone"}
-            tone={isExpoGo ? "amber" : "lime"}
-          />
-          <InfoRow
-            label="Expo project"
-            value={projectIdConfigured ? "Configured" : "Missing"}
-            tone={projectIdConfigured ? "lime" : "amber"}
-          />
-          <Text style={styles.profileBody} selectable>
-            Pilot push validation still belongs on a physical device. The in-app inbox remains the fallback path whenever native banners are unavailable.
-          </Text>
           {pushError || preferenceError ? (
-            <Text style={styles.errorText} selectable>
+            <Text style={styles.errorText}>
               {preferenceError ?? pushError}
             </Text>
           ) : null}
@@ -349,39 +238,18 @@ export default function Profile() {
 
         <Card style={styles.toggleCard}>
           <PreferenceToggleRow
-            label="Push alerts"
-            hint="Registers this device with Expo push when permission is granted."
+            label="Push notifications"
+            hint="Receive alerts on this device."
             value={effectivePreferences.pushEnabled}
             busy={busyPreferenceKey === "pushEnabled"}
             onValueChange={(value) => void handlePushToggle(value)}
           />
           <PreferenceToggleRow
-            label="Transactional"
-            hint="Membership, order, and account notifications."
-            value={effectivePreferences.transactional}
-            busy={busyPreferenceKey === "transactional"}
-            onValueChange={(value) => void updateNotificationPreference("transactional", value)}
-          />
-          <PreferenceToggleRow
-            label="Operational"
-            hint="Check-in, gym floor, and process updates."
-            value={effectivePreferences.operational}
-            busy={busyPreferenceKey === "operational"}
-            onValueChange={(value) => void updateNotificationPreference("operational", value)}
-          />
-          <PreferenceToggleRow
             label="Promotional"
-            hint="Offers, discounts, and marketing messages."
+            hint="Offers, discounts, and deals."
             value={effectivePreferences.promotional}
             busy={busyPreferenceKey === "promotional"}
             onValueChange={(value) => void updateNotificationPreference("promotional", value)}
-          />
-          <PreferenceToggleRow
-            label="Engagement"
-            hint="Plan nudges and reactivation prompts."
-            value={effectivePreferences.engagement}
-            busy={busyPreferenceKey === "engagement"}
-            onValueChange={(value) => void updateNotificationPreference("engagement", value)}
           />
         </Card>
 
@@ -389,13 +257,9 @@ export default function Profile() {
           <SecondaryLink href="/notifications" style={styles.actionHalf}>
             Open inbox
           </SecondaryLink>
-          <PrimaryButton
-            onPress={() => void refreshRegistration()}
-            tone="secondary"
-            style={styles.actionHalf}
-          >
-            Refresh device
-          </PrimaryButton>
+          <SecondaryLink href="/membership" style={styles.actionHalf}>
+            Membership
+          </SecondaryLink>
         </View>
 
         <View style={styles.actionRow}>
@@ -404,75 +268,10 @@ export default function Profile() {
             tone="secondary"
             style={styles.actionHalf}
           >
-            Open settings
+            System settings
           </PrimaryButton>
           <SecondaryLink href="/plans" style={styles.actionHalf}>
-            Open plans
-          </SecondaryLink>
-        </View>
-
-        <SectionHeader
-          eyebrow="Devices"
-          title="Registered device visibility"
-          subtitle="This mirrors the backend push-device registry so QA can confirm the right physical build is active."
-        />
-
-        {devicesQuery.isLoading ? (
-          <Card>
-            <Text style={styles.profileBody}>Loading registered devices...</Text>
-          </Card>
-        ) : null}
-
-        {!devicesQuery.isLoading && !devices.length ? (
-          <Card>
-            <Text style={styles.profileBody}>
-              No push device has been registered for this account yet. Enable push alerts on a physical device to create one.
-            </Text>
-          </Card>
-        ) : null}
-
-        {devices.length ? (
-          <View style={styles.deviceList}>
-            {devices.map((device) => (
-              <Card key={device.id} style={styles.deviceCard}>
-                <View style={styles.deviceHeader}>
-                  <View style={styles.deviceCopy}>
-                    <Text style={styles.deviceTitle} selectable>
-                      {device.deviceLabel ?? "Unnamed device"}
-                    </Text>
-                    <Text style={styles.profileBody} selectable>
-                      {titleCaseFromCode(device.platform ?? "unknown")} · {device.provider ?? "expo"}
-                    </Text>
-                  </View>
-                  <Pill tone={device.status === "ACTIVE" ? "lime" : "amber"}>
-                    {titleCaseFromCode(device.status)}
-                  </Pill>
-                </View>
-                <Text style={styles.profileBody} selectable>
-                  Last registered{" "}
-                  {device.lastRegisteredAt
-                    ? formatRelativeDate(device.lastRegisteredAt)
-                    : "recently unavailable"}
-                </Text>
-                <Text style={styles.deviceMeta} selectable>
-                  {device.lastRegisteredAt ? formatDateTime(device.lastRegisteredAt) : "No registration timestamp"}
-                </Text>
-                {device.failureReason ? (
-                  <Text style={styles.errorText} selectable>
-                    {device.failureReason}
-                  </Text>
-                ) : null}
-              </Card>
-            ))}
-          </View>
-        ) : null}
-
-        <View style={styles.actionRow}>
-          <SecondaryLink href="/find-gyms" style={styles.actionHalf}>
-            Discover more
-          </SecondaryLink>
-          <SecondaryLink href="/shop" style={styles.actionHalf}>
-            Open shop
+            Plans
           </SecondaryLink>
         </View>
 
@@ -528,11 +327,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     flexWrap: "wrap",
-  },
-  metricGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
   },
   infoCard: {
     gap: 10,
@@ -611,31 +405,6 @@ const styles = StyleSheet.create({
     color: "#f59e0b",
     lineHeight: 20,
   },
-  deviceList: {
-    gap: 12,
-  },
-  deviceCard: {
-    gap: 10,
-  },
-  deviceHeader: {
-    flexDirection: "row",
-    gap: 12,
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  deviceCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  deviceTitle: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  deviceMeta: {
-    color: colors.muted,
-    fontSize: 12,
-  },
 });
 
 function PreferenceToggleRow({
@@ -654,10 +423,10 @@ function PreferenceToggleRow({
   return (
     <View style={styles.toggleRow}>
       <View style={styles.toggleCopy}>
-        <Text style={styles.toggleLabel} selectable>
+        <Text style={styles.toggleLabel}>
           {label}
         </Text>
-        <Text style={styles.toggleHint} selectable>
+        <Text style={styles.toggleHint}>
           {hint}
         </Text>
       </View>

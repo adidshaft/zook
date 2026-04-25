@@ -77,20 +77,19 @@ export default function MembershipScreen() {
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <ScreenHeader
           eyebrow="Membership"
-          title="Keep plan access, renewal timing, and visit balances visible."
-          subtitle="This is the mobile handoff target for expiring membership alerts and checkout follow-up."
+          title="Your plans and visits."
         />
 
         {routeParams.focus === "membership" ? (
           <Card style={styles.calloutCard}>
             <Pill tone="blue">Opened from push</Pill>
-            <Text style={styles.calloutTitle} selectable>
-              Membership notification context is active.
+            <Text style={styles.calloutTitle}>
+              Your membership details are below.
             </Text>
-            <Text style={styles.body} selectable>
+            <Text style={styles.body}>
               {routeParams.subscriptionId
-                ? `Subscription ${routeParams.subscriptionId} was passed through the notification payload.`
-                : "This screen is showing the current membership stack without a specific subscription ID."}
+                ? "Your subscription has been updated."
+                : "Showing your current membership status."}
             </Text>
           </Card>
         ) : null}
@@ -100,14 +99,14 @@ export default function MembershipScreen() {
             label="Active"
             value={String(activeCount)}
             detail={
-              activeCount ? "Current paid or approved memberships." : "No active membership yet."
+              activeCount ? "Active memberships." : "No active plan."
             }
             tone={activeCount ? "lime" : "neutral"}
           />
           <MetricTile
             label="Expiring in 30 days"
             value={String(expiringSoonCount)}
-            detail="Use this to verify membership expiry reminders and renewal follow-up."
+            detail="Memberships ending within 30 days."
             tone={expiringSoonCount ? "amber" : "blue"}
           />
         </View>
@@ -122,7 +121,7 @@ export default function MembershipScreen() {
         {!membershipsQuery.isLoading && !subscriptions.length ? (
           <EmptyState
             title="No memberships yet"
-            body="Choose a public gym and start a membership to see renewal, visits, and active-plan state here."
+            body="Join a gym to see your membership here."
             action={<PrimaryLink href="/find-gyms">Browse gyms</PrimaryLink>}
           />
         ) : null}
@@ -130,17 +129,16 @@ export default function MembershipScreen() {
         {latestSubscription ? (
           <>
             <SectionHeader
-              eyebrow="Current focus"
-              title="Latest membership"
-              subtitle="The most relevant subscription is surfaced first for pilot QA and push follow-up."
+              eyebrow="Current"
+              title="Active membership"
             />
             <Card style={styles.featuredCard}>
               <View style={styles.featuredHeader}>
                 <View style={styles.featuredCopy}>
-                  <Text style={styles.featuredTitle} selectable>
+                  <Text style={styles.featuredTitle}>
                     {latestSubscription.plan?.name ?? "Membership"}
                   </Text>
-                  <Text style={styles.body} selectable>
+                  <Text style={styles.body}>
                     {latestSubscription.organization?.name ?? "Gym organization"}
                   </Text>
                 </View>
@@ -148,14 +146,14 @@ export default function MembershipScreen() {
                   {titleCaseFromCode(latestSubscription.status ?? "ACTIVE")}
                 </Pill>
               </View>
-              <Text style={styles.body} selectable>
+              <Text style={styles.body}>
                 {latestSubscription.endsAt
                   ? `Ends on ${formatLongDate(latestSubscription.endsAt)}`
                   : "No end date available for this membership."}
               </Text>
               {latestSubscription.remainingVisits !== null &&
               latestSubscription.remainingVisits !== undefined ? (
-                <Text style={styles.detail} selectable>
+                <Text style={styles.detail}>
                   {latestSubscription.remainingVisits} visits remaining
                 </Text>
               ) : null}
@@ -168,17 +166,16 @@ export default function MembershipScreen() {
             <SectionHeader
               eyebrow="History"
               title="Other memberships"
-              subtitle="Past and secondary subscriptions stay visible for renewal support and operator troubleshooting."
             />
             <View style={styles.stack}>
               {sortedSubscriptions.slice(1).map((subscription) => (
                 <Card key={subscription.id}>
                   <View style={styles.listHeader}>
                     <View style={styles.listCopy}>
-                      <Text style={styles.listTitle} selectable>
+                      <Text style={styles.listTitle}>
                         {subscription.plan?.name ?? "Membership"}
                       </Text>
-                      <Text style={styles.body} selectable>
+                      <Text style={styles.body}>
                         {subscription.organization?.name ?? "Gym organization"}
                       </Text>
                     </View>
@@ -186,7 +183,7 @@ export default function MembershipScreen() {
                       {titleCaseFromCode(subscription.status ?? "ACTIVE")}
                     </Pill>
                   </View>
-                  <Text style={styles.body} selectable>
+                  <Text style={styles.body}>
                     {subscription.endsAt
                       ? `Ends on ${formatLongDate(subscription.endsAt)}`
                       : "No expiry date available."}
