@@ -11,7 +11,6 @@ import {
   type TextStyle,
   type ViewStyle,
   View,
-  View,
   ActivityIndicator,
   Animated,
 } from "react-native";
@@ -20,7 +19,6 @@ import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
-import { useAuth } from "@/lib/auth";
 import { useAuth } from "@/lib/auth";
 import { useMyNotifications } from "@/lib/query-hooks";
 import { colors, radii } from "@/lib/theme";
@@ -273,6 +271,7 @@ export function PrimaryButton({
   disabled = false,
   style,
   textStyle,
+  accessibilityLabel,
 }: {
   children: ReactNode;
   onPress?: () => void;
@@ -540,8 +539,8 @@ export function Skeleton({ style, width, height, borderRadius = 8 }: { style?: S
     <Animated.View
       style={[
         {
-          width,
-          height,
+          width: width as any,
+          height: height as any,
           borderRadius,
           backgroundColor: "rgba(255,255,255,0.1)",
           opacity: anim,
@@ -799,7 +798,16 @@ const styles = StyleSheet.create({
   dockText: {
     color: colors.muted,
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: "800",
+  },
+  dockBadge: {
+    position: "absolute",
+    top: -2,
+    right: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.red,
   },
   dockTextActive: {
     color: colors.lime,
