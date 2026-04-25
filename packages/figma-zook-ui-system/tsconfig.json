@@ -1,0 +1,12 @@
+{
+  "extends": "../config/tsconfig/base.json",
+  "compilerOptions": {
+    "types": ["@figma/plugin-typings"],
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "rootDir": "src",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"]
+}

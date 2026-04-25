@@ -1,0 +1,8 @@
+{
+  "name": "Zook — Product UI System v1",
+  "id": "zook-product-ui-system-v1",
+  "api": "1.0.0",
+  "main": "dist/main.js",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page"
+}
