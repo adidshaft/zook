@@ -331,7 +331,7 @@ function createPages(): { pages: PageMap; fallback: boolean } {
     created.forEach((page) => {
       try {
         page.remove();
-      } catch {
+      } catch (_cleanupError) {
         // A best-effort cleanup keeps Starter-file fallbacks tidy.
       }
     });
@@ -516,7 +516,7 @@ async function loadFonts(): Promise<void> {
     await Promise.all([figma.loadFontAsync(FONT_REGULAR), figma.loadFontAsync(FONT_BOLD)]);
     activeRegularFont = FONT_REGULAR;
     activeBoldFont = FONT_BOLD;
-  } catch {
+  } catch (_fontError) {
     const fallback: FontName = { family: "Inter", style: "Regular" };
     await figma.loadFontAsync(fallback);
     activeRegularFont = fallback;

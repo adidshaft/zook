@@ -274,7 +274,7 @@ function createPages() {
             try {
                 page.remove();
             }
-            catch {
+            catch (_cleanupError) {
                 // A best-effort cleanup keeps Starter-file fallbacks tidy.
             }
         });
@@ -432,7 +432,7 @@ async function loadFonts() {
         activeRegularFont = FONT_REGULAR;
         activeBoldFont = FONT_BOLD;
     }
-    catch {
+    catch (_fontError) {
         const fallback = { family: "Inter", style: "Regular" };
         await figma.loadFontAsync(fallback);
         activeRegularFont = fallback;
