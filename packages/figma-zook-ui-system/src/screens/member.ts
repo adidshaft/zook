@@ -439,10 +439,11 @@ export function memberPlanDetail(ctx: DesignContext): FrameNode {
   const sticky = glassCard("Sticky action bar", 350, 10, TOKENS.radius.xl);
   sticky.layoutMode = "HORIZONTAL";
   lockWidthHugHeight(sticky, 350);
+  sticky.itemSpacing = 8;
   sticky.primaryAxisAlignItems = "SPACE_BETWEEN";
   sticky.counterAxisAlignItems = "CENTER";
-  sticky.appendChild(button(ctx, "Complete", "primary", "check", 168));
-  sticky.appendChild(button(ctx, "Add Exercise", "secondary", "plus", 152));
+  sticky.appendChild(button(ctx, "Complete", "primary", "check", 160));
+  sticky.appendChild(button(ctx, "Add Exercise", "secondary", "plus", 160));
   screen.appendChild(sticky);
   return screen;
 }

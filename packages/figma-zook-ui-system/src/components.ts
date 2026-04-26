@@ -454,13 +454,13 @@ export interface NavItem {
 }
 
 export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], selected: string): FrameNode {
-  const node = row(`Bottom Nav / ${name}`, 2);
-  node.resize(TOKENS.frame.mobile.width - 40, 78);
+  const node = row(`Bottom Nav / ${name}`, 0);
+  node.resize(TOKENS.frame.mobile.width - 40, 76);
   forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
   node.counterAxisAlignItems = "CENTER";
-  node.paddingTop = 7;
-  node.paddingBottom = 7;
+  node.paddingTop = 8;
+  node.paddingBottom = 6;
   node.paddingLeft = 8;
   node.paddingRight = 8;
   node.cornerRadius = TOKENS.radius.xxl;
@@ -470,8 +470,8 @@ export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], se
   node.effects = [{ type: "BACKGROUND_BLUR", radius: 18, visible: true, blurType: "NORMAL" }];
   for (const item of items) {
     const active = item.label === selected;
-    const entry = stack(`Nav Item / ${item.label}`, "VERTICAL", 4);
-    entry.resize(62, 60);
+    const entry = stack(`Nav Item / ${item.label}`, "VERTICAL", 3);
+    entry.resize(66, 62);
     forceFixedAutoLayoutSize(entry);
     entry.primaryAxisAlignItems = "CENTER";
     entry.counterAxisAlignItems = "CENTER";
@@ -481,7 +481,7 @@ export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], se
     indicator.cornerRadius = TOKENS.radius.round;
     indicator.fills = [solid(active ? TOKENS.color.accent : TOKENS.color.white, active ? 1 : 0)];
     entry.appendChild(indicator);
-    entry.appendChild(createIcon(item.icon, 20, active ? TOKENS.color.accent : TOKENS.color.subtleText));
+    entry.appendChild(createIcon(item.icon, 21, active ? TOKENS.color.accent : TOKENS.color.subtleText));
     entry.appendChild(text(item.label, ctx.styles.text.caption, active ? TOKENS.color.accent : TOKENS.color.subtleText));
     node.appendChild(entry);
   }
@@ -519,11 +519,11 @@ export function listRow(
 
 export function textField(ctx: DesignContext, label: string, value: string): FrameNode {
   const node = stack(`Text Field / ${label}`, "VERTICAL", 6);
-  node.resize(350, 64);
+  node.resize(350, 58);
   forceFixedAutoLayoutSize(node);
   node.appendChild(text(label, ctx.styles.text.caption, TOKENS.color.subtleText, "Label"));
   const box = row("Input", TOKENS.space.sm);
-  box.resize(350, 40);
+  box.resize(350, 34);
   forceFixedAutoLayoutSize(box);
   box.paddingLeft = TOKENS.space.md;
   box.paddingRight = TOKENS.space.md;

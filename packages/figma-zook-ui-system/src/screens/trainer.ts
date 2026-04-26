@@ -10,7 +10,6 @@ import {
   glassCard,
   header,
   iconDisk,
-  lockWidthHugHeight,
   mobileShell,
   row,
   stack,
@@ -50,13 +49,15 @@ function clientSummaryCard(
   value: string,
   icon: "dumbbell" | "clipboard" | "shield" | "clock" | "check"
 ): FrameNode {
-  const card = glassCard(`Client Summary / ${title}`, 350, 10, TOKENS.radius.lg);
+  const card = glassCard(`Client Summary / ${title}`, 350, 8, TOKENS.radius.lg);
   card.layoutMode = "HORIZONTAL";
-  lockWidthHugHeight(card, 350);
+  card.resize(350, 48);
+  card.primaryAxisSizingMode = "FIXED";
+  card.counterAxisSizingMode = "FIXED";
   card.primaryAxisAlignItems = "SPACE_BETWEEN";
   card.counterAxisAlignItems = "CENTER";
-  card.itemSpacing = TOKENS.space.md;
-  card.appendChild(iconDisk(icon, 36, "glass"));
+  card.itemSpacing = TOKENS.space.sm;
+  card.appendChild(iconDisk(icon, 32, "glass"));
   const copy = stack("Copy", "VERTICAL", 2);
   copy.appendChild(text(title, ctx.styles.text.bodyStrong));
   copy.appendChild(text(value, ctx.styles.text.small, value.includes("7:14") || value.startsWith("2 ") ? TOKENS.color.accent : TOKENS.color.mutedText));
@@ -68,21 +69,21 @@ function clientSummaryCard(
 
 export function trainerClientDetail(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Trainer / 01 Client Detail");
-  screen.itemSpacing = 8;
+  screen.itemSpacing = 6;
   screen.appendChild(header(ctx, "Client Detail", undefined, "back", undefined, "Trainer"));
   const privacy = row("Privacy line", TOKENS.space.sm);
   privacy.appendChild(createIcon("shield", 14, TOKENS.color.mutedText));
   privacy.appendChild(text("You’re viewing your assigned client only", ctx.styles.text.small, TOKENS.color.mutedText));
   screen.appendChild(privacy);
 
-  const profile = glassCard("Client Profile Card", 350, 12, TOKENS.radius.xxl);
-  profile.itemSpacing = 10;
+  const profile = glassCard("Client Profile Card", 350, 10, TOKENS.radius.xxl);
+  profile.itemSpacing = 8;
   const top = row("Profile top", TOKENS.space.md);
-  top.resize(326, 62);
+  top.resize(330, 56);
   top.primaryAxisSizingMode = "FIXED";
   top.counterAxisSizingMode = "FIXED";
   top.primaryAxisAlignItems = "SPACE_BETWEEN";
-  top.appendChild(avatar(ctx, "AM", 56, "AM avatar"));
+  top.appendChild(avatar(ctx, "AM", 50, "AM avatar"));
   const copy = stack("Client copy", "VERTICAL", 4);
   copy.appendChild(text("Aarav Mehta", ctx.styles.text.h2));
   const active = row("Active status", TOKENS.space.xs);
@@ -97,7 +98,7 @@ export function trainerClientDetail(ctx: DesignContext): FrameNode {
   top.appendChild(createIcon("more", 18, TOKENS.color.primaryText));
   profile.appendChild(top);
   const facts = row("Client facts", TOKENS.space.sm);
-  facts.resize(326, 40);
+  facts.resize(330, 34);
   facts.primaryAxisSizingMode = "FIXED";
   facts.primaryAxisAlignItems = "SPACE_BETWEEN";
   for (const [label, value, icon] of [
@@ -117,7 +118,7 @@ export function trainerClientDetail(ctx: DesignContext): FrameNode {
   screen.appendChild(profile);
 
   screen.appendChild(segmentedTabs(ctx));
-  const cards = stack("Summary rows", "VERTICAL", TOKENS.space.sm);
+  const cards = stack("Summary rows", "VERTICAL", 6);
   for (const [title, value, icon] of [
     ["Fitness goal", "Muscle gain", "dumbbell"],
     ["Diet note", "Vegetarian", "clipboard"],
@@ -138,43 +139,48 @@ export function trainerClientDetail(ctx: DesignContext): FrameNode {
 function editableCard(ctx: DesignContext, title: string, body: string, icon: "dumbbell" | "clipboard" | "shield" | "clock"): FrameNode {
   const card = glassCard(`Editable Section / ${title}`, 350, 8, TOKENS.radius.lg);
   card.layoutMode = "HORIZONTAL";
-  lockWidthHugHeight(card, 350);
-  card.itemSpacing = 10;
+  card.resize(350, 54);
+  card.primaryAxisSizingMode = "FIXED";
+  card.counterAxisSizingMode = "FIXED";
+  card.itemSpacing = 8;
   card.primaryAxisAlignItems = "SPACE_BETWEEN";
   card.counterAxisAlignItems = "CENTER";
-  card.appendChild(iconDisk(icon, 36, "lime"));
+  card.appendChild(iconDisk(icon, 32, "lime"));
   const copy = stack("Editable copy", "VERTICAL", 3);
   copy.appendChild(text(title, ctx.styles.text.bodyStrong));
   copy.appendChild(text(body, ctx.styles.text.small, TOKENS.color.mutedText));
   card.appendChild(copy);
   copy.layoutSizingHorizontal = "FILL";
-  card.appendChild(iconDisk("edit", 34, "glass"));
+  card.appendChild(iconDisk("edit", 30, "glass"));
   return card;
 }
 
 export function trainerAiDraftReview(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Trainer / 02 AI Draft Review");
-  screen.itemSpacing = 7;
+  screen.itemSpacing = 6;
   screen.appendChild(header(ctx, "AI Draft Review", undefined, "back", undefined, "Trainer"));
   screen.appendChild(chip(ctx, "Review required", "warning", "warning"));
   const alert = glassCard("AI Alert Card", 350, 8, TOKENS.radius.lg);
   alert.layoutMode = "HORIZONTAL";
-  lockWidthHugHeight(alert, 350);
-  alert.appendChild(iconDisk("sparkle", 36, "warning"));
+  alert.resize(350, 54);
+  alert.primaryAxisSizingMode = "FIXED";
+  alert.counterAxisSizingMode = "FIXED";
+  alert.counterAxisAlignItems = "CENTER";
+  alert.appendChild(iconDisk("sparkle", 32, "warning"));
   const alertCopy = stack("Alert copy", "VERTICAL", 3);
   alertCopy.appendChild(text("AI generated this draft.", ctx.styles.text.bodyStrong));
   alertCopy.appendChild(text("Edit and approve before assigning.", ctx.styles.text.small, TOKENS.color.mutedText));
   alert.appendChild(alertCopy);
   screen.appendChild(alert);
 
-  const summary = glassCard("Plan Summary", 350, 14, TOKENS.radius.xl);
-  summary.itemSpacing = 10;
+  const summary = glassCard("Plan Summary", 350, 10, TOKENS.radius.xl);
+  summary.itemSpacing = 8;
   const top = row("Plan top", TOKENS.space.md);
-  top.resize(318, 48);
+  top.resize(330, 44);
   top.primaryAxisSizingMode = "FIXED";
   top.counterAxisSizingMode = "FIXED";
   top.primaryAxisAlignItems = "SPACE_BETWEEN";
-  top.appendChild(iconDisk("dumbbell", 40, "lime"));
+  top.appendChild(iconDisk("dumbbell", 36, "lime"));
   const copy = stack("Plan copy", "VERTICAL", 4);
   copy.appendChild(text("4-week Push/Pull Routine", ctx.styles.text.h3));
   top.appendChild(copy);
@@ -182,7 +188,7 @@ export function trainerAiDraftReview(ctx: DesignContext): FrameNode {
   top.appendChild(createIcon("more", 16, TOKENS.color.primaryText));
   summary.appendChild(top);
   const facts = row("Draft facts", 10);
-  facts.resize(318, 34);
+  facts.resize(330, 32);
   facts.primaryAxisSizingMode = "FIXED";
   facts.counterAxisSizingMode = "FIXED";
   facts.primaryAxisAlignItems = "SPACE_BETWEEN";
@@ -206,10 +212,10 @@ export function trainerAiDraftReview(ctx: DesignContext): FrameNode {
   screen.appendChild(editableCard(ctx, "Workout A", "Chest, Shoulders, Triceps · 45–60 min", "dumbbell"));
   screen.appendChild(editableCard(ctx, "Workout B", "Back, Biceps · 45–60 min", "clipboard"));
   screen.appendChild(editableCard(ctx, "Recovery Notes", "Mobility, sleep, hydration and deload guidance", "shield"));
-  const safety = glassCard("Safety Panel", 350, 10, TOKENS.radius.xl);
-  safety.itemSpacing = 8;
+  const safety = glassCard("Safety Panel", 350, 8, TOKENS.radius.xl);
+  safety.itemSpacing = 7;
   const safetyTop = row("Safety review metrics", 10);
-  safetyTop.resize(330, 46);
+  safetyTop.resize(334, 42);
   safetyTop.primaryAxisSizingMode = "FIXED";
   safetyTop.counterAxisSizingMode = "FIXED";
   safetyTop.primaryAxisAlignItems = "SPACE_BETWEEN";
@@ -235,7 +241,7 @@ export function trainerAiDraftReview(ctx: DesignContext): FrameNode {
   safety.appendChild(privacy);
   screen.appendChild(safety);
   const sticky = glassCard("Sticky actions", 350, 8, TOKENS.radius.xl);
-  sticky.itemSpacing = 8;
+  sticky.itemSpacing = 7;
   sticky.counterAxisAlignItems = "CENTER";
   sticky.appendChild(button(ctx, "Assign Plan", "primary", "user", 326));
   sticky.appendChild(button(ctx, "Edit Draft", "secondary", "edit", 326));

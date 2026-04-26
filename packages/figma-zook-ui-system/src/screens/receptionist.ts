@@ -16,11 +16,29 @@ import {
   textField
 } from "../components";
 import { createIcon } from "../icons";
-import { TOKENS, solid } from "../tokens";
+import { TOKENS, glassFill, glassStroke, solid } from "../tokens";
+
+function paymentModeChip(ctx: DesignContext, label: string, icon: "cash" | "upi" | "bank" | "card" | "manual", selected = false, width = 108): FrameNode {
+  const node = row(`Payment Mode / ${label}`, TOKENS.space.sm);
+  node.resize(width, 38);
+  node.primaryAxisSizingMode = "FIXED";
+  node.counterAxisSizingMode = "FIXED";
+  node.primaryAxisAlignItems = "CENTER";
+  node.counterAxisAlignItems = "CENTER";
+  node.paddingLeft = 10;
+  node.paddingRight = 10;
+  node.cornerRadius = TOKENS.radius.lg;
+  node.fills = [selected ? solid(TOKENS.color.accent, 0.12) : glassFill(TOKENS.opacity.glassLow)];
+  node.strokes = [selected ? solid(TOKENS.color.accent, 0.8) : glassStroke(TOKENS.opacity.subtleStroke)];
+  node.strokeWeight = 1;
+  node.appendChild(createIcon(icon, 17, selected ? TOKENS.color.accent : TOKENS.color.mutedText));
+  node.appendChild(text(label, ctx.styles.text.caption, selected ? TOKENS.color.primaryText : TOKENS.color.mutedText, "Label"));
+  return node;
+}
 
 export function receptionistPayment(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Receptionist / 01 Offline Payment Entry");
-  screen.itemSpacing = 9;
+  screen.itemSpacing = 7;
   screen.appendChild(header(ctx, "Record Payment", "Member: Aarav Mehta", "back"));
 
   const member = glassCard("Member Summary Card", 350, 14, TOKENS.radius.xl);
@@ -55,21 +73,17 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   screen.appendChild(member);
 
   screen.appendChild(text("Payment mode", ctx.styles.text.h3));
-  const modes = stack("Payment mode chips", "VERTICAL", TOKENS.space.sm);
-  modes.resize(350, 78);
+  const modes = stack("Payment mode chips", "VERTICAL", 7);
+  modes.resize(350, 83);
   modes.primaryAxisSizingMode = "FIXED";
   modes.counterAxisSizingMode = "FIXED";
-  const modeRowOne = row("Payment mode row 1", TOKENS.space.sm);
-  const modeRowTwo = row("Payment mode row 2", TOKENS.space.sm);
-  for (const [label, selected, icon] of [
-    ["Cash", false, "cash"],
-    ["Direct UPI", true, "upi"],
-    ["Bank", false, "bank"],
-    ["Card", false, "card"],
-    ["Manual", false, "manual"]
-  ] as const) {
-    (label === "Card" || label === "Manual" ? modeRowTwo : modeRowOne).appendChild(chip(ctx, label, selected ? "lime" : "glass", icon));
-  }
+  const modeRowOne = row("Payment mode row 1", 8);
+  modeRowOne.appendChild(paymentModeChip(ctx, "Cash", "cash", false, 108));
+  modeRowOne.appendChild(paymentModeChip(ctx, "Direct UPI", "upi", true, 118));
+  modeRowOne.appendChild(paymentModeChip(ctx, "Bank", "bank", false, 108));
+  const modeRowTwo = row("Payment mode row 2", 8);
+  modeRowTwo.appendChild(paymentModeChip(ctx, "Card", "card", false, 171));
+  modeRowTwo.appendChild(paymentModeChip(ctx, "Manual", "manual", false, 171));
   modes.appendChild(modeRowOne);
   modes.appendChild(modeRowTwo);
   screen.appendChild(modes);
@@ -80,7 +94,7 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   fields.appendChild(textField(ctx, "Payment note (optional)", "Add a note for this payment"));
   screen.appendChild(fields);
 
-  const audit = glassCard("Audit Warning", 350, 10, TOKENS.radius.md);
+  const audit = glassCard("Audit Warning", 350, 8, TOKENS.radius.md);
   audit.layoutMode = "HORIZONTAL";
   lockWidthHugHeight(audit, 350);
   audit.counterAxisAlignItems = "CENTER";
@@ -88,9 +102,9 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   audit.appendChild(paragraph("Manual records require reason and are saved in audit logs.", ctx.styles.text.caption, 290, TOKENS.color.warning));
   screen.appendChild(audit);
 
-  const reason = glassCard("Reason Dropdown", 350, 12, TOKENS.radius.lg);
+  const reason = glassCard("Reason Dropdown", 350, 10, TOKENS.radius.lg);
   reason.layoutMode = "HORIZONTAL";
-  reason.resize(350, 58);
+  reason.resize(350, 54);
   reason.primaryAxisSizingMode = "FIXED";
   reason.counterAxisSizingMode = "FIXED";
   reason.primaryAxisAlignItems = "SPACE_BETWEEN";
@@ -102,14 +116,15 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   reason.appendChild(createIcon("chevron", 16, TOKENS.color.mutedText));
   screen.appendChild(reason);
 
-  const sticky = glassCard("Sticky actions", 350, 12, TOKENS.radius.xl);
+  const sticky = glassCard("Sticky actions", 350, 10, TOKENS.radius.xl);
+  sticky.itemSpacing = 7;
   sticky.appendChild(button(ctx, "Record Payment", "primary", "card", 326));
-  const cancel = fixedFrame("Cancel touch target", 326, 36);
+  const cancel = fixedFrame("Cancel touch target", 326, 30);
   cancel.fills = [solid(TOKENS.color.white, 0)];
   const cancelText = text("Cancel", ctx.styles.text.bodyStrong, TOKENS.color.mutedText);
   cancel.appendChild(cancelText);
   cancelText.x = (326 - cancelText.width) / 2;
-  cancelText.y = 8;
+  cancelText.y = 5;
   sticky.appendChild(cancel);
   screen.appendChild(sticky);
   return screen;

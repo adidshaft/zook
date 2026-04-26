@@ -69,7 +69,7 @@ const paths: Record<IconName, string> = {
   bottle: '<path d="M9 4h6"/><path d="M10 4v4l-2 2v9a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-9l-2-2V4"/><path d="M8 14h8"/>',
   towel: '<path d="M5 7h10a4 4 0 0 1 4 4v8H9a4 4 0 0 1-4-4V7Z"/><path d="M9 7v12"/><path d="M12 11h4"/><path d="M12 15h4"/>',
   cash: '<path d="M3 7h18v10H3z"/><path d="M7 7a4 4 0 0 1-4 4"/><path d="M17 17a4 4 0 0 1 4-4"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>',
-  upi: '<path d="M6 18V8l6-4 6 4v10"/><path d="M9 18v-6h6v6"/><path d="m12 8 3 3"/><path d="M12 8v7"/>',
+  upi: '<path d="M5 17V7"/><path d="M5 7h5.2c2.4 0 3.8 1.2 3.8 3.2S12.6 13.4 10.2 13.4H7.8"/><path d="m15 8 4 4-4 4"/><path d="M19 12H10"/>',
   bank: '<path d="M4 9h16"/><path d="M5 19h14"/><path d="M6 9l6-5 6 5"/><path d="M7 9v10"/><path d="M12 9v10"/><path d="M17 9v10"/>',
   card: '<path d="M3 6h18v12H3z"/><path d="M3 10h18"/><path d="M7 15h4"/>',
   manual: '<path d="M7 3h8l4 4v14H7z"/><path d="M15 3v5h4"/><path d="M10 12h6"/><path d="M10 16h5"/>'
