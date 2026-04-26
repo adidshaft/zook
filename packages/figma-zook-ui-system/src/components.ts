@@ -343,13 +343,46 @@ export function statusBar(ctx: DesignContext): FrameNode {
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
   node.appendChild(text("9:41", ctx.styles.text.caption, TOKENS.color.primaryText, "Time"));
   const indicators = row("Indicators", 4);
-  indicators.appendChild(fixedFrame("Signal", 18, 10));
-  indicators.appendChild(fixedFrame("WiFi", 14, 10));
-  indicators.appendChild(fixedFrame("Battery", 22, 10));
-  for (const child of indicators.children) {
-    if ("fills" in child) child.fills = [solid(TOKENS.color.primaryText, 0.72)];
-    if (child.type === "FRAME") child.cornerRadius = 3;
-  }
+  const signal = fixedFrame("Signal bars", 18, 12);
+  signal.clipsContent = false;
+  [4, 6, 8, 10].forEach((height, index) => {
+    const bar = fixedFrame(`Signal bar ${index + 1}`, 3, height);
+    bar.cornerRadius = 2;
+    bar.fills = [solid(TOKENS.color.primaryText, 0.8)];
+    signal.appendChild(bar);
+    bar.x = index * 5;
+    bar.y = 12 - height;
+  });
+  const wifi = fixedFrame("WiFi glyph", 16, 12);
+  wifi.clipsContent = false;
+  [14, 10, 5].forEach((width, index) => {
+    const arc = fixedFrame(`WiFi arc ${index + 1}`, width, 3);
+    arc.cornerRadius = TOKENS.radius.round;
+    arc.fills = [solid(TOKENS.color.primaryText, 0.78)];
+    wifi.appendChild(arc);
+    arc.x = (16 - width) / 2;
+    arc.y = index * 4;
+  });
+  const battery = fixedFrame("Battery", 24, 12);
+  battery.cornerRadius = 3;
+  battery.fills = [solid(TOKENS.color.white, 0)];
+  battery.strokes = [solid(TOKENS.color.primaryText, 0.7)];
+  battery.strokeWeight = 1;
+  const charge = fixedFrame("Battery charge", 17, 8);
+  charge.cornerRadius = 2;
+  charge.fills = [solid(TOKENS.color.primaryText, 0.76)];
+  battery.appendChild(charge);
+  charge.x = 2;
+  charge.y = 2;
+  const nub = fixedFrame("Battery nub", 2, 5);
+  nub.cornerRadius = 1;
+  nub.fills = [solid(TOKENS.color.primaryText, 0.7)];
+  battery.appendChild(nub);
+  nub.x = 24;
+  nub.y = 3.5;
+  indicators.appendChild(signal);
+  indicators.appendChild(wifi);
+  indicators.appendChild(battery);
   node.appendChild(indicators);
   return node;
 }
@@ -455,12 +488,12 @@ export interface NavItem {
 
 export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], selected: string): FrameNode {
   const node = row(`Bottom Nav / ${name}`, 0);
-  node.resize(TOKENS.frame.mobile.width - 40, 76);
+  node.resize(TOKENS.frame.mobile.width - 40, 72);
   forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
   node.counterAxisAlignItems = "CENTER";
-  node.paddingTop = 8;
-  node.paddingBottom = 6;
+  node.paddingTop = 7;
+  node.paddingBottom = 7;
   node.paddingLeft = 8;
   node.paddingRight = 8;
   node.cornerRadius = TOKENS.radius.xxl;
@@ -471,17 +504,17 @@ export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], se
   for (const item of items) {
     const active = item.label === selected;
     const entry = stack(`Nav Item / ${item.label}`, "VERTICAL", 3);
-    entry.resize(66, 62);
+    entry.resize(64, 58);
     forceFixedAutoLayoutSize(entry);
     entry.primaryAxisAlignItems = "CENTER";
     entry.counterAxisAlignItems = "CENTER";
     entry.cornerRadius = TOKENS.radius.lg;
-    entry.fills = [active ? solid(TOKENS.color.accent, 0.12) : solid(TOKENS.color.white, 0)];
+    entry.fills = [active ? solid(TOKENS.color.accent, 0.1) : solid(TOKENS.color.white, 0)];
     const indicator = fixedFrame(active ? "Selected indicator" : "Inactive indicator", 18, 3);
     indicator.cornerRadius = TOKENS.radius.round;
     indicator.fills = [solid(active ? TOKENS.color.accent : TOKENS.color.white, active ? 1 : 0)];
     entry.appendChild(indicator);
-    entry.appendChild(createIcon(item.icon, 21, active ? TOKENS.color.accent : TOKENS.color.subtleText));
+    entry.appendChild(createIcon(item.icon, 20, active ? TOKENS.color.accent : TOKENS.color.subtleText));
     entry.appendChild(text(item.label, ctx.styles.text.caption, active ? TOKENS.color.accent : TOKENS.color.subtleText));
     node.appendChild(entry);
   }
@@ -563,26 +596,35 @@ export function productCard(
   stock: string,
   tone: "lime" | "warning" | "glass" = "glass"
 ): FrameNode {
-  const node = glassCard(`Product Card / ${product}`, 166, TOKENS.space.md, TOKENS.radius.lg);
-  node.itemSpacing = TOKENS.space.sm;
-  const visual = fixedFrame("Product silhouette", 138, 54);
+  const node = glassCard(`Product Card / ${product}`, 166, 10, TOKENS.radius.lg);
+  node.itemSpacing = 7;
+  const visual = fixedFrame("Product silhouette", 146, 58);
   visual.cornerRadius = TOKENS.radius.md;
   visual.fills = [solid(TOKENS.color.accent, 0.08)];
   visual.strokes = [solid(TOKENS.color.white, 0.08)];
   visual.strokeWeight = 1;
   const productIcon: IconName = product.includes("Shake") || product.includes("Bottle") ? "bottle" : product.includes("Towel") ? "towel" : "bag";
-  const bag = createIcon(productIcon, 28, TOKENS.color.accent);
+  const bag = createIcon(productIcon, 30, TOKENS.color.accent);
   visual.appendChild(bag);
-  bag.x = 55;
-  bag.y = 13;
+  bag.x = 58;
+  bag.y = 14;
   node.appendChild(visual);
   node.appendChild(text(product, ctx.styles.text.bodyStrong, TOKENS.color.primaryText, "Name"));
   node.appendChild(text(price, ctx.styles.text.h3, TOKENS.color.accent, "Price"));
   const footer = row("Footer", TOKENS.space.sm);
   footer.primaryAxisAlignItems = "SPACE_BETWEEN";
-  footer.resize(138, 30);
+  footer.resize(146, 30);
   footer.appendChild(chip(ctx, stock, tone));
-  footer.appendChild(iconButton("Add", "plus", true));
+  const add = fixedFrame("Add product", 30, 30);
+  add.cornerRadius = TOKENS.radius.round;
+  add.fills = [solid(TOKENS.color.accent, 0.1)];
+  add.strokes = [solid(TOKENS.color.accent, 0.6)];
+  add.strokeWeight = 1;
+  const addIcon = createIcon("plus", 16, TOKENS.color.accent);
+  add.appendChild(addIcon);
+  addIcon.x = 7;
+  addIcon.y = 7;
+  footer.appendChild(add);
   node.appendChild(footer);
   return node;
 }

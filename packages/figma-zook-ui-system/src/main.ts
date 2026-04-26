@@ -416,23 +416,23 @@ async function main(): Promise<void> {
   figma.notify("Pages ready. Creating mobile screens…");
   await figma.setCurrentPageAsync(pages["02 — Mobile / Member"]);
   const member = buildScreens("Member", memberScreens, ctx);
-  sectionMarker(ctx, pages["02 — Mobile / Member"], "02 — Mobile / Member", 80, 0);
-  placeFrames(pages["02 — Mobile / Member"], member, 80, 80);
+  sectionMarker(ctx, pages["02 — Mobile / Member"], "02 — Mobile / Member", 80, 40);
+  placeFrames(pages["02 — Mobile / Member"], member, 80, 120);
 
   await figma.setCurrentPageAsync(pages["03 — Mobile / Trainer"]);
   const trainer = buildScreens("Trainer", trainerScreens, ctx);
-  sectionMarker(ctx, pages["03 — Mobile / Trainer"], "03 — Mobile / Trainer", 80, 0);
-  placeFrames(pages["03 — Mobile / Trainer"], trainer, 80, 80);
+  sectionMarker(ctx, pages["03 — Mobile / Trainer"], "03 — Mobile / Trainer", 80, 40);
+  placeFrames(pages["03 — Mobile / Trainer"], trainer, 80, 120);
 
   await figma.setCurrentPageAsync(pages["04 — Mobile / Receptionist"]);
   const receptionist = buildScreens("Receptionist", receptionistScreens, ctx);
-  sectionMarker(ctx, pages["04 — Mobile / Receptionist"], "04 — Mobile / Receptionist", 80, 0);
-  placeFrames(pages["04 — Mobile / Receptionist"], receptionist, 80, 80);
+  sectionMarker(ctx, pages["04 — Mobile / Receptionist"], "04 — Mobile / Receptionist", 80, 40);
+  placeFrames(pages["04 — Mobile / Receptionist"], receptionist, 80, 120);
 
   await figma.setCurrentPageAsync(pages["05 — Mobile / Owner"]);
   const owner = buildScreens("Owner", ownerScreens, ctx);
-  sectionMarker(ctx, pages["05 — Mobile / Owner"], "05 — Mobile / Owner", 80, 0);
-  placeFrames(pages["05 — Mobile / Owner"], owner, 80, 80);
+  sectionMarker(ctx, pages["05 — Mobile / Owner"], "05 — Mobile / Owner", 80, 40);
+  placeFrames(pages["05 — Mobile / Owner"], owner, 80, 120);
 
   const allScreens = [...member, ...receptionist, ...trainer, ...owner];
 
@@ -442,21 +442,21 @@ async function main(): Promise<void> {
 
   figma.notify("Cover ready. Creating UI kit…");
   await figma.setCurrentPageAsync(pages["01 — UI Kit"]);
-  createUiKit(ctx, pages["01 — UI Kit"], 0);
+  createUiKit(ctx, pages["01 — UI Kit"], 40);
 
   figma.notify("UI kit ready. Finalizing handoff…", { timeout: 1000 });
   await figma.setCurrentPageAsync(pages["06 — Prototypes"]);
-  sectionMarker(ctx, pages["06 — Prototypes"], "06 — Prototypes", 80, 0);
-  createPrototypePage(ctx, pages["06 — Prototypes"], allScreens, 80);
+  sectionMarker(ctx, pages["06 — Prototypes"], "06 — Prototypes", 80, 40);
+  createPrototypePage(ctx, pages["06 — Prototypes"], allScreens, 120);
 
   await figma.setCurrentPageAsync(pages["07 — Export Frames"]);
-  sectionMarker(ctx, pages["07 — Export Frames"], "07 — Export Frames", 80, 0);
-  duplicateExportFrames(pages["07 — Export Frames"], allScreens, 80);
+  sectionMarker(ctx, pages["07 — Export Frames"], "07 — Export Frames", 80, 40);
+  duplicateExportFrames(pages["07 — Export Frames"], allScreens, 150);
   applyAutoExportSettings(pages["07 — Export Frames"]);
 
   await figma.setCurrentPageAsync(pages["08 — Notes / Handoff"]);
-  sectionMarker(ctx, pages["08 — Notes / Handoff"], "08 — Notes / Handoff", 80, 0);
-  createNotes(ctx, pages["08 — Notes / Handoff"], 80);
+  sectionMarker(ctx, pages["08 — Notes / Handoff"], "08 — Notes / Handoff", 80, 40);
+  createNotes(ctx, pages["08 — Notes / Handoff"], 120);
 
   await figma.setCurrentPageAsync(pages["00 — Cover"]);
   figma.notify("Zook Product UI System v1 generated with AUTO_EXPORT frames.");

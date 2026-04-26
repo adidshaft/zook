@@ -68,6 +68,20 @@ function progressBar(width: number, pct: number, tone = TOKENS.color.accent): Fr
   return bar;
 }
 
+function homeQuickAction(ctx: DesignContext, icon: "calendar" | "target" | "rupee" | "headset", label: string): FrameNode {
+  const action = stack(`Quick Action / ${label}`, "VERTICAL", 5);
+  action.resize(76, 54);
+  action.primaryAxisSizingMode = "FIXED";
+  action.counterAxisSizingMode = "FIXED";
+  action.primaryAxisAlignItems = "CENTER";
+  action.counterAxisAlignItems = "CENTER";
+  action.appendChild(createIcon(icon, 18, TOKENS.color.mutedText));
+  const caption = paragraph(label, ctx.styles.text.caption, 70, TOKENS.color.mutedText, "Label");
+  caption.textAlignHorizontal = "CENTER";
+  action.appendChild(caption);
+  return action;
+}
+
 function detailLine(ctx: DesignContext, label: string, value: string, icon: "clock" | "shield" | "clipboard" | "dumbbell" | "check" = "clock"): FrameNode {
   const line = row(`Detail / ${label}`, TOKENS.space.md);
   line.resize(286, 38);
@@ -160,6 +174,17 @@ export function memberHome(ctx: DesignContext): FrameNode {
   activity.appendChild(metricTile(ctx, "clock", "Last check-in", "7:12 AM"));
   activity.appendChild(metricTile(ctx, "target", "Weekly goal", "3/5"));
   screen.appendChild(activity);
+
+  const quickActions = glassCard("Home Quick Actions", 350, 10, TOKENS.radius.xl);
+  quickActions.layoutMode = "HORIZONTAL";
+  lockWidthHugHeight(quickActions, 350);
+  quickActions.primaryAxisAlignItems = "SPACE_BETWEEN";
+  quickActions.counterAxisAlignItems = "CENTER";
+  quickActions.appendChild(homeQuickAction(ctx, "calendar", "Book class"));
+  quickActions.appendChild(homeQuickAction(ctx, "target", "Body stats"));
+  quickActions.appendChild(homeQuickAction(ctx, "rupee", "Payments"));
+  quickActions.appendChild(homeQuickAction(ctx, "headset", "Support"));
+  screen.appendChild(quickActions);
   footerSpacer(screen);
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Home"));
   return screen;
@@ -390,6 +415,7 @@ export function memberShop(ctx: DesignContext): FrameNode {
   grid.appendChild(r1);
   grid.appendChild(r2);
   screen.appendChild(grid);
+  footerSpacer(screen);
   const miniCart = glassCard("Floating Mini Cart", 246, 12, TOKENS.radius.xxl);
   miniCart.layoutMode = "HORIZONTAL";
   lockWidthHugHeight(miniCart, 246);
@@ -399,7 +425,6 @@ export function memberShop(ctx: DesignContext): FrameNode {
   miniCart.appendChild(text("2 items · ₹548", ctx.styles.text.bodyStrong));
   miniCart.appendChild(createIcon("chevron", 16, TOKENS.color.accent));
   screen.appendChild(miniCart);
-  footerSpacer(screen);
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Shop"));
   return screen;
 }

@@ -129,9 +129,9 @@ export function trainerClientDetail(ctx: DesignContext): FrameNode {
     cards.appendChild(clientSummaryCard(ctx, title, value, icon));
   }
   screen.appendChild(cards);
+  footerSpacer(screen);
   screen.appendChild(button(ctx, "Create Plan", "primary", "plus", 350));
   screen.appendChild(button(ctx, "Generate AI Draft", "secondary", "edit", 350));
-  footerSpacer(screen);
   screen.appendChild(bottomNav(ctx, "Trainer", trainerNavItems, "Clients"));
   return screen;
 }

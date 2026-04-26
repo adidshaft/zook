@@ -3,6 +3,7 @@ import {
   avatar,
   button,
   chip,
+  footerSpacer,
   fixedFrame,
   glassCard,
   header,
@@ -11,6 +12,7 @@ import {
   mobileShell,
   paragraph,
   row,
+  sectionTitle,
   stack,
   text,
   textField
@@ -72,7 +74,7 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   member.appendChild(chip(ctx, "Membership expired yesterday", "warning", "warning"));
   screen.appendChild(member);
 
-  screen.appendChild(text("Payment mode", ctx.styles.text.h3));
+  screen.appendChild(sectionTitle(ctx, "Payment mode"));
   const modes = stack("Payment mode chips", "VERTICAL", 7);
   modes.resize(350, 83);
   modes.primaryAxisSizingMode = "FIXED";
@@ -116,6 +118,7 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   reason.appendChild(createIcon("chevron", 16, TOKENS.color.mutedText));
   screen.appendChild(reason);
 
+  footerSpacer(screen);
   const sticky = glassCard("Sticky actions", 350, 10, TOKENS.radius.xl);
   sticky.itemSpacing = 7;
   sticky.appendChild(button(ctx, "Record Payment", "primary", "card", 326));
