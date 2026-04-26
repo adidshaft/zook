@@ -8,7 +8,7 @@ export interface DesignContext {
 
 type Direction = "HORIZONTAL" | "VERTICAL";
 
-const BUILD_STAGING_COORD = -20000;
+const BUILD_STAGING_COORD = 0;
 
 export function stack(name: string, direction: Direction, gap: number = TOKENS.space.md): FrameNode {
   const node = figma.createFrame();
@@ -79,6 +79,14 @@ export function paragraph(
 export function spacer(width: number, height = 1): FrameNode {
   const node = fixedFrame("Spacer", width, height);
   node.fills = [];
+  return node;
+}
+
+export function footerSpacer(parent: FrameNode): FrameNode {
+  const node = spacer(1, 1);
+  node.name = "Footer spacer";
+  parent.appendChild(node);
+  node.layoutSizingVertical = "FILL";
   return node;
 }
 
@@ -285,7 +293,7 @@ export function button(
   width: number = 160
 ): FrameNode {
   const node = row(`Button / ${variant} / ${label}`, TOKENS.space.sm);
-  node.resize(width, 48);
+  node.resize(width, 46);
   forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "CENTER";
   node.counterAxisAlignItems = "CENTER";
@@ -371,7 +379,7 @@ export function header(
   chipLabel?: string
 ): FrameNode {
   const node = row(`Header / ${title}`, TOKENS.space.md);
-  node.resize(TOKENS.frame.mobile.width - 40, 52);
+  node.resize(TOKENS.frame.mobile.width - 40, 50);
   forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
   const left = row("Left", TOKENS.space.md);
@@ -440,7 +448,7 @@ export function listRow(
   trailing?: SceneNode
 ): FrameNode {
   const node = row(`List Row / ${title}`, TOKENS.space.md);
-  node.resize(310, 58);
+  node.resize(310, 52);
   forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
   if (icon) node.appendChild(iconButton("Icon", icon));
@@ -455,11 +463,11 @@ export function listRow(
 
 export function textField(ctx: DesignContext, label: string, value: string): FrameNode {
   const node = stack(`Text Field / ${label}`, "VERTICAL", 6);
-  node.resize(310, 68);
+  node.resize(350, 64);
   forceFixedAutoLayoutSize(node);
   node.appendChild(text(label, ctx.styles.text.caption, TOKENS.color.subtleText, "Label"));
   const box = row("Input", TOKENS.space.sm);
-  box.resize(310, 44);
+  box.resize(350, 40);
   forceFixedAutoLayoutSize(box);
   box.paddingLeft = TOKENS.space.md;
   box.paddingRight = TOKENS.space.md;
@@ -530,12 +538,12 @@ export function exerciseRow(
   complete = false,
   slid = false
 ): FrameNode {
-  const wrap = fixedFrame(`Exercise Row / ${title}`, 350, 66);
+  const wrap = fixedFrame(`Exercise Row / ${title}`, 350, 58);
   wrap.cornerRadius = TOKENS.radius.lg;
   wrap.fills = slid ? [solid(TOKENS.color.danger, 0.18)] : [];
   if (slid) {
     const del = stack("Delete action", "VERTICAL", TOKENS.space.xs);
-    del.resize(78, 66);
+    del.resize(78, 58);
     forceFixedAutoLayoutSize(del);
     del.primaryAxisAlignItems = "CENTER";
     del.counterAxisAlignItems = "CENTER";
@@ -548,7 +556,7 @@ export function exerciseRow(
     del.y = 0;
   }
   const node = row("Exercise content", TOKENS.space.md);
-  node.resize(350, 66);
+  node.resize(350, 58);
   forceFixedAutoLayoutSize(node);
   node.paddingLeft = TOKENS.space.md;
   node.paddingRight = TOKENS.space.md;
@@ -568,7 +576,7 @@ export function exerciseRow(
     mark.y = 7;
   }
   node.appendChild(check);
-  const thumb = iconDisk("dumbbell", 42, complete ? "lime" : "glass", "Exercise thumb");
+  const thumb = iconDisk("dumbbell", 36, complete ? "lime" : "glass", "Exercise thumb");
   node.appendChild(thumb);
   const copy = stack("Copy", "VERTICAL", 2);
   copy.appendChild(text(`${title} · ${sets}`, ctx.styles.text.bodyStrong, TOKENS.color.primaryText, "Title"));
@@ -576,7 +584,8 @@ export function exerciseRow(
   node.appendChild(copy);
   copy.layoutSizingHorizontal = "FILL";
   wrap.appendChild(node);
-  if (slid) node.x = -56;
+  node.x = slid ? -56 : 0;
+  node.y = 0;
   return wrap;
 }
 
@@ -592,44 +601,73 @@ export function safetyPanel(ctx: DesignContext, lines: string[]): FrameNode {
   return node;
 }
 
+function libraryComponent(ctx: DesignContext, name: string, width = 300, height = 64, icon: IconName = "shield"): FrameNode {
+  const node = row(name, TOKENS.space.md);
+  node.name = name;
+  node.resize(width, height);
+  node.primaryAxisSizingMode = "FIXED";
+  node.counterAxisSizingMode = "FIXED";
+  node.layoutSizingHorizontal = "FIXED";
+  node.layoutSizingVertical = "FIXED";
+  node.primaryAxisAlignItems = "SPACE_BETWEEN";
+  node.counterAxisAlignItems = "CENTER";
+  node.paddingLeft = TOKENS.space.md;
+  node.paddingRight = TOKENS.space.md;
+  node.paddingTop = TOKENS.space.sm;
+  node.paddingBottom = TOKENS.space.sm;
+  node.cornerRadius = TOKENS.radius.lg;
+  node.fills = [glassFill()];
+  node.strokes = [glassStroke()];
+  node.strokeWeight = 1;
+  node.effects = [{ type: "BACKGROUND_BLUR", radius: 16, visible: true, blurType: "NORMAL" }];
+
+  const left = row("Preview", TOKENS.space.sm);
+  left.appendChild(iconDisk(icon, 34, name.includes("Danger") ? "danger" : name.includes("Status") ? "warning" : "lime"));
+  const copy = stack("Component label", "VERTICAL", 2);
+  copy.appendChild(text(name, ctx.styles.text.bodyStrong, TOKENS.color.primaryText, "Name"));
+  copy.appendChild(text("Reusable auto-layout component", ctx.styles.text.caption, TOKENS.color.mutedText, "Description"));
+  left.appendChild(copy);
+  node.appendChild(left);
+  left.layoutSizingHorizontal = "FILL";
+  node.appendChild(createIcon("chevron", 14, TOKENS.color.subtleText));
+  return node;
+}
+
 export function createComponentLibrary(ctx: DesignContext, page: PageNode, x = 520, y = 120): void {
-  const section = stack("Reusable Components", "VERTICAL", TOKENS.space.xl);
-  section.x = x;
-  section.y = y;
-  page.appendChild(section);
+  const title = text("Reusable Components", ctx.styles.text.h2, TOKENS.color.primaryText);
+  title.x = x;
+  title.y = y - 48;
+  page.appendChild(title);
 
-  const samples = [
-    mobileShell(ctx, "AppShell / Mobile"),
-    glassCard("Card / Glass", 310),
-    button(ctx, "Scan QR", "primary", "qr"),
-    button(ctx, "Cancel", "secondary"),
-    button(ctx, "Delete", "danger", "trash"),
-    chip(ctx, "Assigned", "lime"),
-    chip(ctx, "Trainer", "glass"),
-    bottomNav(ctx, "Member", memberNavItems, "Home"),
-    bottomNav(ctx, "Trainer", trainerNavItems, "Clients"),
-    bottomNav(ctx, "Owner", ownerNavItems, "Command"),
-    bottomNav(ctx, "Receptionist", receptionistNavItems, "Desk"),
-    header(ctx, "Header / Mobile", "Iron Temple Gym", "back", "bell"),
-    kpiCard(ctx, "Active members", "412"),
-    listRow(ctx, "List Row", "Operational detail", "clock"),
-    textField(ctx, "Amount", "₹2,499"),
-    searchBar(ctx, "Search water, protein, towel..."),
-    productCard(ctx, "Protein Shake", "₹149", "Ready", "lime"),
-    exerciseRow(ctx, "Bench Press", "4 sets", "Barbell · 8–12 reps"),
-    safetyPanel(ctx, ["Blocked content: none", "Medical-risk check: clear"]),
-    statusBar(ctx)
-  ];
+  const components = [
+    ["AppShell / Mobile", "home"],
+    ["Card / Glass", "shield"],
+    ["Button / Primary Lime", "plus"],
+    ["Button / Secondary Glass", "chevron"],
+    ["Button / Danger Swipe", "trash"],
+    ["Chip / Status", "warning"],
+    ["Chip / Role", "user"],
+    ["Bottom Nav / Member", "home"],
+    ["Bottom Nav / Trainer", "dumbbell"],
+    ["Bottom Nav / Owner", "shield"],
+    ["Bottom Nav / Receptionist", "rupee"],
+    ["Header / Mobile", "bell"],
+    ["KPI Card", "rupee"],
+    ["List Row", "clipboard"],
+    ["Text Field", "edit"],
+    ["Search Bar", "qr"],
+    ["Product Card", "bag"],
+    ["Exercise Row", "dumbbell"],
+    ["Safety Panel", "shield"],
+    ["Status Bar", "clock"]
+  ] as const;
 
-  for (const sample of samples) {
-    const component = figma.createComponent();
-    component.name = sample.name;
-    component.resize(sample.width, sample.height);
-    component.appendChild(sample);
-    sample.x = 0;
-    sample.y = 0;
-    section.appendChild(component);
-  }
+  components.forEach(([name, icon], index) => {
+    const component = libraryComponent(ctx, name, 300, 64, icon);
+    page.appendChild(component);
+    component.x = x + (index % 3) * 324;
+    component.y = y + Math.floor(index / 3) * 88;
+  });
 }
 
 export const memberNavItems: NavItem[] = [

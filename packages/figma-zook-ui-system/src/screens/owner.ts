@@ -3,6 +3,7 @@ import {
   bottomNav,
   chip,
   divider,
+  footerSpacer,
   glassCard,
   header,
   kpiCard,
@@ -69,6 +70,7 @@ export function ownerCommand(ctx: DesignContext): FrameNode {
     recent.appendChild(item);
   }
   screen.appendChild(recent);
+  footerSpacer(screen);
   screen.appendChild(bottomNav(ctx, "Owner", ownerNavItems, "Command"));
   return screen;
 }

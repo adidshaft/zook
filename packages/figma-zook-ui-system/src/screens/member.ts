@@ -6,6 +6,7 @@ import {
   chip,
   divider,
   exerciseRow,
+  footerSpacer,
   fixedFrame,
   glassCard,
   header,
@@ -118,9 +119,13 @@ export function memberHome(ctx: DesignContext): FrameNode {
   label.appendChild(iconDisk("shield", 28, "lime"));
   label.appendChild(text("Active Membership", ctx.styles.text.small, TOKENS.color.mutedText));
   membershipCopy.appendChild(label);
-  membershipCopy.appendChild(text("Hybrid Pro — 22 days left", ctx.styles.text.h2));
+  const headline = row("Membership headline", 6);
+  headline.appendChild(text("Hybrid Pro", ctx.styles.text.h2));
+  headline.appendChild(text("22 days left", ctx.styles.text.bodyStrong, TOKENS.color.accent));
+  membershipCopy.appendChild(headline);
   membershipCopy.appendChild(text("8 visits remaining", ctx.styles.text.body, TOKENS.color.mutedText));
   top.appendChild(membershipCopy);
+  membershipCopy.layoutSizingHorizontal = "FILL";
   top.appendChild(progressRing(ctx, "73%"));
   membership.appendChild(top);
   membership.appendChild(divider(314));
@@ -139,7 +144,7 @@ export function memberHome(ctx: DesignContext): FrameNode {
   planRow.primaryAxisAlignItems = "SPACE_BETWEEN";
   planRow.appendChild(iconDisk("dumbbell", 44, "lime"));
   const planCopy = stack("Plan copy", "VERTICAL", 2);
-  planCopy.appendChild(text("Push Day · 6 exercises · Coach Rhea", ctx.styles.text.bodyStrong));
+  planCopy.appendChild(paragraph("Push Day · 6 exercises · Coach Rhea", ctx.styles.text.bodyStrong, 178, TOKENS.color.primaryText, "Title"));
   planCopy.appendChild(text("Chest · Shoulders · Triceps", ctx.styles.text.small, TOKENS.color.mutedText));
   planRow.appendChild(planCopy);
   planCopy.layoutSizingHorizontal = "FILL";
@@ -149,29 +154,14 @@ export function memberHome(ctx: DesignContext): FrameNode {
 
   const activity = glassCard("Activity Metrics Card", 350, 14, TOKENS.radius.xl);
   activity.layoutMode = "HORIZONTAL";
+  activity.counterAxisSizingMode = "AUTO";
   activity.primaryAxisAlignItems = "SPACE_BETWEEN";
   activity.counterAxisAlignItems = "CENTER";
   activity.appendChild(metricTile(ctx, "clock", "Streak", "5 days"));
   activity.appendChild(metricTile(ctx, "qr", "Last check-in", "7:12 AM"));
   activity.appendChild(metricTile(ctx, "check", "Weekly goal", "3/5"));
   screen.appendChild(activity);
-
-  const quick = glassCard("Member Quick Actions", 350, 12, TOKENS.radius.xl);
-  quick.layoutMode = "HORIZONTAL";
-  quick.primaryAxisAlignItems = "SPACE_BETWEEN";
-  for (const [labelText, icon] of [
-    ["Book", "clock"],
-    ["Stats", "shield"],
-    ["Payments", "rupee"],
-    ["Support", "bell"]
-  ] as const) {
-    const item = stack(`Quick action / ${labelText}`, "VERTICAL", 5);
-    item.counterAxisAlignItems = "CENTER";
-    item.appendChild(createIcon(icon, 19, TOKENS.color.mutedText));
-    item.appendChild(text(labelText, ctx.styles.text.caption, TOKENS.color.mutedText));
-    quick.appendChild(item);
-  }
-  screen.appendChild(quick);
+  footerSpacer(screen);
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Home"));
   return screen;
 }
@@ -241,11 +231,13 @@ export function memberScanner(ctx: DesignContext): FrameNode {
   screen.appendChild(validation);
   const support = glassCard("Support Panel", 350, 12, TOKENS.radius.xl);
   support.layoutMode = "HORIZONTAL";
+  support.counterAxisSizingMode = "AUTO";
   support.primaryAxisAlignItems = "SPACE_BETWEEN";
   support.counterAxisAlignItems = "CENTER";
   support.appendChild(text("Need help? Ask receptionist", ctx.styles.text.bodyStrong, TOKENS.color.mutedText));
   support.appendChild(createIcon("chevron", 16, TOKENS.color.mutedText));
   screen.appendChild(support);
+  footerSpacer(screen);
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Check-in"));
   return screen;
 }
@@ -277,6 +269,7 @@ export function attendanceApproved(ctx: DesignContext): FrameNode {
   screen.appendChild(code);
   const next = glassCard("Next Up Card", 350, 14, TOKENS.radius.xl);
   next.layoutMode = "HORIZONTAL";
+  next.counterAxisSizingMode = "AUTO";
   next.primaryAxisAlignItems = "SPACE_BETWEEN";
   next.counterAxisAlignItems = "CENTER";
   next.appendChild(iconDisk("dumbbell", 44, "lime"));
@@ -287,6 +280,7 @@ export function attendanceApproved(ctx: DesignContext): FrameNode {
   copy.layoutSizingHorizontal = "FILL";
   next.appendChild(chip(ctx, "Open Plan", "lime", "chevron"));
   screen.appendChild(next);
+  footerSpacer(screen);
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Check-in"));
   return screen;
 }
@@ -314,6 +308,7 @@ export function attendancePending(ctx: DesignContext): FrameNode {
   screen.appendChild(code);
   const reason = glassCard("Why Review Card", 350, 14, TOKENS.radius.xl);
   reason.layoutMode = "HORIZONTAL";
+  reason.counterAxisSizingMode = "AUTO";
   reason.appendChild(iconDisk("warning", 48, "warning"));
   const reasonCopy = stack("Reason copy", "VERTICAL", 4);
   reasonCopy.appendChild(text("Why review?", ctx.styles.text.h3));
@@ -353,7 +348,14 @@ export function memberShop(ctx: DesignContext): FrameNode {
   categories.resize(350, 36);
   categories.primaryAxisSizingMode = "FIXED";
   categories.clipsContent = true;
-  for (const [label, selected] of [["All", true], ["Water", false], ["Protein Shake", false], ["Shaker", false], ["Towel", false]] as const) {
+  for (const [label, selected] of [
+    ["All", true],
+    ["Water", false],
+    ["Protein Shake", false],
+    ["Shaker", false],
+    ["Towel", false],
+    ["Supplement", false]
+  ] as const) {
     categories.appendChild(chip(ctx, label, selected ? "lime" : "glass"));
   }
   screen.appendChild(categories);
@@ -369,41 +371,45 @@ export function memberShop(ctx: DesignContext): FrameNode {
   screen.appendChild(grid);
   const miniCart = glassCard("Floating Mini Cart", 246, 12, TOKENS.radius.xxl);
   miniCart.layoutMode = "HORIZONTAL";
+  miniCart.counterAxisSizingMode = "AUTO";
   miniCart.primaryAxisAlignItems = "SPACE_BETWEEN";
   miniCart.counterAxisAlignItems = "CENTER";
   miniCart.appendChild(createIcon("cart", 22, TOKENS.color.primaryText));
   miniCart.appendChild(text("2 items · ₹548", ctx.styles.text.bodyStrong));
   miniCart.appendChild(createIcon("chevron", 16, TOKENS.color.accent));
   screen.appendChild(miniCart);
+  footerSpacer(screen);
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Shop"));
   return screen;
 }
 
 export function memberPlanDetail(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Member / 06 Plan Detail");
-  screen.itemSpacing = 10;
+  screen.itemSpacing = 6;
   screen.appendChild(header(ctx, "Push Day", undefined, "back", "more"));
   const summary = glassCard("Plan Summary Card", 350, 14, TOKENS.radius.xl);
+  summary.itemSpacing = 10;
   const summaryTop = row("Summary top", TOKENS.space.md);
-  summaryTop.resize(322, 80);
+  summaryTop.resize(322, 68);
   summaryTop.primaryAxisSizingMode = "FIXED";
   summaryTop.counterAxisSizingMode = "FIXED";
   summaryTop.primaryAxisAlignItems = "SPACE_BETWEEN";
   const coach = row("Coach", TOKENS.space.md);
-  coach.appendChild(avatar(ctx, "CR", 52, "Coach Rhea avatar"));
+  coach.appendChild(avatar(ctx, "CR", 44, "Coach Rhea avatar"));
   const coachCopy = stack("Coach copy", "VERTICAL", 4);
   coachCopy.appendChild(text("Assigned by", ctx.styles.text.small, TOKENS.color.mutedText));
   coachCopy.appendChild(text("Coach Rhea", ctx.styles.text.h3));
   coachCopy.appendChild(chip(ctx, "Trainer", "lime"));
   coach.appendChild(coachCopy);
   summaryTop.appendChild(coach);
-  const facts = stack("Plan facts", "VERTICAL", 7);
+  const facts = stack("Plan facts", "VERTICAL", 4);
   facts.appendChild(text("6 exercises", ctx.styles.text.bodyStrong));
   facts.appendChild(text("45–60 min", ctx.styles.text.bodyStrong));
   facts.appendChild(text("Difficulty: Medium", ctx.styles.text.bodyStrong, TOKENS.color.warning));
   summaryTop.appendChild(facts);
   summary.appendChild(summaryTop);
-  const progress = glassCard("Progress inset", 322, 10, TOKENS.radius.lg);
+  const progress = glassCard("Progress inset", 322, 8, TOKENS.radius.lg);
+  progress.itemSpacing = 6;
   progress.appendChild(text("Progress", ctx.styles.text.small, TOKENS.color.mutedText));
   const progressRow = row("Progress text", 4);
   progressRow.appendChild(text("2", ctx.styles.text.bodyStrong, TOKENS.color.accent));
@@ -423,6 +429,7 @@ export function memberPlanDetail(ctx: DesignContext): FrameNode {
   screen.appendChild(list);
   const sticky = glassCard("Sticky action bar", 350, 10, TOKENS.radius.xl);
   sticky.layoutMode = "HORIZONTAL";
+  sticky.counterAxisSizingMode = "AUTO";
   sticky.primaryAxisAlignItems = "SPACE_BETWEEN";
   sticky.counterAxisAlignItems = "CENTER";
   sticky.appendChild(button(ctx, "Complete", "primary", "check", 168));

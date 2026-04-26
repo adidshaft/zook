@@ -17,7 +17,7 @@ pnpm --filter @zook/figma-ui-system build
 3. Select `packages/figma-zook-ui-system/manifest.json`.
 4. Run `Zook — Product UI System v1`.
 
-The plugin regenerates:
+The plugin regenerates one Figma page named `Zook UI System v1 — Current`, with clearly labeled sections for:
 
 - `00 — Cover`
 - `01 — UI Kit`
@@ -33,7 +33,7 @@ It also creates the reusable component library, final mobile screens, clean dupl
 
 ## Regenerate the File
 
-Run the development plugin in a fresh Figma file whenever possible. The generator clears the current page, renames it to `00 — Cover`, then creates the remaining pages. This avoids loading every page in large files and keeps plugin startup reliable.
+Run the development plugin in a fresh Figma file whenever possible. The generator removes earlier Zook-generated pages, clears the active generated page, then rebuilds the full system as sectioned content on `Zook UI System v1 — Current`. This avoids Figma Free page-limit issues and prevents regenerated frames from stacking on top of older output.
 
 If Figma appears stuck while importing a development manifest, quit Figma Desktop, reopen a blank design file, rebuild with `pnpm --filter @zook/figma-ui-system build`, then import `manifest.json` again. The development manifest intentionally omits a fixed plugin `id`; Figma assigns one locally.
 
@@ -47,12 +47,12 @@ Then import `packages/figma-zook-ui-system/manifest.smoke.json`. If the smoke ma
 
 ## Export
 
-Every frame named with `AUTO_EXPORT` receives:
+Every frame named with `AUTO_EXPORT` is prepared for:
 
 - PNG @2x
 - JPG @1x
 
-Use Figma's export panel on page `07 — Export Frames` and export to an `/exports` folder. The plugin also exposes an `exportAutoFrames` helper internally; because Figma plugins cannot write arbitrary local files without a UI/download flow, it logs instructions and validates the generated auto-export frame set.
+Use Figma's export panel on the `07 — Export Frames` section and export to an `/exports` folder. The plugin also exposes an `exportAutoFrames` helper internally; because Figma plugins cannot write arbitrary local files without a UI/download flow, it logs instructions and validates the generated auto-export frame set. The main generator does not attach live export settings during generation because that pass can make Figma Desktop appear stuck in development mode on large files.
 
 Clean export frame names:
 

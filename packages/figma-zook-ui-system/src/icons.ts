@@ -51,8 +51,8 @@ function addLine(frame: FrameNode, name: string, x: number, y: number, width: nu
 export function createIcon(name: IconName, size = 20, color: string = TOKENS.color.mutedText): FrameNode {
   const node = figma.createFrame();
   node.name = `Icon / ${name}`;
-  node.x = -20000;
-  node.y = -20000;
+  node.x = 0;
+  node.y = 0;
   node.resize(size, size);
   node.fills = [];
   node.clipsContent = false;

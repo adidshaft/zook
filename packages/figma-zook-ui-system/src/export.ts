@@ -12,7 +12,9 @@ export const exportFrameNames = [
 ] as const;
 
 export function applyAutoExportSettings(root: PageNode | FrameNode = figma.currentPage): FrameNode[] {
-  const frames = root.findAll((node: SceneNode) => node.type === "FRAME" && node.name.startsWith("AUTO_EXPORT")) as FrameNode[];
+  const frames = root.children.filter(
+    (node): node is FrameNode => node.type === "FRAME" && node.name.startsWith("AUTO_EXPORT")
+  );
   for (const frame of frames) {
     frame.exportSettings = [
       { format: "PNG", constraint: { type: "SCALE", value: 2 }, suffix: "@2x" },

@@ -1,5 +1,5 @@
-import { createComponentLibrary, DesignContext, fixedFrame, glassCard, row, stack, text } from "./components";
-import { applyAutoExportSettings, exportAutoFrames, exportFrameNames } from "./export";
+import { DesignContext, fixedFrame, row, stack, text } from "./components";
+import { exportFrameNames } from "./export";
 import { createIcon, IconName } from "./icons";
 import { ownerScreens } from "./screens/owner";
 import { memberScreens } from "./screens/member";
@@ -20,14 +20,29 @@ const pageNames = [
   "08 — Notes / Handoff"
 ] as const;
 
-function resetGeneratedPages(): Record<(typeof pageNames)[number], PageNode> {
+function isGeneratedPage(page: PageNode): boolean {
+  return (
+    page.name === "Zook Generator Staging" ||
+    pageNames.includes(page.name as (typeof pageNames)[number]) ||
+    page.name.startsWith("Zook UI System v1")
+  );
+}
+
+async function resetGeneratedPages(): Promise<Record<(typeof pageNames)[number], PageNode>> {
   const pages = {} as Record<(typeof pageNames)[number], PageNode>;
-  const runPage = figma.createPage();
-  runPage.name = `Zook UI System v1 — Current ${new Date().toLocaleTimeString()}`;
-  figma.currentPage = runPage;
+  const generatedPages = figma.root.children.filter(isGeneratedPage);
+  let runPage = figma.root.children.find((page) => !generatedPages.includes(page)) ?? generatedPages[0];
+  if (!runPage) runPage = figma.createPage();
+  await figma.setCurrentPageAsync(runPage);
+  for (const page of generatedPages) {
+    if (page !== runPage) page.remove();
+  }
+  runPage.name = "Zook UI System v1 — Current";
+  for (const child of [...runPage.children]) child.remove();
   for (const name of pageNames) {
     pages[name] = runPage;
   }
+  await figma.setCurrentPageAsync(runPage);
   return pages;
 }
 
@@ -37,7 +52,17 @@ function nextRunY(page: PageNode): number {
 }
 
 function sectionMarker(ctx: DesignContext, page: PageNode, label: string, x: number, y: number): void {
-  const marker = glassCard(`Section / ${label}`, 420, 14, 20);
+  const marker = row(`Section / ${label}`, 8);
+  marker.resize(420, 52);
+  marker.primaryAxisSizingMode = "FIXED";
+  marker.counterAxisSizingMode = "FIXED";
+  marker.paddingLeft = 16;
+  marker.paddingRight = 16;
+  marker.cornerRadius = 20;
+  marker.fills = [solid(TOKENS.color.accent, 0.1)];
+  marker.strokes = [solid(TOKENS.color.accent, 0.32)];
+  marker.strokeWeight = 1;
+  marker.appendChild(createIcon("shield", 16, TOKENS.color.accent));
   marker.appendChild(text(label, ctx.styles.text.h2, TOKENS.color.accent));
   page.appendChild(marker);
   marker.x = x;
@@ -50,6 +75,11 @@ function placeFrames(page: PageNode, frames: FrameNode[], startX = 80, startY = 
     frame.x = startX + (index % 5) * (TOKENS.frame.mobile.width + gap);
     frame.y = startY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
   });
+}
+
+function afterFrameGrid(startY: number, count: number, columns = 5, bottomGap = 180): number {
+  const rows = Math.max(1, Math.ceil(count / columns));
+  return startY + rows * TOKENS.frame.mobile.height + (rows - 1) * 96 + bottomGap;
 }
 
 function createCover(ctx: DesignContext, page: PageNode, thumbnails: FrameNode[], yOffset = 0): void {
@@ -98,20 +128,29 @@ function createCover(ctx: DesignContext, page: PageNode, thumbnails: FrameNode[]
 
 function createUiKit(ctx: DesignContext, page: PageNode, yOffset = 0): void {
   sectionMarker(ctx, page, "01 — UI Kit", 80, yOffset);
-  const title = text("Zook UI Kit", ctx.styles.text.h1, TOKENS.color.primaryText);
-  title.x = 80;
-  title.y = yOffset + 84;
-  page.appendChild(title);
+  const board = stack("UI Kit / Zook Product UI System", "VERTICAL", 22);
+  board.resize(1180, 760);
+  board.primaryAxisSizingMode = "FIXED";
+  board.counterAxisSizingMode = "FIXED";
+  board.paddingTop = 28;
+  board.paddingBottom = 28;
+  board.paddingLeft = 28;
+  board.paddingRight = 28;
+  board.cornerRadius = 28;
+  board.fills = [solid(TOKENS.color.surface, 0.98)];
+  board.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
+  board.strokeWeight = 1;
+  board.x = 80;
+  board.y = yOffset + 84;
+  board.appendChild(text("Zook UI Kit", ctx.styles.text.h1, TOKENS.color.primaryText));
 
-  const colors = stack("Colors", "VERTICAL", 16);
-  colors.x = 80;
-  colors.y = yOffset + 152;
+  const colors = stack("Colors", "VERTICAL", 12);
   colors.appendChild(text("Colors", ctx.styles.text.h2));
-  const colorGrid = stack("Color swatches", "HORIZONTAL", 12);
-  for (const [name, hex] of Object.entries(TOKENS.color)) {
+  const colorGrid = stack("Color swatches", "HORIZONTAL", 8);
+  for (const [name, hex] of Object.entries(TOKENS.color).slice(0, 12)) {
     const swatch = stack(`Swatch / ${name}`, "VERTICAL", 8);
-    const block = fixedFrame(name, 96, 72);
-    block.cornerRadius = 16;
+    const block = fixedFrame(name, 76, 48);
+    block.cornerRadius = 12;
     block.fills = [solid(hex as `#${string}`)];
     block.strokes = [glassStroke()];
     block.strokeWeight = 1;
@@ -121,37 +160,91 @@ function createUiKit(ctx: DesignContext, page: PageNode, yOffset = 0): void {
     colorGrid.appendChild(swatch);
   }
   colors.appendChild(colorGrid);
-  page.appendChild(colors);
+  board.appendChild(colors);
 
   const type = stack("Typography", "VERTICAL", 12);
-  type.x = 80;
-  type.y = yOffset + 372;
   type.appendChild(text("Typography", ctx.styles.text.h2));
   type.appendChild(text("Display / Inter Bold", ctx.styles.text.display));
   type.appendChild(text("H1 / Command-level page title", ctx.styles.text.h1));
   type.appendChild(text("Body / Operational details with no filler copy", ctx.styles.text.body, TOKENS.color.mutedText));
-  page.appendChild(type);
+  board.appendChild(type);
 
-  const effects = glassCard("Effects", 360);
-  effects.x = 80;
-  effects.y = yOffset + 622;
+  const effects = stack("Effects", "VERTICAL", 10);
+  effects.resize(520, 92);
+  effects.primaryAxisSizingMode = "FIXED";
+  effects.counterAxisSizingMode = "FIXED";
+  effects.paddingTop = 14;
+  effects.paddingBottom = 14;
+  effects.paddingLeft = 14;
+  effects.paddingRight = 14;
+  effects.cornerRadius = 20;
+  effects.fills = [glassFill(TOKENS.opacity.glassLow)];
+  effects.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
+  effects.strokeWeight = 1;
   effects.appendChild(text("Effects", ctx.styles.text.h2));
   effects.appendChild(text("Glass fills, soft shadows, background blur, and subtle lime glow.", ctx.styles.text.body, TOKENS.color.mutedText));
-  page.appendChild(effects);
+  board.appendChild(effects);
 
-  for (const section of ["Buttons", "Chips", "Cards", "Forms", "Navigation", "Icons", "Screen Templates", "Status Components"]) {
-    const label = text(section, ctx.styles.text.h2, TOKENS.color.primaryText);
-    label.x = 520;
-    label.y = yOffset + 84 + ["Buttons", "Chips", "Cards", "Forms", "Navigation", "Icons", "Screen Templates", "Status Components"].indexOf(section) * 56;
-    page.appendChild(label);
+  const sections = ["Buttons", "Chips", "Cards", "Forms", "Navigation", "Icons", "Screen Templates", "Status Components"];
+  const sectionGrid = stack("UI Kit section index", "HORIZONTAL", 8);
+  sections.forEach((section) => {
+    const label = stack(`UI Kit Section / ${section}`, "VERTICAL", 4);
+    label.resize(132, 46);
+    label.primaryAxisSizingMode = "FIXED";
+    label.counterAxisSizingMode = "FIXED";
+    label.paddingTop = 10;
+    label.paddingBottom = 10;
+    label.paddingLeft = 12;
+    label.paddingRight = 12;
+    label.cornerRadius = 18;
+    label.fills = [glassFill(TOKENS.opacity.glassLow)];
+    label.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
+    label.strokeWeight = 1;
+    label.appendChild(text(section, ctx.styles.text.caption, TOKENS.color.primaryText));
+    sectionGrid.appendChild(label);
+  });
+  board.appendChild(sectionGrid);
+
+  const componentNames = [
+    "AppShell / Mobile · Card / Glass · Header / Mobile",
+    "Button / Primary Lime · Button / Secondary Glass · Button / Danger Swipe",
+    "Chip / Status · Chip / Role · KPI Card · List Row",
+    "Text Field · Search Bar · Product Card · Exercise Row",
+    "Bottom Nav / Member · Trainer · Owner · Receptionist",
+    "Safety Panel · Status Bar"
+  ];
+  const componentList = stack("Component master index", "VERTICAL", 8);
+  for (const component of componentNames) {
+    const item = row(`Component Masters / ${component}`, 8);
+    item.resize(880, 34);
+    item.primaryAxisSizingMode = "FIXED";
+    item.counterAxisSizingMode = "FIXED";
+    item.paddingLeft = 12;
+    item.paddingRight = 12;
+    item.cornerRadius = 16;
+    item.fills = [glassFill(TOKENS.opacity.glassLow)];
+    item.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
+    item.strokeWeight = 1;
+    item.appendChild(createIcon("shield", 14, TOKENS.color.accent));
+    item.appendChild(text(component, ctx.styles.text.caption, TOKENS.color.primaryText, "Name"));
+    componentList.appendChild(item);
   }
+  board.appendChild(componentList);
+
   const iconShelf = row("Icons", 12);
-  iconShelf.x = 900;
-  iconShelf.y = yOffset + 512;
   const icons: IconName[] = ["home", "qr", "clipboard", "bag", "user", "back", "bell", "dumbbell", "shield", "rupee", "clock", "warning", "edit", "trash", "plus", "chevron"];
-  for (const icon of icons) iconShelf.appendChild(createIcon(icon, 24, TOKENS.color.accent));
-  page.appendChild(iconShelf);
-  createComponentLibrary(ctx, page, 520, yOffset + 132);
+  for (const icon of icons) {
+    const slot = fixedFrame(`Icon slot / ${icon}`, 36, 36);
+    slot.cornerRadius = 12;
+    slot.fills = [glassFill(TOKENS.opacity.glassLow)];
+    const glyph = createIcon(icon, 18, TOKENS.color.accent);
+    slot.appendChild(glyph);
+    glyph.x = 9;
+    glyph.y = 9;
+    iconShelf.appendChild(slot);
+  }
+  board.appendChild(iconShelf);
+  page.appendChild(board);
 }
 
 function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameNode[], yOffset = 0): void {
@@ -163,7 +256,18 @@ function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameN
   flow.x = 80;
   flow.y = heading.y + 80;
   for (const screen of screens.slice(0, 6)) {
-    const step = glassCard(`Flow node / ${screen.name}`, 180, 12, 20);
+    const step = stack(`Flow node / ${screen.name}`, "VERTICAL", 8);
+    step.resize(180, 80);
+    step.primaryAxisSizingMode = "FIXED";
+    step.counterAxisSizingMode = "FIXED";
+    step.paddingTop = 12;
+    step.paddingBottom = 12;
+    step.paddingLeft = 12;
+    step.paddingRight = 12;
+    step.cornerRadius = 20;
+    step.fills = [glassFill(TOKENS.opacity.glassLow)];
+    step.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
+    step.strokeWeight = 1;
     step.appendChild(text(screen.name.replace("AUTO_EXPORT / Member / ", ""), ctx.styles.text.small));
     step.appendChild(createIcon("chevron", 16, TOKENS.color.accent));
     flow.appendChild(step);
@@ -180,7 +284,7 @@ function createNotes(ctx: DesignContext, page: PageNode, yOffset = 0): void {
   for (const line of [
     "All final mobile frames are 390×844 and named with AUTO_EXPORT prefixes.",
     "Page 07 contains clean duplicates for export and handoff.",
-    "Export settings are attached to every AUTO_EXPORT frame: PNG @2x and JPG @1x.",
+    "AUTO_EXPORT frames are named for export; use exportAutoFrames or Figma's export panel for PNG @2x and JPG @1x.",
     "Typography uses Inter as the plugin-safe fallback for Satoshi/SF Pro.",
     "The visual system stays premium, operational, glassy, and India-first without sci-fi or mascot elements.",
     "Run exportAutoFrames from plugin dev code to validate/export bytes; use Figma export panel for filesystem output."
@@ -190,20 +294,20 @@ function createNotes(ctx: DesignContext, page: PageNode, yOffset = 0): void {
   page.appendChild(notes);
 }
 
-function duplicateExportFrames(page: PageNode, screens: FrameNode[], startY: number): void {
+function placeExportFrames(page: PageNode, screens: FrameNode[], startY: number): void {
   screens.forEach((screen, index) => {
-    const clone = screen.clone();
-    clone.name = exportFrameNames[index] ?? `AUTO_EXPORT / ${index + 1}`;
-    page.appendChild(clone);
-    clone.x = 80 + (index % 5) * (TOKENS.frame.mobile.width + 40);
-    clone.y = startY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
+    screen.name = exportFrameNames[index] ?? `AUTO_EXPORT / ${index + 1}`;
+    page.appendChild(screen);
+    screen.x = 80 + (index % 5) * (TOKENS.frame.mobile.width + 40);
+    screen.y = startY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
   });
 }
 
 function buildScreens(label: string, creators: Array<(ctx: DesignContext) => FrameNode>, ctx: DesignContext): FrameNode[] {
   const screens: FrameNode[] = [];
   for (const [index, createScreen] of creators.entries()) {
-    figma.notify(`Creating ${label} screen ${index + 1}/${creators.length}…`, { timeout: 2500 });
+    void label;
+    void index;
     screens.push(createScreen(ctx));
   }
   return screens;
@@ -211,13 +315,9 @@ function buildScreens(label: string, creators: Array<(ctx: DesignContext) => Fra
 
 async function main(): Promise<void> {
   figma.notify("Zook generator starting…");
-  figma.notify("Loading Inter fonts…");
   await loadTokenFonts();
-  figma.notify("Building file with native text…");
-  const pages = resetGeneratedPages();
-  figma.notify("Pages ready. Preparing tokens…");
-  const styles = createTokenStyles();
-  figma.notify("Tokens ready. Creating screens…");
+  const pages = await resetGeneratedPages();
+  const styles = await createTokenStyles();
   const ctx: DesignContext = { styles };
 
   const member = buildScreens("Member", memberScreens, ctx);
@@ -232,34 +332,50 @@ async function main(): Promise<void> {
   figma.notify("Cover ready. Creating UI kit…");
   createUiKit(ctx, pages["01 — UI Kit"], runY + 1160);
   figma.notify("UI kit ready. Placing mobile frames…");
-  sectionMarker(ctx, pages["02 — Mobile / Member"], "02 — Mobile / Member", 80, runY + 2280);
-  placeFrames(pages["02 — Mobile / Member"], member, 80, runY + 2360);
-  sectionMarker(ctx, pages["03 — Mobile / Trainer"], "03 — Mobile / Trainer", 80, runY + 3300);
-  placeFrames(pages["03 — Mobile / Trainer"], trainer, 80, runY + 3380);
-  sectionMarker(ctx, pages["04 — Mobile / Receptionist"], "04 — Mobile / Receptionist", 80, runY + 4320);
-  placeFrames(pages["04 — Mobile / Receptionist"], receptionist, 80, runY + 4400);
-  sectionMarker(ctx, pages["05 — Mobile / Owner"], "05 — Mobile / Owner", 80, runY + 5340);
-  placeFrames(pages["05 — Mobile / Owner"], owner, 80, runY + 5420);
-  figma.notify("Mobile frames ready. Creating exports…");
-  sectionMarker(ctx, pages["06 — Prototypes"], "06 — Prototypes", 80, runY + 6360);
-  createPrototypePage(ctx, pages["06 — Prototypes"], member, runY + 6440);
-  sectionMarker(ctx, pages["07 — Export Frames"], "07 — Export Frames", 80, runY + 6740);
-  duplicateExportFrames(pages["07 — Export Frames"], allScreens, runY + 6820);
-  sectionMarker(ctx, pages["08 — Notes / Handoff"], "08 — Notes / Handoff", 80, runY + 8840);
-  createNotes(ctx, pages["08 — Notes / Handoff"], runY + 8920);
-  figma.notify("Applying export settings…");
-  applyAutoExportSettings();
 
-  figma.currentPage = pages["00 — Cover"];
-  const coverNode = pages["00 — Cover"].children
-    .slice()
-    .reverse()
-    .find((node) => node.name === "Cover / Zook Product UI System");
-  if (coverNode) {
-    figma.viewport.scrollAndZoomIntoView([coverNode]);
-  }
+  const memberMarkerY = runY + 2280;
+  const memberFramesY = memberMarkerY + 80;
+  sectionMarker(ctx, pages["02 — Mobile / Member"], "02 — Mobile / Member", 80, memberMarkerY);
+  placeFrames(pages["02 — Mobile / Member"], member, 80, memberFramesY);
+
+  const trainerMarkerY = afterFrameGrid(memberFramesY, member.length);
+  const trainerFramesY = trainerMarkerY + 80;
+  sectionMarker(ctx, pages["03 — Mobile / Trainer"], "03 — Mobile / Trainer", 80, trainerMarkerY);
+  placeFrames(pages["03 — Mobile / Trainer"], trainer, 80, trainerFramesY);
+
+  const receptionistMarkerY = afterFrameGrid(trainerFramesY, trainer.length);
+  const receptionistFramesY = receptionistMarkerY + 80;
+  sectionMarker(ctx, pages["04 — Mobile / Receptionist"], "04 — Mobile / Receptionist", 80, receptionistMarkerY);
+  placeFrames(pages["04 — Mobile / Receptionist"], receptionist, 80, receptionistFramesY);
+
+  const ownerMarkerY = afterFrameGrid(receptionistFramesY, receptionist.length);
+  const ownerFramesY = ownerMarkerY + 80;
+  sectionMarker(ctx, pages["05 — Mobile / Owner"], "05 — Mobile / Owner", 80, ownerMarkerY);
+  placeFrames(pages["05 — Mobile / Owner"], owner, 80, ownerFramesY);
+  figma.notify("Mobile frames ready. Creating exports…");
+
+  const prototypeMarkerY = afterFrameGrid(ownerFramesY, owner.length);
+  const prototypeY = prototypeMarkerY + 80;
+  sectionMarker(ctx, pages["06 — Prototypes"], "06 — Prototypes", 80, prototypeMarkerY);
+  createPrototypePage(ctx, pages["06 — Prototypes"], member, prototypeY);
+
+  const exportMarkerY = prototypeY + 380;
+  const exportFramesY = exportMarkerY + 80;
+  sectionMarker(ctx, pages["07 — Export Frames"], "07 — Export Frames", 80, exportMarkerY);
+  figma.notify("Building clean export frames…");
+  const cleanExports = [
+    ...buildScreens("Member export", memberScreens, ctx),
+    ...buildScreens("Receptionist export", receptionistScreens, ctx),
+    ...buildScreens("Trainer export", trainerScreens, ctx),
+    ...buildScreens("Owner export", ownerScreens, ctx)
+  ];
+  placeExportFrames(pages["07 — Export Frames"], cleanExports, exportFramesY);
+
+  const notesMarkerY = afterFrameGrid(exportFramesY, allScreens.length, 5, 220);
+  sectionMarker(ctx, pages["08 — Notes / Handoff"], "08 — Notes / Handoff", 80, notesMarkerY);
+  createNotes(ctx, pages["08 — Notes / Handoff"], notesMarkerY + 80);
+
   figma.notify("Zook Product UI System v1 generated with AUTO_EXPORT frames.");
-  void exportAutoFrames;
   figma.closePlugin("Zook Product UI System v1 generated.");
 }
 

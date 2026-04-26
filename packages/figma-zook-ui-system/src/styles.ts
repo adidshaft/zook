@@ -31,12 +31,19 @@ export interface StyleRegistry {
 }
 
 function fontForWeight(weight: string): FontName {
-  void weight;
+  if (weight === "Bold") return TOKENS.font.bold;
+  if (weight === "Semi Bold") return TOKENS.font.semibold;
+  if (weight === "Medium") return TOKENS.font.medium;
   return TOKENS.font.regular;
 }
 
 export async function loadTokenFonts(): Promise<void> {
-  await figma.loadFontAsync(TOKENS.font.regular);
+  await Promise.all([
+    figma.loadFontAsync(TOKENS.font.regular),
+    figma.loadFontAsync(TOKENS.font.medium),
+    figma.loadFontAsync(TOKENS.font.semibold),
+    figma.loadFontAsync(TOKENS.font.bold)
+  ]);
 }
 
 function rgba(hex: keyof typeof TOKENS.color, opacity: number): RGBA {
@@ -50,7 +57,37 @@ function rgba(hex: keyof typeof TOKENS.color, opacity: number): RGBA {
   };
 }
 
-export function createTokenStyles(): StyleRegistry {
+function stylePaint(hex: keyof typeof TOKENS.color, opacity = 1): SolidPaint {
+  const { a, ...color } = rgba(hex, opacity);
+  return { type: "SOLID", color, opacity: a };
+}
+
+async function upsertPaintStyle(name: string, paints: Paint[]): Promise<void> {
+  const existing = (await figma.getLocalPaintStylesAsync()).find((style) => style.name === name);
+  const style = existing ?? figma.createPaintStyle();
+  style.name = name;
+  style.paints = paints;
+}
+
+async function upsertTextStyle(name: string, spec: TextSpec): Promise<void> {
+  const existing = (await figma.getLocalTextStylesAsync()).find((style) => style.name === name);
+  const style = existing ?? figma.createTextStyle();
+  style.name = name;
+  style.fontName = spec.fontName;
+  style.fontSize = spec.fontSize;
+  style.lineHeight = spec.lineHeight;
+  style.letterSpacing = { unit: "PIXELS", value: 0 };
+  style.paragraphSpacing = 0;
+}
+
+async function upsertEffectStyle(name: string, effects: Effect[]): Promise<void> {
+  const existing = (await figma.getLocalEffectStylesAsync()).find((style) => style.name === name);
+  const style = existing ?? figma.createEffectStyle();
+  style.name = name;
+  style.effects = effects;
+}
+
+export async function createTokenStyles(): Promise<StyleRegistry> {
   const text = {} as Record<TextStyleName, TextSpec>;
   for (const key of Object.keys(TOKENS.type) as TextStyleName[]) {
     const spec = TOKENS.type[key];
@@ -61,7 +98,19 @@ export function createTokenStyles(): StyleRegistry {
       weight: spec.weight,
       fontName: fontForWeight(spec.weight)
     };
+    await upsertTextStyle(`Zook / Type / ${key}`, text[key]);
   }
+
+  const colors = {} as Record<string, Paint>;
+  for (const [name, hex] of Object.entries(TOKENS.color)) {
+    void hex;
+    const paint = stylePaint(name as keyof typeof TOKENS.color);
+    colors[name] = paint;
+    await upsertPaintStyle(`Zook / Color / ${name}`, [paint]);
+  }
+  await upsertPaintStyle("Zook / Glass / Low", [stylePaint("white", TOKENS.opacity.glassLow)]);
+  await upsertPaintStyle("Zook / Glass / High", [stylePaint("white", TOKENS.opacity.glassHigh)]);
+  await upsertPaintStyle("Zook / Glass / Stroke", [stylePaint("white", TOKENS.opacity.glassStroke)]);
 
   const softShadow: Effect[] = [
     {
@@ -86,9 +135,13 @@ export function createTokenStyles(): StyleRegistry {
     }
   ];
   const backgroundBlur: Effect[] = [{ type: "BACKGROUND_BLUR", radius: 18, visible: true, blurType: "NORMAL" }];
+  await upsertEffectStyle("Zook / Effect / Glass Card", [...softShadow, ...backgroundBlur]);
+  await upsertEffectStyle("Zook / Effect / Lime Glow", limeGlow);
+  await upsertEffectStyle("Zook / Effect / Soft Shadow", softShadow);
+  await upsertEffectStyle("Zook / Effect / Background Blur", backgroundBlur);
 
   return {
-    colors: {},
+    colors,
     text,
     effects: {
       glassCard: [...softShadow, ...backgroundBlur],
