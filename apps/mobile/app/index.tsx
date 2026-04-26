@@ -1,49 +1,48 @@
-import { Stack, useLocalSearchParams } from "expo-router";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Stack, Link } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { zookDemoFixtures } from "@zook/core";
 import {
-  BrandMark,
+  ActiveGymPill,
   Card,
   Dock,
-  EmptyState,
-  InfoRow,
-  LoadingState,
+  IconBubble,
+  MetricTile,
   Pill,
   PrimaryLink,
   Screen,
-  ScreenHeader,
   SecondaryLink,
+  SectionHeader,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
-import { formatLongDate } from "@/lib/formatting";
 import { useMemberHome } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+
+const demoOrg = zookDemoFixtures.organizations[0];
+const demoBranch = zookDemoFixtures.branches[0];
+const demoMembership = zookDemoFixtures.memberships.find((membership) => membership.id === "membership-aarav-hybrid");
+const demoPlan = zookDemoFixtures.trainingPlans.find((plan) => plan.id === "plan-push-day");
 
 export default function Home() {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const routeParams = useLocalSearchParams<{
-    attendanceRecordId?: string;
-    focus?: string;
-    notificationId?: string;
-  }>();
   const { activeOrgId, session } = useAuth();
   const homeQuery = useMemberHome();
   const memberHome = homeQuery.data;
-  
   const activeOrganization =
     memberHome?.activeOrganization ??
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization;
-    
-  const initials =
-    session?.user.name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() ?? "Z";
+  const memberName = session?.user.name || "Aarav Mehta";
+  const firstName = memberName.split(" ")[0] || "Aarav";
+  const orgName = activeOrganization?.name ?? demoOrg?.name ?? "Iron Temple Gym";
+  const city = activeOrganization?.city ?? demoOrg?.city ?? "Pune";
+  const daysLeft = memberHome?.activeMembership?.endsAt ? demoMembership?.daysLeft : demoMembership?.daysLeft;
+  const remainingVisits = memberHome?.activeMembership?.remainingVisits ?? demoMembership?.remainingVisits ?? 8;
+  const planName = memberHome?.activePlan?.name ?? demoPlan?.title ?? "Push Day";
+  const usedPct = 73;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -69,188 +68,103 @@ export default function Home() {
         >
           <View style={styles.topbar}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
+              <Text style={styles.avatarText}>AM</Text>
             </View>
             <View style={styles.topbarCopy}>
-              <Text style={styles.eyebrow}>
-                {activeOrganization?.name ?? "Choose your gym"}
-              </Text>
-              <Text style={styles.topbarTitle}>
-                {session?.user.name?.split(" ")[0]
-                  ? `Hey, ${session.user.name.split(" ")[0]}`
-                  : "Welcome back"}
-              </Text>
+              <Text style={styles.greeting}>Good morning, {firstName}</Text>
+              <ActiveGymPill label={`${orgName} · ${city}`} />
             </View>
-            <Pill
-              tone={
-                session?.user.guardianPending
-                  ? "amber"
-                  : memberHome?.activeMembership
-                    ? "lime"
-                    : "blue"
-              }
-            >
-              {session?.user.guardianPending
-                ? "Consent pending"
-                : memberHome?.activeMembership
-                  ? "Active"
-                  : "Ready to join"}
-            </Pill>
+            <Link href="/notifications" asChild>
+              <Pressable style={styles.bellButton} accessibilityRole="button" accessibilityLabel="Open notifications">
+                <Ionicons name="notifications-outline" size={22} color={colors.text} />
+                <View style={styles.unreadDot} />
+              </Pressable>
+            </Link>
           </View>
 
-          {routeParams.focus === "attendance" ? (
-            <Card style={styles.routeCalloutCard}>
-              <Pill tone="blue">Attendance update</Pill>
-              <Text style={styles.routeCalloutTitle}>
-                Check-in recorded.
-              </Text>
-              <Text style={styles.cardBody}>
-                {routeParams.attendanceRecordId
-                  ? "Your attendance has been logged. See details below."
-                  : "Your latest attendance context is ready."}
-              </Text>
-            </Card>
-          ) : null}
+          <Card style={styles.membershipCard}>
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={styles.cardEyebrow}>Active Membership</Text>
+                <Text style={styles.membershipTitle}>Hybrid Pro</Text>
+              </View>
+              <View style={styles.progressRing}>
+                <Text style={styles.progressValue}>{usedPct}%</Text>
+                <Text style={styles.progressLabel}>used</Text>
+              </View>
+            </View>
+            <View style={styles.membershipMeta}>
+              <Pill tone="lime">{daysLeft ?? 22} days left</Pill>
+              <Pill tone="blue">{remainingVisits} visits remaining</Pill>
+              <Pill tone="neutral">{demoBranch?.name ?? "Default Branch"}</Pill>
+            </View>
+            <View style={styles.actionRow}>
+              <PrimaryLink href="/scan" style={styles.actionHalf}>
+                Scan QR
+              </PrimaryLink>
+              <SecondaryLink href="/tracking" style={styles.actionHalf}>
+                Start Workout
+              </SecondaryLink>
+            </View>
+          </Card>
 
-          {homeQuery.isLoading && !memberHome ? (
-            <LoadingState
-              title="Loading your gym"
-              body="Syncing memberships, attendance, and plans."
+          <Card style={styles.planCard}>
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={styles.cardEyebrow}>Today's Plan</Text>
+                <Text style={styles.cardTitle}>{planName}</Text>
+              </View>
+              <Pill tone="lime">Assigned</Pill>
+            </View>
+            <Text style={styles.cardBody}>6 exercises · Coach Rhea · Chest, Shoulders, Triceps</Text>
+            <View style={styles.planMetaRow}>
+              <Pill tone="neutral">60-75 min</Pill>
+              <Pill tone="blue">Intermediate</Pill>
+            </View>
+            <PrimaryLink href="/plans" tone="secondary">
+              Open Plan
+            </PrimaryLink>
+          </Card>
+
+          <SectionHeader title="Activity" subtitle="This week at Iron Temple." />
+          <View style={styles.metricGrid}>
+            <MetricTile
+              label="Streak"
+              value={`${demoMembership?.streakDays ?? 5} days`}
+              detail="Consistent check-ins"
+              tone="lime"
+              style={styles.metricHalf}
             />
-          ) : null}
-
-          {!homeQuery.isLoading && !memberHome ? (
-            <EmptyState
-              title="No gym selected"
-              body="Pick a gym to unlock memberships, plans, and check-in."
-              action={<PrimaryLink href="/find-gyms">Browse gyms</PrimaryLink>}
+            <MetricTile
+              label="Last check-in"
+              value={demoMembership?.lastCheckInLabel ?? "7:12 AM"}
+              detail="Default Branch"
+              tone="blue"
+              style={styles.metricHalf}
             />
-          ) : null}
+            <MetricTile
+              label="Weekly goal"
+              value={`${demoMembership?.weeklyGoalCompleted ?? 3}/${demoMembership?.weeklyGoalTarget ?? 5}`}
+              detail="Visits completed"
+              tone="amber"
+              style={styles.metricHalf}
+            />
+            <MetricTile
+              label="Inbox"
+              value={`${memberHome?.unreadNotifications ?? 1}`}
+              detail="Unread updates"
+              tone="violet"
+              style={styles.metricHalf}
+            />
+          </View>
 
-          {memberHome ? (
-            <Card style={styles.heroCard}>
-              <View style={styles.heroGlow} />
-              <ScreenHeader
-                title={memberHome?.activeMembership ? "Scan, train, show code." : "Find your gym."}
-                subtitle={
-                  memberHome?.activeMembership
-                    ? "QR check-in creates a unique entry code for the floor team."
-                    : "Discover gyms, compare plans, and join from mobile."
-                }
-              />
-              
-              <View style={styles.primaryActionWrapper}>
-                {memberHome?.activeMembership ? (
-                  <PrimaryLink href="/scan" style={styles.hugeButton} textStyle={styles.hugeButtonText}>
-                    Scan In
-                  </PrimaryLink>
-                ) : (
-                  <PrimaryLink href="/find-gyms" style={styles.hugeButton} textStyle={styles.hugeButtonText}>
-                    Find Gyms
-                  </PrimaryLink>
-                )}
-              </View>
-
-              <View style={styles.heroActions}>
-                <SecondaryLink href="/plans" style={styles.heroAction}>
-                  Plans
-                </SecondaryLink>
-                <SecondaryLink href="/tracking" style={styles.heroAction}>
-                  Log Workout
-                </SecondaryLink>
-                <SecondaryLink href="/profile" style={styles.heroAction}>
-                  Profile
-                </SecondaryLink>
-              </View>
-
-              <View style={styles.heroMeta}>
-                <InfoRow
-                  label="Gym"
-                  value={activeOrganization?.name ?? "Not selected"}
-                  tone={activeOrganization ? "lime" : "amber"}
-                />
-                <InfoRow
-                  label="Plan"
-                  value={memberHome?.activePlan?.name ?? "No active plan"}
-                  tone={memberHome?.activePlan ? "lime" : "neutral"}
-                />
-                {(memberHome?.unreadNotifications ?? 0) > 0 ? (
-                  <InfoRow
-                    label="Inbox"
-                    value={`${memberHome?.unreadNotifications} unread`}
-                    tone="amber"
-                  />
-                ) : null}
-              </View>
-            </Card>
-          ) : null}
-
-          {memberHome?.activeMembership && memberHome.recentAttendance.length > 0 ? (() => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const attendanceDays = new Set(
-              memberHome.recentAttendance.map((a) => {
-                const d = new Date(a.checkedInAt);
-                d.setHours(0, 0, 0, 0);
-                return d.getTime();
-              })
-            );
-            let streak = 0;
-            for (let i = 0; i < 60; i++) {
-              const check = new Date(today);
-              check.setDate(check.getDate() - i);
-              if (attendanceDays.has(check.getTime())) {
-                streak++;
-              } else if (i > 0) {
-                break;
-              }
-            }
-            if (streak === 0) return null;
-            return (
-              <Card style={styles.streakCard}>
-                <View style={styles.streakRow}>
-                  <BrandMark size="sm" framed />
-                  <View>
-                    <Text style={styles.streakTitle}>
-                      {streak} Day Streak
-                    </Text>
-                    <Text style={styles.streakBody}>
-                      Keep the momentum going.
-                    </Text>
-                  </View>
-                </View>
-              </Card>
-            );
-          })() : null}
-
-          {memberHome?.activeMembership ? (
-            <Card style={styles.membershipCard}>
-              <View style={styles.membershipHeader}>
-                <Text style={styles.cardLabel}>Membership</Text>
-                <Pill tone="lime">Active</Pill>
-              </View>
-              <Text style={styles.cardTitle}>{memberHome.activePlan?.name ?? "Current plan"}</Text>
-              <Text style={styles.cardBody}>
-                {memberHome.activeMembership.endsAt
-                  ? `Valid until ${formatLongDate(memberHome.activeMembership.endsAt)}`
-                  : "No expiry date"}
-              </Text>
-              {memberHome.activeMembership.remainingVisits != null ? (
-                <Text style={styles.visitsText}>
-                  {memberHome.activeMembership.remainingVisits} visits remaining
-                </Text>
-              ) : null}
-            </Card>
-          ) : null}
-
-          {memberHome?.assignedPlans ? (
-            <Card style={styles.recoveryCard}>
-              <Text style={styles.cardLabel}>Coaching</Text>
-              <Text style={styles.cardTitle}>{memberHome.assignedPlans} plans assigned</Text>
-              <Text style={styles.cardBody}>Open Plans to see your training updates.</Text>
-            </Card>
-          ) : null}
-
+          <SectionHeader title="Quick Links" />
+          <View style={styles.quickGrid}>
+            <QuickLink href="/find-gyms" icon="calendar-outline" label="Book a class" />
+            <QuickLink href="/tracking" icon="analytics-outline" label="Body stats" />
+            <QuickLink href="/membership" icon="card-outline" label="Payments" />
+            <QuickLink href="/profile" icon="help-circle-outline" label="Support" />
+          </View>
         </ScrollView>
         <Dock />
       </Screen>
@@ -258,10 +172,29 @@ export default function Home() {
   );
 }
 
+function QuickLink({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+}) {
+  return (
+    <Link href={href as never} asChild>
+      <Pressable style={styles.quickLink} accessibilityRole="button" accessibilityLabel={label}>
+        <IconBubble icon={icon} tone="lime" size={42} />
+        <Text style={styles.quickLabel}>{label}</Text>
+      </Pressable>
+    </Link>
+  );
+}
+
 const styles = StyleSheet.create({
   content: {
     padding: 20,
-    gap: 16,
+    gap: 18,
     paddingBottom: 120,
   },
   topbar: {
@@ -270,9 +203,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatar: {
-    height: 54,
-    width: 54,
-    borderRadius: 18,
+    height: 56,
+    width: 56,
+    borderRadius: 20,
     backgroundColor: colors.lime,
     alignItems: "center",
     justifyContent: "center",
@@ -280,114 +213,139 @@ const styles = StyleSheet.create({
   avatarText: {
     color: colors.bg,
     fontWeight: "900",
-    fontSize: 20,
+    fontSize: 18,
   },
   topbarCopy: {
     flex: 1,
-    gap: 4,
+    gap: 7,
   },
-  eyebrow: {
+  greeting: {
+    color: colors.text,
+    fontSize: 24,
+    lineHeight: 28,
+    fontWeight: "900",
+  },
+  bellButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  unreadDot: {
+    position: "absolute",
+    top: 11,
+    right: 12,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.lime,
+  },
+  membershipCard: {
+    gap: 18,
+    backgroundColor: "rgba(185,244,85,0.08)",
+    borderColor: "rgba(185,244,85,0.24)",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  cardEyebrow: {
     color: colors.muted,
     fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
   },
-  topbarTitle: {
+  membershipTitle: {
     color: colors.text,
+    fontSize: 34,
+    lineHeight: 38,
     fontWeight: "900",
-    fontSize: 22,
+    marginTop: 6,
   },
-  heroCard: {
-    gap: 20,
-    position: "relative",
-    paddingVertical: 24,
+  progressRing: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    borderWidth: 7,
+    borderColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(7,9,8,0.52)",
   },
-  heroGlow: {
-    position: "absolute",
-    top: -40,
-    right: -40,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: "rgba(185,244,85,0.06)",
-  },
-  primaryActionWrapper: {
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  hugeButton: {
-    minHeight: 72,
-    borderRadius: 24,
-  },
-  hugeButtonText: {
-    fontSize: 22,
+  progressValue: {
+    color: colors.text,
+    fontSize: 19,
     fontWeight: "900",
   },
-  heroActions: {
+  progressLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  membershipMeta: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  actionRow: {
     flexDirection: "row",
     gap: 10,
   },
-  heroAction: {
+  actionHalf: {
     flex: 1,
   },
-  heroMeta: {
-    gap: 12,
-    marginTop: 12,
-  },
-  routeCalloutCard: {
-    gap: 10,
-  },
-  routeCalloutTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  cardLabel: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
+  planCard: {
+    gap: 14,
   },
   cardTitle: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 24,
+    lineHeight: 28,
     fontWeight: "900",
-    lineHeight: 24,
   },
   cardBody: {
     color: colors.muted,
     lineHeight: 21,
   },
-  recoveryCard: {
+  planMetaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
-  membershipCard: {
-    gap: 8,
-  },
-  membershipHeader: {
+  metricGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  visitsText: {
-    color: colors.lime,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  streakCard: {
-    backgroundColor: "rgba(255, 182, 80, 0.05)",
-    borderColor: "rgba(255, 182, 80, 0.2)",
-  },
-  streakRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexWrap: "wrap",
     gap: 12,
   },
-  streakTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "800",
+  metricHalf: {
+    flexBasis: "47%",
+    flexGrow: 1,
   },
-  streakBody: {
-    color: colors.muted,
-    fontSize: 13,
+  quickGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  quickLink: {
+    flexBasis: "47%",
+    flexGrow: 1,
+    minHeight: 92,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    padding: 14,
+    justifyContent: "space-between",
+  },
+  quickLabel: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "800",
   },
 });

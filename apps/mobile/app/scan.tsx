@@ -1,258 +1,326 @@
-import { CameraView, useCameraPermissions } from "expo-camera";
-import { useQueryClient } from "@tanstack/react-query";
-import { useState, useRef } from "react";
-import { StyleSheet, Text, View, Pressable, Animated } from "react-native";
+import { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import * as Haptics from "expo-haptics";
-import { PrimaryButton, Screen, SecondaryButton, GlassInput, ScreenHeader } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
+import { zookMockServices } from "@zook/core";
+import {
+  ActiveGymPill,
+  Card,
+  ConfirmationRing,
+  Dock,
+  EntryCodeCard,
+  ListRow,
+  Pill,
+  PrimaryButton,
+  PrimaryLink,
+  Screen,
+  SecondaryButton,
+  SegmentedControl,
+} from "@/components/primitives";
 import { colors } from "@/lib/theme";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+
+type DemoOutcome = "approved" | "pending" | "flagged" | "rejected";
+type Result = Awaited<ReturnType<typeof zookMockServices.attendanceService.scanQr>>;
+
+const outcomeOptions: Array<{ label: string; value: DemoOutcome }> = [
+  { label: "Approved", value: "approved" },
+  { label: "Pending", value: "pending" },
+  { label: "Flagged", value: "flagged" },
+  { label: "Rejected", value: "rejected" },
+];
 
 export default function Scan() {
-  const [permission, requestPermission] = useCameraPermissions();
-  const queryClient = useQueryClient();
-  const { token } = useAuth();
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-  
-  const [manualToken, setManualToken] = useState("");
-  const [showManual, setShowManual] = useState(false);
-  
-  const [statusState, setStatusState] = useState<"idle" | "success" | "error">("idle");
-  const [statusMessage, setStatusMessage] = useState("Point at the QR code.");
-  const [entryCode, setEntryCode] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const successScale = useRef(new Animated.Value(0)).current;
-  
-  const permissionReady = permission !== null;
-  const canUseCamera = permission?.granted ?? false;
-  const needsManualFallback = permissionReady && !canUseCamera;
+  const [outcome, setOutcome] = useState<DemoOutcome>("approved");
+  const [result, setResult] = useState<Result | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  async function submitScan(qrPayload: string) {
-    if (!token || !qrPayload || submitting) {
-      return;
-    }
-    setSubmitting(true);
+  async function simulateScan(nextOutcome = outcome) {
+    setBusy(true);
     try {
-      const result = await mobileApiFetch<{
-        status: string;
-        duplicate?: boolean;
-        suspiciousFlags?: string[];
-        attendance?: { id?: string };
-      }>("/attendance/scan", {
-        method: "POST",
-        token,
-        body: { qrPayload }
-      });
-      
-      if (result.duplicate || result.status === "APPROVED" || result.status === "PENDING_APPROVAL") {
-        setStatusState("success");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Animated.spring(successScale, {
-          toValue: 1,
-          friction: 4,
-          useNativeDriver: true,
-        }).start();
-      } else {
-        setStatusState("error");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
-
-      if (result.duplicate) {
-        setStatusMessage("Already checked in. Show your entry code.");
-      } else if (result.status === "APPROVED") {
-        setStatusMessage("Approved. Show this at entry.");
-      } else if (result.status === "PENDING_APPROVAL") {
-        setStatusMessage("Code created. Staff can visually verify it.");
-      } else {
-        setStatusMessage(`Scan result: ${result.status}`);
-      }
-      const source = result.attendance?.id ?? `${Date.now()}`;
-      setEntryCode(source.slice(-6).toUpperCase());
-      
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
-        queryClient.invalidateQueries({ queryKey: ["me", "home"] })
-      ]);
-      
-      setTimeout(() => {
-        setStatusState("idle");
-        setStatusMessage("Point at the QR code.");
-        setEntryCode("");
-        Animated.timing(successScale, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }).start();
-      }, 3000);
-      
-    } catch (error) {
-      setStatusState("error");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setStatusMessage(error instanceof Error ? error.message : "Unable to validate.");
-      
-      setTimeout(() => {
-        setStatusState("idle");
-        setStatusMessage("Point at the QR code.");
-        setEntryCode("");
-      }, 3000);
+      const nextResult = await zookMockServices.attendanceService.scanQr(`zook-demo-${nextOutcome}`);
+      setResult(nextResult);
     } finally {
-      setSubmitting(false);
+      setBusy(false);
     }
+  }
+
+  if (result) {
+    const approved = result.status === "APPROVED";
+    const pending = result.status === "PENDING_APPROVAL";
+    const flagged = result.status === "FLAGGED";
+    return (
+      <Screen>
+        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.resultContent}>
+          <View style={styles.resultHeader}>
+            <ActiveGymPill label="Iron Temple Gym · Pune" />
+            <Pill tone={approved ? "lime" : pending ? "amber" : flagged ? "red" : "red"}>
+              {approved ? "Approved" : pending ? "Pending approval" : flagged ? "Flagged" : "Rejected"}
+            </Pill>
+          </View>
+
+          <ConfirmationRing
+            tone={approved ? "lime" : pending ? "amber" : "red"}
+            icon={approved ? "checkmark" : pending ? "time-outline" : "alert-outline"}
+          />
+
+          <View style={styles.resultCopy}>
+            <Text style={styles.resultTitle}>
+              {approved
+                ? "Checked in"
+                : pending
+                  ? "Waiting for desk approval"
+                  : flagged
+                    ? "Desk review required"
+                    : "Check-in rejected"}
+            </Text>
+            <Text style={styles.resultBody}>
+              {approved
+                ? "Entry approved for Iron Temple Gym."
+                : pending
+                  ? "Your check-in was received. Please show this code to Priya at reception."
+                  : flagged
+                    ? "This scan needs staff review before entry."
+                    : "This scan could not be approved by the server gate."}
+            </Text>
+          </View>
+
+          <EntryCodeCard
+            code={result.entryCode}
+            status={approved ? "Approved" : pending ? "Pending approval" : flagged ? "Flagged" : "Rejected"}
+            detail="Show this to the front desk if asked."
+          />
+
+          <Card style={styles.detailCard}>
+            <ListRow title="Time" subtitle="7:14 AM" trailing={<Pill tone="neutral">Today</Pill>} />
+            <ListRow title="Branch" subtitle={result.branchName} trailing={<Pill tone="blue">Verified</Pill>} />
+            <ListRow title="Plan" subtitle={result.planName} trailing={<Pill tone="lime">Active</Pill>} />
+            <ListRow title="Server validation" subtitle={result.reason} trailing={<Ionicons name="lock-closed-outline" size={20} color={colors.lime} />} />
+          </Card>
+
+          {pending ? (
+            <Card style={styles.reasonCard}>
+              <Text style={styles.reasonTitle}>Why review?</Text>
+              <Text style={styles.reasonBody}>
+                This scan needs staff confirmation because attendance approval mode is enabled.
+              </Text>
+            </Card>
+          ) : null}
+
+          {approved ? (
+            <Card style={styles.reasonCard}>
+              <Text style={styles.reasonTitle}>Next up</Text>
+              <Text style={styles.reasonBody}>Push Day workout assigned by Coach Rhea.</Text>
+              <PrimaryLink href="/plans">Open Plan</PrimaryLink>
+            </Card>
+          ) : null}
+
+          <View style={styles.actionRow}>
+            <SecondaryButton onPress={() => setResult(null)} style={styles.actionHalf}>
+              Scan again
+            </SecondaryButton>
+            <PrimaryButton onPress={() => setResult(null)} style={styles.actionHalf}>
+              Back to Check-in
+            </PrimaryButton>
+          </View>
+        </ScrollView>
+        <Dock />
+      </Screen>
+    );
   }
 
   return (
     <Screen>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        {!permissionReady ? (
-          <View style={styles.centerBox}>
-            <Text style={styles.body}>Checking camera permission…</Text>
-          </View>
-        ) : null}
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <ActiveGymPill label="Iron Temple Gym · Pune" />
+          <Text style={styles.title}>Scan Gym QR</Text>
+          <Text style={styles.subtitle}>Scan the rolling QR at the reception desk.</Text>
+        </View>
 
-        {canUseCamera ? (
-          <View style={StyleSheet.absoluteFill}>
-            <CameraView
-              style={StyleSheet.absoluteFill}
-              barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-              onBarcodeScanned={(event) => {
-                if (statusState === "idle" && !submitting && !showManual) {
-                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                   void submitScan(event.data);
-                }
-              }}
-            />
-            <View style={styles.overlayWrapper}>
-               <View style={styles.overlayTop} />
-               <View style={styles.overlayMiddleRow}>
-                 <View style={styles.overlaySide} />
-                 <View style={[styles.cutout, statusState === "success" && styles.cutoutSuccess, statusState === "error" && styles.cutoutError]} />
-                 <View style={styles.overlaySide} />
-               </View>
-               <View style={styles.overlayBottom} />
-               <Animated.View style={[styles.successOverlay, { transform: [{ scale: successScale }], opacity: successScale }]}>
-                 <Ionicons name="checkmark-circle" size={100} color={colors.lime} />
-               </Animated.View>
+        <Pressable
+          onPress={() => void simulateScan()}
+          accessibilityRole="button"
+          accessibilityLabel="Simulate gym QR scan"
+          style={styles.scannerFrame}
+        >
+          <View style={[styles.corner, styles.cornerTopLeft]} />
+          <View style={[styles.corner, styles.cornerTopRight]} />
+          <View style={[styles.corner, styles.cornerBottomLeft]} />
+          <View style={[styles.corner, styles.cornerBottomRight]} />
+          <Ionicons name="qr-code-outline" size={88} color={colors.lime} />
+          <Text style={styles.scannerText}>{busy ? "Validating with server..." : "Tap to simulate scan"}</Text>
+        </Pressable>
+
+        <Card style={styles.checklistCard}>
+          <Text style={styles.cardTitle}>Validation checklist</Text>
+          <ListRow title="Membership active" subtitle="Hybrid Pro · 22 days left" trailing={<Pill tone="lime">Clear</Pill>} />
+          <ListRow title="Branch verified" subtitle="Default Branch" trailing={<Pill tone="lime">Clear</Pill>} />
+          <ListRow title="Server-authorized check-in" subtitle="Replay and minor gates checked" trailing={<Pill tone="lime">Required</Pill>} />
+        </Card>
+
+        <Card style={styles.helpCard}>
+          <View style={styles.helpHeader}>
+            <View>
+              <Text style={styles.cardTitle}>Need help?</Text>
+              <Text style={styles.cardBody}>Ask Priya at reception to verify your entry code.</Text>
             </View>
+            <Pill tone="lime">Auto check-in enabled</Pill>
           </View>
-        ) : null}
+        </Card>
 
-        {needsManualFallback ? (
-           <View style={styles.permissionState}>
-             <ScreenHeader title="Camera Access" subtitle="Allow camera to scan QR codes." />
-             <PrimaryButton onPress={requestPermission}>Allow Camera</PrimaryButton>
-           </View>
-        ) : null}
-        
-        <View style={[styles.headerAbsolute, { top: Math.max(insets.top, 60) }]}>
-           <Pressable onPress={() => router.back()} style={styles.closeButton}>
-             <Ionicons name="close" size={28} color="white" />
-           </Pressable>
-           <Text style={styles.headerTitle}>Scan In</Text>
-        </View>
-
-        <View style={[styles.statusAbsolute, { bottom: insets.bottom + 80 }]}>
-           <BlurView intensity={60} tint="dark" style={styles.statusPill}>
-              <Text style={[styles.statusText, statusState === "success" && styles.statusTextSuccess, statusState === "error" && styles.statusTextError]}>
-                {statusMessage}
-              </Text>
-           </BlurView>
-           {entryCode ? (
-             <View style={styles.entryCodeCard}>
-               <Text style={styles.entryCodeLabel}>Entry code</Text>
-               <Text style={styles.entryCode}>{entryCode}</Text>
-             </View>
-           ) : null}
-
-           {__DEV__ ? (
-             <Pressable onPress={() => setShowManual(!showManual)} style={styles.devToggle}>
-               <Text style={styles.devToggleText}>Dev: Manual Entry</Text>
-             </Pressable>
-           ) : null}
-        </View>
-
-        {__DEV__ && showManual ? (
-          <BlurView intensity={90} tint="dark" style={[StyleSheet.absoluteFill, styles.manualOverlay, { paddingTop: insets.top + 40 }]}>
-            <ScreenHeader title="Manual Token" subtitle="Paste QR payload." />
-            <GlassInput
-              placeholder="Paste QR token"
-              value={manualToken}
-              onChangeText={setManualToken}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <PrimaryButton onPress={() => {
-               setShowManual(false);
-               void submitScan(manualToken);
-            }}>
-              {submitting ? "Validating..." : "Submit token"}
-            </PrimaryButton>
-            <SecondaryButton onPress={() => setShowManual(false)}>Cancel</SecondaryButton>
-          </BlurView>
-        ) : null}
-
-      </View>
+        <Card style={styles.demoCard}>
+          <Text style={styles.cardTitle}>Demo scan outcome</Text>
+          <SegmentedControl options={outcomeOptions} value={outcome} onChange={setOutcome} />
+          <PrimaryButton onPress={() => void simulateScan()} disabled={busy}>
+            {busy ? "Validating..." : "Simulate server scan"}
+          </PrimaryButton>
+        </Card>
+      </ScrollView>
+      <Dock />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centerBox: { flex: 1, alignItems: "center", justifyContent: "center" },
-  body: { color: colors.muted, lineHeight: 20 },
-  permissionState: { padding: 40, gap: 20, justifyContent: "center", flex: 1 },
-  overlayWrapper: { ...StyleSheet.absoluteFillObject },
-  overlayTop: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)" },
-  overlayMiddleRow: { flexDirection: "row", height: 280 },
-  overlaySide: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)" },
-  cutout: { width: 280, height: 280, borderRadius: 24, borderWidth: 2, borderColor: "rgba(255,255,255,0.2)", backgroundColor: "transparent" },
-  cutoutSuccess: { borderColor: colors.lime, borderWidth: 4 },
-  cutoutError: { borderColor: colors.red, borderWidth: 4 },
-  successOverlay: {
-    position: "absolute",
-    top: "35%",
-    alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    borderRadius: 50,
-    padding: 10,
+  content: {
+    padding: 20,
+    gap: 18,
+    paddingBottom: 120,
   },
-  overlayBottom: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)" },
-  headerAbsolute: { position: "absolute", left: 0, right: 0, alignItems: "center", flexDirection: "row", justifyContent: "center" },
-  closeButton: { position: "absolute", left: 20, padding: 8, zIndex: 10 },
-  headerTitle: { color: "white", fontSize: 24, fontWeight: "900", letterSpacing: 1 },
-  statusAbsolute: { position: "absolute", left: 0, right: 0, alignItems: "center", gap: 16 },
-  statusPill: { borderRadius: 999, paddingHorizontal: 24, paddingVertical: 14, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
-  statusText: { color: "white", fontSize: 16, fontWeight: "700" },
-  statusTextSuccess: { color: colors.lime },
-  statusTextError: { color: colors.red },
-  entryCodeCard: {
-    minWidth: 190,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.35)",
-    backgroundColor: "rgba(7,9,8,0.86)",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    alignItems: "center",
-    gap: 6,
+  header: {
+    gap: 10,
   },
-  entryCodeLabel: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: "900",
-    textTransform: "uppercase",
-  },
-  entryCode: {
+  title: {
     color: colors.text,
     fontSize: 34,
-    letterSpacing: 2,
+    lineHeight: 38,
     fontWeight: "900",
   },
-  devToggle: { padding: 10 },
-  devToggleText: { color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: "600" },
-  manualOverlay: { padding: 24, gap: 16 },
+  subtitle: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  scannerFrame: {
+    height: 330,
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.25)",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 18,
+    overflow: "hidden",
+  },
+  corner: {
+    position: "absolute",
+    width: 54,
+    height: 54,
+    borderColor: colors.lime,
+  },
+  cornerTopLeft: {
+    top: 26,
+    left: 26,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    borderTopLeftRadius: 18,
+  },
+  cornerTopRight: {
+    top: 26,
+    right: 26,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+    borderTopRightRadius: 18,
+  },
+  cornerBottomLeft: {
+    bottom: 26,
+    left: 26,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+    borderBottomLeftRadius: 18,
+  },
+  cornerBottomRight: {
+    bottom: 26,
+    right: 26,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomRightRadius: 18,
+  },
+  scannerText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  checklistCard: {
+    gap: 12,
+  },
+  helpCard: {
+    gap: 12,
+  },
+  helpHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  demoCard: {
+    gap: 14,
+  },
+  cardTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  cardBody: {
+    color: colors.muted,
+    lineHeight: 21,
+    marginTop: 6,
+  },
+  resultContent: {
+    padding: 20,
+    gap: 18,
+    paddingBottom: 120,
+  },
+  resultHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  resultCopy: {
+    alignItems: "center",
+    gap: 8,
+  },
+  resultTitle: {
+    color: colors.text,
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+  resultBody: {
+    color: colors.muted,
+    lineHeight: 22,
+    textAlign: "center",
+  },
+  detailCard: {
+    gap: 10,
+  },
+  reasonCard: {
+    gap: 12,
+  },
+  reasonTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  reasonBody: {
+    color: colors.muted,
+    lineHeight: 21,
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  actionHalf: {
+    flex: 1,
+  },
 });

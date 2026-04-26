@@ -1,158 +1,170 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Card, Dock, Pill, PrimaryButton, PrimaryLink, Screen } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
-import { useAuth, getApiErrorMessage } from "@/lib/auth";
-import { useMyPlans } from "@/lib/query-hooks";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { zookDemoFixtures } from "@zook/core";
+import {
+  Card,
+  Dock,
+  IconBubble,
+  ListRow,
+  Pill,
+  PrimaryButton,
+  Screen,
+  SecondaryButton,
+  SectionHeader,
+  SegmentedControl,
+} from "@/components/primitives";
 import { colors } from "@/lib/theme";
 
-type AssignedPlan = {
-  id: string;
-  audience?: string;
-  plan?: {
-    id: string;
-    title?: string;
-    description?: string | null;
-    type?: string;
-    status?: string;
-  } | null;
-  progress?: {
-    completionPct?: number;
-    feedback?: string | null;
-  } | null;
-};
+type PlanView = "assigned" | "detail";
+type PlanFilter = "all" | "workout" | "diet" | "routine" | "recovery";
+
+const plan = zookDemoFixtures.trainingPlans[0];
+const coach = zookDemoFixtures.users.find((user) => user.id === plan?.trainerUserId);
+const filters: Array<{ label: string; value: PlanFilter }> = [
+  { label: "All", value: "all" },
+  { label: "Workout", value: "workout" },
+  { label: "Diet", value: "diet" },
+  { label: "Routine", value: "routine" },
+  { label: "Recovery", value: "recovery" },
+];
+
+const planCards = [
+  { id: "push", title: "Push Day", meta: "Workout · 6 exercises · Coach Rhea", tone: "lime" as const },
+  { id: "diet", title: "High-protein vegetarian notes", meta: "Diet · Trainer note", tone: "blue" as const },
+  { id: "routine", title: "Weekly routine", meta: "Routine · 5 day split", tone: "amber" as const },
+  { id: "recovery", title: "Shoulder mobility", meta: "Recovery · 12 min", tone: "violet" as const },
+  { id: "machine", title: "Chest press machine guide", meta: "Machine Guide · Form cues", tone: "neutral" as const },
+];
 
 export default function Plans() {
-  const routeParams = useLocalSearchParams<{
-    assignmentId?: string;
-    focus?: string;
-    notificationId?: string;
-    planId?: string;
-  }>();
-  const { activeOrgId, token } = useAuth();
-  const queryClient = useQueryClient();
-  const plansQuery = useMyPlans();
-  const plans = (plansQuery.data?.plans ?? []) as AssignedPlan[];
-  const sortedPlans = [...plans].sort((left, right) => {
-    if (left.id === routeParams.assignmentId) {
-      return -1;
-    }
-    if (right.id === routeParams.assignmentId) {
-      return 1;
-    }
-    return 0;
-  });
-  const [busyAssignmentId, setBusyAssignmentId] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState("");
+  const [view, setView] = useState<PlanView>("assigned");
+  const [filter, setFilter] = useState<PlanFilter>("all");
+  const [completed, setCompleted] = useState(new Set(["Bench Press", "Incline Dumbbell Press"]));
+  const completedCount = completed.size;
+  const exercises = plan?.exercises ?? [];
+  const progressPct = Math.round((completedCount / Math.max(exercises.length, 1)) * 100);
 
-  async function updateProgress(assignmentId: string, currentCompletionPct = 0) {
-    if (!token) {
-      return;
-    }
-    setBusyAssignmentId(assignmentId);
-    try {
-      const nextCompletion = Math.min(currentCompletionPct + 20, 100);
-      await mobileApiFetch(`/me/plans/${assignmentId}/progress`, {
-        method: "POST",
-        token,
-        ...(activeOrgId ? { orgId: activeOrgId } : {}),
-        body: {
-          ...(activeOrgId ? { orgId: activeOrgId } : {}),
-          completionPct: nextCompletion,
-          progressJson: { lastMarkedAt: new Date().toISOString(), source: "mobile_plan_screen" }
-        }
-      });
-      setStatusMessage(nextCompletion === 100 ? "Nice. That assignment is now marked complete." : `Progress updated to ${nextCompletion}%.`);
-      await queryClient.invalidateQueries({ queryKey: ["me", "plans"] });
-    } catch (error) {
-      setStatusMessage(getApiErrorMessage(error));
-    } finally {
-      setBusyAssignmentId(null);
-    }
+  function toggleExercise(name: string) {
+    setCompleted((current) => {
+      const next = new Set(current);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  }
+
+  if (view === "detail") {
+    return (
+      <Screen>
+        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+          <View style={styles.headerRow}>
+            <View style={styles.headerCopy}>
+              <Text style={styles.eyebrow}>Assigned by {coach?.name ?? "Coach Rhea"}</Text>
+              <Text style={styles.title}>{plan?.title ?? "Push Day"}</Text>
+              <Text style={styles.subtitle}>
+                6 exercises · {plan?.durationLabel ?? "45-60 min"} · Difficulty: {plan?.difficulty ?? "Medium"}
+              </Text>
+            </View>
+            <Pill tone="lime">Assigned</Pill>
+          </View>
+
+          <Card style={styles.progressCard}>
+            <View style={styles.progressHeader}>
+              <View>
+                <Text style={styles.cardTitle}>Workout progress</Text>
+                <Text style={styles.cardBody}>{completedCount} of {exercises.length} completed</Text>
+              </View>
+              <Text style={styles.progressText}>{progressPct}%</Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
+            </View>
+          </Card>
+
+          <SectionHeader title="Exercises" subtitle="Mark sets complete as you finish them." />
+          <View style={styles.stack}>
+            {exercises.map((exercise) => {
+              const done = completed.has(exercise.name);
+              return (
+                <Pressable
+                  key={exercise.name}
+                  onPress={() => toggleExercise(exercise.name)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: done }}
+                >
+                  <ListRow
+                    title={exercise.name}
+                    subtitle={`${exercise.sets} · ${exercise.equipment} · ${exercise.reps}`}
+                    leading={<IconBubble icon={done ? "checkmark" : "ellipse-outline"} tone={done ? "lime" : "neutral"} size={42} />}
+                    trailing={<Pill tone={done ? "lime" : "neutral"}>{done ? "Done" : "Open"}</Pill>}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={styles.actionRow}>
+            <SecondaryButton onPress={() => setView("assigned")} style={styles.actionHalf}>
+              Back
+            </SecondaryButton>
+            <PrimaryButton onPress={() => setCompleted(new Set(exercises.map((exercise) => exercise.name)))} style={styles.actionHalf}>
+              Complete
+            </PrimaryButton>
+          </View>
+          <SecondaryButton onPress={() => {}}>Send Feedback</SecondaryButton>
+        </ScrollView>
+        <Dock />
+      </Screen>
+    );
   }
 
   return (
     <Screen>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <Card style={styles.heroCard}>
-          <Pill tone="lime">Training</Pill>
-          <Text style={styles.heroTitle}>Assigned plans</Text>
-          <Text style={styles.body}>
-            Review progress here. Coaching questions now live in the separate AI chat.
-          </Text>
-          <PrimaryLink href="/assistant">Open AI assistant</PrimaryLink>
+        <View style={styles.headerRow}>
+          <View style={styles.headerCopy}>
+            <Text style={styles.eyebrow}>Plans</Text>
+            <Text style={styles.title}>Assigned training</Text>
+            <Text style={styles.subtitle}>Workout, diet, routine, recovery, trainer notes, advisories, and guides.</Text>
+          </View>
+          <IconBubble icon="reader-outline" tone="lime" />
+        </View>
+
+        <SegmentedControl options={filters} value={filter} onChange={setFilter} />
+
+        <Card style={styles.featuredPlan}>
+          <View style={styles.featuredTop}>
+            <View>
+              <Text style={styles.eyebrow}>Today</Text>
+              <Text style={styles.cardTitle}>Push Day</Text>
+            </View>
+            <Pill tone="lime">In Progress</Pill>
+          </View>
+          <Text style={styles.cardBody}>Bench Press, Incline Dumbbell Press, Shoulder Press, Tricep Pushdown, Lateral Raise, Push-up Finisher.</Text>
+          <View style={styles.planMeta}>
+            <Pill tone="neutral">6 exercises</Pill>
+            <Pill tone="blue">45-60 min</Pill>
+            <Pill tone="amber">Medium</Pill>
+          </View>
+          <PrimaryButton onPress={() => setView("detail")}>Open Push Day</PrimaryButton>
         </Card>
 
-        {routeParams.focus ? (
-          <Card style={styles.calloutCard}>
-            <Pill tone={routeParams.focus === "pt-update" ? "amber" : "blue"}>
-              {routeParams.focus === "pt-update" ? "PT update" : "Opened from push"}
-            </Pill>
-            <Text style={styles.calloutTitle}>
-              {routeParams.focus === "pt-update"
-                ? "Personal training context landed in plans."
-                : "Assigned plan context is active."}
-            </Text>
-            <Text style={styles.body}>
-              {routeParams.assignmentId
-                ? "Your plan has been updated."
-                : "Check your assigned plans below."}
-            </Text>
-          </Card>
-        ) : null}
-        {plansQuery.isLoading ? (
-          <Card>
-            <Text style={styles.body}>Loading assigned plans...</Text>
-          </Card>
-        ) : null}
-        {!plansQuery.isLoading && !plans.length ? (
-          <Card>
-            <Text style={styles.body}>No plans have been assigned yet.</Text>
-          </Card>
-        ) : null}
-        {sortedPlans.map((assignment) => {
-          const completion = assignment.progress?.completionPct ?? 0;
-          return (
-            <Card
-              key={assignment.id}
-              style={assignment.id === routeParams.assignmentId ? styles.cardHighlighted : undefined}
-            >
-              <View style={styles.rowBetween}>
-                <Pill tone={assignment.id === routeParams.assignmentId ? "blue" : "lime"}>
-                  {assignment.id === routeParams.assignmentId
-                    ? "Opened from notification"
-                    : assignment.plan?.status ?? "Assigned"}
-                </Pill>
-                <Text style={styles.meta}>{completion}% complete</Text>
-              </View>
-              <Text style={styles.title}>
-                {assignment.plan?.title ?? "Plan assignment"}
-              </Text>
-              <Text style={styles.body}>
-                {assignment.plan?.description ?? `Audience: ${assignment.audience ?? "selected_member"}`}
-              </Text>
-              <Text style={styles.meta}>
-                {assignment.plan?.type ?? "WORKOUT"}
-              </Text>
-              {assignment.progress?.feedback ? (
-                <Text style={styles.feedback}>
-                  Latest feedback: {assignment.progress.feedback}
-                </Text>
-              ) : null}
-              <PrimaryButton onPress={() => void updateProgress(assignment.id, completion)}>
-                {busyAssignmentId === assignment.id ? "Saving..." : completion >= 100 ? "Mark reviewed" : "Mark progress"}
-              </PrimaryButton>
-            </Card>
-          );
-        })}
-        {statusMessage ? (
-          <Card>
-            <Text style={styles.reply}>{statusMessage}</Text>
-          </Card>
-        ) : null}
-
+        <SectionHeader title="Plan library" subtitle="Only plans assigned to you are visible here." />
+        <View style={styles.stack}>
+          {planCards.map((item) => (
+            <Pressable key={item.id} onPress={() => item.id === "push" && setView("detail")} accessibilityRole="button">
+              <ListRow
+                title={item.title}
+                subtitle={item.meta}
+                leading={<IconBubble icon={item.id === "push" ? "barbell-outline" : "document-text-outline"} tone={item.tone} />}
+                trailing={<Pill tone={item.tone}>{item.id === "push" ? "Assigned" : "Queued"}</Pill>}
+              />
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
       <Dock />
     </Screen>
@@ -160,58 +172,94 @@ export default function Plans() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, gap: 14, paddingBottom: 120 },
-  heroCard: {
-    gap: 12,
+  content: {
     padding: 20,
-    backgroundColor: "rgba(185,244,85,0.08)",
-    borderColor: "rgba(185,244,85,0.2)",
+    gap: 18,
+    paddingBottom: 120,
   },
-  heroTitle: {
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  headerCopy: {
+    flex: 1,
+    gap: 8,
+  },
+  eyebrow: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  title: {
     color: colors.text,
     fontSize: 34,
     lineHeight: 38,
     fontWeight: "900",
   },
-  rowBetween: {
+  subtitle: {
+    color: colors.muted,
+    lineHeight: 22,
+  },
+  stack: {
+    gap: 12,
+  },
+  featuredPlan: {
+    gap: 14,
+    borderColor: "rgba(185,244,85,0.25)",
+    backgroundColor: "rgba(185,244,85,0.08)",
+  },
+  featuredTop: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  cardTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "900",
+  },
+  cardBody: {
+    color: colors.muted,
+    lineHeight: 21,
+  },
+  planMeta: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  progressCard: {
+    gap: 14,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    justifyContent: "space-between"
+    gap: 12,
   },
-  calloutCard: {
-    gap: 10
+  progressText: {
+    color: colors.lime,
+    fontSize: 28,
+    fontWeight: "900",
   },
-  calloutTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "800"
+  progressTrack: {
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    overflow: "hidden",
   },
-  cardHighlighted: {
-    borderColor: "rgba(96,165,250,0.4)",
-    backgroundColor: "rgba(96,165,250,0.07)"
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: colors.lime,
   },
-  title: { color: colors.text, fontSize: 20, fontWeight: "900", marginTop: 14 },
-  body: { color: colors.muted, lineHeight: 20, marginTop: 8 },
-  meta: { color: colors.lime, marginTop: 10, fontSize: 12, fontWeight: "700" },
-  feedback: { color: colors.text, lineHeight: 20, marginTop: 12 },
-  input: {
-    marginTop: 14,
-    minHeight: 52,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    color: colors.text,
-    paddingHorizontal: 14,
-    paddingVertical: 12
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
   },
-  notesInput: {
-    minHeight: 120,
-    paddingTop: 14
+  actionHalf: {
+    flex: 1,
   },
-  reply: {
-    color: colors.text,
-    marginTop: 14,
-    lineHeight: 20
-  }
 });
