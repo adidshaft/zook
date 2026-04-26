@@ -8,9 +8,13 @@ export interface DesignContext {
 
 type Direction = "HORIZONTAL" | "VERTICAL";
 
+const BUILD_STAGING_COORD = -20000;
+
 export function stack(name: string, direction: Direction, gap: number = TOKENS.space.md): FrameNode {
   const node = figma.createFrame();
   node.name = name;
+  node.x = BUILD_STAGING_COORD;
+  node.y = BUILD_STAGING_COORD;
   node.layoutMode = direction;
   node.itemSpacing = gap;
   node.primaryAxisSizingMode = "AUTO";
@@ -20,10 +24,21 @@ export function stack(name: string, direction: Direction, gap: number = TOKENS.s
   return node;
 }
 
+function forceFixedAutoLayoutSize(node: FrameNode): void {
+  node.primaryAxisSizingMode = "FIXED";
+  node.counterAxisSizingMode = "FIXED";
+  node.layoutSizingHorizontal = "FIXED";
+  node.layoutSizingVertical = "FIXED";
+}
+
 export function fixedFrame(name: string, width: number, height: number): FrameNode {
   const node = figma.createFrame();
   node.name = name;
+  node.x = BUILD_STAGING_COORD;
+  node.y = BUILD_STAGING_COORD;
   node.resize(width, height);
+  node.layoutSizingHorizontal = "FIXED";
+  node.layoutSizingVertical = "FIXED";
   node.fills = [];
   node.clipsContent = false;
   return node;
@@ -37,9 +52,12 @@ export function text(
 ): TextNode {
   const node = figma.createText();
   node.name = name;
+  node.x = BUILD_STAGING_COORD;
+  node.y = BUILD_STAGING_COORD;
   node.fontName = style.fontName;
   node.fontSize = style.fontSize;
   node.lineHeight = style.lineHeight;
+  node.textAutoResize = "WIDTH_AND_HEIGHT";
   node.fills = [solid(color)];
   node.characters = value;
   return node;
@@ -59,6 +77,8 @@ export function glassCard(
 ): FrameNode {
   const node = stack(name, "VERTICAL", TOKENS.space.md);
   node.resize(width, 10);
+  node.primaryAxisSizingMode = "AUTO";
+  node.counterAxisSizingMode = "FIXED";
   node.layoutSizingHorizontal = "FIXED";
   node.paddingTop = padding;
   node.paddingBottom = padding;
@@ -139,7 +159,7 @@ export function button(
 ): FrameNode {
   const node = row(`Button / ${variant} / ${label}`, TOKENS.space.sm);
   node.resize(width, 48);
-  node.layoutSizingHorizontal = "FIXED";
+  forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "CENTER";
   node.counterAxisAlignItems = "CENTER";
   node.cornerRadius = TOKENS.radius.lg;
@@ -176,7 +196,7 @@ export function button(
 export function statusBar(ctx: DesignContext): FrameNode {
   const node = row("Status Bar", 0);
   node.resize(TOKENS.frame.mobile.width - 40, 24);
-  node.layoutSizingHorizontal = "FIXED";
+  forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
   node.appendChild(text("9:41", ctx.styles.text.caption, TOKENS.color.primaryText, "Time"));
   const indicators = row("Indicators", 4);
@@ -194,8 +214,8 @@ export function statusBar(ctx: DesignContext): FrameNode {
 export function mobileShell(ctx: DesignContext, name: string): FrameNode {
   const frame = stack(name, "VERTICAL", TOKENS.space.lg);
   frame.resize(TOKENS.frame.mobile.width, TOKENS.frame.mobile.height);
-  frame.layoutSizingHorizontal = "FIXED";
-  frame.layoutSizingVertical = "FIXED";
+  forceFixedAutoLayoutSize(frame);
+  frame.counterAxisAlignItems = "CENTER";
   frame.paddingTop = 14;
   frame.paddingBottom = TOKENS.space.lg;
   frame.paddingLeft = TOKENS.space.xl;
@@ -207,8 +227,8 @@ export function mobileShell(ctx: DesignContext, name: string): FrameNode {
   glow.fills = [solid(TOKENS.color.accent, 0.09)];
   glow.cornerRadius = TOKENS.radius.round;
   glow.effects = [{ type: "LAYER_BLUR", radius: 70, visible: true, blurType: "NORMAL" }];
-  glow.layoutPositioning = "ABSOLUTE";
   frame.appendChild(glow);
+  glow.layoutPositioning = "ABSOLUTE";
   glow.x = 210;
   glow.y = -94;
   frame.appendChild(statusBar(ctx));
@@ -225,7 +245,7 @@ export function header(
 ): FrameNode {
   const node = row(`Header / ${title}`, TOKENS.space.md);
   node.resize(TOKENS.frame.mobile.width - 40, 52);
-  node.layoutSizingHorizontal = "FIXED";
+  forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
   const left = row("Left", TOKENS.space.md);
   if (leftIcon) left.appendChild(iconButton("Back", leftIcon));
@@ -250,7 +270,7 @@ export interface NavItem {
 export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], selected: string): FrameNode {
   const node = row(`Bottom Nav / ${name}`, 2);
   node.resize(TOKENS.frame.mobile.width - 40, 72);
-  node.layoutSizingHorizontal = "FIXED";
+  forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
   node.paddingTop = 8;
   node.paddingBottom = 8;
@@ -265,6 +285,7 @@ export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], se
     const active = item.label === selected;
     const entry = stack(`Nav Item / ${item.label}`, "VERTICAL", 3);
     entry.resize(64, 54);
+    forceFixedAutoLayoutSize(entry);
     entry.primaryAxisAlignItems = "CENTER";
     entry.counterAxisAlignItems = "CENTER";
     entry.cornerRadius = TOKENS.radius.lg;
@@ -293,14 +314,14 @@ export function listRow(
 ): FrameNode {
   const node = row(`List Row / ${title}`, TOKENS.space.md);
   node.resize(310, 58);
-  node.layoutSizingHorizontal = "FIXED";
+  forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
   if (icon) node.appendChild(iconButton("Icon", icon));
   const copy = stack("Copy", "VERTICAL", 2);
-  copy.layoutSizingHorizontal = "FILL";
   copy.appendChild(text(title, ctx.styles.text.bodyStrong, TOKENS.color.primaryText, "Title"));
   if (subtitle) copy.appendChild(text(subtitle, ctx.styles.text.small, TOKENS.color.mutedText, "Subtitle"));
   node.appendChild(copy);
+  copy.layoutSizingHorizontal = "FILL";
   node.appendChild(trailing ?? createIcon("chevron", 16, TOKENS.color.subtleText));
   return node;
 }
@@ -308,11 +329,11 @@ export function listRow(
 export function textField(ctx: DesignContext, label: string, value: string): FrameNode {
   const node = stack(`Text Field / ${label}`, "VERTICAL", 6);
   node.resize(310, 68);
-  node.layoutSizingHorizontal = "FIXED";
+  forceFixedAutoLayoutSize(node);
   node.appendChild(text(label, ctx.styles.text.caption, TOKENS.color.subtleText, "Label"));
   const box = row("Input", TOKENS.space.sm);
   box.resize(310, 44);
-  box.layoutSizingHorizontal = "FIXED";
+  forceFixedAutoLayoutSize(box);
   box.paddingLeft = TOKENS.space.md;
   box.paddingRight = TOKENS.space.md;
   box.cornerRadius = TOKENS.radius.md;
@@ -327,7 +348,7 @@ export function textField(ctx: DesignContext, label: string, value: string): Fra
 export function searchBar(ctx: DesignContext, placeholder: string): FrameNode {
   const node = row("Search Bar", TOKENS.space.sm);
   node.resize(350, 48);
-  node.layoutSizingHorizontal = "FIXED";
+  forceFixedAutoLayoutSize(node);
   node.paddingLeft = TOKENS.space.lg;
   node.paddingRight = TOKENS.space.lg;
   node.cornerRadius = TOKENS.radius.lg;
@@ -391,7 +412,7 @@ export function exerciseRow(
   }
   const node = row("Exercise content", TOKENS.space.md);
   node.resize(350, 66);
-  node.layoutSizingHorizontal = "FIXED";
+  forceFixedAutoLayoutSize(node);
   node.paddingLeft = TOKENS.space.md;
   node.paddingRight = TOKENS.space.md;
   node.cornerRadius = TOKENS.radius.lg;
@@ -411,10 +432,10 @@ export function exerciseRow(
   }
   node.appendChild(check);
   const copy = stack("Copy", "VERTICAL", 2);
-  copy.layoutSizingHorizontal = "FILL";
   copy.appendChild(text(`${title} · ${sets}`, ctx.styles.text.bodyStrong, TOKENS.color.primaryText, "Title"));
   copy.appendChild(text(detail, ctx.styles.text.small, TOKENS.color.mutedText, "Detail"));
   node.appendChild(copy);
+  copy.layoutSizingHorizontal = "FILL";
   wrap.appendChild(node);
   if (slid) node.x = -56;
   return wrap;

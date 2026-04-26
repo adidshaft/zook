@@ -21,38 +21,139 @@ export type IconName =
   | "cart"
   | "more";
 
-const paths: Record<IconName, string> = {
-  home: '<path d="M4 11.2 12 4l8 7.2v8.3a.5.5 0 0 1-.5.5h-5v-5h-5v5h-5a.5.5 0 0 1-.5-.5v-8.3Z"/>',
-  qr: '<path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h2v2h-2v-2Zm4 0h2v6h-6v-2h4v-4ZM6 6v2h2V6H6Zm10 0v2h2V6h-2ZM6 16v2h2v-2H6Z"/>',
-  clipboard: '<path d="M9 4h6l1 2h2v15H6V6h2l1-2Zm0 6h6v2H9v-2Zm0 4h7v2H9v-2Z"/>',
-  bag: '<path d="M7 8h10l1.5 13h-13L7 8Zm2 0a3 3 0 1 1 6 0h-2a1 1 0 1 0-2 0H9Z"/>',
-  user: '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0H5Z"/>',
-  back: '<path d="M14.5 5 7.5 12l7 7 1.8-1.8-5.2-5.2 5.2-5.2L14.5 5Z"/>',
-  bell: '<path d="M6 18h12l-1.4-2V10a4.6 4.6 0 0 0-3.6-4.5V4a1 1 0 0 0-2 0v1.5A4.6 4.6 0 0 0 7.4 10v6L6 18Zm4 2h4a2 2 0 0 1-4 0Z"/>',
-  dumbbell: '<path d="M4 9h3v6H4V9Zm13 0h3v6h-3V9ZM8 11h8v2H8v-2ZM2 10h2v4H2v-4Zm18 0h2v4h-2v-4Z"/>',
-  shield: '<path d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3Zm-1 12 5-5-1.5-1.5L11 12l-1.5-1.5L8 12l3 3Z"/>',
-  rupee: '<path d="M7 4h11v2h-4a4 4 0 0 1 1 2h3v2h-3.1A5 5 0 0 1 10 14h-.3l5.8 6H12l-6-6v-2h4a3 3 0 0 0 2.8-2H7V8h5.6A3 3 0 0 0 10 6H7V4Z"/>',
-  clock: '<path d="M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20Zm1-10.4V7h-2v6l5 3 1-1.7-4-2.7Z"/>',
-  warning: '<path d="M12 3 22 20H2L12 3Zm-1 6v6h2V9h-2Zm0 8v2h2v-2h-2Z"/>',
-  edit: '<path d="M5 17.5V21h3.5L19 10.5 15.5 7 5 17.5ZM17 5.5 18.5 4 22 7.5 20.5 9 17 5.5Z"/>',
-  trash: '<path d="M7 7h10l-.8 14H7.8L7 7Zm2-3h6l1 2H8l1-2Zm-3 2h12v2H6V6Z"/>',
-  plus: '<path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/>',
-  chevron: '<path d="m9 5 7 7-7 7-1.8-1.8 5.2-5.2-5.2-5.2L9 5Z"/>',
-  check: '<path d="M9.5 16.6 4.8 12l-1.6 1.6 6.3 6.2L21 8.3 19.4 6.7 9.5 16.6Z"/>',
-  cart: '<path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM3 4h2l2.4 10h9.8L20 7H7.1L6.5 5H3V4Z"/>',
-  more: '<path d="M5 12a2 2 0 1 0 0 .1V12Zm7 0a2 2 0 1 0 0 .1V12Zm7 0a2 2 0 1 0 0 .1V12Z"/>'
-};
+function primitive(name: string, x: number, y: number, width: number, height: number, color: string, radius = 1): RectangleNode {
+  const node = figma.createRectangle();
+  node.name = name;
+  node.resize(width, height);
+  node.x = x;
+  node.y = y;
+  node.cornerRadius = radius;
+  node.fills = [solid(color)];
+  return node;
+}
+
+function dot(name: string, x: number, y: number, diameter: number, color: string): EllipseNode {
+  const node = figma.createEllipse();
+  node.name = name;
+  node.resize(diameter, diameter);
+  node.x = x;
+  node.y = y;
+  node.fills = [solid(color)];
+  return node;
+}
+
+function addLine(frame: FrameNode, name: string, x: number, y: number, width: number, thickness: number, color: string, rotation = 0): void {
+  const line = primitive(name, x, y, width, thickness, color, thickness / 2);
+  line.rotation = rotation;
+  frame.appendChild(line);
+}
 
 export function createIcon(name: IconName, size = 20, color: string = TOKENS.color.mutedText): FrameNode {
-  const svg = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">${paths[name]}</svg>`;
-  const node = figma.createNodeFromSvg(svg) as FrameNode;
+  const node = figma.createFrame();
   node.name = `Icon / ${name}`;
+  node.x = -20000;
+  node.y = -20000;
   node.resize(size, size);
-  node.fills = [solid(color)];
-  for (const child of node.findAll()) {
-    if ("fills" in child) {
-      child.fills = [solid(color)];
-    }
+  node.fills = [];
+  node.clipsContent = false;
+
+  const s = size / 24;
+  const p = (value: number) => value * s;
+  const line = (label: string, x: number, y: number, width: number, thickness = 2, rotation = 0) =>
+    addLine(node, label, p(x), p(y), p(width), p(thickness), color, rotation);
+  const rect = (label: string, x: number, y: number, width: number, height: number, radius = 2) =>
+    node.appendChild(primitive(label, p(x), p(y), p(width), p(height), color, p(radius)));
+  const circle = (label: string, x: number, y: number, diameter: number) => node.appendChild(dot(label, p(x), p(y), p(diameter), color));
+
+  switch (name) {
+    case "plus":
+      line("Vertical", 11, 5, 14, 2, 90);
+      line("Horizontal", 5, 11, 14);
+      break;
+    case "back":
+      line("Upper", 7, 11, 9, 2, -45);
+      line("Lower", 7, 11, 9, 2, 45);
+      break;
+    case "chevron":
+      line("Upper", 8, 6, 9, 2, 45);
+      line("Lower", 8, 18, 9, 2, -45);
+      break;
+    case "check":
+      line("Short", 5, 13, 6, 2, 45);
+      line("Long", 10, 16, 11, 2, -45);
+      break;
+    case "more":
+      circle("Dot 1", 4, 10, 4);
+      circle("Dot 2", 10, 10, 4);
+      circle("Dot 3", 16, 10, 4);
+      break;
+    case "qr":
+      rect("Cell 1", 4, 4, 6, 6);
+      rect("Cell 2", 14, 4, 6, 6);
+      rect("Cell 3", 4, 14, 6, 6);
+      rect("Cell 4", 14, 14, 2, 2);
+      rect("Cell 5", 18, 14, 2, 6);
+      break;
+    case "clock":
+      circle("Face", 3, 3, 18);
+      line("Hand hour", 12, 7, 6, 2, 90);
+      line("Hand min", 12, 12, 5, 2, 28);
+      break;
+    case "warning":
+      rect("Triangle body", 6, 5, 12, 14, 2);
+      rect("Bang", 11, 9, 2, 6, 1);
+      rect("Dot", 11, 17, 2, 2, 1);
+      break;
+    case "user":
+      circle("Head", 8, 4, 8);
+      rect("Body", 5, 14, 14, 6, 3);
+      break;
+    case "home":
+      rect("Body", 6, 11, 12, 9, 2);
+      line("Roof left", 5, 11, 9, 2, -35);
+      line("Roof right", 12, 6, 9, 2, 35);
+      break;
+    case "trash":
+      rect("Bin", 7, 8, 10, 12, 2);
+      rect("Lid", 6, 5, 12, 2, 1);
+      break;
+    case "edit":
+      line("Pencil", 6, 17, 13, 3, -45);
+      rect("Tip", 4, 18, 4, 2, 1);
+      break;
+    case "bag":
+    case "cart":
+      rect("Bag", 6, 9, 12, 10, 2);
+      line("Handle", 9, 8, 6, 2, 0);
+      break;
+    case "dumbbell":
+      rect("Left", 3, 8, 4, 8, 1);
+      rect("Right", 17, 8, 4, 8, 1);
+      rect("Bar", 7, 11, 10, 2, 1);
+      break;
+    case "rupee":
+      line("Top", 7, 5, 10);
+      line("Mid", 7, 9, 10);
+      line("Stem", 8, 7, 12, 2, 58);
+      break;
+    case "shield":
+      rect("Shield", 6, 4, 12, 16, 5);
+      rect("Cut", 10, 8, 4, 8, 2);
+      break;
+    case "clipboard":
+      rect("Board", 6, 5, 12, 16, 2);
+      rect("Clip", 9, 3, 6, 3, 1);
+      line("Line 1", 9, 11, 6);
+      line("Line 2", 9, 15, 7);
+      break;
+    case "bell":
+      rect("Bell", 7, 7, 10, 10, 5);
+      rect("Base", 6, 16, 12, 2, 1);
+      circle("Dot", 10, 19, 4);
+      break;
+    default:
+      rect("Glyph", 5, 5, 14, 14, 4);
   }
+
   return node;
 }

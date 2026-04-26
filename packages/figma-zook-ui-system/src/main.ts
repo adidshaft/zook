@@ -30,6 +30,11 @@ function resetGeneratedPages(): Record<(typeof pageNames)[number], PageNode> {
   return pages;
 }
 
+function nextRunY(page: PageNode): number {
+  if (page.children.length === 0) return 0;
+  return page.children.reduce((max, child) => Math.max(max, child.y + child.height), 0) + 280;
+}
+
 function sectionMarker(ctx: DesignContext, page: PageNode, label: string, x: number, y: number): void {
   const marker = glassCard(`Section / ${label}`, 420, 14, 20);
   marker.appendChild(text(label, ctx.styles.text.h2, TOKENS.color.accent));
@@ -39,18 +44,18 @@ function sectionMarker(ctx: DesignContext, page: PageNode, label: string, x: num
 }
 
 function placeFrames(page: PageNode, frames: FrameNode[], startX = 80, startY = 120, gap = 48): void {
-  const usedBottom = page.children.reduce((max, child) => Math.max(max, child.y + child.height), 0);
-  const baseY = Math.max(startY, usedBottom + 120);
   frames.forEach((frame, index) => {
     page.appendChild(frame);
     frame.x = startX + (index % 5) * (TOKENS.frame.mobile.width + gap);
-    frame.y = baseY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
+    frame.y = startY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
   });
 }
 
-function createCover(ctx: DesignContext, page: PageNode, thumbnails: FrameNode[]): void {
+function createCover(ctx: DesignContext, page: PageNode, thumbnails: FrameNode[], yOffset = 0): void {
   const cover = stack("Cover / Zook Product UI System", "HORIZONTAL", 72);
   cover.resize(TOKENS.frame.cover.width, TOKENS.frame.cover.height);
+  cover.primaryAxisSizingMode = "FIXED";
+  cover.counterAxisSizingMode = "FIXED";
   cover.paddingTop = 92;
   cover.paddingBottom = 72;
   cover.paddingLeft = 88;
@@ -59,7 +64,7 @@ function createCover(ctx: DesignContext, page: PageNode, thumbnails: FrameNode[]
   cover.counterAxisAlignItems = "CENTER";
   page.appendChild(cover);
   cover.x = 0;
-  cover.y = 0;
+  cover.y = yOffset;
 
   const copy = stack("Cover copy", "VERTICAL", 24);
   copy.resize(520, 520);
@@ -90,8 +95,7 @@ function createCover(ctx: DesignContext, page: PageNode, thumbnails: FrameNode[]
   cover.appendChild(thumbGrid);
 }
 
-function createUiKit(ctx: DesignContext, page: PageNode): void {
-  const yOffset = page.children.length > 0 ? 1160 : 0;
+function createUiKit(ctx: DesignContext, page: PageNode, yOffset = 0): void {
   sectionMarker(ctx, page, "01 — UI Kit", 80, yOffset);
   const title = text("Zook UI Kit", ctx.styles.text.h1, TOKENS.color.primaryText);
   title.x = 80;
@@ -149,11 +153,10 @@ function createUiKit(ctx: DesignContext, page: PageNode): void {
   createComponentLibrary(ctx, page, 520, yOffset + 132);
 }
 
-function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameNode[]): void {
-  const usedBottom = page.children.reduce((max, child) => Math.max(max, child.y + child.height), 0);
+function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameNode[], yOffset = 0): void {
   const heading = text("Prototype Map", ctx.styles.text.h1);
   heading.x = 80;
-  heading.y = page.children.length > 0 ? usedBottom + 120 : 72;
+  heading.y = yOffset;
   page.appendChild(heading);
   const flow = row("Member operational flow", 32);
   flow.x = 80;
@@ -167,11 +170,10 @@ function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameN
   page.appendChild(flow);
 }
 
-function createNotes(ctx: DesignContext, page: PageNode): void {
-  const usedBottom = page.children.reduce((max, child) => Math.max(max, child.y + child.height), 0);
+function createNotes(ctx: DesignContext, page: PageNode, yOffset = 0): void {
   const notes = stack("Notes / Handoff", "VERTICAL", 18);
   notes.x = 80;
-  notes.y = page.children.length > 0 ? usedBottom + 120 : 80;
+  notes.y = yOffset;
   notes.resize(780, 640);
   notes.appendChild(text("Notes / Handoff", ctx.styles.text.h1));
   for (const line of [
@@ -187,24 +189,22 @@ function createNotes(ctx: DesignContext, page: PageNode): void {
   page.appendChild(notes);
 }
 
-function duplicateExportFrames(page: PageNode, screens: FrameNode[]): void {
-  const usedBottom = page.children.reduce((max, child) => Math.max(max, child.y + child.height), 0);
-  const baseY = usedBottom + 120;
+function duplicateExportFrames(page: PageNode, screens: FrameNode[], startY: number): void {
   screens.forEach((screen, index) => {
     const clone = screen.clone();
     clone.name = exportFrameNames[index] ?? `AUTO_EXPORT / ${index + 1}`;
     page.appendChild(clone);
     clone.x = 80 + (index % 5) * (TOKENS.frame.mobile.width + 40);
-    clone.y = baseY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
+    clone.y = startY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
   });
 }
 
 function buildScreens(label: string, creators: Array<(ctx: DesignContext) => FrameNode>, ctx: DesignContext): FrameNode[] {
   const screens: FrameNode[] = [];
-  creators.forEach((createScreen, index) => {
+  for (const [index, createScreen] of creators.entries()) {
     figma.notify(`Creating ${label} screen ${index + 1}/${creators.length}…`, { timeout: 2500 });
     screens.push(createScreen(ctx));
-  });
+  }
   return screens;
 }
 
@@ -226,23 +226,34 @@ async function main(): Promise<void> {
   const allScreens = [...member, ...receptionist, ...trainer, ...owner];
 
   figma.notify("Screens ready. Creating cover and UI kit…");
-  createCover(ctx, pages["00 — Cover"], member);
+  const runY = nextRunY(pages["00 — Cover"]);
+  createCover(ctx, pages["00 — Cover"], member, runY);
   figma.notify("Cover ready. Creating UI kit…");
-  createUiKit(ctx, pages["01 — UI Kit"]);
+  createUiKit(ctx, pages["01 — UI Kit"], runY + 1160);
   figma.notify("UI kit ready. Placing mobile frames…");
-  placeFrames(pages["02 — Mobile / Member"], member);
-  placeFrames(pages["03 — Mobile / Trainer"], trainer);
-  placeFrames(pages["04 — Mobile / Receptionist"], receptionist);
-  placeFrames(pages["05 — Mobile / Owner"], owner);
+  sectionMarker(ctx, pages["02 — Mobile / Member"], "02 — Mobile / Member", 80, runY + 2280);
+  placeFrames(pages["02 — Mobile / Member"], member, 80, runY + 2360);
+  sectionMarker(ctx, pages["03 — Mobile / Trainer"], "03 — Mobile / Trainer", 80, runY + 3300);
+  placeFrames(pages["03 — Mobile / Trainer"], trainer, 80, runY + 3380);
+  sectionMarker(ctx, pages["04 — Mobile / Receptionist"], "04 — Mobile / Receptionist", 80, runY + 4320);
+  placeFrames(pages["04 — Mobile / Receptionist"], receptionist, 80, runY + 4400);
+  sectionMarker(ctx, pages["05 — Mobile / Owner"], "05 — Mobile / Owner", 80, runY + 5340);
+  placeFrames(pages["05 — Mobile / Owner"], owner, 80, runY + 5420);
   figma.notify("Mobile frames ready. Creating exports…");
-  createPrototypePage(ctx, pages["06 — Prototypes"], member);
-  duplicateExportFrames(pages["07 — Export Frames"], allScreens);
-  createNotes(ctx, pages["08 — Notes / Handoff"]);
+  sectionMarker(ctx, pages["06 — Prototypes"], "06 — Prototypes", 80, runY + 6360);
+  createPrototypePage(ctx, pages["06 — Prototypes"], member, runY + 6440);
+  sectionMarker(ctx, pages["07 — Export Frames"], "07 — Export Frames", 80, runY + 6740);
+  duplicateExportFrames(pages["07 — Export Frames"], allScreens, runY + 6820);
+  sectionMarker(ctx, pages["08 — Notes / Handoff"], "08 — Notes / Handoff", 80, runY + 8840);
+  createNotes(ctx, pages["08 — Notes / Handoff"], runY + 8920);
   figma.notify("Applying export settings…");
   applyAutoExportSettings();
 
   figma.currentPage = pages["00 — Cover"];
-  const coverNode = pages["00 — Cover"].children[0];
+  const coverNode = pages["00 — Cover"].children
+    .slice()
+    .reverse()
+    .find((node) => node.name === "Cover / Zook Product UI System");
   if (coverNode) {
     figma.viewport.scrollAndZoomIntoView([coverNode]);
   }
