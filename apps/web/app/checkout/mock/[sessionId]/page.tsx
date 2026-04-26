@@ -12,9 +12,10 @@ export default async function MockCheckoutPage({
   try {
     session = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
   } catch {
-    if (sessionId === "demo") {
-      session = { id: "demo", amountPaise: 199900, purpose: "MEMBERSHIP", status: "CREATED" };
-    }
+    // Database is optional in local mock checkout.
+  }
+  if (!session && sessionId === "demo") {
+    session = { id: "demo", amountPaise: 224900, purpose: "MEMBERSHIP", status: "CREATED" };
   }
   return (
     <main className="grid min-h-screen place-items-center px-5 py-8">

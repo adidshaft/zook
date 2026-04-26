@@ -5,9 +5,9 @@ import { ZookLogo } from "@/components/zook-logo";
 
 export default function HomePage() {
   const featureCards: Array<[LucideIcon, string, string]> = [
-    [Dumbbell, "Active plan", "Monthly Unlimited"],
-    [MapPin, "Nearby gyms", "Discover spaces"],
-    [ShieldCheck, "Secure Access", "Verified Check-ins"]
+    [Dumbbell, "Active plan", "Hybrid Pro"],
+    [MapPin, "Pune gym", "Iron Temple"],
+    [ShieldCheck, "Secure access", "Server QR"]
   ];
 
   return (
@@ -32,14 +32,14 @@ export default function HomePage() {
               The operating system for modern gyms.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/58">
-              Seamlessly manage memberships, automate check-ins, coordinate personal trainers, and handle retail sales—all from one premium dashboard.
+              Manage memberships, rolling QR entry, trainer plans, reception approvals, shop pickup, and provider readiness from one operating cockpit.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/login" className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black">
                 Sign in to Dashboard
                 <ArrowRight size={18} />
               </Link>
-              <Link href="/g/iron-house" className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-5 py-3 text-white/75">
+              <Link href="/g/iron-temple" className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-5 py-3 text-white/75">
                 View gym profile
               </Link>
             </div>
@@ -49,7 +49,7 @@ export default function HomePage() {
             <GlassCard className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-white/45">Iron House Fitness</p>
+                  <p className="text-sm text-white/45">Iron Temple Gym · Pune</p>
                   <h2 className="mt-1 text-3xl font-semibold">Ready for today?</h2>
                 </div>
                 <QrCode className="text-lime-200" />

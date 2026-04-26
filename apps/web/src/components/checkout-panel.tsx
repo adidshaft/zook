@@ -14,6 +14,17 @@ export function CheckoutPanel({
 
   async function complete(nextStatus: "SUCCEEDED" | "FAILED" | "PENDING") {
     if (!session) return;
+    if (session.id === "demo") {
+      setStatus(nextStatus);
+      setMessage(
+        nextStatus === "SUCCEEDED"
+          ? "Mock backend confirmation completed. Hybrid Pro is now active for the local demo."
+          : nextStatus === "PENDING"
+            ? "Payment is pending. Membership stays inactive until confirmation."
+            : "Payment failed. Membership was not activated."
+      );
+      return;
+    }
     const response = await fetch(`/api/payments/mock/${session.id}/complete`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
@@ -38,6 +49,11 @@ export function CheckoutPanel({
         <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs">{status}</span>
       </div>
       <p className="text-sm leading-6 text-white/55">{message}</p>
+      <div className="mt-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4 text-sm text-white/65">
+        <p><span className="text-white/38">Plan:</span> Hybrid Pro</p>
+        <p><span className="text-white/38">Validity:</span> 30 days · 12 visits</p>
+        <p><span className="text-white/38">Activation:</span> server/mock confirmation only</p>
+      </div>
       <div className="mt-8 grid gap-3 sm:grid-cols-3">
         <button onClick={() => complete("SUCCEEDED")} className="zook-focus rounded-2xl bg-lime-300 px-4 py-3 font-semibold text-black">
           <CheckCircle2 className="mx-auto mb-2" />
