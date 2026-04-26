@@ -7,6 +7,7 @@ import {
   glassCard,
   header,
   iconDisk,
+  lockWidthHugHeight,
   mobileShell,
   paragraph,
   row,
@@ -81,7 +82,7 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
 
   const audit = glassCard("Audit Warning", 350, 10, TOKENS.radius.md);
   audit.layoutMode = "HORIZONTAL";
-  audit.counterAxisSizingMode = "AUTO";
+  lockWidthHugHeight(audit, 350);
   audit.counterAxisAlignItems = "CENTER";
   audit.appendChild(createIcon("warning", 16, TOKENS.color.warning));
   audit.appendChild(paragraph("Manual records require reason and are saved in audit logs.", ctx.styles.text.caption, 290, TOKENS.color.warning));

@@ -19,7 +19,18 @@ export type IconName =
   | "chevron"
   | "check"
   | "cart"
-  | "more";
+  | "more"
+  | "search"
+  | "filter"
+  | "fire"
+  | "target"
+  | "location"
+  | "calendar"
+  | "headset"
+  | "sparkle"
+  | "lock"
+  | "bottle"
+  | "towel";
 
 function primitive(name: string, x: number, y: number, width: number, height: number, color: string, radius = 1): RectangleNode {
   const node = figma.createRectangle();
@@ -86,6 +97,64 @@ export function createIcon(name: IconName, size = 20, color: string = TOKENS.col
       circle("Dot 1", 4, 10, 4);
       circle("Dot 2", 10, 10, 4);
       circle("Dot 3", 16, 10, 4);
+      break;
+    case "search":
+      circle("Lens", 4, 4, 12);
+      line("Handle", 14, 14, 7, 2, 45);
+      break;
+    case "filter":
+      line("Slider 1", 4, 7, 16);
+      circle("Knob 1", 8, 5, 4);
+      line("Slider 2", 4, 15, 16);
+      circle("Knob 2", 14, 13, 4);
+      break;
+    case "fire":
+      rect("Flame", 7, 5, 10, 15, 6);
+      rect("Inner", 10, 12, 4, 7, 3);
+      break;
+    case "target":
+      circle("Outer", 3, 3, 18);
+      circle("Middle", 7, 7, 10);
+      circle("Center", 10, 10, 4);
+      break;
+    case "location":
+      circle("Pin body", 4, 3, 16);
+      circle("Pin dot", 9, 8, 6);
+      rect("Pin point", 10, 16, 4, 5, 2);
+      break;
+    case "calendar":
+      rect("Calendar body", 5, 7, 14, 12, 2);
+      rect("Calendar top", 5, 7, 14, 3, 1);
+      line("Ring left", 8, 4, 4, 2, 90);
+      line("Ring right", 16, 4, 4, 2, 90);
+      break;
+    case "headset":
+      circle("Headset arc", 4, 4, 16);
+      rect("Left cup", 4, 12, 4, 6, 2);
+      rect("Right cup", 16, 12, 4, 6, 2);
+      line("Mic", 14, 18, 5, 2);
+      break;
+    case "sparkle":
+      line("Spark vertical", 12, 4, 16, 2, 90);
+      line("Spark horizontal", 4, 12, 16);
+      line("Small vertical", 18, 4, 6, 2, 90);
+      line("Small horizontal", 15, 7, 6);
+      break;
+    case "lock":
+      rect("Lock body", 6, 10, 12, 10, 2);
+      line("Shackle left", 8, 11, 6, 2, -90);
+      line("Shackle top", 8, 5, 8);
+      line("Shackle right", 16, 5, 6, 2, 90);
+      break;
+    case "bottle":
+      rect("Bottle body", 8, 7, 8, 13, 3);
+      rect("Bottle cap", 9, 4, 6, 3, 1);
+      line("Label", 9, 13, 6);
+      break;
+    case "towel":
+      rect("Fold", 5, 8, 14, 10, 2);
+      line("Fold line", 8, 8, 10);
+      line("Edge", 7, 15, 9);
       break;
     case "qr":
       rect("Cell 1", 4, 4, 6, 6);

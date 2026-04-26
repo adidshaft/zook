@@ -31,6 +31,14 @@ function forceFixedAutoLayoutSize(node: FrameNode): void {
   node.layoutSizingVertical = "FIXED";
 }
 
+export function lockWidthHugHeight(node: FrameNode, width: number): void {
+  node.resize(width, Math.max(1, node.height));
+  node.primaryAxisSizingMode = "FIXED";
+  node.counterAxisSizingMode = "AUTO";
+  node.layoutSizingHorizontal = "FIXED";
+  node.layoutSizingVertical = "HUG";
+}
+
 export function fixedFrame(name: string, width: number, height: number): FrameNode {
   const node = figma.createFrame();
   node.name = name;
@@ -433,8 +441,8 @@ export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], se
 }
 
 export function kpiCard(ctx: DesignContext, label: string, value: string, tone: "lime" | "warning" = "lime"): FrameNode {
-  const node = glassCard(`KPI Card / ${label}`, 160, TOKENS.space.md, TOKENS.radius.lg);
-  node.itemSpacing = TOKENS.space.xs;
+  const node = glassCard(`KPI Card / ${label}`, 160, 10, TOKENS.radius.lg);
+  node.itemSpacing = 2;
   node.appendChild(text(label, ctx.styles.text.caption, TOKENS.color.mutedText, "Label"));
   node.appendChild(text(value, ctx.styles.text.metric, tone === "lime" ? TOKENS.color.primaryText : TOKENS.color.warning, "Value"));
   return node;
@@ -492,10 +500,11 @@ export function searchBar(ctx: DesignContext, placeholder: string): FrameNode {
   node.strokeWeight = 1;
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
   const left = row("Search input", TOKENS.space.sm);
-  left.appendChild(createIcon("qr", 16, TOKENS.color.subtleText));
-  left.appendChild(text(placeholder, ctx.styles.text.body, TOKENS.color.subtleText, "Placeholder"));
+  left.appendChild(createIcon("search", 16, TOKENS.color.subtleText));
+  const placeholderText = paragraph(placeholder, ctx.styles.text.body, 238, TOKENS.color.subtleText, "Placeholder");
+  left.appendChild(placeholderText);
   node.appendChild(left);
-  node.appendChild(createIcon("more", 16, TOKENS.color.mutedText));
+  node.appendChild(createIcon("filter", 16, TOKENS.color.mutedText));
   return node;
 }
 
@@ -508,16 +517,16 @@ export function productCard(
 ): FrameNode {
   const node = glassCard(`Product Card / ${product}`, 166, TOKENS.space.md, TOKENS.radius.lg);
   node.itemSpacing = TOKENS.space.sm;
-  const visual = fixedFrame("Product silhouette", 138, 72);
+  const visual = fixedFrame("Product silhouette", 138, 54);
   visual.cornerRadius = TOKENS.radius.md;
   visual.fills = [solid(TOKENS.color.accent, 0.08)];
   visual.strokes = [solid(TOKENS.color.white, 0.08)];
   visual.strokeWeight = 1;
-  const productIcon = product.includes("Shake") || product.includes("Bottle") ? "dumbbell" : product.includes("Towel") ? "clipboard" : "bag";
-  const bag = createIcon(productIcon, 30, TOKENS.color.accent);
+  const productIcon: IconName = product.includes("Shake") || product.includes("Bottle") ? "bottle" : product.includes("Towel") ? "towel" : "bag";
+  const bag = createIcon(productIcon, 28, TOKENS.color.accent);
   visual.appendChild(bag);
-  bag.x = 54;
-  bag.y = 20;
+  bag.x = 55;
+  bag.y = 13;
   node.appendChild(visual);
   node.appendChild(text(product, ctx.styles.text.bodyStrong, TOKENS.color.primaryText, "Name"));
   node.appendChild(text(price, ctx.styles.text.h3, TOKENS.color.accent, "Price"));

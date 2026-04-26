@@ -294,12 +294,13 @@ function createNotes(ctx: DesignContext, page: PageNode, yOffset = 0): void {
   page.appendChild(notes);
 }
 
-function placeExportFrames(page: PageNode, screens: FrameNode[], startY: number): void {
+function duplicateExportFrames(page: PageNode, screens: FrameNode[], startY: number): void {
   screens.forEach((screen, index) => {
-    screen.name = exportFrameNames[index] ?? `AUTO_EXPORT / ${index + 1}`;
-    page.appendChild(screen);
-    screen.x = 80 + (index % 5) * (TOKENS.frame.mobile.width + 40);
-    screen.y = startY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
+    const clone = screen.clone();
+    clone.name = exportFrameNames[index] ?? `AUTO_EXPORT / ${index + 1}`;
+    page.appendChild(clone);
+    clone.x = 80 + (index % 5) * (TOKENS.frame.mobile.width + 40);
+    clone.y = startY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
   });
 }
 
@@ -352,7 +353,7 @@ async function main(): Promise<void> {
   const ownerFramesY = ownerMarkerY + 80;
   sectionMarker(ctx, pages["05 — Mobile / Owner"], "05 — Mobile / Owner", 80, ownerMarkerY);
   placeFrames(pages["05 — Mobile / Owner"], owner, 80, ownerFramesY);
-  figma.notify("Mobile frames ready. Creating exports…");
+  figma.notify("Mobile frames ready. Finalizing handoff…", { timeout: 1000 });
 
   const prototypeMarkerY = afterFrameGrid(ownerFramesY, owner.length);
   const prototypeY = prototypeMarkerY + 80;
@@ -362,14 +363,7 @@ async function main(): Promise<void> {
   const exportMarkerY = prototypeY + 380;
   const exportFramesY = exportMarkerY + 80;
   sectionMarker(ctx, pages["07 — Export Frames"], "07 — Export Frames", 80, exportMarkerY);
-  figma.notify("Building clean export frames…");
-  const cleanExports = [
-    ...buildScreens("Member export", memberScreens, ctx),
-    ...buildScreens("Receptionist export", receptionistScreens, ctx),
-    ...buildScreens("Trainer export", trainerScreens, ctx),
-    ...buildScreens("Owner export", ownerScreens, ctx)
-  ];
-  placeExportFrames(pages["07 — Export Frames"], cleanExports, exportFramesY);
+  duplicateExportFrames(pages["07 — Export Frames"], allScreens, exportFramesY);
 
   const notesMarkerY = afterFrameGrid(exportFramesY, allScreens.length, 5, 220);
   sectionMarker(ctx, pages["08 — Notes / Handoff"], "08 — Notes / Handoff", 80, notesMarkerY);

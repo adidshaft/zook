@@ -13,6 +13,7 @@ import {
   iconButton,
   iconDisk,
   listRow,
+  lockWidthHugHeight,
   memberNavItems,
   metricTile,
   mobileShell,
@@ -154,12 +155,12 @@ export function memberHome(ctx: DesignContext): FrameNode {
 
   const activity = glassCard("Activity Metrics Card", 350, 14, TOKENS.radius.xl);
   activity.layoutMode = "HORIZONTAL";
-  activity.counterAxisSizingMode = "AUTO";
+  lockWidthHugHeight(activity, 350);
   activity.primaryAxisAlignItems = "SPACE_BETWEEN";
   activity.counterAxisAlignItems = "CENTER";
-  activity.appendChild(metricTile(ctx, "clock", "Streak", "5 days"));
-  activity.appendChild(metricTile(ctx, "qr", "Last check-in", "7:12 AM"));
-  activity.appendChild(metricTile(ctx, "check", "Weekly goal", "3/5"));
+  activity.appendChild(metricTile(ctx, "fire", "Streak", "5 days"));
+  activity.appendChild(metricTile(ctx, "clock", "Last check-in", "7:12 AM"));
+  activity.appendChild(metricTile(ctx, "target", "Weekly goal", "3/5"));
   screen.appendChild(activity);
   footerSpacer(screen);
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Home"));
@@ -231,10 +232,13 @@ export function memberScanner(ctx: DesignContext): FrameNode {
   screen.appendChild(validation);
   const support = glassCard("Support Panel", 350, 12, TOKENS.radius.xl);
   support.layoutMode = "HORIZONTAL";
-  support.counterAxisSizingMode = "AUTO";
+  lockWidthHugHeight(support, 350);
   support.primaryAxisAlignItems = "SPACE_BETWEEN";
   support.counterAxisAlignItems = "CENTER";
-  support.appendChild(text("Need help? Ask receptionist", ctx.styles.text.bodyStrong, TOKENS.color.mutedText));
+  const supportLeft = row("Support copy", TOKENS.space.sm);
+  supportLeft.appendChild(iconDisk("headset", 34, "glass"));
+  supportLeft.appendChild(text("Need help? Ask receptionist", ctx.styles.text.bodyStrong, TOKENS.color.mutedText));
+  support.appendChild(supportLeft);
   support.appendChild(createIcon("chevron", 16, TOKENS.color.mutedText));
   screen.appendChild(support);
   footerSpacer(screen);
@@ -269,7 +273,7 @@ export function attendanceApproved(ctx: DesignContext): FrameNode {
   screen.appendChild(code);
   const next = glassCard("Next Up Card", 350, 14, TOKENS.radius.xl);
   next.layoutMode = "HORIZONTAL";
-  next.counterAxisSizingMode = "AUTO";
+  lockWidthHugHeight(next, 350);
   next.primaryAxisAlignItems = "SPACE_BETWEEN";
   next.counterAxisAlignItems = "CENTER";
   next.appendChild(iconDisk("dumbbell", 44, "lime"));
@@ -308,7 +312,7 @@ export function attendancePending(ctx: DesignContext): FrameNode {
   screen.appendChild(code);
   const reason = glassCard("Why Review Card", 350, 14, TOKENS.radius.xl);
   reason.layoutMode = "HORIZONTAL";
-  reason.counterAxisSizingMode = "AUTO";
+  lockWidthHugHeight(reason, 350);
   reason.appendChild(iconDisk("warning", 48, "warning"));
   const reasonCopy = stack("Reason copy", "VERTICAL", 4);
   reasonCopy.appendChild(text("Why review?", ctx.styles.text.h3));
@@ -323,7 +327,7 @@ export function attendancePending(ctx: DesignContext): FrameNode {
 
 export function memberShop(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Member / 05 Shop Catalog");
-  screen.itemSpacing = 10;
+  screen.itemSpacing = 8;
   const head = row("Shop header", TOKENS.space.md);
   head.resize(350, 64);
   head.primaryAxisSizingMode = "FIXED";
@@ -344,10 +348,12 @@ export function memberShop(ctx: DesignContext): FrameNode {
   head.appendChild(cart);
   screen.appendChild(head);
   screen.appendChild(searchBar(ctx, "Search water, protein, towel…"));
-  const categories = row("Category chips", TOKENS.space.sm);
-  categories.resize(350, 36);
+  const categories = stack("Category chips", "VERTICAL", 6);
+  categories.resize(350, 68);
   categories.primaryAxisSizingMode = "FIXED";
-  categories.clipsContent = true;
+  categories.counterAxisSizingMode = "FIXED";
+  const categoryRowOne = row("Category row 1", TOKENS.space.sm);
+  const categoryRowTwo = row("Category row 2", TOKENS.space.sm);
   for (const [label, selected] of [
     ["All", true],
     ["Water", false],
@@ -356,8 +362,11 @@ export function memberShop(ctx: DesignContext): FrameNode {
     ["Towel", false],
     ["Supplement", false]
   ] as const) {
-    categories.appendChild(chip(ctx, label, selected ? "lime" : "glass"));
+    const target = label === "All" || label === "Water" || label === "Protein Shake" ? categoryRowOne : categoryRowTwo;
+    target.appendChild(chip(ctx, label, selected ? "lime" : "glass"));
   }
+  categories.appendChild(categoryRowOne);
+  categories.appendChild(categoryRowTwo);
   screen.appendChild(categories);
   const grid = stack("Product Grid", "VERTICAL", TOKENS.space.sm);
   const r1 = row("Product row 1", TOKENS.space.md);
@@ -371,7 +380,7 @@ export function memberShop(ctx: DesignContext): FrameNode {
   screen.appendChild(grid);
   const miniCart = glassCard("Floating Mini Cart", 246, 12, TOKENS.radius.xxl);
   miniCart.layoutMode = "HORIZONTAL";
-  miniCart.counterAxisSizingMode = "AUTO";
+  lockWidthHugHeight(miniCart, 246);
   miniCart.primaryAxisAlignItems = "SPACE_BETWEEN";
   miniCart.counterAxisAlignItems = "CENTER";
   miniCart.appendChild(createIcon("cart", 22, TOKENS.color.primaryText));
@@ -429,7 +438,7 @@ export function memberPlanDetail(ctx: DesignContext): FrameNode {
   screen.appendChild(list);
   const sticky = glassCard("Sticky action bar", 350, 10, TOKENS.radius.xl);
   sticky.layoutMode = "HORIZONTAL";
-  sticky.counterAxisSizingMode = "AUTO";
+  lockWidthHugHeight(sticky, 350);
   sticky.primaryAxisAlignItems = "SPACE_BETWEEN";
   sticky.counterAxisAlignItems = "CENTER";
   sticky.appendChild(button(ctx, "Complete", "primary", "check", 168));
