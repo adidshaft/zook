@@ -16,6 +16,7 @@ export interface TextSpec {
   fontSize: number;
   lineHeight: { unit: "PIXELS"; value: number };
   weight: string;
+  fontName: FontName;
 }
 
 export interface StyleRegistry {
@@ -27,6 +28,15 @@ export interface StyleRegistry {
     softShadow: Effect[];
     backgroundBlur: Effect[];
   };
+}
+
+function fontForWeight(weight: string): FontName {
+  void weight;
+  return TOKENS.font.regular;
+}
+
+export async function loadTokenFonts(): Promise<void> {
+  await figma.loadFontAsync(TOKENS.font.regular);
 }
 
 function rgba(hex: keyof typeof TOKENS.color, opacity: number): RGBA {
@@ -48,7 +58,8 @@ export function createTokenStyles(): StyleRegistry {
       name: `Type / ${key}`,
       fontSize: spec.size,
       lineHeight: { unit: "PIXELS", value: spec.lineHeight },
-      weight: spec.weight
+      weight: spec.weight,
+      fontName: fontForWeight(spec.weight)
     };
   }
 

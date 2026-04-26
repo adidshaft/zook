@@ -5,7 +5,7 @@ import { ownerScreens } from "./screens/owner";
 import { memberScreens } from "./screens/member";
 import { receptionistScreens } from "./screens/receptionist";
 import { trainerScreens } from "./screens/trainer";
-import { createTokenStyles } from "./styles";
+import { createTokenStyles, loadTokenFonts } from "./styles";
 import { TOKENS, glassFill, glassStroke, solid } from "./tokens";
 
 const pageNames = [
@@ -22,12 +22,10 @@ const pageNames = [
 
 function resetGeneratedPages(): Record<(typeof pageNames)[number], PageNode> {
   const pages = {} as Record<(typeof pageNames)[number], PageNode>;
-  figma.currentPage.name = "Zook UI System v1 — Starter Compatible";
-  for (const child of [...figma.currentPage.children]) {
-    child.remove();
-  }
+  const runPage = figma.currentPage;
+  runPage.name = "Zook UI System v1 — Starter Compatible";
   for (const name of pageNames) {
-    pages[name] = figma.currentPage;
+    pages[name] = runPage;
   }
   return pages;
 }
@@ -201,30 +199,46 @@ function duplicateExportFrames(page: PageNode, screens: FrameNode[]): void {
   });
 }
 
+function buildScreens(label: string, creators: Array<(ctx: DesignContext) => FrameNode>, ctx: DesignContext): FrameNode[] {
+  const screens: FrameNode[] = [];
+  creators.forEach((createScreen, index) => {
+    figma.notify(`Creating ${label} screen ${index + 1}/${creators.length}…`, { timeout: 2500 });
+    screens.push(createScreen(ctx));
+  });
+  return screens;
+}
+
 async function main(): Promise<void> {
   figma.notify("Zook generator starting…");
-  figma.notify("Building file with SVG text fallback…");
+  figma.notify("Loading Inter fonts…");
+  await loadTokenFonts();
+  figma.notify("Building file with native text…");
   const pages = resetGeneratedPages();
   figma.notify("Pages ready. Preparing tokens…");
   const styles = createTokenStyles();
   figma.notify("Tokens ready. Creating screens…");
   const ctx: DesignContext = { styles };
 
-  const member = memberScreens.map((createScreen) => createScreen(ctx));
-  const trainer = trainerScreens.map((createScreen) => createScreen(ctx));
-  const receptionist = receptionistScreens.map((createScreen) => createScreen(ctx));
-  const owner = ownerScreens.map((createScreen) => createScreen(ctx));
+  const member = buildScreens("Member", memberScreens, ctx);
+  const trainer = buildScreens("Trainer", trainerScreens, ctx);
+  const receptionist = buildScreens("Receptionist", receptionistScreens, ctx);
+  const owner = buildScreens("Owner", ownerScreens, ctx);
   const allScreens = [...member, ...receptionist, ...trainer, ...owner];
 
+  figma.notify("Screens ready. Creating cover and UI kit…");
   createCover(ctx, pages["00 — Cover"], member);
+  figma.notify("Cover ready. Creating UI kit…");
   createUiKit(ctx, pages["01 — UI Kit"]);
+  figma.notify("UI kit ready. Placing mobile frames…");
   placeFrames(pages["02 — Mobile / Member"], member);
   placeFrames(pages["03 — Mobile / Trainer"], trainer);
   placeFrames(pages["04 — Mobile / Receptionist"], receptionist);
   placeFrames(pages["05 — Mobile / Owner"], owner);
+  figma.notify("Mobile frames ready. Creating exports…");
   createPrototypePage(ctx, pages["06 — Prototypes"], member);
   duplicateExportFrames(pages["07 — Export Frames"], allScreens);
   createNotes(ctx, pages["08 — Notes / Handoff"]);
+  figma.notify("Applying export settings…");
   applyAutoExportSettings();
 
   figma.currentPage = pages["00 — Cover"];

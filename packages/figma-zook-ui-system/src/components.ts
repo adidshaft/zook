@@ -29,33 +29,19 @@ export function fixedFrame(name: string, width: number, height: number): FrameNo
   return node;
 }
 
-function escapeSvg(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function rgbaCss(color: string): string {
-  return color;
-}
-
 export function text(
   value: string,
   style: TextSpec,
   color: string = TOKENS.color.primaryText,
   name = "Text"
-): FrameNode {
-  const size = style.fontSize;
-  const lineHeight = style.lineHeight.value;
-  const width = Math.max(24, Math.ceil(value.length * size * 0.58));
-  const height = Math.max(lineHeight, Math.ceil(lineHeight * Math.max(1, Math.ceil(width / 330))));
-  const weight = style.weight === "Bold" || style.weight === "Semi Bold" ? 700 : 500;
-  const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><text x="0" y="${Math.round(size)}" fill="${rgbaCss(color)}" font-family="Inter, Arial, sans-serif" font-size="${size}" font-weight="${weight}" letter-spacing="0">${escapeSvg(value)}</text></svg>`;
-  const node = figma.createNodeFromSvg(svg) as FrameNode;
+): TextNode {
+  const node = figma.createText();
   node.name = name;
-  node.resize(width, height);
+  node.fontName = style.fontName;
+  node.fontSize = style.fontSize;
+  node.lineHeight = style.lineHeight;
+  node.fills = [solid(color)];
+  node.characters = value;
   return node;
 }
 

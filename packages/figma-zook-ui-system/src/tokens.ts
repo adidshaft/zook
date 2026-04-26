@@ -98,7 +98,6 @@ export function glassStroke(opacity: number = TOKENS.opacity.glassStroke): Solid
 export function layoutGrid(): LayoutGrid {
   return {
     pattern: "COLUMNS",
-    sectionSize: 1,
     visible: false,
     color: { r: 1, g: 1, b: 1, a: 0.08 },
     alignment: "STRETCH",
