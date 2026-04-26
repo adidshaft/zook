@@ -2,7 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { zookMockServices } from "@zook/core";
 import {
+  AuditWarning,
   Card,
   Dock,
   GlassInput,
@@ -50,6 +52,7 @@ export default function Profile() {
   const [dietPreference, setDietPreference] = useState("");
   const [allergies, setAllergies] = useState("");
   const [summaryNote, setSummaryNote] = useState("");
+  const [privacyStatus, setPrivacyStatus] = useState("");
   const activeOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization;
@@ -178,6 +181,16 @@ export default function Profile() {
     router.replace("/");
   }
 
+  async function requestPrivacyExport() {
+    const job = await zookMockServices.privacyService.requestExport(session?.user.id);
+    setPrivacyStatus(`Data export job created: ${job.id}. Status: ${job.status}.`);
+  }
+
+  async function requestPrivacyDeletion() {
+    const job = await zookMockServices.privacyService.requestDeletion(session?.user.id);
+    setPrivacyStatus(`Deletion job created: ${job.id}. Status: ${job.status}.`);
+  }
+
   const ageLabel = (() => {
     if (!dateOfBirth) {
       return "Not added";
@@ -246,6 +259,16 @@ export default function Profile() {
             )}
           </View>
         </Card>
+
+        {session?.user.guardianPending ? (
+          <Card style={styles.minorCard}>
+            <Pill tone="amber">Guardian consent required</Pill>
+            <Text style={styles.calloutTitle}>Protected account gates are active.</Text>
+            <Text style={styles.profileBody}>
+              Membership activation, attendance, PT activation, plan assignment, personalized AI, and marketing stay blocked until guardian consent is verified.
+            </Text>
+          </Card>
+        ) : null}
 
         <SectionHeader
           eyebrow="My Gym"
@@ -421,6 +444,24 @@ export default function Profile() {
           </SecondaryLink>
         </View>
 
+        <SectionHeader
+          eyebrow="Privacy"
+          title="Data rights"
+        />
+
+        <Card style={styles.detailsCard}>
+          <AuditWarning>Export and deletion requests create server jobs and audit logs. Zook does not fake instant deletion.</AuditWarning>
+          <View style={styles.actionRow}>
+            <PrimaryButton onPress={() => void requestPrivacyExport()} tone="secondary" style={styles.actionHalf}>
+              Request export
+            </PrimaryButton>
+            <PrimaryButton onPress={() => void requestPrivacyDeletion()} tone="danger" style={styles.actionHalf}>
+              Request deletion
+            </PrimaryButton>
+          </View>
+          {privacyStatus ? <Text style={styles.detailsStatus}>{privacyStatus}</Text> : null}
+        </Card>
+
         <PrimaryButton onPress={() => void logout()} tone="danger">
           Logout
         </PrimaryButton>
@@ -523,6 +564,11 @@ const styles = StyleSheet.create({
   },
   calloutCard: {
     gap: 10,
+  },
+  minorCard: {
+    gap: 10,
+    borderColor: "rgba(245,200,75,0.24)",
+    backgroundColor: "rgba(245,200,75,0.08)",
   },
   calloutTitle: {
     color: colors.text,
