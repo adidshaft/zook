@@ -1,308 +1,150 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { zookDemoFixtures, zookMockServices } from "@zook/core";
 import {
+  ActiveGymPill,
   Card,
-  CollapsibleSection,
   Dock,
-  EmptyState,
-  LoadingState,
+  IconBubble,
+  ListRow,
   MetricTile,
   Pill,
   PrimaryButton,
   Screen,
-  ScreenHeader,
   SecondaryButton,
+  SectionHeader,
 } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
-import { getApiErrorMessage, useAuth } from "@/lib/auth";
-import { formatInr, formatRelativeDate, titleCaseFromCode } from "@/lib/formatting";
-import type { OwnerDashboardData } from "@/lib/query-hooks";
-import { useOwnerDashboard } from "@/lib/query-hooks";
+import { formatInr } from "@/lib/formatting";
 import { colors } from "@/lib/theme";
 
+type OwnerView = "command" | "approvals" | "revenue" | "stock";
+
+function normalizeView(value: string | string[] | undefined): OwnerView {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw === "approvals" || raw === "revenue" || raw === "stock") return raw;
+  return "command";
+}
+
 export default function Owner() {
-  const queryClient = useQueryClient();
-  const { activeOrgId, token } = useAuth();
-  const dashboardQuery = useOwnerDashboard();
-  const dashboard = dashboardQuery.data;
-  const summary = dashboard?.summary;
-  const joinRequests = dashboard?.joinRequests ?? [];
-  const products = dashboard?.products ?? [];
-  const notifications = dashboard?.notifications ?? [];
-  const aiUsage = dashboard?.aiUsage ?? [];
-  const [refreshing, setRefreshing] = useState(false);
+  const params = useLocalSearchParams<{ view?: string | string[] }>();
+  const view = normalizeView(params.view);
+  const [version, setVersion] = useState(0);
+  const joinRequests = zookDemoFixtures.joinRequests.filter((request) => request.status === "PENDING");
+  const attentionAttempts = zookMockServices.state.attendanceAttempts.filter(
+    (attempt) => attempt.status === "PENDING_APPROVAL" || attempt.status === "FLAGGED",
+  );
+  const lowStock = zookDemoFixtures.shopProducts.filter((product) => product.stock <= product.lowStockThreshold);
+  const payments = zookMockServices.state.payments;
+  const orders = zookMockServices.state.shopOrders.filter((order) => order.status === "READY_FOR_PICKUP" || order.status === "PAID");
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "dashboard"] });
-    setRefreshing(false);
-  };
-
-  async function updateJoinRequest(joinRequestId: string, action: "approve" | "reject") {
-    if (!token || !activeOrgId) {
-      return;
-    }
-    await mobileApiFetch(`/orgs/${activeOrgId}/join-requests/${joinRequestId}/${action}`, {
-      method: "POST",
-      token,
-      orgId: activeOrgId,
-    });
-    await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "dashboard"] });
+  async function approveAttendance(attemptId: string) {
+    await zookMockServices.receptionistService.approveAttendance(attemptId, "Owner approved from mobile command view");
+    setVersion((current) => current + 1);
   }
 
   return (
     <Screen>
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.lime}
-            colors={[colors.lime]}
-          />
-        }
-      >
-        <ScreenHeader
-          eyebrow="Owner desk"
-          title="Web command center"
-          subtitle="Mobile preview of owner queues. Full setup lives in the web dashboard."
-          trailing={
-            <Pill tone="lime">
-              {titleCaseFromCode(dashboard?.organization?.status ?? "loading")}
-            </Pill>
-          }
-        />
-
-        <View style={styles.metricGrid}>
-          <MetricTile
-            label="Active members"
-            value={String(summary?.activeMembers ?? 0)}
-            detail={`${summary?.joinRequests ?? 0} join requests still waiting`}
-            tone="lime"
-            style={styles.metricHalf}
-          />
-          <MetricTile
-            label="Today attendance"
-            value={String(summary?.todayAttendance ?? 0)}
-            detail="QR check-ins create visible entry codes"
-            tone="blue"
-            style={styles.metricHalf}
-          />
-          <MetricTile
-            label="Revenue today"
-            value={formatInr(summary?.revenuePaise ?? 0)}
-            detail={`${formatInr(summary?.cashCollectedPaise ?? 0)} recorded offline`}
-            tone="amber"
-            style={styles.metricHalf}
-          />
-          <MetricTile
-            label="Trainer AI logs"
-            value={String(summary?.aiUsageThisMonth ?? 0)}
-            detail={`${summary?.notificationQueueCount ?? 0} notification jobs`}
-            tone="violet"
-            style={styles.metricHalf}
-          />
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+        <View style={styles.headerRow}>
+          <View style={styles.headerCopy}>
+            <ActiveGymPill label="Iron Temple Gym · Pune" />
+            <Text style={styles.title}>
+              {view === "command" ? "Command" : view === "approvals" ? "Approvals" : view === "revenue" ? "Revenue" : "Stock"}
+            </Text>
+            <Text style={styles.subtitle}>Owner mobile command view · web handles full configuration.</Text>
+          </View>
+          <Pill tone="lime">Owner</Pill>
         </View>
 
-        {dashboardQuery.isLoading ? (
-          <LoadingState
-            title="Loading owner dashboard"
-            body="Pulling the latest command-center summary for the active organization."
-          />
+        {view === "command" ? (
+          <>
+            <View style={styles.metricGrid}>
+              <MetricTile label="Active members" value="412" detail="Across default branch" tone="lime" style={styles.metricHalf} />
+              <MetricTile label="Today check-ins" value="48" detail="7 pending review" tone="blue" style={styles.metricHalf} />
+              <MetricTile label="Revenue" value="₹82.4k" detail="Today collected" tone="amber" style={styles.metricHalf} />
+              <MetricTile label="Approvals" value="7" detail="Needs attention" tone="violet" style={styles.metricHalf} />
+            </View>
+
+            <SectionHeader title="Needs attention" />
+            <Card style={styles.stack}>
+              <ListRow title="Join requests waiting" subtitle="3 members waiting for approval" leading={<IconBubble icon="person-add-outline" tone="amber" />} trailing={<Pill tone="amber">3</Pill>} />
+              <ListRow title="Flagged check-in" subtitle="Replay protection needs review" leading={<IconBubble icon="alert-outline" tone="red" />} trailing={<Pill tone="red">1</Pill>} />
+              <ListRow title="Expiring soon" subtitle="5 memberships in next 7 days" leading={<IconBubble icon="time-outline" tone="blue" />} trailing={<Pill tone="blue">5</Pill>} />
+              <ListRow title="Low stock" subtitle="2 products under threshold" leading={<IconBubble icon="cube-outline" tone="amber" />} trailing={<Pill tone="amber">2</Pill>} />
+            </Card>
+
+            <SectionHeader title="Recent activity" />
+            <Card style={styles.stack}>
+              <ListRow title="Priya recorded offline payment" subtitle="Hybrid Pro renewal · Direct UPI" trailing={<Pill tone="lime">Audit</Pill>} />
+              <ListRow title="Coach Rhea assigned Push Day" subtitle="Aarav Mehta · visible to member" trailing={<Pill tone="blue">Plan</Pill>} />
+              <ListRow title="Protein Shake stock updated" subtitle="18 units ready at desk" trailing={<Pill tone="neutral">Shop</Pill>} />
+            </Card>
+          </>
         ) : null}
 
-        <Card style={styles.webCard}>
-          <Text style={styles.cardTitle}>Owner web app focus</Text>
-          <Text style={styles.rowBody}>
-            Use web for multi-gym profiles, referral discounts, trainer attendance summaries, inventory, staff roles, and broadcasts.
-          </Text>
-        </Card>
-
-        <CollapsibleSection
-          eyebrow="Membership funnel"
-          title="Join requests"
-          subtitle="Approval-required gyms only."
-          count={joinRequests.length}
-          defaultOpen={joinRequests.length > 0}
-        >
-          {!dashboardQuery.isLoading && !joinRequests.length ? (
-            <EmptyState
-              title="No join requests waiting"
-              body="Open-join memberships can skip this queue."
-            />
-          ) : (
+        {view === "approvals" ? (
+          <>
+            <SectionHeader title="Join requests" subtitle="Approve to create checkout link and member notification." />
             <View style={styles.stack}>
               {joinRequests.map((request) => (
-                <JoinRequestCard key={request.id} request={request} onUpdate={updateJoinRequest} />
+                <Card key={request.id} style={styles.stack}>
+                  <ListRow title={request.userName} subtitle={`${request.userEmail} · Referral ${request.referralCode}`} trailing={<Pill tone="amber">Pending</Pill>} />
+                  <View style={styles.actionRow}>
+                    <PrimaryButton onPress={() => setVersion(version + 1)} style={styles.actionHalf}>Approve</PrimaryButton>
+                    <SecondaryButton onPress={() => setVersion(version + 1)} style={styles.actionHalf}>Reject</SecondaryButton>
+                  </View>
+                </Card>
               ))}
             </View>
-          )}
-        </CollapsibleSection>
 
-        <CollapsibleSection
-          eyebrow="Watchlist"
-          title="Stock"
-          subtitle="Low inventory and gym shop pressure."
-          count={products.length}
-          defaultOpen={products.length > 0}
-        >
+            <SectionHeader title="Attendance review" subtitle="Pending and flagged scans." />
             <View style={styles.stack}>
-              {products.length ? (
-                products.map((product) => (
-                  <View key={product.id} style={styles.rowCard}>
-                    <View style={styles.rowCopy}>
-                      <Text style={styles.rowTitle}>
-                        {product.name}
-                      </Text>
-                      <Text style={styles.rowBody}>
-                        {formatInr(product.pricePaise ?? 0)} ·{" "}
-                        {titleCaseFromCode(product.category ?? "OTHER")}
-                      </Text>
-                    </View>
-                    <Pill tone={(product.stock ?? 0) <= 3 ? "red" : "amber"}>
-                      {product.stock ?? 0} left
-                    </Pill>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.rowBody}>
-                  No low-stock products in the current organization.
-                </Text>
-              )}
+              {attentionAttempts.map((attempt) => (
+                <Card key={attempt.id} style={styles.stack}>
+                  <ListRow title={attempt.memberName} subtitle={`${attempt.status.replace(/_/g, " ")} · ${attempt.reason}`} trailing={<Pill tone={attempt.status === "FLAGGED" ? "red" : "amber"}>{attempt.entryCode}</Pill>} />
+                  <PrimaryButton onPress={() => void approveAttendance(attempt.id)}>Approve Check-in</PrimaryButton>
+                </Card>
+              ))}
             </View>
-        </CollapsibleSection>
+          </>
+        ) : null}
 
-        <CollapsibleSection
-          eyebrow="Messaging"
-          title="Recent notifications"
-          subtitle="Limited sends and automatic triggers belong in web."
-          count={notifications.length}
-          defaultOpen={false}
-        >
-            <View style={styles.stack}>
-              {notifications.length ? (
-                notifications.map((notification) => (
-                  <View key={notification.id} style={styles.rowCard}>
-                    <View style={styles.rowCopy}>
-                      <Text style={styles.rowTitle}>
-                        {notification.title ?? "Notification"}
-                      </Text>
-                      <Text style={styles.rowBody}>
-                        {titleCaseFromCode(notification.type)} ·{" "}
-                        {formatRelativeDate(notification.createdAt)}
-                      </Text>
-                    </View>
-                    <Pill
-                      tone={
-                        notification.status === "FAILED"
-                          ? "red"
-                          : notification.status === "SCHEDULED"
-                            ? "amber"
-                            : "blue"
-                      }
-                    >
-                      {titleCaseFromCode(notification.status)}
-                    </Pill>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.rowBody}>
-                  No notifications have been sent from this organization yet.
-                </Text>
-              )}
+        {view === "revenue" ? (
+          <>
+            <View style={styles.metricGrid}>
+              <MetricTile label="Revenue today" value="₹82.4k" detail="Online + offline" tone="lime" style={styles.metricHalf} />
+              <MetricTile label="Manual records" value="₹18.6k" detail="Cash and direct UPI" tone="amber" style={styles.metricHalf} />
             </View>
-        </CollapsibleSection>
+            <SectionHeader title="Recent transactions" />
+            <Card style={styles.stack}>
+              {payments.map((payment) => (
+                <ListRow key={payment.id} title={payment.summary} subtitle={`${payment.mode.replace(/_/g, " ")} · ${payment.reason}`} trailing={<Pill tone={payment.status === "SUCCEEDED" ? "lime" : "amber"}>{formatInr(payment.amountPaise)}</Pill>} />
+              ))}
+              <ListRow title="Shop pickup order" subtitle="Protein Shake + Zook Shaker" trailing={<Pill tone="lime">₹548</Pill>} />
+            </Card>
+          </>
+        ) : null}
 
-        <CollapsibleSection
-          eyebrow="AI oversight"
-          title="Recent usage"
-          subtitle="AI use remains member and trainer facing."
-          count={aiUsage.length}
-          defaultOpen={false}
-        >
-          <View style={styles.stack}>
-            {aiUsage.length ? (
-              aiUsage.map((usage) => (
-                <View key={usage.id} style={styles.rowCard}>
-                  <View style={styles.rowCopy}>
-                    <Text style={styles.rowTitle}>
-                      {usage.promptSummary ?? "AI request"}
-                    </Text>
-                    <Text style={styles.rowBody}>
-                      {titleCaseFromCode(usage.requestType)} · {formatRelativeDate(usage.createdAt)}
-                    </Text>
-                  </View>
-                  <Pill tone="lime">{titleCaseFromCode(usage.role)}</Pill>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.rowBody}>
-                No AI usage has been logged for this organization yet.
-              </Text>
-            )}
-          </View>
-        </CollapsibleSection>
-
+        {view === "stock" ? (
+          <>
+            <SectionHeader title="Low-stock products" subtitle="Quick stock visibility. Full inventory lives on web." />
+            <Card style={styles.stack}>
+              {lowStock.map((product) => (
+                <ListRow key={product.id} title={product.name} subtitle={`${formatInr(product.pricePaise)} · threshold ${product.lowStockThreshold}`} trailing={<Pill tone="amber">{product.stock} left</Pill>} />
+              ))}
+            </Card>
+            <SectionHeader title="Pending pickups" />
+            <Card style={styles.stack}>
+              {orders.map((order) => (
+                <ListRow key={order.id} title="Aarav Mehta" subtitle={`${order.pickupCode} · ${order.status.replace(/_/g, " ")}`} trailing={<Pill tone="lime">{formatInr(order.totalPaise)}</Pill>} />
+              ))}
+            </Card>
+          </>
+        ) : null}
       </ScrollView>
       <Dock />
     </Screen>
-  );
-}
-
-function JoinRequestCard({
-  request,
-  onUpdate,
-}: {
-  request: NonNullable<OwnerDashboardData["joinRequests"]>[number];
-  onUpdate: (joinRequestId: string, action: "approve" | "reject") => Promise<void>;
-}) {
-  const [busyAction, setBusyAction] = useState<"approve" | "reject" | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  async function handleUpdate(action: "approve" | "reject") {
-    try {
-      setBusyAction(action);
-      setErrorMessage(null);
-      await onUpdate(request.id, action);
-    } catch (error) {
-      setErrorMessage(getApiErrorMessage(error));
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
-  return (
-    <Card style={styles.requestCard}>
-      <View style={styles.requestHeader}>
-        <View style={styles.rowCopy}>
-          <Text style={styles.cardTitle}>
-            Member {request.userName ?? request.userEmail ?? request.userId.slice(0, 8)}
-          </Text>
-          <Text style={styles.rowBody}>
-            Requested {formatRelativeDate(request.createdAt)}
-            {request.planId ? " · plan selected" : ""}
-          </Text>
-        </View>
-        <Pill tone="amber">{titleCaseFromCode(request.status ?? "pending")}</Pill>
-      </View>
-      {request.referralCode ? <Pill tone="blue">Referral {request.referralCode}</Pill> : null}
-      {errorMessage ? (
-        <Text style={styles.errorText}>
-          {errorMessage}
-        </Text>
-      ) : null}
-      <View style={styles.actions}>
-        <PrimaryButton onPress={() => void handleUpdate("approve")} style={styles.actionHalf}>
-          {busyAction === "approve" ? "Approving..." : "Approve"}
-        </PrimaryButton>
-        <SecondaryButton onPress={() => void handleUpdate("reject")} style={styles.actionHalf}>
-          {busyAction === "reject" ? "Rejecting..." : "Reject"}
-        </SecondaryButton>
-      </View>
-    </Card>
   );
 }
 
@@ -311,6 +153,26 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
     paddingBottom: 120,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  headerCopy: {
+    flex: 1,
+    gap: 8,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 34,
+    lineHeight: 38,
+    fontWeight: "900",
+  },
+  subtitle: {
+    color: colors.muted,
+    lineHeight: 22,
   },
   metricGrid: {
     flexDirection: "row",
@@ -321,67 +183,14 @@ const styles = StyleSheet.create({
     flexBasis: "47%",
     flexGrow: 1,
   },
-  webCard: {
-    gap: 10,
-    backgroundColor: "rgba(125,211,252,0.08)",
-    borderColor: "rgba(125,211,252,0.18)",
-  },
   stack: {
     gap: 12,
   },
-  splitStack: {
-    gap: 12,
-  },
-  splitCard: {
-    gap: 12,
-  },
-  requestCard: {
-    gap: 12,
-  },
-  requestHeader: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "flex-start",
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: "900",
-  },
-  rowCard: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    padding: 14,
-  },
-  rowCopy: {
-    flex: 1,
-    gap: 6,
-  },
-  rowTitle: {
-    color: colors.text,
-    fontWeight: "800",
-    fontSize: 16,
-  },
-  rowBody: {
-    color: colors.muted,
-    lineHeight: 19,
-    fontSize: 13,
-  },
-  actions: {
+  actionRow: {
     flexDirection: "row",
     gap: 10,
   },
   actionHalf: {
     flex: 1,
-  },
-  errorText: {
-    color: colors.red,
-    lineHeight: 20,
   },
 });
