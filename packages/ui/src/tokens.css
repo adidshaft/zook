@@ -4,23 +4,29 @@
   --zook-graphite-800: #171c18;
   --zook-graphite-700: #222820;
   --zook-graphite-600: #333b32;
-  --zook-glass: rgba(255, 255, 255, 0.08);
-  --zook-glass-strong: rgba(255, 255, 255, 0.14);
-  --zook-border: rgba(255, 255, 255, 0.14);
+  --zook-surface: rgba(255, 255, 255, 0.05);
+  --zook-glass: rgba(255, 255, 255, 0.06);
+  --zook-glass-strong: rgba(255, 255, 255, 0.08);
+  --zook-border: rgba(255, 255, 255, 0.12);
+  --zook-border-strong: rgba(255, 255, 255, 0.18);
   --zook-text: #f4f7ef;
   --zook-text-muted: #aeb8a8;
   --zook-lime: #b9f455;
+  --zook-lime-dim: rgba(185, 244, 85, 0.16);
+  --zook-lime-border: rgba(185, 244, 85, 0.45);
   --zook-lime-deep: #6fad21;
-  --zook-amber: #ffb650;
-  --zook-red: #ff5d5d;
+  --zook-amber: #f5c84b;
+  --zook-red: #ff6b5f;
   --zook-blue: #7dd3fc;
   --zook-radius-xs: 8px;
   --zook-radius-sm: 12px;
   --zook-radius-md: 18px;
   --zook-radius-lg: 24px;
-  --zook-radius-xl: 32px;
+  --zook-radius-xl: 28px;
+  --zook-radius-xxl: 32px;
   --zook-shadow-glass: 0 20px 70px rgba(0, 0, 0, 0.36);
-  --zook-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --zook-shadow-glow-lime: 0 18px 55px rgba(185, 244, 85, 0.16);
+  --zook-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .zook-glass {

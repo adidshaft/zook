@@ -22,11 +22,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 import { useAuth } from "@/lib/auth";
 import { useMyNotifications } from "@/lib/query-hooks";
-import { colors, radii, typography } from "@/lib/theme";
+import { colors, radii, shadows, typography } from "@/lib/theme";
 
-type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
-type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
+export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
+export type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
 type BrandMarkSize = "sm" | "md" | "lg";
+type IconName = keyof typeof Ionicons.glyphMap;
 
 // Metro resolves static image requires at build time.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -141,6 +142,62 @@ export function Screen({ children, title }: { children: ReactNode; title?: strin
   );
 }
 
+export function ScreenShell({ children, title }: { children: ReactNode; title?: string }) {
+  return <Screen title={title}>{children}</Screen>;
+}
+
+export function SafeAreaScreen({
+  children,
+  bottomInset = false,
+  style,
+}: {
+  children: ReactNode;
+  bottomInset?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      style={[
+        styles.screen,
+        {
+          paddingTop: insets.top,
+          paddingBottom: bottomInset ? insets.bottom : 0,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+export function ZookHeader({
+  title,
+  subtitle,
+  activeGym,
+  role,
+  trailing,
+}: {
+  title: string;
+  subtitle?: string;
+  activeGym?: string;
+  role?: Role | string;
+  trailing?: ReactNode;
+}) {
+  return (
+    <View style={styles.zookHeader}>
+      <View style={styles.zookHeaderCopy}>
+        {activeGym ? <ActiveGymPill label={activeGym} /> : null}
+        <Text style={styles.headerTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.headerSubtitle}>{subtitle}</Text> : null}
+        {role ? <RoleChip role={role} /> : null}
+      </View>
+      {trailing ? <View>{trailing}</View> : null}
+    </View>
+  );
+}
+
 export function ScreenHeader({
   eyebrow,
   title,
@@ -211,6 +268,22 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
+export function GlassCard(props: Parameters<typeof Card>[0]) {
+  return <Card {...props} />;
+}
+
+export function GlassPanel({
+  children,
+  strong = false,
+  style,
+}: {
+  children: ReactNode;
+  strong?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return <View style={[styles.glassPanel, strong ? styles.glassPanelStrong : null, style]}>{children}</View>;
+}
+
 export function BrandMark({
   size = "md",
   framed = false,
@@ -270,6 +343,14 @@ export function MetricTile({
   );
 }
 
+export function StatCard(props: Parameters<typeof MetricTile>[0]) {
+  return <MetricTile {...props} />;
+}
+
+export function MetricCard(props: Parameters<typeof MetricTile>[0]) {
+  return <MetricTile {...props} />;
+}
+
 export function InfoRow({
   label,
   value,
@@ -296,6 +377,29 @@ export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone
       <Text style={[styles.pillText, { color: palette.color }]}>
         {children}
       </Text>
+    </View>
+  );
+}
+
+export function StatusChip(props: Parameters<typeof Pill>[0]) {
+  return <Pill {...props} />;
+}
+
+export function ActiveGymPill({ label }: { label: string }) {
+  return (
+    <View style={styles.activeGymPill}>
+      <Ionicons name="business-outline" size={14} color={colors.lime} />
+      <Text style={styles.activeGymPillText}>{label}</Text>
+    </View>
+  );
+}
+
+export function RoleChip({ role }: { role: Role | string }) {
+  const label = String(role).replace(/_/g, " ").toLowerCase();
+  return (
+    <View style={styles.roleChip}>
+      <Ionicons name="shield-checkmark-outline" size={14} color={colors.text} />
+      <Text style={styles.roleChipText}>{label}</Text>
     </View>
   );
 }
@@ -349,6 +453,14 @@ export function PrimaryButton({
 
 export function SecondaryButton(props: Omit<Parameters<typeof PrimaryButton>[0], "tone">) {
   return <PrimaryButton {...props} tone="secondary" />;
+}
+
+export function SecondaryGlassButton(props: Omit<Parameters<typeof PrimaryButton>[0], "tone">) {
+  return <PrimaryButton {...props} tone="secondary" />;
+}
+
+export function DangerButton(props: Omit<Parameters<typeof PrimaryButton>[0], "tone">) {
+  return <PrimaryButton {...props} tone="danger" />;
 }
 
 export function PrimaryLink({
@@ -429,6 +541,21 @@ export function GlassInput({
   );
 }
 
+export function FormField(props: Parameters<typeof GlassInput>[0]) {
+  return <GlassInput {...props} />;
+}
+
+export function SearchField({ label = "Search", ...props }: Omit<Parameters<typeof GlassInput>[0], "label"> & { label?: string }) {
+  return (
+    <GlassInput
+      label={label}
+      autoCapitalize="none"
+      autoCorrect={false}
+      {...props}
+    />
+  );
+}
+
 export function LoadingState({
   title = "Loading",
   body = "Pulling the latest details from your gym.",
@@ -468,6 +595,168 @@ export function EmptyState({
       </Text>
       {action ? <View style={styles.stateAction}>{action}</View> : null}
     </View>
+  );
+}
+
+export function ErrorState({
+  title = "Something needs attention",
+  body,
+  action,
+}: {
+  title?: string;
+  body: string;
+  action?: ReactNode;
+}) {
+  return (
+    <View style={[styles.emptyState, styles.errorState]}>
+      <IconBubble icon="alert-circle-outline" tone="red" />
+      <Text style={styles.stateTitle}>{title}</Text>
+      <Text style={styles.stateBody}>{body}</Text>
+      {action ? <View style={styles.stateAction}>{action}</View> : null}
+    </View>
+  );
+}
+
+export function LoadingSkeleton(props: Parameters<typeof Skeleton>[0]) {
+  return <Skeleton {...props} />;
+}
+
+export function IconBubble({
+  icon,
+  tone = "neutral",
+  size = 44,
+}: {
+  icon: IconName;
+  tone?: PillTone;
+  size?: number;
+}) {
+  const palette = pillPalettes[tone];
+  return (
+    <View
+      style={[
+        styles.iconBubble,
+        {
+          width: size,
+          height: size,
+          borderRadius: Math.max(14, size / 2.5),
+          borderColor: palette.borderColor,
+          backgroundColor: palette.backgroundColor,
+        },
+      ]}
+    >
+      <Ionicons name={icon} size={Math.max(18, size / 2.2)} color={palette.color} />
+    </View>
+  );
+}
+
+export function ListRow({
+  title,
+  subtitle,
+  leading,
+  trailing,
+}: {
+  title: string;
+  subtitle?: string;
+  leading?: ReactNode;
+  trailing?: ReactNode;
+}) {
+  return (
+    <View style={styles.listRow}>
+      {leading}
+      <View style={styles.listRowCopy}>
+        <Text style={styles.listRowTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.listRowSubtitle}>{subtitle}</Text> : null}
+      </View>
+      {trailing}
+    </View>
+  );
+}
+
+export function ConfirmationRing({
+  tone = "lime",
+  icon = "checkmark",
+  label,
+}: {
+  tone?: PillTone;
+  icon?: IconName;
+  label?: string;
+}) {
+  const palette = pillPalettes[tone];
+  return (
+    <View style={[styles.confirmationRing, { borderColor: palette.borderColor }]}>
+      <View style={[styles.confirmationRingInner, { backgroundColor: palette.backgroundColor }]}>
+        <Ionicons name={icon} size={38} color={palette.color} />
+      </View>
+      {label ? <Text style={[styles.confirmationRingLabel, { color: palette.color }]}>{label}</Text> : null}
+    </View>
+  );
+}
+
+export function EntryCodeCard({
+  code,
+  status,
+  detail,
+}: {
+  code: string;
+  status?: string;
+  detail?: string;
+}) {
+  return (
+    <Card style={styles.entryCodeCard}>
+      <Text style={styles.entryCodeLabel}>Entry code</Text>
+      <Text style={styles.entryCodeValue}>{code}</Text>
+      {status ? <Pill tone="lime">{status}</Pill> : null}
+      {detail ? <Text style={styles.entryCodeDetail}>{detail}</Text> : null}
+    </Card>
+  );
+}
+
+export function SegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: Array<{ label: string; value: T }>;
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <View style={styles.segmentedControl}>
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <Pressable
+            key={option.value}
+            onPress={() => onChange(option.value)}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            style={[styles.segmentedOption, selected ? styles.segmentedOptionSelected : null]}
+          >
+            <Text style={[styles.segmentedOptionText, selected ? styles.segmentedOptionTextSelected : null]}>
+              {option.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+export function AuditWarning({ children }: { children: ReactNode }) {
+  return (
+    <View style={styles.auditWarning}>
+      <IconBubble icon="reader-outline" tone="amber" size={38} />
+      <Text style={styles.auditWarningText}>{children}</Text>
+    </View>
+  );
+}
+
+export function StickyActionBar({ children }: { children: ReactNode }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <BlurView intensity={80} tint="dark" style={[styles.stickyActionBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+      {children}
+    </BlurView>
   );
 }
 
@@ -625,6 +914,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
+  zookHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  zookHeaderCopy: {
+    flex: 1,
+    gap: 8,
+  },
   screenHeaderCopy: {
     flex: 1,
     gap: 8,
@@ -670,6 +969,19 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     padding: 18,
     overflow: "hidden",
+    ...shadows.glass,
+  },
+  glassPanel: {
+    backgroundColor: colors.panel,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: radii.panel,
+    padding: 16,
+    overflow: "hidden",
+  },
+  glassPanelStrong: {
+    backgroundColor: colors.panelStrong,
+    borderColor: colors.borderStrong,
   },
   brandMark: {
     alignItems: "center",
@@ -724,6 +1036,41 @@ const styles = StyleSheet.create({
   },
   pillText: {
     ...typography.caption,
+  },
+  activeGymPill: {
+    alignSelf: "flex-start",
+    minHeight: 34,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.limeBorder,
+    backgroundColor: colors.accentPanel,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  activeGymPillText: {
+    color: colors.text,
+    ...typography.caption,
+  },
+  roleChip: {
+    alignSelf: "flex-start",
+    minHeight: 32,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(255,255,255,0.07)",
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  roleChipText: {
+    color: colors.text,
+    ...typography.caption,
+    textTransform: "capitalize",
   },
   button: {
     minHeight: 56,
@@ -780,6 +1127,10 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     gap: 8,
   },
+  errorState: {
+    borderColor: "rgba(255,107,95,0.28)",
+    backgroundColor: "rgba(255,107,95,0.08)",
+  },
   loadingState: {
     padding: 32,
     alignItems: "center",
@@ -799,6 +1150,137 @@ const styles = StyleSheet.create({
   },
   stateAction: {
     marginTop: 14,
+  },
+  iconBubble: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  listRow: {
+    minHeight: 64,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  listRowCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  listRowTitle: {
+    color: colors.text,
+    ...typography.titleSmall,
+  },
+  listRowSubtitle: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  confirmationRing: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    ...shadows.glowLime,
+  },
+  confirmationRingInner: {
+    width: 94,
+    height: 94,
+    borderRadius: 47,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmationRingLabel: {
+    marginTop: 8,
+    ...typography.caption,
+  },
+  entryCodeCard: {
+    alignItems: "center",
+    gap: 8,
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.08)",
+  },
+  entryCodeLabel: {
+    color: colors.muted,
+    ...typography.eyebrow,
+  },
+  entryCodeValue: {
+    color: colors.text,
+    fontSize: 42,
+    lineHeight: 46,
+    fontFamily: "Inter_900Black",
+    letterSpacing: 0,
+  },
+  entryCodeDetail: {
+    color: colors.muted,
+    ...typography.body,
+    textAlign: "center",
+  },
+  segmentedControl: {
+    minHeight: 48,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    flexDirection: "row",
+    padding: 4,
+    gap: 4,
+  },
+  segmentedOption: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: radii.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  segmentedOptionSelected: {
+    backgroundColor: colors.accentPanel,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.28)",
+  },
+  segmentedOptionText: {
+    color: colors.muted,
+    ...typography.caption,
+    textAlign: "center",
+  },
+  segmentedOptionTextSelected: {
+    color: colors.lime,
+  },
+  auditWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "rgba(245,200,75,0.24)",
+    backgroundColor: "rgba(245,200,75,0.08)",
+    padding: 14,
+  },
+  auditWarningText: {
+    flex: 1,
+    color: colors.text,
+    ...typography.body,
+  },
+  stickyActionBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: "rgba(7,9,8,0.76)",
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    gap: 10,
+    overflow: "hidden",
   },
   collapsibleCard: {
     gap: 0,

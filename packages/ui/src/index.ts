@@ -4,15 +4,19 @@ export const zookColors = {
   graphite800: "#171c18",
   graphite700: "#222820",
   graphite600: "#333b32",
-  glass: "rgba(255, 255, 255, 0.08)",
-  glassStrong: "rgba(255, 255, 255, 0.14)",
-  border: "rgba(255, 255, 255, 0.14)",
+  surface: "rgba(255, 255, 255, 0.05)",
+  glass: "rgba(255, 255, 255, 0.06)",
+  glassStrong: "rgba(255, 255, 255, 0.08)",
+  border: "rgba(255, 255, 255, 0.12)",
+  borderStrong: "rgba(255, 255, 255, 0.18)",
   text: "#f4f7ef",
   textMuted: "#aeb8a8",
   lime: "#b9f455",
+  limeDim: "rgba(185, 244, 85, 0.16)",
+  limeBorder: "rgba(185, 244, 85, 0.45)",
   limeDeep: "#6fad21",
-  amber: "#ffb650",
-  red: "#ff5d5d",
+  amber: "#f5c84b",
+  red: "#ff6b5f",
   blue: "#7dd3fc"
 } as const;
 
@@ -21,7 +25,8 @@ export const zookRadii = {
   sm: 12,
   md: 18,
   lg: 24,
-  xl: 32,
+  xl: 28,
+  xxl: 32,
   pill: 999
 } as const;
 
@@ -71,7 +76,8 @@ export const zookTypography = {
 
 export const zookShadows = {
   glass: "0 20px 70px rgba(0, 0, 0, 0.36)",
-  inset: "inset 0 1px 0 rgba(255, 255, 255, 0.12)"
+  glowLime: "0 18px 55px rgba(185, 244, 85, 0.16)",
+  inset: "inset 0 1px 0 rgba(255, 255, 255, 0.1)"
 } as const;
 
 export const zookTokens = {
