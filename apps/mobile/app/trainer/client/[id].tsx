@@ -1,289 +1,275 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { zookDemoFixtures, zookMockServices } from "@zook/core";
 import {
+  ActiveGymPill,
+  AuditWarning,
   Card,
-  GlassInput,
-  InfoRow,
+  Dock,
+  FormField,
+  IconBubble,
+  ListRow,
   Pill,
   PrimaryButton,
-  PrimaryLink,
   Screen,
-  ScreenHeader,
-  SectionHeader,
   SecondaryButton,
+  SegmentedControl,
+  SectionHeader,
 } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
-import { useAuth, getApiErrorMessage } from "@/lib/auth";
-import { useTrainerClients } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
+
+type ClientTab = "summary" | "plans" | "progress" | "notes";
+type Draft = Awaited<ReturnType<typeof zookMockServices.planService.generateAiPlanDraft>>;
+
+const tabs: Array<{ label: string; value: ClientTab }> = [
+  { label: "Summary", value: "summary" },
+  { label: "Plans", value: "plans" },
+  { label: "Progress", value: "progress" },
+  { label: "Notes", value: "notes" },
+];
 
 export default function TrainerClientDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const queryClient = useQueryClient();
-  const { activeOrgId, session, token } = useAuth();
-  
-  const clientsQuery = useTrainerClients();
-  const clients = clientsQuery.data?.clients ?? [];
-  const selectedClient = clients.find((client) => client.memberUserId === id);
-  const activeClientId = id;
-
-  const [planTitle, setPlanTitle] = useState("3-Day Strength Reset");
-  const [planPrompt, setPlanPrompt] = useState(
-    "Create a safe 3-day strength plan for a beginner gym member.",
-  );
-  const [importedSummary, setImportedSummary] = useState("");
-  const [messageDraft, setMessageDraft] = useState(
-    "Plan update: open Zook to review your latest workout draft.",
-  );
-  const [latestPlanId, setLatestPlanId] = useState<string | undefined>();
-  const [statusMessage, setStatusMessage] = useState("");
-  const [busy, setBusy] = useState<string | null>(null);
+  const clientId = id || "user-aarav";
+  const [tab, setTab] = useState<ClientTab>("summary");
+  const [draft, setDraft] = useState<Draft | null>(zookDemoFixtures.planDrafts[0] ?? null);
+  const [status, setStatus] = useState("");
+  const [planTitle, setPlanTitle] = useState("4-week Push/Pull Routine");
+  const client = zookDemoFixtures.users.find((user) => user.id === clientId) ?? zookDemoFixtures.users.find((user) => user.id === "user-aarav");
+  const profile = zookDemoFixtures.memberProfiles.find((item) => item.userId === client?.id);
+  const membership = zookDemoFixtures.memberships.find((item) => item.memberUserId === client?.id);
+  const ptPack = zookDemoFixtures.ptPacks.find((item) => item.memberUserId === client?.id);
+  const plans = zookMockServices.state.trainingPlans.filter((plan) => plan.memberUserId === client?.id);
 
   async function generateDraft() {
-    if (!token || !activeOrgId) return;
-    setBusy("draft");
-    try {
-      const result = await mobileApiFetch<{ createdPlan?: { id: string; title: string } }>(
-        "/ai/generate-plan",
-        {
-          method: "POST",
-          token,
-          orgId: activeOrgId,
-          body: {
-            orgId: activeOrgId,
-            title: planTitle,
-            type: "WORKOUT",
-            prompt: [
-              selectedClient?.summary?.fitnessGoal ? `Client goal: ${selectedClient.summary.fitnessGoal}` : null,
-              selectedClient?.summary?.weightKg ? `Weight: ${selectedClient.summary.weightKg} kg` : null,
-              selectedClient?.summary?.dietPreference ? `Diet: ${selectedClient.summary.dietPreference}` : null,
-              selectedClient?.summary?.allergies ? `Allergies: ${selectedClient.summary.allergies}` : null,
-              importedSummary ? `Imported client summary: ${importedSummary}` : null,
-              `Trainer request: ${planPrompt}`,
-            ].filter(Boolean).join("\n"),
-            persistDraft: true,
-          },
-        },
-      );
-      setLatestPlanId(result.createdPlan?.id);
-      setStatusMessage(
-        result.createdPlan
-          ? `Draft ready: ${result.createdPlan.title}. You can assign it below.`
-          : "AI returned a draft response.",
-      );
-      await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "dashboard"] });
-    } catch (error) {
-      setStatusMessage(getApiErrorMessage(error));
-    } finally {
-      setBusy(null);
-    }
+    const nextDraft = await zookMockServices.planService.generateAiPlanDraft({
+      trainerUserId: "user-rhea",
+      clientId: client?.id ?? "user-aarav",
+      goal: profile?.goal ?? "Muscle gain",
+    });
+    setDraft(nextDraft);
+    setStatus("AI draft created. It is not visible to the client yet.");
   }
 
   async function assignDraft() {
-    if (!token || !activeOrgId || !latestPlanId || !activeClientId) {
-      setStatusMessage("Generate a draft first.");
-      return;
-    }
-    setBusy("assign");
-    try {
-      await mobileApiFetch(`/orgs/${activeOrgId}/plans/${latestPlanId}/assign`, {
-        method: "POST",
-        token,
-        orgId: activeOrgId,
-        body: {
-          assignedToUserId: activeClientId,
-          audience: "selected_member",
-        },
-      });
-      setStatusMessage("Draft successfully assigned to the client.");
-    } catch (error) {
-      setStatusMessage(getApiErrorMessage(error));
-    } finally {
-      setBusy(null);
-    }
+    if (!draft || !client) return;
+    const plan = await zookMockServices.planService.assignDraft(draft.id, client.id);
+    setStatus(`${plan.title} assigned. Member notification generated.`);
   }
 
-  async function recordPtSubscription() {
-    if (!token || !activeOrgId || !activeClientId || !session?.user.id) return;
-    setBusy("pt");
-    try {
-      await mobileApiFetch(`/orgs/${activeOrgId}/pt-subscriptions`, {
-        method: "POST",
-        token,
-        orgId: activeOrgId,
-        body: {
-          memberUserId: activeClientId,
-          trainerUserId: session.user.id,
-          amountPaise: 150000, // TODO: make configurable from trainer input
-          paymentMode: "CASH",
-          totalSessions: 12,
-          notes: "Recorded from mobile.",
-        },
-      });
-      setStatusMessage("Offline PT subscription recorded.");
-    } catch (error) {
-      setStatusMessage(getApiErrorMessage(error));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function sendAssignedNotification() {
-    if (!token || !activeOrgId || !activeClientId) return;
-    setBusy("notify");
-    try {
-      await mobileApiFetch(`/orgs/${activeOrgId}/notifications`, {
-        method: "POST",
-        token,
-        orgId: activeOrgId,
-        body: {
-          type: "PLAN",
-          title: "Trainer update",
-          body: messageDraft,
-          audience: "selected_members",
-          selectedUserIds: [activeClientId],
-          pushEnabled: true,
-          excludeMinors: false,
-        },
-      });
-      setStatusMessage("Client notification sent.");
-    } catch (error) {
-      setStatusMessage(getApiErrorMessage(error));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  if (!selectedClient) {
-    return (
-      <Screen>
-        <ScreenHeader title="Loading client..." />
-      </Screen>
-    );
+  function discardDraft() {
+    setDraft(null);
+    setStatus("Draft discarded before assignment.");
   }
 
   return (
     <Screen>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <ScreenHeader
-          eyebrow="Client Dashboard"
-          title={selectedClient.user?.name ?? selectedClient.memberUserId}
-          subtitle={`Goal: ${selectedClient.profile?.fitnessGoal ?? "General fitness"}`}
-        />
+        <View style={styles.headerRow}>
+          <View style={styles.headerCopy}>
+            <ActiveGymPill label="Iron Temple Gym · Pune" />
+            <Text style={styles.title}>Client Detail</Text>
+            <Text style={styles.subtitle}>You're viewing your assigned client only.</Text>
+          </View>
+          <Pill tone="blue">Trainer</Pill>
+        </View>
 
-        <Card style={styles.selectedCard}>
-          <View style={styles.clientTopRow}>
-            <Pill tone="lime">Trainer visible</Pill>
-            <Pill tone="blue">{selectedClient.summary?.activePlans ?? 0} active plans</Pill>
+        <Card style={styles.clientCard}>
+          <View style={styles.clientTop}>
+            <IconBubble icon="person-outline" tone="lime" size={54} />
+            <View style={styles.clientCopy}>
+              <Text style={styles.clientName}>{client?.name ?? "Aarav Mehta"}</Text>
+              <Text style={styles.cardBody}>Active member · Goal: {profile?.goal ?? "Muscle gain"}</Text>
+            </View>
           </View>
-          <Text style={styles.sectionTitle}>Client summary</Text>
-          <Text style={styles.sectionBody}>
-            {selectedClient.summary?.summaryNote ?? "Import or write context before generating a plan."}
-          </Text>
-          <View style={styles.infoStack}>
-            <InfoRow label="Goal" value={selectedClient.summary?.fitnessGoal ?? selectedClient.profile?.fitnessGoal ?? "General fitness"} tone="lime" />
-            <InfoRow label="Weight" value={selectedClient.summary?.weightKg ? `${selectedClient.summary.weightKg} kg` : "Not added"} tone="blue" />
-            <InfoRow label="Diet" value={selectedClient.summary?.dietPreference ?? "Not added"} tone="amber" />
-            <InfoRow label="Allergies" value={selectedClient.summary?.allergies ?? "None added"} tone="neutral" />
-          </View>
-          <View style={styles.quickActions}>
-            <SecondaryButton onPress={() => void recordPtSubscription()} style={styles.quickAction}>
-              {busy === "pt" ? "Recording..." : "Record PT pack"}
-            </SecondaryButton>
-            <PrimaryLink href="/assistant" style={styles.quickAction}>
-              AI chat
-            </PrimaryLink>
+          <View style={styles.chipRow}>
+            <Pill tone="lime">PT Pack: {ptPack?.sessionsLeft ?? 6} sessions left</Pill>
+            <Pill tone={profile?.trainerVisibleTracking ? "lime" : "amber"}>
+              Tracking: {profile?.trainerVisibleTracking ? "Opted in" : "Private"}
+            </Pill>
           </View>
         </Card>
 
-        <SectionHeader
-          eyebrow="Import"
-          title="Client data"
-          subtitle="Paste a body-composition result, WhatsApp summary, or intake note."
-        />
+        <SegmentedControl options={tabs} value={tab} onChange={setTab} />
 
-        <Card style={styles.formCard}>
-          <GlassInput
-            label="Imported summary"
-            value={importedSummary}
-            onChangeText={setImportedSummary}
-            multiline
-            placeholder="Example: sleeps late, vegetarian, knee pain, wants fat loss..."
-          />
-        </Card>
-
-        <SectionHeader
-          eyebrow="AI workflow"
-          title="Plan Draft Studio"
-          subtitle="Generate a tailored workout and assign it instantly."
-        />
-
-        <Card style={styles.formCard}>
-          <GlassInput
-            label="Draft title"
-            value={planTitle}
-            onChangeText={setPlanTitle}
-          />
-          <GlassInput
-            label="Prompt context"
-            value={planPrompt}
-            onChangeText={setPlanPrompt}
-            multiline
-          />
-          
-          <PrimaryButton onPress={() => void generateDraft()}>
-            {busy === "draft" ? "Generating AI..." : "Step 1: Generate AI Draft"}
-          </PrimaryButton>
-          
-          {latestPlanId ? (
-            <SecondaryButton onPress={() => void assignDraft()}>
-              {busy === "assign" ? "Assigning..." : "Step 2: Assign Generated Draft"}
-            </SecondaryButton>
-          ) : null}
-        </Card>
-
-        <SectionHeader
-          eyebrow="Messaging"
-          title="Direct Update"
-          subtitle="Send a push notification directly to this client's inbox."
-        />
-
-        <Card style={styles.formCard}>
-          <GlassInput
-            label="Message body"
-            value={messageDraft}
-            onChangeText={setMessageDraft}
-            multiline
-          />
-          <PrimaryButton onPress={() => void sendAssignedNotification()}>
-            {busy === "notify" ? "Sending..." : "Send Push Update"}
-          </PrimaryButton>
-        </Card>
-
-        {statusMessage ? (
-          <Card>
-            <Text style={styles.statusTitle}>Latest Activity</Text>
-            <Text style={styles.statusMessage}>{statusMessage}</Text>
+        {tab === "summary" ? (
+          <Card style={styles.stack}>
+            <ListRow title="Fitness goal" subtitle={profile?.goal ?? "Muscle gain"} trailing={<Pill tone="lime">Active</Pill>} />
+            <ListRow title="Diet note" subtitle={profile?.dietPreference ?? "Vegetarian"} trailing={<Pill tone="blue">Visible</Pill>} />
+            <ListRow title="Allergy note" subtitle={profile?.allergyNote ?? "None added"} trailing={<Pill tone="neutral">Clear</Pill>} />
+            <ListRow title="Last check-in" subtitle={`Today ${membership?.lastCheckInLabel ?? "7:14 AM"}`} trailing={<Pill tone="lime">Checked in</Pill>} />
+            <ListRow title="Recent progress" subtitle="2 workouts completed this week" trailing={<Pill tone="amber">Review</Pill>} />
           </Card>
         ) : null}
-        
+
+        {tab === "plans" ? (
+          <Card style={styles.stack}>
+            <SectionHeader title="Plan Builder" subtitle="Create, save, and assign plans to this client." />
+            <FormField label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
+            <View style={styles.chipRow}>
+              {["Workout", "Diet", "Routine", "Transformation", "Trainer Note", "Advisory", "Machine Guide", "Recovery"].map((label) => (
+                <Pill key={label} tone={label === "Workout" ? "lime" : "neutral"}>{label}</Pill>
+              ))}
+            </View>
+            <PrimaryButton onPress={() => setStatus(`${planTitle} saved as trainer draft.`)}>Save Draft</PrimaryButton>
+            <SecondaryButton onPress={() => setStatus(`${planTitle} assigned and member notified.`)}>Assign Plan</SecondaryButton>
+          </Card>
+        ) : null}
+
+        {tab === "progress" ? (
+          <Card style={styles.stack}>
+            <ListRow title="Weekly workouts" subtitle="2 completed this week" trailing={<Pill tone="lime">40%</Pill>} />
+            <ListRow title="Last check-in" subtitle="Today 7:14 AM · Default Branch" trailing={<Pill tone="blue">QR</Pill>} />
+            <ListRow title="Assigned plans" subtitle={`${plans.filter((plan) => plan.visibleToMember).length} visible to client`} trailing={<Pill tone="lime">Scoped</Pill>} />
+          </Card>
+        ) : null}
+
+        {tab === "notes" ? (
+          <Card style={styles.stack}>
+            <FormField label="Trainer note" multiline placeholder="Add coaching note for your own follow-up..." />
+            <AuditWarning>Only assigned trainers and owners/admins can see trainer notes.</AuditWarning>
+          </Card>
+        ) : null}
+
+        <SectionHeader title="AI Draft Review" subtitle="Drafts require trainer review before assignment." />
+        {draft ? (
+          <Card style={styles.draftCard}>
+            <View style={styles.draftHeader}>
+              <View>
+                <Text style={styles.cardEyebrow}>Review required</Text>
+                <Text style={styles.cardTitle}>{draft.title}</Text>
+              </View>
+              <Pill tone="amber">Hidden</Pill>
+            </View>
+            <Text style={styles.cardBody}>Client: {client?.name ?? "Aarav Mehta"} · Goal: {draft.goal} · Difficulty: {draft.difficulty}</Text>
+            <AuditWarning>AI generated this draft. Edit and approve before assigning.</AuditWarning>
+            <View style={styles.stack}>
+              {draft.sections.map((section) => (
+                <ListRow key={section.title} title={section.title} subtitle={section.body} />
+              ))}
+            </View>
+            <Card style={styles.safetyPanel}>
+              <Text style={styles.cardTitle}>Safety panel</Text>
+              <ListRow title="Blocked content" subtitle={draft.safety.blockedContent} trailing={<Pill tone="lime">Clear</Pill>} />
+              <ListRow title="Medical-risk check" subtitle={draft.safety.medicalRisk} trailing={<Pill tone="lime">Clear</Pill>} />
+              <ListRow title="Trainer approval" subtitle={draft.safety.trainerApproval} trailing={<Pill tone="amber">Required</Pill>} />
+              <Text style={styles.cardBody}>This draft is not visible to the client yet.</Text>
+            </Card>
+            <View style={styles.actionRow}>
+              <PrimaryButton onPress={() => void assignDraft()} style={styles.actionHalf}>Assign Plan</PrimaryButton>
+              <SecondaryButton onPress={() => setStatus("Draft opened for editing.")} style={styles.actionHalf}>Edit Draft</SecondaryButton>
+            </View>
+            <SecondaryButton onPress={discardDraft}>Discard</SecondaryButton>
+          </Card>
+        ) : (
+          <Card style={styles.stack}>
+            <Text style={styles.cardBody}>No active draft. Generate a new AI draft for trainer review.</Text>
+            <PrimaryButton onPress={() => void generateDraft()}>Generate AI Draft</PrimaryButton>
+          </Card>
+        )}
+
+        {status ? (
+          <Card>
+            <Text style={styles.statusText}>{status}</Text>
+          </Card>
+        ) : null}
       </ScrollView>
+      <Dock />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, gap: 16, paddingBottom: 60 },
-  selectedCard: { gap: 12 },
-  sectionTitle: { color: colors.text, fontSize: 20, fontWeight: "900" },
-  sectionBody: { color: colors.muted, lineHeight: 21 },
-  quickActions: { flexDirection: "row", gap: 10 },
-  quickAction: { flex: 1 },
-  clientTopRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  infoStack: { gap: 10 },
-  formCard: { gap: 14 },
-  statusTitle: { color: colors.text, fontSize: 16, fontWeight: "800" },
-  statusMessage: { color: colors.lime, marginTop: 4, lineHeight: 21 },
+  content: {
+    padding: 20,
+    gap: 16,
+    paddingBottom: 120,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  headerCopy: {
+    flex: 1,
+    gap: 8,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 34,
+    lineHeight: 38,
+    fontWeight: "900",
+  },
+  subtitle: {
+    color: colors.muted,
+    lineHeight: 22,
+  },
+  clientCard: {
+    gap: 14,
+  },
+  clientTop: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+  },
+  clientCopy: {
+    flex: 1,
+    gap: 5,
+  },
+  clientName: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: "900",
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  stack: {
+    gap: 12,
+  },
+  draftCard: {
+    gap: 14,
+    borderColor: "rgba(245,200,75,0.24)",
+    backgroundColor: "rgba(245,200,75,0.08)",
+  },
+  draftHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  cardEyebrow: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  cardTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  cardBody: {
+    color: colors.muted,
+    lineHeight: 21,
+  },
+  safetyPanel: {
+    gap: 10,
+    backgroundColor: "rgba(7,9,8,0.36)",
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  actionHalf: {
+    flex: 1,
+  },
+  statusText: {
+    color: colors.lime,
+    lineHeight: 21,
+    fontWeight: "800",
+  },
 });
