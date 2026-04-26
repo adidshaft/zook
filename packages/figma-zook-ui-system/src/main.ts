@@ -21,15 +21,12 @@ const pageNames = [
 ] as const;
 
 function resetGeneratedPages(): Record<(typeof pageNames)[number], PageNode> {
-  for (const page of [...figma.root.children]) {
-    if (pageNames.includes(page.name as (typeof pageNames)[number]) && page !== figma.currentPage) {
-      page.remove();
-    }
-  }
   const pages = {} as Record<(typeof pageNames)[number], PageNode>;
   figma.currentPage.name = pageNames[0];
   pages[pageNames[0]] = figma.currentPage;
-  pages[pageNames[0]].children.forEach((child) => child.remove());
+  for (const child of [...pages[pageNames[0]].children]) {
+    child.remove();
+  }
   for (const name of pageNames.slice(1)) {
     const page = figma.createPage();
     page.name = name;
@@ -190,9 +187,6 @@ function duplicateExportFrames(page: PageNode, screens: FrameNode[]): void {
 }
 
 async function main(): Promise<void> {
-  if ("loadAllPagesAsync" in figma) {
-    await figma.loadAllPagesAsync();
-  }
   await loadFonts();
   const pages = resetGeneratedPages();
   const styles = createStyles();

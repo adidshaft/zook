@@ -33,7 +33,9 @@ It also creates the reusable component library, final mobile screens, clean dupl
 
 ## Regenerate the File
 
-Run the development plugin again in the same Figma file. The generator clears and rebuilds its named pages, so the output remains deterministic.
+Run the development plugin in a fresh Figma file whenever possible. The generator clears the current page, renames it to `00 — Cover`, then creates the remaining pages. This avoids loading every page in large files and keeps plugin startup reliable.
+
+If Figma appears stuck while importing a development manifest, quit Figma Desktop, reopen a blank design file, rebuild with `pnpm --filter @zook/figma-ui-system build`, then import `manifest.json` again. The development manifest intentionally omits a fixed plugin `id`; Figma assigns one locally.
 
 ## Export
 
