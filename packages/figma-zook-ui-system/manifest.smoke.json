@@ -1,0 +1,6 @@
+{
+  "name": "Zook UI System Smoke Test",
+  "api": "1.0.0",
+  "main": "dist/smoke.js",
+  "editorType": ["figma"]
+}

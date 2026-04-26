@@ -37,6 +37,14 @@ Run the development plugin in a fresh Figma file whenever possible. The generato
 
 If Figma appears stuck while importing a development manifest, quit Figma Desktop, reopen a blank design file, rebuild with `pnpm --filter @zook/figma-ui-system build`, then import `manifest.json` again. The development manifest intentionally omits a fixed plugin `id`; Figma assigns one locally.
 
+For import debugging, build and import the smoke-test plugin:
+
+```bash
+pnpm --filter @zook/figma-ui-system build:smoke
+```
+
+Then import `packages/figma-zook-ui-system/manifest.smoke.json`. If the smoke manifest also hangs, the issue is Figma Desktop/local development plugin loading rather than the Zook generator code.
+
 ## Export
 
 Every frame named with `AUTO_EXPORT` receives:

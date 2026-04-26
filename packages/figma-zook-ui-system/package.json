@@ -5,6 +5,8 @@
   "description": "Figma plugin that generates the Zook Product UI System v1 design file.",
   "scripts": {
     "build": "esbuild src/main.ts --bundle --format=iife --target=es2017 --outfile=dist/main.js",
+    "build:smoke": "esbuild src/smoke.ts --bundle --format=iife --target=es2017 --outfile=dist/smoke.js",
+    "build:all": "pnpm build && pnpm build:smoke",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
