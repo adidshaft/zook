@@ -51,6 +51,17 @@ export default async function PlatformPage() {
           </div>
         </GlassCard>
 
+        <nav className="flex flex-wrap gap-2 rounded-[28px] border border-white/10 bg-white/5 p-3">
+          {["Overview", "Organizations", "Provider Diagnostics", "AI & Abuse", "Readiness", "Audit Logs", "Jobs"].map((item, index) => (
+            <span
+              key={item}
+              className={`rounded-full px-4 py-2 text-sm ${index === 0 ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"}`}
+            >
+              {item}
+            </span>
+          ))}
+        </nav>
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {data.metrics.map((metric) => (
             <MetricCard

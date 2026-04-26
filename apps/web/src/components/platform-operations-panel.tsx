@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { zookDemoFixtures } from "@zook/core";
 import { DataTable, EmptyState, ReadoutGrid, SectionHeader, StatusPill, toneFromStatus } from "./dashboard-primitives";
 import { GlassCard, Pill } from "./glass-card";
 import { formatCompactNumber, formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
@@ -54,8 +55,31 @@ type ProviderDiagnostics = {
   provider: string;
   mode: string;
   configured: boolean;
+  lastCheckedAt?: string;
+  requestId?: string;
+  notes?: string;
   metadata?: Record<string, string | number | boolean | null>;
 };
+
+const demoProviderDiagnostics = Object.fromEntries(
+  zookDemoFixtures.providerDiagnostics.map((diagnostic) => [
+    diagnostic.category,
+    {
+      category: diagnostic.category,
+      selectedProvider: diagnostic.provider,
+      activeProvider: diagnostic.provider,
+      status: diagnostic.status,
+      missingEnv: [],
+      env: {},
+      provider: diagnostic.provider,
+      mode: diagnostic.mode,
+      configured: diagnostic.status === "ready",
+      lastCheckedAt: diagnostic.lastCheckedAt,
+      requestId: diagnostic.requestId,
+      notes: diagnostic.notes
+    } satisfies ProviderDiagnostics
+  ])
+);
 
 export function PlatformOperationsPanel({
   initialOrgs,
@@ -72,7 +96,8 @@ export function PlatformOperationsPanel({
     initialData: { orgs: initialOrgs }
   });
   const providersState = useOperationalResource<{ providers: Record<string, ProviderDiagnostics> }>({
-    path: "/api/platform/provider-status"
+    path: "/api/platform/provider-status",
+    initialData: { providers: demoProviderDiagnostics }
   });
   const usageState = useOperationalResource<{ usage: PlatformUsageRow[] }>({
     path: "/api/platform/ai-usage"
@@ -113,12 +138,17 @@ export function PlatformOperationsPanel({
   return (
     <div className="grid gap-4">
       <GlassCard>
-        <SectionHeader
-          eyebrow="Provider Registry"
-          title="Runtime readiness"
-          description="These diagnostics come from the backend provider registry. They are safe for admins and intentionally avoid exposing raw secrets."
-          badge={<Pill tone={misconfiguredProviders.length ? "red" : "lime"}>{misconfiguredProviders.length} need setup</Pill>}
-        />
+          <SectionHeader
+            eyebrow="Provider Registry"
+            title="Runtime readiness"
+            description="These diagnostics come from the backend provider registry. They are safe for admins and intentionally avoid exposing raw secrets or env values."
+            badge={<Pill tone={misconfiguredProviders.length ? "red" : "lime"}>{misconfiguredProviders.length} need setup</Pill>}
+            action={
+              <button className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black">
+                Run Readiness Check
+              </button>
+            }
+          />
         <div className="mt-5 grid gap-4 xl:grid-cols-[0.72fr_1.28fr]">
           <ReadoutGrid
             items={[
@@ -184,6 +214,21 @@ export function PlatformOperationsPanel({
                 id: "env",
                 header: "Missing env",
                 render: ([, provider]) => (provider.missingEnv.length ? provider.missingEnv.join(", ") : "None")
+              },
+              {
+                id: "last",
+                header: "Last check",
+                render: ([, provider]) => provider.lastCheckedAt ? formatDateTime(provider.lastCheckedAt) : "Latest registry read"
+              },
+              {
+                id: "request",
+                header: "Request ID",
+                render: ([, provider]) => provider.requestId ?? "Not recorded"
+              },
+              {
+                id: "notes",
+                header: "Notes",
+                render: ([, provider]) => provider.notes ?? "Secrets are never exposed."
               }
             ]}
             rows={providerEntries}
