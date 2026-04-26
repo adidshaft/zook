@@ -63,9 +63,86 @@ export function text(
   return node;
 }
 
+export function paragraph(
+  value: string,
+  style: TextSpec,
+  width: number,
+  color: string = TOKENS.color.mutedText,
+  name = "Paragraph"
+): TextNode {
+  const node = text(value, style, color, name);
+  node.textAutoResize = "HEIGHT";
+  node.resize(width, node.height);
+  return node;
+}
+
 export function spacer(width: number, height = 1): FrameNode {
   const node = fixedFrame("Spacer", width, height);
   node.fills = [];
+  return node;
+}
+
+export function divider(width: number = 310, opacity = 0.1): FrameNode {
+  const node = fixedFrame("Divider", width, 1);
+  node.fills = [solid(TOKENS.color.white, opacity)];
+  return node;
+}
+
+export function iconDisk(
+  icon: IconName,
+  size = 44,
+  tone: "lime" | "warning" | "danger" | "glass" = "glass",
+  label = `Icon Disk / ${icon}`
+): FrameNode {
+  const node = fixedFrame(label, size, size);
+  node.cornerRadius = TOKENS.radius.round;
+  const toneColor =
+    tone === "lime"
+      ? TOKENS.color.accent
+      : tone === "warning"
+        ? TOKENS.color.warning
+        : tone === "danger"
+          ? TOKENS.color.danger
+          : TOKENS.color.mutedText;
+  node.fills = [solid(toneColor, tone === "glass" ? 0.1 : 0.16)];
+  node.strokes = [solid(toneColor, tone === "glass" ? 0.1 : 0.3)];
+  node.strokeWeight = 1;
+  const glyph = createIcon(icon, Math.round(size * 0.46), toneColor);
+  node.appendChild(glyph);
+  glyph.x = (size - glyph.width) / 2;
+  glyph.y = (size - glyph.height) / 2;
+  if (tone !== "glass") {
+    node.effects = [
+      {
+        type: "DROP_SHADOW",
+        color: { ...solid(toneColor).color, a: 0.22 },
+        offset: { x: 0, y: 0 },
+        radius: 22,
+        spread: -6,
+        visible: true,
+        blendMode: "NORMAL"
+      }
+    ];
+  }
+  return node;
+}
+
+export function avatar(ctx: DesignContext, initials: string, size = 64, name = "Avatar"): FrameNode {
+  const node = fixedFrame(name, size, size);
+  node.cornerRadius = TOKENS.radius.round;
+  node.fills = [solid(TOKENS.color.accent, 0.13)];
+  node.strokes = [solid(TOKENS.color.accent, 0.38)];
+  node.strokeWeight = 1;
+  const glow = fixedFrame("Avatar inner glow", size - 8, size - 8);
+  glow.cornerRadius = TOKENS.radius.round;
+  glow.fills = [solid(TOKENS.color.white, 0.05)];
+  node.appendChild(glow);
+  glow.x = 4;
+  glow.y = 4;
+  const label = text(initials, ctx.styles.text.h2, TOKENS.color.accent, "Initials");
+  node.appendChild(label);
+  label.x = (size - label.width) / 2;
+  label.y = (size - label.height) / 2;
   return node;
 }
 
@@ -147,6 +224,56 @@ export function chip(
   node.strokeWeight = 1;
   if (icon) node.appendChild(createIcon(icon, 12, toneColor));
   node.appendChild(text(label, ctx.styles.text.caption, toneColor, "Label"));
+  return node;
+}
+
+export function selectPill(ctx: DesignContext, label: string, icon: IconName = "dumbbell"): FrameNode {
+  const node = row(`Selector / ${label}`, TOKENS.space.sm);
+  node.paddingTop = 8;
+  node.paddingBottom = 8;
+  node.paddingLeft = 12;
+  node.paddingRight = 12;
+  node.cornerRadius = TOKENS.radius.round;
+  node.fills = [glassFill(TOKENS.opacity.glassLow)];
+  node.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
+  node.strokeWeight = 1;
+  node.appendChild(createIcon(icon, 15, TOKENS.color.accent));
+  node.appendChild(text(label, ctx.styles.text.bodyStrong, TOKENS.color.primaryText, "Label"));
+  node.appendChild(createIcon("chevron", 12, TOKENS.color.mutedText));
+  return node;
+}
+
+export function sectionTitle(ctx: DesignContext, title: string, action?: string): FrameNode {
+  const node = row(`Section Title / ${title}`, TOKENS.space.sm);
+  node.resize(350, 24);
+  forceFixedAutoLayoutSize(node);
+  node.primaryAxisAlignItems = "SPACE_BETWEEN";
+  node.appendChild(text(title, ctx.styles.text.h3, TOKENS.color.primaryText, "Title"));
+  if (action) {
+    const link = row("Action", TOKENS.space.xs);
+    link.appendChild(text(action, ctx.styles.text.small, TOKENS.color.accent, "Label"));
+    link.appendChild(createIcon("chevron", 12, TOKENS.color.accent));
+    node.appendChild(link);
+  }
+  return node;
+}
+
+export function metricTile(
+  ctx: DesignContext,
+  icon: IconName,
+  label: string,
+  value: string,
+  width = 102,
+  tone: "lime" | "warning" | "glass" = "lime"
+): FrameNode {
+  const node = stack(`Metric / ${label}`, "VERTICAL", 6);
+  node.resize(width, 96);
+  forceFixedAutoLayoutSize(node);
+  node.primaryAxisAlignItems = "CENTER";
+  node.counterAxisAlignItems = "CENTER";
+  node.appendChild(iconDisk(icon, 34, tone));
+  node.appendChild(text(label, ctx.styles.text.caption, TOKENS.color.mutedText, "Label"));
+  node.appendChild(text(value, ctx.styles.text.h3, TOKENS.color.primaryText, "Value"));
   return node;
 }
 
@@ -355,8 +482,12 @@ export function searchBar(ctx: DesignContext, placeholder: string): FrameNode {
   node.fills = [glassFill()];
   node.strokes = [glassStroke()];
   node.strokeWeight = 1;
-  node.appendChild(createIcon("qr", 16, TOKENS.color.subtleText));
-  node.appendChild(text(placeholder, ctx.styles.text.body, TOKENS.color.subtleText, "Placeholder"));
+  node.primaryAxisAlignItems = "SPACE_BETWEEN";
+  const left = row("Search input", TOKENS.space.sm);
+  left.appendChild(createIcon("qr", 16, TOKENS.color.subtleText));
+  left.appendChild(text(placeholder, ctx.styles.text.body, TOKENS.color.subtleText, "Placeholder"));
+  node.appendChild(left);
+  node.appendChild(createIcon("more", 16, TOKENS.color.mutedText));
   return node;
 }
 
@@ -371,14 +502,17 @@ export function productCard(
   node.itemSpacing = TOKENS.space.sm;
   const visual = fixedFrame("Product silhouette", 138, 72);
   visual.cornerRadius = TOKENS.radius.md;
-  visual.fills = [solid(TOKENS.color.accent, 0.1)];
-  const bag = createIcon("bag", 28, TOKENS.color.accent);
+  visual.fills = [solid(TOKENS.color.accent, 0.08)];
+  visual.strokes = [solid(TOKENS.color.white, 0.08)];
+  visual.strokeWeight = 1;
+  const productIcon = product.includes("Shake") || product.includes("Bottle") ? "dumbbell" : product.includes("Towel") ? "clipboard" : "bag";
+  const bag = createIcon(productIcon, 30, TOKENS.color.accent);
   visual.appendChild(bag);
-  bag.x = 55;
-  bag.y = 22;
+  bag.x = 54;
+  bag.y = 20;
   node.appendChild(visual);
   node.appendChild(text(product, ctx.styles.text.bodyStrong, TOKENS.color.primaryText, "Name"));
-  node.appendChild(text(price, ctx.styles.text.h3, TOKENS.color.primaryText, "Price"));
+  node.appendChild(text(price, ctx.styles.text.h3, TOKENS.color.accent, "Price"));
   const footer = row("Footer", TOKENS.space.sm);
   footer.primaryAxisAlignItems = "SPACE_BETWEEN";
   footer.resize(138, 30);
@@ -400,12 +534,15 @@ export function exerciseRow(
   wrap.cornerRadius = TOKENS.radius.lg;
   wrap.fills = slid ? [solid(TOKENS.color.danger, 0.18)] : [];
   if (slid) {
-    const del = row("Delete action", TOKENS.space.xs);
+    const del = stack("Delete action", "VERTICAL", TOKENS.space.xs);
     del.resize(78, 66);
+    forceFixedAutoLayoutSize(del);
     del.primaryAxisAlignItems = "CENTER";
     del.counterAxisAlignItems = "CENTER";
-    del.appendChild(createIcon("trash", 16, TOKENS.color.danger));
-    del.appendChild(text("Delete", ctx.styles.text.caption, TOKENS.color.danger, "Label"));
+    del.cornerRadius = TOKENS.radius.lg;
+    del.fills = [solid(TOKENS.color.danger, 0.84)];
+    del.appendChild(createIcon("trash", 17, TOKENS.color.primaryText));
+    del.appendChild(text("Delete", ctx.styles.text.caption, TOKENS.color.primaryText, "Label"));
     wrap.appendChild(del);
     del.x = 272;
     del.y = 0;
@@ -419,7 +556,7 @@ export function exerciseRow(
   node.fills = [glassFill()];
   node.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
   node.strokeWeight = 1;
-  const check = fixedFrame(complete ? "Completed check" : "Open check", 26, 26);
+  const check = fixedFrame(complete ? "Completed check" : "Open check", 28, 28);
   check.cornerRadius = TOKENS.radius.round;
   check.fills = [complete ? solid(TOKENS.color.accent) : solid(TOKENS.color.white, 0.04)];
   check.strokes = [complete ? solid(TOKENS.color.accent) : glassStroke()];
@@ -427,10 +564,12 @@ export function exerciseRow(
   if (complete) {
     const mark = createIcon("check", 14, TOKENS.color.background);
     check.appendChild(mark);
-    mark.x = 6;
-    mark.y = 6;
+    mark.x = 7;
+    mark.y = 7;
   }
   node.appendChild(check);
+  const thumb = iconDisk("dumbbell", 42, complete ? "lime" : "glass", "Exercise thumb");
+  node.appendChild(thumb);
   const copy = stack("Copy", "VERTICAL", 2);
   copy.appendChild(text(`${title} · ${sets}`, ctx.styles.text.bodyStrong, TOKENS.color.primaryText, "Title"));
   copy.appendChild(text(detail, ctx.styles.text.small, TOKENS.color.mutedText, "Detail"));

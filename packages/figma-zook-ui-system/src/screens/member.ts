@@ -1,19 +1,26 @@
 import {
   DesignContext,
+  avatar,
   bottomNav,
   button,
   chip,
+  divider,
   exerciseRow,
   fixedFrame,
   glassCard,
   header,
   iconButton,
+  iconDisk,
   listRow,
   memberNavItems,
+  metricTile,
   mobileShell,
+  paragraph,
   productCard,
   row,
   searchBar,
+  sectionTitle,
+  selectPill,
   spacer,
   stack,
   text
@@ -21,139 +28,264 @@ import {
 import { createIcon } from "../icons";
 import { TOKENS, glassFill, glassStroke, solid } from "../tokens";
 
-function progressRing(ctx: DesignContext, label: string, color: string = TOKENS.color.accent): FrameNode {
-  const wrap = fixedFrame(`Progress Ring / ${label}`, 82, 82);
+function progressRing(ctx: DesignContext, label: string, color: string = TOKENS.color.accent, size = 86): FrameNode {
+  const wrap = fixedFrame(`Progress Ring / ${label}`, size, size);
   const base = figma.createEllipse();
   base.name = "Ring base";
-  base.resize(82, 82);
+  base.resize(size, size);
   base.fills = [];
   base.strokes = [solid(TOKENS.color.white, 0.1)];
   base.strokeWeight = 8;
   const active = figma.createEllipse();
   active.name = "Ring progress";
-  active.resize(82, 82);
+  active.resize(size, size);
   active.fills = [];
   active.strokes = [solid(color)];
   active.strokeWeight = 8;
   active.strokeCap = "ROUND";
-  active.dashPattern = [155, 90];
-  active.rotation = -90;
+  active.dashPattern = [Math.round(size * 1.9), Math.round(size * 1.05)];
   active.effects = [
-    { type: "DROP_SHADOW", color: { ...solid(color).color, a: 0.28 }, offset: { x: 0, y: 0 }, radius: 18, spread: -2, visible: true, blendMode: "NORMAL" }
+    { type: "DROP_SHADOW", color: { ...solid(color).color, a: 0.34 }, offset: { x: 0, y: 0 }, radius: 22, spread: -2, visible: true, blendMode: "NORMAL" }
   ];
-  const value = text(label, ctx.styles.text.h3, color, "Ring label");
+  const value = text(label, label.length > 2 ? ctx.styles.text.h3 : ctx.styles.text.h2, color, "Ring label");
   wrap.appendChild(base);
   wrap.appendChild(active);
   wrap.appendChild(value);
-  value.x = 27;
-  value.y = 29;
+  value.x = (size - value.width) / 2;
+  value.y = (size - value.height) / 2;
   return wrap;
+}
+
+function progressBar(width: number, pct: number, tone = TOKENS.color.accent): FrameNode {
+  const bar = fixedFrame("Progress bar", width, 8);
+  bar.cornerRadius = TOKENS.radius.round;
+  bar.fills = [solid(TOKENS.color.white, 0.09)];
+  const fill = fixedFrame("Progress fill", Math.round(width * pct), 8);
+  fill.cornerRadius = TOKENS.radius.round;
+  fill.fills = [solid(tone)];
+  fill.effects = [{ type: "DROP_SHADOW", color: { ...solid(tone).color, a: 0.28 }, offset: { x: 0, y: 0 }, radius: 12, spread: -2, visible: true, blendMode: "NORMAL" }];
+  bar.appendChild(fill);
+  return bar;
+}
+
+function detailLine(ctx: DesignContext, label: string, value: string, icon: "clock" | "shield" | "clipboard" | "dumbbell" | "check" = "clock"): FrameNode {
+  const line = row(`Detail / ${label}`, TOKENS.space.md);
+  line.resize(286, 38);
+  line.primaryAxisSizingMode = "FIXED";
+  line.counterAxisSizingMode = "FIXED";
+  line.primaryAxisAlignItems = "SPACE_BETWEEN";
+  const left = row("Left", TOKENS.space.sm);
+  left.appendChild(iconDisk(icon, 28, "glass"));
+  left.appendChild(text(label, ctx.styles.text.small, TOKENS.color.mutedText, "Label"));
+  line.appendChild(left);
+  line.appendChild(text(value, ctx.styles.text.bodyStrong, value === "Approved" ? TOKENS.color.accent : TOKENS.color.primaryText, "Value"));
+  return line;
 }
 
 export function memberHome(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Member / 01 Home");
-  screen.appendChild(header(ctx, "Good morning, Aarav", "Iron Temple Gym · Pune", undefined, "bell"));
+  screen.itemSpacing = 12;
+  const head = row("Home header", TOKENS.space.md);
+  head.resize(350, 66);
+  head.primaryAxisSizingMode = "FIXED";
+  head.counterAxisSizingMode = "FIXED";
+  head.primaryAxisAlignItems = "SPACE_BETWEEN";
+  head.appendChild(avatar(ctx, "AM", 56, "Aarav avatar"));
+  const copy = stack("Greeting copy", "VERTICAL", 4);
+  copy.appendChild(text("Good morning, Aarav", ctx.styles.text.h3));
+  copy.appendChild(text("Iron Temple Gym · Pune", ctx.styles.text.body, TOKENS.color.mutedText));
+  head.appendChild(copy);
+  copy.layoutSizingHorizontal = "FILL";
+  const bell = iconButton("Bell with unread dot", "bell");
+  const dot = fixedFrame("Unread dot", 10, 10);
+  dot.cornerRadius = TOKENS.radius.round;
+  dot.fills = [solid(TOKENS.color.accent)];
+  bell.appendChild(dot);
+  dot.x = 29;
+  dot.y = 4;
+  head.appendChild(bell);
+  screen.appendChild(head);
 
-  const membership = glassCard("Active Membership Card", 350, TOKENS.space.xl, TOKENS.radius.xxl);
+  const membership = glassCard("Active Membership Card", 350, 18, TOKENS.radius.xxl);
+  membership.itemSpacing = 14;
   const top = row("Membership top", TOKENS.space.md);
-  top.resize(310, 96);
+  top.resize(314, 98);
+  top.primaryAxisSizingMode = "FIXED";
+  top.counterAxisSizingMode = "FIXED";
   top.primaryAxisAlignItems = "SPACE_BETWEEN";
-  const copy = stack("Membership copy", "VERTICAL", 6);
-  copy.appendChild(text("Active Membership", ctx.styles.text.small, TOKENS.color.mutedText));
-  copy.appendChild(text("Hybrid Pro — 22 days left", ctx.styles.text.h2));
-  copy.appendChild(text("8 visits remaining", ctx.styles.text.body, TOKENS.color.accent));
-  top.appendChild(copy);
-  top.appendChild(progressRing(ctx, "68%"));
+  const membershipCopy = stack("Membership copy", "VERTICAL", 8);
+  const label = row("Membership label", TOKENS.space.sm);
+  label.appendChild(iconDisk("shield", 28, "lime"));
+  label.appendChild(text("Active Membership", ctx.styles.text.small, TOKENS.color.mutedText));
+  membershipCopy.appendChild(label);
+  membershipCopy.appendChild(text("Hybrid Pro — 22 days left", ctx.styles.text.h2));
+  membershipCopy.appendChild(text("8 visits remaining", ctx.styles.text.body, TOKENS.color.mutedText));
+  top.appendChild(membershipCopy);
+  top.appendChild(progressRing(ctx, "73%"));
   membership.appendChild(top);
+  membership.appendChild(divider(314));
   const actions = row("Membership actions", TOKENS.space.sm);
-  actions.appendChild(button(ctx, "Scan QR", "primary", "qr", 148));
-  actions.appendChild(button(ctx, "Start Workout", "secondary", "dumbbell", 154));
+  actions.appendChild(button(ctx, "Scan QR", "primary", "qr", 153));
+  actions.appendChild(button(ctx, "Start Workout", "secondary", "dumbbell", 153));
   membership.appendChild(actions);
   screen.appendChild(membership);
 
-  const plan = glassCard("Today’s Plan", 350);
-  const planTop = row("Plan row", TOKENS.space.md);
-  planTop.primaryAxisAlignItems = "SPACE_BETWEEN";
-  const planCopy = stack("Plan copy", "VERTICAL", 4);
-  planCopy.appendChild(text("Today’s Plan", ctx.styles.text.small, TOKENS.color.mutedText));
+  screen.appendChild(sectionTitle(ctx, "Today’s Plan", "View all"));
+  const plan = glassCard("Today’s Plan Card", 350, 14, TOKENS.radius.xl);
+  const planRow = row("Plan row", TOKENS.space.md);
+  planRow.resize(322, 54);
+  planRow.primaryAxisSizingMode = "FIXED";
+  planRow.counterAxisSizingMode = "FIXED";
+  planRow.primaryAxisAlignItems = "SPACE_BETWEEN";
+  planRow.appendChild(iconDisk("dumbbell", 44, "lime"));
+  const planCopy = stack("Plan copy", "VERTICAL", 2);
   planCopy.appendChild(text("Push Day · 6 exercises · Coach Rhea", ctx.styles.text.bodyStrong));
-  planTop.appendChild(planCopy);
-  planTop.appendChild(chip(ctx, "Assigned", "lime"));
-  plan.appendChild(planTop);
+  planCopy.appendChild(text("Chest · Shoulders · Triceps", ctx.styles.text.small, TOKENS.color.mutedText));
+  planRow.appendChild(planCopy);
+  planCopy.layoutSizingHorizontal = "FILL";
+  planRow.appendChild(chip(ctx, "Assigned", "lime"));
+  plan.appendChild(planRow);
   screen.appendChild(plan);
 
-  const activity = glassCard("Activity Card", 350);
-  activity.appendChild(text("Activity", ctx.styles.text.h3));
-  activity.appendChild(listRow(ctx, "Streak 5 days", "Last check-in 7:12 AM", "clock", chip(ctx, "Weekly goal 3/5", "glass")));
+  const activity = glassCard("Activity Metrics Card", 350, 14, TOKENS.radius.xl);
+  activity.layoutMode = "HORIZONTAL";
+  activity.primaryAxisAlignItems = "SPACE_BETWEEN";
+  activity.counterAxisAlignItems = "CENTER";
+  activity.appendChild(metricTile(ctx, "clock", "Streak", "5 days"));
+  activity.appendChild(metricTile(ctx, "qr", "Last check-in", "7:12 AM"));
+  activity.appendChild(metricTile(ctx, "check", "Weekly goal", "3/5"));
   screen.appendChild(activity);
-  screen.appendChild(spacer(1, 64));
+
+  const quick = glassCard("Member Quick Actions", 350, 12, TOKENS.radius.xl);
+  quick.layoutMode = "HORIZONTAL";
+  quick.primaryAxisAlignItems = "SPACE_BETWEEN";
+  for (const [labelText, icon] of [
+    ["Book", "clock"],
+    ["Stats", "shield"],
+    ["Payments", "rupee"],
+    ["Support", "bell"]
+  ] as const) {
+    const item = stack(`Quick action / ${labelText}`, "VERTICAL", 5);
+    item.counterAxisAlignItems = "CENTER";
+    item.appendChild(createIcon(icon, 19, TOKENS.color.mutedText));
+    item.appendChild(text(labelText, ctx.styles.text.caption, TOKENS.color.mutedText));
+    quick.appendChild(item);
+  }
+  screen.appendChild(quick);
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Home"));
   return screen;
 }
 
 export function memberScanner(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Member / 02 QR Check-in Scanner");
+  screen.itemSpacing = 12;
   screen.appendChild(header(ctx, "Scan Gym QR", "Iron Temple Gym", "back"));
-  const scanner = glassCard("Scanner Frame", 350, TOKENS.space.xl, TOKENS.radius.xxl);
-  scanner.resize(350, 356);
-  scanner.primaryAxisAlignItems = "CENTER";
-  const viewport = fixedFrame("Rolling QR scanner viewport", 286, 286);
-  viewport.cornerRadius = TOKENS.radius.xl;
+  const scanner = fixedFrame("Scanner Stage", 350, 318);
+  const viewport = fixedFrame("Rolling QR scanner viewport", 302, 302);
+  viewport.cornerRadius = TOKENS.radius.xxl;
   viewport.fills = [solid(TOKENS.color.white, 0.03)];
-  viewport.strokes = [solid(TOKENS.color.accent, 0.28)];
+  viewport.strokes = [glassStroke(0.16)];
   viewport.strokeWeight = 1;
-  for (let i = 0; i < 6; i += 1) {
-    const line = fixedFrame(`Grid line ${i + 1}`, i % 2 === 0 ? 286 : 1, i % 2 === 0 ? 1 : 286);
-    line.fills = [solid(TOKENS.color.white, 0.06)];
-    viewport.appendChild(line);
-    line.x = i % 2 === 0 ? 0 : 48 + i * 30;
-    line.y = i % 2 === 0 ? 48 + i * 30 : 0;
-  }
-  const scan = fixedFrame("Horizontal scan line", 250, 2);
-  scan.fills = [solid(TOKENS.color.accent, 0.9)];
-  scan.effects = [{ type: "DROP_SHADOW", color: { ...solid(TOKENS.color.accent).color, a: 0.42 }, offset: { x: 0, y: 0 }, radius: 18, spread: 2, visible: true, blendMode: "NORMAL" }];
-  viewport.appendChild(scan);
-  scan.x = 18;
-  scan.y = 132;
+  viewport.effects = [{ type: "BACKGROUND_BLUR", radius: 16, visible: true, blurType: "NORMAL" }];
   scanner.appendChild(viewport);
-  scanner.appendChild(text("Scan the rolling QR at the reception desk.", ctx.styles.text.small, TOKENS.color.mutedText));
+  viewport.x = 24;
+  viewport.y = 8;
+  for (let i = 1; i < 6; i += 1) {
+    const v = fixedFrame(`Vertical grid ${i}`, 1, 302);
+    v.fills = [solid(TOKENS.color.white, 0.06)];
+    viewport.appendChild(v);
+    v.x = i * 50;
+    const h = fixedFrame(`Horizontal grid ${i}`, 302, 1);
+    h.fills = [solid(TOKENS.color.white, 0.06)];
+    viewport.appendChild(h);
+    h.y = i * 50;
+  }
+  const scan = fixedFrame("Horizontal scan line", 278, 2);
+  scan.fills = [solid(TOKENS.color.accent, 0.88)];
+  scan.effects = [{ type: "DROP_SHADOW", color: { ...solid(TOKENS.color.accent).color, a: 0.45 }, offset: { x: 0, y: 0 }, radius: 18, spread: 2, visible: true, blendMode: "NORMAL" }];
+  viewport.appendChild(scan);
+  scan.x = 12;
+  scan.y = 146;
+  for (const [name, x, y, rotation] of [
+    ["Top left", 0, 0, 0],
+    ["Top right", 252, 0, 90],
+    ["Bottom right", 252, 252, 180],
+    ["Bottom left", 0, 252, 270]
+  ] as const) {
+    const corner = fixedFrame(`Lime corner / ${name}`, 50, 50);
+    corner.fills = [];
+    const a = fixedFrame("Corner horizontal", 50, 4);
+    a.cornerRadius = 2;
+    a.fills = [solid(TOKENS.color.accent)];
+    const b = fixedFrame("Corner vertical", 4, 50);
+    b.cornerRadius = 2;
+    b.fills = [solid(TOKENS.color.accent)];
+    corner.appendChild(a);
+    corner.appendChild(b);
+    corner.rotation = rotation;
+    corner.effects = [{ type: "DROP_SHADOW", color: { ...solid(TOKENS.color.accent).color, a: 0.5 }, offset: { x: 0, y: 0 }, radius: 14, spread: 1, visible: true, blendMode: "NORMAL" }];
+    viewport.appendChild(corner);
+    corner.x = x;
+    corner.y = y;
+  }
   screen.appendChild(scanner);
-  const validation = glassCard("Validation Card", 350);
-  validation.appendChild(chip(ctx, "Membership active", "lime", "shield"));
-  validation.appendChild(chip(ctx, "Branch verified", "lime", "check"));
-  validation.appendChild(chip(ctx, "Server-authorized check-in", "lime", "check"));
+  const helper = row("Scanner helper", TOKENS.space.sm);
+  helper.appendChild(createIcon("qr", 16, TOKENS.color.accent));
+  helper.appendChild(text("Scan the rolling QR at the reception desk.", ctx.styles.text.small, TOKENS.color.mutedText));
+  screen.appendChild(helper);
+  const validation = glassCard("Validation Card", 350, 12, TOKENS.radius.xl);
+  for (const item of ["Membership active", "Branch verified", "Server-authorized check-in"]) {
+    validation.appendChild(listRow(ctx, item, undefined, item === "Membership active" ? "shield" : "check", createIcon("check", 16, TOKENS.color.accent)));
+    if (item !== "Server-authorized check-in") validation.appendChild(divider(310, 0.08));
+  }
   screen.appendChild(validation);
-  const support = glassCard("Support Panel", 350);
-  support.appendChild(text("Need help? Ask receptionist", ctx.styles.text.bodyStrong));
+  const support = glassCard("Support Panel", 350, 12, TOKENS.radius.xl);
+  support.layoutMode = "HORIZONTAL";
+  support.primaryAxisAlignItems = "SPACE_BETWEEN";
+  support.counterAxisAlignItems = "CENTER";
+  support.appendChild(text("Need help? Ask receptionist", ctx.styles.text.bodyStrong, TOKENS.color.mutedText));
+  support.appendChild(createIcon("chevron", 16, TOKENS.color.mutedText));
   screen.appendChild(support);
-  screen.appendChild(spacer(1, 32));
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Check-in"));
   return screen;
 }
 
 export function attendanceApproved(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Member / 03 Attendance Result Approved");
-  screen.appendChild(header(ctx, "Attendance"));
-  const hero = stack("Approved hero", "VERTICAL", TOKENS.space.md);
+  screen.itemSpacing = 12;
+  screen.appendChild(header(ctx, "Attendance", undefined, "back"));
+  const hero = stack("Approved hero", "VERTICAL", 8);
   hero.counterAxisAlignItems = "CENTER";
-  hero.appendChild(progressRing(ctx, "✓"));
+  hero.appendChild(progressRing(ctx, "✓", TOKENS.color.accent, 92));
   hero.appendChild(text("Checked in", ctx.styles.text.h1));
   hero.appendChild(text("Entry approved for Iron Temple Gym", ctx.styles.text.body, TOKENS.color.mutedText));
   screen.appendChild(hero);
-  const code = glassCard("Entry Code Card", 350);
+  const code = glassCard("Entry Code Card", 350, 14, TOKENS.radius.xxl);
   code.primaryAxisAlignItems = "CENTER";
   code.appendChild(text("Entry Code", ctx.styles.text.small, TOKENS.color.mutedText));
-  code.appendChild(text("ZK-4821", ctx.styles.text.h1, TOKENS.color.accent));
+  code.appendChild(text("ZK-4821", ctx.styles.text.display, TOKENS.color.accent));
+  code.appendChild(divider(286));
   code.appendChild(text("Show this to the front desk if asked.", ctx.styles.text.small, TOKENS.color.mutedText));
-  screen.appendChild(code);
-  const details = glassCard("Details List", 350);
-  for (const line of ["Time: 7:14 AM", "Branch: Default Branch", "Plan: Hybrid Pro", "Status: Approved"]) {
-    details.appendChild(text(line, ctx.styles.text.body, TOKENS.color.primaryText));
+  for (const [label, value, icon] of [
+    ["Time", "7:14 AM", "clock"],
+    ["Branch", "Default Branch", "shield"],
+    ["Plan", "Hybrid Pro", "clipboard"],
+    ["Status", "Approved", "check"]
+  ] as const) {
+    code.appendChild(detailLine(ctx, label, value, icon));
   }
-  screen.appendChild(details);
-  const next = glassCard("Next Up Card", 350);
-  next.appendChild(text("Push Day workout assigned by Coach Rhea", ctx.styles.text.bodyStrong));
-  next.appendChild(button(ctx, "Open Plan", "primary", "clipboard", 310));
+  screen.appendChild(code);
+  const next = glassCard("Next Up Card", 350, 14, TOKENS.radius.xl);
+  next.layoutMode = "HORIZONTAL";
+  next.primaryAxisAlignItems = "SPACE_BETWEEN";
+  next.counterAxisAlignItems = "CENTER";
+  next.appendChild(iconDisk("dumbbell", 44, "lime"));
+  const copy = stack("Next copy", "VERTICAL", 4);
+  copy.appendChild(text("Next up", ctx.styles.text.h3));
+  copy.appendChild(text("Push Day workout assigned by Coach Rhea", ctx.styles.text.small, TOKENS.color.mutedText));
+  next.appendChild(copy);
+  copy.layoutSizingHorizontal = "FILL";
+  next.appendChild(chip(ctx, "Open Plan", "lime", "chevron"));
   screen.appendChild(next);
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Check-in"));
   return screen;
@@ -161,47 +293,71 @@ export function attendanceApproved(ctx: DesignContext): FrameNode {
 
 export function attendancePending(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Member / 04 Attendance Pending Approval");
-  screen.appendChild(header(ctx, "Attendance"));
-  const hero = stack("Pending hero", "VERTICAL", TOKENS.space.md);
+  screen.itemSpacing = 12;
+  screen.appendChild(header(ctx, "Attendance", "Iron Temple Gym", "back"));
+  const hero = stack("Pending hero", "VERTICAL", 8);
   hero.counterAxisAlignItems = "CENTER";
-  hero.appendChild(progressRing(ctx, "…", TOKENS.color.warning));
-  hero.appendChild(text("Waiting for desk approval", ctx.styles.text.h2, TOKENS.color.primaryText));
-  hero.appendChild(text("Your check-in was received. Please show this code to the receptionist.", ctx.styles.text.body, TOKENS.color.mutedText));
+  hero.appendChild(progressRing(ctx, "◷", TOKENS.color.warning, 88));
+  hero.appendChild(text("Waiting for desk approval", ctx.styles.text.h2));
+  hero.appendChild(paragraph("Your check-in was received. Please show this code to the receptionist.", ctx.styles.text.small, 320, TOKENS.color.mutedText));
   screen.appendChild(hero);
-  const code = glassCard("Entry Code Card", 350);
+  const code = glassCard("Entry Code Card", 350, 14, TOKENS.radius.xxl);
   code.primaryAxisAlignItems = "CENTER";
-  code.appendChild(text("ZK-7319", ctx.styles.text.h1, TOKENS.color.warning));
+  code.appendChild(text("Entry Code", ctx.styles.text.small, TOKENS.color.mutedText));
+  code.appendChild(text("ZK-7319", ctx.styles.text.display, TOKENS.color.warning));
+  code.appendChild(divider(286));
   const chips = row("Pending chips", TOKENS.space.sm);
   chips.appendChild(chip(ctx, "Pending approval", "warning"));
-  chips.appendChild(chip(ctx, "Membership active", "lime"));
+  chips.appendChild(chip(ctx, "Membership active", "lime", "check"));
   code.appendChild(chips);
-  code.appendChild(chip(ctx, "Manual review required", "warning"));
+  code.appendChild(chip(ctx, "Manual review required", "warning", "warning"));
   screen.appendChild(code);
-  const reason = glassCard("Why Review Card", 350);
-  reason.appendChild(text("Why review?", ctx.styles.text.h3));
-  reason.appendChild(text("This scan needs staff confirmation because attendance approval mode is enabled.", ctx.styles.text.body, TOKENS.color.mutedText));
+  const reason = glassCard("Why Review Card", 350, 14, TOKENS.radius.xl);
+  reason.layoutMode = "HORIZONTAL";
+  reason.appendChild(iconDisk("warning", 48, "warning"));
+  const reasonCopy = stack("Reason copy", "VERTICAL", 4);
+  reasonCopy.appendChild(text("Why review?", ctx.styles.text.h3));
+  reasonCopy.appendChild(paragraph("This scan needs staff confirmation because attendance approval mode is enabled.", ctx.styles.text.small, 244, TOKENS.color.mutedText));
+  reason.appendChild(reasonCopy);
+  reasonCopy.layoutSizingHorizontal = "FILL";
   screen.appendChild(reason);
-  screen.appendChild(button(ctx, "View Attendance History", "secondary", "clock", 350));
-  screen.appendChild(button(ctx, "Back to Home", "primary", "home", 350));
+  screen.appendChild(button(ctx, "View Attendance History", "primary", "clock", 350));
+  screen.appendChild(button(ctx, "Back to Home", "secondary", "home", 350));
   return screen;
 }
 
 export function memberShop(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Member / 05 Shop Catalog");
-  const head = header(ctx, "Shop", "Iron Temple Gym", undefined, "cart");
+  screen.itemSpacing = 10;
+  const head = row("Shop header", TOKENS.space.md);
+  head.resize(350, 64);
+  head.primaryAxisSizingMode = "FIXED";
+  head.counterAxisSizingMode = "FIXED";
+  head.primaryAxisAlignItems = "SPACE_BETWEEN";
+  const shopCopy = stack("Shop copy", "VERTICAL", 4);
+  shopCopy.appendChild(text("Shop", ctx.styles.text.h1));
+  shopCopy.appendChild(selectPill(ctx, "Iron Temple Gym", "dumbbell"));
+  head.appendChild(shopCopy);
+  const cart = iconButton("Cart badge button", "cart");
   const badge = fixedFrame("Cart badge 2", 16, 16);
   badge.cornerRadius = TOKENS.radius.round;
   badge.fills = [solid(TOKENS.color.accent)];
   badge.appendChild(text("2", ctx.styles.text.caption, TOKENS.color.background));
-  head.appendChild(badge);
+  cart.appendChild(badge);
+  badge.x = 27;
+  badge.y = -4;
+  head.appendChild(cart);
   screen.appendChild(head);
   screen.appendChild(searchBar(ctx, "Search water, protein, towel…"));
   const categories = row("Category chips", TOKENS.space.sm);
-  for (const [label, selected] of [["All", true], ["Water", false], ["Protein Shake", false], ["Shaker", false], ["Towel", false], ["Supplement", false]] as const) {
+  categories.resize(350, 36);
+  categories.primaryAxisSizingMode = "FIXED";
+  categories.clipsContent = true;
+  for (const [label, selected] of [["All", true], ["Water", false], ["Protein Shake", false], ["Shaker", false], ["Towel", false]] as const) {
     categories.appendChild(chip(ctx, label, selected ? "lime" : "glass"));
   }
   screen.appendChild(categories);
-  const grid = stack("Product Grid", "VERTICAL", TOKENS.space.md);
+  const grid = stack("Product Grid", "VERTICAL", TOKENS.space.sm);
   const r1 = row("Product row 1", TOKENS.space.md);
   r1.appendChild(productCard(ctx, "Protein Shake", "₹149", "Ready at desk", "lime"));
   r1.appendChild(productCard(ctx, "Zook Shaker", "₹399", "Low stock", "warning"));
@@ -211,35 +367,52 @@ export function memberShop(ctx: DesignContext): FrameNode {
   grid.appendChild(r1);
   grid.appendChild(r2);
   screen.appendChild(grid);
-  const cart = glassCard("Floating Mini Cart", 350, TOKENS.space.md, TOKENS.radius.xl);
-  cart.layoutMode = "HORIZONTAL";
-  cart.primaryAxisAlignItems = "SPACE_BETWEEN";
-  cart.counterAxisAlignItems = "CENTER";
-  cart.appendChild(text("2 items · ₹548", ctx.styles.text.bodyStrong));
-  cart.appendChild(iconButton("Open cart", "chevron", true));
-  screen.appendChild(cart);
+  const miniCart = glassCard("Floating Mini Cart", 246, 12, TOKENS.radius.xxl);
+  miniCart.layoutMode = "HORIZONTAL";
+  miniCart.primaryAxisAlignItems = "SPACE_BETWEEN";
+  miniCart.counterAxisAlignItems = "CENTER";
+  miniCart.appendChild(createIcon("cart", 22, TOKENS.color.primaryText));
+  miniCart.appendChild(text("2 items · ₹548", ctx.styles.text.bodyStrong));
+  miniCart.appendChild(createIcon("chevron", 16, TOKENS.color.accent));
+  screen.appendChild(miniCart);
   screen.appendChild(bottomNav(ctx, "Member", memberNavItems, "Shop"));
   return screen;
 }
 
 export function memberPlanDetail(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Member / 06 Plan Detail");
+  screen.itemSpacing = 10;
   screen.appendChild(header(ctx, "Push Day", undefined, "back", "more"));
-  const summary = glassCard("Plan Summary Card", 350);
-  summary.appendChild(text("Assigned by Coach Rhea", ctx.styles.text.bodyStrong));
-  const meta = row("Plan meta", TOKENS.space.sm);
-  for (const item of ["6 exercises", "45–60 min", "Difficulty: Medium"]) meta.appendChild(chip(ctx, item, "glass"));
-  summary.appendChild(meta);
-  summary.appendChild(text("2 of 6 completed", ctx.styles.text.small, TOKENS.color.mutedText));
-  const bar = fixedFrame("Progress 33 percent", 310, 8);
-  bar.cornerRadius = TOKENS.radius.round;
-  bar.fills = [solid(TOKENS.color.white, 0.08)];
-  const fill = fixedFrame("Progress fill", 102, 8);
-  fill.cornerRadius = TOKENS.radius.round;
-  fill.fills = [solid(TOKENS.color.accent)];
-  bar.appendChild(fill);
-  summary.appendChild(bar);
+  const summary = glassCard("Plan Summary Card", 350, 14, TOKENS.radius.xl);
+  const summaryTop = row("Summary top", TOKENS.space.md);
+  summaryTop.resize(322, 80);
+  summaryTop.primaryAxisSizingMode = "FIXED";
+  summaryTop.counterAxisSizingMode = "FIXED";
+  summaryTop.primaryAxisAlignItems = "SPACE_BETWEEN";
+  const coach = row("Coach", TOKENS.space.md);
+  coach.appendChild(avatar(ctx, "CR", 52, "Coach Rhea avatar"));
+  const coachCopy = stack("Coach copy", "VERTICAL", 4);
+  coachCopy.appendChild(text("Assigned by", ctx.styles.text.small, TOKENS.color.mutedText));
+  coachCopy.appendChild(text("Coach Rhea", ctx.styles.text.h3));
+  coachCopy.appendChild(chip(ctx, "Trainer", "lime"));
+  coach.appendChild(coachCopy);
+  summaryTop.appendChild(coach);
+  const facts = stack("Plan facts", "VERTICAL", 7);
+  facts.appendChild(text("6 exercises", ctx.styles.text.bodyStrong));
+  facts.appendChild(text("45–60 min", ctx.styles.text.bodyStrong));
+  facts.appendChild(text("Difficulty: Medium", ctx.styles.text.bodyStrong, TOKENS.color.warning));
+  summaryTop.appendChild(facts);
+  summary.appendChild(summaryTop);
+  const progress = glassCard("Progress inset", 322, 10, TOKENS.radius.lg);
+  progress.appendChild(text("Progress", ctx.styles.text.small, TOKENS.color.mutedText));
+  const progressRow = row("Progress text", 4);
+  progressRow.appendChild(text("2", ctx.styles.text.bodyStrong, TOKENS.color.accent));
+  progressRow.appendChild(text("of 6 completed", ctx.styles.text.small, TOKENS.color.mutedText));
+  progress.appendChild(progressRow);
+  progress.appendChild(progressBar(298, 0.33));
+  summary.appendChild(progress);
   screen.appendChild(summary);
+  screen.appendChild(sectionTitle(ctx, "Exercises", "View tips"));
   const list = stack("Exercise List", "VERTICAL", TOKENS.space.sm);
   list.appendChild(exerciseRow(ctx, "Bench Press", "4 sets", "Barbell · 8–12 reps", true));
   list.appendChild(exerciseRow(ctx, "Incline Dumbbell Press", "3 sets", "Dumbbells · 8–12 reps", true));
@@ -248,9 +421,12 @@ export function memberPlanDetail(ctx: DesignContext): FrameNode {
   list.appendChild(exerciseRow(ctx, "Lateral Raise", "3 sets", "Dumbbells · 12–15 reps"));
   list.appendChild(exerciseRow(ctx, "Push-up Finisher", "2 rounds", "To failure"));
   screen.appendChild(list);
-  const sticky = row("Sticky action bar", TOKENS.space.sm);
-  sticky.appendChild(button(ctx, "Complete", "primary", "check", 166));
-  sticky.appendChild(button(ctx, "Add Exercise", "secondary", "plus", 174));
+  const sticky = glassCard("Sticky action bar", 350, 10, TOKENS.radius.xl);
+  sticky.layoutMode = "HORIZONTAL";
+  sticky.primaryAxisAlignItems = "SPACE_BETWEEN";
+  sticky.counterAxisAlignItems = "CENTER";
+  sticky.appendChild(button(ctx, "Complete", "primary", "check", 168));
+  sticky.appendChild(button(ctx, "Add Exercise", "secondary", "plus", 152));
   screen.appendChild(sticky);
   return screen;
 }

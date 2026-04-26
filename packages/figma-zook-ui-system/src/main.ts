@@ -22,8 +22,9 @@ const pageNames = [
 
 function resetGeneratedPages(): Record<(typeof pageNames)[number], PageNode> {
   const pages = {} as Record<(typeof pageNames)[number], PageNode>;
-  const runPage = figma.currentPage;
-  runPage.name = "Zook UI System v1 — Starter Compatible";
+  const runPage = figma.createPage();
+  runPage.name = `Zook UI System v1 — Current ${new Date().toLocaleTimeString()}`;
+  figma.currentPage = runPage;
   for (const name of pageNames) {
     pages[name] = runPage;
   }
