@@ -66,7 +66,7 @@ export function formatDaysRemaining(days: number): string {
 
 export function titleFromSection(section?: string[]): string {
   if (!section?.length) {
-    return "Dashboard";
+    return "Today's Command Board";
   }
   return section.map((part) => formatEnumLabel(part)).join(" / ");
 }

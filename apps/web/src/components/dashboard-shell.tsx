@@ -3,13 +3,19 @@ import {
   Bell,
   Brain,
   CalendarCheck,
-  CreditCard,
+  ClipboardList,
   Dumbbell,
+  FileText,
+  Globe2,
+  History,
   MapPin,
   Package,
   QrCode,
+  ReceiptText,
+  Settings,
   Shield,
   Store,
+  UserPlus,
   Users
 } from "lucide-react";
 import { DashboardOperationalPanel } from "./dashboard-operational-panel";
@@ -20,16 +26,22 @@ import { formatDate, formatDaysRemaining, formatEnumLabel, titleFromSection } fr
 
 const nav = [
   ["Dashboard", "/dashboard", Dumbbell],
-  ["Organization", "/dashboard/org", MapPin],
-  ["Staff", "/dashboard/staff", Shield],
   ["Members", "/dashboard/members", Users],
-  ["Plans", "/dashboard/membership-plans", CreditCard],
-  ["QR Entry", "/dashboard/attendance", QrCode],
-  ["Trainers", "/dashboard/trainers", CalendarCheck],
-  ["AI", "/dashboard/ai", Brain],
+  ["Join Requests", "/dashboard/join-requests", UserPlus],
+  ["Plans", "/dashboard/membership-plans", ClipboardList],
+  ["Payments", "/dashboard/payments", ReceiptText],
+  ["Attendance", "/dashboard/attendance", QrCode],
+  ["Trainers & PT", "/dashboard/trainers", CalendarCheck],
+  ["Plans & AI", "/dashboard/ai", Brain],
   ["Notifications", "/dashboard/notifications", Bell],
   ["Shop", "/dashboard/shop/products", Store],
-  ["Reports", "/dashboard/reports", Package]
+  ["Reports", "/dashboard/reports", FileText],
+  ["Staff", "/dashboard/staff", Shield],
+  ["Public Profile", "/dashboard/public-profile", Globe2],
+  ["Settings", "/dashboard/settings", Settings],
+  ["Audit", "/dashboard/audit", History],
+  ["Organization", "/dashboard/org", MapPin],
+  ["Inventory Ops", "/dashboard/shop/orders", Package]
 ] as const;
 
 function isActiveNav(href: string, sectionKey: string) {
@@ -198,7 +210,7 @@ export function DashboardShell({
                 </div>
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">{title}</h1>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
-                  Premium operating surface for ownership and admins. Manage gym profiles, memberships, referrals, inventory, trainers, and daily performance.
+                  Today's command board for owners and admins. Review members, payments, QR attendance, trainer work, shop pickup, reports, staff actions, and audit posture.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

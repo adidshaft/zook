@@ -1,3 +1,4 @@
+import { zookDemoFixtures } from "@zook/core";
 import { getOrganizationDashboardData, getPlatformDashboardData } from "@/server/read-models";
 
 const zeroSummary = {
@@ -13,6 +14,92 @@ const zeroSummary = {
   aiUsageThisMonth: 0,
   trialDaysRemaining: 0
 };
+
+const demoOrg = zookDemoFixtures.organizations[0];
+const demoProducts = zookDemoFixtures.shopProducts.filter((product) => product.stock <= product.lowStockThreshold);
+const demoNotifications = zookDemoFixtures.notifications.map((notification) => ({
+  id: notification.id,
+  title: notification.title,
+  type: notification.type,
+  status: "SENT",
+  createdAt: notification.createdAt
+}));
+const demoAiUsage = zookDemoFixtures.aiUsageRecords.map((usage) => ({
+  id: usage.id,
+  role: usage.actorRole,
+  provider: "MOCK",
+  requestType: usage.requestType,
+  promptSummary: usage.promptSummary,
+  responseSummary: "Mock draft generated for trainer review",
+  tokenEstimate: 420,
+  costEstimatePaise: 0,
+  quotaConsumed: usage.quotaConsumed,
+  imageCount: 0,
+  safetyFlags: {},
+  createdAt: usage.createdAt
+}));
+
+function getDemoDashboardData(scope: "org" | "platform") {
+  const summary = {
+    activeMembers: 412,
+    joinRequests: 7,
+    expiringMemberships: 5,
+    todayAttendance: 48,
+    pendingAttendanceApprovals: 3,
+    cashCollectedPaise: 1860000,
+    revenuePaise: 8245000,
+    lowStockProducts: 2,
+    notificationQueueCount: 4,
+    aiUsageThisMonth: 18,
+    trialDaysRemaining: 21
+  };
+  const org = {
+    id: demoOrg?.id ?? "org-iron-temple",
+    name: demoOrg?.name ?? "Iron Temple Gym",
+    username: demoOrg?.username ?? "iron-temple",
+    city: demoOrg?.city ?? "Pune",
+    state: demoOrg?.state ?? "Maharashtra",
+    status: "ACTIVE",
+    joinMode: demoOrg?.joinMode ?? "OPEN_JOIN",
+    attendanceMode: "EXCEPTION_APPROVAL",
+    trialEndAt: new Date("2026-05-17T00:00:00.000Z"),
+    createdAt: new Date("2026-04-01T00:00:00.000Z"),
+    contactEmail: "owner@zook.local",
+    contactPhone: "+91 99887 77665"
+  };
+  return {
+    scope,
+    connected: false,
+    metrics:
+      scope === "org"
+        ? [
+            { label: "Active Members", value: "412", delta: "Iron Temple Gym" },
+            { label: "Today's Check-ins", value: "48", delta: "3 pending approval" },
+            { label: "Revenue", value: "₹82,450", delta: "Includes manual records" },
+            { label: "Pending Join Requests", value: "7", delta: "Approval queue" },
+            { label: "Low Stock", value: "2", delta: "Protein bar and shaker" },
+            { label: "AI Usage", value: "18", delta: "Trainer drafts this month" }
+          ]
+        : [
+            { label: "Organizations", value: "1", delta: "Demo mode" },
+            { label: "Active orgs", value: "1", delta: "0 suspended" },
+            { label: "Provider health", value: "5", delta: "Mock/provider-ready" },
+            { label: "Abuse flags", value: "0", delta: "No open flags" }
+          ],
+    orgs: [org],
+    products: demoProducts,
+    notifications: demoNotifications,
+    attendance: zookDemoFixtures.joinRequests,
+    aiUsage: demoAiUsage,
+    joinRequests: zookDemoFixtures.joinRequests,
+    auditLogCount: zookDemoFixtures.auditLogs.length,
+    summary,
+    platform: {
+      aiUsageThisMonth: 18,
+      abuseFlags: []
+    }
+  };
+}
 
 export async function getDashboardData(orgId?: string) {
   try {
@@ -55,6 +142,14 @@ export async function getDashboardData(orgId?: string) {
       }
     };
   } catch {
+    if (orgId) {
+      return getDemoDashboardData("org");
+    }
+    return getDemoDashboardData("platform");
+  }
+}
+
+export async function getEmptyDashboardData(orgId?: string) {
     const zeroMetrics = orgId
       ? [
           { label: "Today attendance", value: "0", delta: "database unavailable" },
@@ -91,5 +186,4 @@ export async function getDashboardData(orgId?: string) {
         abuseFlags: []
       }
     };
-  }
 }
