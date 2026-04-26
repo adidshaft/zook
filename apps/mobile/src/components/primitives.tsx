@@ -803,31 +803,49 @@ type DockTab = { href: Href; label: string; icon: keyof typeof Ionicons.glyphMap
 
 const memberTabs: DockTab[] = [
   { href: "/", label: "Home", icon: "home-outline", activeIcon: "home" },
-  { href: "/find-gyms", label: "Gyms", icon: "business-outline", activeIcon: "business" },
-  { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
+  { href: "/scan", label: "Check-in", icon: "qr-code-outline", activeIcon: "qr-code" },
+  { href: "/plans", label: "Plans", icon: "barbell-outline", activeIcon: "barbell" },
   { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag" },
-  { href: "/assistant", label: "AI", icon: "sparkles-outline", activeIcon: "sparkles" },
+  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
 const trainerTabs: DockTab[] = [
-  { href: "/trainer", label: "Clients", icon: "people-outline", activeIcon: "people" },
-  { href: "/assistant", label: "AI", icon: "sparkles-outline", activeIcon: "sparkles" },
-  { href: "/scan", label: "Scan", icon: "qr-code-outline", activeIcon: "qr-code" },
+  { href: "/trainer", label: "Home", icon: "home-outline", activeIcon: "home" },
+  { href: "/trainer?view=clients", label: "Clients", icon: "people-outline", activeIcon: "people" },
+  { href: "/plans", label: "Plans", icon: "reader-outline", activeIcon: "reader" },
   { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble" },
   { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
-function getTabsForRole(hasAnyRole: (...roles: Role[]) => boolean): DockTab[] {
-  if (hasAnyRole("TRAINER")) return trainerTabs;
+const receptionTabs: DockTab[] = [
+  { href: "/reception", label: "Desk", icon: "desktop-outline", activeIcon: "desktop" },
+  { href: "/reception?view=members", label: "Members", icon: "people-outline", activeIcon: "people" },
+  { href: "/reception?view=payments", label: "Payments", icon: "card-outline", activeIcon: "card" },
+  { href: "/reception?view=orders", label: "Orders", icon: "cube-outline", activeIcon: "cube" },
+  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
+];
+
+const ownerTabs: DockTab[] = [
+  { href: "/owner", label: "Command", icon: "pulse-outline", activeIcon: "pulse" },
+  { href: "/owner?view=approvals", label: "Approvals", icon: "checkmark-done-outline", activeIcon: "checkmark-done" },
+  { href: "/owner?view=revenue", label: "Revenue", icon: "trending-up-outline", activeIcon: "trending-up" },
+  { href: "/owner?view=stock", label: "Stock", icon: "cube-outline", activeIcon: "cube" },
+  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person" },
+];
+
+function getTabsForRole(role?: Role): DockTab[] {
+  if (role === "TRAINER") return trainerTabs;
+  if (role === "RECEPTIONIST") return receptionTabs;
+  if (role === "OWNER" || role === "ADMIN") return ownerTabs;
   return memberTabs;
 }
 
 export function Dock() {
   const pathname = usePathname();
-  const { hasAnyRole } = useAuth();
+  const { activeRole } = useAuth();
   const notificationsQuery = useMyNotifications();
   const unreadCount = notificationsQuery.data?.notifications?.filter(n => !n.readAt)?.length ?? 0;
-  const tabs = getTabsForRole(hasAnyRole);
+  const tabs = getTabsForRole(activeRole);
   const insets = useSafeAreaInsets();
   return (
     <BlurView intensity={80} tint="dark" style={StyleSheet.flatten([styles.dock, { bottom: Math.max(insets.bottom, 18) }])}>

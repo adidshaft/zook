@@ -52,7 +52,7 @@ function decodeRedirectTarget(rawRedirect: string | string[] | undefined) {
 }
 
 function LayoutContent() {
-  const { defaultRoute, hasAnyRole, status } = useAuth();
+  const { defaultRoute, hasActiveRole, hasAnyRole, status } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
@@ -75,18 +75,24 @@ function LayoutContent() {
       return;
     }
 
-    if (pathname.startsWith("/owner") && !hasAnyRole("OWNER", "ADMIN")) {
+    if (pathname.startsWith("/owner") && (!hasAnyRole("OWNER", "ADMIN") || !hasActiveRole("OWNER", "ADMIN"))) {
       router.replace(defaultRoute as never);
       return;
     }
-    if (pathname.startsWith("/reception")) {
+    if (
+      pathname.startsWith("/reception") &&
+      (!hasAnyRole("RECEPTIONIST", "OWNER", "ADMIN") || !hasActiveRole("RECEPTIONIST", "OWNER", "ADMIN"))
+    ) {
       router.replace(defaultRoute as never);
       return;
     }
-    if (pathname.startsWith("/trainer") && !hasAnyRole("TRAINER", "OWNER", "ADMIN")) {
+    if (
+      pathname.startsWith("/trainer") &&
+      (!hasAnyRole("TRAINER", "OWNER", "ADMIN") || !hasActiveRole("TRAINER", "OWNER", "ADMIN"))
+    ) {
       router.replace(defaultRoute as never);
     }
-  }, [defaultRoute, hasAnyRole, pathname, redirectTarget, router, searchParams, status]);
+  }, [defaultRoute, hasActiveRole, hasAnyRole, pathname, redirectTarget, router, searchParams, status]);
 
   if (status === "loading") {
     return (

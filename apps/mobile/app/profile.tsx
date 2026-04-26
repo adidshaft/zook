@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import {
@@ -23,7 +23,8 @@ import { useMyNotificationPreferences, useMyProfile } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
 
 export default function Profile() {
-  const { activeOrgId, logout, session, setActiveOrgId, token } = useAuth();
+  const { activeOrgId, activeRole, logout, session, setActiveOrgId, setActiveRole, token } = useAuth();
+  const router = useRouter();
   const {
     disablePush,
     error: pushError,
@@ -160,6 +161,23 @@ export default function Profile() {
     }
   }
 
+  async function switchRole(role: typeof allRoles[number]) {
+    await setActiveRole(role);
+    if (role === "TRAINER") {
+      router.replace("/trainer");
+      return;
+    }
+    if (role === "RECEPTIONIST") {
+      router.replace("/reception");
+      return;
+    }
+    if (role === "OWNER" || role === "ADMIN") {
+      router.replace("/owner");
+      return;
+    }
+    router.replace("/");
+  }
+
   const ageLabel = (() => {
     if (!dateOfBirth) {
       return "Not added";
@@ -211,9 +229,17 @@ export default function Profile() {
           <View style={styles.roleRow}>
             {allRoles.length ? (
               allRoles.map((role) => (
-                <Pill key={role} tone={role === "MEMBER" ? "lime" : "blue"}>
-                  {titleCaseFromCode(role)}
-                </Pill>
+                <Pressable
+                  key={role}
+                  onPress={() => void switchRole(role)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Switch to ${titleCaseFromCode(role)} role`}
+                  style={styles.roleButton}
+                >
+                  <Pill key={role} tone={role === activeRole ? "lime" : "blue"}>
+                    {role === activeRole ? `Active ${titleCaseFromCode(role)}` : titleCaseFromCode(role)}
+                  </Pill>
+                </Pressable>
               ))
             ) : (
               <Pill tone="neutral">Member</Pill>
@@ -222,9 +248,9 @@ export default function Profile() {
         </Card>
 
         <SectionHeader
-          eyebrow="Current gym"
-          title="Switch gym"
-          action={<SecondaryLink href="/find-gyms">Discover</SecondaryLink>}
+          eyebrow="My Gym"
+          title="Active Location"
+          action={<SecondaryLink href="/find-gyms">Explore</SecondaryLink>}
         />
 
         <Card style={styles.infoCard}>
@@ -275,9 +301,11 @@ export default function Profile() {
                   {organization.roles.map((role) => (
                     <Pill
                       key={`${organization.orgId}-${role}`}
-                      tone={role === "MEMBER" ? "lime" : "blue"}
+                      tone={organization.orgId === activeOrgId && role === activeRole ? "lime" : "blue"}
                     >
-                      {titleCaseFromCode(role)}
+                      {organization.orgId === activeOrgId && role === activeRole
+                        ? `Active ${titleCaseFromCode(role)}`
+                        : titleCaseFromCode(role)}
                     </Pill>
                   ))}
                 </View>
@@ -287,8 +315,8 @@ export default function Profile() {
         </View>
 
         <SectionHeader
-          eyebrow="Member details"
-          title="Health summary"
+          eyebrow="Health & Fitness"
+          title="My Profile"
           action={<Pill tone="blue">{ageLabel}</Pill>}
         />
 
@@ -337,38 +365,27 @@ export default function Profile() {
           />
           {detailsStatus ? <Text style={styles.detailsStatus}>{detailsStatus}</Text> : null}
           <PrimaryButton onPress={() => void saveMemberDetails()} disabled={detailsBusy}>
-            {detailsBusy ? "Saving..." : "Save summary"}
+            {detailsBusy ? "Saving..." : "Update Profile"}
           </PrimaryButton>
         </Card>
 
         <SectionHeader
-          eyebrow="Notifications"
-          title="Push preferences"
+          eyebrow="Preferences"
+          title="Alerts"
         />
 
-        <Card style={styles.infoCard}>
-          <InfoRow
-            label="Push status"
-            value={titleCaseFromCode(syncStatus)}
-            tone={
-              syncStatus === "registered"
-                ? "lime"
-                : syncStatus === "denied" || syncStatus === "error"
-                  ? "amber"
-                  : "neutral"
-            }
-          />
+        <Card style={styles.toggleCard}>
           {pushError || preferenceError ? (
             <Text style={styles.errorText}>
               {preferenceError ?? pushError}
             </Text>
           ) : null}
-        </Card>
-
-        <Card style={styles.toggleCard}>
+          <Text style={styles.syncStatusText}>
+            Push sync: {syncStatus}
+          </Text>
           <PreferenceToggleRow
             label="Push notifications"
-            hint="Receive alerts on this device."
+            hint="Stay updated with your gym."
             value={effectivePreferences.pushEnabled}
             busy={busyPreferenceKey === "pushEnabled"}
             onValueChange={(value) => void handlePushToggle(value)}
@@ -457,6 +474,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     flexWrap: "wrap",
+  },
+  roleButton: {
+    borderRadius: 999,
   },
   infoCard: {
     gap: 10,
@@ -548,6 +568,11 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#f59e0b",
     lineHeight: 20,
+  },
+  syncStatusText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "700",
   },
 });
 

@@ -7,6 +7,7 @@ import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const SESSION_STORAGE_KEY = "zook_session";
 const ACTIVE_ORG_STORAGE_KEY = "zook_active_org";
+const ACTIVE_ROLE_STORAGE_KEY = "zook_active_role";
 type LogoutCleanup = () => Promise<void> | void;
 
 interface RequestOtpResult {
@@ -26,23 +27,42 @@ interface AuthContextValue {
   token?: string;
   session?: AuthSessionSummary;
   activeOrgId?: string;
+  activeRole?: Role;
   defaultRoute: string;
   requestOtp: (email: string) => Promise<RequestOtpResult>;
   verifyOtp: (email: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   setActiveOrgId: (orgId: string) => Promise<void>;
+  setActiveRole: (role: Role) => Promise<void>;
   hasAnyRole: (...roles: Role[]) => boolean;
+  hasActiveRole: (...roles: Role[]) => boolean;
   registerLogoutCleanup: (cleanup: LogoutCleanup) => () => void;
   error?: string;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function sessionDefaultRoute(session?: AuthSessionSummary) {
-  const roles = new Set(session?.organizations.flatMap((organization) => organization.roles) ?? []);
-  if (roles.has("TRAINER")) {
+function sessionDefaultRole(session?: AuthSessionSummary): Role | undefined {
+  const roles = new Set(session?.activeOrganization?.roles ?? session?.organizations[0]?.roles ?? []);
+  if (roles.has("MEMBER")) return "MEMBER";
+  if (roles.has("TRAINER")) return "TRAINER";
+  if (roles.has("RECEPTIONIST")) return "RECEPTIONIST";
+  if (roles.has("OWNER")) return "OWNER";
+  if (roles.has("ADMIN")) return "ADMIN";
+  if (roles.has("PLATFORM_ADMIN")) return "PLATFORM_ADMIN";
+  return undefined;
+}
+
+function sessionDefaultRoute(role?: Role) {
+  if (role === "TRAINER") {
     return "/trainer";
+  }
+  if (role === "RECEPTIONIST") {
+    return "/reception";
+  }
+  if (role === "OWNER" || role === "ADMIN") {
+    return "/owner";
   }
   return "/";
 }
@@ -52,11 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | undefined>();
   const [session, setSession] = useState<AuthSessionSummary | undefined>();
   const [activeOrgId, setActiveOrgIdState] = useState<string | undefined>();
+  const [activeRole, setActiveRoleState] = useState<Role | undefined>();
   const [error, setError] = useState<string | undefined>();
   const logoutCleanupsRef = useRef(new Set<LogoutCleanup>());
 
   const hydrate = useCallback(
-    async (tokenValue: string, preferredOrgId?: string) => {
+    async (tokenValue: string, preferredOrgId?: string, preferredRole?: Role) => {
       const currentSession = await mobileApiFetch<AuthSessionSummary>("/auth/me", {
         token: tokenValue,
         ...(preferredOrgId ? { orgId: preferredOrgId } : {})
@@ -65,9 +86,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (resolvedOrgId) {
         await setStoredValue(ACTIVE_ORG_STORAGE_KEY, resolvedOrgId);
       }
+      const availableRoles = new Set(
+        (currentSession.activeOrganization?.roles ??
+          currentSession.organizations.find((organization) => organization.orgId === resolvedOrgId)?.roles ??
+          currentSession.organizations[0]?.roles ??
+          [])
+      );
+      const resolvedRole =
+        preferredRole && availableRoles.has(preferredRole)
+          ? preferredRole
+          : sessionDefaultRole(currentSession);
+      if (resolvedRole) {
+        await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, resolvedRole);
+      }
       setToken(tokenValue);
       setSession(currentSession);
       setActiveOrgIdState(resolvedOrgId);
+      setActiveRoleState(resolvedRole);
       setStatus("authenticated");
       setError(undefined);
     },
@@ -75,18 +110,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const clearSession = useCallback(async () => {
-    await Promise.all([deleteStoredValue(SESSION_STORAGE_KEY), deleteStoredValue(ACTIVE_ORG_STORAGE_KEY)]);
+    await Promise.all([
+      deleteStoredValue(SESSION_STORAGE_KEY),
+      deleteStoredValue(ACTIVE_ORG_STORAGE_KEY),
+      deleteStoredValue(ACTIVE_ROLE_STORAGE_KEY)
+    ]);
     setToken(undefined);
     setSession(undefined);
     setActiveOrgIdState(undefined);
+    setActiveRoleState(undefined);
     setStatus("unauthenticated");
   }, []);
 
   const refresh = useCallback(async () => {
     setStatus("loading");
-    const [storedToken, storedOrgId] = await Promise.all([
+    const [storedToken, storedOrgId, storedRole] = await Promise.all([
       getStoredValue(SESSION_STORAGE_KEY),
-      getStoredValue(ACTIVE_ORG_STORAGE_KEY)
+      getStoredValue(ACTIVE_ORG_STORAGE_KEY),
+      getStoredValue(ACTIVE_ROLE_STORAGE_KEY)
     ]);
 
     if (!storedToken) {
@@ -94,11 +135,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(undefined);
       setSession(undefined);
       setActiveOrgIdState(storedOrgId ?? undefined);
+      setActiveRoleState((storedRole as Role | null) ?? undefined);
       return;
     }
 
     try {
-      await hydrate(storedToken, storedOrgId ?? undefined);
+      await hydrate(storedToken, storedOrgId ?? undefined, (storedRole as Role | null) ?? undefined);
     } catch {
       await clearSession();
     }
@@ -124,9 +166,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: { email, code }
       });
       await setStoredValue(SESSION_STORAGE_KEY, result.token);
-      await hydrate(result.token, activeOrgId);
+      await hydrate(result.token, activeOrgId, activeRole);
     },
-    [activeOrgId, hydrate]
+    [activeOrgId, activeRole, hydrate]
   );
 
   const registerLogoutCleanup = useCallback((cleanup: LogoutCleanup) => {
@@ -159,9 +201,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       await setStoredValue(ACTIVE_ORG_STORAGE_KEY, orgId);
-      await hydrate(token, orgId);
+      await hydrate(token, orgId, activeRole);
     },
-    [hydrate, token]
+    [activeRole, hydrate, token]
+  );
+
+  const setActiveRole = useCallback(
+    async (role: Role) => {
+      await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, role);
+      setActiveRoleState(role);
+    },
+    []
   );
 
   const hasAnyRole = useCallback(
@@ -172,25 +222,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [session]
   );
 
+  const hasActiveRole = useCallback(
+    (...roles: Role[]) => Boolean(activeRole && roles.includes(activeRole)),
+    [activeRole]
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       token,
       session,
       activeOrgId,
-      defaultRoute: sessionDefaultRoute(session),
+      activeRole,
+      defaultRoute: sessionDefaultRoute(activeRole ?? sessionDefaultRole(session)),
       requestOtp,
       verifyOtp,
       logout,
       refresh,
       setActiveOrgId,
+      setActiveRole,
       hasAnyRole,
+      hasActiveRole,
       registerLogoutCleanup,
       error
     }),
     [
       activeOrgId,
+      activeRole,
       error,
+      hasActiveRole,
       hasAnyRole,
       logout,
       refresh,
@@ -198,6 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       requestOtp,
       session,
       setActiveOrgId,
+      setActiveRole,
       status,
       token,
       verifyOtp
