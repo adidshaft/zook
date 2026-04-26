@@ -1,4 +1,4 @@
-import { TOKENS, glassFill, glassStroke, hexToRgb, solid } from "./tokens";
+import { TOKENS } from "./tokens";
 
 export type TextStyleName =
   | "display"
@@ -11,96 +11,48 @@ export type TextStyleName =
   | "caption"
   | "metric";
 
+export interface TextSpec {
+  name: string;
+  fontSize: number;
+  lineHeight: { unit: "PIXELS"; value: number };
+  weight: string;
+}
+
 export interface StyleRegistry {
-  colors: Record<string, PaintStyle>;
-  text: Record<TextStyleName, TextStyle>;
+  colors: Record<string, Paint>;
+  text: Record<TextStyleName, TextSpec>;
   effects: {
-    glassCard: EffectStyle;
-    limeGlow: EffectStyle;
-    softShadow: EffectStyle;
-    backgroundBlur: EffectStyle;
+    glassCard: Effect[];
+    limeGlow: Effect[];
+    softShadow: Effect[];
+    backgroundBlur: Effect[];
   };
 }
 
 function rgba(hex: keyof typeof TOKENS.color, opacity: number): RGBA {
-  const rgb = hexToRgb(TOKENS.color[hex]);
-  return { ...rgb, a: opacity };
-}
-
-function setTextStyle(style: TextStyle, spec: (typeof TOKENS.type)[TextStyleName]): void {
-  style.fontSize = spec.size;
-  style.lineHeight = { unit: "PIXELS", value: spec.lineHeight };
-  style.letterSpacing = { unit: "PIXELS", value: 0 };
-}
-
-function timeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
-    promise.then(
-      (value) => {
-        clearTimeout(id);
-        resolve(value);
-      },
-      (error: unknown) => {
-        clearTimeout(id);
-        reject(error);
-      }
-    );
-  });
-}
-
-async function safeLoadFont(font: FontName): Promise<boolean> {
-  try {
-    await timeout(figma.loadFontAsync(font), 2500, `${font.family} ${font.style}`);
-    return true;
-  } catch (error) {
-    console.warn(`Could not load ${font.family} ${font.style}`, error);
-    return false;
-  }
-}
-
-export async function loadFonts(): Promise<void> {
-  const requiredFonts = [TOKENS.font.regular, TOKENS.font.medium, TOKENS.font.semibold, TOKENS.font.bold];
-  for (const font of requiredFonts) {
-    await safeLoadFont(font);
-  }
-}
-
-export function createStyles(): StyleRegistry {
-  const colors: Record<string, PaintStyle> = {};
-  const colorEntries = {
-    "Color / Background": solid(TOKENS.color.background),
-    "Color / Surface": solid(TOKENS.color.surface),
-    "Color / Surface Raised": solid(TOKENS.color.surfaceRaised),
-    "Color / Text Primary": solid(TOKENS.color.primaryText),
-    "Color / Text Muted": solid(TOKENS.color.mutedText),
-    "Color / Text Subtle": solid(TOKENS.color.subtleText),
-    "Color / Brand Lime": solid(TOKENS.color.accent),
-    "Color / Warning Amber": solid(TOKENS.color.warning),
-    "Color / Danger": solid(TOKENS.color.danger),
-    "Color / Glass Fill 05": glassFill(TOKENS.opacity.glassLow),
-    "Color / Glass Fill 08": glassFill(TOKENS.opacity.glassHigh),
-    "Color / Glass Stroke": glassStroke()
+  const normalized = TOKENS.color[hex].replace("#", "");
+  const value = Number.parseInt(normalized, 16);
+  return {
+    r: ((value >> 16) & 255) / 255,
+    g: ((value >> 8) & 255) / 255,
+    b: (value & 255) / 255,
+    a: opacity
   };
+}
 
-  for (const [name, paint] of Object.entries(colorEntries)) {
-    const style = figma.createPaintStyle();
-    style.name = name;
-    style.paints = [paint];
-    colors[name] = style;
-  }
-
-  const text = {} as Record<TextStyleName, TextStyle>;
+export function createTokenStyles(): StyleRegistry {
+  const text = {} as Record<TextStyleName, TextSpec>;
   for (const key of Object.keys(TOKENS.type) as TextStyleName[]) {
-    const style = figma.createTextStyle();
-    style.name = `Type / ${key}`;
-    setTextStyle(style, TOKENS.type[key]);
-    text[key] = style;
+    const spec = TOKENS.type[key];
+    text[key] = {
+      name: `Type / ${key}`,
+      fontSize: spec.size,
+      lineHeight: { unit: "PIXELS", value: spec.lineHeight },
+      weight: spec.weight
+    };
   }
 
-  const softShadow = figma.createEffectStyle();
-  softShadow.name = "Effect / Soft Operational Shadow";
-  softShadow.effects = [
+  const softShadow: Effect[] = [
     {
       type: "DROP_SHADOW",
       color: rgba("black", TOKENS.shadow.card.opacity),
@@ -111,10 +63,7 @@ export function createStyles(): StyleRegistry {
       blendMode: "NORMAL"
     }
   ];
-
-  const limeGlow = figma.createEffectStyle();
-  limeGlow.name = "Effect / Subtle Lime Glow";
-  limeGlow.effects = [
+  const limeGlow: Effect[] = [
     {
       type: "DROP_SHADOW",
       color: rgba("accent", TOKENS.shadow.glow.opacity),
@@ -125,18 +74,16 @@ export function createStyles(): StyleRegistry {
       blendMode: "NORMAL"
     }
   ];
-
-  const backgroundBlur = figma.createEffectStyle();
-  backgroundBlur.name = "Effect / Glass Background Blur";
-  backgroundBlur.effects = [{ type: "BACKGROUND_BLUR", radius: 18, visible: true, blurType: "NORMAL" }];
-
-  const glassCard = figma.createEffectStyle();
-  glassCard.name = "Effect / Glass Card Composite";
-  glassCard.effects = [...softShadow.effects, ...backgroundBlur.effects];
+  const backgroundBlur: Effect[] = [{ type: "BACKGROUND_BLUR", radius: 18, visible: true, blurType: "NORMAL" }];
 
   return {
-    colors,
+    colors: {},
     text,
-    effects: { glassCard, limeGlow, softShadow, backgroundBlur }
+    effects: {
+      glassCard: [...softShadow, ...backgroundBlur],
+      limeGlow,
+      softShadow,
+      backgroundBlur
+    }
   };
 }

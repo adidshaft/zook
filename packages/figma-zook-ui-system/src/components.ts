@@ -1,5 +1,5 @@
 import { createIcon, IconName } from "./icons";
-import { StyleRegistry } from "./styles";
+import { StyleRegistry, TextSpec } from "./styles";
 import { TOKENS, glassFill, glassStroke, layoutGrid, solid } from "./tokens";
 
 export interface DesignContext {
@@ -43,18 +43,15 @@ function rgbaCss(color: string): string {
 
 export function text(
   value: string,
-  style: TextStyle,
+  style: TextSpec,
   color: string = TOKENS.color.primaryText,
   name = "Text"
 ): FrameNode {
-  const size = typeof style.fontSize === "number" ? style.fontSize : TOKENS.type.body.size;
-  const lineHeight =
-    typeof style.lineHeight === "object" && style.lineHeight.unit === "PIXELS"
-      ? style.lineHeight.value
-      : Math.round(size * 1.35);
+  const size = style.fontSize;
+  const lineHeight = style.lineHeight.value;
   const width = Math.max(24, Math.ceil(value.length * size * 0.58));
   const height = Math.max(lineHeight, Math.ceil(lineHeight * Math.max(1, Math.ceil(width / 330))));
-  const weight = String(style.name).includes("Bold") || String(style.name).includes("h1") || String(style.name).includes("h2") ? 700 : 500;
+  const weight = style.weight === "Bold" || style.weight === "Semi Bold" ? 700 : 500;
   const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><text x="0" y="${Math.round(size)}" fill="${rgbaCss(color)}" font-family="Inter, Arial, sans-serif" font-size="${size}" font-weight="${weight}" letter-spacing="0">${escapeSvg(value)}</text></svg>`;
   const node = figma.createNodeFromSvg(svg) as FrameNode;
   node.name = name;

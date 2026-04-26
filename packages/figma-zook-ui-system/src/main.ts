@@ -5,7 +5,7 @@ import { ownerScreens } from "./screens/owner";
 import { memberScreens } from "./screens/member";
 import { receptionistScreens } from "./screens/receptionist";
 import { trainerScreens } from "./screens/trainer";
-import { createStyles } from "./styles";
+import { createTokenStyles } from "./styles";
 import { TOKENS, glassFill, glassStroke, solid } from "./tokens";
 
 const pageNames = [
@@ -205,9 +205,9 @@ async function main(): Promise<void> {
   figma.notify("Zook generator starting…");
   figma.notify("Building file with SVG text fallback…");
   const pages = resetGeneratedPages();
-  figma.notify("Pages ready. Creating styles…");
-  const styles = createStyles();
-  figma.notify("Styles ready. Creating screens…");
+  figma.notify("Pages ready. Preparing tokens…");
+  const styles = createTokenStyles();
+  figma.notify("Tokens ready. Creating screens…");
   const ctx: DesignContext = { styles };
 
   const member = memberScreens.map((createScreen) => createScreen(ctx));
