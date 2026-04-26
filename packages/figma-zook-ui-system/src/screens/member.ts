@@ -12,7 +12,6 @@ import {
   header,
   iconButton,
   iconDisk,
-  listRow,
   lockWidthHugHeight,
   memberNavItems,
   metricTile,
@@ -23,7 +22,6 @@ import {
   searchBar,
   sectionTitle,
   selectPill,
-  spacer,
   stack,
   text
 } from "../components";
@@ -169,51 +167,53 @@ export function memberHome(ctx: DesignContext): FrameNode {
 
 export function memberScanner(ctx: DesignContext): FrameNode {
   const screen = mobileShell(ctx, "AUTO_EXPORT / Member / 02 QR Check-in Scanner");
-  screen.itemSpacing = 12;
+  screen.itemSpacing = 8;
   screen.appendChild(header(ctx, "Scan Gym QR", "Iron Temple Gym", "back"));
-  const scanner = fixedFrame("Scanner Stage", 350, 318);
-  const viewport = fixedFrame("Rolling QR scanner viewport", 302, 302);
+  const scanner = fixedFrame("Scanner Stage", 350, 292);
+  const viewport = fixedFrame("Rolling QR scanner viewport", 278, 278);
   viewport.cornerRadius = TOKENS.radius.xxl;
   viewport.fills = [solid(TOKENS.color.white, 0.03)];
   viewport.strokes = [glassStroke(0.16)];
   viewport.strokeWeight = 1;
   viewport.effects = [{ type: "BACKGROUND_BLUR", radius: 16, visible: true, blurType: "NORMAL" }];
   scanner.appendChild(viewport);
-  viewport.x = 24;
-  viewport.y = 8;
+  viewport.x = 36;
+  viewport.y = 6;
   for (let i = 1; i < 6; i += 1) {
-    const v = fixedFrame(`Vertical grid ${i}`, 1, 302);
+    const gridPosition = Math.round(i * (278 / 6));
+    const v = fixedFrame(`Vertical grid ${i}`, 1, 278);
     v.fills = [solid(TOKENS.color.white, 0.06)];
     viewport.appendChild(v);
-    v.x = i * 50;
-    const h = fixedFrame(`Horizontal grid ${i}`, 302, 1);
+    v.x = gridPosition;
+    const h = fixedFrame(`Horizontal grid ${i}`, 278, 1);
     h.fills = [solid(TOKENS.color.white, 0.06)];
     viewport.appendChild(h);
-    h.y = i * 50;
+    h.y = gridPosition;
   }
-  const scan = fixedFrame("Horizontal scan line", 278, 2);
+  const scan = fixedFrame("Horizontal scan line", 254, 2);
   scan.fills = [solid(TOKENS.color.accent, 0.88)];
   scan.effects = [{ type: "DROP_SHADOW", color: { ...solid(TOKENS.color.accent).color, a: 0.45 }, offset: { x: 0, y: 0 }, radius: 18, spread: 2, visible: true, blendMode: "NORMAL" }];
   viewport.appendChild(scan);
   scan.x = 12;
-  scan.y = 146;
-  for (const [name, x, y, rotation] of [
-    ["Top left", 0, 0, 0],
-    ["Top right", 252, 0, 90],
-    ["Bottom right", 252, 252, 180],
-    ["Bottom left", 0, 252, 270]
+  scan.y = 138;
+  for (const [name, x, y, horizontalY, verticalX] of [
+    ["Top left", 0, 0, 0, 0],
+    ["Top right", 232, 0, 0, 42],
+    ["Bottom right", 232, 232, 42, 42],
+    ["Bottom left", 0, 232, 42, 0]
   ] as const) {
-    const corner = fixedFrame(`Lime corner / ${name}`, 50, 50);
+    const corner = fixedFrame(`Lime corner / ${name}`, 46, 46);
     corner.fills = [];
-    const a = fixedFrame("Corner horizontal", 50, 4);
+    const a = fixedFrame("Corner horizontal", 46, 4);
     a.cornerRadius = 2;
     a.fills = [solid(TOKENS.color.accent)];
-    const b = fixedFrame("Corner vertical", 4, 50);
+    const b = fixedFrame("Corner vertical", 4, 46);
     b.cornerRadius = 2;
     b.fills = [solid(TOKENS.color.accent)];
     corner.appendChild(a);
     corner.appendChild(b);
-    corner.rotation = rotation;
+    a.y = horizontalY;
+    b.x = verticalX;
     corner.effects = [{ type: "DROP_SHADOW", color: { ...solid(TOKENS.color.accent).color, a: 0.5 }, offset: { x: 0, y: 0 }, radius: 14, spread: 1, visible: true, blendMode: "NORMAL" }];
     viewport.appendChild(corner);
     corner.x = x;
@@ -224,13 +224,25 @@ export function memberScanner(ctx: DesignContext): FrameNode {
   helper.appendChild(createIcon("qr", 16, TOKENS.color.accent));
   helper.appendChild(text("Scan the rolling QR at the reception desk.", ctx.styles.text.small, TOKENS.color.mutedText));
   screen.appendChild(helper);
-  const validation = glassCard("Validation Card", 350, 12, TOKENS.radius.xl);
+  const validation = glassCard("Validation Card", 350, 10, TOKENS.radius.xl);
+  validation.itemSpacing = 6;
   for (const item of ["Membership active", "Branch verified", "Server-authorized check-in"]) {
-    validation.appendChild(listRow(ctx, item, undefined, item === "Membership active" ? "shield" : "check", createIcon("check", 16, TOKENS.color.accent)));
+    const itemRow = row(`Validation / ${item}`, TOKENS.space.md);
+    itemRow.resize(330, 40);
+    itemRow.primaryAxisSizingMode = "FIXED";
+    itemRow.counterAxisSizingMode = "FIXED";
+    itemRow.primaryAxisAlignItems = "SPACE_BETWEEN";
+    itemRow.counterAxisAlignItems = "CENTER";
+    const itemLeft = row("Validation copy", TOKENS.space.sm);
+    itemLeft.appendChild(iconDisk(item === "Membership active" ? "shield" : "check", 32, "glass"));
+    itemLeft.appendChild(text(item, ctx.styles.text.bodyStrong, TOKENS.color.primaryText));
+    itemRow.appendChild(itemLeft);
+    itemRow.appendChild(createIcon("check", 16, TOKENS.color.accent));
+    validation.appendChild(itemRow);
     if (item !== "Server-authorized check-in") validation.appendChild(divider(310, 0.08));
   }
   screen.appendChild(validation);
-  const support = glassCard("Support Panel", 350, 12, TOKENS.radius.xl);
+  const support = glassCard("Support Panel", 350, 10, TOKENS.radius.xl);
   support.layoutMode = "HORIZONTAL";
   lockWidthHugHeight(support, 350);
   support.primaryAxisAlignItems = "SPACE_BETWEEN";
