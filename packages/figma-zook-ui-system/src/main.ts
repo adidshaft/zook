@@ -5,7 +5,7 @@ import { ownerScreens } from "./screens/owner";
 import { memberScreens } from "./screens/member";
 import { receptionistScreens } from "./screens/receptionist";
 import { trainerScreens } from "./screens/trainer";
-import { createStyles, loadFonts } from "./styles";
+import { createStyles } from "./styles";
 import { TOKENS, glassFill, glassStroke, solid } from "./tokens";
 
 const pageNames = [
@@ -22,24 +22,31 @@ const pageNames = [
 
 function resetGeneratedPages(): Record<(typeof pageNames)[number], PageNode> {
   const pages = {} as Record<(typeof pageNames)[number], PageNode>;
-  figma.currentPage.name = pageNames[0];
-  pages[pageNames[0]] = figma.currentPage;
-  for (const child of [...pages[pageNames[0]].children]) {
+  figma.currentPage.name = "Zook UI System v1 — Starter Compatible";
+  for (const child of [...figma.currentPage.children]) {
     child.remove();
   }
-  for (const name of pageNames.slice(1)) {
-    const page = figma.createPage();
-    page.name = name;
-    pages[name] = page;
+  for (const name of pageNames) {
+    pages[name] = figma.currentPage;
   }
   return pages;
 }
 
+function sectionMarker(ctx: DesignContext, page: PageNode, label: string, x: number, y: number): void {
+  const marker = glassCard(`Section / ${label}`, 420, 14, 20);
+  marker.appendChild(text(label, ctx.styles.text.h2, TOKENS.color.accent));
+  page.appendChild(marker);
+  marker.x = x;
+  marker.y = y;
+}
+
 function placeFrames(page: PageNode, frames: FrameNode[], startX = 80, startY = 120, gap = 48): void {
+  const usedBottom = page.children.reduce((max, child) => Math.max(max, child.y + child.height), 0);
+  const baseY = Math.max(startY, usedBottom + 120);
   frames.forEach((frame, index) => {
     page.appendChild(frame);
-    frame.x = startX + index * (TOKENS.frame.mobile.width + gap);
-    frame.y = startY;
+    frame.x = startX + (index % 5) * (TOKENS.frame.mobile.width + gap);
+    frame.y = baseY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
   });
 }
 
@@ -53,6 +60,8 @@ function createCover(ctx: DesignContext, page: PageNode, thumbnails: FrameNode[]
   cover.fills = [solid(TOKENS.color.background)];
   cover.counterAxisAlignItems = "CENTER";
   page.appendChild(cover);
+  cover.x = 0;
+  cover.y = 0;
 
   const copy = stack("Cover copy", "VERTICAL", 24);
   copy.resize(520, 520);
@@ -84,14 +93,16 @@ function createCover(ctx: DesignContext, page: PageNode, thumbnails: FrameNode[]
 }
 
 function createUiKit(ctx: DesignContext, page: PageNode): void {
+  const yOffset = page.children.length > 0 ? 1160 : 0;
+  sectionMarker(ctx, page, "01 — UI Kit", 80, yOffset);
   const title = text("Zook UI Kit", ctx.styles.text.h1, TOKENS.color.primaryText);
   title.x = 80;
-  title.y = 72;
+  title.y = yOffset + 84;
   page.appendChild(title);
 
   const colors = stack("Colors", "VERTICAL", 16);
   colors.x = 80;
-  colors.y = 140;
+  colors.y = yOffset + 152;
   colors.appendChild(text("Colors", ctx.styles.text.h2));
   const colorGrid = stack("Color swatches", "HORIZONTAL", 12);
   for (const [name, hex] of Object.entries(TOKENS.color)) {
@@ -111,7 +122,7 @@ function createUiKit(ctx: DesignContext, page: PageNode): void {
 
   const type = stack("Typography", "VERTICAL", 12);
   type.x = 80;
-  type.y = 360;
+  type.y = yOffset + 372;
   type.appendChild(text("Typography", ctx.styles.text.h2));
   type.appendChild(text("Display / Inter Bold", ctx.styles.text.display));
   type.appendChild(text("H1 / Command-level page title", ctx.styles.text.h1));
@@ -120,7 +131,7 @@ function createUiKit(ctx: DesignContext, page: PageNode): void {
 
   const effects = glassCard("Effects", 360);
   effects.x = 80;
-  effects.y = 610;
+  effects.y = yOffset + 622;
   effects.appendChild(text("Effects", ctx.styles.text.h2));
   effects.appendChild(text("Glass fills, soft shadows, background blur, and subtle lime glow.", ctx.styles.text.body, TOKENS.color.mutedText));
   page.appendChild(effects);
@@ -128,26 +139,27 @@ function createUiKit(ctx: DesignContext, page: PageNode): void {
   for (const section of ["Buttons", "Chips", "Cards", "Forms", "Navigation", "Icons", "Screen Templates", "Status Components"]) {
     const label = text(section, ctx.styles.text.h2, TOKENS.color.primaryText);
     label.x = 520;
-    label.y = 72 + ["Buttons", "Chips", "Cards", "Forms", "Navigation", "Icons", "Screen Templates", "Status Components"].indexOf(section) * 56;
+    label.y = yOffset + 84 + ["Buttons", "Chips", "Cards", "Forms", "Navigation", "Icons", "Screen Templates", "Status Components"].indexOf(section) * 56;
     page.appendChild(label);
   }
   const iconShelf = row("Icons", 12);
   iconShelf.x = 900;
-  iconShelf.y = 500;
+  iconShelf.y = yOffset + 512;
   const icons: IconName[] = ["home", "qr", "clipboard", "bag", "user", "back", "bell", "dumbbell", "shield", "rupee", "clock", "warning", "edit", "trash", "plus", "chevron"];
   for (const icon of icons) iconShelf.appendChild(createIcon(icon, 24, TOKENS.color.accent));
   page.appendChild(iconShelf);
-  createComponentLibrary(ctx, page);
+  createComponentLibrary(ctx, page, 520, yOffset + 132);
 }
 
 function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameNode[]): void {
+  const usedBottom = page.children.reduce((max, child) => Math.max(max, child.y + child.height), 0);
   const heading = text("Prototype Map", ctx.styles.text.h1);
   heading.x = 80;
-  heading.y = 72;
+  heading.y = page.children.length > 0 ? usedBottom + 120 : 72;
   page.appendChild(heading);
   const flow = row("Member operational flow", 32);
   flow.x = 80;
-  flow.y = 150;
+  flow.y = heading.y + 80;
   for (const screen of screens.slice(0, 6)) {
     const step = glassCard(`Flow node / ${screen.name}`, 180, 12, 20);
     step.appendChild(text(screen.name.replace("AUTO_EXPORT / Member / ", ""), ctx.styles.text.small));
@@ -158,9 +170,10 @@ function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameN
 }
 
 function createNotes(ctx: DesignContext, page: PageNode): void {
+  const usedBottom = page.children.reduce((max, child) => Math.max(max, child.y + child.height), 0);
   const notes = stack("Notes / Handoff", "VERTICAL", 18);
   notes.x = 80;
-  notes.y = 80;
+  notes.y = page.children.length > 0 ? usedBottom + 120 : 80;
   notes.resize(780, 640);
   notes.appendChild(text("Notes / Handoff", ctx.styles.text.h1));
   for (const line of [
@@ -177,19 +190,24 @@ function createNotes(ctx: DesignContext, page: PageNode): void {
 }
 
 function duplicateExportFrames(page: PageNode, screens: FrameNode[]): void {
+  const usedBottom = page.children.reduce((max, child) => Math.max(max, child.y + child.height), 0);
+  const baseY = usedBottom + 120;
   screens.forEach((screen, index) => {
     const clone = screen.clone();
     clone.name = exportFrameNames[index] ?? `AUTO_EXPORT / ${index + 1}`;
     page.appendChild(clone);
     clone.x = 80 + (index % 5) * (TOKENS.frame.mobile.width + 40);
-    clone.y = 100 + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 56);
+    clone.y = baseY + Math.floor(index / 5) * (TOKENS.frame.mobile.height + 96);
   });
 }
 
 async function main(): Promise<void> {
-  await loadFonts();
+  figma.notify("Zook generator starting…");
+  figma.notify("Building file with SVG text fallback…");
   const pages = resetGeneratedPages();
+  figma.notify("Pages ready. Creating styles…");
   const styles = createStyles();
+  figma.notify("Styles ready. Creating screens…");
   const ctx: DesignContext = { styles };
 
   const member = memberScreens.map((createScreen) => createScreen(ctx));
@@ -219,4 +237,9 @@ async function main(): Promise<void> {
   figma.closePlugin("Zook Product UI System v1 generated.");
 }
 
-void main();
+main().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(error);
+  figma.notify(`Zook generator failed: ${message}`, { error: true, timeout: 8000 });
+  figma.closePlugin(`Zook generator failed: ${message}`);
+});

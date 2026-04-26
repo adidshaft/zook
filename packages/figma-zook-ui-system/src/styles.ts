@@ -28,19 +28,42 @@ function rgba(hex: keyof typeof TOKENS.color, opacity: number): RGBA {
 }
 
 function setTextStyle(style: TextStyle, spec: (typeof TOKENS.type)[TextStyleName]): void {
-  style.fontName = { family: TOKENS.font.family, style: spec.weight };
   style.fontSize = spec.size;
   style.lineHeight = { unit: "PIXELS", value: spec.lineHeight };
   style.letterSpacing = { unit: "PIXELS", value: 0 };
 }
 
+function timeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(id);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(id);
+        reject(error);
+      }
+    );
+  });
+}
+
+async function safeLoadFont(font: FontName): Promise<boolean> {
+  try {
+    await timeout(figma.loadFontAsync(font), 2500, `${font.family} ${font.style}`);
+    return true;
+  } catch (error) {
+    console.warn(`Could not load ${font.family} ${font.style}`, error);
+    return false;
+  }
+}
+
 export async function loadFonts(): Promise<void> {
-  await Promise.all([
-    figma.loadFontAsync(TOKENS.font.regular),
-    figma.loadFontAsync(TOKENS.font.medium),
-    figma.loadFontAsync(TOKENS.font.semibold),
-    figma.loadFontAsync(TOKENS.font.bold)
-  ]);
+  const requiredFonts = [TOKENS.font.regular, TOKENS.font.medium, TOKENS.font.semibold, TOKENS.font.bold];
+  for (const font of requiredFonts) {
+    await safeLoadFont(font);
+  }
 }
 
 export function createStyles(): StyleRegistry {

@@ -29,18 +29,36 @@ export function fixedFrame(name: string, width: number, height: number): FrameNo
   return node;
 }
 
+function escapeSvg(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function rgbaCss(color: string): string {
+  return color;
+}
+
 export function text(
   value: string,
   style: TextStyle,
   color: string = TOKENS.color.primaryText,
   name = "Text"
-): TextNode {
-  const node = figma.createText();
+): FrameNode {
+  const size = typeof style.fontSize === "number" ? style.fontSize : TOKENS.type.body.size;
+  const lineHeight =
+    typeof style.lineHeight === "object" && style.lineHeight.unit === "PIXELS"
+      ? style.lineHeight.value
+      : Math.round(size * 1.35);
+  const width = Math.max(24, Math.ceil(value.length * size * 0.58));
+  const height = Math.max(lineHeight, Math.ceil(lineHeight * Math.max(1, Math.ceil(width / 330))));
+  const weight = String(style.name).includes("Bold") || String(style.name).includes("h1") || String(style.name).includes("h2") ? 700 : 500;
+  const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><text x="0" y="${Math.round(size)}" fill="${rgbaCss(color)}" font-family="Inter, Arial, sans-serif" font-size="${size}" font-weight="${weight}" letter-spacing="0">${escapeSvg(value)}</text></svg>`;
+  const node = figma.createNodeFromSvg(svg) as FrameNode;
   node.name = name;
-  node.characters = value;
-  node.textStyleId = style.id;
-  node.fills = [solid(color)];
-  node.textAutoResize = "HEIGHT";
+  node.resize(width, height);
   return node;
 }
 
@@ -431,10 +449,10 @@ export function safetyPanel(ctx: DesignContext, lines: string[]): FrameNode {
   return node;
 }
 
-export function createComponentLibrary(ctx: DesignContext, page: PageNode): void {
+export function createComponentLibrary(ctx: DesignContext, page: PageNode, x = 520, y = 120): void {
   const section = stack("Reusable Components", "VERTICAL", TOKENS.space.xl);
-  section.x = 520;
-  section.y = 120;
+  section.x = x;
+  section.y = y;
   page.appendChild(section);
 
   const samples = [
