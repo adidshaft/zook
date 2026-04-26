@@ -1,5 +1,5 @@
 import { DesignContext, fixedFrame, row, stack, text } from "./components";
-import { exportFrameNames } from "./export";
+import { applyAutoExportSettings, exportFrameNames } from "./export";
 import { createIcon, IconName } from "./icons";
 import { ownerScreens } from "./screens/owner";
 import { memberScreens } from "./screens/member";
@@ -248,31 +248,121 @@ function createUiKit(ctx: DesignContext, page: PageNode, yOffset = 0): void {
 }
 
 function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameNode[], yOffset = 0): void {
-  const heading = text("Prototype Map", ctx.styles.text.h1);
-  heading.x = 80;
-  heading.y = yOffset;
-  page.appendChild(heading);
-  const flow = row("Member operational flow", 32);
-  flow.x = 80;
-  flow.y = heading.y + 80;
-  for (const screen of screens.slice(0, 6)) {
-    const step = stack(`Flow node / ${screen.name}`, "VERTICAL", 8);
-    step.resize(180, 80);
-    step.primaryAxisSizingMode = "FIXED";
-    step.counterAxisSizingMode = "FIXED";
-    step.paddingTop = 12;
-    step.paddingBottom = 12;
-    step.paddingLeft = 12;
-    step.paddingRight = 12;
-    step.cornerRadius = 20;
-    step.fills = [glassFill(TOKENS.opacity.glassLow)];
-    step.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
-    step.strokeWeight = 1;
-    step.appendChild(text(screen.name.replace("AUTO_EXPORT / Member / ", ""), ctx.styles.text.small));
-    step.appendChild(createIcon("chevron", 16, TOKENS.color.accent));
-    flow.appendChild(step);
+  const board = stack("Prototype Map / Zook flows", "VERTICAL", 22);
+  board.resize(1180, 640);
+  board.primaryAxisSizingMode = "FIXED";
+  board.counterAxisSizingMode = "FIXED";
+  board.paddingTop = 28;
+  board.paddingBottom = 28;
+  board.paddingLeft = 28;
+  board.paddingRight = 28;
+  board.cornerRadius = 28;
+  board.fills = [solid(TOKENS.color.surface, 0.98)];
+  board.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
+  board.strokeWeight = 1;
+  board.x = 80;
+  board.y = yOffset;
+
+  const titleBlock = stack("Prototype heading", "VERTICAL", 6);
+  titleBlock.appendChild(text("Prototype Map", ctx.styles.text.h1, TOKENS.color.primaryText));
+  titleBlock.appendChild(text("Primary mobile flows for member, staff, trainer, and owner roles.", ctx.styles.text.body, TOKENS.color.mutedText));
+  board.appendChild(titleBlock);
+
+  const knownScreens = new Set(screens.map((screen) => screen.name));
+  const flowData: Array<{
+    role: string;
+    tone: "lime" | "warning" | "glass";
+    icon: IconName;
+    nodes: Array<{ label: string; frame: string; note: string; icon: IconName }>;
+  }> = [
+    {
+      role: "Member",
+      tone: "lime",
+      icon: "user",
+      nodes: [
+        { label: "Home", frame: "AUTO_EXPORT / Member / 01 Home", note: "Daily command surface", icon: "home" },
+        { label: "QR Check-in", frame: "AUTO_EXPORT / Member / 02 QR Check-in Scanner", note: "Rolling reception QR", icon: "qr" },
+        { label: "Approved", frame: "AUTO_EXPORT / Member / 03 Attendance Result Approved", note: "Entry code issued", icon: "check" },
+        { label: "Pending", frame: "AUTO_EXPORT / Member / 04 Attendance Pending Approval", note: "Desk approval mode", icon: "clock" },
+        { label: "Shop", frame: "AUTO_EXPORT / Member / 05 Shop Catalog", note: "Desk-ready purchases", icon: "bag" },
+        { label: "Plan Detail", frame: "AUTO_EXPORT / Member / 06 Plan Detail", note: "Assigned workout", icon: "clipboard" }
+      ]
+    },
+    {
+      role: "Receptionist",
+      tone: "warning",
+      icon: "cash",
+      nodes: [{ label: "Offline Payment", frame: "AUTO_EXPORT / Receptionist / 01 Offline Payment Entry", note: "Audited desk collection", icon: "upi" }]
+    },
+    {
+      role: "Trainer",
+      tone: "lime",
+      icon: "dumbbell",
+      nodes: [
+        { label: "Client Detail", frame: "AUTO_EXPORT / Trainer / 01 Client Detail", note: "Assigned client only", icon: "user" },
+        { label: "AI Draft Review", frame: "AUTO_EXPORT / Trainer / 02 AI Draft Review", note: "Edit before assign", icon: "sparkle" }
+      ]
+    },
+    {
+      role: "Owner",
+      tone: "glass",
+      icon: "shield",
+      nodes: [{ label: "Command View", frame: "AUTO_EXPORT / Owner / 01 Command View", note: "Gym-level operations", icon: "shield" }]
+    }
+  ];
+
+  for (const flow of flowData) {
+    const lane = row(`Prototype lane / ${flow.role}`, 12);
+    lane.resize(1124, 102);
+    lane.primaryAxisSizingMode = "FIXED";
+    lane.counterAxisSizingMode = "FIXED";
+    lane.counterAxisAlignItems = "CENTER";
+    lane.paddingTop = 14;
+    lane.paddingBottom = 14;
+    lane.paddingLeft = 14;
+    lane.paddingRight = 14;
+    lane.cornerRadius = 22;
+    lane.fills = [glassFill(TOKENS.opacity.glassLow)];
+    lane.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
+    lane.strokeWeight = 1;
+
+    const role = row(`Role / ${flow.role}`, 8);
+    role.resize(124, 74);
+    role.primaryAxisSizingMode = "FIXED";
+    role.counterAxisSizingMode = "FIXED";
+    role.counterAxisAlignItems = "CENTER";
+    role.appendChild(createIcon(flow.icon, 18, flow.tone === "warning" ? TOKENS.color.warning : TOKENS.color.accent));
+    role.appendChild(text(flow.role, ctx.styles.text.bodyStrong, TOKENS.color.primaryText));
+    lane.appendChild(role);
+
+    flow.nodes.forEach((nodeData, index) => {
+      const step = stack(`Flow node / ${nodeData.label}`, "VERTICAL", 5);
+      step.resize(flow.role === "Member" ? 116 : 190, 74);
+      step.primaryAxisSizingMode = "FIXED";
+      step.counterAxisSizingMode = "FIXED";
+      step.paddingTop = 10;
+      step.paddingBottom = 10;
+      step.paddingLeft = 10;
+      step.paddingRight = 10;
+      step.cornerRadius = 18;
+      step.fills = [solid(knownScreens.has(nodeData.frame) ? TOKENS.color.accent : TOKENS.color.warning, 0.08)];
+      step.strokes = [solid(knownScreens.has(nodeData.frame) ? TOKENS.color.accent : TOKENS.color.warning, 0.28)];
+      step.strokeWeight = 1;
+      const labelRow = row("Node label", 6);
+      labelRow.appendChild(createIcon(nodeData.icon, 13, knownScreens.has(nodeData.frame) ? TOKENS.color.accent : TOKENS.color.warning));
+      labelRow.appendChild(text(nodeData.label, ctx.styles.text.caption, TOKENS.color.primaryText, "Label"));
+      step.appendChild(labelRow);
+      step.appendChild(text(nodeData.note, ctx.styles.text.caption, TOKENS.color.mutedText, "Note"));
+      lane.appendChild(step);
+
+      if (index < flow.nodes.length - 1) {
+        lane.appendChild(createIcon("chevron", 16, TOKENS.color.subtleText));
+      }
+    });
+    board.appendChild(lane);
   }
-  page.appendChild(flow);
+
+  page.appendChild(board);
 }
 
 function createNotes(ctx: DesignContext, page: PageNode, yOffset = 0): void {
@@ -358,9 +448,9 @@ async function main(): Promise<void> {
   const prototypeMarkerY = afterFrameGrid(ownerFramesY, owner.length);
   const prototypeY = prototypeMarkerY + 80;
   sectionMarker(ctx, pages["06 — Prototypes"], "06 — Prototypes", 80, prototypeMarkerY);
-  createPrototypePage(ctx, pages["06 — Prototypes"], member, prototypeY);
+  createPrototypePage(ctx, pages["06 — Prototypes"], allScreens, prototypeY);
 
-  const exportMarkerY = prototypeY + 380;
+  const exportMarkerY = prototypeY + 760;
   const exportFramesY = exportMarkerY + 80;
   sectionMarker(ctx, pages["07 — Export Frames"], "07 — Export Frames", 80, exportMarkerY);
   duplicateExportFrames(pages["07 — Export Frames"], allScreens, exportFramesY);
@@ -368,6 +458,7 @@ async function main(): Promise<void> {
   const notesMarkerY = afterFrameGrid(exportFramesY, allScreens.length, 5, 220);
   sectionMarker(ctx, pages["08 — Notes / Handoff"], "08 — Notes / Handoff", 80, notesMarkerY);
   createNotes(ctx, pages["08 — Notes / Handoff"], notesMarkerY + 80);
+  applyAutoExportSettings(pages["07 — Export Frames"]);
 
   figma.notify("Zook Product UI System v1 generated with AUTO_EXPORT frames.");
   figma.closePlugin("Zook Product UI System v1 generated.");

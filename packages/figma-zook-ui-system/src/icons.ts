@@ -1,4 +1,4 @@
-import { TOKENS, solid } from "./tokens";
+import { TOKENS } from "./tokens";
 
 export type IconName =
   | "home"
@@ -30,199 +30,64 @@ export type IconName =
   | "sparkle"
   | "lock"
   | "bottle"
-  | "towel";
+  | "towel"
+  | "cash"
+  | "upi"
+  | "bank"
+  | "card"
+  | "manual";
 
-function primitive(name: string, x: number, y: number, width: number, height: number, color: string, radius = 1): RectangleNode {
-  const node = figma.createRectangle();
-  node.name = name;
-  node.resize(width, height);
-  node.x = x;
-  node.y = y;
-  node.cornerRadius = radius;
-  node.fills = [solid(color)];
-  return node;
-}
+const paths: Record<IconName, string> = {
+  home: '<path d="M3.5 11.5 12 4l8.5 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/>',
+  qr: '<path d="M4 4h6v6H4z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6H4z"/><path d="M14 14h2v2h-2z"/><path d="M18 14h2v6h-6v-2h4z"/>',
+  clipboard: '<path d="M8 5h8"/><path d="M9 3h6v4H9z"/><path d="M6 6h12v15H6z"/><path d="M9 12h6"/><path d="M9 16h5"/>',
+  bag: '<path d="M6 9h12l-1 12H7L6 9Z"/><path d="M9 9a3 3 0 0 1 6 0"/>',
+  user: '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
+  back: '<path d="M15 5 8 12l7 7"/><path d="M9 12h12"/>',
+  bell: '<path d="M18 16v-5a6 6 0 0 0-12 0v5l-2 2h16l-2-2Z"/><path d="M10 21h4"/>',
+  dumbbell: '<path d="M4 9v6"/><path d="M7 8v8"/><path d="M17 8v8"/><path d="M20 9v6"/><path d="M7 12h10"/>',
+  shield: '<path d="M12 3 19 6v5c0 4.5-2.8 8.5-7 10-4.2-1.5-7-5.5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-5"/>',
+  rupee: '<path d="M7 5h10"/><path d="M7 9h10"/><path d="M9 5c4.8 0 5.2 7-1 7l7 7"/>',
+  clock: '<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M12 7v5l3 2"/>',
+  warning: '<path d="M12 4 21 20H3L12 4Z"/><path d="M12 9v5"/><path d="M12 17h.01"/>',
+  edit: '<path d="M4 20h4l11-11-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/>',
+  trash: '<path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  chevron: '<path d="m9 5 7 7-7 7"/>',
+  check: '<path d="m5 12 4 4 10-10"/>',
+  cart: '<path d="M4 5h2l2 11h10l2-8H7"/><path d="M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/><path d="M17 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/>',
+  more: '<circle cx="6" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="18" cy="12" r="1.7" fill="currentColor"/>',
+  search: '<path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z"/><path d="m16 16 4 4"/>',
+  filter: '<path d="M4 7h16"/><path d="M7 17h10"/><path d="M9 7a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z"/><path d="M12 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z"/>',
+  fire: '<path d="M12 22c4 0 7-2.7 7-6.5 0-2.8-1.6-5.1-4.8-7.4.1 2-1 3.4-2.3 4.2.2-2.7-1-5-3.6-7.3.2 4.1-3.3 6.1-3.3 10.5C5 19.3 8 22 12 22Z"/>',
+  target: '<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/><path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/>',
+  location: '<path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"/><path d="M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/>',
+  calendar: '<path d="M5 5h14v15H5z"/><path d="M5 9h14"/><path d="M8 3v4"/><path d="M16 3v4"/>',
+  headset: '<path d="M4 13a8 8 0 0 1 16 0"/><path d="M4 13v4a2 2 0 0 0 2 2h2v-6H6a2 2 0 0 0-2 2Z"/><path d="M20 13v4a2 2 0 0 1-2 2h-2v-6h2a2 2 0 0 1 2 2Z"/><path d="M16 19h-3"/>',
+  sparkle: '<path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3Z"/><path d="M19 3v4"/><path d="M17 5h4"/>',
+  lock: '<path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M6 11h12v10H6z"/><path d="M12 15v2"/>',
+  bottle: '<path d="M9 4h6"/><path d="M10 4v4l-2 2v9a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-9l-2-2V4"/><path d="M8 14h8"/>',
+  towel: '<path d="M5 7h10a4 4 0 0 1 4 4v8H9a4 4 0 0 1-4-4V7Z"/><path d="M9 7v12"/><path d="M12 11h4"/><path d="M12 15h4"/>',
+  cash: '<path d="M3 7h18v10H3z"/><path d="M7 7a4 4 0 0 1-4 4"/><path d="M17 17a4 4 0 0 1 4-4"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>',
+  upi: '<path d="M6 18V8l6-4 6 4v10"/><path d="M9 18v-6h6v6"/><path d="m12 8 3 3"/><path d="M12 8v7"/>',
+  bank: '<path d="M4 9h16"/><path d="M5 19h14"/><path d="M6 9l6-5 6 5"/><path d="M7 9v10"/><path d="M12 9v10"/><path d="M17 9v10"/>',
+  card: '<path d="M3 6h18v12H3z"/><path d="M3 10h18"/><path d="M7 15h4"/>',
+  manual: '<path d="M7 3h8l4 4v14H7z"/><path d="M15 3v5h4"/><path d="M10 12h6"/><path d="M10 16h5"/>'
+};
 
-function dot(name: string, x: number, y: number, diameter: number, color: string): EllipseNode {
-  const node = figma.createEllipse();
-  node.name = name;
-  node.resize(diameter, diameter);
-  node.x = x;
-  node.y = y;
-  node.fills = [solid(color)];
-  return node;
-}
-
-function addLine(frame: FrameNode, name: string, x: number, y: number, width: number, thickness: number, color: string, rotation = 0): void {
-  const line = primitive(name, x, y, width, thickness, color, thickness / 2);
-  line.rotation = rotation;
-  frame.appendChild(line);
+function iconSvg(name: IconName, size: number, color: string): string {
+  const body = paths[name].replace(/currentColor/g, color);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="${color}">
+    <g stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</g>
+  </svg>`;
 }
 
 export function createIcon(name: IconName, size = 20, color: string = TOKENS.color.mutedText): FrameNode {
-  const node = figma.createFrame();
+  const node = figma.createNodeFromSvg(iconSvg(name, size, color));
   node.name = `Icon / ${name}`;
   node.x = 0;
   node.y = 0;
   node.resize(size, size);
   node.fills = [];
-  node.clipsContent = false;
-
-  const s = size / 24;
-  const p = (value: number) => value * s;
-  const line = (label: string, x: number, y: number, width: number, thickness = 2, rotation = 0) =>
-    addLine(node, label, p(x), p(y), p(width), p(thickness), color, rotation);
-  const rect = (label: string, x: number, y: number, width: number, height: number, radius = 2) =>
-    node.appendChild(primitive(label, p(x), p(y), p(width), p(height), color, p(radius)));
-  const circle = (label: string, x: number, y: number, diameter: number) => node.appendChild(dot(label, p(x), p(y), p(diameter), color));
-
-  switch (name) {
-    case "plus":
-      line("Vertical", 11, 5, 14, 2, 90);
-      line("Horizontal", 5, 11, 14);
-      break;
-    case "back":
-      line("Upper", 7, 11, 9, 2, -45);
-      line("Lower", 7, 11, 9, 2, 45);
-      break;
-    case "chevron":
-      line("Upper", 8, 6, 9, 2, 45);
-      line("Lower", 8, 18, 9, 2, -45);
-      break;
-    case "check":
-      line("Short", 5, 13, 6, 2, 45);
-      line("Long", 10, 16, 11, 2, -45);
-      break;
-    case "more":
-      circle("Dot 1", 4, 10, 4);
-      circle("Dot 2", 10, 10, 4);
-      circle("Dot 3", 16, 10, 4);
-      break;
-    case "search":
-      circle("Lens", 4, 4, 12);
-      line("Handle", 14, 14, 7, 2, 45);
-      break;
-    case "filter":
-      line("Slider 1", 4, 7, 16);
-      circle("Knob 1", 8, 5, 4);
-      line("Slider 2", 4, 15, 16);
-      circle("Knob 2", 14, 13, 4);
-      break;
-    case "fire":
-      rect("Flame", 7, 5, 10, 15, 6);
-      rect("Inner", 10, 12, 4, 7, 3);
-      break;
-    case "target":
-      circle("Outer", 3, 3, 18);
-      circle("Middle", 7, 7, 10);
-      circle("Center", 10, 10, 4);
-      break;
-    case "location":
-      circle("Pin body", 4, 3, 16);
-      circle("Pin dot", 9, 8, 6);
-      rect("Pin point", 10, 16, 4, 5, 2);
-      break;
-    case "calendar":
-      rect("Calendar body", 5, 7, 14, 12, 2);
-      rect("Calendar top", 5, 7, 14, 3, 1);
-      line("Ring left", 8, 4, 4, 2, 90);
-      line("Ring right", 16, 4, 4, 2, 90);
-      break;
-    case "headset":
-      circle("Headset arc", 4, 4, 16);
-      rect("Left cup", 4, 12, 4, 6, 2);
-      rect("Right cup", 16, 12, 4, 6, 2);
-      line("Mic", 14, 18, 5, 2);
-      break;
-    case "sparkle":
-      line("Spark vertical", 12, 4, 16, 2, 90);
-      line("Spark horizontal", 4, 12, 16);
-      line("Small vertical", 18, 4, 6, 2, 90);
-      line("Small horizontal", 15, 7, 6);
-      break;
-    case "lock":
-      rect("Lock body", 6, 10, 12, 10, 2);
-      line("Shackle left", 8, 11, 6, 2, -90);
-      line("Shackle top", 8, 5, 8);
-      line("Shackle right", 16, 5, 6, 2, 90);
-      break;
-    case "bottle":
-      rect("Bottle body", 8, 7, 8, 13, 3);
-      rect("Bottle cap", 9, 4, 6, 3, 1);
-      line("Label", 9, 13, 6);
-      break;
-    case "towel":
-      rect("Fold", 5, 8, 14, 10, 2);
-      line("Fold line", 8, 8, 10);
-      line("Edge", 7, 15, 9);
-      break;
-    case "qr":
-      rect("Cell 1", 4, 4, 6, 6);
-      rect("Cell 2", 14, 4, 6, 6);
-      rect("Cell 3", 4, 14, 6, 6);
-      rect("Cell 4", 14, 14, 2, 2);
-      rect("Cell 5", 18, 14, 2, 6);
-      break;
-    case "clock":
-      circle("Face", 3, 3, 18);
-      line("Hand hour", 12, 7, 6, 2, 90);
-      line("Hand min", 12, 12, 5, 2, 28);
-      break;
-    case "warning":
-      rect("Triangle body", 6, 5, 12, 14, 2);
-      rect("Bang", 11, 9, 2, 6, 1);
-      rect("Dot", 11, 17, 2, 2, 1);
-      break;
-    case "user":
-      circle("Head", 8, 4, 8);
-      rect("Body", 5, 14, 14, 6, 3);
-      break;
-    case "home":
-      rect("Body", 6, 11, 12, 9, 2);
-      line("Roof left", 5, 11, 9, 2, -35);
-      line("Roof right", 12, 6, 9, 2, 35);
-      break;
-    case "trash":
-      rect("Bin", 7, 8, 10, 12, 2);
-      rect("Lid", 6, 5, 12, 2, 1);
-      break;
-    case "edit":
-      line("Pencil", 6, 17, 13, 3, -45);
-      rect("Tip", 4, 18, 4, 2, 1);
-      break;
-    case "bag":
-    case "cart":
-      rect("Bag", 6, 9, 12, 10, 2);
-      line("Handle", 9, 8, 6, 2, 0);
-      break;
-    case "dumbbell":
-      rect("Left", 3, 8, 4, 8, 1);
-      rect("Right", 17, 8, 4, 8, 1);
-      rect("Bar", 7, 11, 10, 2, 1);
-      break;
-    case "rupee":
-      line("Top", 7, 5, 10);
-      line("Mid", 7, 9, 10);
-      line("Stem", 8, 7, 12, 2, 58);
-      break;
-    case "shield":
-      rect("Shield", 6, 4, 12, 16, 5);
-      rect("Cut", 10, 8, 4, 8, 2);
-      break;
-    case "clipboard":
-      rect("Board", 6, 5, 12, 16, 2);
-      rect("Clip", 9, 3, 6, 3, 1);
-      line("Line 1", 9, 11, 6);
-      line("Line 2", 9, 15, 7);
-      break;
-    case "bell":
-      rect("Bell", 7, 7, 10, 10, 5);
-      rect("Base", 6, 16, 12, 2, 1);
-      circle("Dot", 10, 19, 4);
-      break;
-    default:
-      rect("Glyph", 5, 5, 14, 14, 4);
-  }
-
   return node;
 }

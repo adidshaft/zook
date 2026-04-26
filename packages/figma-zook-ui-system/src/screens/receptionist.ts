@@ -62,11 +62,11 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   const modeRowOne = row("Payment mode row 1", TOKENS.space.sm);
   const modeRowTwo = row("Payment mode row 2", TOKENS.space.sm);
   for (const [label, selected, icon] of [
-    ["Cash", false, "rupee"],
-    ["Direct UPI", true, "home"],
-    ["Bank", false, "shield"],
-    ["Card", false, "clipboard"],
-    ["Manual", false, "edit"]
+    ["Cash", false, "cash"],
+    ["Direct UPI", true, "upi"],
+    ["Bank", false, "bank"],
+    ["Card", false, "card"],
+    ["Manual", false, "manual"]
   ] as const) {
     (label === "Card" || label === "Manual" ? modeRowTwo : modeRowOne).appendChild(chip(ctx, label, selected ? "lime" : "glass", icon));
   }
@@ -103,7 +103,7 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   screen.appendChild(reason);
 
   const sticky = glassCard("Sticky actions", 350, 12, TOKENS.radius.xl);
-  sticky.appendChild(button(ctx, "Record Payment", "primary", "rupee", 326));
+  sticky.appendChild(button(ctx, "Record Payment", "primary", "card", 326));
   const cancel = fixedFrame("Cancel touch target", 326, 36);
   cancel.fills = [solid(TOKENS.color.white, 0)];
   const cancelText = text("Cancel", ctx.styles.text.bodyStrong, TOKENS.color.mutedText);

@@ -210,8 +210,8 @@ export function iconButton(name: string, icon: IconName, selected = false): Fram
   node.strokeWeight = 1;
   const glyph = createIcon(icon, 18, selected ? TOKENS.color.accent : TOKENS.color.mutedText);
   node.appendChild(glyph);
-  glyph.x = 11;
-  glyph.y = 11;
+  glyph.x = (node.width - glyph.width) / 2;
+  glyph.y = (node.height - glyph.height) / 2;
   return node;
 }
 
@@ -386,6 +386,49 @@ export function header(
   rightIcon?: IconName,
   chipLabel?: string
 ): FrameNode {
+  if (leftIcon) {
+    const node = fixedFrame(`Header / ${title}`, TOKENS.frame.mobile.width - 40, 50);
+    const back = iconButton("Back", leftIcon);
+    node.appendChild(back);
+    back.x = 0;
+    back.y = 5;
+
+    const copyWidth = chipLabel ? 188 : rightIcon ? 230 : 250;
+    const copy = stack("Copy", "VERTICAL", 2);
+    copy.resize(copyWidth, subtitle ? 44 : 28);
+    copy.primaryAxisSizingMode = "FIXED";
+    copy.counterAxisSizingMode = "FIXED";
+    copy.counterAxisAlignItems = "CENTER";
+    const titleNode = text(title, ctx.styles.text.h3, TOKENS.color.primaryText, "Title");
+    titleNode.textAutoResize = "HEIGHT";
+    titleNode.textAlignHorizontal = "CENTER";
+    titleNode.resize(copyWidth, titleNode.height);
+    copy.appendChild(titleNode);
+    if (subtitle) {
+      const subtitleNode = text(subtitle, ctx.styles.text.small, TOKENS.color.mutedText, "Subtitle");
+      subtitleNode.textAutoResize = "HEIGHT";
+      subtitleNode.textAlignHorizontal = "CENTER";
+      subtitleNode.resize(copyWidth, subtitleNode.height);
+      copy.appendChild(subtitleNode);
+    }
+    node.appendChild(copy);
+    copy.x = (node.width - copyWidth) / 2;
+    copy.y = subtitle ? 3 : 11;
+
+    if (chipLabel) {
+      const role = chip(ctx, chipLabel, "lime", "dumbbell");
+      node.appendChild(role);
+      role.x = node.width - role.width;
+      role.y = (node.height - role.height) / 2;
+    } else if (rightIcon) {
+      const action = iconButton("Action", rightIcon);
+      node.appendChild(action);
+      action.x = node.width - action.width;
+      action.y = 5;
+    }
+    return node;
+  }
+
   const node = row(`Header / ${title}`, TOKENS.space.md);
   node.resize(TOKENS.frame.mobile.width - 40, 50);
   forceFixedAutoLayoutSize(node);
@@ -412,11 +455,12 @@ export interface NavItem {
 
 export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], selected: string): FrameNode {
   const node = row(`Bottom Nav / ${name}`, 2);
-  node.resize(TOKENS.frame.mobile.width - 40, 72);
+  node.resize(TOKENS.frame.mobile.width - 40, 78);
   forceFixedAutoLayoutSize(node);
   node.primaryAxisAlignItems = "SPACE_BETWEEN";
-  node.paddingTop = 8;
-  node.paddingBottom = 8;
+  node.counterAxisAlignItems = "CENTER";
+  node.paddingTop = 7;
+  node.paddingBottom = 7;
   node.paddingLeft = 8;
   node.paddingRight = 8;
   node.cornerRadius = TOKENS.radius.xxl;
@@ -426,14 +470,18 @@ export function bottomNav(ctx: DesignContext, name: string, items: NavItem[], se
   node.effects = [{ type: "BACKGROUND_BLUR", radius: 18, visible: true, blurType: "NORMAL" }];
   for (const item of items) {
     const active = item.label === selected;
-    const entry = stack(`Nav Item / ${item.label}`, "VERTICAL", 3);
-    entry.resize(64, 54);
+    const entry = stack(`Nav Item / ${item.label}`, "VERTICAL", 4);
+    entry.resize(62, 60);
     forceFixedAutoLayoutSize(entry);
     entry.primaryAxisAlignItems = "CENTER";
     entry.counterAxisAlignItems = "CENTER";
     entry.cornerRadius = TOKENS.radius.lg;
     entry.fills = [active ? solid(TOKENS.color.accent, 0.12) : solid(TOKENS.color.white, 0)];
-    entry.appendChild(createIcon(item.icon, 18, active ? TOKENS.color.accent : TOKENS.color.subtleText));
+    const indicator = fixedFrame(active ? "Selected indicator" : "Inactive indicator", 18, 3);
+    indicator.cornerRadius = TOKENS.radius.round;
+    indicator.fills = [solid(active ? TOKENS.color.accent : TOKENS.color.white, active ? 1 : 0)];
+    entry.appendChild(indicator);
+    entry.appendChild(createIcon(item.icon, 20, active ? TOKENS.color.accent : TOKENS.color.subtleText));
     entry.appendChild(text(item.label, ctx.styles.text.caption, active ? TOKENS.color.accent : TOKENS.color.subtleText));
     node.appendChild(entry);
   }
