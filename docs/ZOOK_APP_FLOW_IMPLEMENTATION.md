@@ -82,3 +82,37 @@ The repo is not a scaffold. The implementation should preserve the existing Expo
 - Updating web dashboard navigation/content labels to the owner/admin control-room model.
 - Keeping mock providers as the default local runtime and never requiring production secrets.
 - Documenting any remaining provider-backed limitations honestly.
+
+## Completed MVP Alignment In This Pass
+
+- Added settled Zook dark glass tokens on mobile and web.
+- Added mobile primitives for safe-area screens, glass panels, status chips, role/gym pills, confirmation rings, entry codes, segmented controls, audit warnings, search/form fields, and sticky action bars.
+- Added centralized Iron Temple Gym fixtures and mock service facades for auth, org/role, membership checkout, payment confirmation, QR attendance, reception approvals, offline payments, shop orders, trainer assignments, AI drafts, notifications, guardian consent, diagnostics, reports, privacy export, and deletion jobs.
+- Added persisted active role on mobile and role-shaped bottom docks for Member, Trainer, Receptionist, and Owner.
+- Rebuilt member mobile Home, Check-in, Plans, and Shop flows around realistic Iron Temple data.
+- Rebuilt receptionist Desk, Members, Payments, and Orders flows with audit-aware actions.
+- Rebuilt trainer Home and Client Detail flows with assigned-client-only data and AI draft review.
+- Rebuilt owner mobile Command, Approvals, Revenue, and Stock views as a lightweight cockpit.
+- Reworked public web gym profile, join flow, and mock checkout handoff for Iron Temple Gym.
+- Aligned owner/admin web navigation and fallback dashboard data to the final control-room model.
+- Tightened platform diagnostics with safe provider mock fallback, readiness CTA, request IDs, notes, and no-secret wording.
+- Added mobile profile privacy job requests and guardian-gated blocked state.
+- Added core acceptance tests for payment activation semantics, pending attendance approval, AI draft visibility, and provider diagnostics safety.
+
+## Current Verification
+
+- `pnpm typecheck`: run before implementation and passed.
+- `pnpm lint`: run before implementation and passed with one pre-existing mobile warning, later fixed.
+- `pnpm --filter @zook/mobile typecheck`: passed after mobile changes.
+- `pnpm --filter @zook/mobile lint`: passed after mobile changes.
+- `pnpm --filter @zook/web typecheck`: passed after web changes.
+- `pnpm --filter @zook/web lint`: passed after web changes.
+- `pnpm --filter @zook/core test`: passed with 49 tests.
+- `pnpm typecheck`: passed after final implementation.
+- `pnpm lint`: passed after final implementation.
+- `pnpm test`: passed after final implementation.
+- `pnpm --filter @zook/web build`: passed. Next.js emitted the existing notice that the Next plugin is not configured in ESLint.
+
+Known limitation:
+
+- Providers remain mock-first/provider-ready. Razorpay, real push delivery, real AI, and real maps are not claimed as production-verified in this pass.

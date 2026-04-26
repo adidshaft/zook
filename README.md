@@ -2,7 +2,7 @@
 
 Zook is an India-first operating system for small and medium gyms. This monorepo contains the mobile app, web dashboard, API backend, Prisma database package, shared core domain logic, and provider abstractions for local-first development.
 
-This repository is currently at **Phase 4: Private Pilot Release Candidate**. Zook now has provider-backed payment and push readiness, health/readiness deployment checks, deeper privacy workflows, stronger release preflight checks, and private-pilot mobile/deployment baselines while keeping mock providers as the default low-cost runtime.
+This repository is currently aligned to the **mock-first Zook MVP product flow**: mobile execution apps for members, trainers, receptionists, and owners on the move; web control-room surfaces for owner/admin and platform operations; public join pages; and hosted checkout handoff with mock server confirmation.
 
 ## What Is Built
 
@@ -17,7 +17,7 @@ This repository is currently at **Phase 4: Private Pilot Release Candidate**. Zo
 - Real QR attendance validation, approval queue actions, visit consumption, and manual override logging.
 - Persisted in-app notifications with recipient fanout, read state, preference records, push devices, and push delivery tracking.
 - Shop stock movement, pickup code creation, and inventory adjustment records tied to mock payment success.
-- Seed data for Iron House Fitness and PeakLab Gym, plus Phase 4 pilot operations records.
+- Mock product fixtures for Iron Temple Gym in Pune, plus existing database seed flows for local/pilot operations.
 - Vitest unit tests for core business rules and Playwright smoke tests for web flows.
 
 ## Quick Start
@@ -59,9 +59,10 @@ Web:
 - `/dashboard`
 - `/dashboard/attendance/qr-display`
 - `/platform`
-- `/g/iron-house`
-- `/join/iron-house?ref=NISHAFIT`
+- `/g/iron-temple`
+- `/join/iron-temple?plan=plan-hybrid-pro&ref=RHEA250`
 - `/r/NISHAFIT`
+- `/checkout/mock/demo`
 - `/checkout/mock/{sessionId}`
 - `/checkout/{sessionId}`
 
@@ -94,7 +95,7 @@ API:
 
 Mobile:
 
-- `/` member home with dominant Scan QR action
+- `/` member home with active gym/role context and dominant Scan QR action
 - `/find-gyms`
 - `/gym/[username]`
 - `/scan`
@@ -108,6 +109,17 @@ Mobile:
 - `/owner`
 - `/reception`
 - `/trainer`
+
+## Mock-First Demo Paths
+
+- OTP: `000000`.
+- Member: login as `member@zook.local`, open Home, scan QR, simulate approved or pending, open Push Day, mark progress, add Protein Shake and Zook Shaker, confirm mock checkout, show pickup code.
+- Receptionist: switch to Receptionist in Profile, open Desk, approve pending scan, verify `ZK-7319`, record Direct UPI payment for Aarav, fulfill pickup order.
+- Trainer: switch to Trainer, open Aarav Mehta, generate/review AI draft, assign only after trainer approval.
+- Owner mobile: switch to Owner, open Command, review approvals, revenue, and stock.
+- Public web: open `/g/iron-temple`, select Hybrid Pro, apply `RHEA250`, continue to `/checkout/mock/demo`, then confirm mock payment.
+- Owner/admin web: open `/dashboard` for Today’s Command Board, Attendance, Notifications, Shop, Reports, Staff, Audit, and Settings.
+- Platform admin: open `/platform` to inspect provider diagnostics and org operations. Diagnostics show request IDs and missing env names only, never secret values.
 
 ## Provider Defaults
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, LoaderCircle, RefreshCw, ShieldCheck } from "lucide-react";
 
 type GuardianConsentPayload = {
@@ -43,8 +43,9 @@ async function apiFetch<T>(url: string, init?: RequestInit) {
 export default function GuardianConsentPage({
   params
 }: {
-  params: { challengeId: string };
+  params: Promise<{ challengeId: string }>;
 }) {
+  const { challengeId } = use(params);
   const [data, setData] = useState<GuardianConsentPayload | null>(null);
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
@@ -54,7 +55,7 @@ export default function GuardianConsentPage({
   async function load() {
     setLoading(true);
     try {
-      const payload = await apiFetch<GuardianConsentPayload>(`/api/guardian-consent/${params.challengeId}`);
+      const payload = await apiFetch<GuardianConsentPayload>(`/api/guardian-consent/${challengeId}`);
       setData(payload);
       setMessage("");
     } catch (error) {
@@ -66,7 +67,7 @@ export default function GuardianConsentPage({
 
   useEffect(() => {
     void load();
-  }, [params.challengeId]);
+  }, [challengeId]);
 
   const statusTone = useMemo(() => {
     if (data?.challenge.status === "VERIFIED") {
@@ -81,7 +82,7 @@ export default function GuardianConsentPage({
   async function verify() {
     setSubmitting(true);
     try {
-      await apiFetch(`/api/guardian-consent/${params.challengeId}/verify`, {
+      await apiFetch(`/api/guardian-consent/${challengeId}/verify`, {
         method: "POST",
         body: JSON.stringify({ code })
       });
@@ -97,7 +98,7 @@ export default function GuardianConsentPage({
   async function resend() {
     setSubmitting(true);
     try {
-      await apiFetch(`/api/guardian-consent/${params.challengeId}/resend`, {
+      await apiFetch(`/api/guardian-consent/${challengeId}/resend`, {
         method: "POST",
         body: JSON.stringify({})
       });
