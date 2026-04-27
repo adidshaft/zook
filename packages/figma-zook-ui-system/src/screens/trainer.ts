@@ -166,7 +166,7 @@ export function trainerAiDraftReview(ctx: DesignContext): FrameNode {
   alert.primaryAxisSizingMode = "FIXED";
   alert.counterAxisSizingMode = "FIXED";
   alert.counterAxisAlignItems = "CENTER";
-  alert.appendChild(iconDisk("sparkle", 32, "warning"));
+  alert.appendChild(iconDisk("shield", 32, "warning"));
   const alertCopy = stack("Alert copy", "VERTICAL", 3);
   alertCopy.appendChild(text("AI generated this draft.", ctx.styles.text.bodyStrong));
   alertCopy.appendChild(text("Edit and approve before assigning.", ctx.styles.text.small, TOKENS.color.mutedText));
@@ -221,12 +221,12 @@ export function trainerAiDraftReview(ctx: DesignContext): FrameNode {
   safetyTop.primaryAxisAlignItems = "SPACE_BETWEEN";
   safetyTop.appendChild(createIcon("shield", 18, TOKENS.color.accentSoft));
   for (const [label, value, tone] of [
-    ["Blocked content", "None", TOKENS.color.accent],
+    ["Blocked", "None detected", TOKENS.color.accent],
     ["Medical-risk check", "Clear", TOKENS.color.accent],
     ["Trainer approval", "Required", TOKENS.color.warning]
   ] as const) {
     const metric = stack(`Safety metric / ${label}`, "VERTICAL", 2);
-    metric.resize(82, 42);
+    metric.resize(92, 42);
     metric.primaryAxisSizingMode = "FIXED";
     metric.counterAxisSizingMode = "FIXED";
     metric.appendChild(text(label, ctx.styles.text.caption, TOKENS.color.mutedText));

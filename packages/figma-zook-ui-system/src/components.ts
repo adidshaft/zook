@@ -795,8 +795,8 @@ export const ownerNavItems: NavItem[] = [
 
 export const receptionistNavItems: NavItem[] = [
   { label: "Desk", icon: "home" },
-  { label: "Payments", icon: "rupee" },
-  { label: "Check-ins", icon: "qr" },
   { label: "Members", icon: "user" },
+  { label: "Payments", icon: "rupee" },
+  { label: "Orders", icon: "bag" },
   { label: "Profile", icon: "user" }
 ];

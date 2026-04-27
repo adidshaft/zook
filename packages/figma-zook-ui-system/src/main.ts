@@ -1,4 +1,5 @@
 import { DesignContext, fixedFrame, row, stack, text } from "./components";
+import { runCorrectedMvpPass } from "./corrected";
 import { applyAutoExportSettings, exportFrameNames } from "./export";
 import { createIcon, IconName } from "./icons";
 import { ownerScreens } from "./screens/owner";
@@ -406,7 +407,7 @@ function buildScreens(label: string, creators: Array<(ctx: DesignContext) => Fra
   return screens;
 }
 
-async function main(): Promise<void> {
+async function generateFullSystem(): Promise<void> {
   figma.notify("Zook generator starting…");
   await loadTokenFonts();
   const pages = await resetGeneratedPages();
@@ -461,6 +462,14 @@ async function main(): Promise<void> {
   await figma.setCurrentPageAsync(pages["00 — Cover"]);
   figma.notify("Zook Product UI System v1 generated with AUTO_EXPORT frames.");
   figma.closePlugin("Zook Product UI System v1 generated.");
+}
+
+async function main(): Promise<void> {
+  if (figma.command === "corrected-mvp-pass") {
+    await runCorrectedMvpPass();
+    return;
+  }
+  await generateFullSystem();
 }
 
 main().catch((error: unknown) => {

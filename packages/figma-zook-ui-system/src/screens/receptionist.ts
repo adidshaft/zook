@@ -85,7 +85,7 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   modeRowOne.appendChild(paymentModeChip(ctx, "Bank", "bank", false, 108));
   const modeRowTwo = row("Payment mode row 2", 8);
   modeRowTwo.appendChild(paymentModeChip(ctx, "Card", "card", false, 171));
-  modeRowTwo.appendChild(paymentModeChip(ctx, "Manual", "manual", false, 171));
+  modeRowTwo.appendChild(paymentModeChip(ctx, "Manual Entry", "manual", false, 171));
   modes.appendChild(modeRowOne);
   modes.appendChild(modeRowTwo);
   screen.appendChild(modes);
@@ -101,7 +101,7 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   lockWidthHugHeight(audit, 350);
   audit.counterAxisAlignItems = "CENTER";
   audit.appendChild(createIcon("warning", 16, TOKENS.color.warning));
-  audit.appendChild(paragraph("Manual records require reason and are saved in audit logs.", ctx.styles.text.caption, 290, TOKENS.color.warning));
+  audit.appendChild(paragraph("Offline payment records require a reason and are saved in audit logs.", ctx.styles.text.caption, 290, TOKENS.color.warning));
   screen.appendChild(audit);
 
   const reason = glassCard("Reason Dropdown", 350, 10, TOKENS.radius.lg);

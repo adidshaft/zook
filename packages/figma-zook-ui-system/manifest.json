@@ -2,5 +2,9 @@
   "name": "Zook — Product UI System v1",
   "api": "1.0.0",
   "main": "dist/main.js",
-  "editorType": ["figma"]
+  "editorType": ["figma"],
+  "menu": [
+    { "name": "Generate Full UI System", "command": "generate-full" },
+    { "name": "Create Corrected MVP Pass", "command": "corrected-mvp-pass" }
+  ]
 }
