@@ -1,4 +1,5 @@
-import { Stack, Link } from "expo-router";
+import { Link, Stack } from "expo-router";
+import type { Href } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -6,24 +7,33 @@ import { Ionicons } from "@expo/vector-icons";
 import { zookDemoFixtures } from "@zook/core";
 import {
   ActiveGymPill,
-  Card,
-  Dock,
+  BottomNav,
+  GlassCard,
   IconBubble,
   MetricTile,
-  Pill,
-  PrimaryLink,
-  Screen,
-  SecondaryLink,
   SectionHeader,
+  StatusRing,
+  ZookButton,
+  ZookChip,
+  ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { useMemberHome } from "@/lib/query-hooks";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 const demoOrg = zookDemoFixtures.organizations[0];
 const demoBranch = zookDemoFixtures.branches[0];
 const demoMembership = zookDemoFixtures.memberships.find((membership) => membership.id === "membership-aarav-hybrid");
 const demoPlan = zookDemoFixtures.trainingPlans.find((plan) => plan.id === "plan-push-day");
+
+function initialsFor(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "AM";
+}
 
 export default function Home() {
   const queryClient = useQueryClient();
@@ -37,12 +47,15 @@ export default function Home() {
     session?.activeOrganization;
   const memberName = session?.user.name || "Aarav Mehta";
   const firstName = memberName.split(" ")[0] || "Aarav";
+  const initials = initialsFor(memberName);
   const orgName = activeOrganization?.name ?? demoOrg?.name ?? "Iron Temple Gym";
   const city = activeOrganization?.city ?? demoOrg?.city ?? "Pune";
-  const daysLeft = memberHome?.activeMembership?.endsAt ? demoMembership?.daysLeft : demoMembership?.daysLeft;
+  const daysLeft = demoMembership?.daysLeft ?? 22;
   const remainingVisits = memberHome?.activeMembership?.remainingVisits ?? demoMembership?.remainingVisits ?? 8;
   const planName = memberHome?.activePlan?.name ?? demoPlan?.title ?? "Push Day";
-  const usedPct = 73;
+  const streakDays = demoMembership?.streakDays ?? 5;
+  const weeklyGoalCompleted = demoMembership?.weeklyGoalCompleted ?? 3;
+  const weeklyGoalTarget = demoMembership?.weeklyGoalTarget ?? 5;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -53,9 +66,10 @@ export default function Home() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <Screen>
+      <ZookScreen>
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
           refreshControl={
             <RefreshControl
@@ -66,125 +80,107 @@ export default function Home() {
             />
           }
         >
-          <View style={styles.topbar}>
+          <View style={styles.homeHeader}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>AM</Text>
+              <Text style={styles.avatarText}>{initials}</Text>
             </View>
-            <View style={styles.topbarCopy}>
+            <View style={styles.headerCopy}>
               <Text style={styles.greeting}>Good morning, {firstName}</Text>
-              <ActiveGymPill label={`${orgName} · ${city}`} />
+              <Text style={styles.gymLine}>{orgName} · {city}</Text>
             </View>
             <Link href="/notifications" asChild>
-              <Pressable style={styles.bellButton} accessibilityRole="button" accessibilityLabel="Open notifications">
-                <Ionicons name="notifications-outline" size={22} color={colors.text} />
+              <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open notifications">
+                <Ionicons name="notifications-outline" size={21} color={colors.text} />
                 <View style={styles.unreadDot} />
               </Pressable>
             </Link>
           </View>
 
-          <Card style={styles.membershipCard}>
-            <View style={styles.cardHeader}>
-              <View>
-                <Text style={styles.cardEyebrow}>Active Membership</Text>
-                <Text style={styles.membershipTitle}>Hybrid Pro</Text>
+          <GlassCard glow contentStyle={styles.membershipContent}>
+            <View style={styles.membershipTop}>
+              <View style={styles.membershipCopy}>
+                <View style={styles.membershipLabel}>
+                  <IconBubble icon="shield-checkmark-outline" tone="lime" size={30} />
+                  <Text style={styles.mutedSmall}>Active Membership</Text>
+                </View>
+                <View style={styles.membershipTitleRow}>
+                  <Text style={styles.membershipTitle}>Hybrid Pro</Text>
+                  <Text style={styles.daysLeft}>{daysLeft} days left</Text>
+                </View>
+                <Text style={styles.mutedBody}>{remainingVisits} visits remaining</Text>
               </View>
-              <View style={styles.progressRing}>
-                <Text style={styles.progressValue}>{usedPct}%</Text>
-                <Text style={styles.progressLabel}>used</Text>
-              </View>
+              <StatusRing tone="lime" value="73%" label="plan cycle" size={86} />
             </View>
-            <View style={styles.membershipMeta}>
-              <Pill tone="lime">{daysLeft ?? 22} days left</Pill>
-              <Pill tone="blue">{remainingVisits} visits remaining</Pill>
-              <Pill tone="neutral">{demoBranch?.name ?? "Default Branch"}</Pill>
-            </View>
+
+            <View style={styles.divider} />
+
             <View style={styles.actionRow}>
-              <PrimaryLink href="/scan" style={styles.actionHalf}>
+              <ZookButton href="/scan" icon="qr-code-outline" style={styles.actionHalf}>
                 Scan QR
-              </PrimaryLink>
-              <SecondaryLink href="/tracking" style={styles.actionHalf}>
+              </ZookButton>
+              <ZookButton href="/tracking" tone="secondary" icon="barbell-outline" style={styles.actionHalf}>
                 Start Workout
-              </SecondaryLink>
+              </ZookButton>
             </View>
-          </Card>
+          </GlassCard>
 
-          <Card style={styles.planCard}>
-            <View style={styles.cardHeader}>
-              <View>
-                <Text style={styles.cardEyebrow}>Today's Plan</Text>
-                <Text style={styles.cardTitle}>{planName}</Text>
+          <SectionHeader
+            title="Today's Plan"
+            action={
+              <Link href="/plans" asChild>
+                <Pressable accessibilityRole="link" style={styles.sectionAction}>
+                  <Text style={styles.sectionActionText}>View all</Text>
+                  <Ionicons name="chevron-forward" size={13} color={colors.lime} />
+                </Pressable>
+              </Link>
+            }
+          />
+
+          <GlassCard contentStyle={styles.planContent}>
+            <View style={styles.planRow}>
+              <IconBubble icon="barbell-outline" tone="lime" size={44} />
+              <View style={styles.planCopy}>
+                <Text style={styles.planTitle}>{planName} · 6 exercises · Coach Rhea</Text>
+                <Text style={styles.mutedSmall}>Chest · Shoulders · Triceps</Text>
               </View>
-              <Pill tone="lime">Assigned</Pill>
+              <ZookChip tone="lime">Assigned</ZookChip>
             </View>
-            <Text style={styles.cardBody}>6 exercises · Coach Rhea · Chest, Shoulders, Triceps</Text>
-            <View style={styles.planMetaRow}>
-              <Pill tone="neutral">60-75 min</Pill>
-              <Pill tone="blue">Intermediate</Pill>
-            </View>
-            <PrimaryLink href="/plans" tone="secondary">
-              Open Plan
-            </PrimaryLink>
-          </Card>
+          </GlassCard>
 
-          <SectionHeader title="Activity" subtitle="This week at Iron Temple." />
-          <View style={styles.metricGrid}>
-            <MetricTile
-              label="Streak"
-              value={`${demoMembership?.streakDays ?? 5} days`}
-              detail="Consistent check-ins"
-              tone="lime"
-              style={styles.metricHalf}
-            />
-            <MetricTile
-              label="Last check-in"
-              value={demoMembership?.lastCheckInLabel ?? "7:12 AM"}
-              detail="Default Branch"
-              tone="blue"
-              style={styles.metricHalf}
-            />
-            <MetricTile
-              label="Weekly goal"
-              value={`${demoMembership?.weeklyGoalCompleted ?? 3}/${demoMembership?.weeklyGoalTarget ?? 5}`}
-              detail="Visits completed"
-              tone="amber"
-              style={styles.metricHalf}
-            />
-            <MetricTile
-              label="Inbox"
-              value={`${memberHome?.unreadNotifications ?? 1}`}
-              detail="Unread updates"
-              tone="violet"
-              style={styles.metricHalf}
-            />
-          </View>
+          <GlassCard contentStyle={styles.metricsContent}>
+            <MetricTile label="Streak" value={`${streakDays} days`} tone="lime" icon="flame-outline" />
+            <MetricTile label="Last check-in" value={demoMembership?.lastCheckInLabel ?? "7:12 AM"} tone="neutral" icon="time-outline" />
+            <MetricTile label="Weekly goal" value={`${weeklyGoalCompleted}/${weeklyGoalTarget}`} tone="amber" icon="locate-outline" />
+          </GlassCard>
 
-          <SectionHeader title="Quick Links" />
-          <View style={styles.quickGrid}>
-            <QuickLink href="/find-gyms" icon="calendar-outline" label="Book a class" />
-            <QuickLink href="/tracking" icon="analytics-outline" label="Body stats" />
-            <QuickLink href="/membership" icon="card-outline" label="Payments" />
-            <QuickLink href="/profile" icon="help-circle-outline" label="Support" />
-          </View>
+          <GlassCard contentStyle={styles.quickContent}>
+            <QuickAction href="/find-gyms" icon="calendar-outline" label="Book class" />
+            <QuickAction href="/tracking" icon="analytics-outline" label="Progress" />
+            <QuickAction href="/membership" icon="card-outline" label="Payments" />
+            <QuickAction href="/profile" icon="help-circle-outline" label="Support" />
+          </GlassCard>
+
+          <ActiveGymPill label={demoBranch?.name ?? "Default Branch"} />
         </ScrollView>
-        <Dock />
-      </Screen>
+        <BottomNav />
+      </ZookScreen>
     </>
   );
 }
 
-function QuickLink({
+function QuickAction({
   href,
   icon,
   label,
 }: {
-  href: string;
+  href: Href;
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
 }) {
   return (
-    <Link href={href as never} asChild>
-      <Pressable style={styles.quickLink} accessibilityRole="button" accessibilityLabel={label}>
-        <IconBubble icon={icon} tone="lime" size={42} />
+    <Link href={href} asChild>
+      <Pressable accessibilityRole="button" accessibilityLabel={label} style={styles.quickAction}>
+        <Ionicons name={icon} size={18} color={colors.muted} />
         <Text style={styles.quickLabel}>{label}</Text>
       </Pressable>
     </Link>
@@ -193,42 +189,49 @@ function QuickLink({
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 18,
-    paddingBottom: 120,
-  },
-  topbar: {
-    flexDirection: "row",
-    alignItems: "center",
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
+    paddingBottom: 128,
     gap: 12,
   },
+  homeHeader: {
+    minHeight: 66,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
   avatar: {
-    height: 56,
     width: 56,
-    borderRadius: 20,
-    backgroundColor: colors.lime,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.13)",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    color: colors.bg,
-    fontWeight: "900",
-    fontSize: 18,
+    color: colors.lime,
+    ...typography.h3,
   },
-  topbarCopy: {
+  headerCopy: {
     flex: 1,
-    gap: 7,
+    gap: 4,
   },
   greeting: {
     color: colors.text,
-    fontSize: 24,
-    lineHeight: 28,
-    fontWeight: "900",
+    ...typography.h3,
   },
-  bellButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 18,
+  gymLine: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.panel,
@@ -237,115 +240,116 @@ const styles = StyleSheet.create({
   },
   unreadDot: {
     position: "absolute",
-    top: 11,
-    right: 12,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 8,
+    right: 9,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: colors.lime,
   },
-  membershipCard: {
-    gap: 18,
-    backgroundColor: "rgba(185,244,85,0.08)",
-    borderColor: "rgba(185,244,85,0.24)",
+  membershipContent: {
+    padding: 18,
+    gap: 14,
   },
-  cardHeader: {
+  membershipTop: {
+    minHeight: 98,
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
+    gap: spacing.md,
   },
-  cardEyebrow: {
+  membershipCopy: {
+    flex: 1,
+    gap: 8,
+  },
+  membershipLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  mutedSmall: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: "900",
-    textTransform: "uppercase",
+    ...typography.small,
+  },
+  mutedBody: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  membershipTitleRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    flexWrap: "wrap",
+    gap: 6,
   },
   membershipTitle: {
     color: colors.text,
-    fontSize: 34,
-    lineHeight: 38,
-    fontWeight: "900",
-    marginTop: 6,
+    ...typography.h2,
   },
-  progressRing: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    borderWidth: 7,
-    borderColor: colors.lime,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(7,9,8,0.52)",
+  daysLeft: {
+    color: colors.lime,
+    ...typography.bodyStrong,
   },
-  progressValue: {
-    color: colors.text,
-    fontSize: 19,
-    fontWeight: "900",
-  },
-  progressLabel: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: "800",
-  },
-  membershipMeta: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
   actionRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: spacing.sm,
   },
   actionHalf: {
     flex: 1,
   },
-  planCard: {
-    gap: 14,
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 24,
-    lineHeight: 28,
-    fontWeight: "900",
-  },
-  cardBody: {
-    color: colors.muted,
-    lineHeight: 21,
-  },
-  planMetaRow: {
+  sectionAction: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+    alignItems: "center",
+    gap: 2,
+    minHeight: 28,
   },
-  metricGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
+  sectionActionText: {
+    color: colors.lime,
+    ...typography.small,
   },
-  metricHalf: {
-    flexBasis: "47%",
-    flexGrow: 1,
-  },
-  quickGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  quickLink: {
-    flexBasis: "47%",
-    flexGrow: 1,
-    minHeight: 92,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+  planContent: {
     padding: 14,
+  },
+  planRow: {
+    minHeight: 54,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  planCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  planTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  metricsContent: {
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: spacing.sm,
+  },
+  quickContent: {
+    padding: 10,
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  quickAction: {
+    width: 76,
+    minHeight: 54,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
   },
   quickLabel: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "800",
+    color: colors.muted,
+    ...typography.caption,
+    textAlign: "center",
   },
 });

@@ -1,326 +1,323 @@
+import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { zookMockServices } from "@zook/core";
 import {
-  ActiveGymPill,
-  Card,
-  ConfirmationRing,
-  Dock,
-  EntryCodeCard,
+  BottomNav,
+  GlassCard,
+  IconBubble,
   ListRow,
-  Pill,
-  PrimaryButton,
-  PrimaryLink,
-  Screen,
-  SecondaryButton,
-  SegmentedControl,
+  MobileHeader,
+  ZookButton,
+  ZookChip,
+  ZookScreen,
 } from "@/components/primitives";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
-type DemoOutcome = "approved" | "pending" | "flagged" | "rejected";
 type Result = Awaited<ReturnType<typeof zookMockServices.attendanceService.scanQr>>;
 
-const outcomeOptions: Array<{ label: string; value: DemoOutcome }> = [
-  { label: "Approved", value: "approved" },
-  { label: "Pending", value: "pending" },
-  { label: "Flagged", value: "flagged" },
-  { label: "Rejected", value: "rejected" },
-];
-
 export default function Scan() {
-  const [outcome, setOutcome] = useState<DemoOutcome>("approved");
-  const [result, setResult] = useState<Result | null>(null);
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
 
-  async function simulateScan(nextOutcome = outcome) {
+  async function simulateScan() {
     setBusy(true);
     try {
-      const nextResult = await zookMockServices.attendanceService.scanQr(`zook-demo-${nextOutcome}`);
-      setResult(nextResult);
+      const result: Result = await zookMockServices.attendanceService.scanQr("zook-demo-approved");
+      router.push({
+        pathname: "/attendance/[attendanceRecordId]",
+        params: {
+          attendanceRecordId: result.id,
+          status: result.status,
+          entryCode: result.entryCode,
+          branchName: result.branchName,
+          planName: result.planName,
+          checkedInAt: result.checkedInAt,
+          reason: result.reason,
+        },
+      });
     } finally {
       setBusy(false);
     }
   }
 
-  if (result) {
-    const approved = result.status === "APPROVED";
-    const pending = result.status === "PENDING_APPROVAL";
-    const flagged = result.status === "FLAGGED";
-    return (
-      <Screen>
-        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.resultContent}>
-          <View style={styles.resultHeader}>
-            <ActiveGymPill label="Iron Temple Gym · Pune" />
-            <Pill tone={approved ? "lime" : pending ? "amber" : flagged ? "red" : "red"}>
-              {approved ? "Approved" : pending ? "Pending approval" : flagged ? "Flagged" : "Rejected"}
-            </Pill>
-          </View>
-
-          <ConfirmationRing
-            tone={approved ? "lime" : pending ? "amber" : "red"}
-            icon={approved ? "checkmark" : pending ? "time-outline" : "alert-outline"}
-          />
-
-          <View style={styles.resultCopy}>
-            <Text style={styles.resultTitle}>
-              {approved
-                ? "Checked in"
-                : pending
-                  ? "Waiting for desk approval"
-                  : flagged
-                    ? "Desk review required"
-                    : "Check-in rejected"}
-            </Text>
-            <Text style={styles.resultBody}>
-              {approved
-                ? "Entry approved for Iron Temple Gym."
-                : pending
-                  ? "Your check-in was received. Please show this code to Priya at reception."
-                  : flagged
-                    ? "This scan needs staff review before entry."
-                    : "This scan could not be approved by the server gate."}
-            </Text>
-          </View>
-
-          <EntryCodeCard
-            code={result.entryCode}
-            status={approved ? "Approved" : pending ? "Pending approval" : flagged ? "Flagged" : "Rejected"}
-            detail="Show this to the front desk if asked."
-          />
-
-          <Card style={styles.detailCard}>
-            <ListRow title="Time" subtitle="7:14 AM" trailing={<Pill tone="neutral">Today</Pill>} />
-            <ListRow title="Branch" subtitle={result.branchName} trailing={<Pill tone="blue">Verified</Pill>} />
-            <ListRow title="Plan" subtitle={result.planName} trailing={<Pill tone="lime">Active</Pill>} />
-            <ListRow title="Server validation" subtitle={result.reason} trailing={<Ionicons name="lock-closed-outline" size={20} color={colors.lime} />} />
-          </Card>
-
-          {pending ? (
-            <Card style={styles.reasonCard}>
-              <Text style={styles.reasonTitle}>Why review?</Text>
-              <Text style={styles.reasonBody}>
-                This scan needs staff confirmation because attendance approval mode is enabled.
-              </Text>
-            </Card>
-          ) : null}
-
-          {approved ? (
-            <Card style={styles.reasonCard}>
-              <Text style={styles.reasonTitle}>Next up</Text>
-              <Text style={styles.reasonBody}>Push Day workout assigned by Coach Rhea.</Text>
-              <PrimaryLink href="/plans">Open Plan</PrimaryLink>
-            </Card>
-          ) : null}
-
-          <View style={styles.actionRow}>
-            <SecondaryButton onPress={() => setResult(null)} style={styles.actionHalf}>
-              Scan again
-            </SecondaryButton>
-            <PrimaryButton onPress={() => setResult(null)} style={styles.actionHalf}>
-              Back to Check-in
-            </PrimaryButton>
-          </View>
-        </ScrollView>
-        <Dock />
-      </Screen>
-    );
-  }
-
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <ActiveGymPill label="Iron Temple Gym · Pune" />
-          <Text style={styles.title}>Scan Gym QR</Text>
-          <Text style={styles.subtitle}>Scan the rolling QR at the reception desk.</Text>
-        </View>
-
-        <Pressable
-          onPress={() => void simulateScan()}
-          accessibilityRole="button"
-          accessibilityLabel="Simulate gym QR scan"
-          style={styles.scannerFrame}
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ZookScreen>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
         >
-          <View style={[styles.corner, styles.cornerTopLeft]} />
-          <View style={[styles.corner, styles.cornerTopRight]} />
-          <View style={[styles.corner, styles.cornerBottomLeft]} />
-          <View style={[styles.corner, styles.cornerBottomRight]} />
-          <Ionicons name="qr-code-outline" size={88} color={colors.lime} />
-          <Text style={styles.scannerText}>{busy ? "Validating with server..." : "Tap to simulate scan"}</Text>
-        </Pressable>
+          <MobileHeader
+            title="Scan Gym QR"
+            subtitle="Iron Temple Gym"
+            leading={
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={20} color={colors.text} />
+              </Pressable>
+            }
+          />
 
-        <Card style={styles.checklistCard}>
-          <Text style={styles.cardTitle}>Validation checklist</Text>
-          <ListRow title="Membership active" subtitle="Hybrid Pro · 22 days left" trailing={<Pill tone="lime">Clear</Pill>} />
-          <ListRow title="Branch verified" subtitle="Default Branch" trailing={<Pill tone="lime">Clear</Pill>} />
-          <ListRow title="Server-authorized check-in" subtitle="Replay and minor gates checked" trailing={<Pill tone="lime">Required</Pill>} />
-        </Card>
-
-        <Card style={styles.helpCard}>
-          <View style={styles.helpHeader}>
-            <View>
-              <Text style={styles.cardTitle}>Need help?</Text>
-              <Text style={styles.cardBody}>Ask Priya at reception to verify your entry code.</Text>
+          <Pressable
+            onPress={() => void simulateScan()}
+            accessibilityRole="button"
+            accessibilityLabel="Scan the gym QR"
+            style={styles.scannerStage}
+          >
+            <View style={styles.scannerViewport}>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <View key={`v-${index}`} style={[styles.gridLineVertical, { left: `${((index + 1) / 6) * 100}%` }]} />
+              ))}
+              {Array.from({ length: 5 }).map((_, index) => (
+                <View key={`h-${index}`} style={[styles.gridLineHorizontal, { top: `${((index + 1) / 6) * 100}%` }]} />
+              ))}
+              <View style={styles.scanLine} />
+              <ScannerCorner position="topLeft" />
+              <ScannerCorner position="topRight" />
+              <ScannerCorner position="bottomLeft" />
+              <ScannerCorner position="bottomRight" />
+              <Ionicons name="qr-code-outline" size={78} color="rgba(185,244,85,0.58)" />
+              <Text style={styles.scannerText}>{busy ? "Validating..." : "Tap to simulate scan"}</Text>
             </View>
-            <Pill tone="lime">Auto check-in enabled</Pill>
-          </View>
-        </Card>
+          </Pressable>
 
-        <Card style={styles.demoCard}>
-          <Text style={styles.cardTitle}>Demo scan outcome</Text>
-          <SegmentedControl options={outcomeOptions} value={outcome} onChange={setOutcome} />
-          <PrimaryButton onPress={() => void simulateScan()} disabled={busy}>
-            {busy ? "Validating..." : "Simulate server scan"}
-          </PrimaryButton>
-        </Card>
-      </ScrollView>
-      <Dock />
-    </Screen>
+          <View style={styles.helperRow}>
+            <Ionicons name="qr-code-outline" size={16} color={colors.lime} />
+            <Text style={styles.helperText}>Scan the rolling QR at the reception desk.</Text>
+          </View>
+
+          <GlassCard contentStyle={styles.validationContent}>
+            <ValidationRow title="Membership active" icon="shield-checkmark-outline" />
+            <View style={styles.divider} />
+            <ValidationRow title="Branch verified" icon="checkmark-circle-outline" />
+            <View style={styles.divider} />
+            <ValidationRow title="Server-authorized check-in" icon="lock-closed-outline" />
+          </GlassCard>
+
+          <GlassCard contentStyle={styles.supportContent}>
+            <ListRow
+              title="Need help? Ask receptionist"
+              leading={<IconBubble icon="headset-outline" tone="neutral" size={34} />}
+              trailing={<Ionicons name="chevron-forward" size={16} color={colors.muted} />}
+              style={styles.flatRow}
+            />
+            <View style={styles.divider} />
+            <View style={styles.modeRow}>
+              <View style={styles.modeCopy}>
+                <Ionicons name="qr-code-outline" size={15} color={colors.lime} />
+                <Text style={styles.modeLabel}>Attendance mode</Text>
+              </View>
+              <ZookChip tone="lime" icon="checkmark">
+                Auto
+              </ZookChip>
+            </View>
+          </GlassCard>
+
+          <ZookButton onPress={() => void simulateScan()} disabled={busy} icon="scan-outline">
+            {busy ? "Validating" : "Simulate Scan"}
+          </ZookButton>
+        </ScrollView>
+        <BottomNav />
+      </ZookScreen>
+    </>
+  );
+}
+
+function ValidationRow({ title, icon }: { title: string; icon: keyof typeof Ionicons.glyphMap }) {
+  return (
+    <View style={styles.validationRow}>
+      <View style={styles.validationCopy}>
+        <IconBubble icon={icon} tone="neutral" size={32} />
+        <Text style={styles.validationTitle}>{title}</Text>
+      </View>
+      <Ionicons name="checkmark" size={16} color={colors.lime} />
+    </View>
+  );
+}
+
+function ScannerCorner({ position }: { position: "topLeft" | "topRight" | "bottomLeft" | "bottomRight" }) {
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        styles.corner,
+        position === "topLeft" ? styles.cornerTopLeft : null,
+        position === "topRight" ? styles.cornerTopRight : null,
+        position === "bottomLeft" ? styles.cornerBottomLeft : null,
+        position === "bottomRight" ? styles.cornerBottomRight : null,
+      ]}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 18,
-    paddingBottom: 120,
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
+    paddingBottom: 128,
+    gap: spacing.sm,
   },
-  header: {
-    gap: 10,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 34,
-    lineHeight: 38,
-    fontWeight: "900",
-  },
-  subtitle: {
-    color: colors.muted,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  scannerFrame: {
-    height: 330,
-    borderRadius: 32,
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.25)",
-    backgroundColor: "rgba(255,255,255,0.05)",
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
     alignItems: "center",
     justifyContent: "center",
-    gap: 18,
+  },
+  scannerStage: {
+    height: 292,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scannerViewport: {
+    width: 278,
+    height: 278,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    backgroundColor: "rgba(255,255,255,0.03)",
     overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  gridLineVertical: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  gridLineHorizontal: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  scanLine: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    top: 138,
+    height: 2,
+    borderRadius: 999,
+    backgroundColor: colors.lime,
+    shadowColor: colors.lime,
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
   },
   corner: {
     position: "absolute",
-    width: 54,
-    height: 54,
+    width: 46,
+    height: 46,
     borderColor: colors.lime,
+    shadowColor: colors.lime,
+    shadowOpacity: 0.5,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
   },
   cornerTopLeft: {
-    top: 26,
-    left: 26,
-    borderTopWidth: 3,
-    borderLeftWidth: 3,
-    borderTopLeftRadius: 18,
+    top: 0,
+    left: 0,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
   },
   cornerTopRight: {
-    top: 26,
-    right: 26,
-    borderTopWidth: 3,
-    borderRightWidth: 3,
-    borderTopRightRadius: 18,
+    top: 0,
+    right: 0,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
   },
   cornerBottomLeft: {
-    bottom: 26,
-    left: 26,
-    borderBottomWidth: 3,
-    borderLeftWidth: 3,
-    borderBottomLeftRadius: 18,
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
   },
   cornerBottomRight: {
-    bottom: 26,
-    right: 26,
-    borderBottomWidth: 3,
-    borderRightWidth: 3,
-    borderBottomRightRadius: 18,
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
   },
   scannerText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  checklistCard: {
-    gap: 12,
-  },
-  helpCard: {
-    gap: 12,
-  },
-  helpHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  demoCard: {
-    gap: 14,
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  cardBody: {
     color: colors.muted,
-    lineHeight: 21,
-    marginTop: 6,
+    ...typography.small,
   },
-  resultContent: {
-    padding: 20,
-    gap: 18,
-    paddingBottom: 120,
+  helperRow: {
+    minHeight: 26,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
   },
-  resultHeader: {
+  helperText: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  validationContent: {
+    padding: 10,
+    gap: 0,
+  },
+  validationRow: {
+    minHeight: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
+    gap: spacing.md,
   },
-  resultCopy: {
-    alignItems: "center",
-    gap: 8,
-  },
-  resultTitle: {
-    color: colors.text,
-    fontSize: 30,
-    lineHeight: 34,
-    fontWeight: "900",
-    textAlign: "center",
-  },
-  resultBody: {
-    color: colors.muted,
-    lineHeight: 22,
-    textAlign: "center",
-  },
-  detailCard: {
-    gap: 10,
-  },
-  reasonCard: {
-    gap: 12,
-  },
-  reasonTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  reasonBody: {
-    color: colors.muted,
-    lineHeight: 21,
-  },
-  actionRow: {
+  validationCopy: {
     flexDirection: "row",
-    gap: 10,
+    alignItems: "center",
+    gap: spacing.md,
   },
-  actionHalf: {
-    flex: 1,
+  validationTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  supportContent: {
+    padding: 10,
+    gap: spacing.sm,
+  },
+  flatRow: {
+    borderWidth: 0,
+    backgroundColor: "transparent",
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
+  modeRow: {
+    minHeight: 30,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  modeCopy: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  modeLabel: {
+    color: colors.muted,
+    ...typography.small,
   },
 });
