@@ -485,14 +485,41 @@ export function ZookButton({
 }) {
   const resolvedVariant = variant ?? variantFromTone(tone);
   const palette = buttonPalettes[resolvedVariant];
+  const staticButtonStyle = StyleSheet.flatten([
+    styles.button,
+    palette.glow,
+    {
+      backgroundColor: palette.backgroundColor,
+      borderColor: palette.borderColor,
+    },
+    disabled ? styles.disabled : null,
+    style,
+  ]);
+
+  if (href && !disabled) {
+    return (
+      <Link href={href} asChild>
+        <Pressable
+          onPressIn={() => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+          accessibilityRole="link"
+          accessibilityLabel={accessibilityLabel ?? (typeof children === "string" ? children : undefined)}
+          accessibilityState={{ disabled }}
+          style={staticButtonStyle}
+        >
+          {icon ? <Ionicons name={icon} size={17} color={palette.color} /> : null}
+          <Text style={[styles.buttonText, { color: palette.color }, textStyle]}>{children}</Text>
+        </Pressable>
+      </Link>
+    );
+  }
+
   const button = (
     <Pressable
-      onPress={href ? undefined : () => {
+      onPress={() => {
         if (!disabled) pressWithHaptics(onPress);
       }}
-      onPressIn={href && !disabled ? () => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) : undefined}
       disabled={disabled}
-      accessibilityRole={href ? "link" : "button"}
+      accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? (typeof children === "string" ? children : undefined)}
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
@@ -512,12 +539,7 @@ export function ZookButton({
     </Pressable>
   );
 
-  if (!href || disabled) return button;
-  return (
-    <Link href={href} asChild>
-      {button}
-    </Link>
-  );
+  return button;
 }
 
 export function PrimaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
@@ -931,7 +953,7 @@ export function StickyActionBar({ children }: { children: ReactNode }) {
     <BlurView
       intensity={80}
       tint="dark"
-      style={[styles.stickyActionBar, { paddingBottom: Math.max(insets.bottom, 14) }]}
+      style={StyleSheet.flatten([styles.stickyActionBar, { paddingBottom: Math.max(insets.bottom, 14) }])}
     >
       {children}
     </BlurView>
@@ -1037,12 +1059,12 @@ export function BottomNav({ tabs, selectedPath }: { tabs?: DockTab[]; selectedPa
     <BlurView
       intensity={80}
       tint="dark"
-      style={[
+      style={StyleSheet.flatten([
         styles.bottomNav,
         {
           bottom: Math.max(insets.bottom, 12),
         },
-      ]}
+      ])}
     >
       {resolvedTabs.map((tab, index) => {
         const firstMatchingIndex = resolvedTabs.findIndex((item) => item.matchPath === tab.matchPath);
@@ -1058,7 +1080,7 @@ export function BottomNav({ tabs, selectedPath }: { tabs?: DockTab[]; selectedPa
               accessibilityRole="tab"
               accessibilityLabel={tab.label}
               accessibilityState={{ selected: active }}
-              style={[styles.bottomNavItem, active ? styles.bottomNavItemActive : null]}
+              style={StyleSheet.flatten([styles.bottomNavItem, active ? styles.bottomNavItemActive : null])}
             >
               <View>
                 <Ionicons name={active ? tab.activeIcon : tab.icon} size={21} color={active ? colors.lime : colors.subtle} />

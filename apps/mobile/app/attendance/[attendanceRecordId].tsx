@@ -102,7 +102,7 @@ export default function AttendanceResultScreen() {
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, pending ? styles.contentWithoutNav : null]}
         >
           <MobileHeader
             title="Attendance"
@@ -195,7 +195,7 @@ export default function AttendanceResultScreen() {
             </>
           )}
         </ScrollView>
-        <BottomNav selectedPath="/scan" />
+        {approved ? <BottomNav selectedPath="/scan" /> : null}
       </ZookScreen>
     </>
   );
@@ -230,6 +230,9 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 128,
     gap: 12,
+  },
+  contentWithoutNav: {
+    paddingBottom: 40,
   },
   iconButton: {
     width: 40,
