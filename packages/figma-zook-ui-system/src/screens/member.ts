@@ -346,7 +346,9 @@ export function attendanceApproved(ctx: DesignContext): FrameNode {
   lockWidthHugHeight(next, 350);
   next.primaryAxisAlignItems = "SPACE_BETWEEN";
   next.counterAxisAlignItems = "CENTER";
-  next.appendChild(iconDisk("dumbbell", 44, "lime"));
+  const nextIcon = iconDisk("dumbbell", 44, "lime");
+  nextIcon.effects = [];
+  next.appendChild(nextIcon);
   const copy = stack("Next copy", "VERTICAL", 4);
   copy.appendChild(text("Next up", ctx.styles.text.h3));
   copy.appendChild(text("Push Day workout assigned by Coach Rhea", ctx.styles.text.small, TOKENS.color.mutedText));
@@ -383,14 +385,16 @@ export function attendancePending(ctx: DesignContext): FrameNode {
   const reason = glassCard("Why Review Card", 350, 14, TOKENS.radius.xl);
   reason.layoutMode = "HORIZONTAL";
   lockWidthHugHeight(reason, 350);
-  reason.appendChild(iconDisk("warning", 48, "warning"));
+  const reasonIcon = iconDisk("warning", 48, "warning");
+  reasonIcon.effects = [];
+  reason.appendChild(reasonIcon);
   const reasonCopy = stack("Reason copy", "VERTICAL", 4);
   reasonCopy.appendChild(text("Why confirmation?", ctx.styles.text.h3));
   reasonCopy.appendChild(paragraph("Your gym asks the desk to confirm some check-ins before entry is marked approved.", ctx.styles.text.small, 244, TOKENS.color.mutedText));
   reason.appendChild(reasonCopy);
   reasonCopy.layoutSizingHorizontal = "FILL";
   screen.appendChild(reason);
-  screen.appendChild(button(ctx, "Keep Code Open", "primary", "clock", 350));
+  screen.appendChild(button(ctx, "Show Code at Desk", "primary", "qr", 350));
   screen.appendChild(button(ctx, "Back to Home", "secondary", "home", 350));
   const history = text("View Attendance History", ctx.styles.text.small, TOKENS.color.mutedText, "History link");
   screen.appendChild(history);
@@ -517,7 +521,7 @@ export function memberPlanDetail(ctx: DesignContext): FrameNode {
   sticky.itemSpacing = 8;
   sticky.primaryAxisAlignItems = "SPACE_BETWEEN";
   sticky.counterAxisAlignItems = "CENTER";
-  sticky.appendChild(button(ctx, "Mark Workout Complete", "primary", "check", 190));
+  sticky.appendChild(button(ctx, "Complete Workout", "primary", "check", 190));
   sticky.appendChild(button(ctx, "Send Feedback", "secondary", "edit", 130));
   screen.appendChild(sticky);
   return screen;
