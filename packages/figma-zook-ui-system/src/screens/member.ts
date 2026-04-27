@@ -515,14 +515,14 @@ export function memberPlanDetail(ctx: DesignContext): FrameNode {
   list.appendChild(exerciseRow(ctx, "Lateral Raise", "3 sets", "Dumbbells · 12–15 reps"));
   list.appendChild(exerciseRow(ctx, "Push-up Finisher", "2 rounds", "To failure"));
   screen.appendChild(list);
-  const sticky = glassCard("Sticky action bar", 350, 10, TOKENS.radius.xl);
+  const sticky = glassCard("Sticky action bar", 350, 8, TOKENS.radius.xl);
   sticky.layoutMode = "HORIZONTAL";
   lockWidthHugHeight(sticky, 350);
   sticky.itemSpacing = 8;
   sticky.primaryAxisAlignItems = "SPACE_BETWEEN";
   sticky.counterAxisAlignItems = "CENTER";
   sticky.appendChild(button(ctx, "Complete Workout", "primary", "check", 190));
-  sticky.appendChild(button(ctx, "Send Feedback", "secondary", "edit", 130));
+  sticky.appendChild(button(ctx, "Send Feedback", "secondary", undefined, 136));
   screen.appendChild(sticky);
   return screen;
 }
