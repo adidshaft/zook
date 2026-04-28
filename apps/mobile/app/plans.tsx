@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useRef, useState } from "react";
+import { Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { zookDemoFixtures } from "@zook/core";
 import {
   BottomNav,
@@ -10,7 +11,6 @@ import {
   ListRow,
   MobileHeader,
   ProgressBar,
-  SecondaryButton,
   SectionHeader,
   SegmentedControl,
   StatusChip,
@@ -22,6 +22,7 @@ import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type PlanView = "assigned" | "detail";
 type PlanFilter = "all" | "workout" | "diet" | "routine" | "recovery";
+type PlanExercise = { name: string; sets: string; equipment: string; reps: string };
 
 const plan = zookDemoFixtures.trainingPlans[0];
 const coach = zookDemoFixtures.users.find((user) => user.id === plan?.trainerUserId);
@@ -44,13 +45,107 @@ function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function SwipeExerciseRow({
+  exercise,
+  complete,
+  onToggle,
+  onDelete,
+}: {
+  exercise: PlanExercise;
+  complete: boolean;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const openRef = useRef(false);
+  const ignorePressRef = useRef(false);
+  const [open, setOpen] = useState(false);
+
+  function snapTo(value: number) {
+    const nextOpen = value < 0;
+    openRef.current = nextOpen;
+    setOpen(nextOpen);
+    Animated.spring(translateX, {
+      toValue: value,
+      friction: 9,
+      tension: 90,
+      useNativeDriver: true,
+    }).start();
+  }
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        Math.abs(gesture.dx) > 12 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+      onPanResponderMove: (_, gesture) => {
+        ignorePressRef.current = true;
+        const start = openRef.current ? -86 : 0;
+        const next = Math.max(-86, Math.min(0, start + gesture.dx));
+        translateX.setValue(next);
+      },
+      onPanResponderRelease: (_, gesture) => {
+        const shouldOpen = gesture.dx < -38 || (openRef.current && gesture.dx < 24);
+        snapTo(shouldOpen ? -86 : 0);
+        setTimeout(() => {
+          ignorePressRef.current = false;
+        }, 120);
+      },
+      onPanResponderTerminate: () => {
+        snapTo(openRef.current ? -86 : 0);
+        setTimeout(() => {
+          ignorePressRef.current = false;
+        }, 120);
+      },
+    }),
+  ).current;
+
+  function handleToggle() {
+    if (ignorePressRef.current) {
+      return;
+    }
+    if (openRef.current) {
+      snapTo(0);
+      return;
+    }
+    onToggle();
+  }
+
+  return (
+    <View style={styles.swipeShell}>
+      <Pressable
+        onPress={onDelete}
+        pointerEvents={open ? "auto" : "none"}
+        accessibilityRole="button"
+        accessibilityLabel={`Delete ${exercise.name}`}
+        style={[styles.deleteAction, open ? styles.deleteActionOpen : null]}
+      >
+        <Ionicons name="trash-outline" size={22} color={colors.text} />
+      </Pressable>
+      <Animated.View style={[styles.swipeForeground, { transform: [{ translateX }] }]} {...panResponder.panHandlers}>
+        <ExerciseRow
+          title={exercise.name}
+          sets={exercise.sets}
+          detail={`${exercise.equipment} · ${exercise.reps}`}
+          complete={complete}
+          onPress={handleToggle}
+          style={styles.swipeRow}
+        />
+      </Animated.View>
+    </View>
+  );
+}
+
 export default function Plans() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const [view, setView] = useState<PlanView>("assigned");
   const [filter, setFilter] = useState<PlanFilter>("all");
   const [completed, setCompleted] = useState(new Set(["Bench Press", "Incline Dumbbell Press"]));
-  const exercises = plan?.exercises ?? [];
-  const completedCount = completed.size;
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackNote, setFeedbackNote] = useState("");
+  const [feedbackStatus, setFeedbackStatus] = useState("");
+  const [exercises, setExercises] = useState<PlanExercise[]>(() => [...(plan?.exercises ?? [])]);
+  const coachName = coach?.name?.split(" ").slice(-1)[0] ?? "Rhea";
+  const completedCount = exercises.filter((exercise) => completed.has(exercise.name)).length;
   const progress = completedCount / Math.max(exercises.length, 1);
 
   useEffect(() => {
@@ -71,6 +166,42 @@ export default function Plans() {
     });
   }
 
+  function addExercise() {
+    setExercises((current) => {
+      let nextIndex = current.length + 1;
+      while (current.some((exercise) => exercise.name === `New exercise ${nextIndex}`)) {
+        nextIndex += 1;
+      }
+      return [
+        ...current,
+        {
+          name: `New exercise ${nextIndex}`,
+          sets: "3 sets",
+          equipment: "Any",
+          reps: "10 reps",
+        },
+      ];
+    });
+  }
+
+  function deleteExercise(name: string) {
+    setExercises((current) => current.filter((exercise) => exercise.name !== name));
+    setCompleted((current) => {
+      const next = new Set(current);
+      next.delete(name);
+      return next;
+    });
+  }
+
+  function sendFeedback() {
+    const cleanNote = feedbackNote.trim();
+    setFeedbackStatus(cleanNote ? "Sent to Coach Rhea." : "Pick one note first.");
+    if (cleanNote) {
+      setFeedbackOpen(false);
+      setFeedbackNote("");
+    }
+  }
+
   if (view === "detail") {
     return (
       <>
@@ -81,21 +212,69 @@ export default function Plans() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.content}
           >
-            <MobileHeader
-              title={plan?.title ?? "Push Day"}
-              subtitle={`Assigned by ${coach?.name ?? "Coach Rhea"}`}
-              leading={
-                <Pressable
-                  onPress={() => setView("assigned")}
-                  accessibilityRole="button"
-                  accessibilityLabel="Back to plans"
-                  style={styles.iconButton}
-                >
-                  <Text style={styles.backIcon}>‹</Text>
-                </Pressable>
-              }
-              chip={<StatusChip status="Assigned" />}
-            />
+            <View style={styles.detailHeader}>
+              <Pressable
+                onPress={() => setView("assigned")}
+                accessibilityRole="button"
+                accessibilityLabel="Back to plans"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={21} color={colors.text} />
+              </Pressable>
+              <View style={styles.detailTitleBlock}>
+                <View style={styles.detailStatusPill}>
+                  <Text style={styles.detailStatusText}>Assigned</Text>
+                </View>
+                <Text numberOfLines={1} style={styles.detailTitle}>{plan?.title ?? "Push Day"}</Text>
+                <Text numberOfLines={1} style={styles.detailSubtitle}>Coach {coachName}</Text>
+              </View>
+              <Pressable
+                onPress={() => setFeedbackOpen((current) => !current)}
+                accessibilityRole="button"
+                accessibilityLabel="Tell coach"
+                style={[styles.iconButton, feedbackOpen ? styles.iconButtonActive : null]}
+              >
+                <Ionicons name="information-outline" size={22} color={feedbackOpen ? colors.bg : colors.text} />
+              </Pressable>
+            </View>
+
+            {feedbackOpen ? (
+              <GlassCard variant="compact" contentStyle={styles.feedbackContent}>
+                <Text style={styles.cardTitle}>Tell coach</Text>
+                <View style={styles.feedbackOptions}>
+                  {["Too hard", "Need swap", "Pain", "Done"].map((option) => (
+                    <Pressable
+                      key={option}
+                      onPress={() => setFeedbackNote(option)}
+                      accessibilityRole="button"
+                      style={[
+                        styles.feedbackOption,
+                        feedbackNote === option ? styles.feedbackOptionActive : null,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.feedbackOptionText,
+                          feedbackNote === option ? styles.feedbackOptionTextActive : null,
+                        ]}
+                      >
+                        {option}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <TextInput
+                  value={feedbackNote}
+                  onChangeText={setFeedbackNote}
+                  placeholder="Add a short note"
+                  placeholderTextColor={colors.muted}
+                  style={styles.feedbackInput}
+                />
+                <ZookButton onPress={sendFeedback} icon="send-outline" style={styles.feedbackSendButton}>Send</ZookButton>
+              </GlassCard>
+            ) : null}
+
+            {feedbackStatus ? <Text style={styles.inlineStatus}>{feedbackStatus}</Text> : null}
 
             <GlassCard variant="selected" contentStyle={styles.progressContent}>
               <View style={styles.progressHeader}>
@@ -108,33 +287,38 @@ export default function Plans() {
               <ProgressBar value={progress} label="Plan cycle" />
             </GlassCard>
 
-            <SectionHeader title="Exercises" subtitle="Mark sets complete as you finish them." />
+            <SectionHeader
+              title="Exercises"
+              action={
+                <Pressable
+                  onPress={addExercise}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add exercise"
+                  style={styles.addExerciseButton}
+                >
+                  <Ionicons name="add" size={22} color={colors.bg} />
+                </Pressable>
+              }
+            />
             <View style={styles.stack}>
               {exercises.map((exercise) => (
-                <ExerciseRow
+                <SwipeExerciseRow
                   key={exercise.name}
-                  title={exercise.name}
-                  sets={exercise.sets}
-                  detail={`${exercise.equipment} · ${exercise.reps}`}
+                  exercise={exercise}
                   complete={completed.has(exercise.name)}
-                  onPress={() => toggleExercise(exercise.name)}
+                  onToggle={() => toggleExercise(exercise.name)}
+                  onDelete={() => deleteExercise(exercise.name)}
                 />
               ))}
             </View>
           </ScrollView>
           <StickyActionBar>
-            <View style={styles.actionRow}>
-              <SecondaryButton onPress={() => {}} style={styles.actionHalf} icon="chatbubble-outline">
-                Send Feedback
-              </SecondaryButton>
-              <ZookButton
-                onPress={() => setCompleted(new Set(exercises.map((exercise) => exercise.name)))}
-                style={styles.actionHalf}
-                icon="checkmark-circle-outline"
-              >
-                Complete Workout
-              </ZookButton>
-            </View>
+            <ZookButton
+              onPress={() => setCompleted(new Set(exercises.map((exercise) => exercise.name)))}
+              icon="checkmark-circle-outline"
+            >
+              Complete Workout
+            </ZookButton>
           </StickyActionBar>
         </ZookScreen>
       </>
@@ -214,17 +398,132 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 44,
     height: 44,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
-  backIcon: {
+  iconButtonActive: {
+    borderColor: colors.lime,
+    backgroundColor: colors.lime,
+  },
+  detailHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  detailTitleBlock: {
+    flex: 1,
+    gap: 4,
+  },
+  detailStatusPill: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.34)",
+    backgroundColor: "rgba(185,244,85,0.12)",
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  detailStatusText: {
+    color: colors.lime,
+    ...typography.caption,
+  },
+  detailTitle: {
     color: colors.text,
-    fontSize: 26,
-    lineHeight: 28,
+    ...typography.headerTitle,
+  },
+  detailSubtitle: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  feedbackContent: {
+    gap: spacing.md,
+  },
+  feedbackOptions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  feedbackOption: {
+    minHeight: 34,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  feedbackOptionActive: {
+    borderColor: colors.lime,
+    backgroundColor: "rgba(185,244,85,0.14)",
+  },
+  feedbackOptionText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  feedbackOptionTextActive: {
+    color: colors.lime,
+  },
+  feedbackInput: {
+    minHeight: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(0,0,0,0.22)",
+    color: colors.text,
+    paddingHorizontal: 12,
+    ...typography.body,
+  },
+  feedbackSendButton: {
+    alignSelf: "flex-start",
+    minWidth: 116,
+  },
+  inlineStatus: {
+    color: colors.lime,
+    ...typography.caption,
+    paddingHorizontal: 4,
+  },
+  addExerciseButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  swipeShell: {
+    width: "100%",
+    alignSelf: "stretch",
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "transparent",
+  },
+  swipeForeground: {
+    width: "100%",
+    alignSelf: "stretch",
+    zIndex: 1,
+  },
+  swipeRow: {
+    width: "100%",
+  },
+  deleteAction: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 86,
+    backgroundColor: colors.red,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 0,
+    opacity: 0,
+  },
+  deleteActionOpen: {
+    opacity: 1,
   },
   stack: {
     gap: 10,
@@ -253,13 +552,6 @@ const styles = StyleSheet.create({
   progressText: {
     color: colors.lime,
     ...typography.metric,
-  },
-  actionRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  actionHalf: {
-    flex: 1,
   },
   featuredContent: {
     gap: 14,

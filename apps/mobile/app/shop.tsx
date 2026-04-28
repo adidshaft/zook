@@ -27,8 +27,8 @@ type Order = Awaited<ReturnType<typeof zookMockServices.shopService.createOrder>
 const categories: Array<{ label: string; value: Category }> = [
   { label: "All", value: "ALL" },
   { label: "Water", value: "WATER" },
-  { label: "Protein", value: "PROTEIN_SHAKE" },
-  { label: "Shaker", value: "SHAKER" },
+  { label: "Shake", value: "PROTEIN_SHAKE" },
+  { label: "Cup", value: "SHAKER" },
   { label: "Towel", value: "TOWEL" },
   { label: "Other", value: "SUPPLEMENT" },
 ];
@@ -45,12 +45,9 @@ function iconForCategory(category: Category) {
 export default function Shop() {
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState("");
-  const [cart, setCart] = useState<Record<string, number>>({
-    "product-protein-shake": 1,
-    "product-zook-shaker": 1,
-  });
+  const [cart, setCart] = useState<Record<string, number>>({});
   const [checkoutState, setCheckoutState] = useState<CheckoutState>("browse");
-  const [order, setOrder] = useState<Order | null>(zookDemoFixtures.shopOrders[0] ?? null);
+  const [order, setOrder] = useState<Order | null>(null);
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const categoryMatch = category === "ALL" || product.category === category;
@@ -69,6 +66,18 @@ export default function Shop() {
 
   function addToCart(productId: string) {
     setCart((current) => ({ ...current, [productId]: (current[productId] ?? 0) + 1 }));
+  }
+
+  function removeFromCart(productId: string) {
+    setCart((current) => {
+      const quantity = current[productId] ?? 0;
+      if (quantity <= 1) {
+        const next = { ...current };
+        delete next[productId];
+        return next;
+      }
+      return { ...current, [productId]: quantity - 1 };
+    });
   }
 
   async function createMockCheckout() {
@@ -117,16 +126,16 @@ export default function Shop() {
   if (checkoutState === "checkout" && order) {
     return (
       <ShopShell selectedPath="/shop">
-        <MobileHeader title="Payment" subtitle="Pickup order for Iron Temple Gym." />
+        <MobileHeader title="Payment" subtitle="Your item will be ready at the desk." />
         <GlassCard contentStyle={styles.checkoutContent}>
-          <ListRow title="Hosted checkout" subtitle="Provider handoff" trailing={<StatusChip status="Step 1" tone="neutral" />} />
-          <ListRow title="Backend confirms payment" subtitle="Client redirect is never trusted" trailing={<StatusChip status="Step 2" tone="amber" />} />
-          <ListRow title="Pickup code issued" subtitle="Reception verifies before fulfillment" trailing={<StatusChip status="Step 3" tone="lime" />} />
+          <ListRow title="Pay securely" subtitle="Confirm the order" trailing={<StatusChip status="1" tone="neutral" />} />
+          <ListRow title="Get pickup code" subtitle="We will make a code for the desk" trailing={<StatusChip status="2" tone="amber" />} />
+          <ListRow title="Collect at desk" subtitle="Show the code to pick it up" trailing={<StatusChip status="3" tone="lime" />} />
           <View style={styles.checkoutTotal}>
             <Text style={styles.cardBody}>Order total</Text>
             <Text style={styles.totalText}>{formatInr(order.totalPaise)}</Text>
           </View>
-          <ZookButton onPress={() => void confirmMockPayment()} icon="card-outline">Continue to payment</ZookButton>
+          <ZookButton onPress={() => void confirmMockPayment()} icon="card-outline">Continue</ZookButton>
         </GlassCard>
       </ShopShell>
     );
@@ -138,7 +147,7 @@ export default function Shop() {
         <MobileHeader
           eyebrow="Cart"
           title="Review order"
-          subtitle="Reception fulfills pickup after payment confirmation."
+          subtitle="Pick it up at the front desk after payment."
           chip={<StatusChip status={`${itemCount} items`} tone="lime" />}
         />
         <GlassCard variant="compact" contentStyle={styles.stack}>
@@ -173,9 +182,8 @@ export default function Shop() {
     <>
       <ShopShell selectedPath="/shop">
         <MobileHeader
-          eyebrow="Shop"
           title="Desk pickup"
-          subtitle="Order gym essentials for counter pickup at Iron Temple Gym."
+          subtitle="Iron Temple Gym"
           trailing={
             <Pressable
               onPress={() => setCheckoutState("cart")}
@@ -189,7 +197,7 @@ export default function Shop() {
           }
         />
 
-        <SearchBar value={query} onChangeText={setQuery} placeholder="Search water, protein, towel..." />
+        <SearchBar value={query} onChangeText={setQuery} placeholder="Search essentials" />
         <SegmentedControl options={categories} value={category} onChange={setCategory} />
 
         {filteredProducts.length ? (
@@ -203,8 +211,11 @@ export default function Shop() {
                   price={formatInr(product.pricePaise)}
                   stock={lowStock ? "Low stock" : product.fulfillmentLabel}
                   tone={lowStock ? "amber" : "lime"}
+                  imageUrl={(product as { imageUrl?: string | null }).imageUrl}
+                  quantity={cart[product.id] ?? 0}
                   icon={iconForCategory(product.category as Category)}
-                  onPress={() => addToCart(product.id)}
+                  onIncrement={() => addToCart(product.id)}
+                  onDecrement={() => removeFromCart(product.id)}
                   style={styles.productCard}
                 />
               );
@@ -285,7 +296,8 @@ const styles = StyleSheet.create({
   productGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    columnGap: 10,
+    rowGap: 12,
   },
   productCard: {
     flexBasis: "47%",

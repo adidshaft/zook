@@ -1,4 +1,4 @@
-import { Link, useLocalSearchParams, usePathname } from "expo-router";
+import { Link, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import type { Href } from "expo-router";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
@@ -96,18 +96,18 @@ const buttonPalettes: Record<
     glow: shadows.glowLime,
   },
   secondary: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    borderColor: "rgba(255,255,255,0.12)",
     color: colors.text,
   },
   ghost: {
     backgroundColor: "transparent",
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.1)",
     color: colors.text,
   },
   danger: {
-    backgroundColor: "rgba(255,90,61,0.14)",
-    borderColor: "rgba(255,90,61,0.35)",
+    backgroundColor: "rgba(255,90,61,0.1)",
+    borderColor: "rgba(255,90,61,0.28)",
     color: colors.text,
   },
 };
@@ -1117,7 +1117,11 @@ export function ProductCard({
   stock,
   tone = "neutral",
   icon = "bag-outline",
+  imageUrl,
+  quantity = 0,
   onPress,
+  onIncrement,
+  onDecrement,
   style,
 }: {
   name: string;
@@ -1125,26 +1129,69 @@ export function ProductCard({
   stock: string;
   tone?: PillTone;
   icon?: IconName;
+  imageUrl?: string | null;
+  quantity?: number;
   onPress?: () => void;
+  onIncrement?: () => void;
+  onDecrement?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
+  const palette = tonePalettes[tone];
+  const increment = onIncrement ?? onPress;
   return (
     <GlassCard style={[styles.productCard, style]} contentStyle={styles.productContent}>
       <View style={styles.productVisual}>
-        <Ionicons name={icon} size={26} color={colors.lime} />
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.productImage} contentFit="cover" />
+        ) : (
+          <>
+            <View style={[styles.productVisualGlow, { backgroundColor: palette.backgroundColor }]} />
+            <Ionicons name={icon} size={38} color={palette.color} />
+          </>
+        )}
+        {tone === "amber" || tone === "red" ? (
+          <View style={[styles.productBadge, { borderColor: palette.borderColor, backgroundColor: palette.backgroundColor }]}>
+            <Text style={[styles.productBadgeText, { color: palette.color }]}>{stock}</Text>
+          </View>
+        ) : null}
       </View>
-      <Text style={styles.productName}>{name}</Text>
-      <Text style={styles.productPrice}>{price}</Text>
+      <View style={styles.productInfo}>
+        <Text numberOfLines={2} style={styles.productName}>{name}</Text>
+        <Text numberOfLines={1} style={styles.productMeta}>{stock}</Text>
+      </View>
       <View style={styles.productFooter}>
-        <ZookChip tone={tone}>{stock}</ZookChip>
-        <Pressable
-          onPress={() => pressWithHaptics(onPress)}
-          accessibilityRole="button"
-          accessibilityLabel={`Add ${name}`}
-          style={styles.productAdd}
-        >
-          <Ionicons name="add" size={18} color={colors.lime} />
-        </Pressable>
+        <Text style={styles.productPrice}>{price}</Text>
+        {quantity > 0 ? (
+          <View style={styles.productStepper}>
+            <Pressable
+              onPress={() => pressWithHaptics(onDecrement)}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${name}`}
+              style={styles.productStepperButton}
+            >
+              <Ionicons name="remove" size={16} color={colors.lime} />
+            </Pressable>
+            <Text style={styles.productQuantity}>{quantity}</Text>
+            <Pressable
+              onPress={() => pressWithHaptics(increment)}
+              accessibilityRole="button"
+              accessibilityLabel={`Add ${name}`}
+              style={styles.productStepperButton}
+            >
+              <Ionicons name="add" size={16} color={colors.lime} />
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => pressWithHaptics(increment)}
+            accessibilityRole="button"
+            accessibilityLabel={`Add ${name}`}
+            style={styles.productAdd}
+          >
+            <Text style={styles.productAddText}>ADD</Text>
+            <Ionicons name="add" size={16} color={colors.lime} />
+          </Pressable>
+        )}
       </View>
     </GlassCard>
   );
@@ -1385,17 +1432,28 @@ export function CollapsibleSection({
 type DockTab = {
   href: Href;
   label: string;
+  accessibilityLabel?: string;
   icon: IconName;
   activeIcon: IconName;
   matchPath: string;
   activeView?: string;
+  raised?: boolean;
+  hideLabel?: boolean;
 };
 
 const memberTabs: DockTab[] = [
   { href: "/", label: "Home", icon: "home-outline", activeIcon: "home", matchPath: "/" },
-  { href: "/scan", label: "Check-in", icon: "qr-code-outline", activeIcon: "qr-code", matchPath: "/scan" },
-  { href: "/plans", label: "Plans", icon: "barbell-outline", activeIcon: "barbell", matchPath: "/plans" },
-  { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag", matchPath: "/shop" },
+  {
+    href: "/scan",
+    label: "Check in",
+    accessibilityLabel: "Check in",
+    icon: "scan-outline",
+    activeIcon: "scan",
+    matchPath: "/scan",
+    raised: true,
+    hideLabel: true,
+  },
+  { href: "/plans", label: "Plan", icon: "barbell-outline", activeIcon: "barbell", matchPath: "/plans" },
 ];
 
 const trainerTabs: DockTab[] = [
@@ -1438,26 +1496,19 @@ export function BottomNav({
   activeView?: string;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const params = useLocalSearchParams<{ view?: string }>();
   const { activeRole } = useAuth();
   const notificationsQuery = useMyNotifications();
   const unreadCount = notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt)?.length ?? 0;
-  const resolvedTabs = tabs ?? getTabsForRole(role ?? activeRole);
+  const resolvedRole = role ?? activeRole;
+  const resolvedTabs = tabs ?? getTabsForRole(resolvedRole);
+  const isMemberNav = !tabs && (!resolvedRole || resolvedRole === "MEMBER");
   const activePath = selectedPath ?? pathname;
   const insets = useSafeAreaInsets();
+  const bottom = Math.max(insets.bottom, 12);
 
-  return (
-    <BlurView
-      intensity={54}
-      tint="dark"
-      style={StyleSheet.flatten([
-        styles.bottomNav,
-        {
-          bottom: Math.max(insets.bottom, 12),
-        },
-      ])}
-    >
-      {resolvedTabs.map((tab) => {
+  const navItems = resolvedTabs.map((tab) => {
         const currentView = activeView ?? (Array.isArray(params.view) ? params.view[0] : params.view);
         const clientDetailMatches = tab.label === "Clients" && activePath.startsWith("/trainer/client");
         const roleRootPath = tab.matchPath === "/trainer" || tab.matchPath === "/reception" || tab.matchPath === "/owner";
@@ -1468,24 +1519,91 @@ export function BottomNav({
           clientDetailMatches;
         const active = pathMatches && viewMatches;
         const showBadge = unreadCount > 0 && tab.label === "Inbox";
-        return (
-          <Link key={`${String(tab.href)}-${tab.label}`} href={tab.href} asChild>
+        const raised = isMemberNav && tab.raised;
+        const showLabel = !(raised && tab.hideLabel);
+        const memberPressProps = isMemberNav
+          ? {
+              onPress: () => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.replace(tab.href as never);
+              },
+            }
+          : {};
+        const item = (
             <Pressable
-              onPressIn={() => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+              {...memberPressProps}
+              onPressIn={() => {
+                if (!isMemberNav) {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+              }}
               accessibilityRole="tab"
-              accessibilityLabel={tab.label}
+              accessibilityLabel={tab.accessibilityLabel ?? tab.label}
               accessibilityState={{ selected: active }}
-              style={StyleSheet.flatten([styles.bottomNavItem, active ? styles.bottomNavItemActive : null])}
+              style={StyleSheet.flatten([
+                styles.bottomNavItem,
+                isMemberNav ? styles.memberBottomNavItem : null,
+                raised ? styles.memberBottomNavItemRaised : null,
+                active ? styles.bottomNavItemActive : null,
+                active && raised ? styles.memberBottomNavItemRaisedActive : null,
+              ])}
             >
               <View>
-                <Ionicons name={active ? tab.activeIcon : tab.icon} size={21} color={active ? colors.lime : colors.subtle} />
+                <Ionicons
+                  name={active ? tab.activeIcon : tab.icon}
+                  size={raised ? 31 : 21}
+                  color={raised ? colors.bg : active ? colors.lime : colors.subtle}
+                />
                 {showBadge ? <View style={styles.navBadge} /> : null}
               </View>
-              <Text style={[styles.bottomNavText, active ? styles.bottomNavTextActive : null]}>{tab.label}</Text>
+              {showLabel ? (
+                <Text
+                  style={[
+                    styles.bottomNavText,
+                    isMemberNav ? styles.memberBottomNavText : null,
+                    raised ? styles.memberBottomNavTextRaised : null,
+                    active ? styles.bottomNavTextActive : null,
+                    active && raised ? styles.memberBottomNavTextRaisedActive : null,
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              ) : null}
             </Pressable>
+        );
+
+        if (isMemberNav) {
+          return <View key={`${String(tab.href)}-${tab.label}`}>{item}</View>;
+        }
+
+        return (
+          <Link key={`${String(tab.href)}-${tab.label}`} href={tab.href} asChild>
+            {item}
           </Link>
         );
-      })}
+      });
+
+  if (isMemberNav) {
+    return (
+      <View style={[styles.memberBottomNavShell, { bottom }]}>
+        <BlurView intensity={86} tint="dark" style={styles.memberBottomNavBlur} />
+        <View style={styles.memberBottomNavItems}>{navItems}</View>
+      </View>
+    );
+  }
+
+  return (
+    <BlurView
+      intensity={54}
+      tint="dark"
+      style={StyleSheet.flatten([
+        styles.bottomNav,
+        {
+          bottom,
+        },
+      ])}
+    >
+      {navItems}
     </BlurView>
   );
 }
@@ -1759,17 +1877,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   button: {
-    minHeight: 52,
+    minHeight: 46,
     borderWidth: 1,
-    borderRadius: radii.button,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 14,
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: 7,
   },
   buttonText: {
-    ...typography.bodyStrong,
+    ...typography.button,
   },
   pressed: {
     opacity: 0.88,
@@ -1934,45 +2052,110 @@ const styles = StyleSheet.create({
   productCard: {
     flex: 1,
     minWidth: 0,
-    borderRadius: radii.large,
+    borderRadius: radii.medium,
   },
   productContent: {
-    padding: 10,
-    gap: 6,
+    padding: 8,
+    gap: 8,
   },
   productVisual: {
-    height: 50,
-    borderRadius: radii.medium,
+    height: 122,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
-    backgroundColor: "rgba(185,244,85,0.08)",
+    backgroundColor: "rgba(255,255,255,0.055)",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  productImage: {
+    width: "100%",
+    height: "100%",
+  },
+  productVisualGlow: {
+    position: "absolute",
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    opacity: 0.82,
+  },
+  productBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    minHeight: 24,
+    maxWidth: "82%",
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  productBadgeText: {
+    ...typography.caption,
+  },
+  productInfo: {
+    minHeight: 44,
+    gap: 2,
   },
   productName: {
     color: colors.text,
-    ...typography.bodyStrong,
+    ...typography.caption,
   },
-  productPrice: {
-    color: colors.lime,
-    ...typography.h3,
+  productMeta: {
+    color: colors.muted,
+    ...typography.caption,
   },
   productFooter: {
-    minHeight: 30,
+    minHeight: 36,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: spacing.sm,
+    gap: 6,
+  },
+  productPrice: {
+    color: colors.text,
+    ...typography.bodyStrong,
   },
   productAdd: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    minWidth: 68,
+    height: 34,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.limeBorder,
-    backgroundColor: "rgba(185,244,85,0.1)",
+    backgroundColor: "rgba(7,9,8,0.9)",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 3,
+  },
+  productAddText: {
+    color: colors.lime,
+    ...typography.caption,
+  },
+  productStepper: {
+    height: 34,
+    minWidth: 84,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(7,9,8,0.9)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+  productStepperButton: {
+    width: 30,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  productQuantity: {
+    minWidth: 20,
+    color: colors.text,
+    ...typography.caption,
+    textAlign: "center",
   },
   exerciseRow: {
     minHeight: 54,
@@ -2256,6 +2439,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
   },
+  memberBottomNavShell: {
+    position: "absolute",
+    left: 28,
+    right: 28,
+    height: 86,
+    overflow: "visible",
+  },
+  memberBottomNavBlur: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 66,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.22)",
+    backgroundColor: "rgba(7,9,8,0.88)",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.24,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+  },
+  memberBottomNavItems: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 66,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 0,
+    gap: 18,
+    overflow: "visible",
+  },
   bottomNavItem: {
     width: 58,
     height: 54,
@@ -2264,17 +2484,55 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 2,
   },
+  memberBottomNavItem: {
+    flex: 1,
+    height: 54,
+    borderRadius: 16,
+  },
+  memberBottomNavItemRaised: {
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 76,
+    width: 76,
+    height: 76,
+    marginTop: -30,
+    borderRadius: 38,
+    borderWidth: 3,
+    borderColor: "rgba(7,9,8,0.94)",
+    backgroundColor: colors.lime,
+    shadowColor: colors.lime,
+    shadowOpacity: 0.2,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+    zIndex: 3,
+  },
   bottomNavItemActive: {
     backgroundColor: "rgba(185,244,85,0.1)",
     borderWidth: 1,
     borderColor: "rgba(185,244,85,0.22)",
   },
+  memberBottomNavItemRaisedActive: {
+    backgroundColor: colors.lime,
+    borderColor: "rgba(7,9,8,0.94)",
+    borderWidth: 3,
+  },
   bottomNavText: {
     color: colors.subtle,
     ...typography.navLabel,
   },
+  memberBottomNavText: {
+    fontSize: 12,
+    lineHeight: 15,
+  },
+  memberBottomNavTextRaised: {
+    color: colors.bg,
+  },
   bottomNavTextActive: {
     color: colors.lime,
+  },
+  memberBottomNavTextRaisedActive: {
+    color: colors.bg,
   },
   navBadge: {
     position: "absolute",

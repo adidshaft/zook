@@ -118,7 +118,14 @@ function LayoutContent() {
           headerTintColor: "#f4f7ef",
           contentStyle: { backgroundColor: "#070908" },
         }}
-      />
+      >
+        <Stack.Screen name="index" options={{ animation: "none" }} />
+        <Stack.Screen name="plans" options={{ animation: "none" }} />
+        <Stack.Screen name="scan" options={{ animation: "none" }} />
+        <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="notifications" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="profile" options={{ animation: "slide_from_left" }} />
+      </Stack>
     </>
   );
 }

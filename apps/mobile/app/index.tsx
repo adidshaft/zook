@@ -1,5 +1,6 @@
 import { Link, Stack } from "expo-router";
 import type { Href } from "expo-router";
+import { BlurView } from "expo-blur";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -9,11 +10,8 @@ import {
   BottomNav,
   GlassCard,
   IconBubble,
-  MetricTile,
   SectionHeader,
   StatusRing,
-  ZookButton,
-  ZookChip,
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
@@ -39,21 +37,23 @@ export default function Home() {
   const { activeOrgId, session } = useAuth();
   const homeQuery = useMemberHome();
   const memberHome = homeQuery.data;
-  const activeOrganization =
-    memberHome?.activeOrganization ??
+  const sessionOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization;
+  const activeOrganization =
+    memberHome?.activeOrganization ??
+    sessionOrganization;
   const memberName = session?.user.name || "Aarav Mehta";
   const firstName = memberName.split(" ")[0] || "Aarav";
   const initials = initialsFor(memberName);
   const orgName = activeOrganization?.name ?? demoOrg?.name ?? "Iron Temple Gym";
   const city = activeOrganization?.city ?? demoOrg?.city ?? "Pune";
+  const gymHref = sessionOrganization?.username
+    ? (`/gym/${sessionOrganization.username}` as Href)
+    : ("/find-gyms" as Href);
   const daysLeft = demoMembership?.daysLeft ?? 22;
   const remainingVisits = memberHome?.activeMembership?.remainingVisits ?? demoMembership?.remainingVisits ?? 8;
   const planName = memberHome?.activePlan?.name ?? demoPlan?.title ?? "Push Day";
-  const streakDays = demoMembership?.streakDays ?? 5;
-  const weeklyGoalCompleted = demoMembership?.weeklyGoalCompleted ?? 3;
-  const weeklyGoalTarget = demoMembership?.weeklyGoalTarget ?? 5;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -78,7 +78,7 @@ export default function Home() {
             />
           }
         >
-          <View style={styles.homeHeader}>
+          <BlurView intensity={58} tint="dark" style={styles.homeHeader}>
             <Link href="/profile" asChild>
               <Pressable
                 style={({ pressed }) => pressed ? styles.pressedAvatar : null}
@@ -90,17 +90,31 @@ export default function Home() {
                 </View>
               </Pressable>
             </Link>
-            <View style={styles.headerCopy}>
-              <Text style={styles.greeting}>Good morning, {firstName}</Text>
-              <Text style={styles.gymLine}>{orgName} · {city}</Text>
-            </View>
+            <Link href={gymHref} asChild>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Open gym details"
+                style={styles.headerCopy}
+              >
+                <Text numberOfLines={1} style={styles.greeting}>Good morning, {firstName}</Text>
+                <View style={styles.gymLineRow}>
+                  <Text numberOfLines={1} style={styles.gymLine}>{orgName}, {city}</Text>
+                  <Ionicons name="chevron-down" size={14} color={colors.muted} />
+                </View>
+              </Pressable>
+            </Link>
+            <Link href="/shop" asChild>
+              <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open shop">
+                <Ionicons name="bag-outline" size={21} color={colors.text} />
+              </Pressable>
+            </Link>
             <Link href="/notifications" asChild>
               <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open notifications">
                 <Ionicons name="notifications-outline" size={21} color={colors.text} />
                 <View style={styles.unreadDot} />
               </Pressable>
             </Link>
-          </View>
+          </BlurView>
 
           <GlassCard variant="success" contentStyle={styles.membershipContent}>
             <View style={styles.membershipTop}>
@@ -115,18 +129,7 @@ export default function Home() {
                 </View>
                 <Text style={styles.mutedBody}>{remainingVisits} visits remaining</Text>
               </View>
-              <StatusRing tone="lime" value="73%" label="plan cycle" size={86} />
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.actionRow}>
-              <ZookButton href="/scan" icon="qr-code-outline" style={styles.actionHalf}>
-                Scan QR
-              </ZookButton>
-              <ZookButton href="/tracking" tone="secondary" icon="barbell-outline" style={styles.actionHalf}>
-                Start Workout
-              </ZookButton>
+              <StatusRing tone="lime" value="73%" label="used" size={76} />
             </View>
           </GlassCard>
 
@@ -142,28 +145,20 @@ export default function Home() {
             }
           />
 
-          <GlassCard contentStyle={styles.planContent}>
-            <View style={styles.planRow}>
-              <IconBubble icon="barbell-outline" tone="lime" size={44} />
-              <View style={styles.planCopy}>
-                <Text style={styles.planTitle}>{planName} · 6 exercises · Coach Rhea</Text>
-                <Text style={styles.mutedSmall}>Chest · Shoulders · Triceps</Text>
-              </View>
-              <ZookChip tone="lime">Assigned</ZookChip>
-            </View>
-          </GlassCard>
-
-          <GlassCard contentStyle={styles.metricsContent}>
-            <MetricTile label="Streak" value={`${streakDays} days`} tone="lime" icon="flame-outline" />
-            <MetricTile label="Check-in" value={demoMembership?.lastCheckInLabel ?? "7:12 AM"} tone="neutral" icon="time-outline" />
-            <MetricTile label="Weekly goal" value={`${weeklyGoalCompleted}/${weeklyGoalTarget}`} tone="amber" icon="locate-outline" />
-          </GlassCard>
-
-          <GlassCard variant="compact" contentStyle={styles.quickContent}>
-            <QuickAction href="/find-gyms" icon="search-outline" label="Find gyms" />
-            <QuickAction href="/tracking" icon="analytics-outline" label="Progress" />
-            <QuickAction href="/membership" icon="card-outline" label="Payments" />
-          </GlassCard>
+          <Link href="/plans" asChild>
+            <Pressable accessibilityRole="link" accessibilityLabel="Open today's plan">
+              <GlassCard contentStyle={styles.planContent}>
+                <View style={styles.planRow}>
+                  <IconBubble icon="barbell-outline" tone="lime" size={44} />
+                  <View style={styles.planCopy}>
+                    <Text numberOfLines={1} style={styles.planTitle}>{planName}</Text>
+                    <Text numberOfLines={1} style={styles.mutedSmall}>6 exercises · Coach Rhea</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                </View>
+              </GlassCard>
+            </Pressable>
+          </Link>
 
         </ScrollView>
         <BottomNav />
@@ -172,44 +167,32 @@ export default function Home() {
   );
 }
 
-function QuickAction({
-  href,
-  icon,
-  label,
-}: {
-  href: Href;
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-}) {
-  return (
-    <Link href={href} asChild>
-      <Pressable accessibilityRole="button" accessibilityLabel={label} style={styles.quickAction}>
-        <Ionicons name={icon} size={18} color={colors.muted} />
-        <Text style={styles.quickLabel}>{label}</Text>
-      </Pressable>
-    </Link>
-  );
-}
-
 const styles = StyleSheet.create({
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
+    paddingTop: 12,
     paddingBottom: 128,
     gap: 12,
   },
   homeHeader: {
-    minHeight: 58,
+    minHeight: 64,
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
+    gap: 8,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    backgroundColor: "rgba(7,9,8,0.74)",
+    overflow: "hidden",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.limeBorder,
     backgroundColor: "rgba(185,244,85,0.13)",
@@ -226,20 +209,30 @@ const styles = StyleSheet.create({
   },
   headerCopy: {
     flex: 1,
-    gap: 4,
+    minHeight: 44,
+    justifyContent: "center",
+    gap: 2,
+    paddingHorizontal: 4,
   },
   greeting: {
     color: colors.text,
     ...typography.h3,
   },
+  gymLineRow: {
+    minHeight: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
   gymLine: {
+    flexShrink: 1,
     color: colors.muted,
-    ...typography.body,
+    ...typography.small,
   },
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.panel,
@@ -256,11 +249,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lime,
   },
   membershipContent: {
-    padding: 18,
-    gap: 14,
+    padding: 16,
+    gap: 10,
   },
   membershipTop: {
-    minHeight: 98,
+    minHeight: 88,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -297,17 +290,6 @@ const styles = StyleSheet.create({
     color: colors.lime,
     ...typography.bodyStrong,
   },
-  divider: {
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
-  },
-  actionRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  actionHalf: {
-    flex: 1,
-  },
   sectionAction: {
     flexDirection: "row",
     alignItems: "center",
@@ -334,29 +316,5 @@ const styles = StyleSheet.create({
   planTitle: {
     color: colors.text,
     ...typography.bodyStrong,
-  },
-  metricsContent: {
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "stretch",
-    gap: spacing.sm,
-  },
-  quickContent: {
-    padding: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  quickAction: {
-    flex: 1,
-    minHeight: 54,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-  },
-  quickLabel: {
-    color: colors.muted,
-    ...typography.caption,
-    textAlign: "center",
   },
 });
