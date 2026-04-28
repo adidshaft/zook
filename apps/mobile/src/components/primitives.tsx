@@ -189,6 +189,16 @@ function pressWithHaptics(callback?: () => void) {
   callback?.();
 }
 
+function initialsForName(name?: string | null) {
+  const cleanName = name?.trim();
+  if (!cleanName) return "AM";
+  return cleanName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
 export function ZookScreen({
   children,
   bottomInset = false,
@@ -302,6 +312,43 @@ export function BrandMark({
     >
       <Image source={zookMarkSource} style={styles.brandMarkImage} contentFit="contain" />
     </View>
+  );
+}
+
+export function ProfileShortcut({
+  size = 44,
+  accessibilityLabel = "Open profile",
+}: {
+  size?: number;
+  accessibilityLabel?: string;
+}) {
+  const { session, status } = useAuth();
+
+  if (status !== "authenticated") return null;
+
+  const name = session?.user.name ?? "Aarav Mehta";
+  const initials = initialsForName(name);
+  const photoUrl = session?.user.profilePhotoUrl;
+
+  return (
+    <Link href="/profile" asChild>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        onPressIn={() => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+        style={({ pressed }) => [
+          styles.profileShortcut,
+          { width: size, height: size, borderRadius: size / 2 },
+          pressed ? styles.pressed : null,
+        ]}
+      >
+        {photoUrl ? (
+          <Image source={{ uri: photoUrl }} style={styles.profileShortcutImage} contentFit="cover" />
+        ) : (
+          <Text style={styles.profileShortcutText}>{initials}</Text>
+        )}
+      </Pressable>
+    </Link>
   );
 }
 
@@ -515,6 +562,7 @@ export function MobileHeader({
   trailing,
   chip,
   centered = false,
+  showProfileShortcut = true,
   style,
 }: {
   eyebrow?: string;
@@ -524,11 +572,14 @@ export function MobileHeader({
   trailing?: ReactNode;
   chip?: ReactNode;
   centered?: boolean;
+  showProfileShortcut?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
+  const resolvedLeading = leading ?? (!centered && showProfileShortcut ? <ProfileShortcut /> : null);
+
   return (
     <View style={[styles.mobileHeader, centered ? styles.mobileHeaderCentered : null, style]}>
-      {leading ? <View style={styles.headerSide}>{leading}</View> : null}
+      {resolvedLeading ? <View style={styles.headerSide}>{resolvedLeading}</View> : null}
       <View style={[styles.mobileHeaderCopy, centered ? styles.centeredCopy : null]}>
         {chip}
         {eyebrow ? <Text style={styles.headerEyebrow}>{eyebrow}</Text> : null}
@@ -595,7 +646,7 @@ export function ScreenHeader({
   subtitle?: string;
   trailing?: ReactNode;
 }) {
-  return <MobileHeader eyebrow={eyebrow} title={title} subtitle={subtitle} trailing={trailing} />;
+  return <MobileHeader eyebrow={eyebrow} title={title} subtitle={subtitle} trailing={trailing} showProfileShortcut={false} />;
 }
 
 export function SectionHeader({
@@ -1080,7 +1131,7 @@ export function ProductCard({
   return (
     <GlassCard style={[styles.productCard, style]} contentStyle={styles.productContent}>
       <View style={styles.productVisual}>
-        <Ionicons name={icon} size={30} color={colors.lime} />
+        <Ionicons name={icon} size={26} color={colors.lime} />
       </View>
       <Text style={styles.productName}>{name}</Text>
       <Text style={styles.productPrice}>{price}</Text>
@@ -1154,7 +1205,12 @@ export function SegmentedControl<T extends string>({
             accessibilityState={{ selected }}
             style={[styles.segmentedOption, selected ? styles.segmentedOptionSelected : null]}
           >
-            <Text style={[styles.segmentedOptionText, selected ? styles.segmentedOptionTextSelected : null]}>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+              style={[styles.segmentedOptionText, selected ? styles.segmentedOptionTextSelected : null]}
+            >
               {option.label}
             </Text>
           </Pressable>
@@ -1340,7 +1396,6 @@ const memberTabs: DockTab[] = [
   { href: "/scan", label: "Check-in", icon: "qr-code-outline", activeIcon: "qr-code", matchPath: "/scan" },
   { href: "/plans", label: "Plans", icon: "barbell-outline", activeIcon: "barbell", matchPath: "/plans" },
   { href: "/shop", label: "Shop", icon: "bag-outline", activeIcon: "bag", matchPath: "/shop" },
-  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person", matchPath: "/profile" },
 ];
 
 const trainerTabs: DockTab[] = [
@@ -1348,7 +1403,6 @@ const trainerTabs: DockTab[] = [
   { href: "/trainer?view=clients" as Href, label: "Clients", icon: "people-outline", activeIcon: "people", matchPath: "/trainer", activeView: "clients" },
   { href: "/plans", label: "Plans", icon: "reader-outline", activeIcon: "reader", matchPath: "/plans" },
   { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble", matchPath: "/notifications" },
-  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person", matchPath: "/profile" },
 ];
 
 const receptionTabs: DockTab[] = [
@@ -1356,7 +1410,6 @@ const receptionTabs: DockTab[] = [
   { href: "/reception?view=members" as Href, label: "Members", icon: "people-outline", activeIcon: "people", matchPath: "/reception", activeView: "members" },
   { href: "/reception?view=payments" as Href, label: "Payments", icon: "card-outline", activeIcon: "card", matchPath: "/reception", activeView: "payments" },
   { href: "/reception?view=orders" as Href, label: "Orders", icon: "cube-outline", activeIcon: "cube", matchPath: "/reception", activeView: "orders" },
-  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person", matchPath: "/profile" },
 ];
 
 const ownerTabs: DockTab[] = [
@@ -1364,7 +1417,6 @@ const ownerTabs: DockTab[] = [
   { href: "/owner?view=approvals" as Href, label: "Approvals", icon: "checkmark-done-outline", activeIcon: "checkmark-done", matchPath: "/owner", activeView: "approvals" },
   { href: "/owner?view=revenue" as Href, label: "Revenue", icon: "trending-up-outline", activeIcon: "trending-up", matchPath: "/owner", activeView: "revenue" },
   { href: "/owner?view=stock" as Href, label: "Stock", icon: "cube-outline", activeIcon: "cube", matchPath: "/owner", activeView: "stock" },
-  { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person", matchPath: "/profile" },
 ];
 
 function getTabsForRole(role?: Role): DockTab[] {
@@ -1374,13 +1426,23 @@ function getTabsForRole(role?: Role): DockTab[] {
   return memberTabs;
 }
 
-export function BottomNav({ tabs, selectedPath }: { tabs?: DockTab[]; selectedPath?: string }) {
+export function BottomNav({
+  tabs,
+  selectedPath,
+  role,
+  activeView,
+}: {
+  tabs?: DockTab[];
+  selectedPath?: string;
+  role?: Role;
+  activeView?: string;
+}) {
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string }>();
   const { activeRole } = useAuth();
   const notificationsQuery = useMyNotifications();
   const unreadCount = notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt)?.length ?? 0;
-  const resolvedTabs = tabs ?? getTabsForRole(activeRole);
+  const resolvedTabs = tabs ?? getTabsForRole(role ?? activeRole);
   const activePath = selectedPath ?? pathname;
   const insets = useSafeAreaInsets();
 
@@ -1396,16 +1458,16 @@ export function BottomNav({ tabs, selectedPath }: { tabs?: DockTab[]; selectedPa
       ])}
     >
       {resolvedTabs.map((tab) => {
-        const currentView = Array.isArray(params.view) ? params.view[0] : params.view;
+        const currentView = activeView ?? (Array.isArray(params.view) ? params.view[0] : params.view);
         const clientDetailMatches = tab.label === "Clients" && activePath.startsWith("/trainer/client");
+        const roleRootPath = tab.matchPath === "/trainer" || tab.matchPath === "/reception" || tab.matchPath === "/owner";
         const viewMatches = clientDetailMatches || (tab.activeView ? currentView === tab.activeView : !currentView);
         const pathMatches =
           activePath === tab.matchPath ||
-          (tab.matchPath !== "/" && activePath.startsWith(tab.matchPath)) ||
+          (tab.matchPath !== "/" && !roleRootPath && activePath.startsWith(tab.matchPath)) ||
           clientDetailMatches;
         const active = pathMatches && viewMatches;
-        const showBadge =
-          unreadCount > 0 && (tab.label === "Inbox" || (tab.label === "Profile" && !resolvedTabs.find((item) => item.label === "Inbox")));
+        const showBadge = unreadCount > 0 && tab.label === "Inbox";
         return (
           <Link key={`${String(tab.href)}-${tab.label}`} href={tab.href} asChild>
             <Pressable
@@ -1552,7 +1614,7 @@ const styles = StyleSheet.create({
   },
   legacyTitle: {
     color: colors.text,
-    ...typography.h1,
+    ...typography.screenTitle,
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.lg,
   },
@@ -1574,6 +1636,22 @@ const styles = StyleSheet.create({
   brandMarkImage: {
     width: "100%",
     height: "100%",
+  },
+  profileShortcut: {
+    borderWidth: 1,
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  profileShortcutImage: {
+    width: "100%",
+    height: "100%",
+  },
+  profileShortcutText: {
+    color: colors.lime,
+    ...typography.button,
   },
   glassCard: {
     borderWidth: 1,
@@ -1644,7 +1722,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: colors.text,
-    ...typography.h1,
+    ...typography.headerTitle,
   },
   headerSubtitle: {
     color: colors.muted,
@@ -1669,7 +1747,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text,
-    ...typography.h3,
+    ...typography.sectionTitle,
   },
   sectionSubtitle: {
     color: colors.muted,
@@ -1860,10 +1938,10 @@ const styles = StyleSheet.create({
   },
   productContent: {
     padding: 10,
-    gap: 7,
+    gap: 6,
   },
   productVisual: {
-    height: 58,
+    height: 50,
     borderRadius: radii.medium,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -1880,7 +1958,7 @@ const styles = StyleSheet.create({
     ...typography.h3,
   },
   productFooter: {
-    minHeight: 32,
+    minHeight: 30,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1897,7 +1975,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   exerciseRow: {
-    minHeight: 58,
+    minHeight: 54,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
@@ -1909,9 +1987,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   exerciseCheck: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: "rgba(255,255,255,0.04)",
@@ -2176,15 +2254,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.sm,
-    paddingVertical: 7,
+    paddingVertical: 6,
   },
   bottomNavItem: {
-    width: 64,
-    height: 60,
-    borderRadius: radii.large,
+    width: 58,
+    height: 54,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
+    gap: 2,
   },
   bottomNavItemActive: {
     backgroundColor: "rgba(185,244,85,0.1)",

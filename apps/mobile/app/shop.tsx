@@ -7,7 +7,6 @@ import {
   BottomNav,
   EmptyState,
   GlassCard,
-  IconBubble,
   ListRow,
   MobileHeader,
   ProductCard,
@@ -47,8 +46,8 @@ export default function Shop() {
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({
-    "shop-protein-shake": 1,
-    "shop-shaker": 1,
+    "product-protein-shake": 1,
+    "product-zook-shaker": 1,
   });
   const [checkoutState, setCheckoutState] = useState<CheckoutState>("browse");
   const [order, setOrder] = useState<Order | null>(zookDemoFixtures.shopOrders[0] ?? null);
@@ -357,8 +356,8 @@ const styles = StyleSheet.create({
   },
   pickupCode: {
     color: colors.text,
-    fontSize: 44,
-    lineHeight: 50,
+    fontSize: 28,
+    lineHeight: 34,
     fontFamily: "Inter_600SemiBold",
     fontVariant: ["tabular-nums"],
   },

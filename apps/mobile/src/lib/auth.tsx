@@ -3,7 +3,7 @@ import { ApiError } from "@zook/core";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { mobileApiFetch } from "./api";
-import { DEMO_AUTH_TOKEN, isOfflineDemoMode } from "./demo-mode";
+import { DEMO_AUTH_TOKEN, getOfflineDemoRoleOverride, isOfflineDemoMode } from "./demo-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const SESSION_STORAGE_KEY = "zook_session";
@@ -126,7 +126,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setStatus("loading");
     if (isOfflineDemoMode()) {
-      await hydrate(DEMO_AUTH_TOKEN);
+      const [storedOrgId, storedRole] = await Promise.all([
+        getStoredValue(ACTIVE_ORG_STORAGE_KEY),
+        getStoredValue(ACTIVE_ROLE_STORAGE_KEY)
+      ]);
+      await hydrate(
+        DEMO_AUTH_TOKEN,
+        storedOrgId ?? undefined,
+        getOfflineDemoRoleOverride() ?? (storedRole as Role | null) ?? undefined,
+      );
       return;
     }
 

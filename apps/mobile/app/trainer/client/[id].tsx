@@ -157,7 +157,7 @@ export default function TrainerClientDetail() {
             </GlassCard>
           ) : null}
         </ScrollView>
-        <BottomNav selectedPath="/trainer/client" />
+        <BottomNav selectedPath="/trainer/client" role="TRAINER" />
       </ZookScreen>
     </>
   );
@@ -184,8 +184,8 @@ const styles = StyleSheet.create({
   },
   backIcon: {
     color: colors.text,
-    fontSize: 30,
-    lineHeight: 32,
+    fontSize: 26,
+    lineHeight: 28,
   },
   clientContent: {
     gap: 14,

@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   avatarText: {
     color: colors.bg,
     fontWeight: "900",
-    fontSize: 28,
+    fontSize: 24,
   },
   profileCopy: {
     flex: 1,
@@ -504,8 +504,8 @@ const styles = StyleSheet.create({
   },
   profileName: {
     color: colors.text,
-    fontSize: 22,
-    fontWeight: "900",
+    fontSize: 19,
+    fontWeight: "700",
   },
   profileBody: {
     color: colors.muted,

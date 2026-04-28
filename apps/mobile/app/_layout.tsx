@@ -75,6 +75,11 @@ function LayoutContent() {
       return;
     }
 
+    if (pathname === "/" && defaultRoute !== "/") {
+      router.replace(defaultRoute as never);
+      return;
+    }
+
     if (pathname.startsWith("/owner") && (!hasAnyRole("OWNER", "ADMIN") || !hasActiveRole("OWNER", "ADMIN"))) {
       router.replace(defaultRoute as never);
       return;

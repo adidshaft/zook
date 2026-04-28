@@ -6,7 +6,6 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 import { Ionicons } from "@expo/vector-icons";
 import { zookDemoFixtures } from "@zook/core";
 import {
-  ActiveGymPill,
   BottomNav,
   GlassCard,
   IconBubble,
@@ -22,7 +21,6 @@ import { useMemberHome } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 const demoOrg = zookDemoFixtures.organizations[0];
-const demoBranch = zookDemoFixtures.branches[0];
 const demoMembership = zookDemoFixtures.memberships.find((membership) => membership.id === "membership-aarav-hybrid");
 const demoPlan = zookDemoFixtures.trainingPlans.find((plan) => plan.id === "plan-push-day");
 
@@ -81,9 +79,17 @@ export default function Home() {
           }
         >
           <View style={styles.homeHeader}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
+            <Link href="/profile" asChild>
+              <Pressable
+                style={({ pressed }) => pressed ? styles.pressedAvatar : null}
+                accessibilityRole="button"
+                accessibilityLabel="Open profile"
+              >
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{initials}</Text>
+                </View>
+              </Pressable>
+            </Link>
             <View style={styles.headerCopy}>
               <Text style={styles.greeting}>Good morning, {firstName}</Text>
               <Text style={styles.gymLine}>{orgName} · {city}</Text>
@@ -149,7 +155,7 @@ export default function Home() {
 
           <GlassCard contentStyle={styles.metricsContent}>
             <MetricTile label="Streak" value={`${streakDays} days`} tone="lime" icon="flame-outline" />
-            <MetricTile label="Last check-in" value={demoMembership?.lastCheckInLabel ?? "7:12 AM"} tone="neutral" icon="time-outline" />
+            <MetricTile label="Check-in" value={demoMembership?.lastCheckInLabel ?? "7:12 AM"} tone="neutral" icon="time-outline" />
             <MetricTile label="Weekly goal" value={`${weeklyGoalCompleted}/${weeklyGoalTarget}`} tone="amber" icon="locate-outline" />
           </GlassCard>
 
@@ -159,7 +165,6 @@ export default function Home() {
             <QuickAction href="/membership" icon="card-outline" label="Payments" />
           </GlassCard>
 
-          <ActiveGymPill label={demoBranch?.name ?? "Main Branch"} />
         </ScrollView>
         <BottomNav />
       </ZookScreen>
@@ -196,20 +201,24 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   homeHeader: {
-    minHeight: 66,
+    minHeight: 58,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.limeBorder,
     backgroundColor: "rgba(185,244,85,0.13)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  pressedAvatar: {
+    opacity: 0.82,
+    transform: [{ scale: 0.98 }],
   },
   avatarText: {
     color: colors.lime,

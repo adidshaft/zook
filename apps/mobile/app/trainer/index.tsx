@@ -86,7 +86,7 @@ export default function Trainer() {
             <ListRow title="System notice" subtitle="Minor-safe AI rules active for protected accounts." trailing={<StatusChip status="Safety" tone="amber" />} />
           </GlassCard>
         </ScrollView>
-        <BottomNav selectedPath="/trainer" />
+        <BottomNav selectedPath="/trainer" role="TRAINER" />
       </ZookScreen>
     </>
   );

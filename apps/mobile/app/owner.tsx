@@ -4,8 +4,8 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { zookDemoFixtures, zookMockServices } from "@zook/core";
 import {
   ActiveGymPill,
+  BottomNav,
   Card,
-  Dock,
   EmptyState,
   IconBubble,
   ListRow,
@@ -16,6 +16,7 @@ import {
   SecondaryButton,
   SectionHeader,
 } from "@/components/primitives";
+import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
 import { colors } from "@/lib/theme";
 
@@ -26,6 +27,15 @@ function normalizeView(value: string | string[] | undefined): OwnerView {
   const raw = Array.isArray(value) ? value[0] : value;
   if (raw === "approvals" || raw === "revenue" || raw === "stock") return raw;
   return "command";
+}
+
+function offlineDemoViewOverride() {
+  return isOfflineDemoMode() ? process.env.EXPO_PUBLIC_OFFLINE_DEMO_VIEW : undefined;
+}
+
+function cleanReviewReason(reason?: string | null) {
+  if (!reason) return "Desk approval is required.";
+  return reason.replace("Attendance approval mode is enabled.", "Desk approval is required.");
 }
 
 function titleCase(value: string) {
@@ -39,7 +49,7 @@ function titleCase(value: string) {
 
 export default function Owner() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
-  const view = normalizeView(params.view);
+  const view = normalizeView(params.view ?? offlineDemoViewOverride());
   const [, setVersion] = useState(0);
   const joinRequests = zookDemoFixtures.joinRequests.filter((request) => request.status === "PENDING");
   const attentionAttempts = zookMockServices.state.attendanceAttempts.filter(
@@ -149,7 +159,7 @@ export default function Owner() {
         {view === "command" ? (
           <>
             <View style={styles.metricGrid}>
-              <MetricTile label="Active members" value={formatCompactNumber(activeMembers)} detail="Default branch" tone="lime" icon="people-outline" style={styles.metricHalf} />
+              <MetricTile label="Active members" value={formatCompactNumber(activeMembers)} detail="Main Branch" tone="lime" icon="people-outline" style={styles.metricHalf} />
               <MetricTile label="Today check-ins" value={formatCompactNumber(todayCheckIns)} detail={`${attentionAttempts.length} pending review`} tone="blue" icon="qr-code-outline" style={styles.metricHalf} />
               <MetricTile label="Revenue" value={formatInr(revenuePaise)} detail="Collected + pickup" tone="amber" icon="trending-up-outline" style={styles.metricHalf} />
               <MetricTile label="Approvals" value={String(pendingApprovals)} detail="Needs attention" tone="violet" icon="checkmark-done-outline" style={styles.metricHalf} />
@@ -230,7 +240,7 @@ export default function Owner() {
                   <Card key={attempt.id} style={styles.stack}>
                     <ListRow
                       title={attempt.memberName}
-                      subtitle={`${titleCase(attempt.status)} · ${attempt.reason}`}
+                      subtitle={`${titleCase(attempt.status)} · ${cleanReviewReason(attempt.reason)}`}
                       leading={<IconBubble icon={attempt.status === "FLAGGED" ? "alert-outline" : "qr-code-outline"} tone={attempt.status === "FLAGGED" ? "red" : "amber"} />}
                       trailing={<Pill tone={attempt.status === "FLAGGED" ? "red" : "amber"}>{attempt.entryCode}</Pill>}
                     />
@@ -325,7 +335,7 @@ export default function Owner() {
           </>
         ) : null}
       </ScrollView>
-      <Dock />
+      <BottomNav role="OWNER" activeView={view === "command" ? undefined : view} />
     </Screen>
   );
 }
@@ -348,13 +358,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 34,
-    lineHeight: 38,
-    fontWeight: "900",
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "700",
   },
   subtitle: {
     color: colors.muted,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   metricGrid: {
     flexDirection: "row",

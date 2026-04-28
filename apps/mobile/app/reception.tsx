@@ -5,8 +5,8 @@ import { zookDemoFixtures, zookMockServices, type PaymentMode } from "@zook/core
 import {
   ActiveGymPill,
   AuditWarning,
+  BottomNav,
   Card,
-  Dock,
   FormField,
   IconBubble,
   ListRow,
@@ -36,6 +36,11 @@ function normalizeView(value: string | string[] | undefined): DeskView {
   const raw = Array.isArray(value) ? value[0] : value;
   if (raw === "members" || raw === "payments" || raw === "orders") return raw;
   return "desk";
+}
+
+function deskReasonCopy(reason?: string | null) {
+  if (!reason) return "Desk approval required.";
+  return reason.replace("Attendance approval mode is enabled.", "Desk approval is required.");
 }
 
 export default function Reception() {
@@ -133,7 +138,7 @@ export default function Reception() {
                     <IconBubble icon={attempt.status === "FLAGGED" ? "alert-circle-outline" : "person-outline"} tone={attempt.status === "FLAGGED" ? "red" : "amber"} size={38} />
                     <View style={styles.queueCopy}>
                       <Text style={styles.queueTitle}>{attempt.memberName}</Text>
-                      <Text style={styles.cardBody}>{attempt.entryCode} · {attempt.planName} · {attempt.reason}</Text>
+                      <Text style={styles.cardBody}>{attempt.entryCode} · {attempt.planName} · {deskReasonCopy(attempt.reason)}</Text>
                     </View>
                     <Pill tone={attempt.status === "FLAGGED" ? "red" : "amber"}>{attempt.status.replace(/_/g, " ")}</Pill>
                   </View>
@@ -186,7 +191,7 @@ export default function Reception() {
               <SectionHeader title="Member Snapshot" subtitle="Front desk view for fast decisions." />
               <ListRow title={member?.name ?? "Aarav Mehta"} subtitle={`${profile?.memberId ?? "ZK-M-10234"} · ${profile?.goal ?? "Muscle gain"}`} trailing={<Pill tone="lime">{membership?.status ?? "ACTIVE"}</Pill>} />
               <ListRow title="Due amount" subtitle="Hybrid Pro renewal" trailing={<Pill tone="amber">{formatInr(dueAmount)}</Pill>} />
-              <ListRow title="Last check-in" subtitle="Today 7:12 AM" trailing={<Pill tone="blue">Default Branch</Pill>} />
+              <ListRow title="Last check-in" subtitle="Today 7:12 AM" trailing={<Pill tone="blue">Main Branch</Pill>} />
               <AuditWarning>Manual attendance requires a reason and writes an audit log.</AuditWarning>
               <FormField label="Manual attendance reason" value={reason} onChangeText={setReason} />
               <PrimaryButton icon="create-outline" onPress={() => void approveAttendance("attendance-pending")}>Record Manual Attendance</PrimaryButton>
@@ -265,7 +270,7 @@ export default function Reception() {
           </>
         ) : null}
       </ScrollView>
-      <Dock />
+      <BottomNav role="RECEPTIONIST" />
     </Screen>
   );
 }
@@ -288,13 +293,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 34,
-    lineHeight: 38,
-    fontWeight: "900",
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "700",
   },
   subtitle: {
     color: colors.muted,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   metricGrid: {
     flexDirection: "row",

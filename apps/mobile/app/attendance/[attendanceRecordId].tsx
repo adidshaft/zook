@@ -93,7 +93,7 @@ export default function AttendanceResultScreen() {
   const approved = !pending;
   const tone = pending ? "amber" : approved ? "lime" : "red";
   const code = record.entryCode ?? (pending ? "ZK-7319" : "ZK-4821");
-  const branchName = record.branchName ?? "Main Branch";
+  const branchName = record.branchName === "Default Branch" ? "Main Branch" : record.branchName ?? "Main Branch";
   const planName = record.planName ?? "Hybrid Pro";
 
   return (
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.text,
-    ...typography.h1,
+    ...typography.headerTitle,
     textAlign: "center",
   },
   heroBody: {

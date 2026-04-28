@@ -1,5 +1,5 @@
-import { Stack } from "expo-router";
-import { useState } from "react";
+import { Stack, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { zookDemoFixtures } from "@zook/core";
 import {
@@ -14,6 +14,7 @@ import {
   SectionHeader,
   SegmentedControl,
   StatusChip,
+  StickyActionBar,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -39,13 +40,24 @@ const planCards = [
   { id: "recovery", title: "Shoulder mobility", meta: "Recovery · 12 min", tone: "violet" as const },
 ];
 
+function firstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default function Plans() {
+  const params = useLocalSearchParams<{ view?: string | string[] }>();
   const [view, setView] = useState<PlanView>("assigned");
   const [filter, setFilter] = useState<PlanFilter>("all");
   const [completed, setCompleted] = useState(new Set(["Bench Press", "Incline Dumbbell Press"]));
   const exercises = plan?.exercises ?? [];
   const completedCount = completed.size;
   const progress = completedCount / Math.max(exercises.length, 1);
+
+  useEffect(() => {
+    if (firstParam(params.view) === "detail") {
+      setView("detail");
+    }
+  }, [params.view]);
 
   function toggleExercise(name: string) {
     setCompleted((current) => {
@@ -109,7 +121,8 @@ export default function Plans() {
                 />
               ))}
             </View>
-
+          </ScrollView>
+          <StickyActionBar>
             <View style={styles.actionRow}>
               <SecondaryButton onPress={() => {}} style={styles.actionHalf} icon="chatbubble-outline">
                 Send Feedback
@@ -122,8 +135,7 @@ export default function Plans() {
                 Complete Workout
               </ZookButton>
             </View>
-          </ScrollView>
-          <BottomNav selectedPath="/plans" />
+          </StickyActionBar>
         </ZookScreen>
       </>
     );
@@ -211,8 +223,8 @@ const styles = StyleSheet.create({
   },
   backIcon: {
     color: colors.text,
-    fontSize: 30,
-    lineHeight: 32,
+    fontSize: 26,
+    lineHeight: 28,
   },
   stack: {
     gap: 10,
