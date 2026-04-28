@@ -451,12 +451,17 @@ function toneForStatusLabel(status: string): PillTone {
   return "neutral";
 }
 
+type StatusChipProps = Omit<Parameters<typeof ZookChip>[0], "children"> & {
+  status?: StatusLabel | string;
+  children?: ReactNode;
+};
+
 export function StatusChip({
   status,
   children,
   tone,
   ...props
-}: Parameters<typeof ZookChip>[0] & { status?: StatusLabel | string }) {
+}: StatusChipProps) {
   const label = status ?? children;
   const resolvedTone = tone ?? (typeof label === "string" ? toneForStatusLabel(label) : "neutral");
   return (
