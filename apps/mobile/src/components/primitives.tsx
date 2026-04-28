@@ -1,4 +1,4 @@
-import { Link, usePathname } from "expo-router";
+import { Link, useLocalSearchParams, usePathname } from "expo-router";
 import type { Href } from "expo-router";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
@@ -9,10 +9,12 @@ import {
   ActivityIndicator,
   Animated,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   type TextInputProps,
+  type ScrollViewProps,
   type StyleProp,
   type TextStyle,
   View,
@@ -22,11 +24,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 import { useAuth } from "@/lib/auth";
 import { useMyNotifications } from "@/lib/query-hooks";
-import { colors, layout, radii, shadows, spacing, typography } from "@/lib/theme";
+import { colors, layout, palettes, radii, shadows, spacing, typography } from "@/lib/theme";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 export type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type GlassCardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
 type BrandMarkSize = "sm" | "md" | "lg";
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -109,6 +112,40 @@ const buttonPalettes: Record<
   },
 };
 
+const glassCardVariants: Record<
+  GlassCardVariant,
+  { backgroundColor: string; borderColor: string; shadow?: ViewStyle }
+> = {
+  default: {
+    backgroundColor: colors.glassFill,
+    borderColor: colors.glassStroke,
+    shadow: shadows.glass,
+  },
+  compact: {
+    backgroundColor: colors.glassFill,
+    borderColor: colors.divider,
+    shadow: shadows.card,
+  },
+  selected: {
+    backgroundColor: palettes.lime.fillSoft,
+    borderColor: palettes.lime.stroke,
+    shadow: shadows.glowLimeSoft,
+  },
+  success: {
+    backgroundColor: palettes.lime.fillSoft,
+    borderColor: palettes.lime.stroke,
+    shadow: shadows.glowLimeSoft,
+  },
+  warning: {
+    backgroundColor: palettes.warning.fill,
+    borderColor: palettes.warning.stroke,
+  },
+  danger: {
+    backgroundColor: palettes.danger.fill,
+    borderColor: palettes.danger.stroke,
+  },
+};
+
 const metricPalettes = {
   neutral: {
     backgroundColor: "rgba(255,255,255,0.05)",
@@ -156,10 +193,12 @@ export function ZookScreen({
   children,
   bottomInset = false,
   style,
+  ambient = true,
 }: {
   children: ReactNode;
   bottomInset?: boolean;
   style?: StyleProp<ViewStyle>;
+  ambient?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -173,7 +212,7 @@ export function ZookScreen({
         style,
       ]}
     >
-      <View pointerEvents="none" style={styles.ambientGlow} />
+      {ambient ? <View pointerEvents="none" style={styles.ambientGlow} /> : null}
       {children}
     </View>
   );
@@ -188,8 +227,51 @@ export function Screen({ children, title }: { children: ReactNode; title?: strin
   );
 }
 
-export function ScreenShell({ children, title }: { children: ReactNode; title?: string }) {
-  return <Screen title={title}>{children}</Screen>;
+export function ScreenShell({
+  children,
+  title,
+  scroll = true,
+  bottomNav = true,
+  stickyAction = false,
+  ambient = true,
+  contentStyle,
+  style,
+  ...scrollProps
+}: {
+  children: ReactNode;
+  title?: string;
+  scroll?: boolean;
+  bottomNav?: boolean;
+  stickyAction?: boolean;
+  ambient?: boolean;
+  contentStyle?: StyleProp<ViewStyle>;
+  style?: StyleProp<ViewStyle>;
+} & Omit<ScrollViewProps, "contentContainerStyle" | "style">) {
+  const contentPaddingBottom =
+    (bottomNav ? layout.bottomNavHeight + 34 : 24) + (stickyAction ? layout.stickyActionHeight : 0);
+  return (
+    <ZookScreen ambient={ambient} style={style}>
+      {title ? <Text style={styles.legacyTitle}>{title}</Text> : null}
+      {scroll ? (
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          {...scrollProps}
+          contentContainerStyle={[
+            styles.screenShellContent,
+            { paddingBottom: contentPaddingBottom },
+            contentStyle,
+          ]}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View style={[styles.screenShellContent, { paddingBottom: contentPaddingBottom }, contentStyle]}>
+          {children}
+        </View>
+      )}
+    </ZookScreen>
+  );
 }
 
 export function SafeAreaScreen(props: Parameters<typeof ZookScreen>[0]) {
@@ -228,16 +310,61 @@ export function GlassCard({
   style,
   contentStyle,
   glow = false,
+  variant = "default",
+  padding,
+  radius,
+  pressable = false,
+  disabled = false,
+  onPress,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   glow?: boolean;
+  variant?: GlassCardVariant;
+  padding?: number;
+  radius?: number;
+  pressable?: boolean;
+  disabled?: boolean;
+  onPress?: () => void;
 }) {
-  return (
-    <View style={[styles.glassCard, glow ? styles.glassCardGlow : null, style]}>
+  const palette = glassCardVariants[variant];
+  const cardStyle = [
+    styles.glassCard,
+    palette.shadow,
+    {
+      backgroundColor: palette.backgroundColor,
+      borderColor: palette.borderColor,
+      borderRadius: radius ?? (variant === "compact" ? radii.smallCard : radii.mainCard),
+    },
+    glow ? styles.glassCardGlow : null,
+    disabled ? styles.disabled : null,
+    style,
+  ];
+  const inner = (
+    <>
       <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFillObject} />
-      <View style={[styles.glassContent, contentStyle]}>{children}</View>
+      <View style={[styles.glassContent, padding !== undefined ? { padding } : null, contentStyle]}>{children}</View>
+    </>
+  );
+
+  if (pressable || onPress) {
+    return (
+      <Pressable
+        disabled={disabled}
+        onPress={() => pressWithHaptics(onPress)}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        style={({ pressed }) => [cardStyle, pressed && !disabled ? styles.pressed : null]}
+      >
+        {inner}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={cardStyle}>
+      {inner}
     </View>
   );
 }
@@ -297,8 +424,46 @@ export function Pill(props: Parameters<typeof ZookChip>[0]) {
   return <ZookChip {...props} />;
 }
 
-export function StatusChip(props: Parameters<typeof ZookChip>[0]) {
-  return <ZookChip {...props} />;
+type StatusLabel =
+  | "Active"
+  | "Approved"
+  | "Pending"
+  | "Pending approval"
+  | "Expired"
+  | "Flagged"
+  | "Assigned"
+  | "Low stock"
+  | "In stock"
+  | "Review required"
+  | "Desk confirmation needed";
+
+function toneForStatusLabel(status: string): PillTone {
+  const normalized = status.toLowerCase();
+  if (normalized.includes("approved") || normalized.includes("active") || normalized.includes("assigned") || normalized.includes("in stock")) {
+    return "lime";
+  }
+  if (normalized.includes("pending") || normalized.includes("review") || normalized.includes("desk") || normalized.includes("low")) {
+    return "amber";
+  }
+  if (normalized.includes("expired") || normalized.includes("flagged")) {
+    return "red";
+  }
+  return "neutral";
+}
+
+export function StatusChip({
+  status,
+  children,
+  tone,
+  ...props
+}: Parameters<typeof ZookChip>[0] & { status?: StatusLabel | string }) {
+  const label = status ?? children;
+  const resolvedTone = tone ?? (typeof label === "string" ? toneForStatusLabel(label) : "neutral");
+  return (
+    <ZookChip {...props} tone={resolvedTone}>
+      {label}
+    </ZookChip>
+  );
 }
 
 export function ActiveGymPill({ label }: { label: string }) {
@@ -314,6 +479,25 @@ export function RoleChip({ role }: { role: Role | string }) {
   return (
     <ZookChip tone="neutral" icon="shield-checkmark-outline" textStyle={styles.capitalize}>
       {label}
+    </ZookChip>
+  );
+}
+
+export function PriorityChip({ priority }: { priority: "High" | "Medium" | "Low" }) {
+  const tone: PillTone = priority === "High" ? "red" : priority === "Medium" ? "amber" : "neutral";
+  return <ZookChip tone={tone}>{priority}</ZookChip>;
+}
+
+export function ModeChip({
+  mode,
+  selected = false,
+}: {
+  mode: "Direct UPI" | "Manual Approval" | "Open Join" | "Desk Pickup" | "Cash" | "Bank" | "Card" | "Manual";
+  selected?: boolean;
+}) {
+  return (
+    <ZookChip tone={selected ? "lime" : "neutral"} icon={selected ? "checkmark-circle-outline" : undefined}>
+      {mode}
     </ZookChip>
   );
 }
@@ -558,6 +742,14 @@ export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "vari
   return <ZookButton {...props} variant="danger" />;
 }
 
+export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+  return <ZookButton {...props} variant="ghost" />;
+}
+
+export function DangerActionButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+  return <ZookButton {...props} variant="danger" />;
+}
+
 export function PrimaryLink({
   href,
   children,
@@ -760,6 +952,10 @@ export function ListRow({
 type TextFieldProps = Omit<TextInputProps, "style"> & {
   label?: string;
   hint?: string;
+  error?: string;
+  optional?: boolean;
+  required?: boolean;
+  readonly?: boolean;
   style?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
   leading?: ReactNode;
@@ -769,25 +965,50 @@ type TextFieldProps = Omit<TextInputProps, "style"> & {
 export function TextField({
   label,
   hint,
+  error,
+  optional = false,
+  required = false,
+  readonly = false,
   style,
   inputStyle,
   leading,
   trailing,
   ...props
 }: TextFieldProps) {
+  const [focused, setFocused] = useState(false);
+  const disabled = props.editable === false;
+  const labelSuffix = required ? " *" : optional ? " optional" : "";
   return (
     <View style={[styles.inputGroup, style]}>
-      {label ? <Text style={styles.inputLabel}>{label}</Text> : null}
-      <View style={styles.inputWrapper}>
+      {label ? <Text style={styles.inputLabel}>{label}{labelSuffix}</Text> : null}
+      <View
+        style={[
+          styles.inputWrapper,
+          focused ? styles.inputWrapperFocused : null,
+          error ? styles.inputWrapperError : null,
+          readonly ? styles.inputWrapperReadonly : null,
+          disabled ? styles.inputWrapperDisabled : null,
+        ]}
+      >
         {leading}
         <TextInput
           {...props}
+          editable={readonly ? false : props.editable}
+          onFocus={(event) => {
+            setFocused(true);
+            props.onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            props.onBlur?.(event);
+          }}
           placeholderTextColor={colors.subtle}
           style={[styles.input, props.multiline ? styles.inputMultiline : null, inputStyle]}
         />
         {trailing}
       </View>
-      {hint ? <Text style={styles.inputHint}>{hint}</Text> : null}
+      {error ? <Text accessibilityRole="alert" style={styles.inputError}>{error}</Text> : null}
+      {!error && hint ? <Text style={styles.inputHint}>{hint}</Text> : null}
     </View>
   );
 }
@@ -947,6 +1168,107 @@ export function AuditWarning({ children }: { children: ReactNode }) {
   );
 }
 
+export function OfflineBanner({
+  children = "Offline. Changes will sync when connection returns.",
+}: {
+  children?: ReactNode;
+}) {
+  return (
+    <View style={styles.offlineBanner}>
+      <Ionicons name="cloud-offline-outline" size={16} color={colors.amber} />
+      <Text style={styles.offlineBannerText}>{children}</Text>
+    </View>
+  );
+}
+
+export function DetailRow({
+  label,
+  value,
+  trailing,
+}: {
+  label: string;
+  value: string;
+  trailing?: ReactNode;
+}) {
+  return (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailRowLabel}>{label}</Text>
+      <View style={styles.detailRowValueWrap}>
+        <Text style={styles.detailRowValue}>{value}</Text>
+        {trailing}
+      </View>
+    </View>
+  );
+}
+
+export function KPIBox(props: Parameters<typeof MetricTile>[0]) {
+  return <MetricTile {...props} />;
+}
+
+export function ProgressRing(props: Parameters<typeof StatusRing>[0]) {
+  return <StatusRing {...props} />;
+}
+
+export function ProgressBar({
+  value,
+  tone = "lime",
+  label,
+}: {
+  value: number;
+  tone?: PillTone;
+  label?: string;
+}) {
+  const palette = tonePalettes[tone];
+  const percent = Math.max(0, Math.min(1, value));
+  return (
+    <View style={styles.progressBarGroup}>
+      {label ? <Text style={styles.progressBarLabel}>{label}</Text> : null}
+      <View style={styles.progressBarTrack}>
+        <View style={[styles.progressBarFill, { width: `${percent * 100}%`, backgroundColor: palette.color }]} />
+      </View>
+    </View>
+  );
+}
+
+export function ScannerFrame({
+  children,
+  tone = "lime",
+}: {
+  children?: ReactNode;
+  tone?: PillTone;
+}) {
+  const palette = tonePalettes[tone];
+  return (
+    <View style={styles.scannerFrame}>
+      <View style={[styles.scannerCorner, styles.scannerCornerTopLeft, { borderColor: palette.color }]} />
+      <View style={[styles.scannerCorner, styles.scannerCornerTopRight, { borderColor: palette.color }]} />
+      <View style={[styles.scannerCorner, styles.scannerCornerBottomLeft, { borderColor: palette.color }]} />
+      <View style={[styles.scannerCorner, styles.scannerCornerBottomRight, { borderColor: palette.color }]} />
+      <View style={[styles.scannerLine, { backgroundColor: palette.color }]} />
+      <View style={styles.scannerFrameContent}>{children}</View>
+    </View>
+  );
+}
+
+export function SwipeActionRow({
+  children,
+  action,
+  revealed = false,
+}: {
+  children: ReactNode;
+  action: ReactNode;
+  revealed?: boolean;
+}) {
+  return (
+    <View style={styles.swipeActionRow}>
+      <View style={[styles.swipeActionContent, revealed ? styles.swipeActionContentRevealed : null]}>
+        {children}
+      </View>
+      {revealed ? <View style={styles.swipeAction}>{action}</View> : null}
+    </View>
+  );
+}
+
 export function StickyActionBar({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
@@ -1005,6 +1327,7 @@ type DockTab = {
   icon: IconName;
   activeIcon: IconName;
   matchPath: string;
+  activeView?: string;
 };
 
 const memberTabs: DockTab[] = [
@@ -1017,7 +1340,7 @@ const memberTabs: DockTab[] = [
 
 const trainerTabs: DockTab[] = [
   { href: "/trainer", label: "Home", icon: "home-outline", activeIcon: "home", matchPath: "/trainer" },
-  { href: "/trainer?view=clients" as Href, label: "Clients", icon: "people-outline", activeIcon: "people", matchPath: "/trainer" },
+  { href: "/trainer?view=clients" as Href, label: "Clients", icon: "people-outline", activeIcon: "people", matchPath: "/trainer", activeView: "clients" },
   { href: "/plans", label: "Plans", icon: "reader-outline", activeIcon: "reader", matchPath: "/plans" },
   { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble", matchPath: "/notifications" },
   { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person", matchPath: "/profile" },
@@ -1025,17 +1348,17 @@ const trainerTabs: DockTab[] = [
 
 const receptionTabs: DockTab[] = [
   { href: "/reception", label: "Desk", icon: "desktop-outline", activeIcon: "desktop", matchPath: "/reception" },
-  { href: "/reception?view=members" as Href, label: "Members", icon: "people-outline", activeIcon: "people", matchPath: "/reception" },
-  { href: "/reception?view=payments" as Href, label: "Payments", icon: "card-outline", activeIcon: "card", matchPath: "/reception" },
-  { href: "/reception?view=orders" as Href, label: "Orders", icon: "cube-outline", activeIcon: "cube", matchPath: "/reception" },
+  { href: "/reception?view=members" as Href, label: "Members", icon: "people-outline", activeIcon: "people", matchPath: "/reception", activeView: "members" },
+  { href: "/reception?view=payments" as Href, label: "Payments", icon: "card-outline", activeIcon: "card", matchPath: "/reception", activeView: "payments" },
+  { href: "/reception?view=orders" as Href, label: "Orders", icon: "cube-outline", activeIcon: "cube", matchPath: "/reception", activeView: "orders" },
   { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person", matchPath: "/profile" },
 ];
 
 const ownerTabs: DockTab[] = [
   { href: "/owner", label: "Command", icon: "pulse-outline", activeIcon: "pulse", matchPath: "/owner" },
-  { href: "/owner?view=approvals" as Href, label: "Approvals", icon: "checkmark-done-outline", activeIcon: "checkmark-done", matchPath: "/owner" },
-  { href: "/owner?view=revenue" as Href, label: "Revenue", icon: "trending-up-outline", activeIcon: "trending-up", matchPath: "/owner" },
-  { href: "/owner?view=stock" as Href, label: "Stock", icon: "cube-outline", activeIcon: "cube", matchPath: "/owner" },
+  { href: "/owner?view=approvals" as Href, label: "Approvals", icon: "checkmark-done-outline", activeIcon: "checkmark-done", matchPath: "/owner", activeView: "approvals" },
+  { href: "/owner?view=revenue" as Href, label: "Revenue", icon: "trending-up-outline", activeIcon: "trending-up", matchPath: "/owner", activeView: "revenue" },
+  { href: "/owner?view=stock" as Href, label: "Stock", icon: "cube-outline", activeIcon: "cube", matchPath: "/owner", activeView: "stock" },
   { href: "/profile", label: "Profile", icon: "person-outline", activeIcon: "person", matchPath: "/profile" },
 ];
 
@@ -1048,6 +1371,7 @@ function getTabsForRole(role?: Role): DockTab[] {
 
 export function BottomNav({ tabs, selectedPath }: { tabs?: DockTab[]; selectedPath?: string }) {
   const pathname = usePathname();
+  const params = useLocalSearchParams<{ view?: string }>();
   const { activeRole } = useAuth();
   const notificationsQuery = useMyNotifications();
   const unreadCount = notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt)?.length ?? 0;
@@ -1066,11 +1390,15 @@ export function BottomNav({ tabs, selectedPath }: { tabs?: DockTab[]; selectedPa
         },
       ])}
     >
-      {resolvedTabs.map((tab, index) => {
-        const firstMatchingIndex = resolvedTabs.findIndex((item) => item.matchPath === tab.matchPath);
-        const active =
-          (activePath === tab.matchPath || (tab.matchPath !== "/" && activePath.startsWith(tab.matchPath))) &&
-          index === firstMatchingIndex;
+      {resolvedTabs.map((tab) => {
+        const currentView = Array.isArray(params.view) ? params.view[0] : params.view;
+        const clientDetailMatches = tab.label === "Clients" && activePath.startsWith("/trainer/client");
+        const viewMatches = clientDetailMatches || (tab.activeView ? currentView === tab.activeView : !currentView);
+        const pathMatches =
+          activePath === tab.matchPath ||
+          (tab.matchPath !== "/" && activePath.startsWith(tab.matchPath)) ||
+          clientDetailMatches;
+        const active = pathMatches && viewMatches;
         const showBadge =
           unreadCount > 0 && (tab.label === "Inbox" || (tab.label === "Profile" && !resolvedTabs.find((item) => item.label === "Inbox")));
         return (
@@ -1223,6 +1551,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.lg,
   },
+  screenShellContent: {
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.xl,
+    gap: layout.cardGap,
+  },
   brandMark: {
     alignItems: "center",
     justifyContent: "center",
@@ -1239,18 +1572,14 @@ const styles = StyleSheet.create({
   },
   glassCard: {
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.card,
-    backgroundColor: colors.panel,
     overflow: "hidden",
-    ...shadows.glass,
   },
   glassCardGlow: {
     borderColor: colors.limeBorder,
-    ...shadows.glowLime,
+    ...shadows.glowLimeSoft,
   },
   glassContent: {
-    padding: 18,
+    padding: layout.cardPadding,
     gap: spacing.md,
   },
   glassPanel: {
@@ -1347,9 +1676,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   button: {
-    minHeight: 46,
+    minHeight: 52,
     borderWidth: 1,
-    borderRadius: radii.large,
+    borderRadius: radii.button,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: spacing.lg,
@@ -1476,8 +1805,8 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   inputWrapper: {
-    minHeight: 48,
-    borderRadius: radii.large,
+    minHeight: 50,
+    borderRadius: radii.input,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.panel,
@@ -1493,12 +1822,30 @@ const styles = StyleSheet.create({
     ...typography.body,
     paddingVertical: spacing.md,
   },
+  inputWrapperFocused: {
+    borderColor: "rgba(185,244,85,0.38)",
+    backgroundColor: "rgba(255,255,255,0.075)",
+  },
+  inputWrapperError: {
+    borderColor: "rgba(255,90,61,0.42)",
+    backgroundColor: "rgba(255,90,61,0.08)",
+  },
+  inputWrapperReadonly: {
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  inputWrapperDisabled: {
+    opacity: 0.55,
+  },
   inputMultiline: {
     minHeight: 120,
     textAlignVertical: "top",
   },
   inputHint: {
     color: colors.muted,
+    ...typography.caption,
+  },
+  inputError: {
+    color: colors.red,
     ...typography.caption,
   },
   productCard: {
@@ -1628,6 +1975,141 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.body,
   },
+  offlineBanner: {
+    minHeight: 38,
+    borderRadius: radii.input,
+    borderWidth: 1,
+    borderColor: "rgba(242,201,76,0.28)",
+    backgroundColor: "rgba(242,201,76,0.08)",
+    paddingHorizontal: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  offlineBannerText: {
+    color: colors.text,
+    ...typography.caption,
+    flex: 1,
+  },
+  detailRow: {
+    minHeight: 42,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    paddingVertical: spacing.sm,
+  },
+  detailRowLabel: {
+    color: colors.muted,
+    ...typography.small,
+    flex: 1,
+  },
+  detailRowValueWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: spacing.sm,
+    flex: 1.2,
+  },
+  detailRowValue: {
+    color: colors.text,
+    ...typography.bodyStrong,
+    textAlign: "right",
+  },
+  progressBarGroup: {
+    gap: spacing.sm,
+  },
+  progressBarLabel: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  progressBarTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+  scannerFrame: {
+    aspectRatio: 1,
+    borderRadius: radii.mainCard,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    backgroundColor: "rgba(255,255,255,0.035)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  scannerFrameContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  scannerCorner: {
+    position: "absolute",
+    width: 42,
+    height: 42,
+    borderWidth: 3,
+    opacity: 0.9,
+  },
+  scannerCornerTopLeft: {
+    top: 18,
+    left: 18,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 16,
+  },
+  scannerCornerTopRight: {
+    top: 18,
+    right: 18,
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+    borderTopRightRadius: 16,
+  },
+  scannerCornerBottomLeft: {
+    bottom: 18,
+    left: 18,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 16,
+  },
+  scannerCornerBottomRight: {
+    bottom: 18,
+    right: 18,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    borderBottomRightRadius: 16,
+  },
+  scannerLine: {
+    position: "absolute",
+    left: 32,
+    right: 32,
+    top: "50%",
+    height: 2,
+    opacity: 0.3,
+  },
+  swipeActionRow: {
+    minHeight: 62,
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: spacing.sm,
+  },
+  swipeActionContent: {
+    flex: 1,
+  },
+  swipeActionContentRevealed: {
+    flex: 0.76,
+  },
+  swipeAction: {
+    minWidth: 72,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   stickyActionBar: {
     position: "absolute",
     left: 0,
@@ -1680,10 +2162,10 @@ const styles = StyleSheet.create({
     left: layout.screenPadding,
     right: layout.screenPadding,
     height: layout.bottomNavHeight,
-    borderRadius: radii.card,
+    borderRadius: radii.bottomNav,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "rgba(7,9,8,0.72)",
+    backgroundColor: "rgba(7,9,8,0.76)",
     overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
@@ -1693,7 +2175,7 @@ const styles = StyleSheet.create({
   },
   bottomNavItem: {
     width: 64,
-    height: 58,
+    height: 60,
     borderRadius: radii.large,
     alignItems: "center",
     justifyContent: "center",
@@ -1706,7 +2188,7 @@ const styles = StyleSheet.create({
   },
   bottomNavText: {
     color: colors.subtle,
-    ...typography.caption,
+    ...typography.navLabel,
   },
   bottomNavTextActive: {
     color: colors.lime,
