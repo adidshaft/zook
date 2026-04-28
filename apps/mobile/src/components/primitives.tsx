@@ -343,7 +343,7 @@ export function GlassCard({
   ];
   const inner = (
     <>
-      <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFillObject} />
+      <BlurView intensity={14} tint="dark" style={StyleSheet.absoluteFillObject} />
       <View style={[styles.glassContent, padding !== undefined ? { padding } : null, contentStyle]}>{children}</View>
     </>
   );
@@ -1278,7 +1278,7 @@ export function StickyActionBar({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
     <BlurView
-      intensity={80}
+      intensity={54}
       tint="dark"
       style={StyleSheet.flatten([styles.stickyActionBar, { paddingBottom: Math.max(insets.bottom, 14) }])}
     >
@@ -1386,7 +1386,7 @@ export function BottomNav({ tabs, selectedPath }: { tabs?: DockTab[]; selectedPa
 
   return (
     <BlurView
-      intensity={80}
+      intensity={54}
       tint="dark"
       style={StyleSheet.flatten([
         styles.bottomNav,
@@ -1542,13 +1542,13 @@ const styles = StyleSheet.create({
   },
   ambientGlow: {
     position: "absolute",
-    top: -96,
-    right: -44,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: "rgba(185,244,85,0.08)",
-    opacity: 0.9,
+    top: -120,
+    right: -72,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "rgba(185,244,85,0.055)",
+    opacity: 0.82,
   },
   legacyTitle: {
     color: colors.text,
