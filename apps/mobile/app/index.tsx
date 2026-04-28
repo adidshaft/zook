@@ -96,7 +96,7 @@ export default function Home() {
             </Link>
           </View>
 
-          <GlassCard glow contentStyle={styles.membershipContent}>
+          <GlassCard variant="success" contentStyle={styles.membershipContent}>
             <View style={styles.membershipTop}>
               <View style={styles.membershipCopy}>
                 <View style={styles.membershipLabel}>
@@ -153,14 +153,13 @@ export default function Home() {
             <MetricTile label="Weekly goal" value={`${weeklyGoalCompleted}/${weeklyGoalTarget}`} tone="amber" icon="locate-outline" />
           </GlassCard>
 
-          <GlassCard contentStyle={styles.quickContent}>
-            <QuickAction href="/find-gyms" icon="calendar-outline" label="Book class" />
+          <GlassCard variant="compact" contentStyle={styles.quickContent}>
+            <QuickAction href="/find-gyms" icon="search-outline" label="Find gyms" />
             <QuickAction href="/tracking" icon="analytics-outline" label="Progress" />
             <QuickAction href="/membership" icon="card-outline" label="Payments" />
-            <QuickAction href="/profile" icon="help-circle-outline" label="Support" />
           </GlassCard>
 
-          <ActiveGymPill label={demoBranch?.name ?? "Default Branch"} />
+          <ActiveGymPill label={demoBranch?.name ?? "Main Branch"} />
         </ScrollView>
         <BottomNav />
       </ZookScreen>
@@ -337,11 +336,10 @@ const styles = StyleSheet.create({
     padding: 10,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     gap: spacing.sm,
   },
   quickAction: {
-    width: 76,
+    flex: 1,
     minHeight: 54,
     alignItems: "center",
     justifyContent: "center",

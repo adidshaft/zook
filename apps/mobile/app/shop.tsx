@@ -1,22 +1,25 @@
+import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { zookDemoFixtures, zookMockServices } from "@zook/core";
 import {
-  ActiveGymPill,
-  Card,
-  Dock,
+  BottomNav,
+  EmptyState,
+  GlassCard,
   IconBubble,
   ListRow,
-  Pill,
-  PrimaryButton,
-  Screen,
-  SearchField,
+  MobileHeader,
+  ProductCard,
+  SearchBar,
   SecondaryButton,
   SegmentedControl,
+  StatusChip,
+  ZookButton,
+  ZookScreen,
 } from "@/components/primitives";
 import { formatInr } from "@/lib/formatting";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT";
 type CheckoutState = "browse" | "cart" | "checkout" | "pickup";
@@ -28,15 +31,25 @@ const categories: Array<{ label: string; value: Category }> = [
   { label: "Protein", value: "PROTEIN_SHAKE" },
   { label: "Shaker", value: "SHAKER" },
   { label: "Towel", value: "TOWEL" },
-  { label: "Supplement", value: "SUPPLEMENT" },
+  { label: "Other", value: "SUPPLEMENT" },
 ];
 
 const products = zookDemoFixtures.shopProducts;
 
+function iconForCategory(category: Category) {
+  if (category === "WATER") return "water-outline" as const;
+  if (category === "TOWEL") return "shirt-outline" as const;
+  if (category === "SHAKER") return "flask-outline" as const;
+  return "nutrition-outline" as const;
+}
+
 export default function Shop() {
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState("");
-  const [cart, setCart] = useState<Record<string, number>>({});
+  const [cart, setCart] = useState<Record<string, number>>({
+    "shop-protein-shake": 1,
+    "shop-shaker": 1,
+  });
   const [checkoutState, setCheckoutState] = useState<CheckoutState>("browse");
   const [order, setOrder] = useState<Order | null>(zookDemoFixtures.shopOrders[0] ?? null);
   const filteredProducts = useMemo(() => {
@@ -77,196 +90,177 @@ export default function Shop() {
 
   if (checkoutState === "pickup" && order) {
     return (
-      <Screen>
-        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-          <View style={styles.header}>
-            <ActiveGymPill label="Iron Temple Gym · Pune" />
-            <Text style={styles.title}>Ready for pickup</Text>
-            <Text style={styles.subtitle}>Show this code at the front desk. Priya can verify and fulfill the order.</Text>
-          </View>
-          <Card style={styles.pickupCard}>
-            <Text style={styles.pickupLabel}>Pickup code</Text>
-            <Text style={styles.pickupCode}>{order.pickupCode}</Text>
-            <Pill tone="lime">{order.status.replace(/_/g, " ")}</Pill>
-          </Card>
-          <Card style={styles.stack}>
-            {order.items.map((item) => {
-              const product = products.find((candidate) => candidate.id === item.productId);
-              return (
-                <ListRow
-                  key={item.productId}
-                  title={product?.name ?? item.productId}
-                  subtitle={`${item.quantity} item · ${formatInr(item.unitPaise)}`}
-                  trailing={<Pill tone="neutral">Paid</Pill>}
-                />
-              );
-            })}
-          </Card>
-          <PrimaryButton onPress={() => setCheckoutState("browse")}>Back to Shop</PrimaryButton>
-        </ScrollView>
-        <Dock />
-      </Screen>
+      <ShopShell selectedPath="/shop">
+        <MobileHeader title="Ready for pickup" subtitle="Show this code at the front desk." />
+        <GlassCard variant="success" contentStyle={styles.pickupContent}>
+          <Text style={styles.pickupLabel}>Pickup code</Text>
+          <Text style={styles.pickupCode}>{order.pickupCode}</Text>
+          <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
+        </GlassCard>
+        <GlassCard variant="compact" contentStyle={styles.stack}>
+          {order.items.map((item) => {
+            const product = products.find((candidate) => candidate.id === item.productId);
+            return (
+              <ListRow
+                key={item.productId}
+                title={product?.name ?? item.productId}
+                subtitle={`${item.quantity} item · ${formatInr(item.unitPaise)}`}
+                trailing={<StatusChip status="Paid" tone="neutral" />}
+              />
+            );
+          })}
+        </GlassCard>
+        <ZookButton onPress={() => setCheckoutState("browse")} icon="bag-outline">Back to Shop</ZookButton>
+      </ShopShell>
     );
   }
 
   if (checkoutState === "checkout" && order) {
     return (
-      <Screen>
-        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-          <View style={styles.header}>
-            <ActiveGymPill label="Iron Temple Gym · Pune" />
-            <Text style={styles.title}>Hosted checkout</Text>
-            <Text style={styles.subtitle}>The order activates only after mock backend payment confirmation.</Text>
+      <ShopShell selectedPath="/shop">
+        <MobileHeader title="Payment" subtitle="Pickup order for Iron Temple Gym." />
+        <GlassCard contentStyle={styles.checkoutContent}>
+          <ListRow title="Hosted checkout" subtitle="Provider handoff" trailing={<StatusChip status="Step 1" tone="neutral" />} />
+          <ListRow title="Backend confirms payment" subtitle="Client redirect is never trusted" trailing={<StatusChip status="Step 2" tone="amber" />} />
+          <ListRow title="Pickup code issued" subtitle="Reception verifies before fulfillment" trailing={<StatusChip status="Step 3" tone="lime" />} />
+          <View style={styles.checkoutTotal}>
+            <Text style={styles.cardBody}>Order total</Text>
+            <Text style={styles.totalText}>{formatInr(order.totalPaise)}</Text>
           </View>
-          <Card style={styles.checkoutCard}>
-            <ListRow title="Secure hosted checkout" subtitle="Mock provider handoff" trailing={<Pill tone="blue">Step 1</Pill>} />
-            <ListRow title="Backend confirms payment" subtitle="Client redirect is never trusted" trailing={<Pill tone="amber">Step 2</Pill>} />
-            <ListRow title="Pickup code issued" subtitle="Reception verifies before fulfillment" trailing={<Pill tone="lime">Step 3</Pill>} />
-            <View style={styles.checkoutTotal}>
-              <Text style={styles.cardBody}>Order total</Text>
-              <Text style={styles.totalText}>{formatInr(order.totalPaise)}</Text>
-            </View>
-            <PrimaryButton onPress={() => void confirmMockPayment()}>Confirm Mock Payment</PrimaryButton>
-          </Card>
-        </ScrollView>
-        <Dock />
-      </Screen>
+          <ZookButton onPress={() => void confirmMockPayment()} icon="card-outline">Continue to payment</ZookButton>
+        </GlassCard>
+      </ShopShell>
     );
   }
 
   if (checkoutState === "cart") {
     return (
-      <Screen>
-        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerCopy}>
-              <Text style={styles.eyebrow}>Cart</Text>
-              <Text style={styles.title}>Review order</Text>
-              <Text style={styles.subtitle}>Pickup items are fulfilled by reception after payment confirmation.</Text>
-            </View>
-            <Pill tone="lime">{itemCount} items</Pill>
-          </View>
-          <Card style={styles.stack}>
-            {cartItems.length ? (
-              cartItems.map((item) => (
-                <ListRow
-                  key={item.product.id}
-                  title={item.product.name}
-                  subtitle={`${item.quantity} item · ${item.product.fulfillmentLabel}`}
-                  trailing={<Pill tone="neutral">{formatInr(item.product.pricePaise * item.quantity)}</Pill>}
-                />
-              ))
-            ) : (
-              <Text style={styles.cardBody}>Your cart is empty.</Text>
-            )}
-          </Card>
-          <Card style={styles.totalCard}>
-            <Text style={styles.cardBody}>Subtotal</Text>
-            <Text style={styles.totalText}>{formatInr(totalPaise)}</Text>
-          </Card>
-          <View style={styles.actionRow}>
-            <SecondaryButton onPress={() => setCheckoutState("browse")} style={styles.actionHalf}>
-              Back
-            </SecondaryButton>
-            <PrimaryButton onPress={() => void createMockCheckout()} disabled={!cartItems.length} style={styles.actionHalf}>
-              Continue
-            </PrimaryButton>
-          </View>
-        </ScrollView>
-        <Dock />
-      </Screen>
+      <ShopShell selectedPath="/shop">
+        <MobileHeader
+          eyebrow="Cart"
+          title="Review order"
+          subtitle="Reception fulfills pickup after payment confirmation."
+          chip={<StatusChip status={`${itemCount} items`} tone="lime" />}
+        />
+        <GlassCard variant="compact" contentStyle={styles.stack}>
+          {cartItems.length ? (
+            cartItems.map((item) => (
+              <ListRow
+                key={item.product.id}
+                title={item.product.name}
+                subtitle={`${item.quantity} item · ${item.product.fulfillmentLabel}`}
+                trailing={<StatusChip status={formatInr(item.product.pricePaise * item.quantity)} tone="neutral" />}
+              />
+            ))
+          ) : (
+            <EmptyState title="Your cart is empty" body="Add desk pickup items from the shop." />
+          )}
+        </GlassCard>
+        <GlassCard variant="compact" contentStyle={styles.totalRow}>
+          <Text style={styles.cardBody}>Subtotal</Text>
+          <Text style={styles.totalText}>{formatInr(totalPaise)}</Text>
+        </GlassCard>
+        <View style={styles.actionRow}>
+          <SecondaryButton onPress={() => setCheckoutState("browse")} style={styles.actionHalf}>Back</SecondaryButton>
+          <ZookButton onPress={() => void createMockCheckout()} disabled={!cartItems.length} style={styles.actionHalf}>
+            Continue
+          </ZookButton>
+        </View>
+      </ShopShell>
     );
   }
 
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>Shop</Text>
-            <Text style={styles.title}>Desk pickup</Text>
-            <Text style={styles.subtitle}>Order water, protein, towels, and gear for counter pickup.</Text>
-          </View>
-          <Pressable onPress={() => setCheckoutState("cart")} accessibilityRole="button" accessibilityLabel="Open cart" style={styles.cartIcon}>
-            <Ionicons name="bag-outline" size={24} color={colors.text} />
-            {itemCount ? <View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{itemCount}</Text></View> : null}
-          </Pressable>
-        </View>
+    <>
+      <ShopShell selectedPath="/shop">
+        <MobileHeader
+          eyebrow="Shop"
+          title="Desk pickup"
+          subtitle="Order gym essentials for counter pickup at Iron Temple Gym."
+          trailing={
+            <Pressable
+              onPress={() => setCheckoutState("cart")}
+              accessibilityRole="button"
+              accessibilityLabel="Open cart"
+              style={styles.cartIcon}
+            >
+              <Ionicons name="bag-outline" size={22} color={colors.text} />
+              {itemCount ? <View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{itemCount}</Text></View> : null}
+            </Pressable>
+          }
+        />
 
-        <SearchField value={query} onChangeText={setQuery} placeholder="Search water, protein, towel..." />
+        <SearchBar value={query} onChangeText={setQuery} placeholder="Search water, protein, towel..." />
         <SegmentedControl options={categories} value={category} onChange={setCategory} />
 
-        <View style={styles.productGrid}>
-          {filteredProducts.map((product) => {
-            const lowStock = product.stock <= product.lowStockThreshold;
-            return (
-              <Card key={product.id} style={styles.productCard}>
-                <View style={styles.productTop}>
-                  <IconBubble
-                    icon={product.category === "WATER" ? "water-outline" : product.category === "TOWEL" ? "shirt-outline" : "nutrition-outline"}
-                    tone={lowStock ? "amber" : "lime"}
-                  />
-                  <Pill tone={lowStock ? "amber" : "lime"}>{product.fulfillmentLabel}</Pill>
-                </View>
-                <Text style={styles.productName}>{product.name}</Text>
-                <Text style={styles.price}>{formatInr(product.pricePaise)}</Text>
-                <Text style={styles.stockText}>{product.stock} in stock</Text>
-                <PrimaryButton onPress={() => addToCart(product.id)}>Add</PrimaryButton>
-              </Card>
-            );
-          })}
-        </View>
-      </ScrollView>
+        {filteredProducts.length ? (
+          <View style={styles.productGrid}>
+            {filteredProducts.map((product) => {
+              const lowStock = product.stock <= product.lowStockThreshold;
+              return (
+                <ProductCard
+                  key={product.id}
+                  name={product.name}
+                  price={formatInr(product.pricePaise)}
+                  stock={lowStock ? "Low stock" : product.fulfillmentLabel}
+                  tone={lowStock ? "amber" : "lime"}
+                  icon={iconForCategory(product.category as Category)}
+                  onPress={() => addToCart(product.id)}
+                  style={styles.productCard}
+                />
+              );
+            })}
+          </View>
+        ) : (
+          <EmptyState title="No products found" body="Try a different item or ask the desk for availability." />
+        )}
+      </ShopShell>
       {itemCount ? (
-        <Pressable onPress={() => setCheckoutState("cart")} style={styles.miniCart} accessibilityRole="button" accessibilityLabel="Open mini cart">
+        <Pressable
+          onPress={() => setCheckoutState("cart")}
+          style={styles.miniCart}
+          accessibilityRole="button"
+          accessibilityLabel="Open mini cart"
+        >
           <Text style={styles.miniCartText}>{itemCount} items · {formatInr(totalPaise)}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.bg} />
         </Pressable>
       ) : null}
-      <Dock />
-    </Screen>
+    </>
+  );
+}
+
+function ShopShell({ children, selectedPath }: { children: React.ReactNode; selectedPath: string }) {
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ZookScreen>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          {children}
+        </ScrollView>
+        <BottomNav selectedPath={selectedPath} />
+      </ZookScreen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 130,
-  },
-  header: {
-    gap: 10,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  headerCopy: {
-    flex: 1,
-    gap: 8,
-  },
-  eyebrow: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: "900",
-    textTransform: "uppercase",
-  },
-  title: {
-    color: colors.text,
-    fontSize: 34,
-    lineHeight: 38,
-    fontWeight: "900",
-  },
-  subtitle: {
-    color: colors.muted,
-    lineHeight: 22,
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
+    gap: 14,
+    paddingBottom: 132,
   },
   cartIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.panel,
@@ -287,40 +281,16 @@ const styles = StyleSheet.create({
   },
   cartBadgeText: {
     color: colors.bg,
-    fontSize: 11,
-    fontWeight: "900",
+    ...typography.navLabel,
   },
   productGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 10,
   },
   productCard: {
     flexBasis: "47%",
     flexGrow: 1,
-    gap: 10,
-    minHeight: 226,
-  },
-  productTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  productName: {
-    color: colors.text,
-    fontSize: 18,
-    lineHeight: 22,
-    fontWeight: "900",
-  },
-  price: {
-    color: colors.lime,
-    fontSize: 22,
-    fontWeight: "900",
-  },
-  stockText: {
-    color: colors.muted,
-    lineHeight: 20,
   },
   miniCart: {
     position: "absolute",
@@ -334,38 +304,42 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    ...{
+      shadowColor: colors.lime,
+      shadowOpacity: 0.12,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+    },
   },
   miniCartText: {
     color: colors.bg,
-    fontSize: 16,
-    fontWeight: "900",
+    ...typography.button,
   },
   stack: {
-    gap: 12,
+    gap: 10,
   },
-  totalCard: {
+  cardBody: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  totalRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  cardBody: {
-    color: colors.muted,
-    lineHeight: 21,
-  },
   totalText: {
     color: colors.text,
-    fontSize: 28,
-    fontWeight: "900",
+    ...typography.metric,
   },
   actionRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: spacing.sm,
   },
   actionHalf: {
     flex: 1,
   },
-  checkoutCard: {
-    gap: 12,
+  checkoutContent: {
+    gap: 10,
   },
   checkoutTotal: {
     borderTopWidth: 1,
@@ -373,22 +347,19 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     marginTop: 4,
   },
-  pickupCard: {
+  pickupContent: {
     alignItems: "center",
     gap: 10,
-    borderColor: colors.limeBorder,
-    backgroundColor: colors.accentPanel,
   },
   pickupLabel: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: "900",
-    textTransform: "uppercase",
+    ...typography.eyebrow,
   },
   pickupCode: {
     color: colors.text,
-    fontSize: 46,
+    fontSize: 44,
     lineHeight: 50,
-    fontWeight: "900",
+    fontFamily: "Inter_600SemiBold",
+    fontVariant: ["tabular-nums"],
   },
 });

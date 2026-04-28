@@ -9,6 +9,7 @@ import {
   ListRow,
   MobileHeader,
   StatusRing,
+  StatusChip,
   ZookButton,
   ZookChip,
   ZookScreen,
@@ -53,7 +54,7 @@ function resolveFallback(id?: string, status?: string): AttendanceRecord {
     status: fallbackId === "attendance-pending" ? "PENDING_APPROVAL" : "APPROVED",
     entryCode: fallbackId === "attendance-pending" ? "ZK-7319" : "ZK-4821",
     checkedInAt: "2026-04-26T01:44:00.000Z",
-    branchName: "Default Branch",
+    branchName: "Main Branch",
     planName: "Hybrid Pro",
   };
 }
@@ -92,7 +93,7 @@ export default function AttendanceResultScreen() {
   const approved = !pending;
   const tone = pending ? "amber" : approved ? "lime" : "red";
   const code = record.entryCode ?? (pending ? "ZK-7319" : "ZK-4821");
-  const branchName = record.branchName ?? "Default Branch";
+  const branchName = record.branchName ?? "Main Branch";
   const planName = record.planName ?? "Hybrid Pro";
 
   return (
@@ -136,14 +137,14 @@ export default function AttendanceResultScreen() {
 
           {pending ? (
             <>
-              <GlassCard contentStyle={styles.pendingCodeContent}>
+              <GlassCard variant="warning" contentStyle={styles.pendingCodeContent}>
                 <Text style={styles.entryLabel}>Entry Code</Text>
                 <Text style={styles.pendingCode}>{code}</Text>
                 <View style={styles.pendingChips}>
-                  <ZookChip tone="amber">Pending</ZookChip>
-                  <ZookChip tone="lime" icon="checkmark">Membership active</ZookChip>
+                  <StatusChip status="Pending approval" />
+                  <StatusChip status="Membership active" icon="checkmark" />
                 </View>
-                <ZookChip tone="amber" icon="alert-circle-outline">Desk confirmation needed</ZookChip>
+                <StatusChip status="Desk confirmation needed" icon="alert-circle-outline" />
               </GlassCard>
 
               <GlassCard contentStyle={styles.reasonContent}>
@@ -156,7 +157,7 @@ export default function AttendanceResultScreen() {
                 </View>
               </GlassCard>
 
-              <ZookButton icon="qr-code-outline">Show Code at Desk</ZookButton>
+              <ZookButton href="/attendance/attendance-approved" icon="refresh-outline">View Status</ZookButton>
               <ZookButton href="/" tone="secondary" icon="home-outline">Back to Home</ZookButton>
               <Link href="/attendance/attendance-approved" asChild>
                 <Pressable accessibilityRole="link" style={styles.historyLink}>

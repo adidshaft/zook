@@ -131,7 +131,7 @@ export default function MembershipScreen() {
           <>
             <SectionHeader
               eyebrow="Current"
-              title="Active membership"
+              title="Latest membership"
             />
             <Card style={styles.featuredCard}>
               <View style={styles.featuredHeader}>

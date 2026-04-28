@@ -9,6 +9,7 @@ import {
   IconBubble,
   ListRow,
   MobileHeader,
+  ScannerFrame,
   ZookButton,
   ZookChip,
   ZookScreen,
@@ -72,21 +73,10 @@ export default function Scan() {
             accessibilityLabel="Scan the gym QR"
             style={styles.scannerStage}
           >
-            <View style={styles.scannerViewport}>
-              {Array.from({ length: 5 }).map((_, index) => (
-                <View key={`v-${index}`} style={[styles.gridLineVertical, { left: `${((index + 1) / 6) * 100}%` }]} />
-              ))}
-              {Array.from({ length: 5 }).map((_, index) => (
-                <View key={`h-${index}`} style={[styles.gridLineHorizontal, { top: `${((index + 1) / 6) * 100}%` }]} />
-              ))}
-              <View style={styles.scanLine} />
-              <ScannerCorner position="topLeft" />
-              <ScannerCorner position="topRight" />
-              <ScannerCorner position="bottomLeft" />
-              <ScannerCorner position="bottomRight" />
-              <Ionicons name="qr-code-outline" size={78} color="rgba(185,244,85,0.58)" />
+            <ScannerFrame>
+              <Ionicons name="qr-code-outline" size={72} color="rgba(185,244,85,0.52)" />
               <Text style={styles.scannerText}>{busy ? "Validating..." : "Tap to simulate scan"}</Text>
-            </View>
+            </ScannerFrame>
           </Pressable>
 
           <View style={styles.helperRow}>
@@ -102,9 +92,9 @@ export default function Scan() {
             <ValidationRow title="Server-authorized check-in" icon="lock-closed-outline" />
           </GlassCard>
 
-          <GlassCard contentStyle={styles.supportContent}>
+          <GlassCard variant="compact" contentStyle={styles.supportContent}>
             <ListRow
-              title="Need help? Ask receptionist"
+              title="Can’t scan? Enter code"
               leading={<IconBubble icon="headset-outline" tone="neutral" size={34} />}
               trailing={<Ionicons name="chevron-forward" size={16} color={colors.muted} />}
               style={styles.flatRow}
@@ -143,21 +133,6 @@ function ValidationRow({ title, icon }: { title: string; icon: keyof typeof Ioni
   );
 }
 
-function ScannerCorner({ position }: { position: "topLeft" | "topRight" | "bottomLeft" | "bottomRight" }) {
-  return (
-    <View
-      pointerEvents="none"
-      style={[
-        styles.corner,
-        position === "topLeft" ? styles.cornerTopLeft : null,
-        position === "topRight" ? styles.cornerTopRight : null,
-        position === "bottomLeft" ? styles.cornerBottomLeft : null,
-        position === "bottomRight" ? styles.cornerBottomRight : null,
-      ]}
-    />
-  );
-}
-
 const styles = StyleSheet.create({
   content: {
     width: "100%",
@@ -181,79 +156,7 @@ const styles = StyleSheet.create({
     height: 292,
     alignItems: "center",
     justifyContent: "center",
-  },
-  scannerViewport: {
-    width: 278,
-    height: 278,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
-    backgroundColor: "rgba(255,255,255,0.03)",
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-  },
-  gridLineVertical: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: 1,
-    backgroundColor: "rgba(255,255,255,0.06)",
-  },
-  gridLineHorizontal: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.06)",
-  },
-  scanLine: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    top: 138,
-    height: 2,
-    borderRadius: 999,
-    backgroundColor: colors.lime,
-    shadowColor: colors.lime,
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  corner: {
-    position: "absolute",
-    width: 46,
-    height: 46,
-    borderColor: colors.lime,
-    shadowColor: colors.lime,
-    shadowOpacity: 0.5,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  cornerTopLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-  },
-  cornerTopRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
-  },
-  cornerBottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
-  },
-  cornerBottomRight: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
+    paddingHorizontal: 6,
   },
   scannerText: {
     color: colors.muted,

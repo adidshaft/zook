@@ -213,7 +213,7 @@ export default function Profile() {
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <ScreenHeader
           eyebrow="Account"
-          title={session?.user.name ?? "Zook member"}
+          title="Profile"
         />
 
         {routeParams.focus === "membership" ? (
@@ -232,10 +232,10 @@ export default function Profile() {
             </View>
             <View style={styles.profileCopy}>
               <Text style={styles.profileName}>
-                {session?.user.email ?? "No email"}
+                {session?.user.name ?? "Zook member"}
               </Text>
               <Text style={styles.profileBody}>
-                {session?.user.phone ?? "Phone not added"}
+                {session?.user.email ?? session?.user.phone ?? "Contact not added"}
               </Text>
             </View>
           </View>
@@ -272,7 +272,7 @@ export default function Profile() {
 
         <SectionHeader
           eyebrow="My Gym"
-          title="Active Location"
+          title="Active gym"
           action={<SecondaryLink href="/find-gyms">Explore</SecondaryLink>}
         />
 
@@ -445,11 +445,11 @@ export default function Profile() {
         </View>
 
         <SectionHeader
-          eyebrow="Privacy"
-          title="Data rights"
+          eyebrow="Settings"
+          title="Privacy"
         />
 
-        <Card style={styles.detailsCard}>
+        <Card variant="compact" style={styles.detailsCard}>
           <AuditWarning>Export and deletion requests create server jobs and audit logs. Zook does not fake instant deletion.</AuditWarning>
           <View style={styles.actionRow}>
             <PrimaryButton onPress={() => void requestPrivacyExport()} tone="secondary" style={styles.actionHalf}>

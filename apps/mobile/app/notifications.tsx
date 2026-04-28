@@ -157,7 +157,7 @@ export default function NotificationsScreen() {
         {!notificationsQuery.isLoading && !notifications.length ? (
           <EmptyState
             title="No notifications yet"
-            body="The inbox will start filling once your gym sends operational updates, plan messages, or transactional alerts."
+            body="Gym updates, payment alerts, and plan messages will appear here."
           />
         ) : null}
 
