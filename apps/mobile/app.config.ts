@@ -133,6 +133,10 @@ export default (): ExpoConfig => {
       appScheme: "zook",
       appVersion,
       runtimeVersion,
+      offlineDemo:
+        process.env.EXPO_PUBLIC_OFFLINE_DEMO === "true" ||
+        process.env.EXPO_PUBLIC_DEMO_MODE === "true" ||
+        process.env.MOBILE_OFFLINE_DEMO === "true",
       easBuildProfile: process.env.EAS_BUILD_PROFILE ?? "local",
       pushEnvironment: resolvePushEnvironment(releaseProfile),
       ...(expoProjectId ? { expoProjectId } : {}),

@@ -3,6 +3,7 @@ import { ApiError } from "@zook/core";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { mobileApiFetch } from "./api";
+import { DEMO_AUTH_TOKEN, isOfflineDemoMode } from "./demo-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const SESSION_STORAGE_KEY = "zook_session";
@@ -124,6 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     setStatus("loading");
+    if (isOfflineDemoMode()) {
+      await hydrate(DEMO_AUTH_TOKEN);
+      return;
+    }
+
     const [storedToken, storedOrgId, storedRole] = await Promise.all([
       getStoredValue(SESSION_STORAGE_KEY),
       getStoredValue(ACTIVE_ORG_STORAGE_KEY),
@@ -191,9 +197,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await mobileApiFetch("/auth/logout", { method: "POST", token });
       }
     } finally {
-      await clearSession();
+      if (isOfflineDemoMode()) {
+        await hydrate(DEMO_AUTH_TOKEN);
+      } else {
+        await clearSession();
+      }
     }
-  }, [clearSession, token]);
+  }, [clearSession, hydrate, token]);
 
   const setActiveOrgId = useCallback(
     async (orgId: string) => {

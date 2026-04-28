@@ -1,6 +1,8 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { parseApiResponse } from "@zook/core";
+import { demoMobileApiFetch } from "./demo-api";
+import { isOfflineDemoMode } from "./demo-mode";
 
 type MobileReleaseProfile = "local" | "staging" | "production";
 type MobilePushEnvironment = "development" | "preview" | "production";
@@ -36,6 +38,8 @@ export function getMobileReleaseProfile() {
 export function getMobilePushEnvironment() {
   return (Constants.expoConfig?.extra?.pushEnvironment as MobilePushEnvironment | undefined) ?? "development";
 }
+
+export { isOfflineDemoMode };
 
 export function getExpoProjectId() {
   return (
@@ -82,6 +86,10 @@ export async function mobileApiFetch<T>(
   } = {},
 ): Promise<T> {
   const { body: rawBody, orgId, token, ...requestInit } = init;
+  if (isOfflineDemoMode()) {
+    return demoMobileApiFetch<T>(path, { body: rawBody });
+  }
+
   const headers = new Headers(requestInit.headers);
   let body = rawBody;
   const apiBaseUrl = getMobileApiBaseUrl();

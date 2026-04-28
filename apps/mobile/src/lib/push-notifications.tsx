@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Linking, Platform } from "react-native";
 import { getExpoProjectId, getMobilePushEnvironment, mobileApiFetch } from "./api";
 import { getApiErrorMessage, useAuth } from "./auth";
+import { isOfflineDemoMode } from "./demo-mode";
 import { mergeNotificationPreferences } from "./notification-preferences";
 import { mapNotificationPayloadToHref } from "./notification-routing";
 import { useMyNotificationPreferences } from "./query-hooks";
@@ -52,6 +53,17 @@ interface PushNotificationsContextValue {
 
 const PushNotificationsContext = createContext<PushNotificationsContextValue | undefined>(undefined);
 
+const offlineDemoPushValue: PushNotificationsContextValue = {
+  permissionState: "unsupported",
+  syncStatus: "disabled",
+  isExpoGo: false,
+  projectIdConfigured: false,
+  requestEnablePush: async () => false,
+  disablePush: async () => {},
+  refreshRegistration: async () => {},
+  openSystemSettings: async () => {},
+};
+
 function normalizePermissionState(status: Notifications.NotificationPermissionsStatus): PushPermissionState {
   if (status.granted) {
     return "granted";
@@ -92,6 +104,10 @@ async function getOrCreateInstallationId() {
 }
 
 export function PushNotificationsProvider({ children }: { children: ReactNode }) {
+  if (isOfflineDemoMode()) {
+    return <PushNotificationsContext.Provider value={offlineDemoPushValue}>{children}</PushNotificationsContext.Provider>
+  }
+
   const { activeOrgId, registerLogoutCleanup, status, token } = useAuth()
   const router = useRouter()
   const queryClient = useQueryClient()
