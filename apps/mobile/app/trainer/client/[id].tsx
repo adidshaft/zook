@@ -1,26 +1,26 @@
-import { useLocalSearchParams } from "expo-router";
+import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
+import type { Href } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { zookDemoFixtures, zookMockServices } from "@zook/core";
 import {
-  ActiveGymPill,
   AuditWarning,
-  Card,
-  Dock,
+  BottomNav,
   FormField,
+  GlassCard,
   IconBubble,
   ListRow,
-  Pill,
-  PrimaryButton,
-  Screen,
+  MobileHeader,
   SecondaryButton,
   SegmentedControl,
   SectionHeader,
+  StatusChip,
+  ZookButton,
+  ZookScreen,
 } from "@/components/primitives";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type ClientTab = "summary" | "plans" | "progress" | "notes";
-type Draft = Awaited<ReturnType<typeof zookMockServices.planService.generateAiPlanDraft>>;
 
 const tabs: Array<{ label: string; value: ClientTab }> = [
   { label: "Summary", value: "summary" },
@@ -30,246 +30,215 @@ const tabs: Array<{ label: string; value: ClientTab }> = [
 ];
 
 export default function TrainerClientDetail() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const clientId = id || "user-aarav";
   const [tab, setTab] = useState<ClientTab>("summary");
-  const [draft, setDraft] = useState<Draft | null>(zookDemoFixtures.planDrafts[0] ?? null);
   const [status, setStatus] = useState("");
-  const [planTitle, setPlanTitle] = useState("4-week Push/Pull Routine");
+  const [planTitle, setPlanTitle] = useState("Push Day Strength Block");
   const client = zookDemoFixtures.users.find((user) => user.id === clientId) ?? zookDemoFixtures.users.find((user) => user.id === "user-aarav");
   const profile = zookDemoFixtures.memberProfiles.find((item) => item.userId === client?.id);
   const membership = zookDemoFixtures.memberships.find((item) => item.memberUserId === client?.id);
   const ptPack = zookDemoFixtures.ptPacks.find((item) => item.memberUserId === client?.id);
   const plans = zookMockServices.state.trainingPlans.filter((plan) => plan.memberUserId === client?.id);
-
-  async function generateDraft() {
-    const nextDraft = await zookMockServices.planService.generateAiPlanDraft({
-      trainerUserId: "user-rhea",
-      clientId: client?.id ?? "user-aarav",
-      goal: profile?.goal ?? "Muscle gain",
-    });
-    setDraft(nextDraft);
-    setStatus("AI draft created. It is not visible to the client yet.");
-  }
-
-  async function assignDraft() {
-    if (!draft || !client) return;
-    const plan = await zookMockServices.planService.assignDraft(draft.id, client.id);
-    setStatus(`${plan.title} assigned. Member notification generated.`);
-  }
-
-  function discardDraft() {
-    setDraft(null);
-    setStatus("Draft discarded before assignment.");
-  }
+  const aiDraftHref = `/trainer/client/${client?.id ?? "user-aarav"}/ai-draft` as Href;
 
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerCopy}>
-            <ActiveGymPill label="Iron Temple Gym · Pune" />
-            <Text style={styles.title}>Client Detail</Text>
-            <Text style={styles.subtitle}>You're viewing your assigned client only.</Text>
-          </View>
-          <Pill tone="blue">Trainer</Pill>
-        </View>
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ZookScreen>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          <MobileHeader
+            title="Client Detail"
+            subtitle="You’re viewing your assigned client only."
+            leading={
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/trainer")}
+                accessibilityRole="button"
+                accessibilityLabel="Back to trainer"
+                style={styles.iconButton}
+              >
+                <Text style={styles.backIcon}>‹</Text>
+              </Pressable>
+            }
+            chip={<StatusChip status="Trainer" tone="neutral" />}
+          />
 
-        <Card style={styles.clientCard}>
-          <View style={styles.clientTop}>
-            <IconBubble icon="person-outline" tone="lime" size={54} />
-            <View style={styles.clientCopy}>
-              <Text style={styles.clientName}>{client?.name ?? "Aarav Mehta"}</Text>
-              <Text style={styles.cardBody}>Active member · Goal: {profile?.goal ?? "Muscle gain"}</Text>
-            </View>
-          </View>
-          <View style={styles.chipRow}>
-            <Pill tone="lime">PT Pack: {ptPack?.sessionsLeft ?? 6} sessions left</Pill>
-            <Pill tone={profile?.trainerVisibleTracking ? "lime" : "amber"}>
-              Tracking: {profile?.trainerVisibleTracking ? "Opted in" : "Private"}
-            </Pill>
-          </View>
-        </Card>
-
-        <SegmentedControl options={tabs} value={tab} onChange={setTab} />
-
-        {tab === "summary" ? (
-          <Card style={styles.stack}>
-            <ListRow title="Fitness goal" subtitle={profile?.goal ?? "Muscle gain"} trailing={<Pill tone="lime">Active</Pill>} />
-            <ListRow title="Diet note" subtitle={profile?.dietPreference ?? "Vegetarian"} trailing={<Pill tone="blue">Visible</Pill>} />
-            <ListRow title="Allergy note" subtitle={profile?.allergyNote ?? "None added"} trailing={<Pill tone="neutral">Clear</Pill>} />
-            <ListRow title="Last check-in" subtitle={`Today ${membership?.lastCheckInLabel ?? "7:14 AM"}`} trailing={<Pill tone="lime">Checked in</Pill>} />
-            <ListRow title="Recent progress" subtitle="2 workouts completed this week" trailing={<Pill tone="amber">Review</Pill>} />
-          </Card>
-        ) : null}
-
-        {tab === "plans" ? (
-          <Card style={styles.stack}>
-            <SectionHeader title="Plan Builder" subtitle="Create, save, and assign plans to this client." />
-            <FormField label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
-            <View style={styles.chipRow}>
-              {["Workout", "Diet", "Routine", "Transformation", "Trainer Note", "Advisory", "Machine Guide", "Recovery"].map((label) => (
-                <Pill key={label} tone={label === "Workout" ? "lime" : "neutral"}>{label}</Pill>
-              ))}
-            </View>
-            <PrimaryButton onPress={() => setStatus(`${planTitle} saved as trainer draft.`)}>Save Draft</PrimaryButton>
-            <SecondaryButton onPress={() => setStatus(`${planTitle} assigned and member notified.`)}>Assign Plan</SecondaryButton>
-          </Card>
-        ) : null}
-
-        {tab === "progress" ? (
-          <Card style={styles.stack}>
-            <ListRow title="Weekly workouts" subtitle="2 completed this week" trailing={<Pill tone="lime">40%</Pill>} />
-            <ListRow title="Last check-in" subtitle="Today 7:14 AM · Default Branch" trailing={<Pill tone="blue">QR</Pill>} />
-            <ListRow title="Assigned plans" subtitle={`${plans.filter((plan) => plan.visibleToMember).length} visible to client`} trailing={<Pill tone="lime">Scoped</Pill>} />
-          </Card>
-        ) : null}
-
-        {tab === "notes" ? (
-          <Card style={styles.stack}>
-            <FormField label="Trainer note" multiline placeholder="Add coaching note for your own follow-up..." />
-            <AuditWarning>Only assigned trainers and owners/admins can see trainer notes.</AuditWarning>
-          </Card>
-        ) : null}
-
-        <SectionHeader title="AI Draft Review" subtitle="Drafts require trainer review before assignment." />
-        {draft ? (
-          <Card style={styles.draftCard}>
-            <View style={styles.draftHeader}>
-              <View>
-                <Text style={styles.cardEyebrow}>Review required</Text>
-                <Text style={styles.cardTitle}>{draft.title}</Text>
+          <GlassCard contentStyle={styles.clientContent}>
+            <View style={styles.clientTop}>
+              <IconBubble icon="person-outline" tone="lime" size={54} />
+              <View style={styles.clientCopy}>
+                <Text style={styles.clientName}>{client?.name ?? "Aarav Mehta"}</Text>
+                <Text style={styles.cardBody}>Active member · Goal: {profile?.goal ?? "Muscle gain"}</Text>
               </View>
-              <Pill tone="amber">Hidden</Pill>
             </View>
-            <Text style={styles.cardBody}>Client: {client?.name ?? "Aarav Mehta"} · Goal: {draft.goal} · Difficulty: {draft.difficulty}</Text>
-            <AuditWarning>AI generated this draft. Edit and approve before assigning.</AuditWarning>
-            <View style={styles.stack}>
-              {draft.sections.map((section) => (
-                <ListRow key={section.title} title={section.title} subtitle={section.body} />
-              ))}
+            <View style={styles.chipRow}>
+              <StatusChip status={`PT Pack: ${ptPack?.sessionsLeft ?? 6} sessions left`} tone="lime" />
+              <StatusChip status={`Tracking: ${profile?.trainerVisibleTracking ? "Opted in" : "Private"}`} tone={profile?.trainerVisibleTracking ? "lime" : "amber"} />
             </View>
-            <Card style={styles.safetyPanel}>
-              <Text style={styles.cardTitle}>Safety panel</Text>
-              <ListRow title="Blocked content" subtitle={draft.safety.blockedContent} trailing={<Pill tone="lime">Clear</Pill>} />
-              <ListRow title="Medical-risk check" subtitle={draft.safety.medicalRisk} trailing={<Pill tone="lime">Clear</Pill>} />
-              <ListRow title="Trainer approval" subtitle={draft.safety.trainerApproval} trailing={<Pill tone="amber">Required</Pill>} />
-              <Text style={styles.cardBody}>This draft is not visible to the client yet.</Text>
-            </Card>
-            <View style={styles.actionRow}>
-              <PrimaryButton onPress={() => void assignDraft()} style={styles.actionHalf}>Assign Plan</PrimaryButton>
-              <SecondaryButton onPress={() => setStatus("Draft opened for editing.")} style={styles.actionHalf}>Edit Draft</SecondaryButton>
-            </View>
-            <SecondaryButton onPress={discardDraft}>Discard</SecondaryButton>
-          </Card>
-        ) : (
-          <Card style={styles.stack}>
-            <Text style={styles.cardBody}>No active draft. Generate a new AI draft for trainer review.</Text>
-            <PrimaryButton onPress={() => void generateDraft()}>Generate AI Draft</PrimaryButton>
-          </Card>
-        )}
+          </GlassCard>
 
-        {status ? (
-          <Card>
-            <Text style={styles.statusText}>{status}</Text>
-          </Card>
-        ) : null}
-      </ScrollView>
-      <Dock />
-    </Screen>
+          <View style={styles.actionRow}>
+            <ZookButton onPress={() => setTab("plans")} style={styles.actionHalf} icon="add-circle-outline">
+              Create Plan
+            </ZookButton>
+            <ZookButton href={aiDraftHref} tone="secondary" style={styles.actionHalf} icon="sparkles-outline">
+              Generate AI Draft
+            </ZookButton>
+          </View>
+
+          <SegmentedControl options={tabs} value={tab} onChange={setTab} />
+
+          {tab === "summary" ? (
+            <GlassCard variant="compact" contentStyle={styles.stack}>
+              <ListRow title="Fitness goal" subtitle={profile?.goal ?? "Muscle gain"} trailing={<StatusChip status="Active" />} />
+              <ListRow title="Diet note" subtitle={profile?.dietPreference ?? "Vegetarian"} trailing={<StatusChip status="Visible" tone="neutral" />} />
+              <ListRow title="Allergy note" subtitle={profile?.allergyNote ?? "None added"} trailing={<StatusChip status="Clear" tone="neutral" />} />
+              <ListRow title="Last check-in" subtitle={`Today ${membership?.lastCheckInLabel ?? "7:14 AM"}`} trailing={<StatusChip status="Checked in" tone="lime" />} />
+              <ListRow title="Recent progress" subtitle="2 workouts completed this week" trailing={<StatusChip status="Review" tone="amber" />} />
+            </GlassCard>
+          ) : null}
+
+          {tab === "plans" ? (
+            <GlassCard contentStyle={styles.stack}>
+              <SectionHeader title="Plan builder" subtitle="Create a trainer-owned draft before assigning." />
+              <FormField label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
+              <View style={styles.chipRow}>
+                {["Workout", "Diet", "Routine", "Trainer Note", "Machine Guide", "Recovery"].map((label) => (
+                  <StatusChip key={label} status={label} tone={label === "Workout" ? "lime" : "neutral"} />
+                ))}
+              </View>
+              <ZookButton onPress={() => setStatus(`${planTitle} saved as trainer draft.`)} icon="save-outline">
+                Save Draft
+              </ZookButton>
+              <SecondaryButton onPress={() => setStatus(`${planTitle} assigned and member notified.`)}>
+                Assign Later
+              </SecondaryButton>
+            </GlassCard>
+          ) : null}
+
+          {tab === "progress" ? (
+            <GlassCard variant="compact" contentStyle={styles.stack}>
+              <ListRow title="Weekly workouts" subtitle="2 completed this week" trailing={<StatusChip status="40%" tone="lime" />} />
+              <ListRow title="Last check-in" subtitle="Today 7:14 AM · Main Branch" trailing={<StatusChip status="QR" tone="neutral" />} />
+              <ListRow title="Assigned plans" subtitle={`${plans.filter((plan) => plan.visibleToMember).length} visible to client`} trailing={<StatusChip status="Scoped" tone="lime" />} />
+            </GlassCard>
+          ) : null}
+
+          {tab === "notes" ? (
+            <GlassCard contentStyle={styles.stack}>
+              <FormField label="Trainer note" multiline placeholder="Add coaching note for your own follow-up..." />
+              <AuditWarning>Only assigned trainers and owners/admins can see trainer notes.</AuditWarning>
+            </GlassCard>
+          ) : null}
+
+          <GlassCard variant="warning" contentStyle={styles.draftPromptContent}>
+            <View style={styles.attentionHeader}>
+              <IconBubble icon="reader-outline" tone="amber" />
+              <View style={styles.clientCopy}>
+                <Text style={styles.cardTitle}>AI draft review</Text>
+                <Text style={styles.cardBody}>Generated plans require edits and approval before assigning.</Text>
+              </View>
+            </View>
+            <Link href={aiDraftHref} asChild>
+              <Pressable accessibilityRole="link">
+                <StatusChip status="Open review" tone="amber" icon="chevron-forward" />
+              </Pressable>
+            </Link>
+          </GlassCard>
+
+          {status ? (
+            <GlassCard variant="success" contentStyle={styles.statusContent}>
+              <Text style={styles.statusText}>{status}</Text>
+            </GlassCard>
+          ) : null}
+        </ScrollView>
+        <BottomNav selectedPath="/trainer/client" />
+      </ZookScreen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 120,
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
+    gap: 14,
+    paddingBottom: 128,
   },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  headerCopy: {
-    flex: 1,
-    gap: 8,
-  },
-  title: {
+  backIcon: {
     color: colors.text,
-    fontSize: 34,
-    lineHeight: 38,
-    fontWeight: "900",
+    fontSize: 30,
+    lineHeight: 32,
   },
-  subtitle: {
-    color: colors.muted,
-    lineHeight: 22,
-  },
-  clientCard: {
+  clientContent: {
     gap: 14,
   },
   clientTop: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.md,
     alignItems: "center",
   },
   clientCopy: {
     flex: 1,
-    gap: 5,
+    gap: 4,
   },
   clientName: {
     color: colors.text,
-    fontSize: 24,
-    fontWeight: "900",
+    ...typography.headerTitle,
+  },
+  cardTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  cardBody: {
+    color: colors.muted,
+    ...typography.body,
   },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-  },
-  stack: {
-    gap: 12,
-  },
-  draftCard: {
-    gap: 14,
-    borderColor: "rgba(245,200,75,0.24)",
-    backgroundColor: "rgba(245,200,75,0.08)",
-  },
-  draftHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  cardEyebrow: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: "900",
-    textTransform: "uppercase",
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  cardBody: {
-    color: colors.muted,
-    lineHeight: 21,
-  },
-  safetyPanel: {
-    gap: 10,
-    backgroundColor: "rgba(7,9,8,0.36)",
+    gap: spacing.sm,
   },
   actionRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: spacing.sm,
   },
   actionHalf: {
     flex: 1,
   },
+  stack: {
+    gap: 10,
+  },
+  attentionHeader: {
+    flexDirection: "row",
+    gap: spacing.md,
+    alignItems: "center",
+  },
+  draftPromptContent: {
+    gap: 12,
+  },
+  statusContent: {
+    padding: 14,
+  },
   statusText: {
     color: colors.lime,
-    lineHeight: 21,
-    fontWeight: "800",
+    ...typography.bodyStrong,
   },
 });

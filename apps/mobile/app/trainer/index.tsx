@@ -1,19 +1,20 @@
-import { Link } from "expo-router";
+import { Link, Stack } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { zookDemoFixtures } from "@zook/core";
 import {
-  ActiveGymPill,
-  Card,
-  Dock,
+  BottomNav,
+  EmptyState,
+  GlassCard,
   IconBubble,
   ListRow,
   MetricTile,
-  Pill,
-  PrimaryLink,
-  Screen,
+  MobileHeader,
   SectionHeader,
+  StatusChip,
+  ZookButton,
+  ZookScreen,
 } from "@/components/primitives";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 const clients = zookDemoFixtures.trainerClientAssignments
   .filter((assignment) => assignment.trainerUserId === "user-rhea" && assignment.active)
@@ -26,122 +27,105 @@ const clients = zookDemoFixtures.trainerClientAssignments
 
 export default function Trainer() {
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerCopy}>
-            <ActiveGymPill label="Iron Temple Gym · Pune" />
-            <Text style={styles.title}>Coach cockpit</Text>
-            <Text style={styles.subtitle}>Coach Rhea · assigned clients only</Text>
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ZookScreen>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          <MobileHeader
+            eyebrow="Trainer mode"
+            title="Coach cockpit"
+            subtitle="Coach Rhea · assigned clients only"
+            chip={<StatusChip status="Trainer" tone="neutral" />}
+          />
+
+          <View style={styles.metricGrid}>
+            <MetricTile label="Assigned clients" value={String(clients.length)} detail="Scoped to you" tone="blue" />
+            <MetricTile label="Drafts" value="1" detail="Review required" tone="amber" />
+            <MetricTile label="PT sessions" value="6" detail="Aarav pack left" tone="lime" />
+            <MetricTile label="Feedback" value="2" detail="Unread notes" tone="violet" />
           </View>
-          <Pill tone="lime">Trainer</Pill>
-        </View>
 
-        <View style={styles.metricGrid}>
-          <MetricTile label="Assigned clients" value={String(clients.length)} detail="Only scoped members" tone="blue" style={styles.metricHalf} />
-          <MetricTile label="Drafts" value="1" detail="Needs review" tone="amber" style={styles.metricHalf} />
-          <MetricTile label="PT sessions" value="6" detail="Aarav pack left" tone="lime" style={styles.metricHalf} />
-          <MetricTile label="Feedback" value="2" detail="Unread notes" tone="violet" style={styles.metricHalf} />
-        </View>
-
-        <Card style={styles.attentionCard}>
-          <View style={styles.attentionHeader}>
-            <IconBubble icon="sparkles-outline" tone="amber" />
-            <View style={styles.attentionCopy}>
-              <Text style={styles.cardTitle}>AI draft needs review</Text>
-              <Text style={styles.cardBody}>4-week Push/Pull Routine for Aarav Mehta is hidden from the client until assigned.</Text>
+          <GlassCard variant="warning" contentStyle={styles.attentionContent}>
+            <View style={styles.attentionHeader}>
+              <IconBubble icon="document-text-outline" tone="amber" />
+              <View style={styles.attentionCopy}>
+                <Text style={styles.cardTitle}>Review required</Text>
+                <Text style={styles.cardBody}>4-week Push/Pull Routine for Aarav Mehta is hidden until you approve it.</Text>
+              </View>
             </View>
+            <ZookButton href="/trainer/client/user-aarav/ai-draft" tone="secondary" icon="reader-outline">Review Draft</ZookButton>
+          </GlassCard>
+
+          <SectionHeader title="Assigned clients" subtitle="Trainer-visible tracking is opt-in and scoped." />
+          <View style={styles.stack}>
+            {clients.length ? (
+              clients.map((client) => (
+                <Link key={client.assignment.id} href={`/trainer/client/${client.assignment.memberUserId}`} asChild>
+                  <Pressable accessibilityRole="button">
+                    <ListRow
+                      title={client.user?.name ?? "Assigned client"}
+                      subtitle={`${client.profile?.goal ?? "General fitness"} · Last check-in ${client.membership?.lastCheckInLabel ?? "Not available"}`}
+                      leading={<IconBubble icon="person-outline" tone="lime" />}
+                      trailing={<StatusChip status={client.membership?.status ?? "ACTIVE"} tone="lime" />}
+                    />
+                  </Pressable>
+                </Link>
+              ))
+            ) : (
+              <EmptyState title="No assigned clients" body="Assigned members will appear here when your gym adds them." />
+            )}
           </View>
-          <PrimaryLink href="/trainer/client/user-aarav" tone="secondary">Review Draft</PrimaryLink>
-        </Card>
 
-        <SectionHeader title="Today's assigned clients" subtitle="Trainer-visible tracking is opt-in and never assumed." />
-        <View style={styles.stack}>
-          {clients.map((client) => (
-            <Link key={client.assignment.id} href={`/trainer/client/${client.assignment.memberUserId}`} asChild>
-              <Pressable accessibilityRole="button">
-                <ListRow
-                  title={client.user?.name ?? "Assigned client"}
-                  subtitle={`${client.profile?.goal ?? "General fitness"} · Last check-in ${client.membership?.lastCheckInLabel ?? "Not available"}`}
-                  leading={<IconBubble icon="person-outline" tone="lime" />}
-                  trailing={<Pill tone="lime">{client.membership?.status ?? "ACTIVE"}</Pill>}
-                />
-              </Pressable>
-            </Link>
-          ))}
-        </View>
-
-        <SectionHeader title="Recent feedback" />
-        <Card style={styles.stack}>
-          <ListRow title="Aarav Mehta" subtitle="Bench felt strong. Shoulder warm-up helped." trailing={<Pill tone="blue">Plan</Pill>} />
-          <ListRow title="System notice" subtitle="Minor-safe AI rules active for protected accounts." trailing={<Pill tone="amber">Safety</Pill>} />
-        </Card>
-
-        <PrimaryLink href="/trainer/client/user-aarav">Create Plan</PrimaryLink>
-      </ScrollView>
-      <Dock />
-    </Screen>
+          <SectionHeader title="Recent feedback" />
+          <GlassCard variant="compact" contentStyle={styles.stack}>
+            <ListRow title="Aarav Mehta" subtitle="Bench felt strong. Shoulder warm-up helped." trailing={<StatusChip status="Plan" tone="neutral" />} />
+            <ListRow title="System notice" subtitle="Minor-safe AI rules active for protected accounts." trailing={<StatusChip status="Safety" tone="amber" />} />
+          </GlassCard>
+        </ScrollView>
+        <BottomNav selectedPath="/trainer" />
+      </ZookScreen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 120,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  headerCopy: {
-    flex: 1,
-    gap: 8,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 34,
-    lineHeight: 38,
-    fontWeight: "900",
-  },
-  subtitle: {
-    color: colors.muted,
-    lineHeight: 22,
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
+    gap: 14,
+    paddingBottom: 128,
   },
   metricGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 10,
   },
-  metricHalf: {
-    flexBasis: "47%",
-    flexGrow: 1,
-  },
-  attentionCard: {
+  attentionContent: {
     gap: 14,
-    borderColor: "rgba(245,200,75,0.24)",
-    backgroundColor: "rgba(245,200,75,0.08)",
   },
   attentionHeader: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.md,
   },
   attentionCopy: {
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   cardTitle: {
     color: colors.text,
-    fontSize: 20,
-    fontWeight: "900",
+    ...typography.cardTitle,
   },
   cardBody: {
     color: colors.muted,
-    lineHeight: 21,
+    ...typography.body,
   },
   stack: {
-    gap: 12,
+    gap: 10,
   },
 });
