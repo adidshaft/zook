@@ -132,6 +132,12 @@ function LayoutContent() {
         <Stack.Screen name="assistant" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="owner" options={{ animation: "none" }} />
+        <Stack.Screen name="reception" options={{ animation: "none" }} />
+        <Stack.Screen name="trainer/index" options={{ animation: "none" }} />
+        <Stack.Screen name="trainer/client/[id]" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="attendance/[attendanceRecordId]" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="owner/member/[id]" options={{ animation: "slide_from_right" }} />
       </Stack>
     </>

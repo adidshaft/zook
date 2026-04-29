@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
-    paddingBottom: 128,
+    paddingBottom: layout.bottomNavHeight + 40,
     gap: 12,
   },
   contentWithoutNav: {
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingBottom: layout.cardGap,
   },
   heroTitle: {
     color: colors.text,

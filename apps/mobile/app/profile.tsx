@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import {
-  AuditWarning,
   BottomNav,
   CollapsibleSection,
   DetailRow,
@@ -52,7 +51,6 @@ export default function Profile() {
   const [dietPreference, setDietPreference] = useState("");
   const [allergies, setAllergies] = useState("");
   const [summaryNote, setSummaryNote] = useState("");
-  const [privacyStatus, setPrivacyStatus] = useState("");
   const activeOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization;
@@ -182,26 +180,6 @@ export default function Profile() {
     router.replace("/");
   }
 
-  async function requestPrivacyExport() {
-    if (!token) return;
-    const result = await mobileApiFetch<{ request: { id: string; status: string } }>("/me/data-export-request", {
-      method: "POST",
-      token,
-      ...(activeOrgId ? { orgId: activeOrgId } : {}),
-    });
-    setPrivacyStatus(`Data export request created: ${result.request.id}. Status: ${result.request.status}.`);
-  }
-
-  async function requestPrivacyDeletion() {
-    if (!token) return;
-    const result = await mobileApiFetch<{ request: { id: string; status: string } }>("/me/account-deletion-request", {
-      method: "POST",
-      token,
-      ...(activeOrgId ? { orgId: activeOrgId } : {}),
-    });
-    setPrivacyStatus(`Deletion request created: ${result.request.id}. Status: ${result.request.status}.`);
-  }
-
   const ageLabel = (() => {
     if (!dateOfBirth) {
       return "Not added";
@@ -268,7 +246,7 @@ export default function Profile() {
             <Pill tone="amber">Guardian consent required</Pill>
             <Text style={styles.calloutTitle}>Protected account gates are active.</Text>
             <Text style={styles.profileBody}>
-              Membership activation, attendance, PT activation, plan assignment, personalized AI, and marketing stay blocked until guardian consent is verified.
+              Some features are restricted until guardian consent is verified.
             </Text>
           </GlassCard>
         ) : null}
@@ -416,22 +394,19 @@ export default function Profile() {
           />
         </CollapsibleSection>
 
-        <CollapsibleSection
-          title="Privacy"
-          subtitle="Data export and deletion"
-          defaultOpen={false}
+        <Pressable
+          onPress={() => router.push("/settings")}
+          accessibilityRole="button"
+          accessibilityLabel="Open privacy settings"
+          style={styles.privacyLink}
         >
-          <AuditWarning>Export and deletion requests create server jobs and audit logs. Zook does not fake instant deletion.</AuditWarning>
-          <View style={styles.actionRow}>
-            <PrimaryButton onPress={() => void requestPrivacyExport()} tone="secondary" style={styles.actionHalf}>
-              Request export
-            </PrimaryButton>
-            <PrimaryButton onPress={() => void requestPrivacyDeletion()} tone="danger" style={styles.actionHalf}>
-              Request deletion
-            </PrimaryButton>
+          <IconBubble icon="shield-outline" tone="neutral" size={36} />
+          <View style={styles.privacyLinkCopy}>
+            <Text style={styles.privacyLinkTitle}>Privacy & Data</Text>
+            <Text style={styles.privacyLinkBody}>Export, delete, or manage account data</Text>
           </View>
-          {privacyStatus ? <Text style={styles.detailsStatus}>{privacyStatus}</Text> : null}
-        </CollapsibleSection>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
 
         <CollapsibleSection
           title="Account"
@@ -692,6 +667,29 @@ const styles = StyleSheet.create({
   summaryValue: {
     color: colors.text,
     ...typography.caption,
+  },
+  privacyLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    padding: spacing.md,
+    minHeight: 60,
+  },
+  privacyLinkCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  privacyLinkTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  privacyLinkBody: {
+    color: colors.muted,
+    ...typography.small,
   },
   detailsStatus: {
     color: colors.lime,

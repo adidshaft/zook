@@ -31,12 +31,10 @@ import {
   useOwnerDashboard,
   useRejectJoinRequest,
 } from "@/lib/query-hooks";
-import { colors, spacing, typography } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type OwnerView = "command" | "approvals" | "revenue" | "stock" | "members";
 type Drilldown = Exclude<OwnerView, "command">;
-const OWNER_CONTENT_WIDTH = 370;
-const OWNER_BOTTOM_NAV_HEIGHT = 72;
 
 function normalizeView(value: string | string[] | undefined): OwnerView {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -211,7 +209,6 @@ export default function Owner() {
           <View style={styles.headerCopy}>
             <ActiveGymPill label={dashboard?.organization?.name ?? "Active gym"} />
             <Text style={styles.title}>{titleForView(view)}</Text>
-            <Text style={styles.subtitle}>Owner mobile command view · web handles full configuration.</Text>
           </View>
           <Pill tone="lime">Owner</Pill>
         </View>
@@ -261,21 +258,6 @@ export default function Owner() {
               {recentActivity.map((activity) => (
                 <ListRow key={activity.id} title={activity.title} subtitle={activity.subtitle} trailing={<Pill tone={activity.tone}>{activity.label}</Pill>} />
               ))}
-            </GlassCard>
-
-            <View style={styles.drilldownGrid}>
-              <PrimaryButton href="/owner?view=approvals" icon="checkmark-done-outline" style={styles.drilldownButton}>
-                Approvals
-              </PrimaryButton>
-              <SecondaryButton href="/owner?view=revenue" icon="trending-up-outline" style={styles.drilldownButton}>
-                Revenue
-              </SecondaryButton>
-              <SecondaryButton href="/owner?view=stock" icon="cube-outline" style={styles.drilldownButton}>
-                Stock
-              </SecondaryButton>
-            </View>
-            <GlassCard variant="compact" contentStyle={styles.noteCard}>
-              <Text style={styles.noteText}>Mobile command is for fast decisions. Full gym configuration stays on web.</Text>
             </GlassCard>
           </>
         ) : null}
@@ -349,7 +331,7 @@ export default function Owner() {
               <MetricTile label="Scan reviews" value={String(attentionAttempts.length)} detail="Pending or flagged" tone="red" style={styles.metricHalf} />
             </View>
 
-            <SectionHeader title="Join requests" subtitle="Approve to create checkout link and member notification." />
+            <SectionHeader title="Join requests" subtitle="Pending review" />
             <View style={styles.stack}>
               {joinRequests.length ? (
                 joinRequests.map((request) => (
@@ -420,7 +402,7 @@ export default function Owner() {
               <MetricTile label="Revenue today" value={formatInr(revenuePaise)} detail="Membership + shop" tone="lime" style={styles.metricHalf} />
               <MetricTile label="Manual records" value={formatInr(payments.reduce((sum, payment) => sum + payment.amountPaise, 0))} detail="Cash and direct UPI" tone="amber" style={styles.metricHalf} />
             </View>
-            <SectionHeader title="Recent transactions" subtitle="A quick audit trail for owner review." />
+            <SectionHeader title="Recent transactions" subtitle="Today" />
             <GlassCard contentStyle={styles.stack}>
               {payments.length ? (
                 payments.map((payment) => (
@@ -446,9 +428,6 @@ export default function Owner() {
                 ))}
             </GlassCard>
 
-            <GlassCard variant="compact" contentStyle={styles.noteCard}>
-              <Text style={styles.noteText}>Use the web dashboard for refunds, exports, and detailed reconciliation.</Text>
-            </GlassCard>
           </>
         ) : null}
 
@@ -458,7 +437,7 @@ export default function Owner() {
               <MetricTile label="Low stock" value={String(lowStock.length)} detail="Under threshold" tone="amber" style={styles.metricHalf} />
               <MetricTile label="Pickups" value={String(orders.length)} detail="Paid or ready" tone="lime" style={styles.metricHalf} />
             </View>
-            <SectionHeader title="Low-stock products" subtitle="Quick stock visibility. Full inventory lives on web." />
+            <SectionHeader title="Low-stock products" subtitle="Below threshold" />
             <GlassCard contentStyle={styles.stack}>
               {lowStock.length ? (
                 lowStock.map((product) => (
@@ -502,11 +481,11 @@ export default function Owner() {
 const styles = StyleSheet.create({
   content: {
     width: "100%",
-    maxWidth: OWNER_CONTENT_WIDTH,
+    maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
     gap: 16,
-    paddingBottom: OWNER_BOTTOM_NAV_HEIGHT + 40,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
   headerRow: {
     flexDirection: "row",
@@ -548,10 +527,6 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     ...typography.screenTitle,
-  },
-  subtitle: {
-    color: colors.muted,
-    ...typography.body,
   },
   metricGrid: {
     flexDirection: "row",
@@ -619,22 +594,6 @@ const styles = StyleSheet.create({
   memberEmail: {
     color: colors.muted,
     ...typography.small,
-  },
-  drilldownGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  drilldownButton: {
-    flexGrow: 1,
-    minWidth: 104,
-  },
-  noteCard: {
-    gap: 0,
-  },
-  noteText: {
-    color: colors.muted,
-    ...typography.body,
   },
   statusText: {
     color: colors.lime,

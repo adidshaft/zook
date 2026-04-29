@@ -14,6 +14,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
+import { titleCaseFromCode } from "@/lib/formatting";
 import { useMemberHome } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -30,6 +31,13 @@ function initialsFor(name: string) {
     .join("") || "AM";
 }
 
+function greetingForHour() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function Home() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -39,12 +47,12 @@ export default function Home() {
   const [healthOpen, setHealthOpen] = useState(false);
   const [dietOpen, setDietOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
-  const [weight, setWeight] = useState("78");
-  const [dob, setDob] = useState("1996-08-14");
-  const [diet, setDiet] = useState("Vegetarian");
-  const [goal, setGoal] = useState("Muscle gain");
+  const [weight, setWeight] = useState("");
+  const [dob, setDob] = useState("");
+  const [diet, setDiet] = useState("");
+  const [goal, setGoal] = useState("");
   const [allergies, setAllergies] = useState<string[]>([]);
-  const [trainerNote, setTrainerNote] = useState("Shoulder feels better. Keep presses controlled.");
+  const [trainerNote, setTrainerNote] = useState("");
   const { activeOrgId, session } = useAuth();
   const homeQuery = useMemberHome();
   const memberHome = homeQuery.data;
@@ -54,8 +62,8 @@ export default function Home() {
   const activeOrganization =
     memberHome?.activeOrganization ??
     sessionOrganization;
-  const memberName = session?.user.name || "Aarav Mehta";
-  const firstName = memberName.split(" ")[0] || "Aarav";
+  const memberName = session?.user.name || "Member";
+  const firstName = memberName.split(" ")[0] || "Hey";
   const initials = initialsFor(memberName);
   const orgName = activeOrganization?.name ?? "Find a gym";
   const city = activeOrganization?.city ?? "Nearby";
@@ -64,6 +72,9 @@ export default function Home() {
     : ("/find-gyms" as Href);
   const daysLeft = memberHome?.activeMembership?.daysLeft ?? 0;
   const remainingVisits = memberHome?.activeMembership?.remainingVisits ?? 0;
+  const activePlan = memberHome?.activePlan;
+  const totalDays = activePlan?.durationDays ?? activePlan?.validityDays ?? 30;
+  const usedPercent = activePlan && totalDays > 0 ? Math.min(100, Math.round(((totalDays - daysLeft) / totalDays) * 100)) : 0;
   const planName = memberHome?.todayPlanName ?? memberHome?.activePlan?.name ?? "No plan assigned";
   const enrolledGyms = session?.organizations ?? [];
 
@@ -107,7 +118,7 @@ export default function Home() {
                 accessibilityLabel="Open gym details"
                 style={styles.headerCopy}
               >
-                <Text numberOfLines={1} style={styles.greeting}>Good morning, {firstName}</Text>
+                <Text numberOfLines={1} style={styles.greeting}>{greetingForHour()}, {firstName}</Text>
                 <View style={styles.gymLineRow}>
                   <Text numberOfLines={1} style={styles.gymLine}>{orgName}, {city}</Text>
                   <Ionicons name="chevron-down" size={14} color={colors.muted} />
@@ -122,7 +133,7 @@ export default function Home() {
             <Link href="/notifications" asChild>
               <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open notifications">
                 <Ionicons name="notifications-outline" size={21} color={colors.text} />
-                <View style={styles.unreadDot} />
+                {(memberHome?.unreadNotifications ?? 0) > 0 ? <View style={styles.unreadDot} /> : null}
               </Pressable>
             </Link>
           </BlurView>
@@ -140,14 +151,14 @@ export default function Home() {
                 </View>
                 <Text style={styles.mutedBody}>{remainingVisits} visits remaining</Text>
               </View>
-              <StatusRing tone="lime" value="73%" label="used" size={76} />
+              <StatusRing tone="lime" value={`${usedPercent}%`} label="used" size={76} />
             </View>
           </GlassCard>
 
           <View style={styles.metricsRow}>
-            <MiniMetric label="Visits" value={`${remainingVisits}`} bars={[0.4, 0.65, 0.82, 0.58]} />
-            <MiniMetric label="Streak" value={`${memberHome?.streakDays ?? 0}`} bars={[0.35, 0.48, 0.7, 0.9]} />
-            <MiniMetric label="Plan" value={`${memberHome?.assignedPlans ?? 0}`} bars={[0.52, 0.64, 0.76, 0.86]} />
+            <MiniMetric label="Visits" value={`${remainingVisits}`} />
+            <MiniMetric label="Streak" value={`${memberHome?.streakDays ?? 0}`} />
+            <MiniMetric label="Plans" value={`${memberHome?.assignedPlans ?? 0}`} />
           </View>
 
           <SectionHeader
@@ -169,7 +180,9 @@ export default function Home() {
                   <IconBubble icon="barbell-outline" tone="lime" size={44} />
                   <View style={styles.planCopy}>
                     <Text numberOfLines={1} style={styles.planTitle}>{planName}</Text>
-                    <Text numberOfLines={1} style={styles.mutedSmall}>6 exercises · Coach Rhea</Text>
+                    <Text numberOfLines={1} style={styles.mutedSmall}>
+                      {memberHome?.activePlan?.type ? titleCaseFromCode(memberHome.activePlan.type) : "Tap to view"}
+                    </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={colors.muted} />
                 </View>
@@ -235,7 +248,7 @@ export default function Home() {
                   title="Health"
                   open={healthOpen}
                   onPress={() => setHealthOpen((current) => !current)}
-                  subtitle={`${weight} kg · ${goal}`}
+                  subtitle={[weight ? `${weight} kg` : null, goal || null].filter(Boolean).join(" · ") || "Add details"}
                 />
                 {healthOpen ? (
                   <View style={styles.healthPanel}>
@@ -313,14 +326,16 @@ export default function Home() {
   );
 }
 
-function MiniMetric({ label, value, bars }: { label: string; value: string; bars: number[] }) {
+function MiniMetric({ label, value, bars }: { label: string; value: string; bars?: number[] }) {
   return (
     <View style={styles.metricCard}>
-      <View style={styles.metricChart}>
-        {bars.map((bar, index) => (
-          <View key={`${label}-${index}`} style={[styles.metricBar, { height: `${Math.round(bar * 100)}%` }]} />
-        ))}
-      </View>
+      {bars?.length ? (
+        <View style={styles.metricChart}>
+          {bars.map((bar, index) => (
+            <View key={`${label}-${index}`} style={[styles.metricBar, { height: `${Math.round(bar * 100)}%` }]} />
+          ))}
+        </View>
+      ) : null}
       <View>
         <Text style={styles.metricValue}>{value}</Text>
         <Text style={styles.metricLabel}>{label}</Text>

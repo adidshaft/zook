@@ -32,12 +32,10 @@ import {
   useRejectAttendance,
 } from "@/lib/query-hooks";
 import { useAuth } from "@/lib/auth";
-import { colors, spacing, typography } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type DeskView = "desk" | "members" | "payments" | "orders";
 type DeskPaymentMode = Extract<PaymentMode, "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER">;
-const RECEPTION_CONTENT_WIDTH = 370;
-const RECEPTION_BOTTOM_NAV_HEIGHT = 72;
 
 const paymentModes: Array<{ label: string; value: DeskPaymentMode }> = [
   { label: "Cash", value: "CASH" },
@@ -161,7 +159,7 @@ export default function Reception() {
               <MetricTile label="Flagged" value={String(flaggedCount)} detail="Needs care" tone="red" icon="alert-circle-outline" style={styles.metricThird} />
             </View>
 
-            <SectionHeader title="Speed Queue" subtitle="Clear the gate one scan at a time." action={<Pill tone="amber">{pendingCount} pending</Pill>} />
+            <SectionHeader title="Speed Queue" action={<Pill tone="amber">{pendingCount} pending</Pill>} />
             <View style={styles.stack}>
               {approvalQueue.length ? approvalQueue.map((attempt, index) => (
                 <GlassCard key={attempt.id} variant={index === 0 ? "selected" : "compact"} padding={14} contentStyle={styles.queueCard}>
@@ -315,11 +313,11 @@ export default function Reception() {
 const styles = StyleSheet.create({
   content: {
     width: "100%",
-    maxWidth: RECEPTION_CONTENT_WIDTH,
+    maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
     gap: 16,
-    paddingBottom: RECEPTION_BOTTOM_NAV_HEIGHT + 40,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
   headerRow: {
     flexDirection: "row",

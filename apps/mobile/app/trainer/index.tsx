@@ -13,10 +13,12 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function Trainer() {
+  const { session } = useAuth();
   const clientsQuery = useTrainerClients();
   const clients = clientsQuery.data?.clients ?? [];
   const clientsWithPlans = clients.filter((client) => (client.summary?.activePlans ?? 0) > 0).length;
@@ -32,15 +34,15 @@ export default function Trainer() {
           <MobileHeader
             eyebrow="Trainer mode"
             title="Coach cockpit"
-            subtitle="Coach Rhea · assigned clients only"
+            subtitle={`${session?.user.name ?? "Trainer"} · assigned clients only`}
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
 
           <View style={styles.metricGrid}>
             <MetricTile label="Assigned clients" value={String(clients.length)} detail="Scoped to you" tone="blue" />
             <MetricTile label="Active plans" value={String(clientsWithPlans)} detail="Assigned members" tone="amber" />
-            <MetricTile label="PT sessions" value="0" detail="Use PT records" tone="lime" />
-            <MetricTile label="Feedback" value="0" detail="Unread notes" tone="violet" />
+            <MetricTile label="PT sessions" value="0" detail="This month" tone="lime" />
+            <MetricTile label="Feedback" value="0" detail="From clients" tone="violet" />
           </View>
 
           {clientsWithPlans ? (
@@ -56,7 +58,7 @@ export default function Trainer() {
           </GlassCard>
           ) : null}
 
-          <SectionHeader title="Assigned clients" subtitle="Trainer-visible tracking is opt-in and scoped." />
+          <SectionHeader title="Assigned clients" />
           <View style={styles.stack}>
             {clientsQuery.isLoading ? (
               <GlassCard variant="compact" contentStyle={styles.attentionHeader}>
@@ -83,8 +85,10 @@ export default function Trainer() {
 
           <SectionHeader title="Recent feedback" />
           <GlassCard variant="compact" contentStyle={styles.stack}>
-            <ListRow title="Aarav Mehta" subtitle="Bench felt strong. Shoulder warm-up helped." trailing={<StatusChip status="Plan" tone="neutral" />} />
-            <ListRow title="System notice" subtitle="Minor-safe AI rules active for protected accounts." trailing={<StatusChip status="Safety" tone="amber" />} />
+            <EmptyState
+              title="No recent feedback"
+              body="Client notes and session feedback will appear here."
+            />
           </GlassCard>
         </ScrollView>
         <BottomNav selectedPath="/trainer" role="TRAINER" />
@@ -100,7 +104,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: 128,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
   metricGrid: {
     flexDirection: "row",
