@@ -1451,7 +1451,6 @@ const memberTabs: DockTab[] = [
     activeIcon: "scan",
     matchPath: "/scan",
     raised: true,
-    hideLabel: true,
   },
   { href: "/plans", label: "Plan", icon: "barbell-outline", activeIcon: "barbell", matchPath: "/plans" },
 ];
@@ -1459,6 +1458,7 @@ const memberTabs: DockTab[] = [
 const trainerTabs: DockTab[] = [
   { href: "/trainer", label: "Home", icon: "home-outline", activeIcon: "home", matchPath: "/trainer" },
   { href: "/trainer?view=clients" as Href, label: "Clients", icon: "people-outline", activeIcon: "people", matchPath: "/trainer", activeView: "clients" },
+  { href: "/scan", label: "Check in", icon: "scan-outline", activeIcon: "scan", matchPath: "/scan" },
   { href: "/plans", label: "Plans", icon: "reader-outline", activeIcon: "reader", matchPath: "/plans" },
   { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble", matchPath: "/notifications" },
 ];
@@ -1477,10 +1477,18 @@ const ownerTabs: DockTab[] = [
   { href: "/owner?view=stock" as Href, label: "Stock", icon: "cube-outline", activeIcon: "cube", matchPath: "/owner", activeView: "stock" },
 ];
 
+const adminTabs: DockTab[] = [
+  { href: "/owner", label: "Home", icon: "pulse-outline", activeIcon: "pulse", matchPath: "/owner" },
+  { href: "/scan", label: "Check in", icon: "scan-outline", activeIcon: "scan", matchPath: "/scan" },
+  { href: "/owner?view=approvals" as Href, label: "Approvals", icon: "checkmark-done-outline", activeIcon: "checkmark-done", matchPath: "/owner", activeView: "approvals" },
+  { href: "/owner?view=stock" as Href, label: "Stock", icon: "cube-outline", activeIcon: "cube", matchPath: "/owner", activeView: "stock" },
+];
+
 function getTabsForRole(role?: Role): DockTab[] {
   if (role === "TRAINER") return trainerTabs;
   if (role === "RECEPTIONIST") return receptionTabs;
-  if (role === "OWNER" || role === "ADMIN") return ownerTabs;
+  if (role === "ADMIN") return adminTabs;
+  if (role === "OWNER") return ownerTabs;
   return memberTabs;
 }
 
@@ -2486,17 +2494,17 @@ const styles = StyleSheet.create({
   },
   memberBottomNavItem: {
     flex: 1,
-    height: 54,
-    borderRadius: 16,
+    height: 58,
+    borderRadius: 19,
   },
   memberBottomNavItemRaised: {
     flexGrow: 0,
     flexShrink: 0,
-    flexBasis: 76,
-    width: 76,
-    height: 76,
+    flexBasis: 82,
+    width: 82,
+    height: 82,
     marginTop: -30,
-    borderRadius: 38,
+    borderRadius: 41,
     borderWidth: 3,
     borderColor: "rgba(7,9,8,0.94)",
     backgroundColor: colors.lime,
@@ -2508,9 +2516,9 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   bottomNavItemActive: {
-    backgroundColor: "rgba(185,244,85,0.1)",
+    backgroundColor: "rgba(185,244,85,0.18)",
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.22)",
+    borderColor: "rgba(185,244,85,0.34)",
   },
   memberBottomNavItemRaisedActive: {
     backgroundColor: colors.lime,

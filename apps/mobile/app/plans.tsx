@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import { Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
@@ -8,12 +8,10 @@ import {
   ExerciseRow,
   GlassCard,
   IconBubble,
-  ListRow,
   MobileHeader,
   ProgressBar,
   SectionHeader,
   SegmentedControl,
-  StatusChip,
   StickyActionBar,
   ZookButton,
   ZookScreen,
@@ -21,7 +19,7 @@ import {
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type PlanView = "assigned" | "detail";
-type PlanFilter = "all" | "workout" | "diet" | "routine" | "recovery";
+type PlanFilter = "all" | "workout" | "diet";
 type PlanExercise = { name: string; sets: string; equipment: string; reps: string };
 
 const plan = zookDemoFixtures.trainingPlans[0];
@@ -30,15 +28,13 @@ const filters: Array<{ label: string; value: PlanFilter }> = [
   { label: "All", value: "all" },
   { label: "Workout", value: "workout" },
   { label: "Diet", value: "diet" },
-  { label: "Routine", value: "routine" },
-  { label: "Recovery", value: "recovery" },
 ];
 
 const planCards = [
-  { id: "push", title: "Push Day", meta: "Workout · 6 exercises · Coach Rhea", tone: "lime" as const },
-  { id: "diet", title: "High-protein vegetarian notes", meta: "Diet · Trainer note", tone: "blue" as const },
-  { id: "routine", title: "Weekly routine", meta: "Routine · 5 day split", tone: "amber" as const },
-  { id: "recovery", title: "Shoulder mobility", meta: "Recovery · 12 min", tone: "violet" as const },
+  { id: "push", title: "Workout", detail: "Push Day", icon: "barbell-outline" as const, tone: "lime" as const },
+  { id: "diet", title: "Diet", detail: "High protein", icon: "nutrition-outline" as const, tone: "blue" as const },
+  { id: "routine", title: "Routine", detail: "Weekly", icon: "calendar-outline" as const, tone: "amber" as const },
+  { id: "recovery", title: "Recovery", detail: "Mobility", icon: "body-outline" as const, tone: "violet" as const },
 ];
 
 function firstParam(value?: string | string[]) {
@@ -136,6 +132,7 @@ function SwipeExerciseRow({
 }
 
 export default function Plans() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const [view, setView] = useState<PlanView>("assigned");
   const [filter, setFilter] = useState<PlanFilter>("all");
@@ -222,9 +219,6 @@ export default function Plans() {
                 <Ionicons name="chevron-back" size={21} color={colors.text} />
               </Pressable>
               <View style={styles.detailTitleBlock}>
-                <View style={styles.detailStatusPill}>
-                  <Text style={styles.detailStatusText}>Assigned</Text>
-                </View>
                 <Text numberOfLines={1} style={styles.detailTitle}>{plan?.title ?? "Push Day"}</Text>
                 <Text numberOfLines={1} style={styles.detailSubtitle}>Coach {coachName}</Text>
               </View>
@@ -284,7 +278,7 @@ export default function Plans() {
                 </View>
                 <Text style={styles.progressText}>{Math.round(progress * 100)}%</Text>
               </View>
-              <ProgressBar value={progress} label="Plan cycle" />
+              <ProgressBar value={progress} label="Today" />
             </GlassCard>
 
             <SectionHeader
@@ -335,47 +329,44 @@ export default function Plans() {
           contentContainerStyle={styles.content}
         >
           <MobileHeader
-            eyebrow="Plans"
-            title="Assigned training"
-            subtitle="Workout, diet, routine, recovery, and trainer notes."
-            trailing={<IconBubble icon="reader-outline" tone="lime" />}
+            title="Plan"
+            leading={
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={21} color={colors.text} />
+              </Pressable>
+            }
+            showProfileShortcut={false}
           />
 
           <SegmentedControl options={filters} value={filter} onChange={setFilter} />
 
-          <GlassCard variant="selected" contentStyle={styles.featuredContent}>
-            <View style={styles.featuredTop}>
-              <View style={styles.progressCopy}>
-                <Text style={styles.eyebrow}>Today</Text>
-                <Text style={styles.cardTitle}>Push Day</Text>
-              </View>
-              <StatusChip status="Assigned" />
-            </View>
-            <Text style={styles.cardBody}>
-              Bench Press, Incline Dumbbell Press, Shoulder Press, Tricep Pushdown, Lateral Raise, Push-up Finisher.
-            </Text>
-            <View style={styles.planMeta}>
-              <StatusChip status="6 exercises" tone="neutral" />
-              <StatusChip status="45-60 min" tone="neutral" />
-              <StatusChip status="Medium" tone="amber" />
-            </View>
-            <ZookButton onPress={() => setView("detail")} icon="barbell-outline">Open Push Day</ZookButton>
-          </GlassCard>
-
-          <SectionHeader title="Plan library" subtitle="Only plans assigned to you are visible here." />
-          <View style={styles.stack}>
+          <SectionHeader title="Plan library" />
+          <View style={styles.libraryGrid}>
             {planCards.map((item) => (
               <Pressable
                 key={item.id}
-                onPress={() => item.id === "push" && setView("detail")}
+                onPress={() => {
+                  if (item.id === "push") {
+                    setView("detail");
+                    return;
+                  }
+                  if (item.id === "diet") {
+                    setFilter("diet");
+                    return;
+                  }
+                  setFilter("all");
+                }}
                 accessibilityRole="button"
+                style={styles.libraryCard}
               >
-                <ListRow
-                  title={item.title}
-                  subtitle={item.meta}
-                  leading={<IconBubble icon={item.id === "push" ? "barbell-outline" : "document-text-outline"} tone={item.tone} />}
-                  trailing={<StatusChip status={item.id === "push" ? "Assigned" : "Queued"} tone={item.tone} />}
-                />
+                <IconBubble icon={item.icon} tone={item.tone} size={42} />
+                <Text style={styles.libraryTitle}>{item.title}</Text>
+                <Text style={styles.libraryDetail}>{item.detail}</Text>
               </Pressable>
             ))}
           </View>
@@ -417,19 +408,6 @@ const styles = StyleSheet.create({
   detailTitleBlock: {
     flex: 1,
     gap: 4,
-  },
-  detailStatusPill: {
-    alignSelf: "flex-start",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.34)",
-    backgroundColor: "rgba(185,244,85,0.12)",
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-  },
-  detailStatusText: {
-    color: colors.lime,
-    ...typography.caption,
   },
   detailTitle: {
     color: colors.text,
@@ -569,6 +547,35 @@ const styles = StyleSheet.create({
   planMeta: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.sm,
+    alignItems: "center",
+    gap: 7,
+  },
+  metaDot: {
+    color: colors.subtle,
+    ...typography.small,
+  },
+  libraryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  libraryCard: {
+    width: "48.5%",
+    minHeight: 112,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    padding: 12,
+    gap: 8,
+    justifyContent: "center",
+  },
+  libraryTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  libraryDetail: {
+    color: colors.muted,
+    ...typography.small,
   },
 });

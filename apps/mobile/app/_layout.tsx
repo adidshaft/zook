@@ -125,6 +125,7 @@ function LayoutContent() {
         <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="notifications" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="profile" options={{ animation: "slide_from_left" }} />
+        <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
       </Stack>
     </>
   );

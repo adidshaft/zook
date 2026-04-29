@@ -115,7 +115,7 @@ export const layout = {
   mobileWidth: 390,
   mobileHeight: 844,
   screenPadding: 20,
-  contentWidth: 350,
+  contentWidth: 370,
   topSectionGap: 24,
   cardGap: 12,
   cardPadding: 18,

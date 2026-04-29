@@ -1,31 +1,62 @@
 import { Stack, useRouter } from "expo-router";
-import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { zookMockServices } from "@zook/core";
 import {
   BottomNav,
   GlassCard,
-  IconBubble,
-  ListRow,
   MobileHeader,
   ScannerFrame,
   ZookButton,
-  ZookChip,
   ZookScreen,
 } from "@/components/primitives";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type Result = Awaited<ReturnType<typeof zookMockServices.attendanceService.scanQr>>;
+type ScanState = "idle" | "checking" | "accepted" | "failed";
 
 export default function Scan() {
   const router = useRouter();
+  const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
+  const [scanState, setScanState] = useState<ScanState>("idle");
+  const [code, setCode] = useState("");
+  const completedRef = useRef(false);
+  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function simulateScan() {
+  useEffect(() => {
+    if (!permission) {
+      void requestPermission();
+    }
+  }, [permission, requestPermission]);
+
+  useEffect(() => {
+    autoTimerRef.current = setTimeout(() => {
+      void completeScan("zook-demo-approved");
+    }, 5000);
+
+    return () => {
+      if (autoTimerRef.current) {
+        clearTimeout(autoTimerRef.current);
+      }
+    };
+  }, []);
+
+  async function completeScan(payload: string) {
+    if (completedRef.current) {
+      return;
+    }
+    completedRef.current = true;
+    if (autoTimerRef.current) {
+      clearTimeout(autoTimerRef.current);
+    }
     setBusy(true);
+    setScanState("checking");
     try {
-      const result: Result = await zookMockServices.attendanceService.scanQr("zook-demo-approved");
+      const result: Result = await zookMockServices.attendanceService.scanQr(payload);
+      setScanState(result.status === "REJECTED" || result.status === "FLAGGED" ? "failed" : "accepted");
       router.push({
         pathname: "/attendance/[attendanceRecordId]",
         params: {
@@ -38,10 +69,27 @@ export default function Scan() {
           reason: result.reason,
         },
       });
+    } catch {
+      completedRef.current = false;
+      setScanState("failed");
     } finally {
       setBusy(false);
     }
   }
+
+  function handleBarcode({ data }: BarcodeScanningResult) {
+    void completeScan(data || "zook-demo-approved");
+  }
+
+  function submitCode() {
+    const cleanCode = code.trim();
+    if (!cleanCode) {
+      return;
+    }
+    void completeScan(cleanCode);
+  }
+
+  const hasCamera = permission?.granted;
 
   return (
     <>
@@ -53,8 +101,8 @@ export default function Scan() {
           contentContainerStyle={styles.content}
         >
           <MobileHeader
-            title="Scan Gym QR"
-            subtitle="Iron Temple Gym"
+            title="Check in"
+            subtitle="Scan QR or enter code"
             leading={
               <Pressable
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
@@ -67,53 +115,66 @@ export default function Scan() {
             }
           />
 
-          <Pressable
-            onPress={() => void simulateScan()}
-            accessibilityRole="button"
-            accessibilityLabel="Scan the gym QR"
-            style={styles.scannerStage}
-          >
-            <ScannerFrame>
-              <Ionicons name="qr-code-outline" size={72} color="rgba(185,244,85,0.52)" />
-              <Text style={styles.scannerText}>{busy ? "Validating..." : "Tap to simulate scan"}</Text>
-            </ScannerFrame>
-          </Pressable>
-
-          <View style={styles.helperRow}>
-            <Ionicons name="qr-code-outline" size={16} color={colors.lime} />
-            <Text style={styles.helperText}>Scan the rolling QR at the reception desk.</Text>
+          <View style={styles.cameraCard}>
+            {hasCamera ? (
+              <CameraView
+                style={styles.camera}
+                facing="back"
+                onBarcodeScanned={completedRef.current ? undefined : handleBarcode}
+                barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+              />
+            ) : (
+              <View style={styles.cameraFallback}>
+                <Ionicons name="camera-outline" size={32} color={colors.lime} />
+                <Text style={styles.cameraFallbackTitle}>Camera needed</Text>
+                <Text style={styles.cameraFallbackText}>Allow camera access to scan.</Text>
+                <ZookButton onPress={() => void requestPermission()} tone="secondary" style={styles.permissionButton}>
+                  Allow camera
+                </ZookButton>
+              </View>
+            )}
+            <View pointerEvents="none" style={styles.scannerOverlay}>
+              <ScannerFrame tone={scanState === "failed" ? "red" : "lime"} />
+            </View>
+            <View style={styles.cameraBadge}>
+              <Ionicons name="qr-code-outline" size={14} color={colors.lime} />
+              <Text style={styles.cameraBadgeText}>Point at desk QR</Text>
+            </View>
           </View>
 
-          <GlassCard contentStyle={styles.validationContent}>
-            <ValidationRow title="Membership active" icon="shield-checkmark-outline" />
-            <View style={styles.divider} />
-            <ValidationRow title="Branch verified" icon="checkmark-circle-outline" />
-            <View style={styles.divider} />
-            <ValidationRow title="Server-authorized check-in" icon="lock-closed-outline" />
-          </GlassCard>
+          <View style={styles.validationStrip}>
+            <ValidationMini label="Membership" state={scanState} />
+            <ValidationMini label="Gym" state={scanState} />
+            <ValidationMini label="Check in" state={scanState} />
+          </View>
 
-          <GlassCard variant="compact" contentStyle={styles.supportContent}>
-            <ListRow
-              title="Can’t scan? Enter code"
-              leading={<IconBubble icon="headset-outline" tone="neutral" size={34} />}
-              trailing={<Ionicons name="chevron-forward" size={16} color={colors.muted} />}
-              style={styles.flatRow}
-            />
-            <View style={styles.divider} />
-            <View style={styles.modeRow}>
-              <View style={styles.modeCopy}>
-                <Ionicons name="qr-code-outline" size={15} color={colors.lime} />
-                <Text style={styles.modeLabel}>Attendance mode</Text>
-              </View>
-              <ZookChip tone="lime" icon="checkmark">
-                Auto
-              </ZookChip>
+          <GlassCard variant="compact" contentStyle={styles.codeContent}>
+            <View style={styles.codeHeader}>
+              <Text style={styles.codeTitle}>Can’t scan?</Text>
+              <Text style={styles.codeHint}>Enter code</Text>
+            </View>
+            <View style={styles.codeRow}>
+              <TextInput
+                value={code}
+                onChangeText={setCode}
+                autoCapitalize="characters"
+                placeholder="ZK-4821"
+                placeholderTextColor={colors.subtle}
+                style={styles.codeInput}
+                returnKeyType="done"
+                onSubmitEditing={submitCode}
+              />
+              <Pressable
+                onPress={submitCode}
+                disabled={busy || !code.trim()}
+                accessibilityRole="button"
+                accessibilityLabel="Check code"
+                style={[styles.codeButton, busy || !code.trim() ? styles.codeButtonDisabled : null]}
+              >
+                <Ionicons name="arrow-forward" size={18} color={colors.bg} />
+              </Pressable>
             </View>
           </GlassCard>
-
-          <ZookButton onPress={() => void simulateScan()} disabled={busy} icon="scan-outline">
-            {busy ? "Validating" : "Simulate Scan"}
-          </ZookButton>
         </ScrollView>
         <BottomNav />
       </ZookScreen>
@@ -121,14 +182,17 @@ export default function Scan() {
   );
 }
 
-function ValidationRow({ title, icon }: { title: string; icon: keyof typeof Ionicons.glyphMap }) {
+function ValidationMini({ label, state }: { label: string; state: ScanState }) {
+  const icon = state === "failed" ? "close-circle" : "checkmark-circle";
+  const color = state === "failed" ? colors.red : colors.lime;
   return (
-    <View style={styles.validationRow}>
-      <View style={styles.validationCopy}>
-        <IconBubble icon={icon} tone="neutral" size={32} />
-        <Text style={styles.validationTitle}>{title}</Text>
-      </View>
-      <Ionicons name="checkmark" size={16} color={colors.lime} />
+    <View style={styles.validationMini}>
+      {state === "checking" || state === "idle" ? (
+        <ActivityIndicator size="small" color={colors.lime} />
+      ) : (
+        <Ionicons name={icon} size={15} color={color} />
+      )}
+      <Text numberOfLines={1} style={styles.validationMiniText}>{label}</Text>
     </View>
   );
 }
@@ -140,7 +204,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     paddingBottom: 128,
-    gap: spacing.sm,
+    gap: 10,
   },
   iconButton: {
     width: 40,
@@ -152,75 +216,126 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scannerStage: {
-    height: 292,
+  cameraCard: {
+    height: 304,
+    borderRadius: 28,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceSolid,
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraFallback: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    gap: spacing.sm,
+    padding: spacing.lg,
+  },
+  cameraFallbackTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  cameraFallbackText: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  permissionButton: {
+    minHeight: 38,
+    marginTop: spacing.xs,
+  },
+  scannerOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cameraBadge: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 14,
+    minHeight: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(7,9,8,0.72)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  cameraBadgeText: {
+    color: colors.text,
+    ...typography.caption,
+  },
+  validationStrip: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  validationMini: {
+    flex: 1,
+    minHeight: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
     paddingHorizontal: 6,
   },
-  scannerText: {
+  validationMiniText: {
     color: colors.muted,
-    ...typography.small,
+    fontSize: 10.5,
+    fontWeight: "700",
   },
-  helperRow: {
-    minHeight: 26,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  codeContent: {
+    padding: 12,
     gap: spacing.sm,
   },
-  helperText: {
+  codeHeader: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+  },
+  codeTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  codeHint: {
     color: colors.muted,
     ...typography.small,
   },
-  validationContent: {
-    padding: 10,
-    gap: 0,
-  },
-  validationRow: {
-    minHeight: 40,
+  codeRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
+    gap: 8,
   },
-  validationCopy: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  validationTitle: {
+  codeInput: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(0,0,0,0.2)",
     color: colors.text,
+    paddingHorizontal: 12,
     ...typography.bodyStrong,
   },
-  divider: {
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.08)",
-  },
-  supportContent: {
-    padding: 10,
-    gap: spacing.sm,
-  },
-  flatRow: {
-    borderWidth: 0,
-    backgroundColor: "transparent",
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-  },
-  modeRow: {
-    minHeight: 30,
-    flexDirection: "row",
+  codeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: colors.lime,
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
+    justifyContent: "center",
   },
-  modeCopy: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  modeLabel: {
-    color: colors.muted,
-    ...typography.small,
+  codeButtonDisabled: {
+    opacity: 0.45,
   },
 });
