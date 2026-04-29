@@ -1780,7 +1780,7 @@ const styles = StyleSheet.create({
     ...shadows.glowLimeSoft,
   },
   glassContent: {
-    padding: layout.cardPadding,
+    padding: 16,
     gap: spacing.md,
   },
   glassPanel: {
@@ -1797,14 +1797,14 @@ const styles = StyleSheet.create({
   },
   chip: {
     alignSelf: "flex-start",
-    minHeight: 30,
+    minHeight: 26,
     borderWidth: 1,
     borderRadius: radii.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
   },
   chipText: {
     ...typography.caption,
@@ -1898,8 +1898,8 @@ const styles = StyleSheet.create({
   },
   metricTile: {
     flex: 1,
-    minHeight: 96,
-    borderRadius: radii.large,
+    minHeight: 84,
+    borderRadius: radii.medium,
     borderWidth: 1,
     padding: spacing.md,
     gap: 6,
@@ -1975,11 +1975,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   listRow: {
-    minHeight: 58,
+    minHeight: 54,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    borderRadius: radii.large,
+    borderRadius: radii.medium,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
     backgroundColor: "rgba(255,255,255,0.05)",
@@ -2006,22 +2006,22 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   inputWrapper: {
-    minHeight: 50,
-    borderRadius: radii.input,
+    minHeight: 46,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.panel,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 13,
   },
   input: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 44,
     color: colors.text,
     ...typography.body,
-    paddingVertical: spacing.md,
+    paddingVertical: 11,
   },
   inputWrapperFocused: {
     borderColor: "rgba(185,244,85,0.38)",
@@ -2038,7 +2038,7 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   inputMultiline: {
-    minHeight: 120,
+    minHeight: 96,
     textAlignVertical: "top",
   },
   inputHint: {
@@ -2394,8 +2394,8 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   collapsibleHeader: {
-    minHeight: 76,
-    padding: 18,
+    minHeight: 62,
+    padding: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -2403,15 +2403,15 @@ const styles = StyleSheet.create({
   },
   collapsibleCopy: {
     flex: 1,
-    gap: 6,
+    gap: 3,
   },
   collapsibleTitle: {
     color: colors.text,
-    ...typography.title,
+    ...typography.cardTitle,
   },
   collapsibleSubtitle: {
     color: colors.muted,
-    ...typography.body,
+    ...typography.small,
   },
   collapsibleTrailing: {
     alignItems: "flex-end",
@@ -2420,7 +2420,7 @@ const styles = StyleSheet.create({
   collapsibleBody: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    padding: spacing.lg,
+    padding: 14,
     gap: spacing.md,
   },
   bottomNav: {

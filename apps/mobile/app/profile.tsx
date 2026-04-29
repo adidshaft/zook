@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
@@ -6,15 +7,14 @@ import { zookMockServices } from "@zook/core";
 import {
   AuditWarning,
   Card,
+  CollapsibleSection,
+  DetailRow,
   Dock,
   GlassInput,
-  InfoRow,
   Pill,
   PrimaryButton,
   Screen,
   ScreenHeader,
-  SectionHeader,
-  SecondaryLink,
 } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
@@ -66,6 +66,7 @@ export default function Profile() {
   const allRoles = Array.from(
     new Set(session?.organizations.flatMap((organization) => organization.roles) ?? []),
   );
+  const activeRoleLabel = titleCaseFromCode(activeRole ?? allRoles[0] ?? "MEMBER");
   const effectivePreferences = mergeNotificationPreferences(
     preferencesQuery.data?.preferences,
     activeOrgId,
@@ -212,7 +213,6 @@ export default function Profile() {
     <Screen>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <ScreenHeader
-          eyebrow="Account"
           title="Profile"
         />
 
@@ -225,38 +225,29 @@ export default function Profile() {
           </Card>
         ) : null}
 
-        <Card style={styles.profileCard}>
+        <Card style={styles.profileCard} padding={12} radius={18}>
           <View style={styles.profileTop}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
             <View style={styles.profileCopy}>
-              <Text style={styles.profileName}>
+              <Text numberOfLines={1} style={styles.profileName}>
                 {session?.user.name ?? "Zook member"}
               </Text>
-              <Text style={styles.profileBody}>
+              <Text numberOfLines={1} style={styles.profileBody}>
                 {session?.user.email ?? session?.user.phone ?? "Contact not added"}
               </Text>
+              <View style={styles.activeLine}>
+                <Ionicons name="business-outline" size={13} color={colors.lime} />
+                <Text numberOfLines={1} style={styles.activeLineText}>
+                  {activeOrganization?.name ?? "No gym selected"}
+                </Text>
+              </View>
             </View>
           </View>
-          <View style={styles.roleRow}>
-            {allRoles.length ? (
-              allRoles.map((role) => (
-                <Pressable
-                  key={role}
-                  onPress={() => void switchRole(role)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Switch to ${titleCaseFromCode(role)} role`}
-                  style={styles.roleButton}
-                >
-                  <Pill key={role} tone={role === activeRole ? "lime" : "blue"}>
-                    {role === activeRole ? `Active ${titleCaseFromCode(role)}` : titleCaseFromCode(role)}
-                  </Pill>
-                </Pressable>
-              ))
-            ) : (
-              <Pill tone="neutral">Member</Pill>
-            )}
+          <View style={styles.roleSummaryRow}>
+            <Pill tone="lime">{activeRoleLabel}</Pill>
+            {allRoles.length > 1 ? <Pill tone="neutral">{allRoles.length} roles</Pill> : null}
           </View>
         </Card>
 
@@ -270,80 +261,80 @@ export default function Profile() {
           </Card>
         ) : null}
 
-        <SectionHeader
-          eyebrow="My Gym"
-          title="Active gym"
-          action={<SecondaryLink href="/find-gyms">Explore</SecondaryLink>}
-        />
-
-        <Card style={styles.infoCard}>
-          <InfoRow
-            label="Active gym"
-            value={activeOrganization?.name ?? "None selected"}
-            tone={activeOrganization ? "lime" : "neutral"}
-          />
-          <InfoRow
-            label="Location"
-            value={
-              activeOrganization
-                ? `${activeOrganization.city}, ${activeOrganization.state}`
-                : "Select a gym"
-            }
-            tone="blue"
-          />
-          <InfoRow
-            label="Status"
-            value={titleCaseFromCode(activeOrganization?.status)}
-            tone={activeOrganization?.status === "ACTIVE" ? "lime" : "amber"}
-          />
-        </Card>
-
-        <View style={styles.orgList}>
-          {session?.organizations.map((organization) => {
-            const selected = organization.orgId === activeOrganization?.orgId;
-            return (
-              <Pressable
-                key={organization.orgId}
-                onPress={() => void setActiveOrgId(organization.orgId)}
-                style={[styles.orgButton, selected ? styles.orgButtonActive : null]}
-                accessibilityLabel={`Switch to ${organization.name}`}
-                accessibilityRole="button"
-              >
-                <View style={styles.orgButtonHeader}>
-                  <View style={styles.orgButtonCopy}>
-                    <Text style={styles.orgName}>
-                      {organization.name}
-                    </Text>
-                    <Text style={styles.orgMeta}>
-                      {organization.city}, {organization.state}
-                    </Text>
-                  </View>
-                  <Pill tone={selected ? "lime" : "neutral"}>{selected ? "Active" : "Switch"}</Pill>
-                </View>
-                <View style={styles.roleRow}>
-                  {organization.roles.map((role) => (
-                    <Pill
-                      key={`${organization.orgId}-${role}`}
-                      tone={organization.orgId === activeOrgId && role === activeRole ? "lime" : "blue"}
-                    >
-                      {organization.orgId === activeOrgId && role === activeRole
-                        ? `Active ${titleCaseFromCode(role)}`
-                        : titleCaseFromCode(role)}
-                    </Pill>
-                  ))}
-                </View>
-              </Pressable>
-            );
-          })}
+        <View style={styles.quickGrid}>
+          <View style={styles.quickRow}>
+            <QuickActionTile onPress={() => router.push("/notifications")} icon="notifications-outline" label="Inbox" value="Updates" />
+            <QuickActionTile onPress={() => router.push("/membership")} icon="card-outline" label="Plan" value="Membership" />
+          </View>
+          <View style={styles.quickRow}>
+            <QuickActionTile onPress={() => router.push("/plans")} icon="barbell-outline" label="Workout" value="Today" />
+            <QuickActionTile onPress={() => void openSystemSettings()} icon="settings-outline" label="Phone" value="Settings" />
+          </View>
         </View>
 
-        <SectionHeader
-          eyebrow="Health & Fitness"
-          title="My Profile"
-          action={<Pill tone="blue">{ageLabel}</Pill>}
-        />
+        <CollapsibleSection
+          title="Gym"
+          subtitle={activeOrganization ? `${activeOrganization.city}, ${activeOrganization.state}` : "Pick your gym"}
+          count={session?.organizations.length ?? 0}
+          defaultOpen={false}
+        >
+          <View style={styles.rowStack}>
+            <DetailRow label="Active gym" value={activeOrganization?.name ?? "None selected"} />
+            <DetailRow
+              label="Status"
+              value={titleCaseFromCode(activeOrganization?.status)}
+            />
+            <QuickActionTile onPress={() => router.push("/find-gyms")} icon="search-outline" label="Explore gyms" value="Find more" fullWidth />
+          </View>
+          <View style={styles.orgList}>
+            {session?.organizations.map((organization) => {
+              const selected = organization.orgId === activeOrganization?.orgId;
+              return (
+                <Pressable
+                  key={organization.orgId}
+                  onPress={() => void setActiveOrgId(organization.orgId)}
+                  style={[styles.orgButton, selected ? styles.orgButtonActive : null]}
+                  accessibilityLabel={`Switch to ${organization.name}`}
+                  accessibilityRole="button"
+                >
+                  <View style={styles.orgButtonHeader}>
+                    <View style={styles.orgButtonCopy}>
+                      <Text numberOfLines={1} style={styles.orgName}>
+                        {organization.name}
+                      </Text>
+                      <Text numberOfLines={1} style={styles.orgMeta}>
+                        {organization.city}, {organization.state}
+                      </Text>
+                    </View>
+                    <Pill tone={selected ? "lime" : "neutral"}>{selected ? "Active" : "Switch"}</Pill>
+                  </View>
+                  <View style={styles.roleRow}>
+                    {organization.roles.map((role) => (
+                      <Pill
+                        key={`${organization.orgId}-${role}`}
+                        tone={organization.orgId === activeOrgId && role === activeRole ? "lime" : "neutral"}
+                      >
+                        {titleCaseFromCode(role)}
+                      </Pill>
+                    ))}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </CollapsibleSection>
 
-        <Card style={styles.detailsCard}>
+        <CollapsibleSection
+          title="Health"
+          subtitle={[fitnessGoal || "Goal not added", weightKg ? `${weightKg} kg` : null].filter(Boolean).join(" · ")}
+          count={ageLabel}
+          defaultOpen={false}
+        >
+          <View style={styles.summaryGrid}>
+            <SummaryTile label="Weight" value={weightKg ? `${weightKg} kg` : "Add"} />
+            <SummaryTile label="Age" value={ageLabel} />
+            <SummaryTile label="Diet" value={dietPreference || "Add"} />
+          </View>
           <View style={styles.detailGrid}>
             <GlassInput
               label="Weight kg"
@@ -380,24 +371,24 @@ export default function Profile() {
             placeholder="Peanuts, lactose, none..."
           />
           <GlassInput
-            label="Summary visible to trainer"
+            label="Trainer note"
             value={summaryNote}
             onChangeText={setSummaryNote}
             multiline
-            placeholder="Injuries, schedule, food constraints, coaching notes..."
+            placeholder="Injuries, schedule, food constraints..."
           />
           {detailsStatus ? <Text style={styles.detailsStatus}>{detailsStatus}</Text> : null}
           <PrimaryButton onPress={() => void saveMemberDetails()} disabled={detailsBusy}>
-            {detailsBusy ? "Saving..." : "Update Profile"}
+            {detailsBusy ? "Saving..." : "Save"}
           </PrimaryButton>
-        </Card>
+        </CollapsibleSection>
 
-        <SectionHeader
-          eyebrow="Preferences"
+        <CollapsibleSection
           title="Alerts"
-        />
-
-        <Card style={styles.toggleCard}>
+          subtitle={`Push ${syncStatus}`}
+          count={effectivePreferences.pushEnabled ? "On" : "Off"}
+          defaultOpen={false}
+        >
           {pushError || preferenceError ? (
             <Text style={styles.errorText}>
               {preferenceError ?? pushError}
@@ -420,36 +411,13 @@ export default function Profile() {
             busy={busyPreferenceKey === "promotional"}
             onValueChange={(value) => void updateNotificationPreference("promotional", value)}
           />
-        </Card>
+        </CollapsibleSection>
 
-        <View style={styles.actionRow}>
-          <SecondaryLink href="/notifications" style={styles.actionHalf}>
-            Open inbox
-          </SecondaryLink>
-          <SecondaryLink href="/membership" style={styles.actionHalf}>
-            Membership
-          </SecondaryLink>
-        </View>
-
-        <View style={styles.actionRow}>
-          <PrimaryButton
-            onPress={() => void openSystemSettings()}
-            tone="secondary"
-            style={styles.actionHalf}
-          >
-            System settings
-          </PrimaryButton>
-          <SecondaryLink href="/plans" style={styles.actionHalf}>
-            Plans
-          </SecondaryLink>
-        </View>
-
-        <SectionHeader
-          eyebrow="Settings"
+        <CollapsibleSection
           title="Privacy"
-        />
-
-        <Card variant="compact" style={styles.detailsCard}>
+          subtitle="Data export and deletion"
+          defaultOpen={false}
+        >
           <AuditWarning>Export and deletion requests create server jobs and audit logs. Zook does not fake instant deletion.</AuditWarning>
           <View style={styles.actionRow}>
             <PrimaryButton onPress={() => void requestPrivacyExport()} tone="secondary" style={styles.actionHalf}>
@@ -460,11 +428,46 @@ export default function Profile() {
             </PrimaryButton>
           </View>
           {privacyStatus ? <Text style={styles.detailsStatus}>{privacyStatus}</Text> : null}
-        </Card>
+        </CollapsibleSection>
 
-        <PrimaryButton onPress={() => void logout()} tone="danger">
-          Logout
-        </PrimaryButton>
+        <CollapsibleSection
+          title="Account"
+          subtitle="Phone settings and sign out"
+          defaultOpen={false}
+        >
+          <Text style={styles.sectionMiniLabel}>Switch role</Text>
+          <View style={styles.roleRow}>
+            {allRoles.length ? (
+              allRoles.map((role) => (
+                <Pressable
+                  key={role}
+                  onPress={() => void switchRole(role)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Switch to ${titleCaseFromCode(role)} role`}
+                  style={styles.roleButton}
+                >
+                  <Pill key={role} tone={role === activeRole ? "lime" : "neutral"}>
+                    {titleCaseFromCode(role)}
+                  </Pill>
+                </Pressable>
+              ))
+            ) : (
+              <Pill tone="neutral">Member</Pill>
+            )}
+          </View>
+          <View style={styles.actionRow}>
+            <PrimaryButton
+              onPress={() => void openSystemSettings()}
+              tone="secondary"
+              style={styles.actionHalf}
+            >
+              Phone settings
+            </PrimaryButton>
+            <PrimaryButton onPress={() => void logout()} tone="danger" style={styles.actionHalf}>
+              Logout
+            </PrimaryButton>
+          </View>
+        </CollapsibleSection>
       </ScrollView>
       <Dock />
     </Screen>
@@ -473,22 +476,22 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 16,
+    padding: 14,
+    gap: 10,
     paddingBottom: 120,
   },
   profileCard: {
-    gap: 16,
+    gap: 10,
   },
   profileTop: {
     flexDirection: "row",
-    gap: 14,
+    gap: 12,
     alignItems: "center",
   },
   avatar: {
-    width: 76,
-    height: 76,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     backgroundColor: colors.lime,
     alignItems: "center",
     justifyContent: "center",
@@ -496,42 +499,114 @@ const styles = StyleSheet.create({
   avatarText: {
     color: colors.bg,
     fontWeight: "900",
-    fontSize: 24,
+    fontSize: 18,
   },
   profileCopy: {
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   profileName: {
     color: colors.text,
-    fontSize: 19,
+    fontSize: 17,
     fontWeight: "700",
   },
   profileBody: {
     color: colors.muted,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  activeLine: {
+    minHeight: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  activeLineText: {
+    flex: 1,
+    color: colors.lime,
+    fontSize: 12,
+    fontWeight: "700",
   },
   roleRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
     flexWrap: "wrap",
+  },
+  roleSummaryRow: {
+    flexDirection: "row",
+    gap: 6,
   },
   roleButton: {
     borderRadius: 999,
   },
+  quickGrid: {
+    gap: 10,
+  },
+  quickRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  quickTile: {
+    flex: 1,
+    minHeight: 62,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    padding: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  quickTileFull: {
+    flex: 0,
+    width: "100%",
+  },
+  quickTilePressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.99 }],
+  },
+  quickIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  quickLabel: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  quickValue: {
+    color: colors.muted,
+    fontSize: 11.5,
+    fontWeight: "600",
+  },
   infoCard: {
     gap: 10,
   },
+  rowStack: {
+    gap: 10,
+  },
   orgList: {
-    gap: 12,
+    gap: 10,
   },
   orgButton: {
-    borderRadius: 24,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.panel,
-    padding: 16,
-    gap: 12,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    padding: 12,
+    gap: 10,
   },
   orgButtonActive: {
     borderColor: "rgba(185,244,85,0.3)",
@@ -549,11 +624,11 @@ const styles = StyleSheet.create({
   orgName: {
     color: colors.text,
     fontWeight: "800",
-    fontSize: 18,
+    fontSize: 14,
   },
   orgMeta: {
     color: colors.muted,
-    fontSize: 13,
+    fontSize: 12,
   },
   actionRow: {
     flexDirection: "row",
@@ -588,6 +663,32 @@ const styles = StyleSheet.create({
   detailInput: {
     flex: 1,
   },
+  summaryGrid: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  summaryTile: {
+    flex: 1,
+    minHeight: 58,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    justifyContent: "center",
+    gap: 3,
+  },
+  summaryLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  summaryValue: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "800",
+  },
   detailsStatus: {
     color: colors.lime,
     lineHeight: 20,
@@ -619,6 +720,12 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     fontWeight: "700",
+  },
+  sectionMiniLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
   },
 });
 
@@ -652,6 +759,50 @@ function PreferenceToggleRow({
         thumbColor={value ? colors.lime : "#d1d5db"}
         trackColor={{ false: "rgba(255,255,255,0.12)", true: "rgba(185,244,85,0.35)" }}
       />
+    </View>
+  );
+}
+
+function QuickActionTile({
+  icon,
+  label,
+  value,
+  onPress,
+  fullWidth = false,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  onPress?: () => void;
+  fullWidth?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.quickTile,
+        fullWidth ? styles.quickTileFull : null,
+        pressed ? styles.quickTilePressed : null,
+      ]}
+    >
+      <View style={styles.quickIcon}>
+        <Ionicons name={icon} size={18} color={colors.lime} />
+      </View>
+      <View style={styles.quickCopy}>
+        <Text numberOfLines={1} style={styles.quickLabel}>{label}</Text>
+        <Text numberOfLines={1} style={styles.quickValue}>{value}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function SummaryTile({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.summaryTile}>
+      <Text numberOfLines={1} style={styles.summaryLabel}>{label}</Text>
+      <Text numberOfLines={1} style={styles.summaryValue}>{value}</Text>
     </View>
   );
 }
