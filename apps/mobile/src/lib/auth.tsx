@@ -11,6 +11,10 @@ const ACTIVE_ORG_STORAGE_KEY = "zook_active_org";
 const ACTIVE_ROLE_STORAGE_KEY = "zook_active_role";
 type LogoutCleanup = () => Promise<void> | void;
 
+function sanitizeOtpCode(value: string) {
+  return value.normalize("NFKC").replace(/[^0-9]/g, "").slice(0, 6);
+}
+
 interface RequestOtpResult {
   challengeId: string;
   expiresAt: string;
@@ -175,9 +179,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyOtp = useCallback(
     async (email: string, code: string) => {
+      const normalizedCode = sanitizeOtpCode(code);
       const result = await mobileApiFetch<VerifyOtpResult>("/auth/verify-otp", {
         method: "POST",
-        body: { email, code }
+        body: { email, code: normalizedCode }
       });
       await setStoredValue(SESSION_STORAGE_KEY, result.token);
       await hydrate(result.token, activeOrgId, activeRole);

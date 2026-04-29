@@ -31,24 +31,18 @@ import {
   useOwnerDashboard,
   useRejectJoinRequest,
 } from "@/lib/query-hooks";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { colors, spacing, typography } from "@/lib/theme";
 
 type OwnerView = "command" | "approvals" | "revenue" | "stock" | "members";
 type Drilldown = Exclude<OwnerView, "command">;
+const OWNER_CONTENT_WIDTH = 370;
+const OWNER_BOTTOM_NAV_HEIGHT = 72;
 
 function normalizeView(value: string | string[] | undefined): OwnerView {
   const raw = Array.isArray(value) ? value[0] : value;
   if (raw === "approvals" || raw === "revenue" || raw === "stock" || raw === "members") return raw;
   return "command";
 }
-
-const ownerSegments: Array<{ label: string; value: OwnerView }> = [
-  { label: "Command", value: "command" },
-  { label: "Approvals", value: "approvals" },
-  { label: "Revenue", value: "revenue" },
-  { label: "Stock", value: "stock" },
-  { label: "Members", value: "members" },
-];
 
 function offlineDemoViewOverride() {
   return isOfflineDemoMode() ? process.env.EXPO_PUBLIC_OFFLINE_DEMO_VIEW : undefined;
@@ -222,21 +216,22 @@ export default function Owner() {
           <Pill tone="lime">Owner</Pill>
         </View>
 
-        <View style={styles.segmentRow}>
-          {ownerSegments.map((segment) => {
-            const active = view === segment.value;
-            return (
-              <Pressable
-                key={segment.value}
-                onPress={() => router.replace(segment.value === "command" ? "/owner" : `/owner?view=${segment.value}`)}
-                accessibilityRole="button"
-                accessibilityLabel={segment.label}
-                style={[styles.segmentPill, active ? styles.segmentPillActive : null]}
-              >
-                <Text style={[styles.segmentText, active ? styles.segmentTextActive : null]}>{segment.label}</Text>
-              </Pressable>
-            );
-          })}
+        <View style={styles.utilityRow}>
+          <Pressable
+            onPress={() => router.replace(view === "members" ? "/owner" : "/owner?view=members")}
+            accessibilityRole="button"
+            accessibilityLabel={view === "members" ? "Back to command" : "Open members"}
+            style={[styles.utilityPill, view === "members" ? styles.utilityPillActive : null]}
+          >
+            <Ionicons
+              name={view === "members" ? "pulse-outline" : "people-outline"}
+              size={15}
+              color={view === "members" ? colors.lime : colors.muted}
+            />
+            <Text style={[styles.utilityText, view === "members" ? styles.utilityTextActive : null]}>
+              {view === "members" ? "Back to command" : "Members"}
+            </Text>
+          </Pressable>
         </View>
 
         {view === "command" ? (
@@ -507,11 +502,11 @@ export default function Owner() {
 const styles = StyleSheet.create({
   content: {
     width: "100%",
-    maxWidth: layout.contentWidth,
+    maxWidth: OWNER_CONTENT_WIDTH,
     alignSelf: "center",
     paddingTop: 14,
     gap: 16,
-    paddingBottom: layout.bottomNavHeight + 40,
+    paddingBottom: OWNER_BOTTOM_NAV_HEIGHT + 40,
   },
   headerRow: {
     flexDirection: "row",
@@ -523,30 +518,31 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 8,
   },
-  segmentRow: {
+  utilityRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
   },
-  segmentPill: {
+  utilityPill: {
     minHeight: 36,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.panel,
     paddingHorizontal: 12,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 6,
+    alignSelf: "flex-start",
   },
-  segmentPillActive: {
+  utilityPillActive: {
     borderColor: "rgba(185,244,85,0.34)",
     backgroundColor: "rgba(185,244,85,0.14)",
   },
-  segmentText: {
+  utilityText: {
     color: colors.muted,
     ...typography.caption,
   },
-  segmentTextActive: {
+  utilityTextActive: {
     color: colors.lime,
   },
   title: {

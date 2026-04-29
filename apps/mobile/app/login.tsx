@@ -2,13 +2,19 @@ import { useState } from "react";
 import { ActivityIndicator, Dimensions, KeyboardAvoidingView, LayoutAnimation, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BrandMark, GlassCard, GlassInput, ZookButton, ZookScreen } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { getMobileReleaseProfile } from "@/lib/api";
 import { colors, spacing, typography } from "@/lib/theme";
 
 const screenWidth = Dimensions.get("window").width;
 const heroFontSize = Math.min(54, screenWidth * 0.13);
 
+function sanitizeOtpCode(value: string) {
+  return value.normalize("NFKC").replace(/[^0-9]/g, "").slice(0, 6);
+}
+
 export default function Login() {
   const { requestOtp, verifyOtp } = useAuth();
+  const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"email" | "otp">("email");
@@ -27,14 +33,14 @@ export default function Login() {
           return;
         }
         const result = await requestOtp(email);
+        const seededDevOtp = sanitizeOtpCode(result.devOtp ?? localDevOtp ?? "");
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setStage("otp");
+        setCode(seededDevOtp);
         setMessage(`Code sent to ${email}.`);
-        if (__DEV__ && result.devOtp) {
-          setDevOtp(result.devOtp);
-        }
+        setDevOtp(seededDevOtp || null);
       } else {
-        await verifyOtp(email, code);
+        await verifyOtp(email, sanitizeOtpCode(code || devOtp || localDevOtp || ""));
         setMessage(`Signed in as ${email}.`);
       }
     } catch (error) {
@@ -93,7 +99,7 @@ export default function Login() {
               <GlassInput
                 label="One-Time Code"
                 value={code}
-                onChangeText={setCode}
+                onChangeText={(value) => setCode(sanitizeOtpCode(value))}
                 autoComplete="one-time-code"
                 keyboardType="number-pad"
                 maxLength={6}
@@ -116,6 +122,7 @@ export default function Login() {
                 onPress={() => {
                   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                   setStage("email");
+                  setCode("");
                   setDevOtp(null);
                 }}
                 disabled={busy}

@@ -32,10 +32,12 @@ import {
   useRejectAttendance,
 } from "@/lib/query-hooks";
 import { useAuth } from "@/lib/auth";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { colors, spacing, typography } from "@/lib/theme";
 
 type DeskView = "desk" | "members" | "payments" | "orders";
 type DeskPaymentMode = Extract<PaymentMode, "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER">;
+const RECEPTION_CONTENT_WIDTH = 370;
+const RECEPTION_BOTTOM_NAV_HEIGHT = 72;
 
 const paymentModes: Array<{ label: string; value: DeskPaymentMode }> = [
   { label: "Cash", value: "CASH" },
@@ -313,11 +315,11 @@ export default function Reception() {
 const styles = StyleSheet.create({
   content: {
     width: "100%",
-    maxWidth: layout.contentWidth,
+    maxWidth: RECEPTION_CONTENT_WIDTH,
     alignSelf: "center",
     paddingTop: 14,
     gap: 16,
-    paddingBottom: layout.bottomNavHeight + 40,
+    paddingBottom: RECEPTION_BOTTOM_NAV_HEIGHT + 40,
   },
   headerRow: {
     flexDirection: "row",
