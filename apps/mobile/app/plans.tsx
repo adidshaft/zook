@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: 128,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
   iconButton: {
     width: 44,

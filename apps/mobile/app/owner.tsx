@@ -18,7 +18,7 @@ import {
 } from "@/components/primitives";
 import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
-import { colors } from "@/lib/theme";
+import { colors, layout } from "@/lib/theme";
 
 type OwnerView = "command" | "approvals" | "revenue" | "stock";
 type Drilldown = Exclude<OwnerView, "command">;
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
-    paddingBottom: 120,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
   headerRow: {
     flexDirection: "row",

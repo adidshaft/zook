@@ -1,20 +1,19 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  Card,
-  Dock,
-  EmptyState,
-  Pill,
-  PrimaryButton,
-  Screen,
-  SecondaryButton,
+  BottomNav,
+  GlassCard,
+  IconBubble,
+  MobileHeader,
+  ZookButton,
+  ZookScreen,
 } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useMyPlans, useMyProfile, useTrainerClients } from "@/lib/query-hooks";
-import { colors, typography } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type ChatMessage = {
   id: string;
@@ -31,6 +30,7 @@ const languagePrompts = [
 
 export default function AssistantScreen() {
   const queryClient = useQueryClient();
+  const scrollRef = useRef<ScrollView>(null);
   const { activeOrgId, hasAnyRole, token } = useAuth();
   const profileQuery = useMyProfile();
   const plansQuery = useMyPlans();
@@ -47,7 +47,6 @@ export default function AssistantScreen() {
     },
   ]);
   const [draft, setDraft] = useState("");
-  const [voiceMode, setVoiceMode] = useState(false);
   const [attachSummary, setAttachSummary] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -81,6 +80,10 @@ export default function AssistantScreen() {
     setMessages((current) => [...current, nextUserMessage]);
     setDraft("");
     setLoading(true);
+
+    // Scroll to bottom after adding user message
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+
     try {
       const result = await mobileApiFetch<{ response: string | Record<string, unknown> }>("/ai/chat", {
         method: "POST",
@@ -94,6 +97,7 @@ export default function AssistantScreen() {
       const body = typeof result.response === "string" ? result.response : JSON.stringify(result.response);
       setMessages((current) => [...current, { id: `assistant-${Date.now()}`, role: "assistant", body }]);
       await queryClient.invalidateQueries({ queryKey: ["me", "plans"] });
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (error) {
       setMessages((current) => [
         ...current,
@@ -101,79 +105,87 @@ export default function AssistantScreen() {
       ]);
     } finally {
       setLoading(false);
-      setVoiceMode(false);
     }
   }
 
   if (!canUseAi) {
     return (
-      <Screen>
+      <ZookScreen>
         <View style={styles.content}>
-          <EmptyState
-            title="AI is available for trainers and members"
-            body="Owner and desk operations stay in the web dashboard."
-          />
+          <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+            <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
+            <View style={styles.emptyCopy}>
+              <Text style={styles.emptyTitle}>AI for trainers and members</Text>
+              <Text style={styles.emptyBody}>Owner and desk operations stay in the web dashboard.</Text>
+            </View>
+          </GlassCard>
         </View>
-      </Screen>
+        <BottomNav />
+      </ZookScreen>
     );
   }
 
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <Card style={styles.hero}>
-          <View style={styles.heroTop}>
+    <ZookScreen>
+      <ScrollView
+        ref={scrollRef}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
+        <MobileHeader
+          eyebrow={isTrainer ? "Trainer AI" : "Plan assistant"}
+          title={isTrainer ? "Coach with context" : "Talk through training"}
+          subtitle={isTrainer
+            ? "Attach client summaries, import notes, draft plans."
+            : "Ask in any language — answers are tied to your profile."}
+          leading={
             <View style={styles.aiMark}>
-              <Ionicons name="sparkles" size={26} color={colors.bg} />
+              <Ionicons name="sparkles" size={22} color={colors.bg} />
             </View>
-            <View style={styles.heroCopy}>
-              <Text style={styles.eyebrow}>{isTrainer ? "Trainer AI" : "Plan assistant"}</Text>
-              <Text style={styles.heroTitle}>{isTrainer ? "Coach with context." : "Talk through training."}</Text>
-              <Text style={styles.heroBody}>
-                {isTrainer
-                  ? "Attach client summaries, import notes, and turn natural language into usable plans."
-                  : "Use text or voice-style prompts in any language and keep the answer tied to your profile."}
-              </Text>
-            </View>
-          </View>
+          }
+          showProfileShortcut={false}
+        />
 
-          <View style={styles.modeRow}>
-            <Pressable
-              onPress={() => setVoiceMode((value) => !value)}
-              style={[styles.modeChip, voiceMode ? styles.modeChipActive : null]}
-            >
-              <Ionicons name={voiceMode ? "mic" : "mic-outline"} size={18} color={voiceMode ? colors.bg : colors.text} />
-              <Text style={[styles.modeChipText, voiceMode ? styles.modeChipTextActive : null]}>
-                {voiceMode ? "Listening" : "Audio"}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setAttachSummary((value) => !value)}
-              style={[styles.modeChip, attachSummary ? styles.modeChipActive : null]}
-            >
-              <Ionicons name="document-text-outline" size={18} color={attachSummary ? colors.bg : colors.text} />
-              <Text style={[styles.modeChipText, attachSummary ? styles.modeChipTextActive : null]}>
-                {isTrainer ? "Client summary" : "My summary"}
-              </Text>
-            </Pressable>
+        {/* Controls bar */}
+        <View style={styles.controlsRow}>
+          <Pressable
+            onPress={() => setAttachSummary((value) => !value)}
+            style={[styles.controlChip, attachSummary ? styles.controlChipActive : null]}
+            accessibilityRole="button"
+            accessibilityLabel="Attach summary"
+          >
+            <Ionicons name="document-text-outline" size={16} color={attachSummary ? colors.bg : colors.muted} />
+            <Text style={[styles.controlChipText, attachSummary ? styles.controlChipTextActive : null]}>
+              {isTrainer ? "Client data" : "My profile"}
+            </Text>
+          </Pressable>
+          <View style={styles.languageRow}>
+            {languagePrompts.map((item) => (
+              <Pressable
+                key={item.label}
+                onPress={() => setDraft(item.prompt)}
+                accessibilityRole="button"
+                style={styles.languageChip}
+              >
+                <Text style={styles.languageText}>{item.label}</Text>
+              </Pressable>
+            ))}
           </View>
-        </Card>
-
-        <View style={styles.languageRow}>
-          {languagePrompts.map((item) => (
-            <Pressable key={item.label} onPress={() => setDraft(item.prompt)} style={styles.languageChip}>
-              <Text style={styles.languageText}>{item.label}</Text>
-            </Pressable>
-          ))}
         </View>
 
+        {/* Attached context preview */}
         {attachSummary && contextSummary ? (
-          <Card style={styles.contextCard}>
-            <Pill tone="blue">{isTrainer ? "Attached client data" : "Attached member data"}</Pill>
+          <GlassCard variant="compact" contentStyle={styles.contextContent}>
+            <View style={styles.contextHeader}>
+              <IconBubble icon="person-outline" tone="blue" size={32} />
+              <Text style={styles.contextLabel}>{isTrainer ? "Attached client data" : "Attached profile"}</Text>
+            </View>
             <Text style={styles.contextText}>{contextSummary}</Text>
-          </Card>
+          </GlassCard>
         ) : null}
 
+        {/* Chat messages */}
         <View style={styles.chatStack}>
           {messages.map((message) => (
             <View
@@ -183,176 +195,241 @@ export default function AssistantScreen() {
                 message.role === "user" ? styles.userBubble : styles.assistantBubble,
               ]}
             >
+              {message.role === "assistant" ? (
+                <View style={styles.assistantIcon}>
+                  <Ionicons name="sparkles" size={14} color={colors.lime} />
+                </View>
+              ) : null}
               <Text style={[styles.messageText, message.role === "user" ? styles.userText : null]}>
                 {message.body}
               </Text>
             </View>
           ))}
+          {loading ? (
+            <View style={[styles.messageBubble, styles.assistantBubble]}>
+              <View style={styles.assistantIcon}>
+                <Ionicons name="sparkles" size={14} color={colors.lime} />
+              </View>
+              <Text style={styles.typingText}>Thinking...</Text>
+            </View>
+          ) : null}
         </View>
 
-        <Card style={styles.composer}>
+        {/* Composer */}
+        <GlassCard contentStyle={styles.composerContent}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder={voiceMode ? "Say it naturally..." : "Ask in any language..."}
-            placeholderTextColor={colors.muted}
+            placeholder="Ask in any language..."
+            placeholderTextColor={colors.subtle}
             multiline
             style={styles.input}
+            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200)}
           />
           <View style={styles.composerActions}>
-            <SecondaryButton onPress={() => setDraft("")} style={styles.actionHalf}>
-              Clear
-            </SecondaryButton>
-            <PrimaryButton onPress={() => void askAssistant()} disabled={!draft.trim() || loading} style={styles.actionHalf}>
-              {loading ? "Thinking" : "Send"}
-            </PrimaryButton>
+            {draft.trim() ? (
+              <Pressable
+                onPress={() => setDraft("")}
+                accessibilityRole="button"
+                accessibilityLabel="Clear"
+                style={styles.clearButton}
+              >
+                <Ionicons name="close" size={16} color={colors.muted} />
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={() => void askAssistant()}
+              disabled={!draft.trim() || loading}
+              accessibilityRole="button"
+              accessibilityLabel="Send"
+              style={[styles.sendButton, (!draft.trim() || loading) ? styles.sendButtonDisabled : null]}
+            >
+              <Ionicons name="send" size={18} color={(!draft.trim() || loading) ? colors.subtle : colors.bg} />
+            </Pressable>
           </View>
-        </Card>
+        </GlassCard>
       </ScrollView>
-      <Dock />
-    </Screen>
+      <BottomNav />
+    </ZookScreen>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 124,
-  },
-  hero: {
-    gap: 18,
-    padding: 20,
-    backgroundColor: "rgba(185,244,85,0.09)",
-    borderColor: "rgba(185,244,85,0.22)",
-  },
-  heroTop: {
-    flexDirection: "row",
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
     gap: 14,
-    alignItems: "flex-start",
+    paddingBottom: layout.bottomNavHeight + 40,
   },
   aiMark: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.lime,
   },
-  heroCopy: {
-    flex: 1,
-    gap: 8,
+  controlsRow: {
+    gap: spacing.sm,
   },
-  eyebrow: {
-    color: colors.amber,
-    ...typography.eyebrow,
-  },
-  heroTitle: {
-    color: colors.text,
-    fontSize: 32,
-    lineHeight: 35,
-    fontWeight: "900",
-  },
-  heroBody: {
-    color: colors.muted,
-    lineHeight: 21,
-  },
-  modeRow: {
-    flexDirection: "row",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  modeChip: {
+  controlChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 9,
+    alignSelf: "flex-start",
   },
-  modeChipActive: {
-    backgroundColor: colors.lime,
+  controlChipActive: {
     borderColor: colors.lime,
+    backgroundColor: colors.lime,
   },
-  modeChipText: {
-    color: colors.text,
-    fontWeight: "800",
+  controlChipText: {
+    color: colors.muted,
+    ...typography.caption,
   },
-  modeChipTextActive: {
+  controlChipTextActive: {
     color: colors.bg,
   },
   languageRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 8,
   },
   languageChip: {
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   languageText: {
     color: colors.text,
-    fontWeight: "800",
-    fontSize: 12,
+    ...typography.small,
   },
-  contextCard: {
-    gap: 10,
-    backgroundColor: "rgba(125,211,252,0.08)",
-    borderColor: "rgba(125,211,252,0.18)",
+  contextContent: {
+    gap: spacing.sm,
+  },
+  contextHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  contextLabel: {
+    color: colors.blue,
+    ...typography.caption,
   },
   contextText: {
-    color: colors.text,
-    lineHeight: 20,
+    color: colors.muted,
+    ...typography.body,
   },
   chatStack: {
-    gap: 10,
+    gap: 8,
   },
   messageBubble: {
     maxWidth: "88%",
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     borderWidth: 1,
+    gap: 6,
   },
   assistantBubble: {
     alignSelf: "flex-start",
-    backgroundColor: colors.panel,
-    borderColor: colors.border,
+    backgroundColor: colors.glassFill,
+    borderColor: colors.glassStroke,
   },
   userBubble: {
     alignSelf: "flex-end",
     backgroundColor: colors.lime,
     borderColor: colors.lime,
   },
+  assistantIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.3)",
+    backgroundColor: "rgba(185,244,85,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   messageText: {
     color: colors.text,
-    lineHeight: 21,
+    ...typography.body,
   },
   userText: {
     color: colors.bg,
-    fontWeight: "800",
+    ...typography.bodyStrong,
   },
-  composer: {
-    gap: 12,
+  typingText: {
+    color: colors.muted,
+    ...typography.body,
+    fontStyle: "italic",
+  },
+  composerContent: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: spacing.sm,
   },
   input: {
-    minHeight: 96,
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 120,
     color: colors.text,
-    fontSize: 16,
-    lineHeight: 22,
+    ...typography.body,
     textAlignVertical: "top",
   },
   composerActions: {
     flexDirection: "row",
-    gap: 10,
+    alignItems: "center",
+    gap: 6,
+    paddingBottom: 2,
   },
-  actionHalf: {
-    flex: 1,
+  clearButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sendButtonDisabled: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  emptyContent: {
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.xxl,
+  },
+  emptyCopy: {
+    alignItems: "center",
+    gap: 4,
+  },
+  emptyTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  emptyBody: {
+    color: colors.muted,
+    ...typography.body,
+    textAlign: "center",
   },
 });

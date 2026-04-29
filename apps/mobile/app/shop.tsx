@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: 132,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
   cartIcon: {
     width: 48,

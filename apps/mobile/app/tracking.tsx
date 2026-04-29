@@ -1,6 +1,17 @@
-import { Stack } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Card, Dock, PrimaryLink, Screen } from "@/components/primitives";
+import { Link, Stack } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  BottomNav,
+  GlassCard,
+  IconBubble,
+  ListRow,
+  MobileHeader,
+  SectionHeader,
+  StatusChip,
+  ZookButton,
+  ZookScreen,
+} from "@/components/primitives";
 import {
   TrackingSectionHeader,
   TrackingSummaryTile,
@@ -8,7 +19,7 @@ import {
 } from "@/components/tracking";
 import { useMyTracking } from "@/lib/query-hooks";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function TrackingDashboard() {
   const trackingQuery = useMyTracking();
@@ -41,110 +52,211 @@ export default function TrackingDashboard() {
     habitsCount: habits.length
   });
   const latestWorkout = recentWorkouts[0] ? workoutToEntry(recentWorkouts[0]) : null;
+  const weeklyCount = summary?.weeklyCount ?? 0;
+  const totalDuration = summary?.totalDuration ?? 0;
 
   return (
     <>
-      <Stack.Screen options={{ title: "Tracking" }} />
-      <Screen>
-        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-          <View style={styles.heroHeader}>
-            <Text style={styles.headline}>
-              Your training.
-            </Text>
-            <Text style={styles.subheadline}>
-              Sessions, exercises, and progress — all in one place.
-            </Text>
-          </View>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ZookScreen>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          <MobileHeader
+            title="Tracking"
+            subtitle="Workouts, progress, and goals"
+          />
 
+          {/* Weekly summary hero */}
+          <GlassCard variant="success" contentStyle={styles.heroContent}>
+            <View style={styles.heroTop}>
+              <View style={styles.heroCopy}>
+                <Text style={styles.heroEyebrow}>THIS WEEK</Text>
+                <Text style={styles.heroValue}>{weeklyCount} Workout{weeklyCount !== 1 ? "s" : ""}</Text>
+                <Text style={styles.heroBody}>
+                  {totalDuration > 0
+                    ? `${totalDuration} active minutes`
+                    : "Start your fitness journey."}
+                </Text>
+              </View>
+              <View style={styles.weekRing}>
+                <Text style={styles.weekRingValue}>{weeklyCount}</Text>
+                <Text style={styles.weekRingLabel}>/ 5</Text>
+              </View>
+            </View>
+            <Link href="/tracking-history" asChild>
+              <Pressable accessibilityRole="link" style={styles.viewAllLink}>
+                <Text style={styles.viewAllText}>View all logs</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.lime} />
+              </Pressable>
+            </Link>
+          </GlassCard>
+
+          {/* Metrics grid */}
           <View style={styles.metricGrid}>
             {metrics.map((metric) => (
               <TrackingSummaryTile key={metric.id} metric={metric} />
             ))}
           </View>
 
-          <TrackingSectionHeader title="Today's workout" href="/tracking-entry" linkLabel="Add exercises" />
+          {/* Today's session */}
+          <SectionHeader
+            title="Today's Session"
+            action={
+              <Link href="/tracking-entry" asChild>
+                <Pressable accessibilityRole="link" style={styles.logButton}>
+                  <Ionicons name="add" size={18} color={colors.bg} />
+                  <Text style={styles.logButtonText}>Log</Text>
+                </Pressable>
+              </Link>
+            }
+          />
           {trackingQuery.isLoading ? (
-            <Card>
-              <Text style={styles.subheadline}>Loading workout history...</Text>
-            </Card>
+            <GlassCard variant="compact" contentStyle={styles.loadingContent}>
+              <IconBubble icon="hourglass-outline" tone="amber" size={36} />
+              <Text style={styles.loadingText}>Loading history...</Text>
+            </GlassCard>
           ) : latestWorkout ? (
             <WorkoutLogCard entry={latestWorkout} />
           ) : (
-            <Card>
-              <Text style={styles.subheadline}>No workouts logged yet. Add your first session after training.</Text>
-            </Card>
+            <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+              <IconBubble icon="barbell-outline" tone="neutral" size={42} />
+              <View style={styles.emptyCopy}>
+                <Text style={styles.emptyTitle}>No workouts yet</Text>
+                <Text style={styles.emptyBody}>Log your first session to start tracking progress.</Text>
+              </View>
+              <ZookButton href="/tracking-entry" icon="add-outline">Log workout</ZookButton>
+            </GlassCard>
           )}
 
-          <Card style={styles.weekCard}>
-            <Text style={styles.weekEyebrow}>
-              Weekly summary
-            </Text>
-            <Text style={styles.weekValue}>
-              {summary ? `${summary.weeklyCount} sessions` : "0 sessions"}
-            </Text>
-            <Text style={styles.weekBody}>
-              {summary ? `${summary.totalDuration} minutes logged` : "Start logging workouts and habits."}
-            </Text>
-            <PrimaryLink href="/tracking-history">View history</PrimaryLink>
-          </Card>
-
-          <TrackingSectionHeader title="Recent logs" href="/tracking-history" />
-          <View style={styles.logList}>
-            {recentWorkouts.slice(0, 3).map((workout) => (
-              <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact />
-            ))}
-          </View>
-
+          {/* Recent activity */}
+          {recentWorkouts.length > 1 ? (
+            <>
+              <SectionHeader title="Recent Activity" />
+              <View style={styles.logList}>
+                {recentWorkouts.slice(1, 4).map((workout) => (
+                  <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact />
+                ))}
+              </View>
+            </>
+          ) : null}
         </ScrollView>
-        <Dock />
-      </Screen>
+        <BottomNav />
+      </ZookScreen>
     </>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 120
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
+    gap: 14,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
-  heroHeader: {
-    gap: 8
+  heroContent: {
+    gap: spacing.md,
   },
-  headline: {
+  heroTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  heroCopy: {
+    flex: 1,
+    gap: 6,
+  },
+  heroEyebrow: {
+    color: colors.lime,
+    ...typography.eyebrow,
+  },
+  heroValue: {
     color: colors.text,
-    fontSize: 36,
-    fontWeight: "900",
-    lineHeight: 40
+    ...typography.screenTitle,
   },
-  subheadline: {
+  heroBody: {
     color: colors.muted,
-    fontSize: 15,
-    lineHeight: 22
+    ...typography.body,
+  },
+  weekRing: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 3,
+    borderColor: "rgba(185,244,85,0.4)",
+    backgroundColor: "rgba(185,244,85,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  weekRingValue: {
+    color: colors.lime,
+    ...typography.headerTitle,
+  },
+  weekRingLabel: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  viewAllLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    alignSelf: "flex-start",
+  },
+  viewAllText: {
+    color: colors.lime,
+    ...typography.caption,
   },
   metricGrid: {
     flexDirection: "row",
-    gap: 12,
-    flexWrap: "wrap"
+    gap: 10,
+    flexWrap: "wrap",
   },
-  weekCard: {
-    gap: 10
+  logButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 999,
+    backgroundColor: colors.lime,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  weekEyebrow: {
-    color: colors.amber,
-    fontSize: 12,
-    fontWeight: "800"
+  logButtonText: {
+    color: colors.bg,
+    ...typography.caption,
   },
-  weekValue: {
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: "900"
+  loadingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
   },
-  weekBody: {
+  loadingText: {
     color: colors.muted,
-    lineHeight: 20
+    ...typography.body,
+  },
+  emptyContent: {
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.xl,
+  },
+  emptyCopy: {
+    alignItems: "center",
+    gap: 4,
+  },
+  emptyTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  emptyBody: {
+    color: colors.muted,
+    ...typography.body,
+    textAlign: "center",
   },
   logList: {
-    gap: 14
-  }
+    gap: 10,
+  },
 });

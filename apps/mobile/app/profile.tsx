@@ -6,15 +6,16 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-nat
 import { zookMockServices } from "@zook/core";
 import {
   AuditWarning,
-  Card,
+  BottomNav,
   CollapsibleSection,
   DetailRow,
-  Dock,
+  GlassCard,
   GlassInput,
+  IconBubble,
+  MobileHeader,
   Pill,
   PrimaryButton,
-  Screen,
-  ScreenHeader,
+  ZookScreen,
 } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
@@ -22,7 +23,7 @@ import { titleCaseFromCode } from "@/lib/formatting";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { useMyNotificationPreferences, useMyProfile } from "@/lib/query-hooks";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function Profile() {
   const { activeOrgId, activeRole, logout, session, setActiveOrgId, setActiveRole, token } = useAuth();
@@ -210,22 +211,24 @@ export default function Profile() {
   })();
 
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <ScreenHeader
+    <ZookScreen>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        <MobileHeader
           title="Profile"
+          subtitle={session?.user.email ?? session?.user.phone ?? "Account settings"}
         />
 
         {routeParams.focus === "membership" ? (
-          <Card style={styles.calloutCard}>
-            <Pill tone="blue">Membership update</Pill>
-            <Text style={styles.calloutTitle}>
-              Your membership details are below.
-            </Text>
-          </Card>
+          <GlassCard variant="selected" contentStyle={styles.calloutContent}>
+            <IconBubble icon="card-outline" tone="blue" size={36} />
+            <View style={styles.calloutCopy}>
+              <Text style={styles.calloutTitle}>Membership update</Text>
+              <Text style={styles.calloutBody}>Your membership details are below.</Text>
+            </View>
+          </GlassCard>
         ) : null}
 
-        <Card style={styles.profileCard} padding={12} radius={18}>
+        <GlassCard padding={12} radius={18} contentStyle={styles.profileCardContent}>
           <View style={styles.profileTop}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials}</Text>
@@ -249,28 +252,19 @@ export default function Profile() {
             <Pill tone="lime">{activeRoleLabel}</Pill>
             {allRoles.length > 1 ? <Pill tone="neutral">{allRoles.length} roles</Pill> : null}
           </View>
-        </Card>
+        </GlassCard>
 
         {session?.user.guardianPending ? (
-          <Card style={styles.minorCard}>
+          <GlassCard variant="warning" contentStyle={styles.minorContent}>
             <Pill tone="amber">Guardian consent required</Pill>
             <Text style={styles.calloutTitle}>Protected account gates are active.</Text>
             <Text style={styles.profileBody}>
               Membership activation, attendance, PT activation, plan assignment, personalized AI, and marketing stay blocked until guardian consent is verified.
             </Text>
-          </Card>
+          </GlassCard>
         ) : null}
 
-        <View style={styles.quickGrid}>
-          <View style={styles.quickRow}>
-            <QuickActionTile onPress={() => router.push("/notifications")} icon="notifications-outline" label="Inbox" value="Updates" />
-            <QuickActionTile onPress={() => router.push("/membership")} icon="card-outline" label="Plan" value="Membership" />
-          </View>
-          <View style={styles.quickRow}>
-            <QuickActionTile onPress={() => router.push("/plans")} icon="barbell-outline" label="Workout" value="Today" />
-            <QuickActionTile onPress={() => void openSystemSettings()} icon="settings-outline" label="Phone" value="Settings" />
-          </View>
-        </View>
+        {/* Quick actions removed — bottom nav handles navigation */}
 
         <CollapsibleSection
           title="Gym"
@@ -469,23 +463,42 @@ export default function Profile() {
           </View>
         </CollapsibleSection>
       </ScrollView>
-      <Dock />
-    </Screen>
+      <BottomNav />
+    </ZookScreen>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 14,
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
     gap: 10,
-    paddingBottom: 120,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
-  profileCard: {
+  calloutContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  calloutCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  calloutBody: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  minorContent: {
+    gap: spacing.sm,
+  },
+  profileCardContent: {
     gap: 10,
   },
   profileTop: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.md,
     alignItems: "center",
   },
   avatar: {
@@ -498,8 +511,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: colors.bg,
-    fontWeight: "900",
-    fontSize: 18,
+    ...typography.headerTitle,
   },
   profileCopy: {
     flex: 1,
@@ -507,13 +519,11 @@ const styles = StyleSheet.create({
   },
   profileName: {
     color: colors.text,
-    fontSize: 17,
-    fontWeight: "700",
+    ...typography.sectionTitle,
   },
   profileBody: {
     color: colors.muted,
-    fontSize: 13,
-    lineHeight: 18,
+    ...typography.body,
   },
   activeLine: {
     minHeight: 20,
@@ -524,8 +534,7 @@ const styles = StyleSheet.create({
   activeLineText: {
     flex: 1,
     color: colors.lime,
-    fontSize: 12,
-    fontWeight: "700",
+    ...typography.caption,
   },
   roleRow: {
     flexDirection: "row",
@@ -583,13 +592,11 @@ const styles = StyleSheet.create({
   },
   quickLabel: {
     color: colors.text,
-    fontSize: 13,
-    fontWeight: "800",
+    ...typography.caption,
   },
   quickValue: {
     color: colors.muted,
-    fontSize: 11.5,
-    fontWeight: "600",
+    ...typography.small,
   },
   infoCard: {
     gap: 10,
@@ -623,12 +630,11 @@ const styles = StyleSheet.create({
   },
   orgName: {
     color: colors.text,
-    fontWeight: "800",
-    fontSize: 14,
+    ...typography.cardTitle,
   },
   orgMeta: {
     color: colors.muted,
-    fontSize: 12,
+    ...typography.small,
   },
   actionRow: {
     flexDirection: "row",
@@ -637,18 +643,9 @@ const styles = StyleSheet.create({
   actionHalf: {
     flex: 1,
   },
-  calloutCard: {
-    gap: 10,
-  },
-  minorCard: {
-    gap: 10,
-    borderColor: "rgba(245,200,75,0.24)",
-    backgroundColor: "rgba(245,200,75,0.08)",
-  },
   calloutTitle: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
+    ...typography.cardTitle,
   },
   toggleCard: {
     gap: 14,
@@ -681,13 +678,11 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     color: colors.muted,
-    fontSize: 11,
-    fontWeight: "700",
+    ...typography.eyebrow,
   },
   summaryValue: {
     color: colors.text,
-    fontSize: 13,
-    fontWeight: "800",
+    ...typography.caption,
   },
   detailsStatus: {
     color: colors.lime,
@@ -705,12 +700,11 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: "800",
+    ...typography.cardTitle,
   },
   toggleHint: {
     color: colors.muted,
-    lineHeight: 20,
+    ...typography.body,
   },
   errorText: {
     color: "#f59e0b",
@@ -718,14 +712,11 @@ const styles = StyleSheet.create({
   },
   syncStatusText: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: "700",
+    ...typography.caption,
   },
   sectionMiniLabel: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
+    ...typography.eyebrow,
   },
 });
 

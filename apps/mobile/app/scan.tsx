@@ -24,7 +24,6 @@ export default function Scan() {
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [code, setCode] = useState("");
   const completedRef = useRef(false);
-  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!permission) {
@@ -32,26 +31,13 @@ export default function Scan() {
     }
   }, [permission, requestPermission]);
 
-  useEffect(() => {
-    autoTimerRef.current = setTimeout(() => {
-      void completeScan("zook-demo-approved");
-    }, 5000);
 
-    return () => {
-      if (autoTimerRef.current) {
-        clearTimeout(autoTimerRef.current);
-      }
-    };
-  }, []);
 
   async function completeScan(payload: string) {
     if (completedRef.current) {
       return;
     }
     completedRef.current = true;
-    if (autoTimerRef.current) {
-      clearTimeout(autoTimerRef.current);
-    }
     setBusy(true);
     setScanState("checking");
     try {
@@ -175,6 +161,18 @@ export default function Scan() {
               </Pressable>
             </View>
           </GlassCard>
+
+          {__DEV__ ? (
+            <Pressable
+              onPress={() => void completeScan("zook-demo-approved")}
+              accessibilityRole="button"
+              accessibilityLabel="Demo scan"
+              style={styles.devButton}
+            >
+              <Ionicons name="bug-outline" size={16} color={colors.amber} />
+              <Text style={styles.devButtonText}>Demo scan (dev only)</Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
         <BottomNav />
       </ZookScreen>
@@ -203,7 +201,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
-    paddingBottom: 128,
+    paddingBottom: layout.bottomNavHeight + 40,
     gap: 10,
   },
   iconButton: {
@@ -337,5 +335,21 @@ const styles = StyleSheet.create({
   },
   codeButtonDisabled: {
     opacity: 0.45,
+  },
+  devButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(242,201,76,0.3)",
+    backgroundColor: "rgba(242,201,76,0.08)",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  devButtonText: {
+    color: colors.amber,
+    ...typography.caption,
   },
 });

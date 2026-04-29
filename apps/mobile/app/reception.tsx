@@ -20,7 +20,7 @@ import {
   SectionHeader,
 } from "@/components/primitives";
 import { formatInr } from "@/lib/formatting";
-import { colors } from "@/lib/theme";
+import { colors, layout } from "@/lib/theme";
 
 type DeskView = "desk" | "members" | "payments" | "orders";
 
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
-    paddingBottom: 120,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
   headerRow: {
     flexDirection: "row",

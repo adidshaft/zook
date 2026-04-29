@@ -1,12 +1,31 @@
 import { useRouter, Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View, Platform, Pressable } from "react-native";
+import { ScrollView, StyleSheet, Text, View, Platform, Pressable } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, PrimaryButton, Screen } from "@/components/primitives";
+import {
+  BottomNav,
+  GlassCard,
+  GlassInput,
+  IconBubble,
+  MobileHeader,
+  SectionHeader,
+  ZookButton,
+  ZookScreen,
+} from "@/components/primitives";
 import { useAuth, getApiErrorMessage } from "@/lib/auth";
 import { mobileApiFetch } from "@/lib/api";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
+
+const workoutTypes = [
+  { label: "Strength", value: "strength", icon: "barbell-outline" as const },
+  { label: "Cardio", value: "cardio", icon: "bicycle-outline" as const },
+  { label: "HIIT", value: "hiit", icon: "flash-outline" as const },
+  { label: "Flexibility", value: "flexibility", icon: "body-outline" as const },
+  { label: "Yoga", value: "yoga", icon: "leaf-outline" as const },
+  { label: "Other", value: "other", icon: "ellipsis-horizontal-outline" as const },
+];
 
 function defaultStartedAt() {
   const date = new Date();
@@ -21,6 +40,13 @@ function defaultEndedAt() {
   return date;
 }
 
+type ExerciseEntry = {
+  exerciseName: string;
+  setsCompleted: string;
+  reps: string;
+  weightKg: string;
+};
+
 export default function TrackingEntry() {
   const { activeOrgId, token } = useAuth();
   const router = useRouter();
@@ -32,12 +58,31 @@ export default function TrackingEntry() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [notes, setNotes] = useState("");
-  const [message, setMessage] = useState("Record each session to track your progress.");
+  const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [exercises, setExercises] = useState([
+  const [exercises, setExercises] = useState<ExerciseEntry[]>([
     { exerciseName: "Bench Press", setsCompleted: "4", reps: "8", weightKg: "60" },
-    { exerciseName: "Cable Row", setsCompleted: "4", reps: "10", weightKg: "40" }
+    { exerciseName: "Cable Row", setsCompleted: "4", reps: "10", weightKg: "40" },
   ]);
+
+  function updateExercise(index: number, field: keyof ExerciseEntry, value: string) {
+    setExercises((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
+    );
+  }
+
+  function addExercise() {
+    setExercises((current) => [
+      ...current,
+      { exerciseName: "", setsCompleted: "", reps: "", weightKg: "" },
+    ]);
+  }
+
+  function deleteExercise(index: number) {
+    setExercises((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
 
   async function saveWorkout() {
     if (!token) {
@@ -65,13 +110,13 @@ export default function TrackingEntry() {
               setsCompleted: Number(exercise.setsCompleted || 0),
               reps: Number(exercise.reps || 0),
               weightKg: Number(exercise.weightKg || 0),
-              completed: true
-            }))
-        }
+              completed: true,
+            })),
+        },
       });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "tracking", "summary"] }),
-        queryClient.invalidateQueries({ queryKey: ["me", "tracking", "workouts"] })
+        queryClient.invalidateQueries({ queryKey: ["me", "tracking", "workouts"] }),
       ]);
       setMessage("Workout saved.");
       router.replace("/tracking");
@@ -82,263 +127,346 @@ export default function TrackingEntry() {
     }
   }
 
+  const durationMinutes = Math.max(0, Math.round((endedAt.getTime() - startedAt.getTime()) / 60000));
+
   return (
     <>
-      <Stack.Screen options={{ title: "Workout entry" }} />
-      <Screen>
-        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-          <Card style={styles.hero}>
-            <Text style={styles.heroEyebrow}>
-              New session
-            </Text>
-            <Text style={styles.heroTitle}>
-              Log your workout
-            </Text>
-            <Text style={styles.heroBody}>
-              Add exercises, time, and notes for today's session.
-            </Text>
-          </Card>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ZookScreen>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          <MobileHeader
+            title="Log workout"
+            subtitle={`${durationMinutes} min · ${exercises.length} exercises`}
+            leading={
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/tracking")}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={21} color={colors.text} />
+              </Pressable>
+            }
+            showProfileShortcut={false}
+          />
 
-          <Card style={styles.formCard}>
-            <Text style={styles.sectionTitle}>Workout</Text>
-            <TextInput value={title} onChangeText={setTitle} style={styles.input} placeholder="Workout title" placeholderTextColor={colors.muted} />
-            <TextInput value={workoutType} onChangeText={setWorkoutType} style={styles.input} placeholder="Workout type" placeholderTextColor={colors.muted} />
-            
-            <View style={styles.datePickerContainer}>
-              <Text style={styles.dateLabel}>Start Time</Text>
-              {Platform.OS === "ios" ? (
-                <DateTimePicker
-                  value={startedAt}
-                  mode="datetime"
-                  display="default"
-                  themeVariant="dark"
-                  onChange={(_, date) => {
-                    if (date) setStartedAt(date);
-                  }}
-                />
-              ) : (
-                <>
-                  <Pressable style={styles.input} onPress={() => setShowStartPicker(true)}>
-                    <Text style={styles.dateValue}>{startedAt.toLocaleString()}</Text>
-                  </Pressable>
-                  {showStartPicker && (
-                    <DateTimePicker
-                      value={startedAt}
-                      mode="datetime"
-                      display="default"
-                      onChange={(_, date) => {
-                        setShowStartPicker(false);
-                        if (date) setStartedAt(date);
-                      }}
-                    />
-                  )}
-                </>
-              )}
+          {/* Workout type picker */}
+          <SectionHeader title="Workout type" />
+          <View style={styles.typeGrid}>
+            {workoutTypes.map((type) => {
+              const active = workoutType === type.value;
+              return (
+                <Pressable
+                  key={type.value}
+                  onPress={() => setWorkoutType(type.value)}
+                  accessibilityRole="button"
+                  accessibilityLabel={type.label}
+                  style={[styles.typeChip, active ? styles.typeChipActive : null]}
+                >
+                  <Ionicons
+                    name={type.icon}
+                    size={18}
+                    color={active ? colors.bg : colors.muted}
+                  />
+                  <Text style={[styles.typeChipText, active ? styles.typeChipTextActive : null]}>
+                    {type.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Workout details */}
+          <GlassCard contentStyle={styles.formContent}>
+            <GlassInput
+              label="Session title"
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Morning push day"
+            />
+
+            <View style={styles.dateRow}>
+              <View style={styles.dateField}>
+                <Text style={styles.fieldLabel}>Start</Text>
+                {Platform.OS === "ios" ? (
+                  <DateTimePicker
+                    value={startedAt}
+                    mode="datetime"
+                    display="default"
+                    themeVariant="dark"
+                    onChange={(_, date) => {
+                      if (date) setStartedAt(date);
+                    }}
+                  />
+                ) : (
+                  <>
+                    <Pressable style={styles.dateButton} onPress={() => setShowStartPicker(true)}>
+                      <Ionicons name="time-outline" size={16} color={colors.muted} />
+                      <Text style={styles.dateValue}>{startedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
+                    </Pressable>
+                    {showStartPicker ? (
+                      <DateTimePicker
+                        value={startedAt}
+                        mode="datetime"
+                        display="default"
+                        onChange={(_, date) => {
+                          setShowStartPicker(false);
+                          if (date) setStartedAt(date);
+                        }}
+                      />
+                    ) : null}
+                  </>
+                )}
+              </View>
+              <View style={styles.dateField}>
+                <Text style={styles.fieldLabel}>End</Text>
+                {Platform.OS === "ios" ? (
+                  <DateTimePicker
+                    value={endedAt}
+                    mode="datetime"
+                    display="default"
+                    themeVariant="dark"
+                    onChange={(_, date) => {
+                      if (date) setEndedAt(date);
+                    }}
+                  />
+                ) : (
+                  <>
+                    <Pressable style={styles.dateButton} onPress={() => setShowEndPicker(true)}>
+                      <Ionicons name="time-outline" size={16} color={colors.muted} />
+                      <Text style={styles.dateValue}>{endedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
+                    </Pressable>
+                    {showEndPicker ? (
+                      <DateTimePicker
+                        value={endedAt}
+                        mode="datetime"
+                        display="default"
+                        onChange={(_, date) => {
+                          setShowEndPicker(false);
+                          if (date) setEndedAt(date);
+                        }}
+                      />
+                    ) : null}
+                  </>
+                )}
+              </View>
             </View>
 
-            <View style={styles.datePickerContainer}>
-              <Text style={styles.dateLabel}>End Time</Text>
-              {Platform.OS === "ios" ? (
-                <DateTimePicker
-                  value={endedAt}
-                  mode="datetime"
-                  display="default"
-                  themeVariant="dark"
-                  onChange={(_, date) => {
-                    if (date) setEndedAt(date);
-                  }}
-                />
-              ) : (
-                <>
-                  <Pressable style={styles.input} onPress={() => setShowEndPicker(true)}>
-                    <Text style={styles.dateValue}>{endedAt.toLocaleString()}</Text>
-                  </Pressable>
-                  {showEndPicker && (
-                    <DateTimePicker
-                      value={endedAt}
-                      mode="datetime"
-                      display="default"
-                      onChange={(_, date) => {
-                        setShowEndPicker(false);
-                        if (date) setEndedAt(date);
-                      }}
-                    />
-                  )}
-                </>
-              )}
-            </View>
-
-            <TextInput
+            <GlassInput
+              label="Notes"
               value={notes}
               onChangeText={setNotes}
-              style={[styles.input, styles.notesInput]}
               multiline
-              placeholder="Notes"
-              placeholderTextColor={colors.muted}
+              placeholder="How did it feel? Any injuries?"
             />
-          </Card>
+          </GlassCard>
 
-          <Card style={styles.exerciseCard}>
-            <Text style={styles.sectionTitle}>Exercises</Text>
+          {/* Exercises */}
+          <SectionHeader
+            title="Exercises"
+            action={
+              <Pressable
+                onPress={addExercise}
+                accessibilityRole="button"
+                accessibilityLabel="Add exercise"
+                style={styles.addButton}
+              >
+                <Ionicons name="add" size={20} color={colors.bg} />
+              </Pressable>
+            }
+          />
+
+          <View style={styles.exerciseStack}>
             {exercises.map((exercise, index) => (
-              <View key={`${exercise.exerciseName}-${index}`} style={styles.exerciseGroup}>
-                <TextInput
-                  value={exercise.exerciseName}
-                  onChangeText={(value) =>
-                    setExercises((current) =>
-                      current.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, exerciseName: value } : item
-                      )
-                    )
-                  }
-                  style={styles.input}
-                  placeholder="Exercise"
-                  placeholderTextColor={colors.muted}
-                />
-                <View style={styles.row}>
-                  <TextInput
+              <GlassCard key={`exercise-${index}`} variant="compact" contentStyle={styles.exerciseContent}>
+                <View style={styles.exerciseHeader}>
+                  <IconBubble icon="barbell-outline" tone="lime" size={36} />
+                  <GlassInput
+                    label={`Exercise ${index + 1}`}
+                    value={exercise.exerciseName}
+                    onChangeText={(value) => updateExercise(index, "exerciseName", value)}
+                    placeholder="Exercise name"
+                    style={styles.exerciseNameInput}
+                  />
+                  <Pressable
+                    onPress={() => deleteExercise(index)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete ${exercise.exerciseName || "exercise"}`}
+                    style={styles.deleteButton}
+                  >
+                    <Ionicons name="close" size={16} color={colors.red} />
+                  </Pressable>
+                </View>
+                <View style={styles.exerciseMetrics}>
+                  <GlassInput
+                    label="Sets"
                     value={exercise.setsCompleted}
-                    onChangeText={(value) =>
-                      setExercises((current) =>
-                        current.map((item, itemIndex) =>
-                          itemIndex === index ? { ...item, setsCompleted: value } : item
-                        )
-                      )
-                    }
-                    style={[styles.input, styles.halfInput]}
+                    onChangeText={(value) => updateExercise(index, "setsCompleted", value)}
                     keyboardType="number-pad"
-                    placeholder="Sets"
-                    placeholderTextColor={colors.muted}
+                    placeholder="4"
+                    style={styles.metricInput}
                   />
-                  <TextInput
+                  <GlassInput
+                    label="Reps"
                     value={exercise.reps}
-                    onChangeText={(value) =>
-                      setExercises((current) =>
-                        current.map((item, itemIndex) =>
-                          itemIndex === index ? { ...item, reps: value } : item
-                        )
-                      )
-                    }
-                    style={[styles.input, styles.halfInput]}
+                    onChangeText={(value) => updateExercise(index, "reps", value)}
                     keyboardType="number-pad"
-                    placeholder="Reps"
-                    placeholderTextColor={colors.muted}
+                    placeholder="10"
+                    style={styles.metricInput}
                   />
-                  <TextInput
+                  <GlassInput
+                    label="Kg"
                     value={exercise.weightKg}
-                    onChangeText={(value) =>
-                      setExercises((current) =>
-                        current.map((item, itemIndex) =>
-                          itemIndex === index ? { ...item, weightKg: value } : item
-                        )
-                      )
-                    }
-                    style={[styles.input, styles.halfInput]}
+                    onChangeText={(value) => updateExercise(index, "weightKg", value)}
                     keyboardType="decimal-pad"
-                    placeholder="Kg"
-                    placeholderTextColor={colors.muted}
+                    placeholder="60"
+                    style={styles.metricInput}
                   />
                 </View>
-              </View>
+              </GlassCard>
             ))}
-            <PrimaryButton
-              onPress={() =>
-                setExercises((current) => [
-                  ...current,
-                  { exerciseName: "", setsCompleted: "", reps: "", weightKg: "" }
-                ])
-              }
-            >
-              Add another exercise
-            </PrimaryButton>
-          </Card>
+          </View>
 
-          <Card style={styles.notesCard}>
-            <Text style={styles.notesBody}>{message}</Text>
-            <PrimaryButton onPress={() => void saveWorkout()}>
-              {saving ? "Saving..." : "Save today's workout"}
-            </PrimaryButton>
-          </Card>
+          {message ? (
+            <Text style={styles.statusMessage}>{message}</Text>
+          ) : null}
+
+          <ZookButton
+            onPress={() => void saveWorkout()}
+            disabled={saving}
+            icon="checkmark-circle-outline"
+          >
+            {saving ? "Saving..." : "Save workout"}
+          </ZookButton>
         </ScrollView>
-      </Screen>
+        <BottomNav />
+      </ZookScreen>
     </>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 40
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
+    gap: 14,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
-  hero: {
-    gap: 10
-  },
-  heroEyebrow: {
-    color: colors.amber,
-    fontSize: 12,
-    fontWeight: "800"
-  },
-  heroTitle: {
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: "900",
-    lineHeight: 36
-  },
-  heroBody: {
-    color: colors.muted,
-    lineHeight: 20
-  },
-  formCard: {
-    gap: 12
-  },
-  datePickerContainer: {
-    gap: 8
-  },
-  dateLabel: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: "700"
-  },
-  dateValue: {
-    color: colors.text
-  },
-  exerciseCard: {
-    gap: 12
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "900"
-  },
-  input: {
-    minHeight: 52,
-    borderRadius: 18,
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
-    color: colors.text,
-    paddingHorizontal: 14,
-    backgroundColor: "rgba(0,0,0,0.25)"
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  notesInput: {
-    minHeight: 120,
-    paddingTop: 14
-  },
-  exerciseGroup: {
-    gap: 10
-  },
-  row: {
+  typeGrid: {
     flexDirection: "row",
-    gap: 10
+    flexWrap: "wrap",
+    gap: spacing.sm,
   },
-  halfInput: {
-    flex: 1
+  typeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  notesCard: {
-    gap: 14
+  typeChipActive: {
+    borderColor: colors.lime,
+    backgroundColor: colors.lime,
   },
-  notesBody: {
+  typeChipText: {
     color: colors.muted,
-    lineHeight: 20
-  }
+    ...typography.caption,
+  },
+  typeChipTextActive: {
+    color: colors.bg,
+  },
+  formContent: {
+    gap: spacing.md,
+  },
+  dateRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  dateField: {
+    flex: 1,
+    gap: 6,
+  },
+  fieldLabel: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  dateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 12,
+  },
+  dateValue: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  exerciseStack: {
+    gap: 10,
+  },
+  exerciseContent: {
+    gap: spacing.sm,
+  },
+  exerciseHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  exerciseNameInput: {
+    flex: 1,
+  },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255,90,61,0.28)",
+    backgroundColor: "rgba(255,90,61,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  exerciseMetrics: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  metricInput: {
+    flex: 1,
+  },
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusMessage: {
+    color: colors.lime,
+    ...typography.body,
+    paddingHorizontal: 4,
+  },
 });

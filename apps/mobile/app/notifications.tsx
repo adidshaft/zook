@@ -1,25 +1,24 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
-  Card,
-  Dock,
-  EmptyState,
-  LoadingState,
-  MetricTile,
-  Pill,
-  Screen,
-  ScreenHeader,
+  BottomNav,
+  GlassCard,
+  IconBubble,
+  MobileHeader,
   SectionHeader,
+  StatusChip,
+  ZookButton,
+  ZookScreen,
 } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { formatDateTime, formatRelativeDate, titleCaseFromCode } from "@/lib/formatting";
+import { formatRelativeDate, titleCaseFromCode } from "@/lib/formatting";
 import { mapNotificationPayloadToHref } from "@/lib/notification-routing";
 import { useMyNotifications } from "@/lib/query-hooks";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type InboxNotification = {
   id: string;
@@ -36,6 +35,52 @@ type InboxNotification = {
   } | null;
 };
 
+function iconForType(type?: string | null): keyof typeof Ionicons.glyphMap {
+  if (type === "SECURITY") return "shield-outline";
+  if (type === "PLAN") return "barbell-outline";
+  if (type === "OPERATIONAL") return "settings-outline";
+  if (type === "TRANSACTIONAL") return "card-outline";
+  if (type === "ENGAGEMENT") return "sparkles-outline";
+  return "notifications-outline";
+}
+
+function toneForType(type?: string | null) {
+  if (type === "SECURITY") return "red" as const;
+  if (type === "PLAN") return "blue" as const;
+  if (type === "OPERATIONAL") return "amber" as const;
+  if (type === "TRANSACTIONAL") return "lime" as const;
+  return "violet" as const;
+}
+
+function groupByDate(items: InboxNotification[]) {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const todayKey = today.toISOString().slice(0, 10);
+  const yesterdayKey = yesterday.toISOString().slice(0, 10);
+
+  const groups: Array<{ label: string; items: InboxNotification[] }> = [];
+  const buckets: Record<string, InboxNotification[]> = {};
+
+  for (const item of items) {
+    const dateKey = item.notification?.createdAt?.slice(0, 10) ?? "unknown";
+    if (!buckets[dateKey]) {
+      buckets[dateKey] = [];
+    }
+    buckets[dateKey].push(item);
+  }
+
+  for (const [key, bucketItems] of Object.entries(buckets)) {
+    let label = key;
+    if (key === todayKey) label = "Today";
+    else if (key === yesterdayKey) label = "Yesterday";
+    else label = new Date(key).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    groups.push({ label, items: bucketItems });
+  }
+
+  return groups;
+}
+
 export default function NotificationsScreen() {
   const routeParams = useLocalSearchParams<{ focus?: string; notificationId?: string }>();
   const router = useRouter();
@@ -45,8 +90,7 @@ export default function NotificationsScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const notifications = (notificationsQuery.data?.notifications ?? []) as InboxNotification[];
-  const unread = notifications.filter((item) => !item.readAt);
-  const read = notifications.filter((item) => item.readAt);
+  const unreadCount = notifications.filter((item) => !item.readAt).length;
 
   async function markRead(id: string) {
     if (!token || busyId) {
@@ -65,6 +109,25 @@ export default function NotificationsScreen() {
     } finally {
       setBusyId(null);
     }
+  }
+
+  async function markAllRead() {
+    if (!token || busyId) return;
+    const unread = notifications.filter((item) => !item.readAt);
+    for (const item of unread) {
+      try {
+        await mobileApiFetch(`/me/notifications/${item.id}/read`, {
+          method: "POST",
+          token,
+        });
+      } catch {
+        // continue marking others
+      }
+    }
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
+      queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+    ]);
   }
 
   async function openNotification(item: InboxNotification) {
@@ -94,119 +157,112 @@ export default function NotificationsScreen() {
     setRefreshing(false);
   };
 
+  const dateGroups = groupByDate(notifications);
+
   return (
-    <Screen>
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.lime}
-            colors={[colors.lime]}
-          />
-        }
-      >
-        <ScreenHeader
-          eyebrow="Inbox"
-          title="Notifications"
-        />
-
-        {routeParams.notificationId ? (
-          <Card style={styles.calloutCard}>
-            <Pill tone="blue">
-              {routeParams.focus === "attendance" ? "Attendance alert" : "Opened from push"}
-            </Pill>
-            <Text style={styles.calloutTitle}>
-              You have a new notification.
-            </Text>
-          </Card>
-        ) : null}
-
-        <View style={styles.metricGrid}>
-          <MetricTile
-            label="Unread"
-            value={String(unread.length)}
-            detail={
-              unread.length ? "Tap any unread card to mark it opened." : "You are fully caught up."
-            }
-            tone={unread.length ? "amber" : "lime"}
-          />
-          <MetricTile
-            label="Latest delivery"
-            value={
-              notifications[0]?.notification?.createdAt
-                ? formatRelativeDate(notifications[0].notification?.createdAt)
-                : "No activity"
-            }
-            detail={
-              notifications[0]?.notification?.title ?? "Notifications will appear here when sent."
-            }
-            tone="blue"
-          />
-        </View>
-
-        {notificationsQuery.isLoading ? (
-          <LoadingState
-            title="Loading notification center"
-            body="Pulling the latest messages sent to your account."
-          />
-        ) : null}
-
-        {!notificationsQuery.isLoading && !notifications.length ? (
-          <EmptyState
-            title="No notifications yet"
-            body="Gym updates, payment alerts, and plan messages will appear here."
-          />
-        ) : null}
-
-        {unread.length ? (
-          <>
-            <SectionHeader
-              eyebrow="New"
-              title="Unread"
+    <>
+      <ZookScreen>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.lime}
+              colors={[colors.lime]}
             />
-            <View style={styles.list}>
-              {unread.map((item) => (
-                <NotificationCard
-                  key={item.id}
-                  item={item}
-                  busy={busyId === item.id}
-                  highlighted={item.notification?.id === routeParams.notificationId}
-                  onPress={() => void openNotification(item)}
-                />
-              ))}
-            </View>
-          </>
-        ) : null}
+          }
+        >
+          <MobileHeader
+            title="Inbox"
+            subtitle={unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
+            trailing={
+              unreadCount > 0 ? (
+                <Pressable
+                  onPress={() => void markAllRead()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Mark all read"
+                  style={styles.markAllButton}
+                >
+                  <Ionicons name="checkmark-done" size={18} color={colors.lime} />
+                </Pressable>
+              ) : null
+            }
+          />
 
-        {read.length ? (
-          <>
-            <SectionHeader
-              eyebrow="Earlier"
-              title="Read"
-            />
-            <View style={styles.list}>
-              {read.map((item) => (
-                <NotificationCard
-                  key={item.id}
-                  item={item}
-                  busy={busyId === item.id}
-                  highlighted={item.notification?.id === routeParams.notificationId}
-                  onPress={() => void openNotification(item)}
-                />
-              ))}
+          {routeParams.notificationId ? (
+            <GlassCard variant="selected" contentStyle={styles.calloutContent}>
+              <IconBubble icon="notifications" tone="blue" size={36} />
+              <Text style={styles.calloutText}>
+                {routeParams.focus === "attendance" ? "Attendance alert received" : "Opened from push notification"}
+              </Text>
+            </GlassCard>
+          ) : null}
+
+          {/* Summary bar */}
+          <View style={styles.summaryRow}>
+            <View style={[styles.summaryChip, unreadCount > 0 ? styles.summaryChipActive : null]}>
+              <Text style={styles.summaryValue}>{unreadCount}</Text>
+              <Text style={styles.summaryLabel}>unread</Text>
             </View>
-          </>
-        ) : null}
-      </ScrollView>
-      <Dock />
-    </Screen>
+            <View style={styles.summaryChip}>
+              <Text style={styles.summaryValue}>{notifications.length}</Text>
+              <Text style={styles.summaryLabel}>total</Text>
+            </View>
+            <View style={styles.summaryChip}>
+              <Text style={styles.summaryValue}>
+                {notifications[0]?.notification?.createdAt
+                  ? formatRelativeDate(notifications[0].notification.createdAt)
+                  : "—"}
+              </Text>
+              <Text style={styles.summaryLabel}>latest</Text>
+            </View>
+          </View>
+
+          {notificationsQuery.isLoading ? (
+            <GlassCard variant="compact" contentStyle={styles.loadingContent}>
+              <IconBubble icon="hourglass-outline" tone="amber" size={36} />
+              <Text style={styles.loadingText}>Loading notifications...</Text>
+            </GlassCard>
+          ) : null}
+
+          {!notificationsQuery.isLoading && !notifications.length ? (
+            <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+              <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
+              <View style={styles.emptyCopy}>
+                <Text style={styles.emptyTitle}>No notifications yet</Text>
+                <Text style={styles.emptyBody}>Gym updates, payment alerts, and plan messages will appear here.</Text>
+              </View>
+            </GlassCard>
+          ) : null}
+
+          {/* Grouped notifications */}
+          {dateGroups.map((group) => (
+            <View key={group.label} style={styles.dateGroup}>
+              <Text style={styles.dateGroupLabel}>{group.label}</Text>
+              <View style={styles.list}>
+                {group.items.map((item) => (
+                  <NotificationRow
+                    key={item.id}
+                    item={item}
+                    busy={busyId === item.id}
+                    highlighted={item.notification?.id === routeParams.notificationId}
+                    onPress={() => void openNotification(item)}
+                  />
+                ))}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+        <BottomNav />
+      </ZookScreen>
+    </>
   );
 }
 
-function NotificationCard({
+function NotificationRow({
   item,
   busy,
   highlighted,
@@ -219,120 +275,180 @@ function NotificationCard({
 }) {
   const notification = item.notification;
   const unread = !item.readAt;
+  const type = notification?.type;
 
   return (
-    <Pressable onPress={onPress}>
-      <Card
-        style={[
-          styles.card,
-          unread ? styles.cardUnread : null,
-          highlighted ? styles.cardHighlighted : null,
-        ]}
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={notification?.title ?? "Notification"}
+      style={({ pressed }) => [pressed ? styles.pressed : null]}
+    >
+      <GlassCard
+        variant={highlighted ? "selected" : unread ? "default" : "compact"}
+        contentStyle={styles.notificationContent}
       >
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderCopy}>
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>
+        <View style={styles.notificationRow}>
+          <IconBubble icon={iconForType(type)} tone={toneForType(type)} size={40} />
+          <View style={styles.notificationCopy}>
+            <View style={styles.notificationTitleRow}>
+              <Text numberOfLines={1} style={styles.notificationTitle}>
                 {notification?.title ?? "Notification"}
               </Text>
-              <Pill tone={toneForNotification(notification?.type)}>
-                {titleCaseFromCode(notification?.type ?? "INFO")}
-              </Pill>
+              {unread ? <View style={styles.unreadDot} /> : null}
             </View>
-            <Text style={styles.body}>
-              {notification?.body ?? "No body available."}
+            <Text numberOfLines={2} style={styles.notificationBody}>
+              {notification?.body ?? "No details available."}
+            </Text>
+            <Text style={styles.notificationTime}>
+              {notification?.createdAt
+                ? formatRelativeDate(notification.createdAt)
+                : ""}
+              {busy ? " · Opening..." : ""}
             </Text>
           </View>
-          <Pill tone={unread ? "lime" : "neutral"}>
-            {busy ? "Opening..." : unread ? "Unread" : "Read"}
-          </Pill>
         </View>
-        <View style={styles.metaRow}>
-          <Text style={styles.meta}>
-            {notification?.createdAt ? formatDateTime(notification.createdAt) : "No timestamp"}
-          </Text>
-          <Text style={styles.meta}>
-            {item.readAt ? `Read ${formatRelativeDate(item.readAt)}` : "Tap to mark opened"}
-          </Text>
-        </View>
-      </Card>
+      </GlassCard>
     </Pressable>
   );
 }
 
-function toneForNotification(type?: string | null) {
-  if (type === "SECURITY") {
-    return "red" as const;
-  }
-  if (type === "PLAN") {
-    return "blue" as const;
-  }
-  if (type === "OPERATIONAL") {
-    return "amber" as const;
-  }
-  if (type === "TRANSACTIONAL") {
-    return "lime" as const;
-  }
-  return "violet" as const;
-}
-
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 120,
-  },
-  metricGrid: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  list: {
-    gap: 12,
-  },
-  card: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
     gap: 14,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
-  cardUnread: {
-    borderColor: "rgba(185,244,85,0.24)",
+  markAllButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.3)",
+    backgroundColor: "rgba(185,244,85,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  cardHighlighted: {
-    borderColor: "rgba(94,234,212,0.4)",
-    backgroundColor: "rgba(94,234,212,0.06)",
-  },
-  cardHeader: {
+  calloutContent: {
     flexDirection: "row",
-    gap: 12,
-    alignItems: "flex-start",
+    alignItems: "center",
+    gap: spacing.md,
   },
-  cardHeaderCopy: {
+  calloutText: {
     flex: 1,
-    gap: 10,
+    color: colors.text,
+    ...typography.bodyStrong,
   },
-  titleRow: {
+  summaryRow: {
+    flexDirection: "row",
     gap: 8,
   },
-  title: {
+  summaryChip: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    justifyContent: "center",
+    gap: 2,
+  },
+  summaryChipActive: {
+    borderColor: "rgba(185,244,85,0.3)",
+    backgroundColor: "rgba(185,244,85,0.06)",
+  },
+  summaryValue: {
     color: colors.text,
-    fontSize: 20,
-    fontWeight: "800",
+    ...typography.cardTitle,
   },
-  body: {
+  summaryLabel: {
     color: colors.muted,
-    lineHeight: 21,
+    ...typography.small,
   },
-  metaRow: {
+  loadingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  loadingText: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  emptyContent: {
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.xxl,
+  },
+  emptyCopy: {
+    alignItems: "center",
     gap: 4,
   },
-  meta: {
-    color: colors.muted,
-    fontSize: 12,
-  },
-  calloutCard: {
-    gap: 10,
-  },
-  calloutTitle: {
+  emptyTitle: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
+    ...typography.cardTitle,
+  },
+  emptyBody: {
+    color: colors.muted,
+    ...typography.body,
+    textAlign: "center",
+  },
+  dateGroup: {
+    gap: 8,
+  },
+  dateGroupLabel: {
+    color: colors.muted,
+    ...typography.caption,
+    paddingHorizontal: 4,
+  },
+  list: {
+    gap: 8,
+  },
+  pressed: {
+    opacity: 0.92,
+    transform: [{ scale: 0.99 }],
+  },
+  notificationContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  notificationRow: {
+    flexDirection: "row",
+    gap: spacing.md,
+    alignItems: "flex-start",
+  },
+  notificationCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  notificationTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  notificationTitle: {
+    flex: 1,
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.lime,
+  },
+  notificationBody: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  notificationTime: {
+    color: colors.subtle,
+    ...typography.small,
+    marginTop: 2,
   },
 });

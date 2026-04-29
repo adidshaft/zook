@@ -1,20 +1,19 @@
-import { useLocalSearchParams } from "expo-router";
+import { Link, Stack, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import {
-  Card,
-  Dock,
-  EmptyState,
-  LoadingState,
-  MetricTile,
+  BottomNav,
+  GlassCard,
+  IconBubble,
+  MobileHeader,
   Pill,
-  PrimaryLink,
-  Screen,
-  ScreenHeader,
   SectionHeader,
+  ZookButton,
+  ZookScreen,
 } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { useMyMemberships } from "@/lib/query-hooks";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type MembershipRecord = {
   id: string;
@@ -32,16 +31,16 @@ type MembershipRecord = {
 };
 
 function toneForStatus(status?: string | null) {
-  if (status === "ACTIVE") {
-    return "lime" as const;
-  }
-  if (status === "PENDING" || status === "PAST_DUE") {
-    return "amber" as const;
-  }
-  if (status === "EXPIRED" || status === "CANCELLED") {
-    return "neutral" as const;
-  }
+  if (status === "ACTIVE") return "lime" as const;
+  if (status === "PENDING" || status === "PAST_DUE") return "amber" as const;
+  if (status === "EXPIRED" || status === "CANCELLED") return "red" as const;
   return "blue" as const;
+}
+
+function daysUntil(dateStr?: string | null) {
+  if (!dateStr) return null;
+  const diff = new Date(dateStr).getTime() - Date.now();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
 export default function MembershipScreen() {
@@ -53,188 +52,274 @@ export default function MembershipScreen() {
   const membershipsQuery = useMyMemberships();
   const subscriptions = (membershipsQuery.data?.subscriptions ?? []) as MembershipRecord[];
   const sortedSubscriptions = [...subscriptions].sort((left, right) => {
-    if (left.id === routeParams.subscriptionId) {
-      return -1;
-    }
-    if (right.id === routeParams.subscriptionId) {
-      return 1;
-    }
+    if (left.id === routeParams.subscriptionId) return -1;
+    if (right.id === routeParams.subscriptionId) return 1;
     return 0;
   });
-  const activeCount = subscriptions.filter(
-    (subscription) => subscription.status === "ACTIVE",
-  ).length;
-  const expiringSoonCount = subscriptions.filter((subscription) => {
-    if (subscription.status !== "ACTIVE" || !subscription.endsAt) {
-      return false;
-    }
-    const timeUntilExpiry = new Date(subscription.endsAt).getTime() - Date.now();
-    return timeUntilExpiry >= 0 && timeUntilExpiry <= 1000 * 60 * 60 * 24 * 30;
+  const activeCount = subscriptions.filter((s) => s.status === "ACTIVE").length;
+  const expiringSoonCount = subscriptions.filter((s) => {
+    if (s.status !== "ACTIVE" || !s.endsAt) return false;
+    const days = daysUntil(s.endsAt);
+    return days !== null && days <= 30;
   }).length;
   const latestSubscription = sortedSubscriptions[0];
+  const latestDaysLeft = latestSubscription ? daysUntil(latestSubscription.endsAt) : null;
 
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <ScreenHeader
-          eyebrow="Membership"
-          title="Your plans and visits."
-        />
-
-        {routeParams.focus === "membership" ? (
-          <Card style={styles.calloutCard}>
-            <Pill tone="blue">Opened from push</Pill>
-            <Text style={styles.calloutTitle}>
-              Your membership details are below.
-            </Text>
-            <Text style={styles.body}>
-              {routeParams.subscriptionId
-                ? "Your subscription has been updated."
-                : "Showing your current membership status."}
-            </Text>
-          </Card>
-        ) : null}
-
-        <View style={styles.metricGrid}>
-          <MetricTile
-            label="Active"
-            value={String(activeCount)}
-            detail={
-              activeCount ? "Active memberships." : "No active plan."
-            }
-            tone={activeCount ? "lime" : "neutral"}
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ZookScreen>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          <MobileHeader
+            eyebrow="Membership"
+            title="Your plans"
+            subtitle={activeCount > 0 ? `${activeCount} active membership${activeCount !== 1 ? "s" : ""}` : "No active plans"}
           />
-          <MetricTile
-            label="Expiring in 30 days"
-            value={String(expiringSoonCount)}
-            detail="Memberships ending within 30 days."
-            tone={expiringSoonCount ? "amber" : "blue"}
-          />
-        </View>
 
-        {membershipsQuery.isLoading ? (
-          <LoadingState
-            title="Loading memberships"
-            body="Pulling subscription records, plan metadata, and current gym context."
-          />
-        ) : null}
-
-        {!membershipsQuery.isLoading && !subscriptions.length ? (
-          <EmptyState
-            title="No memberships yet"
-            body="Join a gym to see your membership here."
-            action={<PrimaryLink href="/find-gyms">Browse gyms</PrimaryLink>}
-          />
-        ) : null}
-
-        {latestSubscription ? (
-          <>
-            <SectionHeader
-              eyebrow="Current"
-              title="Latest membership"
-            />
-            <Card style={styles.featuredCard}>
-              <View style={styles.featuredHeader}>
-                <View style={styles.featuredCopy}>
-                  <Text style={styles.featuredTitle}>
-                    {latestSubscription.plan?.name ?? "Membership"}
-                  </Text>
-                  <Text style={styles.body}>
-                    {latestSubscription.organization?.name ?? "Gym organization"}
-                  </Text>
-                </View>
-                <Pill tone={toneForStatus(latestSubscription.status)}>
-                  {titleCaseFromCode(latestSubscription.status ?? "ACTIVE")}
-                </Pill>
-              </View>
-              <Text style={styles.body}>
-                {latestSubscription.endsAt
-                  ? `Ends on ${formatLongDate(latestSubscription.endsAt)}`
-                  : "No end date available for this membership."}
-              </Text>
-              {latestSubscription.remainingVisits !== null &&
-              latestSubscription.remainingVisits !== undefined ? (
-                <Text style={styles.detail}>
-                  {latestSubscription.remainingVisits} visits remaining
+          {routeParams.focus === "membership" ? (
+            <GlassCard variant="selected" contentStyle={styles.calloutContent}>
+              <IconBubble icon="notifications" tone="blue" size={36} />
+              <View style={styles.calloutCopy}>
+                <Text style={styles.calloutTitle}>Membership update</Text>
+                <Text style={styles.calloutBody}>
+                  {routeParams.subscriptionId ? "Your subscription has been updated." : "Showing your current status."}
                 </Text>
-              ) : null}
-            </Card>
-          </>
-        ) : null}
+              </View>
+            </GlassCard>
+          ) : null}
 
-        {sortedSubscriptions.length > 1 ? (
-          <>
-            <SectionHeader
-              eyebrow="History"
-              title="Other memberships"
-            />
-            <View style={styles.stack}>
-              {sortedSubscriptions.slice(1).map((subscription) => (
-                <Card key={subscription.id}>
-                  <View style={styles.listHeader}>
-                    <View style={styles.listCopy}>
-                      <Text style={styles.listTitle}>
-                        {subscription.plan?.name ?? "Membership"}
+          {/* Summary row */}
+          <View style={styles.summaryRow}>
+            <View style={[styles.summaryChip, activeCount > 0 ? styles.summaryChipActive : null]}>
+              <Text style={styles.summaryValue}>{activeCount}</Text>
+              <Text style={styles.summaryLabel}>active</Text>
+            </View>
+            <View style={[styles.summaryChip, expiringSoonCount > 0 ? styles.summaryChipWarning : null]}>
+              <Text style={styles.summaryValue}>{expiringSoonCount}</Text>
+              <Text style={styles.summaryLabel}>expiring</Text>
+            </View>
+            <View style={styles.summaryChip}>
+              <Text style={styles.summaryValue}>{subscriptions.length}</Text>
+              <Text style={styles.summaryLabel}>total</Text>
+            </View>
+          </View>
+
+          {membershipsQuery.isLoading ? (
+            <GlassCard variant="compact" contentStyle={styles.loadingContent}>
+              <IconBubble icon="hourglass-outline" tone="amber" size={36} />
+              <Text style={styles.loadingText}>Loading memberships...</Text>
+            </GlassCard>
+          ) : null}
+
+          {!membershipsQuery.isLoading && !subscriptions.length ? (
+            <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+              <IconBubble icon="card-outline" tone="neutral" size={42} />
+              <View style={styles.emptyCopy}>
+                <Text style={styles.emptyTitle}>No memberships yet</Text>
+                <Text style={styles.emptyBody}>Join a gym to see your membership here.</Text>
+              </View>
+              <ZookButton href="/find-gyms" icon="search-outline">Browse gyms</ZookButton>
+            </GlassCard>
+          ) : null}
+
+          {/* Featured membership */}
+          {latestSubscription ? (
+            <>
+              <SectionHeader title="Current plan" />
+              <GlassCard
+                variant={latestSubscription.status === "ACTIVE" ? "success" : "default"}
+                contentStyle={styles.featuredContent}
+              >
+                <View style={styles.featuredHeader}>
+                  <IconBubble icon="card-outline" tone={toneForStatus(latestSubscription.status)} size={40} />
+                  <View style={styles.featuredCopy}>
+                    <Text style={styles.featuredTitle}>
+                      {latestSubscription.plan?.name ?? "Membership"}
+                    </Text>
+                    <Text style={styles.featuredOrg}>
+                      {latestSubscription.organization?.name ?? "Gym"}
+                    </Text>
+                  </View>
+                  <Pill tone={toneForStatus(latestSubscription.status)}>
+                    {titleCaseFromCode(latestSubscription.status ?? "ACTIVE")}
+                  </Pill>
+                </View>
+
+                {/* Progress indicator */}
+                {latestDaysLeft !== null ? (
+                  <View style={styles.progressSection}>
+                    <View style={styles.progressBar}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: `${Math.max(5, Math.min(100, (latestDaysLeft / 30) * 100))}%` },
+                          latestDaysLeft <= 7 ? styles.progressFillWarning : null,
+                        ]}
+                      />
+                    </View>
+                    <View style={styles.progressLabels}>
+                      <Text style={[styles.progressText, latestDaysLeft <= 7 ? styles.progressTextWarning : null]}>
+                        {latestDaysLeft} day{latestDaysLeft !== 1 ? "s" : ""} left
                       </Text>
-                      <Text style={styles.body}>
-                        {subscription.organization?.name ?? "Gym organization"}
+                      <Text style={styles.progressTextMuted}>
+                        {latestSubscription.endsAt ? formatLongDate(latestSubscription.endsAt) : ""}
                       </Text>
                     </View>
-                    <Pill tone={toneForStatus(subscription.status)}>
-                      {titleCaseFromCode(subscription.status ?? "ACTIVE")}
-                    </Pill>
                   </View>
-                  <Text style={styles.body}>
-                    {subscription.endsAt
-                      ? `Ends on ${formatLongDate(subscription.endsAt)}`
-                      : "No expiry date available."}
-                  </Text>
-                </Card>
-              ))}
-            </View>
-          </>
-        ) : null}
+                ) : null}
 
-        <SectionHeader
-          eyebrow="Billing"
-          title="Payment history"
-        />
-        <EmptyState
-          title="No payments recorded yet"
-          body="Once you make payments for memberships or renewals, your transaction history will appear here."
-        />
-      </ScrollView>
-      <Dock />
-    </Screen>
+                {latestSubscription.remainingVisits !== null && latestSubscription.remainingVisits !== undefined ? (
+                  <View style={styles.visitsBadge}>
+                    <Ionicons name="walk-outline" size={14} color={colors.lime} />
+                    <Text style={styles.visitsText}>{latestSubscription.remainingVisits} visits remaining</Text>
+                  </View>
+                ) : null}
+
+                {latestDaysLeft !== null && latestDaysLeft <= 7 ? (
+                  <ZookButton href="/find-gyms" icon="refresh-outline">Renew membership</ZookButton>
+                ) : null}
+              </GlassCard>
+            </>
+          ) : null}
+
+          {/* Other memberships */}
+          {sortedSubscriptions.length > 1 ? (
+            <>
+              <SectionHeader title="History" />
+              <View style={styles.stack}>
+                {sortedSubscriptions.slice(1).map((subscription) => (
+                  <GlassCard key={subscription.id} variant="compact" contentStyle={styles.historyContent}>
+                    <View style={styles.historyRow}>
+                      <View style={styles.historyCopy}>
+                        <Text numberOfLines={1} style={styles.historyTitle}>
+                          {subscription.plan?.name ?? "Membership"}
+                        </Text>
+                        <Text numberOfLines={1} style={styles.historyBody}>
+                          {subscription.organization?.name ?? "Gym"} · {subscription.endsAt ? formatLongDate(subscription.endsAt) : "No expiry"}
+                        </Text>
+                      </View>
+                      <Pill tone={toneForStatus(subscription.status)}>
+                        {titleCaseFromCode(subscription.status ?? "ACTIVE")}
+                      </Pill>
+                    </View>
+                  </GlassCard>
+                ))}
+              </View>
+            </>
+          ) : null}
+
+          {/* Payment history */}
+          <SectionHeader title="Payments" />
+          <GlassCard variant="compact" contentStyle={styles.emptyPaymentContent}>
+            <IconBubble icon="receipt-outline" tone="neutral" size={36} />
+            <View style={styles.emptyCopy}>
+              <Text style={styles.emptyTitle}>No payments yet</Text>
+              <Text style={styles.emptyBody}>Transaction history will appear here.</Text>
+            </View>
+          </GlassCard>
+        </ScrollView>
+        <BottomNav />
+      </ZookScreen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 40,
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
+    gap: 14,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
-  calloutCard: {
-    gap: 10,
+  calloutContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  calloutCopy: {
+    flex: 1,
+    gap: 4,
   },
   calloutTitle: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
+    ...typography.cardTitle,
   },
-  metricGrid: {
+  calloutBody: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  summaryRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 8,
   },
-  featuredCard: {
-    gap: 12,
+  summaryChip: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    justifyContent: "center",
+    gap: 2,
+  },
+  summaryChipActive: {
+    borderColor: "rgba(185,244,85,0.3)",
+    backgroundColor: "rgba(185,244,85,0.06)",
+  },
+  summaryChipWarning: {
+    borderColor: "rgba(242,201,76,0.3)",
+    backgroundColor: "rgba(242,201,76,0.06)",
+  },
+  summaryValue: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  summaryLabel: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  loadingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  loadingText: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  emptyContent: {
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.xxl,
+  },
+  emptyCopy: {
+    alignItems: "center",
+    gap: 4,
+  },
+  emptyTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  emptyBody: {
+    color: colors.muted,
+    ...typography.body,
+    textAlign: "center",
+  },
+  featuredContent: {
+    gap: spacing.md,
   },
   featuredHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-    alignItems: "center",
+    alignItems: "flex-start",
+    gap: spacing.md,
   },
   featuredCopy: {
     flex: 1,
@@ -242,34 +327,87 @@ const styles = StyleSheet.create({
   },
   featuredTitle: {
     color: colors.text,
-    fontSize: 24,
-    fontWeight: "900",
+    ...typography.headerTitle,
   },
-  body: {
+  featuredOrg: {
     color: colors.muted,
-    lineHeight: 21,
+    ...typography.body,
   },
-  detail: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "700",
+  progressSection: {
+    gap: 6,
   },
-  stack: {
-    gap: 12,
+  progressBar: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    overflow: "hidden",
   },
-  listHeader: {
+  progressFill: {
+    height: "100%",
+    borderRadius: 3,
+    backgroundColor: colors.lime,
+  },
+  progressFillWarning: {
+    backgroundColor: colors.amber,
+  },
+  progressLabels: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 12,
-    alignItems: "center",
   },
-  listCopy: {
+  progressText: {
+    color: colors.lime,
+    ...typography.caption,
+  },
+  progressTextWarning: {
+    color: colors.amber,
+  },
+  progressTextMuted: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  visitsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.2)",
+    backgroundColor: "rgba(185,244,85,0.06)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignSelf: "flex-start",
+  },
+  visitsText: {
+    color: colors.text,
+    ...typography.caption,
+  },
+  stack: {
+    gap: 8,
+  },
+  historyContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  historyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  historyCopy: {
     flex: 1,
     gap: 4,
   },
-  listTitle: {
+  historyTitle: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
+    ...typography.cardTitle,
+  },
+  historyBody: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  emptyPaymentContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
   },
 });

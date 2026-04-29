@@ -2,30 +2,56 @@ import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { zookMockServices } from "@zook/core";
 import {
   AuditWarning,
+  BottomNav,
   CollapsibleSection,
+  GlassCard,
+  IconBubble,
   MobileHeader,
   PrimaryButton,
   ZookScreen,
 } from "@/components/primitives";
-import { useAuth } from "@/lib/auth";
+import { mobileApiFetch } from "@/lib/api";
+import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function Settings() {
   const router = useRouter();
-  const { logout, session } = useAuth();
+  const { logout, session, token } = useAuth();
   const [privacyStatus, setPrivacyStatus] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function requestPrivacyExport() {
-    const job = await zookMockServices.privacyService.requestExport(session?.user.id);
-    setPrivacyStatus(`Export requested. ${job.status}.`);
+    if (!token) return;
+    setBusy(true);
+    try {
+      await mobileApiFetch("/me/privacy/export", {
+        method: "POST",
+        token,
+      });
+      setPrivacyStatus("Export requested. You'll receive an email when it's ready.");
+    } catch (error) {
+      setPrivacyStatus(getApiErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function requestPrivacyDeletion() {
-    const job = await zookMockServices.privacyService.requestDeletion(session?.user.id);
-    setPrivacyStatus(`Deletion requested. ${job.status}.`);
+    if (!token) return;
+    setBusy(true);
+    try {
+      await mobileApiFetch("/me/privacy/deletion", {
+        method: "POST",
+        token,
+      });
+      setPrivacyStatus("Deletion requested. This is being reviewed before execution.");
+    } catch (error) {
+      setPrivacyStatus(getApiErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -56,10 +82,10 @@ export default function Settings() {
           <CollapsibleSection title="Privacy" subtitle="Export or delete data" defaultOpen>
             <AuditWarning>These requests are saved and reviewed before anything changes.</AuditWarning>
             <View style={styles.actionRow}>
-              <PrimaryButton onPress={() => void requestPrivacyExport()} tone="secondary" style={styles.actionHalf}>
+              <PrimaryButton onPress={() => void requestPrivacyExport()} tone="secondary" style={styles.actionHalf} disabled={busy}>
                 Export
               </PrimaryButton>
-              <PrimaryButton onPress={() => void requestPrivacyDeletion()} tone="danger" style={styles.actionHalf}>
+              <PrimaryButton onPress={() => void requestPrivacyDeletion()} tone="danger" style={styles.actionHalf} disabled={busy}>
                 Delete
               </PrimaryButton>
             </View>
@@ -67,11 +93,19 @@ export default function Settings() {
           </CollapsibleSection>
 
           <CollapsibleSection title="Account" subtitle={session?.user.email ?? "Signed in"} defaultOpen={false}>
+            <GlassCard variant="compact" contentStyle={styles.accountContent}>
+              <IconBubble icon="person-outline" tone="blue" size={36} />
+              <View style={styles.accountCopy}>
+                <Text style={styles.accountName}>{session?.user.name ?? "Zook user"}</Text>
+                <Text style={styles.accountEmail}>{session?.user.email ?? session?.user.phone ?? ""}</Text>
+              </View>
+            </GlassCard>
             <PrimaryButton onPress={() => void logout()} tone="danger">
               Logout
             </PrimaryButton>
           </CollapsibleSection>
         </ScrollView>
+        <BottomNav />
       </ZookScreen>
     </>
   );
@@ -83,7 +117,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
-    paddingBottom: 54,
+    paddingBottom: layout.bottomNavHeight + 40,
     gap: 12,
   },
   iconButton: {
@@ -105,6 +139,23 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: colors.lime,
+    ...typography.small,
+  },
+  accountContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  accountCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  accountName: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  accountEmail: {
+    color: colors.muted,
     ...typography.small,
   },
 });

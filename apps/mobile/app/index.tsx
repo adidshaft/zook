@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 12,
-    paddingBottom: 128,
+    paddingBottom: layout.bottomNavHeight + 40,
     gap: 12,
   },
   homeHeader: {

@@ -1,21 +1,21 @@
-import { Link, useLocalSearchParams } from "expo-router";
+import { Link, Stack, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useDeferredValue, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
-  Card,
-  Dock,
-  EmptyState,
-  GlassInput,
-  LoadingState,
+  BottomNav,
+  GlassCard,
+  IconBubble,
+  MobileHeader,
   Pill,
-  Screen,
-  ScreenHeader,
+  GlassInput,
   SectionHeader,
+  ZookScreen,
 } from "@/components/primitives";
 import { titleCaseFromCode } from "@/lib/formatting";
 import { useGymSearch } from "@/lib/query-hooks";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 const featuredCities = ["Pune", "Bengaluru", "Mumbai", "Delhi"];
 
@@ -33,184 +33,225 @@ export default function FindGyms() {
   const gyms = gymsQuery.data?.gyms ?? [];
 
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <ScreenHeader
-          eyebrow="Discovery"
-          title="Find your next gym."
-        />
-
-        {referralCode ? (
-          <Card style={styles.referralCard}>
-            <Pill tone="lime">Referral ready</Pill>
-            <Text style={styles.referralTitle}>
-              Referral code {referralCode} is attached to this mobile session.
-            </Text>
-            <Text style={styles.referralBody}>
-              Open any supported gym below to use your referral code.
-            </Text>
-          </Card>
-        ) : null}
-
-        <Card style={styles.searchCard}>
-          <GlassInput
-            label="Gym name or username"
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Try Iron House or peaklab"
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ZookScreen>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          <MobileHeader
+            eyebrow="Discovery"
+            title="Find your gym"
+            subtitle="Browse public gyms and apply referral codes"
           />
-          <GlassInput
-            label="City"
-            value={city}
-            onChangeText={setCity}
-            placeholder="Pune, Bengaluru, Mumbai..."
-          />
-          <View style={styles.cityRow}>
-            {featuredCities.map((featuredCity) => {
-              const active = city.trim().toLowerCase() === featuredCity.toLowerCase();
-              return (
-                <Pressable
-                  key={featuredCity}
-                  onPress={() => setCity(active ? "" : featuredCity)}
-                  style={[styles.cityChip, active ? styles.cityChipActive : null]}
-                >
-                  <Text style={[styles.cityChipText, active ? styles.cityChipTextActive : null]}>
-                    {featuredCity}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Card>
 
-
-        <SectionHeader
-          eyebrow="Results"
-          title="Available public gyms"
-          subtitle="Open a gym profile to see membership plans, referral support, and whether approval is required."
-        />
-
-        {gymsQuery.isLoading ? (
-          <LoadingState
-            title="Loading gym list"
-            body="Checking public organizations and current join settings."
-          />
-        ) : null}
-
-        {!gymsQuery.isLoading && !gyms.length ? (
-          <EmptyState
-            title="No public gyms matched"
-            body="Try widening the city, clearing the search, or checking a different neighborhood."
-          />
-        ) : null}
-
-        <View style={styles.results}>
-          {gyms.map((gym) => (
-            <Link
-              key={gym.username}
-              href={{
-                pathname: "/gym/[username]",
-                params: {
-                  username: gym.username,
-                  ...(referralCode ? { ref: referralCode } : {}),
-                },
-              }}
-              asChild
-            >
-              <Pressable style={({ pressed }) => [styles.gymCard, pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}>
-                <View style={styles.gymHeader}>
-                  <Image
-                    source={{ uri: gym.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=400&h=400&fit=crop" }}
-                    style={styles.gymThumbnail}
-                    contentFit="cover"
-                  />
-                  <View style={styles.gymCopy}>
-                    <Text style={styles.gymTitle}>
-                      {gym.name}
-                    </Text>
-                    <Text style={styles.gymBody}>
-                      {gym.city}, {gym.state}
-                    </Text>
-                  </View>
-                  <Pill tone={toneForJoinMode(gym.joinMode)}>{titleCaseFromCode(gym.joinMode)}</Pill>
-                </View>
-                <Text style={styles.gymBody}>
-                  {gym.coverImageUrl
-                    ? "Membership flow available."
-                    : "View membership plans and apply referral codes."}
+          {referralCode ? (
+            <GlassCard variant="success" contentStyle={styles.referralContent}>
+              <IconBubble icon="gift-outline" tone="lime" size={36} />
+              <View style={styles.referralCopy}>
+                <Text style={styles.referralTitle}>Referral code applied</Text>
+                <Text style={styles.referralBody}>
+                  Code <Text style={styles.referralCode}>{referralCode}</Text> is attached. Open any gym to use it.
                 </Text>
-                <View style={styles.tags}>
-                  {(gym.amenities ?? []).slice(0, 4).map((amenity) => (
-                    <Pill key={amenity} tone="blue">
-                      {amenity}
-                    </Pill>
-                  ))}
-                </View>
-                <View style={styles.gymFooter}>
-                  <View style={styles.metricChip}>
-                    <Text style={styles.metricChipLabel}>Profile</Text>
-                    <Text style={styles.metricChipValue}>
-                      {titleCaseFromCode(gym.visibility ?? "PUBLIC")}
-                    </Text>
-                  </View>
-                </View>
-              </Pressable>
-            </Link>
-          ))}
-        </View>
+              </View>
+            </GlassCard>
+          ) : null}
 
-      </ScrollView>
-      <Dock />
-    </Screen>
+          {/* Search */}
+          <GlassCard contentStyle={styles.searchContent}>
+            <GlassInput
+              label="Gym name or username"
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Try Iron House or peaklab"
+            />
+            <GlassInput
+              label="City"
+              value={city}
+              onChangeText={setCity}
+              placeholder="Pune, Bengaluru, Mumbai..."
+            />
+            <View style={styles.cityRow}>
+              {featuredCities.map((featuredCity) => {
+                const active = city.trim().toLowerCase() === featuredCity.toLowerCase();
+                return (
+                  <Pressable
+                    key={featuredCity}
+                    onPress={() => setCity(active ? "" : featuredCity)}
+                    accessibilityRole="button"
+                    style={[styles.cityChip, active ? styles.cityChipActive : null]}
+                  >
+                    <Text style={[styles.cityChipText, active ? styles.cityChipTextActive : null]}>
+                      {featuredCity}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </GlassCard>
+
+          {/* Map placeholder */}
+          <GlassCard variant="compact" contentStyle={styles.mapContent}>
+            <View style={styles.mapGlow} />
+            <Text style={styles.mapEyebrow}>MAP</Text>
+            <Text style={styles.mapTitle}>Nearby gyms</Text>
+            <Text style={styles.mapBody}>
+              {gyms.length
+                ? `${gyms.length} gym${gyms.length !== 1 ? "s" : ""} found in ${deferredCity || "all cities"}`
+                : "Search to see results on the map."}
+            </Text>
+            {gyms.length > 0 ? (
+              <View style={styles.mapMarkers}>
+                {gyms.slice(0, 4).map((gym) => (
+                  <View key={gym.username} style={styles.markerBubble}>
+                    <Text style={styles.markerText}>{gym.name}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </GlassCard>
+
+          {/* Results */}
+          <SectionHeader
+            title="Available gyms"
+            subtitle={gymsQuery.isLoading ? "Searching..." : `${gyms.length} result${gyms.length !== 1 ? "s" : ""}`}
+          />
+
+          {gymsQuery.isLoading ? (
+            <GlassCard variant="compact" contentStyle={styles.loadingContent}>
+              <IconBubble icon="hourglass-outline" tone="amber" size={36} />
+              <Text style={styles.loadingText}>Searching public gyms...</Text>
+            </GlassCard>
+          ) : null}
+
+          {!gymsQuery.isLoading && !gyms.length ? (
+            <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+              <IconBubble icon="search-outline" tone="neutral" size={42} />
+              <View style={styles.emptyCopy}>
+                <Text style={styles.emptyTitle}>No gyms found</Text>
+                <Text style={styles.emptyBody}>Try widening the city or clearing the search.</Text>
+              </View>
+            </GlassCard>
+          ) : null}
+
+          <View style={styles.results}>
+            {gyms.map((gym) => (
+              <Link
+                key={gym.username}
+                href={{
+                  pathname: "/gym/[username]",
+                  params: {
+                    username: gym.username,
+                    ...(referralCode ? { ref: referralCode } : {}),
+                  },
+                }}
+                asChild
+              >
+                <Pressable accessibilityRole="link" style={({ pressed }) => [pressed ? styles.pressed : null]}>
+                  <GlassCard contentStyle={styles.gymContent}>
+                    <View style={styles.gymHeader}>
+                      <Image
+                        source={{ uri: gym.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=400&h=400&fit=crop" }}
+                        style={styles.gymThumbnail}
+                        contentFit="cover"
+                      />
+                      <View style={styles.gymCopy}>
+                        <Text numberOfLines={1} style={styles.gymTitle}>
+                          {gym.name}
+                        </Text>
+                        <Text numberOfLines={1} style={styles.gymLocation}>
+                          {gym.city}, {gym.state}
+                        </Text>
+                      </View>
+                      <Pill tone={toneForJoinMode(gym.joinMode)}>{titleCaseFromCode(gym.joinMode)}</Pill>
+                    </View>
+
+                    {(gym.amenities ?? []).length > 0 ? (
+                      <View style={styles.tags}>
+                        {(gym.amenities ?? []).slice(0, 4).map((amenity) => (
+                          <Pill key={amenity} tone="blue">{amenity}</Pill>
+                        ))}
+                      </View>
+                    ) : null}
+
+                    <View style={styles.gymFooter}>
+                      <View style={styles.gymFooterLeft}>
+                        <Ionicons name="eye-outline" size={13} color={colors.muted} />
+                        <Text style={styles.gymFooterText}>
+                          {titleCaseFromCode(gym.visibility ?? "PUBLIC")}
+                        </Text>
+                      </View>
+                      <View style={styles.gymViewCta}>
+                        <Text style={styles.gymViewText}>View</Text>
+                        <Ionicons name="chevron-forward" size={14} color={colors.lime} />
+                      </View>
+                    </View>
+                  </GlassCard>
+                </Pressable>
+              </Link>
+            ))}
+          </View>
+        </ScrollView>
+        <BottomNav />
+      </ZookScreen>
+    </>
   );
 }
 
 function toneForJoinMode(joinMode?: string) {
-  if (joinMode === "OPEN_JOIN") {
-    return "lime" as const;
-  }
-  if (joinMode === "APPROVAL_REQUIRED") {
-    return "amber" as const;
-  }
-  if (joinMode === "INVITE_ONLY") {
-    return "violet" as const;
-  }
+  if (joinMode === "OPEN_JOIN") return "lime" as const;
+  if (joinMode === "APPROVAL_REQUIRED") return "amber" as const;
+  if (joinMode === "INVITE_ONLY") return "violet" as const;
   return "neutral" as const;
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 120,
-  },
-  searchCard: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
     gap: 14,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
-  referralCard: {
-    gap: 10,
+  referralContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  referralCopy: {
+    flex: 1,
+    gap: 4,
   },
   referralTitle: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
+    ...typography.cardTitle,
   },
   referralBody: {
     color: colors.muted,
-    lineHeight: 21,
+    ...typography.body,
+  },
+  referralCode: {
+    color: colors.lime,
+    ...typography.bodyStrong,
+  },
+  searchContent: {
+    gap: spacing.md,
   },
   cityRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: spacing.sm,
   },
   cityChip: {
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(255,255,255,0.04)",
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 9,
   },
   cityChipActive: {
     borderColor: "rgba(185,244,85,0.3)",
@@ -218,23 +259,15 @@ const styles = StyleSheet.create({
   },
   cityChipText: {
     color: colors.text,
-    fontWeight: "700",
-    fontSize: 13,
+    ...typography.caption,
   },
   cityChipTextActive: {
     color: colors.lime,
   },
-  mapCard: {
-    minHeight: 220,
-    gap: 12,
+  mapContent: {
+    gap: 8,
     position: "relative",
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(125,211,252,0.03)",
+    overflow: "hidden",
   },
   mapGlow: {
     position: "absolute",
@@ -243,106 +276,124 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: "rgba(125,211,252,0.08)",
+    backgroundColor: "rgba(125,211,252,0.06)",
   },
   mapEyebrow: {
     color: colors.blue,
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
+    ...typography.eyebrow,
   },
   mapTitle: {
     color: colors.text,
-    fontSize: 28,
-    fontWeight: "900",
+    ...typography.headerTitle,
   },
   mapBody: {
     color: colors.muted,
-    lineHeight: 21,
+    ...typography.body,
   },
   mapMarkers: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-    marginTop: 8,
+    gap: 8,
+    marginTop: 4,
   },
   markerBubble: {
     borderRadius: 999,
     borderWidth: 1,
     borderColor: "rgba(185,244,85,0.18)",
-    backgroundColor: "rgba(185,244,85,0.08)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: "rgba(185,244,85,0.06)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   markerText: {
     color: colors.lime,
-    fontSize: 12,
-    fontWeight: "800",
+    ...typography.small,
+  },
+  loadingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  loadingText: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  emptyContent: {
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.xxl,
+  },
+  emptyCopy: {
+    alignItems: "center",
+    gap: 4,
+  },
+  emptyTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  emptyBody: {
+    color: colors.muted,
+    ...typography.body,
+    textAlign: "center",
   },
   results: {
-    gap: 12,
+    gap: 10,
   },
-  gymCard: {
-    gap: 14,
-    backgroundColor: colors.panel,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 24,
-    padding: 18,
-    overflow: "hidden",
+  pressed: {
+    opacity: 0.92,
+    transform: [{ scale: 0.99 }],
+  },
+  gymContent: {
+    gap: spacing.md,
   },
   gymHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 12,
+    gap: spacing.md,
   },
   gymThumbnail: {
     width: 48,
     height: 48,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: "rgba(255,255,255,0.05)",
   },
   gymCopy: {
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   gymTitle: {
     color: colors.text,
-    fontSize: 22,
-    fontWeight: "900",
+    ...typography.headerTitle,
   },
-  gymBody: {
+  gymLocation: {
     color: colors.muted,
-    lineHeight: 20,
+    ...typography.body,
   },
   tags: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
     flexWrap: "wrap",
   },
   gymFooter: {
     flexDirection: "row",
-    gap: 10,
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  metricChip: {
-    flex: 1,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    padding: 14,
-    gap: 6,
+  gymFooterLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
-  metricChipLabel: {
+  gymFooterText: {
     color: colors.muted,
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
+    ...typography.small,
   },
-  metricChipValue: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "800",
+  gymViewCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  gymViewText: {
+    color: colors.lime,
+    ...typography.caption,
   },
 });
