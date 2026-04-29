@@ -1,7 +1,6 @@
 import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { zookDemoFixtures } from "@zook/core";
 import {
   BottomNav,
   GlassCard,
@@ -47,18 +46,6 @@ function titleCaseStatus(status?: string | null) {
   return "Recorded";
 }
 
-function resolveFallback(id?: string, status?: string): AttendanceRecord {
-  const fallbackId = id?.includes("pending") || status === "PENDING_APPROVAL" ? "attendance-pending" : "attendance-approved";
-  return zookDemoFixtures.attendanceAttempts.find((attempt) => attempt.id === fallbackId) ?? {
-    id: fallbackId,
-    status: fallbackId === "attendance-pending" ? "PENDING_APPROVAL" : "APPROVED",
-    entryCode: fallbackId === "attendance-pending" ? "ZK-7319" : "ZK-4821",
-    checkedInAt: "2026-04-26T01:44:00.000Z",
-    branchName: "Main Branch",
-    planName: "Hybrid Pro",
-  };
-}
-
 export default function AttendanceResultScreen() {
   const router = useRouter();
   const routeParams = useLocalSearchParams<{
@@ -75,11 +62,10 @@ export default function AttendanceResultScreen() {
   const attendanceRecordId = firstParam(routeParams.attendanceRecordId);
   const routeStatus = firstParam(routeParams.status);
   const recordFromApi = records.find((record) => record.id === attendanceRecordId);
-  const fixtureRecord = zookDemoFixtures.attendanceAttempts.find((attempt) => attempt.id === attendanceRecordId);
-  const fallbackRecord = resolveFallback(attendanceRecordId, routeStatus);
   const record: AttendanceRecord = {
-    ...fallbackRecord,
-    ...fixtureRecord,
+    id: attendanceRecordId ?? "attendance-result",
+    status: routeStatus ?? "APPROVED",
+    checkedInAt: firstParam(routeParams.checkedInAt) ?? null,
     ...recordFromApi,
     ...(routeStatus ? { status: routeStatus } : {}),
     ...(firstParam(routeParams.entryCode) ? { entryCode: firstParam(routeParams.entryCode) } : {}),
@@ -92,9 +78,9 @@ export default function AttendanceResultScreen() {
   const pending = record.status === "PENDING_APPROVAL";
   const approved = !pending;
   const tone = pending ? "amber" : approved ? "lime" : "red";
-  const code = record.entryCode ?? (pending ? "ZK-7319" : "ZK-4821");
-  const branchName = record.branchName === "Default Branch" ? "Main Branch" : record.branchName ?? "Main Branch";
-  const planName = record.planName ?? "Hybrid Pro";
+  const code = record.entryCode ?? record.id.slice(-8).toUpperCase();
+  const branchName = record.branchName === "Default Branch" ? "Default branch" : record.branchName ?? "Assigned branch";
+  const planName = record.planName ?? "Active membership";
 
   return (
     <>
@@ -107,7 +93,7 @@ export default function AttendanceResultScreen() {
         >
           <MobileHeader
             title="Attendance"
-            subtitle={pending ? "Iron Temple Gym" : undefined}
+            subtitle={pending ? branchName : undefined}
             leading={
               <Pressable
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/scan")}
@@ -131,7 +117,7 @@ export default function AttendanceResultScreen() {
             <Text style={styles.heroBody}>
               {pending
                 ? "Your check-in was received. Show this code at the front desk."
-                : "Entry approved for Iron Temple Gym"}
+                : "Entry approved for your gym"}
             </Text>
           </View>
 
@@ -185,7 +171,7 @@ export default function AttendanceResultScreen() {
                 <IconBubble icon="barbell-outline" tone="lime" size={44} />
                 <View style={styles.nextCopy}>
                   <Text style={styles.nextTitle}>Next up</Text>
-                  <Text style={styles.nextBody}>Push Day workout assigned by Coach Rhea</Text>
+                  <Text style={styles.nextBody}>Open your latest assigned plan when you are ready.</Text>
                 </View>
                 <Link href="/plans" asChild>
                   <Pressable accessibilityRole="link">

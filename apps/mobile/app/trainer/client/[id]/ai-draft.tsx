@@ -1,7 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { zookDemoFixtures, zookMockServices } from "@zook/core";
 import {
   AuditWarning,
   BottomNav,
@@ -16,33 +15,88 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { mobileApiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
-type Draft = Awaited<ReturnType<typeof zookMockServices.planService.generateAiPlanDraft>>;
+type Draft = {
+  planId?: string;
+  title: string;
+  goal: string;
+  difficulty: string;
+  sections: Array<{ title: string; body: string }>;
+};
+
+function sectionsFromResponse(response: unknown): Array<{ title: string; body: string }> {
+  if (response && typeof response === "object" && "sections" in response) {
+    const sections = (response as { sections?: unknown }).sections;
+    if (Array.isArray(sections)) {
+      return sections
+        .map((section) => {
+          if (!section || typeof section !== "object") return null;
+          const record = section as Record<string, unknown>;
+          return {
+            title: typeof record.title === "string" ? record.title : "Plan section",
+            body: typeof record.body === "string" ? record.body : JSON.stringify(record),
+          };
+        })
+        .filter((section): section is { title: string; body: string } => Boolean(section));
+    }
+  }
+  return [{ title: "Generated draft", body: typeof response === "string" ? response : JSON.stringify(response ?? {}) }];
+}
 
 export default function TrainerAiDraftReview() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const clientId = id || "user-aarav";
-  const client = zookDemoFixtures.users.find((user) => user.id === clientId) ?? zookDemoFixtures.users.find((user) => user.id === "user-aarav");
-  const profile = zookDemoFixtures.memberProfiles.find((item) => item.userId === client?.id);
-  const [draft, setDraft] = useState<Draft | null>(zookDemoFixtures.planDrafts[0] ?? null);
+  const { activeOrgId, token } = useAuth();
+  const clientsQuery = useTrainerClients();
+  const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [status, setStatus] = useState("");
 
   async function generateDraft() {
-    const nextDraft = await zookMockServices.planService.generateAiPlanDraft({
-      trainerUserId: "user-rhea",
-      clientId: client?.id ?? "user-aarav",
-      goal: profile?.goal ?? "Muscle gain",
+    if (!token || !activeOrgId || !client) {
+      setStatus("Select an assigned client before generating.");
+      return;
+    }
+    const goal = client.summary?.fitnessGoal ?? client.profile?.fitnessGoal ?? "General fitness";
+    const result = await mobileApiFetch<{
+      response: unknown;
+      createdPlan?: { id: string; title: string };
+    }>("/ai/generate-plan", {
+      method: "POST",
+      token,
+      orgId: activeOrgId,
+      body: {
+        orgId: activeOrgId,
+        title: `${client.user?.name ?? "Client"} workout draft`,
+        type: "WORKOUT",
+        prompt: `Create a safe trainer-reviewed workout plan for ${client.user?.name ?? "this member"} with goal: ${goal}.`,
+        persistDraft: true,
+      },
     });
-    setDraft(nextDraft);
+    setDraft({
+      planId: result.createdPlan?.id,
+      title: result.createdPlan?.title ?? "AI workout draft",
+      goal,
+      difficulty: "Coach review",
+      sections: sectionsFromResponse(result.response),
+    });
     setStatus("Draft generated. Review is still required.");
   }
 
   async function assignDraft() {
-    if (!draft || !client) return;
-    const assignedPlan = await zookMockServices.planService.assignDraft(draft.id, client.id);
-    setStatus(`${assignedPlan.title} assigned. The client can now see it.`);
+    if (!draft?.planId || !client || !activeOrgId || !token) return;
+    await mobileApiFetch(`/orgs/${activeOrgId}/plans/${draft.planId}/assign`, {
+      method: "POST",
+      token,
+      orgId: activeOrgId,
+      body: { assignedToUserId: client.memberUserId, audience: "selected_member" },
+    });
+    setStatus(`${draft.title} assigned. The client can now see it.`);
   }
 
   return (
@@ -59,7 +113,7 @@ export default function TrainerAiDraftReview() {
             subtitle="Review, edit, then approve before assigning."
             leading={
               <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace(`/trainer/client/${client?.id ?? "user-aarav"}`)}
+                onPress={() => router.canGoBack() ? router.back() : router.replace(`/trainer/client/${client?.memberUserId ?? clientId}`)}
                 accessibilityRole="button"
                 accessibilityLabel="Back to client detail"
                 style={styles.iconButton}
@@ -79,7 +133,7 @@ export default function TrainerAiDraftReview() {
                   <IconBubble icon="reader-outline" tone="amber" />
                   <View style={styles.summaryCopy}>
                     <Text style={styles.cardTitle}>{draft.title}</Text>
-                    <Text style={styles.cardBody}>Client: {client?.name ?? "Aarav Mehta"}</Text>
+                    <Text style={styles.cardBody}>Client: {client?.user?.name ?? "Assigned client"}</Text>
                   </View>
                 </View>
                 <DetailRow label="Goal" value={draft.goal || "Muscle gain"} />

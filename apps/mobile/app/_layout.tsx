@@ -132,6 +132,7 @@ function LayoutContent() {
         <Stack.Screen name="assistant" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="owner/member/[id]" options={{ animation: "slide_from_right" }} />
       </Stack>
     </>
   );

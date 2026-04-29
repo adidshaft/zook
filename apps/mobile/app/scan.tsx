@@ -3,7 +3,6 @@ import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "ex
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { zookMockServices } from "@zook/core";
 import {
   BottomNav,
   GlassCard,
@@ -12,17 +11,34 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { mobileApiFetch } from "@/lib/api";
+import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
-type Result = Awaited<ReturnType<typeof zookMockServices.attendanceService.scanQr>>;
+type ScanResult = {
+  attendance: {
+    id: string;
+    status?: string | null;
+    checkedInAt?: string | null;
+    branchName?: string | null;
+    planName?: string | null;
+    entryCode?: string | null;
+    reason?: string | null;
+  };
+  status?: string | null;
+  duplicate?: boolean;
+  suspiciousFlags?: unknown;
+};
 type ScanState = "idle" | "checking" | "accepted" | "failed";
 
 export default function Scan() {
   const router = useRouter();
+  const { token } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [code, setCode] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const completedRef = useRef(false);
 
   useEffect(() => {
@@ -33,6 +49,16 @@ export default function Scan() {
 
 
 
+  function scanReason(result: ScanResult) {
+    if (Array.isArray(result.suspiciousFlags) && result.suspiciousFlags.length) {
+      return result.suspiciousFlags.join(", ");
+    }
+    if (result.duplicate) {
+      return "Already checked in today.";
+    }
+    return result.attendance.reason ?? "";
+  }
+
   async function completeScan(payload: string) {
     if (completedRef.current) {
       return;
@@ -40,24 +66,34 @@ export default function Scan() {
     completedRef.current = true;
     setBusy(true);
     setScanState("checking");
+    setErrorMessage("");
     try {
-      const result: Result = await zookMockServices.attendanceService.scanQr(payload);
-      setScanState(result.status === "REJECTED" || result.status === "FLAGGED" ? "failed" : "accepted");
+      if (!token) {
+        throw new Error("Sign in again before scanning.");
+      }
+      const result = await mobileApiFetch<ScanResult>("/attendance/scan", {
+        method: "POST",
+        token,
+        body: { qrPayload: payload },
+      });
+      const status = result.status ?? result.attendance.status ?? "APPROVED";
+      setScanState(status === "REJECTED" || status === "FLAGGED" ? "failed" : "accepted");
       router.push({
         pathname: "/attendance/[attendanceRecordId]",
         params: {
-          attendanceRecordId: result.id,
-          status: result.status,
-          entryCode: result.entryCode,
-          branchName: result.branchName,
-          planName: result.planName,
-          checkedInAt: result.checkedInAt,
-          reason: result.reason,
+          attendanceRecordId: result.attendance.id,
+          status,
+          entryCode: result.attendance.entryCode ?? "",
+          branchName: result.attendance.branchName ?? "",
+          planName: result.attendance.planName ?? "",
+          checkedInAt: result.attendance.checkedInAt ?? "",
+          reason: scanReason(result),
         },
       });
-    } catch {
+    } catch (error) {
       completedRef.current = false;
       setScanState("failed");
+      setErrorMessage(getApiErrorMessage(error));
     } finally {
       setBusy(false);
     }
@@ -144,7 +180,7 @@ export default function Scan() {
                 value={code}
                 onChangeText={setCode}
                 autoCapitalize="characters"
-                placeholder="ZK-4821"
+                placeholder="Paste QR code"
                 placeholderTextColor={colors.subtle}
                 style={styles.codeInput}
                 returnKeyType="done"
@@ -161,6 +197,13 @@ export default function Scan() {
               </Pressable>
             </View>
           </GlassCard>
+
+          {errorMessage ? (
+            <GlassCard variant="warning" contentStyle={styles.errorContent}>
+              <Ionicons name="alert-circle-outline" size={18} color={colors.amber} />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </GlassCard>
+          ) : null}
 
           {__DEV__ ? (
             <Pressable
@@ -243,6 +286,16 @@ const styles = StyleSheet.create({
   permissionButton: {
     minHeight: 38,
     marginTop: spacing.xs,
+  },
+  errorContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  errorText: {
+    flex: 1,
+    color: colors.text,
+    ...typography.small,
   },
   scannerOverlay: {
     position: "absolute",

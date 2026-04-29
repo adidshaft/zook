@@ -1,33 +1,54 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { zookDemoFixtures, zookMockServices } from "@zook/core";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   ActiveGymPill,
   BottomNav,
-  Card,
   EmptyState,
+  GlassCard,
+  GlassInput,
   IconBubble,
   ListRow,
   MetricTile,
   Pill,
   PrimaryButton,
-  Screen,
   SecondaryButton,
   SectionHeader,
+  ZookScreen,
 } from "@/components/primitives";
 import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
-import { colors, layout } from "@/lib/theme";
+import {
+  useApproveAttendance,
+  useApproveJoinRequest,
+  useOrgActiveShopOrders,
+  useOrgAttendancePending,
+  useOrgJoinRequests,
+  useOrgMembers,
+  useOrgRecentPayments,
+  useOwnerDashboard,
+  useRejectJoinRequest,
+} from "@/lib/query-hooks";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
-type OwnerView = "command" | "approvals" | "revenue" | "stock";
+type OwnerView = "command" | "approvals" | "revenue" | "stock" | "members";
 type Drilldown = Exclude<OwnerView, "command">;
 
 function normalizeView(value: string | string[] | undefined): OwnerView {
   const raw = Array.isArray(value) ? value[0] : value;
-  if (raw === "approvals" || raw === "revenue" || raw === "stock") return raw;
+  if (raw === "approvals" || raw === "revenue" || raw === "stock" || raw === "members") return raw;
   return "command";
 }
+
+const ownerSegments: Array<{ label: string; value: OwnerView }> = [
+  { label: "Command", value: "command" },
+  { label: "Approvals", value: "approvals" },
+  { label: "Revenue", value: "revenue" },
+  { label: "Stock", value: "stock" },
+  { label: "Members", value: "members" },
+];
 
 function offlineDemoViewOverride() {
   return isOfflineDemoMode() ? process.env.EXPO_PUBLIC_OFFLINE_DEMO_VIEW : undefined;
@@ -47,22 +68,63 @@ function titleCase(value: string) {
     .join(" ");
 }
 
+function titleForView(view: OwnerView) {
+  if (view === "command") return "Command";
+  if (view === "approvals") return "Approvals";
+  if (view === "revenue") return "Revenue";
+  if (view === "members") return "Members";
+  return "Stock";
+}
+
+function memberInitials(name?: string | null, email?: string | null) {
+  const source = name?.trim() || email?.trim() || "Member";
+  return source
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
 export default function Owner() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const view = normalizeView(params.view ?? offlineDemoViewOverride());
-  const [, setVersion] = useState(0);
-  const joinRequests = zookDemoFixtures.joinRequests.filter((request) => request.status === "PENDING");
-  const attentionAttempts = zookMockServices.state.attendanceAttempts.filter(
-    (attempt) => attempt.status === "PENDING_APPROVAL" || attempt.status === "FLAGGED",
+  const [memberSearch, setMemberSearch] = useState("");
+  const [actionStatus, setActionStatus] = useState("");
+  const dashboardQuery = useOwnerDashboard();
+  const membersQuery = useOrgMembers();
+  const joinRequestsQuery = useOrgJoinRequests();
+  const attentionQuery = useOrgAttendancePending();
+  const paymentsQuery = useOrgRecentPayments();
+  const ordersQuery = useOrgActiveShopOrders();
+  const approveAttendanceMutation = useApproveAttendance();
+  const approveJoinRequestMutation = useApproveJoinRequest();
+  const rejectJoinRequestMutation = useRejectJoinRequest();
+  const dashboard = dashboardQuery.data;
+  const joinRequests = (joinRequestsQuery.data?.joinRequests ?? dashboard?.joinRequests ?? []).filter(
+    (request) => String(request.status ?? "").toLowerCase() === "pending",
   );
-  const lowStock = zookDemoFixtures.shopProducts.filter((product) => product.stock <= product.lowStockThreshold);
-  const payments = zookMockServices.state.payments;
-  const orders = zookMockServices.state.shopOrders.filter((order) => order.status === "READY_FOR_PICKUP" || order.status === "PAID");
-  const activeMembers = zookDemoFixtures.memberships.filter((membership) => membership.status === "ACTIVE").length;
-  const todayCheckIns = zookMockServices.state.attendanceAttempts.filter((attempt) => attempt.status === "APPROVED").length;
-  const expiringSoon = zookDemoFixtures.memberships.filter((membership) => membership.status === "ACTIVE" && membership.daysLeft <= 7).length;
+  const firstJoinRequest = joinRequests[0];
+  const attentionAttempts = attentionQuery.data?.records ?? [];
+  const lowStock = dashboard?.products ?? [];
+  const payments = paymentsQuery.data?.payments ?? [];
+  const orders = ordersQuery.data?.orders ?? [];
+  const activeMembers = dashboard?.summary?.activeMembers ?? 0;
+  const todayCheckIns = dashboard?.summary?.todayAttendance ?? 0;
+  const expiringSoon = dashboard?.summary?.expiringMemberships ?? 0;
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
-  const revenuePaise = payments.reduce((sum, payment) => sum + payment.amountPaise, 0) + orders.reduce((sum, order) => sum + order.totalPaise, 0);
+  const revenuePaise =
+    dashboard?.summary?.revenuePaise ??
+    payments.reduce((sum, payment) => sum + payment.amountPaise, 0) +
+      orders.reduce((sum, order) => sum + order.totalPaise, 0);
+  const memberSearchTerm = memberSearch.trim().toLowerCase();
+  const members = membersQuery.data?.members ?? [];
+  const filteredMembers = members.filter((member) => {
+    const name = member.user?.name.toLowerCase() ?? "";
+    const email = member.user?.email.toLowerCase() ?? "";
+    return !memberSearchTerm || name.includes(memberSearchTerm) || email.includes(memberSearchTerm);
+  });
   const needsAttention = [
     {
       id: "approvals",
@@ -112,17 +174,17 @@ export default function Owner() {
   const recentActivity = [
     {
       id: "payment",
-      title: "Priya recorded offline payment",
-      subtitle: payments[0] ? `${payments[0].summary} · ${titleCase(payments[0].mode)}` : "Manual payments will appear here",
+      title: payments[0]?.user?.name ? `${payments[0].user.name} payment recorded` : "Recent payment activity",
+      subtitle: payments[0] ? `${titleCase(payments[0].purpose)} · ${titleCase(payments[0].mode)}` : "Manual payments will appear here",
       tone: "lime",
       label: "Audit",
     },
     {
       id: "plan",
-      title: "Coach Rhea assigned Push Day",
-      subtitle: "Aarav Mehta · visible to member",
+      title: firstJoinRequest?.userName ? `${firstJoinRequest.userName} requested access` : "No new join-request activity",
+      subtitle: firstJoinRequest ? String(firstJoinRequest.status ?? "Pending").replace(/_/g, " ") : "Member plan activity appears in trainer views",
       tone: "blue",
-      label: "Plan",
+      label: "Join",
     },
     {
       id: "stock",
@@ -134,26 +196,47 @@ export default function Owner() {
   ] as const;
 
   async function approveAttendance(attemptId: string) {
-    await zookMockServices.receptionistService.approveAttendance(attemptId, "Owner approved from mobile command view");
-    setVersion((current) => current + 1);
+    await approveAttendanceMutation.mutateAsync(attemptId);
+    setActionStatus("Check-in approved.");
   }
 
-  function bumpVersion() {
-    setVersion((current) => current + 1);
+  async function approveJoinRequest(joinRequestId: string) {
+    await approveJoinRequestMutation.mutateAsync(joinRequestId);
+    setActionStatus("Join request approved.");
+  }
+
+  async function rejectJoinRequest(joinRequestId: string) {
+    await rejectJoinRequestMutation.mutateAsync(joinRequestId);
+    setActionStatus("Join request rejected.");
   }
 
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+    <ZookScreen>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
-            <ActiveGymPill label="Iron Temple Gym · Pune" />
-            <Text style={styles.title}>
-              {view === "command" ? "Command" : view === "approvals" ? "Approvals" : view === "revenue" ? "Revenue" : "Stock"}
-            </Text>
+            <ActiveGymPill label={dashboard?.organization?.name ?? "Active gym"} />
+            <Text style={styles.title}>{titleForView(view)}</Text>
             <Text style={styles.subtitle}>Owner mobile command view · web handles full configuration.</Text>
           </View>
           <Pill tone="lime">Owner</Pill>
+        </View>
+
+        <View style={styles.segmentRow}>
+          {ownerSegments.map((segment) => {
+            const active = view === segment.value;
+            return (
+              <Pressable
+                key={segment.value}
+                onPress={() => router.replace(segment.value === "command" ? "/owner" : `/owner?view=${segment.value}`)}
+                accessibilityRole="button"
+                accessibilityLabel={segment.label}
+                style={[styles.segmentPill, active ? styles.segmentPillActive : null]}
+              >
+                <Text style={[styles.segmentText, active ? styles.segmentTextActive : null]}>{segment.label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         {view === "command" ? (
@@ -166,7 +249,7 @@ export default function Owner() {
             </View>
 
             <SectionHeader title="Needs attention" />
-            <Card style={styles.stack}>
+            <GlassCard contentStyle={styles.stack}>
               {needsAttention.map((item) => (
                 <ListRow
                   key={item.id}
@@ -176,14 +259,14 @@ export default function Owner() {
                   trailing={<Pill tone={item.tone}>{String(item.count)}</Pill>}
                 />
               ))}
-            </Card>
+            </GlassCard>
 
             <SectionHeader title="Recent activity" />
-            <Card style={styles.stack}>
+            <GlassCard contentStyle={styles.stack}>
               {recentActivity.map((activity) => (
                 <ListRow key={activity.id} title={activity.title} subtitle={activity.subtitle} trailing={<Pill tone={activity.tone}>{activity.label}</Pill>} />
               ))}
-            </Card>
+            </GlassCard>
 
             <View style={styles.drilldownGrid}>
               <PrimaryButton href="/owner?view=approvals" icon="checkmark-done-outline" style={styles.drilldownButton}>
@@ -196,9 +279,71 @@ export default function Owner() {
                 Stock
               </SecondaryButton>
             </View>
-            <Card variant="compact" style={styles.noteCard}>
+            <GlassCard variant="compact" contentStyle={styles.noteCard}>
               <Text style={styles.noteText}>Mobile command is for fast decisions. Full gym configuration stays on web.</Text>
-            </Card>
+            </GlassCard>
+          </>
+        ) : null}
+
+        {view === "members" ? (
+          <>
+            <GlassInput
+              value={memberSearch}
+              onChangeText={setMemberSearch}
+              placeholder="Search by name or email"
+              leading={<Ionicons name="search-outline" size={17} color={colors.muted} />}
+            />
+
+            <SectionHeader title="Members" subtitle={`${filteredMembers.length} members`} />
+            <View style={styles.membersStack}>
+              {membersQuery.isLoading ? (
+                <GlassCard variant="compact" contentStyle={styles.membersStateContent}>
+                  <IconBubble icon="hourglass-outline" tone="amber" size={40} />
+                  <Text style={styles.membersStateText}>Loading members...</Text>
+                </GlassCard>
+              ) : null}
+
+              {!membersQuery.isLoading && !filteredMembers.length ? (
+                <GlassCard variant="compact" contentStyle={styles.membersStateContent}>
+                  <IconBubble icon="people-outline" tone="neutral" size={40} />
+                  <Text style={styles.membersStateText}>No members found</Text>
+                </GlassCard>
+              ) : null}
+
+              {!membersQuery.isLoading
+                ? filteredMembers.map((member) => {
+                    const name = member.user?.name ?? "Member";
+                    const email = member.user?.email ?? "No email";
+                    const photoUrl = member.user?.profilePhotoUrl ?? member.profile.profilePhotoUrl;
+                    const goal = member.user?.fitnessGoal ?? member.profile.fitnessGoal;
+                    return (
+                      <GlassCard
+                        key={member.profile.userId}
+                        variant="compact"
+                        pressable
+                        onPress={() => router.push(`/owner/member/${member.profile.userId}`)}
+                        contentStyle={styles.memberCardContent}
+                      >
+                        {photoUrl ? (
+                          <Image source={{ uri: photoUrl }} style={styles.memberAvatarImage} contentFit="cover" />
+                        ) : (
+                          <View style={styles.memberAvatar}>
+                            <Text style={styles.memberAvatarText}>{memberInitials(name, email)}</Text>
+                          </View>
+                        )}
+                        <View style={styles.memberCopy}>
+                          <View style={styles.memberTopRow}>
+                            <Text numberOfLines={1} style={styles.memberName}>{name}</Text>
+                            {goal ? <Pill tone="blue">{goal}</Pill> : null}
+                          </View>
+                          <Text numberOfLines={1} style={styles.memberEmail}>{email}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={17} color={colors.muted} />
+                      </GlassCard>
+                    );
+                  })
+                : null}
+            </View>
           </>
         ) : null}
 
@@ -213,23 +358,35 @@ export default function Owner() {
             <View style={styles.stack}>
               {joinRequests.length ? (
                 joinRequests.map((request) => (
-                  <Card key={request.id} style={styles.stack}>
+                  <GlassCard key={request.id} contentStyle={styles.stack}>
                     <ListRow
-                      title={request.userName}
-                      subtitle={`${request.userEmail} · Referral ${request.referralCode}`}
+                      title={request.userName ?? "Join request"}
+                      subtitle={`${request.userEmail ?? request.userId} · Referral ${request.referralCode ?? "none"}`}
                       leading={<IconBubble icon="person-add-outline" tone="amber" />}
                       trailing={<Pill tone="amber">Pending</Pill>}
                     />
                     <View style={styles.actionRow}>
-                      <PrimaryButton onPress={bumpVersion} style={styles.actionHalf}>Approve</PrimaryButton>
-                      <SecondaryButton onPress={bumpVersion} style={styles.actionHalf}>Reject</SecondaryButton>
+                      <PrimaryButton
+                        onPress={() => void approveJoinRequest(request.id)}
+                        disabled={approveJoinRequestMutation.isPending}
+                        style={styles.actionHalf}
+                      >
+                        Approve
+                      </PrimaryButton>
+                      <SecondaryButton
+                        onPress={() => void rejectJoinRequest(request.id)}
+                        disabled={rejectJoinRequestMutation.isPending}
+                        style={styles.actionHalf}
+                      >
+                        Reject
+                      </SecondaryButton>
                     </View>
-                  </Card>
+                  </GlassCard>
                 ))
               ) : (
-                <Card variant="compact">
+                <GlassCard variant="compact">
                   <EmptyState title="No join requests" body="New public join requests will show up here for owner approval." />
-                </Card>
+                </GlassCard>
               )}
             </View>
 
@@ -237,20 +394,26 @@ export default function Owner() {
             <View style={styles.stack}>
               {attentionAttempts.length ? (
                 attentionAttempts.map((attempt) => (
-                  <Card key={attempt.id} style={styles.stack}>
+                  <GlassCard key={attempt.id} contentStyle={styles.stack}>
                     <ListRow
-                      title={attempt.memberName}
-                      subtitle={`${titleCase(attempt.status)} · ${cleanReviewReason(attempt.reason)}`}
+                      title={attempt.user?.name ?? attempt.user?.email ?? "Member check-in"}
+                      subtitle={`${titleCase(attempt.status)} · ${cleanReviewReason(Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null)}`}
                       leading={<IconBubble icon={attempt.status === "FLAGGED" ? "alert-outline" : "qr-code-outline"} tone={attempt.status === "FLAGGED" ? "red" : "amber"} />}
-                      trailing={<Pill tone={attempt.status === "FLAGGED" ? "red" : "amber"}>{attempt.entryCode}</Pill>}
+                      trailing={<Pill tone={attempt.status === "FLAGGED" ? "red" : "amber"}>{titleCase(attempt.status)}</Pill>}
                     />
-                    <PrimaryButton onPress={() => void approveAttendance(attempt.id)} icon="checkmark-outline">Approve Check-in</PrimaryButton>
-                  </Card>
+                    <PrimaryButton
+                      onPress={() => void approveAttendance(attempt.id)}
+                      disabled={approveAttendanceMutation.isPending}
+                      icon="checkmark-outline"
+                    >
+                      Approve Check-in
+                    </PrimaryButton>
+                  </GlassCard>
                 ))
               ) : (
-                <Card variant="compact">
+                <GlassCard variant="compact">
                   <EmptyState title="Attendance queue clear" body="Pending and flagged scans will appear here when the desk needs help." />
-                </Card>
+                </GlassCard>
               )}
             </View>
           </>
@@ -263,13 +426,13 @@ export default function Owner() {
               <MetricTile label="Manual records" value={formatInr(payments.reduce((sum, payment) => sum + payment.amountPaise, 0))} detail="Cash and direct UPI" tone="amber" style={styles.metricHalf} />
             </View>
             <SectionHeader title="Recent transactions" subtitle="A quick audit trail for owner review." />
-            <Card style={styles.stack}>
+            <GlassCard contentStyle={styles.stack}>
               {payments.length ? (
                 payments.map((payment) => (
                   <ListRow
                     key={payment.id}
-                    title={payment.summary}
-                    subtitle={`${titleCase(payment.mode)} · ${payment.reason}`}
+                    title={payment.user?.name ?? titleCase(payment.purpose)}
+                    subtitle={`${titleCase(payment.mode)} · ${titleCase(payment.status)}`}
                     leading={<IconBubble icon="card-outline" tone={payment.status === "SUCCEEDED" ? "lime" : "amber"} />}
                     trailing={<Pill tone={payment.status === "SUCCEEDED" ? "lime" : "amber"}>{formatInr(payment.amountPaise)}</Pill>}
                   />
@@ -280,17 +443,17 @@ export default function Owner() {
               {orders.map((order) => (
                 <ListRow
                   key={order.id}
-                  title="Shop pickup order"
-                  subtitle={`${order.pickupCode} · ${titleCase(order.status)}`}
+                  title={order.user?.name ?? "Shop pickup order"}
+                  subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
                   leading={<IconBubble icon="bag-outline" tone="lime" />}
                   trailing={<Pill tone="lime">{formatInr(order.totalPaise)}</Pill>}
-                />
-              ))}
-            </Card>
+                  />
+                ))}
+            </GlassCard>
 
-            <Card variant="compact" style={styles.noteCard}>
+            <GlassCard variant="compact" contentStyle={styles.noteCard}>
               <Text style={styles.noteText}>Use the web dashboard for refunds, exports, and detailed reconciliation.</Text>
-            </Card>
+            </GlassCard>
           </>
         ) : null}
 
@@ -301,7 +464,7 @@ export default function Owner() {
               <MetricTile label="Pickups" value={String(orders.length)} detail="Paid or ready" tone="lime" style={styles.metricHalf} />
             </View>
             <SectionHeader title="Low-stock products" subtitle="Quick stock visibility. Full inventory lives on web." />
-            <Card style={styles.stack}>
+            <GlassCard contentStyle={styles.stack}>
               {lowStock.length ? (
                 lowStock.map((product) => (
                   <ListRow
@@ -315,15 +478,15 @@ export default function Owner() {
               ) : (
                 <EmptyState title="Stock looks healthy" body="Products below their threshold will appear here." />
               )}
-            </Card>
+            </GlassCard>
             <SectionHeader title="Pending pickups" />
-            <Card style={styles.stack}>
+            <GlassCard contentStyle={styles.stack}>
               {orders.length ? (
                 orders.map((order) => (
                   <ListRow
                     key={order.id}
-                    title="Aarav Mehta"
-                    subtitle={`${order.pickupCode} · ${titleCase(order.status)}`}
+                    title={order.user?.name ?? "Member pickup"}
+                    subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
                     leading={<IconBubble icon="bag-check-outline" tone="lime" />}
                     trailing={<Pill tone="lime">{formatInr(order.totalPaise)}</Pill>}
                   />
@@ -331,18 +494,22 @@ export default function Owner() {
               ) : (
                 <EmptyState title="No pickups waiting" body="Paid shop orders will show up here until reception fulfills them." />
               )}
-            </Card>
+            </GlassCard>
           </>
         ) : null}
+        {actionStatus ? <Text style={styles.statusText}>{actionStatus}</Text> : null}
       </ScrollView>
       <BottomNav role="OWNER" activeView={view === "command" ? undefined : view} />
-    </Screen>
+    </ZookScreen>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
     gap: 16,
     paddingBottom: layout.bottomNavHeight + 40,
   },
@@ -356,15 +523,39 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 8,
   },
+  segmentRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  segmentPill: {
+    minHeight: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  segmentPillActive: {
+    borderColor: "rgba(185,244,85,0.34)",
+    backgroundColor: "rgba(185,244,85,0.14)",
+  },
+  segmentText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  segmentTextActive: {
+    color: colors.lime,
+  },
   title: {
     color: colors.text,
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: "700",
+    ...typography.screenTitle,
   },
   subtitle: {
     color: colors.muted,
-    lineHeight: 20,
+    ...typography.body,
   },
   metricGrid: {
     flexDirection: "row",
@@ -377,6 +568,61 @@ const styles = StyleSheet.create({
   },
   stack: {
     gap: 12,
+  },
+  membersStack: {
+    gap: spacing.md,
+  },
+  membersStateContent: {
+    minHeight: 72,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  membersStateText: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  memberCardContent: {
+    minHeight: 72,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  memberAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.panel,
+  },
+  memberAvatarText: {
+    color: colors.bg,
+    ...typography.caption,
+  },
+  memberCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  memberTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  memberName: {
+    flex: 1,
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  memberEmail: {
+    color: colors.muted,
+    ...typography.small,
   },
   drilldownGrid: {
     flexDirection: "row",
@@ -392,7 +638,11 @@ const styles = StyleSheet.create({
   },
   noteText: {
     color: colors.muted,
-    lineHeight: 21,
+    ...typography.body,
+  },
+  statusText: {
+    color: colors.lime,
+    ...typography.caption,
   },
   actionRow: {
     flexDirection: "row",

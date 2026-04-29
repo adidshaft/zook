@@ -2,7 +2,6 @@ import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import type { Href } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { zookDemoFixtures, zookMockServices } from "@zook/core";
 import {
   AuditWarning,
   BottomNav,
@@ -18,6 +17,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type ClientTab = "summary" | "plans" | "progress" | "notes";
@@ -36,12 +36,12 @@ export default function TrainerClientDetail() {
   const [tab, setTab] = useState<ClientTab>("summary");
   const [status, setStatus] = useState("");
   const [planTitle, setPlanTitle] = useState("Push Day Strength Block");
-  const client = zookDemoFixtures.users.find((user) => user.id === clientId) ?? zookDemoFixtures.users.find((user) => user.id === "user-aarav");
-  const profile = zookDemoFixtures.memberProfiles.find((item) => item.userId === client?.id);
-  const membership = zookDemoFixtures.memberships.find((item) => item.memberUserId === client?.id);
-  const ptPack = zookDemoFixtures.ptPacks.find((item) => item.memberUserId === client?.id);
-  const plans = zookMockServices.state.trainingPlans.filter((plan) => plan.memberUserId === client?.id);
-  const aiDraftHref = `/trainer/client/${client?.id ?? "user-aarav"}/ai-draft` as Href;
+  const clientsQuery = useTrainerClients();
+  const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
+  const aiDraftHref = `/trainer/client/${client?.memberUserId ?? clientId}/ai-draft` as Href;
+  const clientName = client?.user?.name ?? "Assigned client";
+  const fitnessGoal = client?.summary?.fitnessGoal ?? client?.profile?.fitnessGoal ?? "General fitness";
+  const activePlans = client?.summary?.activePlans ?? 0;
 
   return (
     <>
@@ -72,13 +72,13 @@ export default function TrainerClientDetail() {
             <View style={styles.clientTop}>
               <IconBubble icon="person-outline" tone="lime" size={54} />
               <View style={styles.clientCopy}>
-                <Text style={styles.clientName}>{client?.name ?? "Aarav Mehta"}</Text>
-                <Text style={styles.cardBody}>Active member · Goal: {profile?.goal ?? "Muscle gain"}</Text>
+                <Text style={styles.clientName}>{clientName}</Text>
+                <Text style={styles.cardBody}>Assigned member · Goal: {fitnessGoal}</Text>
               </View>
             </View>
             <View style={styles.chipRow}>
-              <StatusChip status={`PT Pack: ${ptPack?.sessionsLeft ?? 6} sessions left`} tone="lime" />
-              <StatusChip status={`Tracking: ${profile?.trainerVisibleTracking ? "Opted in" : "Private"}`} tone={profile?.trainerVisibleTracking ? "lime" : "amber"} />
+              <StatusChip status={`Active plans: ${activePlans}`} tone={activePlans ? "lime" : "neutral"} />
+              <StatusChip status="Trainer scoped" tone="lime" />
             </View>
           </GlassCard>
 
@@ -95,11 +95,11 @@ export default function TrainerClientDetail() {
 
           {tab === "summary" ? (
             <GlassCard variant="compact" contentStyle={styles.stack}>
-              <ListRow title="Fitness goal" subtitle={profile?.goal ?? "Muscle gain"} trailing={<StatusChip status="Active" />} />
-              <ListRow title="Diet note" subtitle={profile?.dietPreference ?? "Vegetarian"} trailing={<StatusChip status="Visible" tone="neutral" />} />
-              <ListRow title="Allergy note" subtitle={profile?.allergyNote ?? "None added"} trailing={<StatusChip status="Clear" tone="neutral" />} />
-              <ListRow title="Last check-in" subtitle={`Today ${membership?.lastCheckInLabel ?? "7:14 AM"}`} trailing={<StatusChip status="Checked in" tone="lime" />} />
-              <ListRow title="Recent progress" subtitle="2 workouts completed this week" trailing={<StatusChip status="Review" tone="amber" />} />
+              <ListRow title="Fitness goal" subtitle={fitnessGoal} trailing={<StatusChip status={client?.active ? "Active" : "Assigned"} />} />
+              <ListRow title="Diet note" subtitle={client?.summary?.dietPreference ?? "Not shared"} trailing={<StatusChip status="Visible" tone="neutral" />} />
+              <ListRow title="Allergy note" subtitle={client?.summary?.allergies ?? "None added"} trailing={<StatusChip status="Clear" tone="neutral" />} />
+              <ListRow title="Body progress" subtitle={client?.summary?.weightKg ? `${client.summary.weightKg} kg` : "No recent entry"} trailing={<StatusChip status="Tracking" tone="neutral" />} />
+              <ListRow title="Recent progress" subtitle={`${activePlans} active assigned plans`} trailing={<StatusChip status="Review" tone="amber" />} />
             </GlassCard>
           ) : null}
 
@@ -123,9 +123,9 @@ export default function TrainerClientDetail() {
 
           {tab === "progress" ? (
             <GlassCard variant="compact" contentStyle={styles.stack}>
-              <ListRow title="Weekly workouts" subtitle="2 completed this week" trailing={<StatusChip status="40%" tone="lime" />} />
-              <ListRow title="Last check-in" subtitle="Today 7:14 AM · Main Branch" trailing={<StatusChip status="QR" tone="neutral" />} />
-              <ListRow title="Assigned plans" subtitle={`${plans.filter((plan) => plan.visibleToMember).length} visible to client`} trailing={<StatusChip status="Scoped" tone="lime" />} />
+              <ListRow title="Weekly workouts" subtitle="Use member tracking summary for details" trailing={<StatusChip status="Scoped" tone="neutral" />} />
+              <ListRow title="Last check-in" subtitle="Available in owner/member view" trailing={<StatusChip status="QR" tone="neutral" />} />
+              <ListRow title="Assigned plans" subtitle={`${activePlans} active for client`} trailing={<StatusChip status="Scoped" tone="lime" />} />
             </GlassCard>
           ) : null}
 

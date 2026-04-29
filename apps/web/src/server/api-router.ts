@@ -87,10 +87,16 @@ import { applyPaymentSessionStatus } from "./payment-runtime";
 import { deliverPushForNotification } from "./push-runtime";
 import { assertMinorConsentGranted } from "./minor-gates";
 import {
+  getActiveMembershipData,
   getMemberHomeData,
   getMyShopOrders,
+  getOrganizationActiveShopOrders,
+  getOrganizationAttendanceToday,
   getOrganizationDashboardData,
-  getOrganizationMembers
+  getOrganizationMembers,
+  getOrganizationPendingAttendance,
+  getOrganizationRecentPayments,
+  getPlanExercisesForUser
 } from "./read-models";
 
 const emailProvider = getEmailProvider();
@@ -122,7 +128,7 @@ const manualMembershipPaymentSchema = z
     planId: z.string().optional(),
     subscriptionId: z.string().optional(),
     amountPaise: z.number().int().positive(),
-    mode: z.enum(["CASH", "DIRECT_UPI", "BANK_TRANSFER", "OTHER"]),
+    mode: z.enum(["CASH", "DIRECT_UPI", "BANK_TRANSFER", "CARD", "OTHER"]),
     proofAssetId: z.string().optional(),
     receiptNumber: z.string().optional(),
     notes: z.string().max(500).optional()
@@ -302,6 +308,25 @@ const planProgressInputSchema = z.object({
   orgId: z.string().optional(),
   progressJson: z.record(z.string(), z.any()).default({}),
   completionPct: z.number().int().min(0).max(100).default(0),
+  feedback: z.string().max(500).optional()
+});
+
+const planCompletionInputSchema = z.object({
+  orgId: z.string().optional(),
+  exercises: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string().trim().min(1),
+        completed: z.boolean().default(true),
+        setsCompleted: z.number().int().nonnegative().optional(),
+        reps: z.number().int().nonnegative().optional(),
+        weightKg: z.number().nonnegative().optional(),
+        notes: z.string().max(500).optional()
+      })
+    )
+    .default([]),
+  progressJson: z.record(z.string(), z.any()).default({}),
   feedback: z.string().max(500).optional()
 });
 
@@ -2911,6 +2936,12 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       })
     });
   }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "payments", "recent"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "PAYMENTS_RECORD_OFFLINE");
+    return ok({ payments: await getOrganizationRecentPayments(orgId) });
+  }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "join-requests", /.+/, "approve"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -3369,6 +3400,11 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       session: started.session
     });
   }
+  if (request.method === "GET" && pathMatches(path, ["me", "membership", "active"])) {
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    return ok({ membership: await getActiveMembershipData(userId, ctx.orgId) });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "memberships"])) {
     const userId = requireAuth(await getRequestContext(request));
     const subscriptions = await prisma.memberSubscription.findMany({
@@ -3625,6 +3661,18 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         return { ...record, user, profile, subscription, plan };
       })
     });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "attendance", "today"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ATTENDANCE_APPROVE");
+    return ok({ records: await getOrganizationAttendanceToday(orgId) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "attendance", "pending"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ATTENDANCE_APPROVE");
+    return ok({ records: await getOrganizationPendingAttendance(orgId) });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "attendance", /.+/, "approve"])) {
     const orgId = path[1]!;
@@ -4318,6 +4366,14 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const userId = requireAuth(await getRequestContext(request));
     return ok({ plans: await listPlanAssignmentsForUser(userId) });
   }
+  if (request.method === "GET" && pathMatches(path, ["me", "plans", /.+/, "exercises"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const detail = await getPlanExercisesForUser(userId, path[2]!);
+    if (!detail) {
+      throw notFoundError("Plan assignment not found");
+    }
+    return ok(detail);
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "plans", /.+/])) {
     const userId = requireAuth(await getRequestContext(request));
     const plans = await listPlanAssignmentsForUser(userId, path[2]!);
@@ -4353,6 +4409,40 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       })
     });
     return ok({ progress });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "plans", /.+/, "complete"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const body = planCompletionInputSchema.parse(await readJson(request));
+    const detail = await getPlanExercisesForUser(userId, path[2]!);
+    if (!detail) {
+      throw notFoundError("Plan assignment not found");
+    }
+    const completedExercises = body.exercises.length
+      ? body.exercises.filter((exercise) => exercise.completed).map((exercise) => exercise.name)
+      : detail.exercises.map((exercise) => exercise.name);
+    const progressJson = {
+      ...body.progressJson,
+      completedExercises,
+      exerciseProgress: body.exercises,
+      completedAt: new Date().toISOString()
+    };
+    const progress = await prisma.planProgress.upsert({
+      where: { assignmentId_userId: { assignmentId: path[2]!, userId } },
+      update: clean({
+        progressJson: progressJson as Prisma.InputJsonValue,
+        completionPct: 100,
+        feedback: body.feedback
+      }),
+      create: clean({
+        orgId: body.orgId ?? detail.assignment.orgId,
+        assignmentId: path[2]!,
+        userId,
+        progressJson: progressJson as Prisma.InputJsonValue,
+        completionPct: 100,
+        feedback: body.feedback
+      })
+    });
+    return ok({ progress, completedExercises });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "goals"])) {
     const userId = requireAuth(await getRequestContext(request));
@@ -5006,6 +5096,12 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         items: items.filter((item) => item.orderId === order.id)
       }))
     });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "shop", "orders", "active"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "SHOP_FULFILL_ORDER");
+    return ok({ orders: await getOrganizationActiveShopOrders(orgId) });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "shop", "orders", /.+/, "fulfill"])) {
     const orgId = path[1]!;

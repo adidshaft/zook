@@ -1,30 +1,43 @@
 import { useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { zookDemoFixtures, zookMockServices, type PaymentMode } from "@zook/core";
+import type { PaymentMode } from "@zook/core";
 import {
   ActiveGymPill,
   AuditWarning,
   BottomNav,
-  Card,
   FormField,
+  GlassCard,
   IconBubble,
   ListRow,
   MetricTile,
   Pill,
   PrimaryButton,
-  Screen,
   SearchField,
   SecondaryButton,
   SegmentedControl,
   SectionHeader,
+  ZookScreen,
 } from "@/components/primitives";
 import { formatInr } from "@/lib/formatting";
-import { colors, layout } from "@/lib/theme";
+import {
+  useApproveAttendance,
+  useFulfillShopOrder,
+  useManualAttendance,
+  useOrgActiveShopOrders,
+  useOrgAttendanceToday,
+  useOrgMembers,
+  useReceptionQueue,
+  useRecordManualPayment,
+  useRejectAttendance,
+} from "@/lib/query-hooks";
+import { useAuth } from "@/lib/auth";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type DeskView = "desk" | "members" | "payments" | "orders";
+type DeskPaymentMode = Extract<PaymentMode, "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER">;
 
-const paymentModes: Array<{ label: string; value: PaymentMode }> = [
+const paymentModes: Array<{ label: string; value: DeskPaymentMode }> = [
   { label: "Cash", value: "CASH" },
   { label: "Direct UPI", value: "DIRECT_UPI" },
   { label: "Bank", value: "BANK_TRANSFER" },
@@ -45,79 +58,95 @@ function deskReasonCopy(reason?: string | null) {
 
 export default function Reception() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
+  const { session } = useAuth();
   const view = normalizeView(params.view);
-  const [version, setVersion] = useState(0);
   const [reason, setReason] = useState("Desk confirmed member identity");
-  const [verifyCode, setVerifyCode] = useState("ZK-7319");
+  const [verifyCode, setVerifyCode] = useState("");
   const [verifyMessage, setVerifyMessage] = useState("");
-  const [memberSearch, setMemberSearch] = useState("Aarav");
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>("DIRECT_UPI");
+  const [memberSearch, setMemberSearch] = useState("");
+  const [paymentMode, setPaymentMode] = useState<DeskPaymentMode>("DIRECT_UPI");
   const [amount, setAmount] = useState("2499");
   const [referenceId, setReferenceId] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
   const [paymentReason, setPaymentReason] = useState("Desk collected payment");
   const [paymentStatus, setPaymentStatus] = useState("");
-  const attempts = zookMockServices.state.attendanceAttempts;
-  const approvalQueue = attempts.filter((attempt) => attempt.status === "PENDING_APPROVAL" || attempt.status === "FLAGGED");
-  const pendingCount = attempts.filter((attempt) => attempt.status === "PENDING_APPROVAL").length;
-  const flaggedCount = attempts.filter((attempt) => attempt.status === "FLAGGED").length;
-  const orders = zookMockServices.state.shopOrders;
-  const readyOrders = orders.filter((order) => order.status === "READY_FOR_PICKUP" || order.status === "PAID");
-  const fulfilledCount = orders.filter((order) => order.status === "FULFILLED").length;
-  const member = zookDemoFixtures.users.find((user) => user.id === "user-aarav");
-  const membership = zookDemoFixtures.memberships.find((item) => item.memberUserId === "user-aarav");
-  const profile = zookDemoFixtures.memberProfiles.find((item) => item.userId === "user-aarav");
-  const dueAmount = zookDemoFixtures.payments.find((payment) => payment.memberUserId === "user-aarav")?.amountPaise ?? 249900;
+  const queueQuery = useReceptionQueue();
+  const todayAttendanceQuery = useOrgAttendanceToday();
+  const membersQuery = useOrgMembers();
+  const ordersQuery = useOrgActiveShopOrders();
+  const approveAttendanceMutation = useApproveAttendance();
+  const rejectAttendanceMutation = useRejectAttendance();
+  const manualAttendanceMutation = useManualAttendance();
+  const recordPaymentMutation = useRecordManualPayment();
+  const fulfillOrderMutation = useFulfillShopOrder();
+  const approvalQueue = queueQuery.data?.records ?? [];
+  const pendingCount = approvalQueue.filter((attempt) => attempt.status === "PENDING_APPROVAL").length;
+  const flaggedCount = approvalQueue.filter((attempt) => attempt.status === "FLAGGED").length;
+  const todayCount = todayAttendanceQuery.data?.records.length ?? 0;
+  const readyOrders = ordersQuery.data?.orders ?? [];
+  const fulfilledCount = 0;
   const amountPaise = Math.round(Number(amount || "0") * 100);
-  const canRecordPayment = amountPaise > 0 && paymentReason.trim().length > 0;
   const filteredMembers = useMemo(() => {
     const query = memberSearch.toLowerCase();
-    return zookDemoFixtures.users.filter((user) => user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query));
-  }, [memberSearch, version]);
+    return (membersQuery.data?.members ?? []).filter((member) => {
+      const name = member.user?.name.toLowerCase() ?? "";
+      const email = member.user?.email.toLowerCase() ?? "";
+      const phone = member.user?.phone?.toLowerCase() ?? "";
+      return !query || name.includes(query) || email.includes(query) || phone.includes(query);
+    });
+  }, [memberSearch, membersQuery.data?.members]);
+  const memberRecord = filteredMembers[0] ?? membersQuery.data?.members[0] ?? null;
+  const member = memberRecord?.user ?? null;
+  const membership = memberRecord?.activeSubscription ?? null;
+  const profile = memberRecord?.profile ?? null;
+  const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
+  const dueAmount = amountPaise;
+  const canRecordPayment = amountPaise > 0 && paymentReason.trim().length > 0 && Boolean(member?.id) && Boolean(membership?.id);
 
   async function approveAttendance(attemptId: string) {
-    await zookMockServices.receptionistService.approveAttendance(attemptId, reason);
-    setVersion((current) => current + 1);
+    await approveAttendanceMutation.mutateAsync(attemptId);
   }
 
   async function rejectAttendance(attemptId: string) {
-    await zookMockServices.receptionistService.rejectAttendance(attemptId, reason || "Reception rejected scan after review");
-    setVersion((current) => current + 1);
+    await rejectAttendanceMutation.mutateAsync({
+      recordId: attemptId,
+      reason: reason || "Reception rejected scan after review",
+    });
   }
 
   async function verifyEntryCode() {
-    const result = await zookMockServices.attendanceService.verifyEntryCode(verifyCode);
-    setVerifyMessage(result ? "Code verified. Match member identity before entry or pickup." : "No active entry or pickup code found.");
+    const normalized = verifyCode.trim().toUpperCase();
+    const pickup = readyOrders.find((order) => order.pickupCode?.toUpperCase() === normalized);
+    setVerifyMessage(pickup ? "Pickup code verified. Match member identity before handoff." : "No active pickup code found.");
   }
 
   async function recordPayment() {
-    const payment = await zookMockServices.receptionistService.recordOfflinePayment({
-      memberUserId: "user-aarav",
-      amountPaise: Math.round(Number(amount || "0") * 100),
+    if (!member?.id || !membership?.id) return;
+    const payment = await recordPaymentMutation.mutateAsync({
+      memberUserId: member.id,
+      subscriptionId: membership.id,
+      amountPaise,
       mode: paymentMode,
-      reason: paymentReason,
-      referenceId,
-      note: paymentNote,
+      ...(referenceId ? { receiptNumber: referenceId } : {}),
+      notes: [paymentReason, paymentNote].filter(Boolean).join(" · "),
     });
-    setPaymentStatus(`Recorded ${formatInr(payment.amountPaise)} by ${payment.mode.replace(/_/g, " ")}.`);
-    setVersion((current) => current + 1);
+    setPaymentStatus(`Recorded ${formatInr(payment.payment.amountPaise)} by ${payment.payment.mode.replace(/_/g, " ")}.`);
   }
 
   async function fulfillOrder(orderId: string) {
-    await zookMockServices.shopService.fulfillOrder(orderId);
-    setVersion((current) => current + 1);
+    await fulfillOrderMutation.mutateAsync(orderId);
   }
 
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+    <ZookScreen>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
-            <ActiveGymPill label="Iron Temple Gym · Pune" />
+            <ActiveGymPill label={activeOrganization ? `${activeOrganization.name} · ${activeOrganization.city}` : "Active gym"} />
             <Text style={styles.title}>
               {view === "desk" ? "Desk" : view === "members" ? "Members" : view === "payments" ? "Payments" : "Orders"}
             </Text>
-            <Text style={styles.subtitle}>Receptionist execution mode · Priya Sharma</Text>
+            <Text style={styles.subtitle}>Receptionist execution mode · {session?.user.name ?? "Signed-in staff"}</Text>
           </View>
           <Pill tone="blue">Receptionist</Pill>
         </View>
@@ -125,7 +154,7 @@ export default function Reception() {
         {view === "desk" ? (
           <>
             <View style={styles.metricGrid}>
-              <MetricTile label="Scans" value="48" detail="Today" tone="lime" icon="qr-code-outline" style={styles.metricThird} />
+              <MetricTile label="Scans" value={String(todayCount)} detail="Today" tone="lime" icon="qr-code-outline" style={styles.metricThird} />
               <MetricTile label="Queue" value={String(approvalQueue.length)} detail="Open tasks" tone="amber" icon="flash-outline" style={styles.metricThird} />
               <MetricTile label="Flagged" value={String(flaggedCount)} detail="Needs care" tone="red" icon="alert-circle-outline" style={styles.metricThird} />
             </View>
@@ -133,43 +162,43 @@ export default function Reception() {
             <SectionHeader title="Speed Queue" subtitle="Clear the gate one scan at a time." action={<Pill tone="amber">{pendingCount} pending</Pill>} />
             <View style={styles.stack}>
               {approvalQueue.length ? approvalQueue.map((attempt, index) => (
-                <Card key={attempt.id} variant={index === 0 ? "selected" : "compact"} padding={14} style={styles.queueCard}>
+                <GlassCard key={attempt.id} variant={index === 0 ? "selected" : "compact"} padding={14} contentStyle={styles.queueCard}>
                   <View style={styles.queueHeader}>
                     <IconBubble icon={attempt.status === "FLAGGED" ? "alert-circle-outline" : "person-outline"} tone={attempt.status === "FLAGGED" ? "red" : "amber"} size={38} />
                     <View style={styles.queueCopy}>
-                      <Text style={styles.queueTitle}>{attempt.memberName}</Text>
-                      <Text style={styles.cardBody}>{attempt.entryCode} · {attempt.planName} · {deskReasonCopy(attempt.reason)}</Text>
+                      <Text style={styles.queueTitle}>{attempt.user?.name ?? attempt.user?.email ?? "Member check-in"}</Text>
+                      <Text style={styles.cardBody}>{attempt.plan?.name ?? "Membership"} · {deskReasonCopy(Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null)}</Text>
                     </View>
                     <Pill tone={attempt.status === "FLAGGED" ? "red" : "amber"}>{attempt.status.replace(/_/g, " ")}</Pill>
                   </View>
                   <View style={styles.auditTrail}>
-                    {attempt.auditTrail.slice(-3).map((item) => (
+                    {(Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags : [attempt.source ?? "scan"]).slice(-3).map((item) => (
                       <Pill key={item} tone="neutral" style={styles.auditPill}>{item}</Pill>
                     ))}
                   </View>
                   {index === 0 ? <FormField label="Decision reason" value={reason} onChangeText={setReason} /> : null}
                   <View style={styles.actionRow}>
-                    <PrimaryButton icon="checkmark-circle-outline" onPress={() => void approveAttendance(attempt.id)} style={styles.actionHalf}>
+                    <PrimaryButton icon="checkmark-circle-outline" disabled={approveAttendanceMutation.isPending} onPress={() => void approveAttendance(attempt.id)} style={styles.actionHalf}>
                       Approve
                     </PrimaryButton>
-                    <SecondaryButton icon="close-circle-outline" onPress={() => void rejectAttendance(attempt.id)} style={styles.actionHalf}>
+                    <SecondaryButton icon="close-circle-outline" disabled={rejectAttendanceMutation.isPending} onPress={() => void rejectAttendance(attempt.id)} style={styles.actionHalf}>
                       Reject
                     </SecondaryButton>
                   </View>
-                </Card>
+                </GlassCard>
               )) : (
-                <Card variant="compact" padding={14} style={styles.queueCard}>
+                <GlassCard variant="compact" padding={14} contentStyle={styles.queueCard}>
                   <ListRow title="Gate queue clear" subtitle="No pending or flagged scans need the desk." icon="checkmark-done-outline" tone="lime" trailing={<Pill tone="lime">Done</Pill>} />
-                </Card>
+                </GlassCard>
               )}
             </View>
 
-            <Card variant="compact" padding={14} style={styles.stack}>
+            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader title="Code Check" subtitle="Entry or pickup lookup without leaving the desk." />
-              <FormField label="Entry or pickup code" value={verifyCode} onChangeText={setVerifyCode} placeholder="Enter ZK or PK code" autoCapitalize="characters" />
+              <FormField label="Pickup code" value={verifyCode} onChangeText={setVerifyCode} placeholder="Enter pickup code" autoCapitalize="characters" />
               <PrimaryButton icon="scan-outline" onPress={() => void verifyEntryCode()}>Verify Code</PrimaryButton>
               {verifyMessage ? <Text style={styles.statusText}>{verifyMessage}</Text> : null}
-            </Card>
+            </GlassCard>
           </>
         ) : null}
 
@@ -179,36 +208,42 @@ export default function Reception() {
             <View style={styles.stack}>
               {filteredMembers.slice(0, 4).map((user) => (
                 <ListRow
-                  key={user.id}
-                  title={user.name}
-                  subtitle={`${user.email} · ${user.phone}`}
-                  leading={<IconBubble icon="person-outline" tone={user.id === "user-aarav" ? "lime" : "neutral"} />}
-                  trailing={<Pill tone={user.id === "user-riya" ? "amber" : "lime"}>{user.id === "user-riya" ? "Minor gate" : "Active"}</Pill>}
+                  key={user.profile.userId}
+                  title={user.user?.name ?? "Member"}
+                  subtitle={`${user.user?.email ?? "No email"} · ${user.user?.phone ?? "No phone"}`}
+                  leading={<IconBubble icon="person-outline" tone={user.activeSubscription?.status === "ACTIVE" ? "lime" : "neutral"} />}
+                  trailing={<Pill tone={user.activeSubscription?.status === "ACTIVE" ? "lime" : "amber"}>{user.activeSubscription?.status ?? "No membership"}</Pill>}
                 />
               ))}
             </View>
-            <Card variant="compact" padding={14} style={styles.stack}>
+            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader title="Member Snapshot" subtitle="Front desk view for fast decisions." />
-              <ListRow title={member?.name ?? "Aarav Mehta"} subtitle={`${profile?.memberId ?? "ZK-M-10234"} · ${profile?.goal ?? "Muscle gain"}`} trailing={<Pill tone="lime">{membership?.status ?? "ACTIVE"}</Pill>} />
-              <ListRow title="Due amount" subtitle="Hybrid Pro renewal" trailing={<Pill tone="amber">{formatInr(dueAmount)}</Pill>} />
-              <ListRow title="Last check-in" subtitle="Today 7:12 AM" trailing={<Pill tone="blue">Main Branch</Pill>} />
+              <ListRow title={member?.name ?? "Select a member"} subtitle={`${member?.email ?? "Search by name, email, or phone"} · ${member?.fitnessGoal ?? profile?.fitnessGoal ?? "General fitness"}`} trailing={<Pill tone={membership?.status === "ACTIVE" ? "lime" : "amber"}>{membership?.status ?? "No membership"}</Pill>} />
+              <ListRow title="Manual amount" subtitle="Entered by desk" trailing={<Pill tone="amber">{formatInr(dueAmount)}</Pill>} />
+              <ListRow title="Last check-in" subtitle={memberRecord?.lastCheckIn?.checkedInAt ?? "Not available"} trailing={<Pill tone="blue">{memberRecord?.lastCheckIn?.status ?? "None"}</Pill>} />
               <AuditWarning>Manual attendance requires a reason and writes an audit log.</AuditWarning>
               <FormField label="Manual attendance reason" value={reason} onChangeText={setReason} />
-              <PrimaryButton icon="create-outline" onPress={() => void approveAttendance("attendance-pending")}>Record Manual Attendance</PrimaryButton>
-            </Card>
+              <PrimaryButton
+                icon="create-outline"
+                disabled={!member?.id || manualAttendanceMutation.isPending}
+                onPress={() => member?.id ? void manualAttendanceMutation.mutateAsync({ memberUserId: member.id, reason }) : undefined}
+              >
+                Record Manual Attendance
+              </PrimaryButton>
+            </GlassCard>
           </>
         ) : null}
 
         {view === "payments" ? (
           <>
             <View style={styles.metricGrid}>
-              <MetricTile label="Due" value={formatInr(dueAmount)} detail="Hybrid Pro" tone="amber" icon="receipt-outline" style={styles.metricHalf} />
+              <MetricTile label="Amount" value={formatInr(dueAmount)} detail="Manual entry" tone="amber" icon="receipt-outline" style={styles.metricHalf} />
               <MetricTile label="Mode" value={paymentModes.find((mode) => mode.value === paymentMode)?.label ?? "Manual"} detail="Offline record" tone="blue" icon="reader-outline" style={styles.metricHalf} />
             </View>
-            <Card variant="compact" padding={14} style={styles.stack}>
+            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader title="Audited Collection" subtitle="Record only money received at the desk." />
-              <ListRow title="Member" subtitle="Aarav Mehta · ZK-M-10234" leading={<IconBubble icon="person-outline" tone="lime" size={38} />} trailing={<Pill tone="lime">Verified</Pill>} />
-              <ListRow title="Invoice" subtitle="Hybrid Pro renewal · Membership expired yesterday" leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />} trailing={<Pill tone="amber">{formatInr(dueAmount)} due</Pill>} />
+              <ListRow title="Member" subtitle={member?.name ?? "Select a member"} leading={<IconBubble icon="person-outline" tone="lime" size={38} />} trailing={<Pill tone={member ? "lime" : "amber"}>{member ? "Verified" : "Missing"}</Pill>} />
+              <ListRow title="Invoice" subtitle={membership?.id ? "Active subscription record" : "No active subscription selected"} leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />} trailing={<Pill tone="amber">{formatInr(dueAmount)} due</Pill>} />
               <View style={styles.formStack}>
                 <Text style={styles.fieldGroupLabel}>Collection mode</Text>
                 <SegmentedControl options={paymentModes} value={paymentMode} onChange={setPaymentMode} />
@@ -216,11 +251,11 @@ export default function Reception() {
                 <FormField label="Reference ID" value={referenceId} onChangeText={setReferenceId} optional autoCapitalize="characters" placeholder="UPI ref, bank UTR, card slip" />
                 <FormField label="Desk note" value={paymentNote} onChangeText={setPaymentNote} optional multiline placeholder="Anything finance should see" />
               </View>
-              <AuditWarning>Reason is required. This writes an immutable audit event under Priya Sharma.</AuditWarning>
+              <AuditWarning>Reason is required. This writes an immutable audit event under the signed-in staff account.</AuditWarning>
               <FormField label="Audit reason" value={paymentReason} onChangeText={setPaymentReason} required />
-              <PrimaryButton icon="shield-checkmark-outline" disabled={!canRecordPayment} onPress={() => void recordPayment()}>Record Audited Payment</PrimaryButton>
+              <PrimaryButton icon="shield-checkmark-outline" disabled={!canRecordPayment || recordPaymentMutation.isPending} onPress={() => void recordPayment()}>Record Audited Payment</PrimaryButton>
               {paymentStatus ? <Text style={styles.statusText}>{paymentStatus}</Text> : null}
-            </Card>
+            </GlassCard>
           </>
         ) : null}
 
@@ -230,27 +265,27 @@ export default function Reception() {
               <MetricTile label="Ready" value={String(readyOrders.length)} detail="Pickup queue" tone="lime" icon="bag-check-outline" style={styles.metricHalf} />
               <MetricTile label="Done" value={String(fulfilledCount)} detail="Fulfilled" tone="blue" icon="checkmark-done-outline" style={styles.metricHalf} />
             </View>
-            <Card variant="compact" padding={14} style={styles.stack}>
+            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader title="Pickup Verification" subtitle="Match code and member before handoff." />
               <FormField label="Pickup code" value={verifyCode} onChangeText={setVerifyCode} autoCapitalize="characters" placeholder="PK-9142" />
               <PrimaryButton icon="scan-outline" onPress={() => void verifyEntryCode()}>Verify Pickup Code</PrimaryButton>
               {verifyMessage ? <Text style={styles.statusText}>{verifyMessage}</Text> : null}
-            </Card>
+            </GlassCard>
             <SectionHeader title="Fulfillment Queue" subtitle="Paid orders awaiting desk handoff." />
             <View style={styles.stack}>
               {readyOrders.length ? readyOrders.map((order) => (
-                <Card key={order.id} variant="compact" padding={14} style={styles.queueCard}>
+                <GlassCard key={order.id} variant="compact" padding={14} contentStyle={styles.queueCard}>
                   <View style={styles.queueHeader}>
                     <IconBubble icon="bag-handle-outline" tone="lime" size={38} />
                     <View style={styles.queueCopy}>
-                      <Text style={styles.queueTitle}>Aarav Mehta</Text>
-                      <Text style={styles.cardBody}>{order.pickupCode} · {formatInr(order.totalPaise)} · {order.items.length} items</Text>
+                      <Text style={styles.queueTitle}>{order.user?.name ?? "Member pickup"}</Text>
+                      <Text style={styles.cardBody}>{order.pickupCode ?? "Pickup pending"} · {formatInr(order.totalPaise)} · {order.items.length} items</Text>
                     </View>
                     <Pill tone="lime">{order.status.replace(/_/g, " ")}</Pill>
                   </View>
                   <View style={styles.itemGrid}>
                     {order.items.map((item) => {
-                      const product = zookDemoFixtures.shopProducts.find((candidate) => candidate.id === item.productId);
+                      const product = item.product;
                       return (
                         <View key={item.productId} style={styles.itemPill}>
                           <Text style={styles.itemName}>{product?.name ?? item.productId}</Text>
@@ -259,25 +294,28 @@ export default function Reception() {
                       );
                     })}
                   </View>
-                  <PrimaryButton icon="bag-check-outline" onPress={() => void fulfillOrder(order.id)}>Mark Picked Up</PrimaryButton>
-                </Card>
+                  <PrimaryButton icon="bag-check-outline" disabled={fulfillOrderMutation.isPending} onPress={() => void fulfillOrder(order.id)}>Mark Picked Up</PrimaryButton>
+                </GlassCard>
               )) : (
-                <Card variant="compact" padding={14} style={styles.queueCard}>
+                <GlassCard variant="compact" padding={14} contentStyle={styles.queueCard}>
                   <ListRow title="No pickups waiting" subtitle="Ready orders will appear here after payment." icon="bag-check-outline" tone="lime" trailing={<Pill tone="lime">Clear</Pill>} />
-                </Card>
+                </GlassCard>
               )}
             </View>
           </>
         ) : null}
       </ScrollView>
       <BottomNav role="RECEPTIONIST" />
-    </Screen>
+    </ZookScreen>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
     gap: 16,
     paddingBottom: layout.bottomNavHeight + 40,
   },
@@ -293,18 +331,16 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: "700",
+    ...typography.screenTitle,
   },
   subtitle: {
     color: colors.muted,
-    lineHeight: 20,
+    ...typography.body,
   },
   metricGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: spacing.md,
   },
   metricThird: {
     minWidth: 104,
@@ -315,15 +351,15 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   stack: {
-    gap: 12,
+    gap: spacing.md,
   },
   queueCard: {
-    gap: 12,
+    gap: spacing.md,
   },
   queueHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: spacing.md,
   },
   queueCopy: {
     flex: 1,
@@ -331,12 +367,11 @@ const styles = StyleSheet.create({
   },
   queueTitle: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
+    ...typography.headerTitle,
   },
   cardBody: {
     color: colors.muted,
-    lineHeight: 21,
+    ...typography.body,
   },
   auditTrail: {
     flexDirection: "row",
@@ -347,13 +382,11 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
   },
   formStack: {
-    gap: 12,
+    gap: spacing.md,
   },
   fieldGroupLabel: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
+    ...typography.eyebrow,
   },
   itemGrid: {
     gap: 8,
@@ -368,11 +401,12 @@ const styles = StyleSheet.create({
   },
   itemName: {
     color: colors.text,
-    fontWeight: "900",
+    ...typography.bodyStrong,
   },
   itemMeta: {
     color: colors.muted,
     marginTop: 3,
+    ...typography.small,
   },
   actionRow: {
     flexDirection: "row",
@@ -383,7 +417,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: colors.lime,
-    lineHeight: 21,
-    fontWeight: "800",
+    ...typography.bodyStrong,
   },
 });

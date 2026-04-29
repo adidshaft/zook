@@ -26,7 +26,7 @@ export default function Settings() {
     if (!token) return;
     setBusy(true);
     try {
-      await mobileApiFetch("/me/privacy/export", {
+      await mobileApiFetch("/me/data-export-request", {
         method: "POST",
         token,
       });
@@ -42,7 +42,7 @@ export default function Settings() {
     if (!token) return;
     setBusy(true);
     try {
-      await mobileApiFetch("/me/privacy/deletion", {
+      await mobileApiFetch("/me/account-deletion-request", {
         method: "POST",
         token,
       });

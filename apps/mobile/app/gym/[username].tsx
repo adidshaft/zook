@@ -4,21 +4,23 @@ import { useState } from "react";
 import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
-  Card,
+  BottomNav,
   EmptyState,
+  GlassCard,
+  IconBubble,
   InfoRow,
   LoadingState,
+  MobileHeader,
   Pill,
   PrimaryButton,
-  Screen,
-  ScreenHeader,
   SectionHeader,
+  ZookScreen,
 } from "@/components/primitives";
 import { mobileApiFetch, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { useGymProfile } from "@/lib/query-hooks";
-import { colors } from "@/lib/theme";
+import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function GymProfileScreen() {
   const params = useLocalSearchParams<{ username: string; ref?: string }>();
@@ -111,10 +113,10 @@ export default function GymProfileScreen() {
     Boolean(planId);
 
   return (
-    <Screen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+    <ZookScreen>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {gym ? (
-          <ScreenHeader
+          <MobileHeader
             eyebrow="Gym profile"
             title={gym.name}
             subtitle={`${gym.city}, ${gym.state}`}
@@ -123,7 +125,7 @@ export default function GymProfileScreen() {
             }
           />
         ) : (
-          <ScreenHeader
+          <MobileHeader
             eyebrow="Gym profile"
             title="Membership profile"
             subtitle="We’ll load plan details, join rules, and referral support for this gym."
@@ -146,7 +148,7 @@ export default function GymProfileScreen() {
 
         {gym ? (
           <>
-            <Card style={styles.heroCard}>
+            <GlassCard contentStyle={styles.heroCard}>
               <View style={styles.coverPlaceholder}>
                 <Image
                   source={{ uri: gym.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&h=400&fit=crop" }}
@@ -207,7 +209,7 @@ export default function GymProfileScreen() {
                   />
                 ) : null}
               </View>
-            </Card>
+            </GlassCard>
 
             <SectionHeader
               eyebrow="Inside"
@@ -215,11 +217,11 @@ export default function GymProfileScreen() {
               subtitle="Facility, trainers, access, and location details."
             />
 
-            <Card style={styles.profileDetailsCard}>
+            <GlassCard contentStyle={styles.profileDetailsCard}>
               <InfoRow label="Address" value={gym.address ?? `${gym.city}, ${gym.state}`} tone="blue" />
               <InfoRow label="Entry" value="Scan QR and show entry code" tone="lime" />
               <InfoRow label="Trial flow" value="Tour + optional body check" tone="amber" />
-            </Card>
+            </GlassCard>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryRow}>
               {gallery.map((imageUrl, index) => (
@@ -241,7 +243,7 @@ export default function GymProfileScreen() {
             <View style={styles.trainerStack}>
               {trainers.length ? (
                 trainers.filter((trainer) => trainer.visibleToMembers !== false).map((trainer) => (
-                  <Card key={trainer.userId} style={styles.trainerCard}>
+                  <GlassCard key={trainer.userId} contentStyle={styles.trainerCard}>
                     <Image
                       source={{ uri: trainer.profilePhotoUrl || "https://images.unsplash.com/photo-1594381898411-846e7d193883?q=80&w=300&h=300&fit=crop" }}
                       style={styles.trainerImage}
@@ -258,7 +260,7 @@ export default function GymProfileScreen() {
                         ))}
                       </View>
                     </View>
-                  </Card>
+                  </GlassCard>
                 ))
               ) : (
                 <EmptyState title="Trainer profiles coming soon" body="The gym can publish coach bios, expertise, and photos from the owner dashboard." />
@@ -266,7 +268,7 @@ export default function GymProfileScreen() {
             </View>
 
             <View style={styles.metricRow}>
-              <Card style={styles.metricCard}>
+              <GlassCard contentStyle={styles.metricCard}>
                 <Text style={styles.metricLabel}>
                   Join flow
                 </Text>
@@ -278,10 +280,10 @@ export default function GymProfileScreen() {
                     ? "Staff approval happens before payment."
                     : inviteOnlyLocked
                       ? "Referral or invite is required."
-                      : "You can move straight to hosted checkout."}
+                  : "You can move straight to hosted checkout."}
                 </Text>
-              </Card>
-              <Card style={styles.metricCard}>
+              </GlassCard>
+              <GlassCard contentStyle={styles.metricCard}>
                 <Text style={styles.metricLabel}>
                   Membership state
                 </Text>
@@ -298,7 +300,7 @@ export default function GymProfileScreen() {
                     ? `${viewerState.activeMembership.remainingVisits} visits remaining`
                     : "Choose a plan when you’re ready."}
                 </Text>
-              </Card>
+              </GlassCard>
             </View>
 
             <SectionHeader
@@ -307,7 +309,7 @@ export default function GymProfileScreen() {
               subtitle="Follow these steps to start your membership."
             />
 
-            <Card style={styles.timelineCard}>
+            <GlassCard contentStyle={styles.timelineCard}>
               {buildJoinSteps(gym.joinMode, effectiveReferral).map((step, index) => (
                 <View key={step.title} style={styles.timelineRow}>
                   <View style={styles.timelineMarker}>
@@ -323,12 +325,12 @@ export default function GymProfileScreen() {
                   </View>
                 </View>
               ))}
-            </Card>
+            </GlassCard>
 
             {needsApproval &&
             !viewerState?.pendingJoinRequest &&
             !viewerState?.approvedJoinRequest ? (
-              <Card style={styles.ctaCard}>
+              <GlassCard variant="warning" contentStyle={styles.ctaCard}>
                 <Text style={styles.sectionTitle}>
                   Request membership first
                 </Text>
@@ -339,18 +341,18 @@ export default function GymProfileScreen() {
                 <PrimaryButton onPress={() => void requestMembership()}>
                   {busyAction === "join-request" ? "Submitting..." : "Send membership request"}
                 </PrimaryButton>
-              </Card>
+              </GlassCard>
             ) : null}
 
             {inviteOnlyLocked ? (
-              <Card style={styles.ctaCard}>
+              <GlassCard variant="warning" contentStyle={styles.ctaCard}>
                 <Text style={styles.sectionTitle}>
                   Invite or referral required
                 </Text>
                 <Text style={styles.sectionBody}>
                   Open this gym from a referral link or ask the gym team for a code to continue.
                 </Text>
-              </Card>
+              </GlassCard>
             ) : null}
 
             <SectionHeader
@@ -367,7 +369,7 @@ export default function GymProfileScreen() {
 
             <View style={styles.planStack}>
               {plans.map((plan) => (
-                <Card key={plan.id} style={styles.planCard}>
+                <GlassCard key={plan.id} contentStyle={styles.planCard}>
                   <View style={styles.planHeader}>
                     <View style={styles.planCopy}>
                       <Text style={styles.planName}>
@@ -399,21 +401,22 @@ export default function GymProfileScreen() {
                         ? "Choose plan"
                         : "Complete earlier step first"}
                   </PrimaryButton>
-                </Card>
+                </GlassCard>
               ))}
             </View>
 
             {statusMessage ? (
-              <Card>
+              <GlassCard variant="compact">
                 <Text style={styles.statusMessage}>
                   {statusMessage}
                 </Text>
-              </Card>
+              </GlassCard>
             ) : null}
           </>
         ) : null}
       </ScrollView>
-    </Screen>
+      <BottomNav />
+    </ZookScreen>
   );
 }
 
@@ -517,9 +520,12 @@ function toneForJoinMode(joinMode?: string) {
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
     gap: 16,
-    paddingBottom: 120,
+    paddingBottom: layout.bottomNavHeight + 40,
   },
   heroCard: {
     gap: 16,
@@ -545,19 +551,15 @@ const styles = StyleSheet.create({
   },
   coverEyebrow: {
     color: colors.amber,
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
+    ...typography.eyebrow,
   },
   coverTitle: {
     color: colors.text,
-    fontSize: 28,
-    fontWeight: "900",
-    lineHeight: 32,
+    ...typography.display,
   },
   coverBody: {
     color: colors.muted,
-    lineHeight: 21,
+    ...typography.body,
   },
   tagRow: {
     flexDirection: "row",
@@ -571,8 +573,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   galleryRow: {
-    gap: 12,
-    paddingRight: 20,
+    gap: spacing.md,
+    paddingRight: spacing.xl,
   },
   galleryImage: {
     width: 210,
@@ -581,11 +583,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
   },
   trainerStack: {
-    gap: 12,
+    gap: spacing.md,
   },
   trainerCard: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.md,
     alignItems: "center",
   },
   trainerImage: {
@@ -600,12 +602,11 @@ const styles = StyleSheet.create({
   },
   trainerName: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
+    ...typography.headerTitle,
   },
   metricRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.md,
   },
   metricCard: {
     flex: 1,
@@ -613,18 +614,15 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
+    ...typography.eyebrow,
   },
   metricValue: {
     color: colors.text,
-    fontSize: 24,
-    fontWeight: "900",
+    ...typography.metric,
   },
   metricBody: {
     color: colors.muted,
-    lineHeight: 20,
+    ...typography.body,
   },
   timelineCard: {
     gap: 16,
@@ -646,7 +644,7 @@ const styles = StyleSheet.create({
   },
   timelineMarkerText: {
     color: colors.lime,
-    fontWeight: "900",
+    ...typography.bodyStrong,
   },
   timelineCopy: {
     flex: 1,
@@ -654,24 +652,22 @@ const styles = StyleSheet.create({
   },
   timelineTitle: {
     color: colors.text,
-    fontSize: 17,
-    fontWeight: "800",
+    ...typography.sectionTitle,
   },
   timelineBody: {
     color: colors.muted,
-    lineHeight: 20,
+    ...typography.body,
   },
   ctaCard: {
     gap: 12,
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 24,
-    fontWeight: "900",
+    ...typography.screenTitle,
   },
   sectionBody: {
     color: colors.muted,
-    lineHeight: 21,
+    ...typography.body,
   },
   planStack: {
     gap: 12,
@@ -690,13 +686,11 @@ const styles = StyleSheet.create({
   },
   planName: {
     color: colors.text,
-    fontSize: 22,
-    fontWeight: "900",
+    ...typography.headerTitle,
   },
   planPrice: {
     color: colors.lime,
-    fontSize: 26,
-    fontWeight: "900",
+    ...typography.metric,
   },
   planBenefits: {
     flexDirection: "row",
@@ -705,6 +699,6 @@ const styles = StyleSheet.create({
   },
   statusMessage: {
     color: colors.text,
-    lineHeight: 20,
+    ...typography.body,
   },
 });

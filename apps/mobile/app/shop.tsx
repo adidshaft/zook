@@ -1,8 +1,7 @@
 import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { zookDemoFixtures, zookMockServices } from "@zook/core";
 import {
   BottomNav,
   EmptyState,
@@ -18,11 +17,18 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { formatInr } from "@/lib/formatting";
+import {
+  useCompleteMockPayment,
+  useCreateShopOrder,
+  useMyShopOrders,
+  useShopProducts,
+  type ShopOrderRecord,
+} from "@/lib/query-hooks";
+import { useAuth } from "@/lib/auth";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
-type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT";
+type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
 type CheckoutState = "browse" | "cart" | "checkout" | "pickup";
-type Order = Awaited<ReturnType<typeof zookMockServices.shopService.createOrder>>;
 
 const categories: Array<{ label: string; value: Category }> = [
   { label: "All", value: "ALL" },
@@ -33,8 +39,6 @@ const categories: Array<{ label: string; value: Category }> = [
   { label: "Other", value: "SUPPLEMENT" },
 ];
 
-const products = zookDemoFixtures.shopProducts;
-
 function iconForCategory(category: Category) {
   if (category === "WATER") return "water-outline" as const;
   if (category === "TOWEL") return "shirt-outline" as const;
@@ -43,18 +47,26 @@ function iconForCategory(category: Category) {
 }
 
 export default function Shop() {
+  const { session } = useAuth();
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [checkoutState, setCheckoutState] = useState<CheckoutState>("browse");
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<ShopOrderRecord | null>(null);
+  const [checkoutSession, setCheckoutSession] = useState<{ id: string; provider?: string; checkoutUrl?: string } | null>(null);
+  const productsQuery = useShopProducts();
+  const ordersQuery = useMyShopOrders();
+  const createOrder = useCreateShopOrder();
+  const completeMockPayment = useCompleteMockPayment();
+  const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
+  const products = productsQuery.data?.products ?? [];
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const categoryMatch = category === "ALL" || product.category === category;
       const queryMatch = !query || product.name.toLowerCase().includes(query.toLowerCase());
       return categoryMatch && queryMatch;
     });
-  }, [category, query]);
+  }, [category, products, query]);
   const cartItems = Object.entries(cart)
     .map(([productId, quantity]) => {
       const product = products.find((candidate) => candidate.id === productId);
@@ -65,6 +77,10 @@ export default function Shop() {
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   function addToCart(productId: string) {
+    const product = products.find((candidate) => candidate.id === productId);
+    if (!product || product.stock <= (cart[productId] ?? 0)) {
+      return;
+    }
     setCart((current) => ({ ...current, [productId]: (current[productId] ?? 0) + 1 }));
   }
 
@@ -80,19 +96,38 @@ export default function Shop() {
     });
   }
 
-  async function createMockCheckout() {
-    const nextOrder = await zookMockServices.shopService.createOrder(
-      cartItems.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
-    );
-    setOrder(nextOrder);
+  async function createCheckout() {
+    const result = await createOrder.mutateAsync({
+      items: cartItems.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
+    });
+    setOrder({
+      ...result.order,
+      items: cartItems.map((item) => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+        unitPaise: item.product.pricePaise,
+        product: item.product,
+      })),
+    });
+    setCheckoutSession({
+      id: result.session.id,
+      provider: result.session.provider,
+      ...(result.checkoutUrl ? { checkoutUrl: result.checkoutUrl } : {}),
+    });
     setCheckoutState("checkout");
   }
 
-  async function confirmMockPayment() {
-    if (!order) return;
-    const session = await zookMockServices.shopService.createCheckoutSession(order.id);
-    const paidOrder = await zookMockServices.shopService.confirmMockOrderPayment(session.id);
-    setOrder(paidOrder);
+  async function continuePayment() {
+    if (!order || !checkoutSession) return;
+    if (checkoutSession.provider && checkoutSession.provider !== "mock" && checkoutSession.checkoutUrl) {
+      await Linking.openURL(checkoutSession.checkoutUrl);
+      return;
+    }
+    await completeMockPayment.mutateAsync(checkoutSession.id);
+    const refreshed = await ordersQuery.refetch();
+    const paidOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
+    setOrder(paidOrder ?? { ...order, status: "READY_FOR_PICKUP" });
+    setCart({});
     setCheckoutState("pickup");
   }
 
@@ -102,12 +137,17 @@ export default function Shop() {
         <MobileHeader title="Ready for pickup" subtitle="Show this code at the front desk." />
         <GlassCard variant="success" contentStyle={styles.pickupContent}>
           <Text style={styles.pickupLabel}>Pickup code</Text>
-          <Text style={styles.pickupCode}>{order.pickupCode}</Text>
+          <Text style={styles.pickupCode}>{order.pickupCode ?? "Pending"}</Text>
           <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
         </GlassCard>
         <GlassCard variant="compact" contentStyle={styles.stack}>
-          {order.items.map((item) => {
-            const product = products.find((candidate) => candidate.id === item.productId);
+          {(order.items.length ? order.items : cartItems.map((item) => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+            unitPaise: item.product.pricePaise,
+            product: item.product,
+          }))).map((item) => {
+            const product = item.product ?? products.find((candidate) => candidate.id === item.productId);
             return (
               <ListRow
                 key={item.productId}
@@ -135,7 +175,9 @@ export default function Shop() {
             <Text style={styles.cardBody}>Order total</Text>
             <Text style={styles.totalText}>{formatInr(order.totalPaise)}</Text>
           </View>
-          <ZookButton onPress={() => void confirmMockPayment()} icon="card-outline">Continue</ZookButton>
+          <ZookButton onPress={() => void continuePayment()} disabled={completeMockPayment.isPending} icon="card-outline">
+            {completeMockPayment.isPending ? "Confirming..." : "Continue"}
+          </ZookButton>
         </GlassCard>
       </ShopShell>
     );
@@ -156,7 +198,7 @@ export default function Shop() {
               <ListRow
                 key={item.product.id}
                 title={item.product.name}
-                subtitle={`${item.quantity} item · ${item.product.fulfillmentLabel}`}
+                subtitle={`${item.quantity} item · ${item.product.stock} in stock`}
                 trailing={<StatusChip status={formatInr(item.product.pricePaise * item.quantity)} tone="neutral" />}
               />
             ))
@@ -170,8 +212,8 @@ export default function Shop() {
         </GlassCard>
         <View style={styles.actionRow}>
           <SecondaryButton onPress={() => setCheckoutState("browse")} style={styles.actionHalf}>Back</SecondaryButton>
-          <ZookButton onPress={() => void createMockCheckout()} disabled={!cartItems.length} style={styles.actionHalf}>
-            Continue
+          <ZookButton onPress={() => void createCheckout()} disabled={!cartItems.length || createOrder.isPending} style={styles.actionHalf}>
+            {createOrder.isPending ? "Creating..." : "Continue"}
           </ZookButton>
         </View>
       </ShopShell>
@@ -183,7 +225,7 @@ export default function Shop() {
       <ShopShell selectedPath="/shop">
         <MobileHeader
           title="Desk pickup"
-          subtitle="Iron Temple Gym"
+          subtitle={activeOrganization?.name ?? "Active gym"}
           trailing={
             <Pressable
               onPress={() => setCheckoutState("cart")}
@@ -204,13 +246,14 @@ export default function Shop() {
           <View style={styles.productGrid}>
             {filteredProducts.map((product) => {
               const lowStock = product.stock <= product.lowStockThreshold;
+              const fulfillmentLabel = product.stock > 0 ? `${product.stock} in stock` : "Out of stock";
               return (
                 <ProductCard
                   key={product.id}
                   name={product.name}
                   price={formatInr(product.pricePaise)}
-                  stock={lowStock ? "Low stock" : product.fulfillmentLabel}
-                  tone={lowStock ? "amber" : "lime"}
+                  stock={lowStock ? "Low stock" : fulfillmentLabel}
+                  tone={product.stock <= 0 ? "red" : lowStock ? "amber" : "lime"}
                   imageUrl={(product as { imageUrl?: string | null }).imageUrl}
                   quantity={cart[product.id] ?? 0}
                   icon={iconForCategory(product.category as Category)}
@@ -221,6 +264,10 @@ export default function Shop() {
               );
             })}
           </View>
+        ) : productsQuery.isLoading ? (
+          <GlassCard variant="compact" contentStyle={styles.stack}>
+            <ListRow title="Loading products" subtitle="Fetching the desk pickup catalog." icon="hourglass-outline" tone="amber" />
+          </GlassCard>
         ) : (
           <EmptyState title="No products found" body="Try a different item or ask the desk for availability." />
         )}

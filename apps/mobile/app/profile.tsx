@@ -3,7 +3,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
-import { zookMockServices } from "@zook/core";
 import {
   AuditWarning,
   BottomNav,
@@ -184,13 +183,23 @@ export default function Profile() {
   }
 
   async function requestPrivacyExport() {
-    const job = await zookMockServices.privacyService.requestExport(session?.user.id);
-    setPrivacyStatus(`Data export job created: ${job.id}. Status: ${job.status}.`);
+    if (!token) return;
+    const result = await mobileApiFetch<{ request: { id: string; status: string } }>("/me/data-export-request", {
+      method: "POST",
+      token,
+      ...(activeOrgId ? { orgId: activeOrgId } : {}),
+    });
+    setPrivacyStatus(`Data export request created: ${result.request.id}. Status: ${result.request.status}.`);
   }
 
   async function requestPrivacyDeletion() {
-    const job = await zookMockServices.privacyService.requestDeletion(session?.user.id);
-    setPrivacyStatus(`Deletion job created: ${job.id}. Status: ${job.status}.`);
+    if (!token) return;
+    const result = await mobileApiFetch<{ request: { id: string; status: string } }>("/me/account-deletion-request", {
+      method: "POST",
+      token,
+      ...(activeOrgId ? { orgId: activeOrgId } : {}),
+    });
+    setPrivacyStatus(`Deletion request created: ${result.request.id}. Status: ${result.request.status}.`);
   }
 
   const ageLabel = (() => {

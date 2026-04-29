@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import type { AuthSessionSummary } from "@zook/core";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AuthSessionSummary, PaymentMode } from "@zook/core";
 import { mobileApiFetch } from "./api";
 import { useAuth } from "./auth";
 import type { NotificationPreferenceRecord } from "./notification-preferences";
@@ -17,6 +17,8 @@ export interface MemberHomeData {
     status?: string;
     endsAt?: string | null;
     remainingVisits?: number | null;
+    daysLeft?: number | null;
+    nextCheckInEstimate?: string | null;
   } | null;
   activePlan: {
     id?: string;
@@ -35,7 +37,16 @@ export interface MemberHomeData {
   unreadNotifications: number;
   activeGoals: number;
   assignedPlans: number;
+  streakDays?: number;
+  todayPlanName?: string | null;
+  nextCheckInEstimate?: string | null;
 }
+
+export type ActiveMembershipRecord = NonNullable<MemberHomeData["activeMembership"]> & {
+  plan?: PublicPlanSummary | null;
+  organization?: MemberHomeData["activeOrganization"];
+  recentAttendance?: MemberHomeData["recentAttendance"];
+};
 
 export interface GymSearchResult {
   id: string;
@@ -140,6 +151,111 @@ export interface TrainerClientRecord {
   };
 }
 
+export interface PlanContentRecord {
+  id: string;
+  orgId: string;
+  creatorUserId?: string;
+  type: string;
+  title: string;
+  description?: string | null;
+  content?: Record<string, unknown> | null;
+  aiGenerated?: boolean;
+  reviewed?: boolean;
+  status?: string;
+  visibility?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PlanProgressRecord {
+  id: string;
+  orgId: string;
+  assignmentId: string;
+  userId: string;
+  progressJson: Record<string, unknown>;
+  completionPct: number;
+  feedback?: string | null;
+  updatedAt?: string;
+  createdAt?: string;
+}
+
+export interface PlanExerciseRecord {
+  id: string;
+  name: string;
+  sets?: string | null;
+  equipment?: string | null;
+  reps?: string | null;
+  day?: string | null;
+  raw?: string | null;
+  orderIndex: number;
+  completed: boolean;
+}
+
+export interface MyPlanRecord {
+  id: string;
+  orgId: string;
+  planId: string;
+  assignedById?: string;
+  assignedToUserId?: string | null;
+  audience?: string;
+  active?: boolean;
+  createdAt?: string;
+  plan: PlanContentRecord | null;
+  progress: PlanProgressRecord | null;
+}
+
+export interface ShopProductRecord {
+  id: string;
+  orgId: string;
+  name: string;
+  description?: string | null;
+  category: string;
+  pricePaise: number;
+  stock: number;
+  lowStockThreshold: number;
+  imageUrl?: string | null;
+  active?: boolean;
+}
+
+export interface ShopOrderItemRecord {
+  id?: string;
+  productId: string;
+  quantity: number;
+  unitPaise: number;
+  product?: ShopProductRecord | null;
+}
+
+export interface ShopOrderRecord {
+  id: string;
+  orgId: string;
+  userId: string;
+  status: string;
+  paymentSessionId?: string | null;
+  paymentId?: string | null;
+  totalPaise: number;
+  pickupCode?: string | null;
+  fulfilledAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  user?: { id: string; name: string; email: string; phone?: string | null } | null;
+  items: ShopOrderItemRecord[];
+}
+
+export interface OrgPaymentRecord {
+  id: string;
+  orgId?: string | null;
+  userId?: string | null;
+  purpose: string;
+  amountPaise: number;
+  status: string;
+  mode: string;
+  receiptNumber?: string | null;
+  notes?: string | null;
+  recordedAt?: string | null;
+  createdAt?: string;
+  user?: { id: string; name: string; email: string; phone?: string | null } | null;
+}
+
 export interface MyProfileData {
   user: {
     id: string;
@@ -169,6 +285,7 @@ export interface ReceptionQueueRecord {
   id: string;
   status: string;
   checkedInAt: string;
+  source?: string;
   suspiciousFlags?: string[] | null;
   rejectionReason?: string | null;
   user?: { name?: string | null; email?: string | null } | null;
@@ -386,6 +503,22 @@ export function useMyMemberships() {
   });
 }
 
+export function useActiveMembership() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "membership", "active", activeOrgId],
+    queryFn: () =>
+      mobileApiFetch<{ membership: ActiveMembershipRecord | null }>(
+        "/me/membership/active",
+        {
+          token,
+          ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        },
+      ),
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
 export function useMyAttendance() {
   const { status, token } = useAuth();
   return useQuery({
@@ -401,8 +534,33 @@ export function useMyPlans() {
   return useQuery({
     queryKey: ["me", "plans"],
     queryFn: () =>
-      mobileApiFetch<{ plans: Array<Record<string, unknown>> }>("/me/plans", { token }),
+      mobileApiFetch<{ plans: MyPlanRecord[] }>("/me/plans", { token }),
     enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function usePlanDetail(assignmentId?: string) {
+  const { status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "plans", assignmentId],
+    queryFn: () =>
+      mobileApiFetch<{ assignment: MyPlanRecord }>(`/me/plans/${assignmentId}`, { token }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(assignmentId),
+  });
+}
+
+export function usePlanExercises(assignmentId?: string) {
+  const { status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "plans", assignmentId, "exercises"],
+    queryFn: () =>
+      mobileApiFetch<{
+        assignment: MyPlanRecord;
+        plan: PlanContentRecord;
+        progress: PlanProgressRecord | null;
+        exercises: PlanExerciseRecord[];
+      }>(`/me/plans/${assignmentId}/exercises`, { token }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(assignmentId),
   });
 }
 
@@ -458,12 +616,16 @@ export function useShopProducts(orgId?: string) {
   return useQuery({
     queryKey: ["shop", "products", resolvedOrgId],
     queryFn: () =>
-      mobileApiFetch<{ products: Array<Record<string, unknown>> }>(
+      mobileApiFetch<{ products: ShopProductRecord[] }>(
         `/orgs/${resolvedOrgId}/products`,
-        { token },
+        { token, orgId: resolvedOrgId },
       ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
   });
+}
+
+export function useOrgProducts(orgId?: string) {
+  return useShopProducts(orgId);
 }
 
 export function useMyShopOrders() {
@@ -471,7 +633,7 @@ export function useMyShopOrders() {
   return useQuery({
     queryKey: ["me", "shop-orders"],
     queryFn: () =>
-      mobileApiFetch<{ orders: Array<Record<string, unknown>> }>("/me/shop-orders", { token }),
+      mobileApiFetch<{ orders: ShopOrderRecord[] }>("/me/shop-orders", { token }),
     enabled: status === "authenticated" && Boolean(token),
   });
 }
@@ -527,6 +689,31 @@ export function useOwnerDashboard(orgId?: string) {
   });
 }
 
+export interface OrgJoinRequestRecord {
+  id: string;
+  userId: string;
+  userName?: string | null;
+  userEmail?: string | null;
+  planId?: string | null;
+  referralCode?: string | null;
+  status?: string | null;
+  createdAt?: string;
+}
+
+export function useOrgJoinRequests(orgId?: string) {
+  const { activeOrgId, status, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useQuery({
+    queryKey: ["org", resolvedOrgId, "join-requests"],
+    queryFn: () =>
+      mobileApiFetch<{ joinRequests: OrgJoinRequestRecord[] }>(`/orgs/${resolvedOrgId}/join-requests`, {
+        token,
+        orgId: resolvedOrgId,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+  });
+}
+
 export function useReceptionQueue(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
@@ -542,6 +729,65 @@ export function useReceptionQueue(orgId?: string) {
       ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
     refetchInterval: 20_000,
+  });
+}
+
+export function useOrgAttendanceToday(orgId?: string) {
+  const { activeOrgId, status, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useQuery({
+    queryKey: ["org", resolvedOrgId, "attendance", "today"],
+    queryFn: () =>
+      mobileApiFetch<{ records: ReceptionQueueRecord[] }>(
+        `/orgs/${resolvedOrgId}/attendance/today`,
+        { token, orgId: resolvedOrgId },
+      ),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useOrgAttendancePending(orgId?: string) {
+  const { activeOrgId, status, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useQuery({
+    queryKey: ["org", resolvedOrgId, "attendance", "pending"],
+    queryFn: () =>
+      mobileApiFetch<{ records: ReceptionQueueRecord[] }>(
+        `/orgs/${resolvedOrgId}/attendance/pending`,
+        { token, orgId: resolvedOrgId },
+      ),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    refetchInterval: 20_000,
+  });
+}
+
+export function useOrgRecentPayments(orgId?: string) {
+  const { activeOrgId, status, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useQuery({
+    queryKey: ["org", resolvedOrgId, "payments", "recent"],
+    queryFn: () =>
+      mobileApiFetch<{ payments: OrgPaymentRecord[] }>(
+        `/orgs/${resolvedOrgId}/payments/recent`,
+        { token, orgId: resolvedOrgId },
+      ),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+  });
+}
+
+export function useOrgActiveShopOrders(orgId?: string) {
+  const { activeOrgId, status, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useQuery({
+    queryKey: ["org", resolvedOrgId, "shop", "orders", "active"],
+    queryFn: () =>
+      mobileApiFetch<{ orders: ShopOrderRecord[] }>(
+        `/orgs/${resolvedOrgId}/shop/orders/active`,
+        { token, orgId: resolvedOrgId },
+      ),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    refetchInterval: 30_000,
   });
 }
 
@@ -561,5 +807,319 @@ export function useTrainerClients(orgId?: string, trainerUserId?: string) {
       Boolean(token) &&
       Boolean(resolvedOrgId) &&
       Boolean(resolvedTrainerId),
+  });
+}
+
+export interface OrgMemberRecord {
+  profile: {
+    id: string;
+    userId: string;
+    orgId: string;
+    fitnessGoal?: string | null;
+    notes?: string | null;
+    profilePhotoUrl?: string | null;
+    createdAt?: string | null;
+  };
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string | null;
+    dateOfBirth?: string | null;
+    fitnessGoal?: string | null;
+    profilePhotoUrl?: string | null;
+  } | null;
+  lastCheckIn?: { checkedInAt?: string; status?: string } | null;
+  activeSubscription?: {
+    id?: string;
+    status?: string;
+    endsAt?: string | null;
+    remainingVisits?: number | null;
+  } | null;
+  assignedTrainer?: { id: string; name: string; email: string; profilePhotoUrl?: string | null } | null;
+}
+
+export function useOrgMembers(orgId?: string) {
+  const { activeOrgId, status, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useQuery({
+    queryKey: ["org", resolvedOrgId, "members"],
+    queryFn: () =>
+      mobileApiFetch<{ members: OrgMemberRecord[] }>(`/orgs/${resolvedOrgId}/members`, {
+        token,
+        orgId: resolvedOrgId,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+  });
+}
+
+type ManualPaymentMode = Extract<PaymentMode, "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER">;
+
+function getMutationContext(token?: string, orgId?: string) {
+  if (!token) {
+    throw new Error("Authentication is required.");
+  }
+  if (!orgId) {
+    throw new Error("An active organization is required.");
+  }
+  return { token, orgId };
+}
+
+export function useApproveAttendance(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (recordId: string) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ record: ReceptionQueueRecord }>(
+        `/orgs/${ctx.orgId}/attendance/${recordId}/approve`,
+        { method: "POST", token: ctx.token, orgId: ctx.orgId },
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "attendance"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useApproveJoinRequest(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (joinRequestId: string) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ joinRequest: OrgJoinRequestRecord }>(
+        `/orgs/${ctx.orgId}/join-requests/${joinRequestId}/approve`,
+        { method: "POST", token: ctx.token, orgId: ctx.orgId },
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "join-requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "members"] }),
+      ]);
+    },
+  });
+}
+
+export function useRejectJoinRequest(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (joinRequestId: string) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ joinRequest: OrgJoinRequestRecord }>(
+        `/orgs/${ctx.orgId}/join-requests/${joinRequestId}/reject`,
+        { method: "POST", token: ctx.token, orgId: ctx.orgId },
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "join-requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useRejectAttendance(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({ recordId, reason }: { recordId: string; reason: string }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ record: ReceptionQueueRecord }>(
+        `/orgs/${ctx.orgId}/attendance/${recordId}/reject`,
+        { method: "POST", token: ctx.token, orgId: ctx.orgId, body: { reason } },
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "attendance"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useManualAttendance(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (body: { memberUserId: string; branchId?: string; reason: string; notes?: string }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ record: ReceptionQueueRecord }>(
+        `/orgs/${ctx.orgId}/attendance/manual`,
+        { method: "POST", token: ctx.token, orgId: ctx.orgId, body },
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "attendance"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "members"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useRecordManualPayment(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (body: {
+      memberUserId: string;
+      planId?: string;
+      subscriptionId?: string;
+      amountPaise: number;
+      mode: ManualPaymentMode;
+      proofAssetId?: string;
+      receiptNumber?: string;
+      notes?: string;
+    }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ payment: OrgPaymentRecord; subscription?: Record<string, unknown> | null }>(
+        `/orgs/${ctx.orgId}/manual-payments`,
+        { method: "POST", token: ctx.token, orgId: ctx.orgId, body },
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "payments"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "members"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useFulfillShopOrder(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (orderId: string) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ order: ShopOrderRecord }>(
+        `/orgs/${ctx.orgId}/shop/orders/${orderId}/fulfill`,
+        { method: "POST", token: ctx.token, orgId: ctx.orgId },
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "shop", "orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["shop", "products", resolvedOrgId] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
+      ]);
+    },
+  });
+}
+
+export function useCreateShopOrder(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (input: { items: Array<{ productId: string; quantity: number }> }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{
+        order: ShopOrderRecord;
+        checkoutUrl?: string;
+        checkoutData?: Record<string, unknown> | null;
+        session: { id: string; status: string; provider?: string };
+      }>("/shop/orders", {
+        method: "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body: { orgId: ctx.orgId, items: input.items },
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["shop", "products", resolvedOrgId] }),
+        queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "shop", "orders"] }),
+      ]);
+    },
+  });
+}
+
+export function useCompleteMockPayment() {
+  const queryClient = useQueryClient();
+  const { token } = useAuth();
+  return useMutation({
+    mutationFn: (sessionId: string) => {
+      if (!token) {
+        throw new Error("Authentication is required.");
+      }
+      return mobileApiFetch<{
+        session: { id: string; status: string };
+        payment?: OrgPaymentRecord | null;
+      }>(`/payments/mock/${sessionId}/complete`, { method: "POST", token, body: { status: "SUCCEEDED" } });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
+        queryClient.invalidateQueries({ queryKey: ["org"] }),
+      ]);
+    },
+  });
+}
+
+export function useCompletePlanAssignment() {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  return useMutation({
+    mutationFn: (input: {
+      assignmentId: string;
+      exercises?: Array<{
+        id?: string;
+        name: string;
+        completed?: boolean;
+        setsCompleted?: number;
+        reps?: number;
+        weightKg?: number;
+        notes?: string;
+      }>;
+      feedback?: string;
+      progressJson?: Record<string, unknown>;
+    }) => {
+      if (!token) {
+        throw new Error("Authentication is required.");
+      }
+      return mobileApiFetch<{ progress: PlanProgressRecord; completedExercises: string[] }>(
+        `/me/plans/${input.assignmentId}/complete`,
+        {
+          method: "POST",
+          token,
+          ...(activeOrgId ? { orgId: activeOrgId } : {}),
+          body: {
+            orgId: activeOrgId,
+            exercises: input.exercises ?? [],
+            feedback: input.feedback,
+            progressJson: input.progressJson ?? {},
+          },
+        },
+      );
+    },
+    onSuccess: async (_, input) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "plans"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "plans", input.assignmentId] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
+    },
   });
 }

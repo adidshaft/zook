@@ -5,7 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { zookDemoFixtures } from "@zook/core";
 import {
   BottomNav,
   GlassCard,
@@ -18,9 +17,6 @@ import { useAuth } from "@/lib/auth";
 import { useMemberHome } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
-const demoOrg = zookDemoFixtures.organizations[0];
-const demoMembership = zookDemoFixtures.memberships.find((membership) => membership.id === "membership-aarav-hybrid");
-const demoPlan = zookDemoFixtures.trainingPlans.find((plan) => plan.id === "plan-push-day");
 const dietOptions = ["Vegetarian", "High protein", "Jain", "No preference"];
 const goalOptions = ["Muscle gain", "Fat loss", "Strength", "Mobility"];
 const allergyOptions = ["Peanuts", "Lactose", "Gluten", "Soy"];
@@ -61,15 +57,15 @@ export default function Home() {
   const memberName = session?.user.name || "Aarav Mehta";
   const firstName = memberName.split(" ")[0] || "Aarav";
   const initials = initialsFor(memberName);
-  const orgName = activeOrganization?.name ?? demoOrg?.name ?? "Iron Temple Gym";
-  const city = activeOrganization?.city ?? demoOrg?.city ?? "Pune";
+  const orgName = activeOrganization?.name ?? "Find a gym";
+  const city = activeOrganization?.city ?? "Nearby";
   const gymHref = sessionOrganization?.username
     ? (`/gym/${sessionOrganization.username}` as Href)
     : ("/find-gyms" as Href);
-  const daysLeft = demoMembership?.daysLeft ?? 22;
-  const remainingVisits = memberHome?.activeMembership?.remainingVisits ?? demoMembership?.remainingVisits ?? 8;
-  const planName = memberHome?.activePlan?.name ?? demoPlan?.title ?? "Push Day";
-  const enrolledGyms = session?.organizations.length ? session.organizations : demoOrg ? [demoOrg] : [];
+  const daysLeft = memberHome?.activeMembership?.daysLeft ?? 0;
+  const remainingVisits = memberHome?.activeMembership?.remainingVisits ?? 0;
+  const planName = memberHome?.todayPlanName ?? memberHome?.activePlan?.name ?? "No plan assigned";
+  const enrolledGyms = session?.organizations ?? [];
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -139,7 +135,7 @@ export default function Home() {
                   <Text style={styles.mutedSmall}>Active Membership</Text>
                 </View>
                 <View style={styles.membershipTitleRow}>
-                  <Text style={styles.membershipTitle}>Hybrid Pro</Text>
+                  <Text style={styles.membershipTitle}>{memberHome?.activePlan?.name ?? "Membership"}</Text>
                   <Text style={styles.daysLeft}>{daysLeft} days left</Text>
                 </View>
                 <Text style={styles.mutedBody}>{remainingVisits} visits remaining</Text>
@@ -150,8 +146,8 @@ export default function Home() {
 
           <View style={styles.metricsRow}>
             <MiniMetric label="Visits" value={`${remainingVisits}`} bars={[0.4, 0.65, 0.82, 0.58]} />
-            <MiniMetric label="Streak" value="4" bars={[0.35, 0.48, 0.7, 0.9]} />
-            <MiniMetric label="Plan" value="73%" bars={[0.52, 0.64, 0.76, 0.86]} />
+            <MiniMetric label="Streak" value={`${memberHome?.streakDays ?? 0}`} bars={[0.35, 0.48, 0.7, 0.9]} />
+            <MiniMetric label="Plan" value={`${memberHome?.assignedPlans ?? 0}`} bars={[0.52, 0.64, 0.76, 0.86]} />
           </View>
 
           <SectionHeader

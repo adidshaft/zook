@@ -2,9 +2,9 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import { Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { zookDemoFixtures } from "@zook/core";
 import {
   BottomNav,
+  EmptyState,
   ExerciseRow,
   GlassCard,
   IconBubble,
@@ -16,29 +16,44 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import {
+  useCompletePlanAssignment,
+  useMyPlans,
+  usePlanExercises,
+  type MyPlanRecord,
+  type PlanExerciseRecord,
+} from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type PlanView = "assigned" | "detail";
 type PlanFilter = "all" | "workout" | "diet";
 type PlanExercise = { name: string; sets: string; equipment: string; reps: string };
 
-const plan = zookDemoFixtures.trainingPlans[0];
-const coach = zookDemoFixtures.users.find((user) => user.id === plan?.trainerUserId);
 const filters: Array<{ label: string; value: PlanFilter }> = [
   { label: "All", value: "all" },
   { label: "Workout", value: "workout" },
   { label: "Diet", value: "diet" },
 ];
 
-const planCards = [
-  { id: "push", title: "Workout", detail: "Push Day", icon: "barbell-outline" as const, tone: "lime" as const },
-  { id: "diet", title: "Diet", detail: "High protein", icon: "nutrition-outline" as const, tone: "blue" as const },
-  { id: "routine", title: "Routine", detail: "Weekly", icon: "calendar-outline" as const, tone: "amber" as const },
-  { id: "recovery", title: "Recovery", detail: "Mobility", icon: "body-outline" as const, tone: "violet" as const },
-];
-
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function planTitle(assignment?: MyPlanRecord | null) {
+  return assignment?.plan?.title ?? "Assigned plan";
+}
+
+function planKind(assignment?: MyPlanRecord | null) {
+  return (assignment?.plan?.type ?? "WORKOUT").toLowerCase();
+}
+
+function exerciseFromApi(exercise: PlanExerciseRecord): PlanExercise {
+  return {
+    name: exercise.name,
+    sets: exercise.sets ?? "3 sets",
+    equipment: exercise.equipment ?? exercise.day ?? "Assigned",
+    reps: exercise.reps ?? exercise.raw ?? "Coach guided",
+  };
 }
 
 function SwipeExerciseRow({
@@ -136,12 +151,23 @@ export default function Plans() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const [view, setView] = useState<PlanView>("assigned");
   const [filter, setFilter] = useState<PlanFilter>("all");
-  const [completed, setCompleted] = useState(new Set(["Bench Press", "Incline Dumbbell Press"]));
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
+  const [completed, setCompleted] = useState(new Set<string>());
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackNote, setFeedbackNote] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState("");
-  const [exercises, setExercises] = useState<PlanExercise[]>(() => [...(plan?.exercises ?? [])]);
-  const coachName = coach?.name?.split(" ").slice(-1)[0] ?? "Rhea";
+  const [exercises, setExercises] = useState<PlanExercise[]>([]);
+  const plansQuery = useMyPlans();
+  const completePlan = useCompletePlanAssignment();
+  const plans = plansQuery.data?.plans ?? [];
+  const filteredPlans = plans.filter((assignment) => {
+    if (filter === "all") return true;
+    return planKind(assignment).includes(filter);
+  });
+  const selectedAssignment =
+    plans.find((assignment) => assignment.id === selectedAssignmentId) ?? filteredPlans[0] ?? plans[0] ?? null;
+  const exercisesQuery = usePlanExercises(selectedAssignment?.id);
+  const coachName = "Coach";
   const completedCount = exercises.filter((exercise) => completed.has(exercise.name)).length;
   const progress = completedCount / Math.max(exercises.length, 1);
 
@@ -150,6 +176,18 @@ export default function Plans() {
       setView("detail");
     }
   }, [params.view]);
+
+  useEffect(() => {
+    if (!selectedAssignmentId && plans[0]) {
+      setSelectedAssignmentId(plans[0].id);
+    }
+  }, [plans, selectedAssignmentId]);
+
+  useEffect(() => {
+    const apiExercises = exercisesQuery.data?.exercises ?? [];
+    setExercises(apiExercises.map(exerciseFromApi));
+    setCompleted(new Set(apiExercises.filter((exercise) => exercise.completed).map((exercise) => exercise.name)));
+  }, [exercisesQuery.data?.exercises]);
 
   function toggleExercise(name: string) {
     setCompleted((current) => {
@@ -192,11 +230,28 @@ export default function Plans() {
 
   function sendFeedback() {
     const cleanNote = feedbackNote.trim();
-    setFeedbackStatus(cleanNote ? "Sent to Coach Rhea." : "Pick one note first.");
+    setFeedbackStatus(cleanNote ? "Sent to coach." : "Pick one note first.");
     if (cleanNote) {
       setFeedbackOpen(false);
       setFeedbackNote("");
     }
+  }
+
+  async function completeWorkout() {
+    if (!selectedAssignment) {
+      return;
+    }
+    await completePlan.mutateAsync({
+      assignmentId: selectedAssignment.id,
+      exercises: exercises.map((exercise) => ({
+        name: exercise.name,
+        completed: completed.has(exercise.name),
+        notes: exercise.reps,
+      })),
+      feedback: feedbackNote.trim() || undefined,
+    });
+    setCompleted(new Set(exercises.map((exercise) => exercise.name)));
+    setFeedbackStatus("Workout marked complete.");
   }
 
   if (view === "detail") {
@@ -219,7 +274,7 @@ export default function Plans() {
                 <Ionicons name="chevron-back" size={21} color={colors.text} />
               </Pressable>
               <View style={styles.detailTitleBlock}>
-                <Text numberOfLines={1} style={styles.detailTitle}>{plan?.title ?? "Push Day"}</Text>
+                <Text numberOfLines={1} style={styles.detailTitle}>{planTitle(selectedAssignment)}</Text>
                 <Text numberOfLines={1} style={styles.detailSubtitle}>Coach {coachName}</Text>
               </View>
               <Pressable
@@ -295,6 +350,17 @@ export default function Plans() {
               }
             />
             <View style={styles.stack}>
+              {exercisesQuery.isLoading ? (
+                <GlassCard variant="compact" contentStyle={styles.stateContent}>
+                  <IconBubble icon="hourglass-outline" tone="amber" size={40} />
+                  <Text style={styles.cardTitle}>Loading exercises...</Text>
+                </GlassCard>
+              ) : null}
+              {!exercisesQuery.isLoading && !exercises.length ? (
+                <GlassCard variant="compact">
+                  <EmptyState title="No exercises yet" body="Assigned exercise details will appear here once your coach publishes them." />
+                </GlassCard>
+              ) : null}
               {exercises.map((exercise) => (
                 <SwipeExerciseRow
                   key={exercise.name}
@@ -308,10 +374,11 @@ export default function Plans() {
           </ScrollView>
           <StickyActionBar>
             <ZookButton
-              onPress={() => setCompleted(new Set(exercises.map((exercise) => exercise.name)))}
+              onPress={() => void completeWorkout()}
+              disabled={!selectedAssignment || completePlan.isPending}
               icon="checkmark-circle-outline"
             >
-              Complete Workout
+              {completePlan.isPending ? "Completing..." : "Complete Workout"}
             </ZookButton>
           </StickyActionBar>
         </ZookScreen>
@@ -347,26 +414,34 @@ export default function Plans() {
 
           <SectionHeader title="Plan library" />
           <View style={styles.libraryGrid}>
-            {planCards.map((item) => (
+            {plansQuery.isLoading ? (
+              <GlassCard variant="compact" contentStyle={styles.stateContent}>
+                <IconBubble icon="hourglass-outline" tone="amber" size={40} />
+                <Text style={styles.cardTitle}>Loading plans...</Text>
+              </GlassCard>
+            ) : null}
+            {!plansQuery.isLoading && !filteredPlans.length ? (
+              <GlassCard variant="compact" style={styles.emptyPlanCard}>
+                <EmptyState title="No plans assigned" body="Workout and diet plans from your coach will show up here." />
+              </GlassCard>
+            ) : null}
+            {filteredPlans.map((assignment) => (
               <Pressable
-                key={item.id}
+                key={assignment.id}
                 onPress={() => {
-                  if (item.id === "push") {
-                    setView("detail");
-                    return;
-                  }
-                  if (item.id === "diet") {
-                    setFilter("diet");
-                    return;
-                  }
-                  setFilter("all");
+                  setSelectedAssignmentId(assignment.id);
+                  setView("detail");
                 }}
                 accessibilityRole="button"
                 style={styles.libraryCard}
               >
-                <IconBubble icon={item.icon} tone={item.tone} size={42} />
-                <Text style={styles.libraryTitle}>{item.title}</Text>
-                <Text style={styles.libraryDetail}>{item.detail}</Text>
+                <IconBubble
+                  icon={planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"}
+                  tone={planKind(assignment).includes("diet") ? "blue" : "lime"}
+                  size={42}
+                />
+                <Text style={styles.libraryTitle}>{planTitle(assignment)}</Text>
+                <Text style={styles.libraryDetail}>{assignment.progress?.completionPct ?? 0}% complete</Text>
               </Pressable>
             ))}
           </View>
@@ -506,6 +581,12 @@ const styles = StyleSheet.create({
   stack: {
     gap: 10,
   },
+  stateContent: {
+    minHeight: 72,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
   progressContent: {
     gap: 14,
   },
@@ -577,5 +658,8 @@ const styles = StyleSheet.create({
   libraryDetail: {
     color: colors.muted,
     ...typography.small,
+  },
+  emptyPlanCard: {
+    width: "100%",
   },
 });

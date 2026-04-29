@@ -1,6 +1,5 @@
 import { Link, Stack } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { zookDemoFixtures } from "@zook/core";
 import {
   BottomNav,
   EmptyState,
@@ -14,18 +13,13 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
-const clients = zookDemoFixtures.trainerClientAssignments
-  .filter((assignment) => assignment.trainerUserId === "user-rhea" && assignment.active)
-  .map((assignment) => {
-    const user = zookDemoFixtures.users.find((candidate) => candidate.id === assignment.memberUserId);
-    const profile = zookDemoFixtures.memberProfiles.find((candidate) => candidate.userId === assignment.memberUserId);
-    const membership = zookDemoFixtures.memberships.find((candidate) => candidate.memberUserId === assignment.memberUserId);
-    return { assignment, user, profile, membership };
-  });
-
 export default function Trainer() {
+  const clientsQuery = useTrainerClients();
+  const clients = clientsQuery.data?.clients ?? [];
+  const clientsWithPlans = clients.filter((client) => (client.summary?.activePlans ?? 0) > 0).length;
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -44,33 +38,40 @@ export default function Trainer() {
 
           <View style={styles.metricGrid}>
             <MetricTile label="Assigned clients" value={String(clients.length)} detail="Scoped to you" tone="blue" />
-            <MetricTile label="Drafts" value="1" detail="Review required" tone="amber" />
-            <MetricTile label="PT sessions" value="6" detail="Aarav pack left" tone="lime" />
-            <MetricTile label="Feedback" value="2" detail="Unread notes" tone="violet" />
+            <MetricTile label="Active plans" value={String(clientsWithPlans)} detail="Assigned members" tone="amber" />
+            <MetricTile label="PT sessions" value="0" detail="Use PT records" tone="lime" />
+            <MetricTile label="Feedback" value="0" detail="Unread notes" tone="violet" />
           </View>
 
+          {clientsWithPlans ? (
           <GlassCard variant="warning" contentStyle={styles.attentionContent}>
             <View style={styles.attentionHeader}>
               <IconBubble icon="document-text-outline" tone="amber" />
               <View style={styles.attentionCopy}>
-                <Text style={styles.cardTitle}>Review required</Text>
-                <Text style={styles.cardBody}>4-week Push/Pull Routine for Aarav Mehta is hidden until you approve it.</Text>
+                <Text style={styles.cardTitle}>Plans in motion</Text>
+                <Text style={styles.cardBody}>{clientsWithPlans} assigned {clientsWithPlans === 1 ? "client has" : "clients have"} active plan work.</Text>
               </View>
             </View>
-            <ZookButton href="/trainer/client/user-aarav/ai-draft" tone="secondary" icon="reader-outline">Review Draft</ZookButton>
+            <ZookButton href={`/trainer/client/${clients[0]?.memberUserId ?? ""}`} tone="secondary" icon="reader-outline">Open Client</ZookButton>
           </GlassCard>
+          ) : null}
 
           <SectionHeader title="Assigned clients" subtitle="Trainer-visible tracking is opt-in and scoped." />
           <View style={styles.stack}>
-            {clients.length ? (
+            {clientsQuery.isLoading ? (
+              <GlassCard variant="compact" contentStyle={styles.attentionHeader}>
+                <IconBubble icon="hourglass-outline" tone="amber" />
+                <Text style={styles.cardTitle}>Loading clients...</Text>
+              </GlassCard>
+            ) : clients.length ? (
               clients.map((client) => (
-                <Link key={client.assignment.id} href={`/trainer/client/${client.assignment.memberUserId}`} asChild>
+                <Link key={client.id ?? client.memberUserId} href={`/trainer/client/${client.memberUserId}`} asChild>
                   <Pressable accessibilityRole="button">
                     <ListRow
                       title={client.user?.name ?? "Assigned client"}
-                      subtitle={`${client.profile?.goal ?? "General fitness"} · Last check-in ${client.membership?.lastCheckInLabel ?? "Not available"}`}
+                      subtitle={`${client.summary?.fitnessGoal ?? client.profile?.fitnessGoal ?? "General fitness"} · ${client.summary?.activePlans ?? 0} active plans`}
                       leading={<IconBubble icon="person-outline" tone="lime" />}
-                      trailing={<StatusChip status={client.membership?.status ?? "ACTIVE"} tone="lime" />}
+                      trailing={<StatusChip status={client.active ? "Active" : "Assigned"} tone="lime" />}
                     />
                   </Pressable>
                 </Link>
