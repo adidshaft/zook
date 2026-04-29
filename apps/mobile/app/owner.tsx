@@ -31,6 +31,7 @@ import {
   useOwnerDashboard,
   useRejectJoinRequest,
 } from "@/lib/query-hooks";
+import { useAuth } from "@/lib/auth";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type OwnerView = "command" | "approvals" | "revenue" | "stock" | "members";
@@ -80,6 +81,7 @@ function memberInitials(name?: string | null, email?: string | null) {
 
 export default function Owner() {
   const router = useRouter();
+  const { logout } = useAuth();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const view = normalizeView(params.view ?? offlineDemoViewOverride());
   const [memberSearch, setMemberSearch] = useState("");
@@ -228,6 +230,15 @@ export default function Owner() {
             <Text style={[styles.utilityText, view === "members" ? styles.utilityTextActive : null]}>
               {view === "members" ? "Back to command" : "Members"}
             </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => void logout()}
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+            style={[styles.utilityPill, styles.signOutPill]}
+          >
+            <Ionicons name="log-out-outline" size={15} color={colors.red} />
+            <Text style={[styles.utilityText, styles.signOutText]}>Sign out</Text>
           </Pressable>
         </View>
 
@@ -499,6 +510,8 @@ const styles = StyleSheet.create({
   },
   utilityRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
   },
   utilityPill: {
     minHeight: 36,
@@ -523,6 +536,13 @@ const styles = StyleSheet.create({
   },
   utilityTextActive: {
     color: colors.lime,
+  },
+  signOutPill: {
+    borderColor: "rgba(255,107,107,0.34)",
+    backgroundColor: "rgba(255,107,107,0.08)",
+  },
+  signOutText: {
+    color: colors.red,
   },
   title: {
     color: colors.text,

@@ -9,6 +9,7 @@ import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 const SESSION_STORAGE_KEY = "zook_session";
 const ACTIVE_ORG_STORAGE_KEY = "zook_active_org";
 const ACTIVE_ROLE_STORAGE_KEY = "zook_active_role";
+const OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY = "zook_offline_demo_logged_out";
 type LogoutCleanup = () => Promise<void> | void;
 
 function sanitizeOtpCode(value: string) {
@@ -130,10 +131,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setStatus("loading");
     if (isOfflineDemoMode()) {
-      const [storedOrgId, storedRole] = await Promise.all([
+      const [storedOrgId, storedRole, demoLoggedOut] = await Promise.all([
         getStoredValue(ACTIVE_ORG_STORAGE_KEY),
-        getStoredValue(ACTIVE_ROLE_STORAGE_KEY)
+        getStoredValue(ACTIVE_ROLE_STORAGE_KEY),
+        getStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY)
       ]);
+      if (demoLoggedOut === "true") {
+        setToken(undefined);
+        setSession(undefined);
+        setActiveOrgIdState(undefined);
+        setActiveRoleState(undefined);
+        setStatus("unauthenticated");
+        return;
+      }
       await hydrate(
         DEMO_AUTH_TOKEN,
         storedOrgId ?? undefined,
@@ -184,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body: { email, code: normalizedCode }
       });
+      await deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY);
       await setStoredValue(SESSION_STORAGE_KEY, result.token);
       await hydrate(result.token, activeOrgId, activeRole);
     },
@@ -211,7 +222,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } finally {
       if (isOfflineDemoMode()) {
-        await hydrate(DEMO_AUTH_TOKEN);
+        await setStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY, "true");
+        await clearSession();
       } else {
         await clearSession();
       }
