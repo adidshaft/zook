@@ -41,7 +41,7 @@ Zook is a pnpm/Turbo monorepo.
 - Local dev OTP `000000` is controlled by `OTP_FIXED_CODE_DEV`.
 - Seed/demo users and Iron Temple Gym data are deterministic in `packages/db/prisma/seed.ts`.
 - Some staff UI labels and fallback metrics still use demo-style language when data is unavailable.
-- Prisma migrations are not present yet; the repo is still `db push` oriented for local/test.
+- An initial Prisma migration baseline exists for empty databases; local docs still allow `db push` only for disposable development databases.
 
 ## What Will Be Replaced Now
 
@@ -68,6 +68,7 @@ Zook is a pnpm/Turbo monorepo.
 - Gated `/checkout/mock/demo` behind mock-payment environment rules and tightened activation copy.
 - Added backend-backed mobile privacy request status display.
 - Added `docs/QA_CHECKLIST.md` and `docs/PRODUCTION_READINESS_HANDOFF.md`.
+- Added `packages/db/prisma/migrations/20260503000000_initial_baseline/migration.sql` as the first empty-database migration baseline.
 
 ## What Stays Mock Or Provider-Ready
 
@@ -76,11 +77,11 @@ Zook is a pnpm/Turbo monorepo.
 - Push can remain mock/no-op for offline demo while in-app notifications persist.
 - Razorpay remains provider-ready until a full staging/provider certification pass is completed.
 - EAS/Expo native prebuild artifacts remain generated rather than committed unless the team chooses a checked-in native workflow.
-- Prisma migration history remains a launch blocker if not generated in this pass.
+- The initial Prisma migration baseline still needs a staging apply/rollback rehearsal before launch claims.
 
 ## Risks
 
-- No Prisma migration history means shared/staging/prod DB changes cannot be promoted safely yet.
+- The initial migration baseline has not yet been applied to a shared staging database in this pass.
 - In-process rate limiting is not enough for OTP, AI, payment, upload, and QR scan abuse in distributed deployments.
 - Existing local `.env` values may still select mock providers; release checks must be run before staging/prod builds.
 - Demo fallbacks have historically masked backend failures; production/staging should show degraded states instead.

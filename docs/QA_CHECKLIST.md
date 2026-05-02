@@ -10,7 +10,7 @@ Use this for normal development.
 cp .env.example .env
 APP_ENV=local API_MODE=backend pnpm preflight
 pnpm db:generate
-pnpm db:push
+pnpm db:deploy
 pnpm seed:demo
 pnpm dev:web
 pnpm dev:mobile
@@ -42,6 +42,7 @@ APP_ENV=local API_MODE=offline-demo EXPO_PUBLIC_API_MODE=offline-demo pnpm dev:m
 
 ```bash
 APP_ENV=staging API_MODE=backend pnpm release:preflight
+APP_ENV=staging API_MODE=backend pnpm db:deploy
 ```
 
 - `API_MODE=offline-demo` must fail release checks and mobile config.
@@ -81,6 +82,7 @@ pnpm --filter @zook/core typecheck
 pnpm --filter @zook/web typecheck
 pnpm --filter @zook/mobile typecheck
 pnpm --filter @zook/db typecheck
+set -a; source .env; set +a; pnpm --filter @zook/db exec prisma validate --schema prisma/schema.prisma
 pnpm release:preflight
 ```
 

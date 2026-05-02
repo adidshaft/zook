@@ -29,7 +29,7 @@ export async function runDbCheck(): Promise<CheckResult> {
     return fail(
       "Database connection",
       error instanceof Error ? error.message : "Database reachability check failed.",
-      "Start Postgres, verify DATABASE_URL, then run `pnpm db:push` and `pnpm db:seed`."
+      "Start Postgres, verify DATABASE_URL, then run `pnpm db:deploy` and `pnpm seed:demo` for a fresh local database."
     );
   } finally {
     await prisma.$disconnect();

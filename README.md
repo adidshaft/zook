@@ -29,13 +29,15 @@ APP_ENV=local API_MODE=backend pnpm preflight
 pnpm env:check
 pnpm release:preflight
 pnpm db:generate
-pnpm db:push
+pnpm db:deploy
 pnpm seed:demo
 pnpm dev:web
 pnpm dev:mobile
 ```
 
 Development OTP: `000000`
+
+For an older disposable local database created with `db:push`, reset/recreate the database before switching to `db:deploy`, or continue using `pnpm db:push` only for throwaway local work. Shared staging and production databases should use the committed Prisma migrations.
 
 Runtime modes:
 

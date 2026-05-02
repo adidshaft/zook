@@ -7,7 +7,7 @@ Branch: `ui-ux-production-polish-pass`
 
 Zook is now closer to a durable full-stack MVP than an offline prototype. Backend mode is the default, offline demo mode is explicit/local-only, public web gym pages and mobile role flows are increasingly backend-backed, and mock/provider behavior is guarded by environment rules.
 
-This is not a final launch certification. Payments, push, AI, object storage, Prisma migrations, and distributed rate limits still need provider/staging validation before production claims.
+This is not a final launch certification. Payments, push, AI, object storage, the initial Prisma migration deploy, and distributed rate limits still need provider/staging validation before production claims.
 
 ## Backend-Backed Now
 
@@ -31,7 +31,7 @@ This is not a final launch certification. Payments, push, AI, object storage, Pr
 
 ## Launch Gaps
 
-- Generate and commit Prisma migration history before using a shared staging/prod database.
+- Apply and validate the initial Prisma migration baseline against a disposable staging database before using a shared staging/prod database.
 - Replace in-process rate limiting with shared infrastructure for OTP, AI, attendance scan, payments, and uploads.
 - Complete Razorpay test-mode hosted checkout and webhook certification.
 - Complete Expo push device testing on physical iOS/Android devices.
@@ -53,7 +53,7 @@ This is not a final launch certification. Payments, push, AI, object storage, Pr
 pnpm install
 APP_ENV=local API_MODE=backend pnpm preflight
 pnpm db:generate
-pnpm db:push
+pnpm db:deploy
 pnpm seed:demo
 pnpm dev:web
 pnpm dev:mobile
@@ -103,4 +103,4 @@ Rules:
 
 ## Next Recommended Step
 
-Create a staging environment with a disposable Postgres database, generate the first Prisma migration from the current schema, configure Razorpay test credentials, and run the DB-backed acceptance suite plus manual iPhone release QA against that staging backend.
+Create a staging environment with a disposable Postgres database, run the committed Prisma migration baseline with `pnpm db:deploy`, configure Razorpay test credentials, and run the DB-backed acceptance suite plus manual iPhone release QA against that staging backend.
