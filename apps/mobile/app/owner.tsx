@@ -81,11 +81,12 @@ function memberInitials(name?: string | null, email?: string | null) {
 
 export default function Owner() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { activeRole, logout } = useAuth();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const view = normalizeView(params.view ?? offlineDemoViewOverride());
   const [memberSearch, setMemberSearch] = useState("");
   const [actionStatus, setActionStatus] = useState("");
+  const shellRole = activeRole === "ADMIN" ? "ADMIN" : "OWNER";
   const dashboardQuery = useOwnerDashboard();
   const membersQuery = useOrgMembers();
   const joinRequestsQuery = useOrgJoinRequests();
@@ -135,7 +136,12 @@ export default function Owner() {
     {
       id: "revenue",
       title: "Payment exceptions",
-      subtitle: `${paymentExceptionCount} ${paymentExceptionCount === 1 ? "transaction needs" : "transactions need"} confirmation`,
+      subtitle:
+        paymentExceptionCount > 0
+          ? `${paymentExceptionCount} ${
+              paymentExceptionCount === 1 ? "transaction needs" : "transactions need"
+            } review`
+          : "No transactions need review",
       count: paymentExceptionCount,
       tone: paymentExceptionCount ? "amber" : "lime",
       icon: "card-outline",
@@ -229,7 +235,7 @@ export default function Owner() {
             <ActiveGymPill label={dashboard?.organization?.name ?? "Active gym"} />
             <Text style={styles.title}>{titleForView(view)}</Text>
           </View>
-          <Pill tone="lime">Owner</Pill>
+          <Pill tone="lime">{shellRole === "ADMIN" ? "Admin" : "Owner"}</Pill>
         </View>
 
         <View style={styles.utilityRow}>
@@ -614,7 +620,7 @@ export default function Owner() {
         ) : null}
         {actionStatus ? <Text style={styles.statusText}>{actionStatus}</Text> : null}
       </ScrollView>
-      <BottomNav role="OWNER" activeView={view === "command" ? undefined : view} />
+      <BottomNav role={shellRole} activeView={view === "command" ? undefined : view} />
     </ZookScreen>
   );
 }

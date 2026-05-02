@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { LoginPanel } from "@/components/login-panel";
 import { ZookLogo } from "@/components/zook-logo";
 
@@ -7,7 +8,9 @@ export default function LoginPage() {
       <div className="absolute left-5 top-5">
         <ZookLogo />
       </div>
-      <LoginPanel />
+      <Suspense fallback={<div className="glass-panel h-[360px] w-full max-w-md rounded-[28px]" />}>
+        <LoginPanel />
+      </Suspense>
     </main>
   );
 }

@@ -111,6 +111,11 @@ export interface GymProfileData {
     address?: string | null;
     tagline?: string | null;
     gallery?: string[];
+    facilities?: string[];
+    gymType?: string | null;
+    openingHoursSummary?: string | null;
+    appStoreUrl?: string | null;
+    playStoreUrl?: string | null;
   } | null;
   branches?: Array<{
     id: string;
@@ -138,8 +143,19 @@ export interface TrainerClientRecord {
   trainerUserId?: string;
   active?: boolean;
   createdAt?: string;
-  user?: { name?: string; email?: string; phone?: string | null; dateOfBirth?: string | null; fitnessGoal?: string | null; profilePhotoUrl?: string | null } | null;
-  profile?: { fitnessGoal?: string | null; notes?: string | null; profilePhotoUrl?: string | null } | null;
+  user?: {
+    name?: string;
+    email?: string;
+    phone?: string | null;
+    dateOfBirth?: string | null;
+    fitnessGoal?: string | null;
+    profilePhotoUrl?: string | null;
+  } | null;
+  profile?: {
+    fitnessGoal?: string | null;
+    notes?: string | null;
+    profilePhotoUrl?: string | null;
+  } | null;
   summary?: {
     fitnessGoal?: string | null;
     dateOfBirth?: string | null;
@@ -508,13 +524,10 @@ export function useActiveMembership() {
   return useQuery({
     queryKey: ["me", "membership", "active", activeOrgId],
     queryFn: () =>
-      mobileApiFetch<{ membership: ActiveMembershipRecord | null }>(
-        "/me/membership/active",
-        {
-          token,
-          ...(activeOrgId ? { orgId: activeOrgId } : {}),
-        },
-      ),
+      mobileApiFetch<{ membership: ActiveMembershipRecord | null }>("/me/membership/active", {
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+      }),
     enabled: status === "authenticated" && Boolean(token),
   });
 }
@@ -533,8 +546,7 @@ export function useMyPlans() {
   const { status, token } = useAuth();
   return useQuery({
     queryKey: ["me", "plans"],
-    queryFn: () =>
-      mobileApiFetch<{ plans: MyPlanRecord[] }>("/me/plans", { token }),
+    queryFn: () => mobileApiFetch<{ plans: MyPlanRecord[] }>("/me/plans", { token }),
     enabled: status === "authenticated" && Boolean(token),
   });
 }
@@ -581,9 +593,12 @@ export function useMyNotificationPreferences() {
   return useQuery({
     queryKey: ["me", "notification-preferences"],
     queryFn: () =>
-      mobileApiFetch<{ preferences: NotificationPreferenceRecord[] }>("/me/notification-preferences", {
-        token,
-      }),
+      mobileApiFetch<{ preferences: NotificationPreferenceRecord[] }>(
+        "/me/notification-preferences",
+        {
+          token,
+        },
+      ),
     enabled: status === "authenticated" && Boolean(token),
   });
 }
@@ -640,10 +655,10 @@ export function useShopProducts(orgId?: string) {
   return useQuery({
     queryKey: ["shop", "products", resolvedOrgId],
     queryFn: () =>
-      mobileApiFetch<{ products: ShopProductRecord[] }>(
-        `/orgs/${resolvedOrgId}/products`,
-        { token, orgId: resolvedOrgId },
-      ),
+      mobileApiFetch<{ products: ShopProductRecord[] }>(`/orgs/${resolvedOrgId}/products`, {
+        token,
+        orgId: resolvedOrgId,
+      }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
   });
 }
@@ -656,8 +671,7 @@ export function useMyShopOrders() {
   const { status, token } = useAuth();
   return useQuery({
     queryKey: ["me", "shop-orders"],
-    queryFn: () =>
-      mobileApiFetch<{ orders: ShopOrderRecord[] }>("/me/shop-orders", { token }),
+    queryFn: () => mobileApiFetch<{ orders: ShopOrderRecord[] }>("/me/shop-orders", { token }),
     enabled: status === "authenticated" && Boolean(token),
   });
 }
@@ -730,10 +744,13 @@ export function useOrgJoinRequests(orgId?: string) {
   return useQuery({
     queryKey: ["org", resolvedOrgId, "join-requests"],
     queryFn: () =>
-      mobileApiFetch<{ joinRequests: OrgJoinRequestRecord[] }>(`/orgs/${resolvedOrgId}/join-requests`, {
-        token,
-        orgId: resolvedOrgId,
-      }),
+      mobileApiFetch<{ joinRequests: OrgJoinRequestRecord[] }>(
+        `/orgs/${resolvedOrgId}/join-requests`,
+        {
+          token,
+          orgId: resolvedOrgId,
+        },
+      ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
   });
 }
@@ -792,10 +809,10 @@ export function useOrgRecentPayments(orgId?: string) {
   return useQuery({
     queryKey: ["org", resolvedOrgId, "payments", "recent"],
     queryFn: () =>
-      mobileApiFetch<{ payments: OrgPaymentRecord[] }>(
-        `/orgs/${resolvedOrgId}/payments/recent`,
-        { token, orgId: resolvedOrgId },
-      ),
+      mobileApiFetch<{ payments: OrgPaymentRecord[] }>(`/orgs/${resolvedOrgId}/payments/recent`, {
+        token,
+        orgId: resolvedOrgId,
+      }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
   });
 }
@@ -860,7 +877,12 @@ export interface OrgMemberRecord {
     endsAt?: string | null;
     remainingVisits?: number | null;
   } | null;
-  assignedTrainer?: { id: string; name: string; email: string; profilePhotoUrl?: string | null } | null;
+  assignedTrainer?: {
+    id: string;
+    name: string;
+    email: string;
+    profilePhotoUrl?: string | null;
+  } | null;
 }
 
 export function useOrgMembers(orgId?: string) {
@@ -877,7 +899,10 @@ export function useOrgMembers(orgId?: string) {
   });
 }
 
-type ManualPaymentMode = Extract<PaymentMode, "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER">;
+type ManualPaymentMode = Extract<
+  PaymentMode,
+  "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER"
+>;
 
 function getMutationContext(token?: string, orgId?: string) {
   if (!token) {
@@ -979,7 +1004,12 @@ export function useManualAttendance(orgId?: string) {
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useMutation({
-    mutationFn: (body: { memberUserId: string; branchId?: string; reason: string; notes?: string }) => {
+    mutationFn: (body: {
+      memberUserId: string;
+      branchId?: string;
+      reason: string;
+      notes?: string;
+    }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
       return mobileApiFetch<{ record: ReceptionQueueRecord }>(
         `/orgs/${ctx.orgId}/attendance/manual`,
@@ -1012,10 +1042,15 @@ export function useRecordManualPayment(orgId?: string) {
       notes?: string;
     }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
-      return mobileApiFetch<{ payment: OrgPaymentRecord; subscription?: Record<string, unknown> | null }>(
-        `/orgs/${ctx.orgId}/manual-payments`,
-        { method: "POST", token: ctx.token, orgId: ctx.orgId, body },
-      );
+      return mobileApiFetch<{
+        payment: OrgPaymentRecord;
+        subscription?: Record<string, unknown> | null;
+      }>(`/orgs/${ctx.orgId}/manual-payments`, {
+        method: "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body,
+      });
     },
     onSuccess: async () => {
       await Promise.all([
@@ -1090,7 +1125,11 @@ export function useCompleteMockPayment() {
       return mobileApiFetch<{
         session: { id: string; status: string };
         payment?: OrgPaymentRecord | null;
-      }>(`/payments/mock/${sessionId}/complete`, { method: "POST", token, body: { status: "SUCCEEDED" } });
+      }>(`/payments/mock/${sessionId}/complete`, {
+        method: "POST",
+        token,
+        body: { status: "SUCCEEDED" },
+      });
     },
     onSuccess: async () => {
       await Promise.all([

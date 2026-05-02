@@ -42,6 +42,11 @@ export type PublicGymProfileData = {
     logoUrl: string | null;
     tagline: string | null;
     gallery: string[];
+    facilities: string[];
+    gymType: string | null;
+    openingHoursSummary: string | null;
+    appStoreUrl: string | null;
+    playStoreUrl: string | null;
   };
   plans: PublicGymPlan[];
   trainers: PublicGymTrainer[];
@@ -50,25 +55,39 @@ export type PublicGymProfileData = {
 };
 
 function canUsePublicDemoFallback() {
-  return getAppEnv() === "local" && (process.env.API_MODE === "offline-demo" || isTruthy(process.env.WEB_DEMO_FALLBACK));
+  return (
+    getAppEnv() === "local" &&
+    (process.env.API_MODE === "offline-demo" || isTruthy(process.env.WEB_DEMO_FALLBACK))
+  );
 }
 
 function stringArray(value: unknown) {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
 }
 
 function settingsRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
-function demoPublicGymProfile(username: string, referralCode?: string): PublicGymProfileData | null {
-  const org = zookDemoFixtures.organizations.find((gym) => gym.username === username) ?? zookDemoFixtures.organizations[0];
+function demoPublicGymProfile(
+  username: string,
+  referralCode?: string,
+): PublicGymProfileData | null {
+  const org =
+    zookDemoFixtures.organizations.find((gym) => gym.username === username) ??
+    zookDemoFixtures.organizations[0];
   if (!org) {
     return null;
   }
   const usersById = new Map(zookDemoFixtures.users.map((user) => [user.id, user]));
   const referral = referralCode
-    ? zookDemoFixtures.referralCodes.find((code) => code.code.toLowerCase() === referralCode.toLowerCase())
+    ? zookDemoFixtures.referralCodes.find(
+        (code) => code.code.toLowerCase() === referralCode.toLowerCase(),
+      )
     : null;
   return {
     connected: false,
@@ -84,7 +103,12 @@ function demoPublicGymProfile(username: string, referralCode?: string): PublicGy
       coverImageUrl: null,
       logoUrl: null,
       tagline: null,
-      gallery: []
+      gallery: [],
+      facilities: [],
+      gymType: null,
+      openingHoursSummary: null,
+      appStoreUrl: null,
+      playStoreUrl: null,
     },
     plans: zookDemoFixtures.membershipPlans
       .filter((plan) => plan.orgId === org.id && plan.publicVisible)
@@ -96,7 +120,7 @@ function demoPublicGymProfile(username: string, referralCode?: string): PublicGy
         pricePaise: plan.pricePaise,
         durationDays: plan.durationDays,
         visitLimit: plan.visitLimit || null,
-        publicVisible: plan.publicVisible
+        publicVisible: plan.publicVisible,
       })),
     trainers: zookDemoFixtures.trainerClientAssignments
       .filter((assignment) => assignment.orgId === org.id)
@@ -108,7 +132,7 @@ function demoPublicGymProfile(username: string, referralCode?: string): PublicGy
           profilePhotoUrl: null,
           bio: null,
           specialties: null,
-          visibleToMembers: true
+          visibleToMembers: true,
         };
       }),
     referral: referral
@@ -116,13 +140,16 @@ function demoPublicGymProfile(username: string, referralCode?: string): PublicGy
           code: referral.code,
           status: referral.status,
           discountPaise: referral.discountPaise,
-          discountPercentBps: null
+          discountPercentBps: null,
         }
-      : null
+      : null,
   };
 }
 
-async function publicGymProfileFromDb(username: string, referralCode?: string): Promise<PublicGymProfileData | null> {
+async function publicGymProfileFromDb(
+  username: string,
+  referralCode?: string,
+): Promise<PublicGymProfileData | null> {
   const org = await prisma.organization.findUnique({ where: { username } });
   if (!org || org.visibility === "HIDDEN") {
     return null;
@@ -132,18 +159,18 @@ async function publicGymProfileFromDb(username: string, referralCode?: string): 
     prisma.membershipPlan.findMany({
       where: { orgId: org.id, active: true, publicVisible: true },
       orderBy: [{ pricePaise: "asc" }, { createdAt: "asc" }],
-      take: 12
+      take: 12,
     }),
     prisma.organizationRoleAssignment.findMany({
       where: { orgId: org.id, role: "TRAINER" },
-      take: 8
+      take: 8,
     }),
     prisma.organizationSetting.findUnique({ where: { orgId: org.id } }),
     referralCode
       ? prisma.referralCode.findUnique({
-          where: { code: referralCode.toUpperCase() }
+          where: { code: referralCode.toUpperCase() },
         })
-      : Promise.resolve(null)
+      : Promise.resolve(null),
   ]);
 
   const trainerUserIds = trainerAssignments.map((assignment) => assignment.userId);
@@ -156,11 +183,13 @@ async function publicGymProfileFromDb(username: string, referralCode?: string): 
       : Promise.resolve([]),
     referral?.couponId
       ? prisma.coupon.findFirst({ where: { id: referral.couponId, orgId: org.id, active: true } })
-      : Promise.resolve(null)
+      : Promise.resolve(null),
   ]);
 
   const trainerUsersById = new Map(trainerUsers.map((user) => [user.id, user]));
-  const trainerProfilesByUserId = new Map(trainerProfiles.map((profile) => [profile.userId, profile]));
+  const trainerProfilesByUserId = new Map(
+    trainerProfiles.map((profile) => [profile.userId, profile]),
+  );
   const settingValues = settingsRecord(settings?.keyValues);
   const referralBelongsToOrg = referral?.orgId === org.id;
 
@@ -178,7 +207,16 @@ async function publicGymProfileFromDb(username: string, referralCode?: string): 
       coverImageUrl: org.coverImageUrl,
       logoUrl: org.logoUrl,
       tagline: typeof settingValues.tagline === "string" ? settingValues.tagline : null,
-      gallery: stringArray(settingValues.gallery)
+      gallery: stringArray(settingValues.gallery),
+      facilities: stringArray(settingValues.facilities),
+      gymType: typeof settingValues.gymType === "string" ? settingValues.gymType : null,
+      openingHoursSummary:
+        typeof settingValues.openingHoursSummary === "string"
+          ? settingValues.openingHoursSummary
+          : null,
+      appStoreUrl: typeof settingValues.appStoreUrl === "string" ? settingValues.appStoreUrl : null,
+      playStoreUrl:
+        typeof settingValues.playStoreUrl === "string" ? settingValues.playStoreUrl : null,
     },
     plans: plans.map((plan) => ({
       id: plan.id,
@@ -188,7 +226,7 @@ async function publicGymProfileFromDb(username: string, referralCode?: string): 
       pricePaise: plan.pricePaise,
       durationDays: plan.durationDays,
       visitLimit: plan.visitLimit,
-      publicVisible: plan.publicVisible
+      publicVisible: plan.publicVisible,
     })),
     trainers: trainerAssignments.map((assignment) => {
       const user = trainerUsersById.get(assignment.userId) ?? null;
@@ -199,7 +237,7 @@ async function publicGymProfileFromDb(username: string, referralCode?: string): 
         profilePhotoUrl: user?.profilePhotoUrl ?? null,
         bio: profile?.bio ?? null,
         specialties: profile?.specialties ?? null,
-        visibleToMembers: profile?.visibleToMembers ?? true
+        visibleToMembers: profile?.visibleToMembers ?? true,
       };
     }),
     referral:
@@ -208,9 +246,9 @@ async function publicGymProfileFromDb(username: string, referralCode?: string): 
             code: referral.code,
             status: referral.status,
             discountPaise: coupon?.valuePaise ?? 0,
-            discountPercentBps: coupon?.valuePercentBps ?? null
+            discountPercentBps: coupon?.valuePercentBps ?? null,
           }
-        : null
+        : null,
   };
 }
 

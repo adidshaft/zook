@@ -13,6 +13,7 @@ import {
   ZookChip,
   ZookScreen,
 } from "@/components/primitives";
+import { useAuth } from "@/lib/auth";
 import { useMyAttendance } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -57,6 +58,7 @@ export default function AttendanceResultScreen() {
     checkedInAt?: string | string[];
     reason?: string | string[];
   }>();
+  const { activeRole } = useAuth();
   const attendanceQuery = useMyAttendance();
   const records = (attendanceQuery.data?.attendance ?? []) as AttendanceRecord[];
   const attendanceRecordId = firstParam(routeParams.attendanceRecordId);
@@ -69,18 +71,27 @@ export default function AttendanceResultScreen() {
     ...recordFromApi,
     ...(routeStatus ? { status: routeStatus } : {}),
     ...(firstParam(routeParams.entryCode) ? { entryCode: firstParam(routeParams.entryCode) } : {}),
-    ...(firstParam(routeParams.branchName) ? { branchName: firstParam(routeParams.branchName) } : {}),
+    ...(firstParam(routeParams.branchName)
+      ? { branchName: firstParam(routeParams.branchName) }
+      : {}),
     ...(firstParam(routeParams.planName) ? { planName: firstParam(routeParams.planName) } : {}),
-    ...(firstParam(routeParams.checkedInAt) ? { checkedInAt: firstParam(routeParams.checkedInAt) } : {}),
+    ...(firstParam(routeParams.checkedInAt)
+      ? { checkedInAt: firstParam(routeParams.checkedInAt) }
+      : {}),
     ...(firstParam(routeParams.reason) ? { reason: firstParam(routeParams.reason) } : {}),
   };
 
   const pending = record.status === "PENDING_APPROVAL";
-  const approved = !pending;
+  const blocked = record.status === "REJECTED" || record.status === "FLAGGED";
+  const approved = !pending && !blocked;
   const tone = pending ? "amber" : approved ? "lime" : "red";
   const code = record.entryCode ?? record.id.slice(-8).toUpperCase();
-  const branchName = record.branchName === "Default Branch" ? "Default branch" : record.branchName ?? "Assigned branch";
+  const branchName =
+    record.branchName === "Default Branch"
+      ? "Default branch"
+      : (record.branchName ?? "Assigned branch");
   const planName = record.planName ?? "Active membership";
+  const planTarget = activeRole === "TRAINER" ? "/trainer?view=plans" : "/plans?view=detail";
 
   return (
     <>
@@ -96,7 +107,7 @@ export default function AttendanceResultScreen() {
             subtitle={pending ? branchName : undefined}
             leading={
               <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace("/scan")}
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/scan"))}
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
                 style={styles.iconButton}
@@ -109,15 +120,19 @@ export default function AttendanceResultScreen() {
           <View style={styles.hero}>
             <StatusRing
               tone={tone}
-              icon={pending ? "time-outline" : "checkmark"}
+              icon={pending ? "time-outline" : blocked ? "alert-circle-outline" : "checkmark"}
               size={pending ? 88 : 92}
               progress={pending ? 0.52 : 0.86}
             />
-            <Text style={styles.heroTitle}>{pending ? "Waiting for desk approval" : "Checked in"}</Text>
+            <Text style={styles.heroTitle}>
+              {pending ? "Waiting for desk approval" : blocked ? "Desk help needed" : "Checked in"}
+            </Text>
             <Text style={styles.heroBody}>
               {pending
                 ? "Your check-in was received. Show this code at the front desk."
-                : "Entry approved for your gym"}
+                : blocked
+                  ? (record.reason ?? "Please ask the front desk to review this check-in.")
+                  : "Entry approved for your gym"}
             </Text>
           </View>
 
@@ -138,18 +153,38 @@ export default function AttendanceResultScreen() {
                 <View style={styles.reasonCopy}>
                   <Text style={styles.reasonTitle}>Why confirmation?</Text>
                   <Text style={styles.reasonBody}>
-                    Your gym asks the desk to confirm some check-ins before entry is marked approved.
+                    Your gym asks the desk to confirm some check-ins before entry is marked
+                    approved.
                   </Text>
                 </View>
               </GlassCard>
 
-              <ZookButton href="/attendance/attendance-approved" icon="refresh-outline">View Status</ZookButton>
-              <ZookButton href="/" tone="secondary" icon="home-outline">Back to Home</ZookButton>
+              <ZookButton href="/attendance/attendance-approved" icon="refresh-outline">
+                View Status
+              </ZookButton>
+              <ZookButton href="/" tone="secondary" icon="home-outline">
+                Back to Home
+              </ZookButton>
               <Link href="/attendance/attendance-approved" asChild>
                 <Pressable accessibilityRole="link" style={styles.historyLink}>
                   <Text style={styles.historyText}>View Attendance History</Text>
                 </Pressable>
               </Link>
+            </>
+          ) : blocked ? (
+            <>
+              <GlassCard variant="warning" contentStyle={styles.reasonContent}>
+                <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
+                <View style={styles.reasonCopy}>
+                  <Text style={styles.reasonTitle}>Check-in not approved</Text>
+                  <Text style={styles.reasonBody}>
+                    {record.reason || "The desk can help you complete this check-in."}
+                  </Text>
+                </View>
+              </GlassCard>
+              <ZookButton href="/scan" tone="secondary" icon="qr-code-outline">
+                Try again
+              </ZookButton>
             </>
           ) : (
             <>
@@ -161,21 +196,34 @@ export default function AttendanceResultScreen() {
                   <Text style={styles.codeDetail}>Show this to the front desk if asked.</Text>
                 </View>
                 <View style={styles.divider} />
-                <DetailLine label="Time" value={formatTime(record.checkedInAt)} icon="time-outline" />
+                <DetailLine
+                  label="Time"
+                  value={formatTime(record.checkedInAt)}
+                  icon="time-outline"
+                />
                 <DetailLine label="Branch" value={branchName} icon="shield-checkmark-outline" />
                 <DetailLine label="Plan" value={planName} icon="reader-outline" />
-                <DetailLine label="Status" value={titleCaseStatus(record.status)} icon="checkmark-circle-outline" highlight />
+                <DetailLine
+                  label="Status"
+                  value={titleCaseStatus(record.status)}
+                  icon="checkmark-circle-outline"
+                  highlight
+                />
               </GlassCard>
 
               <GlassCard contentStyle={styles.nextContent}>
                 <IconBubble icon="barbell-outline" tone="lime" size={44} />
                 <View style={styles.nextCopy}>
                   <Text style={styles.nextTitle}>Next up</Text>
-                  <Text style={styles.nextBody}>Open your latest assigned plan when you are ready.</Text>
+                  <Text style={styles.nextBody}>
+                    Open your latest assigned plan when you are ready.
+                  </Text>
                 </View>
-                <Link href="/plans" asChild>
+                <Link href={planTarget} asChild>
                   <Pressable accessibilityRole="link">
-                    <ZookChip tone="lime" icon="chevron-forward">Open Plan</ZookChip>
+                    <ZookChip tone="lime" icon="chevron-forward">
+                      Open Plan
+                    </ZookChip>
                   </Pressable>
                 </Link>
               </GlassCard>
@@ -203,7 +251,11 @@ function DetailLine({
     <ListRow
       title={label}
       leading={<IconBubble icon={icon} tone={highlight ? "lime" : "neutral"} size={28} />}
-      trailing={<Text style={[styles.detailValue, highlight ? styles.detailValueHighlight : null]}>{value}</Text>}
+      trailing={
+        <Text style={[styles.detailValue, highlight ? styles.detailValueHighlight : null]}>
+          {value}
+        </Text>
+      }
       style={styles.detailLine}
     />
   );

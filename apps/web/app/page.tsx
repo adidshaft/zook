@@ -7,7 +7,7 @@ export default function HomePage() {
   const featureCards: Array<[LucideIcon, string, string]> = [
     [Dumbbell, "Active plan", "Hybrid Pro"],
     [MapPin, "Pune gym", "Iron Temple"],
-    [ShieldCheck, "Secure access", "Server QR"]
+    [ShieldCheck, "Secure access", "Server QR"],
   ];
 
   return (
@@ -16,10 +16,16 @@ export default function HomePage() {
         <header className="flex items-center justify-between">
           <ZookLogo />
           <div className="flex items-center gap-2">
-            <Link href="/login" className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70">
+            <Link
+              href="/login"
+              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
+            >
               Login
             </Link>
-            <Link href="/dashboard" className="rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black">
+            <Link
+              href="/dashboard"
+              className="rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
+            >
               Dashboard
             </Link>
           </div>
@@ -32,14 +38,27 @@ export default function HomePage() {
               The operating system for modern gyms.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/58">
-              Manage memberships, rolling QR entry, trainer plans, reception approvals, shop pickup, and provider readiness from one operating system.
+              Manage memberships, rolling QR entry, trainer plans, reception approvals, shop pickup,
+              and provider readiness from one operating system.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/login" className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black">
+              <Link
+                href="/login"
+                className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+              >
                 Sign in to Dashboard
                 <ArrowRight size={18} />
               </Link>
-              <Link href="/g/iron-temple" className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-5 py-3 text-white/75">
+              <Link
+                href="/login?redirect=/start-gym"
+                className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-5 py-3 text-white/75"
+              >
+                Start a gym
+              </Link>
+              <Link
+                href="/in/iron-house"
+                className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-5 py-3 text-white/75"
+              >
                 View gym profile
               </Link>
             </div>

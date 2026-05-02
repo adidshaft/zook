@@ -37,6 +37,8 @@ export default function Trainer() {
     (client) => (client.summary?.activePlans ?? 0) > 0,
   ).length;
   const plannedClients = clients.filter((client) => (client.summary?.activePlans ?? 0) > 0);
+  const firstPlannedClientId = plannedClients[0]?.memberUserId ?? firstClientId;
+  const clientsNeedingPlans = Math.max(clients.length - clientsWithPlans, 0);
   const title = view === "clients" ? "Clients" : view === "plans" ? "Plan work" : "Trainer home";
 
   function openClient(clientId?: string) {
@@ -76,8 +78,12 @@ export default function Trainer() {
                   detail="Assigned members"
                   tone="amber"
                 />
-                <MetricTile label="PT sessions" value="0" detail="This month" tone="lime" />
-                <MetricTile label="Feedback" value="0" detail="From clients" tone="violet" />
+                <MetricTile
+                  label="Needs plan"
+                  value={String(clientsNeedingPlans)}
+                  detail="Assigned clients"
+                  tone="lime"
+                />
               </View>
 
               {clientsWithPlans ? (
@@ -93,8 +99,10 @@ export default function Trainer() {
                     </View>
                   </View>
                   <ZookButton
-                    onPress={() => openClient(firstClientId)}
-                    disabled={!firstClientId}
+                    href={
+                      firstPlannedClientId ? `/trainer/client/${firstPlannedClientId}` : undefined
+                    }
+                    disabled={!firstPlannedClientId}
                     tone="secondary"
                     icon="reader-outline"
                   >

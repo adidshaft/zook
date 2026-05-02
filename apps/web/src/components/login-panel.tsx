@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArrowRight, Mail } from "lucide-react";
 import { ApiError } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
 
 export function LoginPanel() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("owner@zook.local");
   const [code, setCode] = useState("000000");
   const [stage, setStage] = useState<"email" | "otp">("email");
@@ -15,9 +17,13 @@ export function LoginPanel() {
     try {
       const payload = await webApiFetch<{ devOtp?: string }>("/api/auth/request-otp", {
         method: "POST",
-        body: { email }
+        body: { email },
       });
-      setMessage(payload.devOtp ? `OTP sent to ${email}. Dev code is ${payload.devOtp}.` : `OTP sent to ${email}.`);
+      setMessage(
+        payload.devOtp
+          ? `OTP sent to ${email}. Dev code is ${payload.devOtp}.`
+          : `OTP sent to ${email}.`,
+      );
       setStage("otp");
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Unable to send OTP.");
@@ -28,9 +34,13 @@ export function LoginPanel() {
     try {
       await webApiFetch("/api/auth/verify-otp", {
         method: "POST",
-        body: { email, code }
+        body: { email, code },
       });
-      window.location.href = email.startsWith("platform") ? "/platform" : "/dashboard";
+      const redirect = searchParams.get("redirect");
+      const safeRedirect =
+        redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
+      window.location.href =
+        safeRedirect ?? (email.startsWith("platform") ? "/platform" : "/dashboard");
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Unable to verify OTP.");
     }

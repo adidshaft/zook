@@ -16,10 +16,16 @@ import {
   Shield,
   Store,
   UserPlus,
-  Users
+  Users,
 } from "lucide-react";
 import { DashboardOperationalPanel } from "./dashboard-operational-panel";
-import { EmptyState, MetricCard, ReadoutGrid, SectionHeader, StatusPill } from "./dashboard-primitives";
+import {
+  EmptyState,
+  MetricCard,
+  ReadoutGrid,
+  SectionHeader,
+  StatusPill,
+} from "./dashboard-primitives";
 import { GlassCard, Pill, type PillTone } from "./glass-card";
 import { ZookLogo } from "./zook-logo";
 import { formatDate, formatDaysRemaining, formatEnumLabel, titleFromSection } from "@/lib/format";
@@ -41,7 +47,7 @@ const nav = [
   ["Settings", "/dashboard/settings", Settings],
   ["Audit", "/dashboard/audit", History],
   ["Organization", "/dashboard/org", MapPin],
-  ["Inventory Ops", "/dashboard/shop/orders", Package]
+  ["Inventory Ops", "/dashboard/shop/orders", Package],
 ] as const;
 
 function isActiveNav(href: string, sectionKey: string) {
@@ -67,7 +73,7 @@ function metricTone(label: string) {
 
 export function DashboardShell({
   section,
-  data
+  data,
 }: {
   section: string[] | undefined;
   data: Awaited<ReturnType<typeof import("@/lib/data").getDashboardData>>;
@@ -83,8 +89,14 @@ export function DashboardShell({
           <GlassCard variant="strong">
             <EmptyState
               title="No active organization is available"
-              description="The dashboard session is live, but there is no current organization bound to this view. Re-select the org or re-seed local data."
+              description="The dashboard session is live, but there is no gym bound to this view yet. Owners can create a gym profile from the web setup flow."
             />
+            <Link
+              href="/start-gym"
+              className="zook-focus mt-5 inline-flex rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+            >
+              Start a gym
+            </Link>
           </GlassCard>
         </div>
       </main>
@@ -101,26 +113,26 @@ export function DashboardShell({
       label: "Display QR entry",
       href: "/dashboard/attendance/approvals",
       detail: `${data.summary.todayAttendance} scans today`,
-      tone: "lime"
+      tone: "lime",
     },
     {
       label: "Process join requests",
       href: "/dashboard/members",
       detail: `${data.summary.joinRequests} membership handoffs`,
-      tone: data.summary.joinRequests > 0 ? "amber" : "lime"
+      tone: data.summary.joinRequests > 0 ? "amber" : "lime",
     },
     {
       label: "Check inventory risk",
       href: "/dashboard/shop/products",
       detail: `${data.summary.lowStockProducts} low-stock SKUs`,
-      tone: data.summary.lowStockProducts > 0 ? "amber" : "blue"
+      tone: data.summary.lowStockProducts > 0 ? "amber" : "blue",
     },
     {
       label: "Inspect audit and AI",
       href: "/dashboard/audit",
       detail: `${data.auditLogCount} audit entries`,
-      tone: data.auditLogCount > 0 ? "blue" : "neutral"
-    }
+      tone: data.auditLogCount > 0 ? "blue" : "neutral",
+    },
   ];
 
   return (
@@ -130,7 +142,9 @@ export function DashboardShell({
           <GlassCard variant="strong" className="p-4">
             <ZookLogo />
             <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">Live organization</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
+                Live organization
+              </p>
               <p className="mt-3 text-lg font-semibold text-white">{activeOrg.name}</p>
               <p className="mt-1 text-sm text-white/48">
                 {activeOrg.city}
@@ -171,7 +185,9 @@ export function DashboardShell({
             </Link>
 
             <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">Ops posture</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
+                Ops posture
+              </p>
               <ReadoutGrid
                 className="mt-4"
                 columns={1}
@@ -179,18 +195,18 @@ export function DashboardShell({
                   {
                     label: "Attendance mode",
                     value: formatEnumLabel(activeOrg.attendanceMode),
-                    meta: `${data.summary.todayAttendance} QR entry scans today`
+                    meta: `${data.summary.todayAttendance} QR entry scans today`,
                   },
                   {
                     label: "Trial runway",
                     value: formatDaysRemaining(data.summary.trialDaysRemaining),
-                    meta: formatDate(activeOrg.trialEndAt)
+                    meta: formatDate(activeOrg.trialEndAt),
                   },
                   {
                     label: "Escalation lane",
                     value: activeOrg.contactEmail ?? activeOrg.contactPhone ?? "Desk-owned",
-                    meta: "Primary contact for ops issues"
-                  }
+                    meta: "Primary contact for ops issues",
+                  },
                 ]}
               />
             </div>
@@ -208,9 +224,12 @@ export function DashboardShell({
                   <StatusPill value={formatEnumLabel(activeOrg.status)} />
                   <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />
                 </div>
-                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">{title}</h1>
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+                  {title}
+                </h1>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
-                  Today's command board for owners and admins. Review members, payments, QR attendance, trainer work, shop pickup, reports, staff actions, and audit posture.
+                  Today's command board for owners and admins. Review members, payments, QR
+                  attendance, trainer work, shop pickup, reports, staff actions, and audit posture.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -281,23 +300,23 @@ export function DashboardShell({
                     {
                       label: "Location",
                       value: `${activeOrg.city}${activeOrg.state ? `, ${activeOrg.state}` : ""}`,
-                      meta: "Current operating geography"
+                      meta: "Current operating geography",
                     },
                     {
                       label: "Join mode",
                       value: formatEnumLabel(activeOrg.joinMode),
-                      meta: `${data.summary.joinRequests} inbound requests`
+                      meta: `${data.summary.joinRequests} inbound requests`,
                     },
                     {
                       label: "Attendance mode",
                       value: formatEnumLabel(activeOrg.attendanceMode),
-                      meta: `${data.summary.todayAttendance} check-ins today`
+                      meta: `${data.summary.todayAttendance} check-ins today`,
                     },
                     {
                       label: "Trial end",
                       value: formatDate(activeOrg.trialEndAt),
-                      meta: formatDaysRemaining(data.summary.trialDaysRemaining)
-                    }
+                      meta: formatDaysRemaining(data.summary.trialDaysRemaining),
+                    },
                   ]}
                   columns={2}
                 />
@@ -318,7 +337,7 @@ export function DashboardShell({
               attendanceMode: activeOrg.attendanceMode,
               trialEndAt: activeOrg.trialEndAt,
               contactEmail: activeOrg.contactEmail,
-              contactPhone: activeOrg.contactPhone
+              contactPhone: activeOrg.contactPhone,
             }}
             summary={data.summary}
             auditLogCount={data.auditLogCount}

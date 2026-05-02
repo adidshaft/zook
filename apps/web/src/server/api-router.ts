@@ -330,6 +330,32 @@ const organizationLocationSchema = z
     "Provide manual latitude/longitude or a Google Maps link.",
   );
 
+const organizationPublicProfileSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  username: z.string().trim().min(3).max(32).optional(),
+  contactPhone: z.string().trim().min(8).max(20),
+  contactEmail: z.string().trim().email(),
+  address: z.string().trim().min(3).max(240),
+  city: z.string().trim().min(2).max(80),
+  state: z.string().trim().min(2).max(80),
+  pincode: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/),
+  amenities: z.array(z.string().trim().min(2).max(80)).default([]),
+  visibility: z.enum(["PUBLIC", "INVITE_ONLY", "HIDDEN"]),
+  joinMode: z.enum(["OPEN_JOIN", "APPROVAL_REQUIRED", "INVITE_ONLY"]),
+  logoUrl: z.string().trim().url().optional().or(z.literal("")),
+  coverImageUrl: z.string().trim().url().optional().or(z.literal("")),
+  tagline: z.string().trim().max(160).optional(),
+  gallery: z.array(z.string().trim().url()).max(8).default([]),
+  facilities: z.array(z.string().trim().min(2).max(80)).max(24).default([]),
+  gymType: z.string().trim().max(80).optional(),
+  openingHoursSummary: z.string().trim().max(160).optional(),
+  appStoreUrl: z.string().trim().url().optional().or(z.literal("")),
+  playStoreUrl: z.string().trim().url().optional().or(z.literal("")),
+});
+
 const trainerProfileAssetSchema = z.object({
   upiId: z.string().trim().max(120).optional(),
   upiQrAssetId: z.string().optional(),
@@ -2663,6 +2689,20 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           settingValues.gallery.every((item) => typeof item === "string")
             ? settingValues.gallery
             : [],
+        facilities:
+          Array.isArray(settingValues.facilities) &&
+          settingValues.facilities.every((item) => typeof item === "string")
+            ? settingValues.facilities
+            : [],
+        gymType: typeof settingValues.gymType === "string" ? settingValues.gymType : null,
+        openingHoursSummary:
+          typeof settingValues.openingHoursSummary === "string"
+            ? settingValues.openingHoursSummary
+            : null,
+        appStoreUrl:
+          typeof settingValues.appStoreUrl === "string" ? settingValues.appStoreUrl : null,
+        playStoreUrl:
+          typeof settingValues.playStoreUrl === "string" ? settingValues.playStoreUrl : null,
       },
       branches,
       trainers: trainerAssignments.map((assignment) => {
@@ -2775,6 +2815,175 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       return ok({ org: null });
     }
     return ok({ org: await prisma.organization.findUnique({ where: { id: membership.orgId } }) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "profile"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ORG_MANAGE_PROFILE");
+    const [org, settings, branches] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: orgId } }),
+      prisma.organizationSetting.findUnique({ where: { orgId } }),
+      prisma.branch.findMany({
+        where: { orgId },
+        orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+      }),
+    ]);
+    if (!org) {
+      throw notFoundError("Organization not found");
+    }
+    const settingValues = getObjectMetadata(settings?.keyValues);
+    return ok({
+      org: {
+        ...org,
+        tagline: typeof settingValues.tagline === "string" ? settingValues.tagline : "",
+        gallery: Array.isArray(settingValues.gallery)
+          ? settingValues.gallery.filter((item): item is string => typeof item === "string")
+          : [],
+        facilities: Array.isArray(settingValues.facilities)
+          ? settingValues.facilities.filter((item): item is string => typeof item === "string")
+          : [],
+        gymType: typeof settingValues.gymType === "string" ? settingValues.gymType : "",
+        openingHoursSummary:
+          typeof settingValues.openingHoursSummary === "string"
+            ? settingValues.openingHoursSummary
+            : "",
+        appStoreUrl: typeof settingValues.appStoreUrl === "string" ? settingValues.appStoreUrl : "",
+        playStoreUrl:
+          typeof settingValues.playStoreUrl === "string" ? settingValues.playStoreUrl : "",
+      },
+      branches,
+      links: {
+        publicProfile: `/in/${org.username}`,
+        join: `/join/${org.username}`,
+        appDeepLink: `zook://join/${org.username}`,
+        qr: `/qr/${org.username}?target=join`,
+      },
+    });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "profile"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_PROFILE");
+    const body = organizationPublicProfileSchema.parse(await readJson(request));
+    const existing = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!existing) {
+      throw notFoundError("Organization not found");
+    }
+    const nextUsername = body.username ? normalizeUsername(body.username) : existing.username;
+    if (nextUsername !== existing.username) {
+      const usernameOwner = await prisma.organization.findUnique({
+        where: { username: nextUsername },
+      });
+      if (usernameOwner && usernameOwner.id !== orgId) {
+        throw conflictError("This public username is already taken.");
+      }
+    }
+    const org = await prisma.$transaction(async (tx) => {
+      const updated = await tx.organization.update({
+        where: { id: orgId },
+        data: clean({
+          name: body.name,
+          username: nextUsername,
+          contactPhone: body.contactPhone,
+          contactEmail: body.contactEmail,
+          address: body.address,
+          city: body.city,
+          state: body.state,
+          pincode: body.pincode,
+          amenities: body.amenities,
+          visibility: body.visibility,
+          joinMode: body.joinMode,
+          logoUrl: body.logoUrl || null,
+          coverImageUrl: body.coverImageUrl || null,
+        }),
+      });
+      if (nextUsername !== existing.username) {
+        await tx.organizationUsernameHistory.create({
+          data: {
+            orgId,
+            oldUsername: existing.username,
+            newUsername: nextUsername,
+            changedById: userId,
+          },
+        });
+      }
+      const currentSettings = await tx.organizationSetting.findUnique({ where: { orgId } });
+      const currentValues = getObjectMetadata(currentSettings?.keyValues);
+      await tx.organizationSetting.upsert({
+        where: { orgId },
+        create: {
+          orgId,
+          keyValues: {
+            ...currentValues,
+            tagline: body.tagline ?? "",
+            gallery: body.gallery,
+            facilities: body.facilities,
+            gymType: body.gymType ?? "",
+            openingHoursSummary: body.openingHoursSummary ?? "",
+            appStoreUrl: body.appStoreUrl || "",
+            playStoreUrl: body.playStoreUrl || "",
+          } as Prisma.InputJsonValue,
+        },
+        update: {
+          keyValues: {
+            ...currentValues,
+            tagline: body.tagline ?? "",
+            gallery: body.gallery,
+            facilities: body.facilities,
+            gymType: body.gymType ?? "",
+            openingHoursSummary: body.openingHoursSummary ?? "",
+            appStoreUrl: body.appStoreUrl || "",
+            playStoreUrl: body.playStoreUrl || "",
+          } as Prisma.InputJsonValue,
+        },
+      });
+      await tx.branch.updateMany({
+        where: { orgId, isDefault: true },
+        data: {
+          address: body.address,
+          city: body.city,
+          state: body.state,
+          pincode: body.pincode,
+        },
+      });
+      return updated;
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "organization.public_profile_updated",
+      entityType: "organization",
+      entityId: orgId,
+      metadata: {
+        username: org.username,
+        visibility: org.visibility,
+        joinMode: org.joinMode,
+      },
+    });
+    const branches = await prisma.branch.findMany({
+      where: { orgId },
+      orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+    });
+    return ok({
+      org: {
+        ...org,
+        tagline: body.tagline ?? "",
+        gallery: body.gallery,
+        facilities: body.facilities,
+        gymType: body.gymType ?? "",
+        openingHoursSummary: body.openingHoursSummary ?? "",
+        appStoreUrl: body.appStoreUrl || "",
+        playStoreUrl: body.playStoreUrl || "",
+      },
+      branches,
+      links: {
+        publicProfile: `/in/${org.username}`,
+        join: `/join/${org.username}`,
+        appDeepLink: `zook://join/${org.username}`,
+        qr: `/qr/${org.username}?target=join`,
+      },
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "dashboard"])) {
     const orgId = path[1]!;

@@ -80,6 +80,10 @@ function LayoutContent() {
       return;
     }
 
+    if (pathname.startsWith("/platform") && !hasActiveRole("PLATFORM_ADMIN")) {
+      router.replace(defaultRoute as never);
+      return;
+    }
     if (
       pathname.startsWith("/owner") &&
       (!hasAnyRole("OWNER", "ADMIN") || !hasActiveRole("OWNER", "ADMIN"))
@@ -149,6 +153,7 @@ function LayoutContent() {
         <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="owner" options={{ animation: "none" }} />
+        <Stack.Screen name="platform" options={{ animation: "none" }} />
         <Stack.Screen name="reception" options={{ animation: "none" }} />
         <Stack.Screen name="trainer/index" options={{ animation: "none" }} />
         <Stack.Screen name="trainer/client/[id]" options={{ animation: "slide_from_right" }} />

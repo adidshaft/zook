@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState } from "react";
-import { Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   BottomNav,
   EmptyState,
@@ -56,99 +56,12 @@ function exerciseFromApi(exercise: PlanExerciseRecord): PlanExercise {
   };
 }
 
-function SwipeExerciseRow({
-  exercise,
-  complete,
-  onToggle,
-  onDelete,
-}: {
-  exercise: PlanExercise;
-  complete: boolean;
-  onToggle: () => void;
-  onDelete: () => void;
-}) {
-  const translateX = useRef(new Animated.Value(0)).current;
-  const openRef = useRef(false);
-  const ignorePressRef = useRef(false);
-  const [open, setOpen] = useState(false);
-
-  function snapTo(value: number) {
-    const nextOpen = value < 0;
-    openRef.current = nextOpen;
-    setOpen(nextOpen);
-    Animated.spring(translateX, {
-      toValue: value,
-      friction: 9,
-      tension: 90,
-      useNativeDriver: true,
-    }).start();
-  }
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) =>
-        Math.abs(gesture.dx) > 12 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
-      onPanResponderMove: (_, gesture) => {
-        ignorePressRef.current = true;
-        const start = openRef.current ? -86 : 0;
-        const next = Math.max(-86, Math.min(0, start + gesture.dx));
-        translateX.setValue(next);
-      },
-      onPanResponderRelease: (_, gesture) => {
-        const shouldOpen = gesture.dx < -38 || (openRef.current && gesture.dx < 24);
-        snapTo(shouldOpen ? -86 : 0);
-        setTimeout(() => {
-          ignorePressRef.current = false;
-        }, 120);
-      },
-      onPanResponderTerminate: () => {
-        snapTo(openRef.current ? -86 : 0);
-        setTimeout(() => {
-          ignorePressRef.current = false;
-        }, 120);
-      },
-    }),
-  ).current;
-
-  function handleToggle() {
-    if (ignorePressRef.current) {
-      return;
-    }
-    if (openRef.current) {
-      snapTo(0);
-      return;
-    }
-    onToggle();
-  }
-
-  return (
-    <View style={styles.swipeShell}>
-      <Pressable
-        onPress={onDelete}
-        pointerEvents={open ? "auto" : "none"}
-        accessibilityRole="button"
-        accessibilityLabel={`Delete ${exercise.name}`}
-        style={[styles.deleteAction, open ? styles.deleteActionOpen : null]}
-      >
-        <Ionicons name="trash-outline" size={22} color={colors.text} />
-      </Pressable>
-      <Animated.View style={[styles.swipeForeground, { transform: [{ translateX }] }]} {...panResponder.panHandlers}>
-        <ExerciseRow
-          title={exercise.name}
-          sets={exercise.sets}
-          detail={`${exercise.equipment} · ${exercise.reps}`}
-          complete={complete}
-          onPress={handleToggle}
-          style={styles.swipeRow}
-        />
-      </Animated.View>
-    </View>
-  );
-}
-
 export default function Plans() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ view?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    view?: string | string[];
+    assignmentId?: string | string[];
+  }>();
   const [view, setView] = useState<PlanView>("assigned");
   const [filter, setFilter] = useState<PlanFilter>("all");
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
@@ -165,7 +78,10 @@ export default function Plans() {
     return planKind(assignment).includes(filter);
   });
   const selectedAssignment =
-    plans.find((assignment) => assignment.id === selectedAssignmentId) ?? filteredPlans[0] ?? plans[0] ?? null;
+    plans.find((assignment) => assignment.id === selectedAssignmentId) ??
+    filteredPlans[0] ??
+    plans[0] ??
+    null;
   const exercisesQuery = usePlanExercises(selectedAssignment?.id);
   const coachName = "Coach";
   const completedCount = exercises.filter((exercise) => completed.has(exercise.name)).length;
@@ -178,6 +94,14 @@ export default function Plans() {
   }, [params.view]);
 
   useEffect(() => {
+    const requestedAssignmentId = firstParam(params.assignmentId);
+    if (requestedAssignmentId) {
+      setSelectedAssignmentId(requestedAssignmentId);
+      setView("detail");
+    }
+  }, [params.assignmentId]);
+
+  useEffect(() => {
     if (!selectedAssignmentId && plans[0]) {
       setSelectedAssignmentId(plans[0].id);
     }
@@ -186,7 +110,11 @@ export default function Plans() {
   useEffect(() => {
     const apiExercises = exercisesQuery.data?.exercises ?? [];
     setExercises(apiExercises.map(exerciseFromApi));
-    setCompleted(new Set(apiExercises.filter((exercise) => exercise.completed).map((exercise) => exercise.name)));
+    setCompleted(
+      new Set(
+        apiExercises.filter((exercise) => exercise.completed).map((exercise) => exercise.name),
+      ),
+    );
   }, [exercisesQuery.data?.exercises]);
 
   function toggleExercise(name: string) {
@@ -197,33 +125,6 @@ export default function Plans() {
       } else {
         next.add(name);
       }
-      return next;
-    });
-  }
-
-  function addExercise() {
-    setExercises((current) => {
-      let nextIndex = current.length + 1;
-      while (current.some((exercise) => exercise.name === `New exercise ${nextIndex}`)) {
-        nextIndex += 1;
-      }
-      return [
-        ...current,
-        {
-          name: `New exercise ${nextIndex}`,
-          sets: "3 sets",
-          equipment: "Any",
-          reps: "10 reps",
-        },
-      ];
-    });
-  }
-
-  function deleteExercise(name: string) {
-    setExercises((current) => current.filter((exercise) => exercise.name !== name));
-    setCompleted((current) => {
-      const next = new Set(current);
-      next.delete(name);
       return next;
     });
   }
@@ -274,8 +175,12 @@ export default function Plans() {
                 <Ionicons name="chevron-back" size={21} color={colors.text} />
               </Pressable>
               <View style={styles.detailTitleBlock}>
-                <Text numberOfLines={1} style={styles.detailTitle}>{planTitle(selectedAssignment)}</Text>
-                <Text numberOfLines={1} style={styles.detailSubtitle}>Coach {coachName}</Text>
+                <Text numberOfLines={1} style={styles.detailTitle}>
+                  {planTitle(selectedAssignment)}
+                </Text>
+                <Text numberOfLines={1} style={styles.detailSubtitle}>
+                  Coach {coachName}
+                </Text>
               </View>
               <Pressable
                 onPress={() => setFeedbackOpen((current) => !current)}
@@ -283,7 +188,11 @@ export default function Plans() {
                 accessibilityLabel="Tell coach"
                 style={[styles.iconButton, feedbackOpen ? styles.iconButtonActive : null]}
               >
-                <Ionicons name="information-outline" size={22} color={feedbackOpen ? colors.bg : colors.text} />
+                <Ionicons
+                  name="information-outline"
+                  size={22}
+                  color={feedbackOpen ? colors.bg : colors.text}
+                />
               </Pressable>
             </View>
 
@@ -319,7 +228,13 @@ export default function Plans() {
                   placeholderTextColor={colors.muted}
                   style={styles.feedbackInput}
                 />
-                <ZookButton onPress={sendFeedback} icon="send-outline" style={styles.feedbackSendButton}>Send</ZookButton>
+                <ZookButton
+                  onPress={sendFeedback}
+                  icon="send-outline"
+                  style={styles.feedbackSendButton}
+                >
+                  Send
+                </ZookButton>
               </GlassCard>
             ) : null}
 
@@ -329,26 +244,16 @@ export default function Plans() {
               <View style={styles.progressHeader}>
                 <View style={styles.progressCopy}>
                   <Text style={styles.cardTitle}>Workout progress</Text>
-                  <Text style={styles.cardBody}>{completedCount} of {exercises.length} completed</Text>
+                  <Text style={styles.cardBody}>
+                    {completedCount} of {exercises.length} completed
+                  </Text>
                 </View>
                 <Text style={styles.progressText}>{Math.round(progress * 100)}%</Text>
               </View>
               <ProgressBar value={progress} label="Today" />
             </GlassCard>
 
-            <SectionHeader
-              title="Exercises"
-              action={
-                <Pressable
-                  onPress={addExercise}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add exercise"
-                  style={styles.addExerciseButton}
-                >
-                  <Ionicons name="add" size={22} color={colors.bg} />
-                </Pressable>
-              }
-            />
+            <SectionHeader title="Exercises" subtitle="Assigned by your coach" />
             <View style={styles.stack}>
               {exercisesQuery.isLoading ? (
                 <GlassCard variant="compact" contentStyle={styles.stateContent}>
@@ -358,16 +263,20 @@ export default function Plans() {
               ) : null}
               {!exercisesQuery.isLoading && !exercises.length ? (
                 <GlassCard variant="compact">
-                  <EmptyState title="No exercises yet" body="Assigned exercise details will appear here once your coach publishes them." />
+                  <EmptyState
+                    title="No exercises yet"
+                    body="Assigned exercise details will appear here once your coach publishes them."
+                  />
                 </GlassCard>
               ) : null}
               {exercises.map((exercise) => (
-                <SwipeExerciseRow
+                <ExerciseRow
                   key={exercise.name}
-                  exercise={exercise}
+                  title={exercise.name}
+                  sets={exercise.sets}
+                  detail={`${exercise.equipment} · ${exercise.reps}`}
                   complete={completed.has(exercise.name)}
-                  onToggle={() => toggleExercise(exercise.name)}
-                  onDelete={() => deleteExercise(exercise.name)}
+                  onPress={() => toggleExercise(exercise.name)}
                 />
               ))}
             </View>
@@ -399,7 +308,7 @@ export default function Plans() {
             title="Plan"
             leading={
               <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
                 style={styles.iconButton}
@@ -422,7 +331,10 @@ export default function Plans() {
             ) : null}
             {!plansQuery.isLoading && !filteredPlans.length ? (
               <GlassCard variant="compact" style={styles.emptyPlanCard}>
-                <EmptyState title="No plans assigned" body="Workout and diet plans from your coach will show up here." />
+                <EmptyState
+                  title="No plans assigned"
+                  body="Workout and diet plans from your coach will show up here."
+                />
               </GlassCard>
             ) : null}
             {filteredPlans.map((assignment) => (
@@ -436,12 +348,16 @@ export default function Plans() {
                 style={styles.libraryCard}
               >
                 <IconBubble
-                  icon={planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"}
+                  icon={
+                    planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"
+                  }
                   tone={planKind(assignment).includes("diet") ? "blue" : "lime"}
                   size={42}
                 />
                 <Text style={styles.libraryTitle}>{planTitle(assignment)}</Text>
-                <Text style={styles.libraryDetail}>{assignment.progress?.completionPct ?? 0}% complete</Text>
+                <Text style={styles.libraryDetail}>
+                  {assignment.progress?.completionPct ?? 0}% complete
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -539,44 +455,6 @@ const styles = StyleSheet.create({
     color: colors.lime,
     ...typography.caption,
     paddingHorizontal: 4,
-  },
-  addExerciseButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
-    backgroundColor: colors.lime,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  swipeShell: {
-    width: "100%",
-    alignSelf: "stretch",
-    borderRadius: 20,
-    overflow: "hidden",
-    backgroundColor: "transparent",
-  },
-  swipeForeground: {
-    width: "100%",
-    alignSelf: "stretch",
-    zIndex: 1,
-  },
-  swipeRow: {
-    width: "100%",
-  },
-  deleteAction: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 86,
-    backgroundColor: colors.red,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 0,
-    opacity: 0,
-  },
-  deleteActionOpen: {
-    opacity: 1,
   },
   stack: {
     gap: 10,

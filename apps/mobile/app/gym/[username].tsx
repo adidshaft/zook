@@ -39,10 +39,12 @@ export default function GymProfileScreen() {
   const gallery = gym?.gallery?.length
     ? gym.gallery
     : [
-        gym?.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&h=500&fit=crop",
+        gym?.coverImageUrl ||
+          "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&h=500&fit=crop",
         "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800&h=500&fit=crop",
         "https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=800&h=500&fit=crop",
       ];
+  const facilities = gym?.facilities?.length ? gym.facilities : (gym?.amenities ?? []);
   const viewerState = gymQuery.data?.viewerState;
   const effectiveReferral = referralCode ?? gymQuery.data?.referral?.code ?? undefined;
 
@@ -108,7 +110,11 @@ export default function GymProfileScreen() {
 
   return (
     <ZookScreen>
-      <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
         {gym ? (
           <MobileHeader
             eyebrow="Gym profile"
@@ -145,23 +151,25 @@ export default function GymProfileScreen() {
             <GlassCard contentStyle={styles.heroCard}>
               <View style={styles.coverPlaceholder}>
                 <Image
-                  source={{ uri: gym.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&h=400&fit=crop" }}
+                  source={{
+                    uri:
+                      gym.coverImageUrl ||
+                      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&h=400&fit=crop",
+                  }}
                   style={[StyleSheet.absoluteFill, { opacity: 0.6 }]}
                   contentFit="cover"
                 />
                 <View style={styles.coverGlow} />
-                <Text style={styles.coverEyebrow}>
-                  {gym.tagline ?? gym.name}
-                </Text>
-                <Text style={styles.coverTitle}>
-                  {plans.length} plans available
-                </Text>
-                <Text style={styles.coverBody}>
-                  {gym.address ?? `${gym.city}, ${gym.state}`}
-                </Text>
+                <Text style={styles.coverEyebrow}>{gym.tagline ?? gym.name}</Text>
+                <Text style={styles.coverTitle}>{plans.length} plans available</Text>
+                <Text style={styles.coverBody}>{gym.address ?? `${gym.city}, ${gym.state}`}</Text>
+                {gym.openingHoursSummary ? (
+                  <Text style={styles.coverBody}>{gym.openingHoursSummary}</Text>
+                ) : null}
               </View>
 
               <View style={styles.tagRow}>
+                {gym.gymType ? <Pill tone="amber">{gym.gymType}</Pill> : null}
                 {(gym.amenities ?? []).slice(0, 6).map((amenity) => (
                   <Pill key={amenity} tone="blue">
                     {amenity}
@@ -212,12 +220,37 @@ export default function GymProfileScreen() {
             />
 
             <GlassCard contentStyle={styles.profileDetailsCard}>
-              <InfoRow label="Address" value={gym.address ?? `${gym.city}, ${gym.state}`} tone="blue" />
+              <InfoRow
+                label="Address"
+                value={gym.address ?? `${gym.city}, ${gym.state}`}
+                tone="blue"
+              />
               <InfoRow label="Entry" value="Scan QR and show entry code" tone="lime" />
               <InfoRow label="Trial flow" value="Tour + optional body check" tone="amber" />
             </GlassCard>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryRow}>
+            <GlassCard contentStyle={styles.facilityCard}>
+              <Text style={styles.sectionTitle}>Facilities</Text>
+              <View style={styles.tagRow}>
+                {facilities.length ? (
+                  facilities.slice(0, 10).map((facility) => (
+                    <Pill key={facility} tone="blue">
+                      {facility}
+                    </Pill>
+                  ))
+                ) : (
+                  <Text style={styles.sectionBody}>
+                    Facilities will appear once the gym publishes them.
+                  </Text>
+                )}
+              </View>
+            </GlassCard>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.galleryRow}
+            >
               {gallery.map((imageUrl, index) => (
                 <Image
                   key={`${imageUrl}-${index}`}
@@ -236,36 +269,47 @@ export default function GymProfileScreen() {
 
             <View style={styles.trainerStack}>
               {trainers.length ? (
-                trainers.filter((trainer) => trainer.visibleToMembers !== false).map((trainer) => (
-                  <GlassCard key={trainer.userId} contentStyle={styles.trainerCard}>
-                    <Image
-                      source={{ uri: trainer.profilePhotoUrl || "https://images.unsplash.com/photo-1594381898411-846e7d193883?q=80&w=300&h=300&fit=crop" }}
-                      style={styles.trainerImage}
-                      contentFit="cover"
-                    />
-                    <View style={styles.trainerCopy}>
-                      <Text style={styles.trainerName}>{trainer.name}</Text>
-                      <Text style={styles.sectionBody} numberOfLines={2}>
-                        {trainer.bio ?? "Strength, conditioning, and member onboarding."}
-                      </Text>
-                      <View style={styles.planBenefits}>
-                        {normalizeSpecialties(trainer.specialties).slice(0, 3).map((specialty) => (
-                          <Pill key={`${trainer.userId}-${specialty}`} tone="blue">{specialty}</Pill>
-                        ))}
+                trainers
+                  .filter((trainer) => trainer.visibleToMembers !== false)
+                  .map((trainer) => (
+                    <GlassCard key={trainer.userId} contentStyle={styles.trainerCard}>
+                      <Image
+                        source={{
+                          uri:
+                            trainer.profilePhotoUrl ||
+                            "https://images.unsplash.com/photo-1594381898411-846e7d193883?q=80&w=300&h=300&fit=crop",
+                        }}
+                        style={styles.trainerImage}
+                        contentFit="cover"
+                      />
+                      <View style={styles.trainerCopy}>
+                        <Text style={styles.trainerName}>{trainer.name}</Text>
+                        <Text style={styles.sectionBody} numberOfLines={2}>
+                          {trainer.bio ?? "Strength, conditioning, and member onboarding."}
+                        </Text>
+                        <View style={styles.planBenefits}>
+                          {normalizeSpecialties(trainer.specialties)
+                            .slice(0, 3)
+                            .map((specialty) => (
+                              <Pill key={`${trainer.userId}-${specialty}`} tone="blue">
+                                {specialty}
+                              </Pill>
+                            ))}
+                        </View>
                       </View>
-                    </View>
-                  </GlassCard>
-                ))
+                    </GlassCard>
+                  ))
               ) : (
-                <EmptyState title="Trainer profiles coming soon" body="The gym can publish coach bios, expertise, and photos from the owner dashboard." />
+                <EmptyState
+                  title="Trainer profiles coming soon"
+                  body="The gym can publish coach bios, expertise, and photos from the owner dashboard."
+                />
               )}
             </View>
 
             <View style={styles.metricRow}>
               <GlassCard contentStyle={styles.metricCard}>
-                <Text style={styles.metricLabel}>
-                  Join flow
-                </Text>
+                <Text style={styles.metricLabel}>Join flow</Text>
                 <Text style={styles.metricValue}>
                   {needsApproval ? "Reviewed" : inviteOnlyLocked ? "Invite only" : "Instant"}
                 </Text>
@@ -274,13 +318,11 @@ export default function GymProfileScreen() {
                     ? "Staff approval happens before payment."
                     : inviteOnlyLocked
                       ? "Referral or invite is required."
-                  : "You can move straight to hosted checkout."}
+                      : "You can move straight to hosted checkout."}
                 </Text>
               </GlassCard>
               <GlassCard contentStyle={styles.metricCard}>
-                <Text style={styles.metricLabel}>
-                  Membership state
-                </Text>
+                <Text style={styles.metricLabel}>Membership state</Text>
                 <Text style={styles.metricValue}>
                   {viewerState?.activeMembership
                     ? "Active"
@@ -310,12 +352,8 @@ export default function GymProfileScreen() {
                     <Text style={styles.timelineMarkerText}>{index + 1}</Text>
                   </View>
                   <View style={styles.timelineCopy}>
-                    <Text style={styles.timelineTitle}>
-                      {step.title}
-                    </Text>
-                    <Text style={styles.timelineBody}>
-                      {step.body}
-                    </Text>
+                    <Text style={styles.timelineTitle}>{step.title}</Text>
+                    <Text style={styles.timelineBody}>{step.body}</Text>
                   </View>
                 </View>
               ))}
@@ -325,12 +363,10 @@ export default function GymProfileScreen() {
             !viewerState?.pendingJoinRequest &&
             !viewerState?.approvedJoinRequest ? (
               <GlassCard variant="warning" contentStyle={styles.ctaCard}>
-                <Text style={styles.sectionTitle}>
-                  Request membership first
-                </Text>
+                <Text style={styles.sectionTitle}>Request membership first</Text>
                 <Text style={styles.sectionBody}>
-                  This gym reviews new members before payment. Submit your request and the
-                  owner can approve it from the web dashboard.
+                  This gym reviews new members before payment. Submit your request and the owner can
+                  approve it from the web dashboard.
                 </Text>
                 <PrimaryButton onPress={() => void requestMembership()}>
                   {busyAction === "join-request" ? "Submitting..." : "Send membership request"}
@@ -340,19 +376,14 @@ export default function GymProfileScreen() {
 
             {inviteOnlyLocked ? (
               <GlassCard variant="warning" contentStyle={styles.ctaCard}>
-                <Text style={styles.sectionTitle}>
-                  Invite or referral required
-                </Text>
+                <Text style={styles.sectionTitle}>Invite or referral required</Text>
                 <Text style={styles.sectionBody}>
                   Open this gym from a referral link or ask the gym team for a code to continue.
                 </Text>
               </GlassCard>
             ) : null}
 
-            <SectionHeader
-              eyebrow="Plans"
-              title="Membership options"
-            />
+            <SectionHeader eyebrow="Plans" title="Membership options" />
 
             {!plans.length ? (
               <EmptyState
@@ -366,12 +397,8 @@ export default function GymProfileScreen() {
                 <GlassCard key={plan.id} contentStyle={styles.planCard}>
                   <View style={styles.planHeader}>
                     <View style={styles.planCopy}>
-                      <Text style={styles.planName}>
-                        {plan.name}
-                      </Text>
-                      <Text style={styles.planPrice}>
-                        {formatInr(plan.pricePaise)}
-                      </Text>
+                      <Text style={styles.planName}>{plan.name}</Text>
+                      <Text style={styles.planPrice}>{formatInr(plan.pricePaise)}</Text>
                     </View>
                     <Pill tone="lime">{titleCaseFromCode(plan.type ?? "MEMBERSHIP")}</Pill>
                   </View>
@@ -401,9 +428,7 @@ export default function GymProfileScreen() {
 
             {statusMessage ? (
               <GlassCard variant="compact">
-                <Text style={styles.statusMessage}>
-                  {statusMessage}
-                </Text>
+                <Text style={styles.statusMessage}>{statusMessage}</Text>
               </GlassCard>
             ) : null}
           </>
@@ -565,6 +590,9 @@ const styles = StyleSheet.create({
   },
   profileDetailsCard: {
     gap: 10,
+  },
+  facilityCard: {
+    gap: 12,
   },
   galleryRow: {
     gap: spacing.md,

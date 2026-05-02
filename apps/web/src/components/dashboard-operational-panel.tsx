@@ -4,10 +4,24 @@ import Link from "next/link";
 import { useState } from "react";
 import { AttendanceApprovalsPanel } from "./attendance-approvals-panel";
 import { AttendanceQrPanel } from "./attendance-qr-panel";
-import { DataTable, EmptyState, ReadoutGrid, SectionHeader, StatusPill } from "./dashboard-primitives";
+import {
+  DataTable,
+  EmptyState,
+  ReadoutGrid,
+  SectionHeader,
+  StatusPill,
+} from "./dashboard-primitives";
 import { GlassCard, Pill, type PillTone } from "./glass-card";
+import { GymProfileSetupPanel } from "./gym-profile-setup-panel";
 import { NotificationComposerPanel } from "./notification-composer-panel";
-import { formatCompactNumber, formatDate, formatDateTime, formatDaysRemaining, formatEnumLabel, formatInr } from "@/lib/format";
+import {
+  formatCompactNumber,
+  formatDate,
+  formatDateTime,
+  formatDaysRemaining,
+  formatEnumLabel,
+  formatInr,
+} from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
 
@@ -23,7 +37,8 @@ type DashboardMode =
   | "plans"
   | "payments"
   | "audit"
-  | "ai";
+  | "ai"
+  | "public-profile";
 
 type OrganizationSummary = {
   activeMembers: number;
@@ -194,6 +209,9 @@ type ProductSnapshot = {
 };
 
 function resolveMode(sectionKey: string): DashboardMode {
+  if (sectionKey.includes("public-profile") || sectionKey === "org" || sectionKey === "settings") {
+    return "public-profile";
+  }
   if (sectionKey.includes("join-requests")) {
     return "join-requests";
   }
@@ -209,10 +227,18 @@ function resolveMode(sectionKey: string): DashboardMode {
   if (sectionKey.includes("shop")) {
     return "shop";
   }
-  if (sectionKey.includes("staff") || sectionKey.includes("trainers") || sectionKey.includes("pt")) {
+  if (
+    sectionKey.includes("staff") ||
+    sectionKey.includes("trainers") ||
+    sectionKey.includes("pt")
+  ) {
     return "staff";
   }
-  if (sectionKey.includes("membership-plans") || sectionKey === "plans" || sectionKey.includes("/plans")) {
+  if (
+    sectionKey.includes("membership-plans") ||
+    sectionKey === "plans" ||
+    sectionKey.includes("/plans")
+  ) {
     return "plans";
   }
   if (sectionKey.includes("payments") || sectionKey.includes("checkout")) {
@@ -231,7 +257,11 @@ function resolveMode(sectionKey: string): DashboardMode {
 }
 
 function ErrorNotice({ message }: { message: string }) {
-  return <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">{message}</p>;
+  return (
+    <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
+      {message}
+    </p>
+  );
 }
 
 function countFlags(value: unknown) {
@@ -269,7 +299,7 @@ export function DashboardOperationalPanel({
   initialJoinRequests,
   initialNotifications,
   initialProducts,
-  initialAiUsage
+  initialAiUsage,
 }: {
   orgId: string;
   sectionKey: string;
@@ -287,43 +317,46 @@ export function DashboardOperationalPanel({
 
   const membersState = useOperationalResource<{ members: MemberRow[] }>({
     path: `/api/orgs/${orgId}/members`,
-    enabled: mode === "members"
+    enabled: mode === "members",
   });
   const joinRequestsState = useOperationalResource<{ joinRequests: JoinRequestRow[] }>({
     path: `/api/orgs/${orgId}/join-requests`,
     enabled: mode === "members" || mode === "join-requests",
     ...(mode === "members" || mode === "join-requests"
       ? { initialData: { joinRequests: initialJoinRequests } }
-      : {})
+      : {}),
   });
   const membershipPlansState = useOperationalResource<{ plans: MembershipPlanRow[] }>({
     path: `/api/orgs/${orgId}/membership-plans`,
-    enabled: mode === "members" || mode === "join-requests" || mode === "plans" || mode === "payments"
+    enabled:
+      mode === "members" || mode === "join-requests" || mode === "plans" || mode === "payments",
   });
-  const staffState = useOperationalResource<{ staff: StaffAssignmentRow[]; users: StaffUserRow[] }>({
-    path: `/api/orgs/${orgId}/staff`,
-    enabled: mode === "staff"
-  });
+  const staffState = useOperationalResource<{ staff: StaffAssignmentRow[]; users: StaffUserRow[] }>(
+    {
+      path: `/api/orgs/${orgId}/staff`,
+      enabled: mode === "staff",
+    },
+  );
   const coachPlansState = useOperationalResource<{ plans: CoachPlanRow[] }>({
     path: `/api/orgs/${orgId}/plans`,
-    enabled: mode === "staff" || mode === "plans" || mode === "ai"
+    enabled: mode === "staff" || mode === "plans" || mode === "ai",
   });
   const productsState = useOperationalResource<{ products: ProductRow[] }>({
     path: `/api/orgs/${orgId}/products`,
-    enabled: mode === "shop" || mode === "payments"
+    enabled: mode === "shop" || mode === "payments",
   });
   const shopOrdersState = useOperationalResource<{ orders: ShopOrderRow[] }>({
     path: `/api/orgs/${orgId}/shop/orders`,
-    enabled: mode === "shop" || mode === "payments"
+    enabled: mode === "shop" || mode === "payments",
   });
   const auditLogsState = useOperationalResource<{ auditLogs: AuditLogRow[] }>({
     path: `/api/orgs/${orgId}/audit-logs`,
-    enabled: mode === "audit"
+    enabled: mode === "audit",
   });
   const aiUsageState = useOperationalResource<{ usage: AIUsageRow[] }>({
     path: `/api/orgs/${orgId}/ai/usage`,
     enabled: mode === "audit" || mode === "ai",
-    ...(mode === "audit" || mode === "ai" ? { initialData: { usage: initialAiUsage } } : {})
+    ...(mode === "audit" || mode === "ai" ? { initialData: { usage: initialAiUsage } } : {}),
   });
 
   const membershipPlans = membershipPlansState.data?.plans ?? [];
@@ -340,7 +373,9 @@ export function DashboardOperationalPanel({
   const planNamesById = new Map(membershipPlans.map((plan) => [plan.id, plan.name]));
   const staffUsersById = new Map(staffUsers.map((user) => [user.id, user]));
 
-  const queuedOrders = shopOrders.filter((order) => order.status === "PENDING_PAYMENT" || order.status === "PAID");
+  const queuedOrders = shopOrders.filter(
+    (order) => order.status === "PENDING_PAYMENT" || order.status === "PAID",
+  );
   const readyOrders = shopOrders.filter((order) => order.status === "READY_FOR_PICKUP");
   const misconfiguredAiCount = aiUsage.filter((row) => countFlags(row.safetyFlags) > 0).length;
 
@@ -354,26 +389,26 @@ export function DashboardOperationalPanel({
       label: "Display QR entry",
       href: "/dashboard/attendance/approvals",
       detail: `${summary.todayAttendance} scans today`,
-      tone: "lime"
+      tone: "lime",
     },
     {
       label: "Clear join requests",
       href: "/dashboard/members",
       detail: `${summary.joinRequests} memberships waiting`,
-      tone: summary.joinRequests > 0 ? "amber" : "lime"
+      tone: summary.joinRequests > 0 ? "amber" : "lime",
     },
     {
       label: "Check inventory pressure",
       href: "/dashboard/shop/products",
       detail: `${summary.lowStockProducts} low-stock products`,
-      tone: summary.lowStockProducts > 0 ? "amber" : "blue"
+      tone: summary.lowStockProducts > 0 ? "amber" : "blue",
     },
     {
       label: "Review AI usage",
       href: "/dashboard/ai",
       detail: `${summary.aiUsageThisMonth} AI events this month`,
-      tone: summary.aiUsageThisMonth > 0 ? "blue" : "neutral"
-    }
+      tone: summary.aiUsageThisMonth > 0 ? "blue" : "neutral",
+    },
   ];
 
   async function updateJoinRequest(requestId: string, action: "approve" | "reject") {
@@ -381,7 +416,7 @@ export function DashboardOperationalPanel({
       setQueueError("");
       setQueueBusyId(requestId);
       await webApiFetch(`/api/orgs/${orgId}/join-requests/${requestId}/${action}`, {
-        method: "POST"
+        method: "POST",
       });
       joinRequestsState.reload();
       membersState.reload();
@@ -390,6 +425,10 @@ export function DashboardOperationalPanel({
     } finally {
       setQueueBusyId(null);
     }
+  }
+
+  if (mode === "public-profile") {
+    return <GymProfileSetupPanel orgId={orgId} />;
   }
 
   if (mode === "attendance") {
@@ -412,18 +451,18 @@ export function DashboardOperationalPanel({
                   {
                     label: "Today scans",
                     value: formatCompactNumber(summary.todayAttendance),
-                    meta: "Members receive visible entry codes"
+                    meta: "Members receive visible entry codes",
                   },
                   {
                     label: "Join mode",
                     value: formatEnumLabel(organization.joinMode),
-                    meta: "Used during membership handoffs"
+                    meta: "Used during membership handoffs",
                   },
                   {
                     label: "Trial window",
                     value: formatDaysRemaining(summary.trialDaysRemaining),
-                    meta: formatDate(organization.trialEndAt)
-                  }
+                    meta: formatDate(organization.trialEndAt),
+                  },
                 ]}
                 columns={1}
               />
@@ -444,7 +483,11 @@ export function DashboardOperationalPanel({
               eyebrow="Guardrails"
               title="Delivery posture"
               description="Operational messages should stay crisp, permission-safe, and relevant to the floor or membership journey."
-              badge={<Pill tone={summary.notificationQueueCount > 0 ? "amber" : "lime"}>{summary.notificationQueueCount} queued</Pill>}
+              badge={
+                <Pill tone={summary.notificationQueueCount > 0 ? "amber" : "lime"}>
+                  {summary.notificationQueueCount} queued
+                </Pill>
+              }
             />
             <ReadoutGrid
               className="mt-5"
@@ -452,23 +495,27 @@ export function DashboardOperationalPanel({
                 {
                   label: "Org status",
                   value: formatEnumLabel(organization.status),
-                  meta: "Broadcasts respect active org availability"
+                  meta: "Broadcasts respect active org availability",
                 },
                 {
                   label: "Recent sends",
                   value: formatCompactNumber(initialNotifications.length),
-                  meta: "Current history in this org snapshot"
+                  meta: "Current history in this org snapshot",
                 },
                 {
                   label: "Audience mode",
-                  value: summary.activeMembers > 0 ? "Live member targeting" : "No active audience yet",
-                  meta: "Uses persisted org memberships"
+                  value:
+                    summary.activeMembers > 0 ? "Live member targeting" : "No active audience yet",
+                  meta: "Uses persisted org memberships",
                 },
                 {
                   label: "Escalation load",
-                  value: summary.pendingAttendanceApprovals > 0 ? `${summary.pendingAttendanceApprovals} pending` : "Clear",
-                  meta: "Useful for operational notices"
-                }
+                  value:
+                    summary.pendingAttendanceApprovals > 0
+                      ? `${summary.pendingAttendanceApprovals} pending`
+                      : "Clear",
+                  meta: "Useful for operational notices",
+                },
               ]}
               columns={2}
             />
@@ -482,7 +529,10 @@ export function DashboardOperationalPanel({
             <div className="mt-5 grid gap-3">
               {initialNotifications.length ? (
                 initialNotifications.slice(0, 4).map((notification) => (
-                  <div key={notification.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                  <div
+                    key={notification.id}
+                    className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+                  >
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-medium text-white">{notification.title}</p>
                       <StatusPill value={formatEnumLabel(notification.status)} />
@@ -523,7 +573,10 @@ export function DashboardOperationalPanel({
               {membersState.error ? (
                 <ErrorNotice message={membersState.error} />
               ) : membersState.loading && members.length === 0 ? (
-                <EmptyState title="Loading member roster" description="Pulling the latest organization member list." />
+                <EmptyState
+                  title="Loading member roster"
+                  description="Pulling the latest organization member list."
+                />
               ) : (
                 <DataTable
                   columns={[
@@ -532,36 +585,52 @@ export function DashboardOperationalPanel({
                       header: "Member",
                       render: (row) => (
                         <div>
-                          <p className="font-medium text-white">{row.user?.name ?? "Member profile"}</p>
-                          <p className="mt-1 text-xs text-white/45">{row.user?.email ?? "No email recorded"}</p>
+                          <p className="font-medium text-white">
+                            {row.user?.name ?? "Member profile"}
+                          </p>
+                          <p className="mt-1 text-xs text-white/45">
+                            {row.user?.email ?? "No email recorded"}
+                          </p>
                         </div>
-                      )
+                      ),
                     },
                     {
                       id: "contact",
                       header: "Contact",
                       render: (row) => (
                         <div>
-                          <p>{row.user?.phone ?? organization.contactPhone ?? "Desk follow-up needed"}</p>
-                          <p className="mt-1 text-xs text-white/45">{row.user?.fitnessGoal ?? "Goal capture pending"}</p>
+                          <p>
+                            {row.user?.phone ??
+                              organization.contactPhone ??
+                              "Desk follow-up needed"}
+                          </p>
+                          <p className="mt-1 text-xs text-white/45">
+                            {row.user?.fitnessGoal ?? "Goal capture pending"}
+                          </p>
                         </div>
-                      )
+                      ),
                     },
                     {
                       id: "profile",
                       header: "Profile state",
                       render: (row) => (
                         <div className="flex flex-wrap gap-2">
-                          <StatusPill value={row.profile.publicVisibility ? "Visible" : "Private"} tone={row.profile.publicVisibility ? "blue" : "neutral"} />
-                          <StatusPill value={row.profile.marketingOptIn ? "Marketing on" : "Marketing off"} tone={row.profile.marketingOptIn ? "lime" : "amber"} />
+                          <StatusPill
+                            value={row.profile.publicVisibility ? "Visible" : "Private"}
+                            tone={row.profile.publicVisibility ? "blue" : "neutral"}
+                          />
+                          <StatusPill
+                            value={row.profile.marketingOptIn ? "Marketing on" : "Marketing off"}
+                            tone={row.profile.marketingOptIn ? "lime" : "amber"}
+                          />
                         </div>
-                      )
+                      ),
                     },
                     {
                       id: "joined",
                       header: "Created",
-                      render: (row) => formatDate(row.profile.createdAt)
-                    }
+                      render: (row) => formatDate(row.profile.createdAt),
+                    },
                   ]}
                   rows={members}
                   rowKey={(row) => row.profile.id}
@@ -576,26 +645,41 @@ export function DashboardOperationalPanel({
               eyebrow="Pipeline"
               title="Join request queue"
               description="Approval-required flows surface here so ownership can clear or stop memberships before payment."
-              badge={<Pill tone={joinRequests.length ? "amber" : "lime"}>{joinRequests.length} pending</Pill>}
+              badge={
+                <Pill tone={joinRequests.length ? "amber" : "lime"}>
+                  {joinRequests.length} pending
+                </Pill>
+              }
             />
-            {queueError ? <div className="mt-5"><ErrorNotice message={queueError} /></div> : null}
+            {queueError ? (
+              <div className="mt-5">
+                <ErrorNotice message={queueError} />
+              </div>
+            ) : null}
             <div className="mt-5 grid gap-3">
               {joinRequestsState.error ? (
                 <ErrorNotice message={joinRequestsState.error} />
               ) : joinRequests.length ? (
                 joinRequests.map((request) => (
-                  <div key={request.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                  <div
+                    key={request.id}
+                    className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium text-white">{planNamesById.get(request.planId ?? "") ?? "Membership request"}</p>
+                          <p className="font-medium text-white">
+                            {planNamesById.get(request.planId ?? "") ?? "Membership request"}
+                          </p>
                           <StatusPill value={formatEnumLabel(request.status)} />
                         </div>
                         <p className="mt-2 text-xs text-white/45">
                           Created {formatDateTime(request.createdAt)}
                           {request.referralCode ? ` · Referral ${request.referralCode}` : ""}
                         </p>
-                        <p className="mt-2 text-sm text-white/60">{request.message ?? "No intake note was added by the member."}</p>
+                        <p className="mt-2 text-sm text-white/60">
+                          {request.message ?? "No intake note was added by the member."}
+                        </p>
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -637,7 +721,10 @@ export function DashboardOperationalPanel({
             {membershipPlansState.error ? (
               <ErrorNotice message={membershipPlansState.error} />
             ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
-              <EmptyState title="Loading plan ladder" description="Pulling the latest membership plans for this organization." />
+              <EmptyState
+                title="Loading plan ladder"
+                description="Pulling the latest membership plans for this organization."
+              />
             ) : (
               <DataTable
                 columns={[
@@ -649,29 +736,37 @@ export function DashboardOperationalPanel({
                         <p className="font-medium text-white">{plan.name}</p>
                         <p className="mt-1 text-xs text-white/45">{formatEnumLabel(plan.type)}</p>
                       </div>
-                    )
+                    ),
                   },
                   {
                     id: "shape",
                     header: "Shape",
-                    render: (plan) => formatPlanShape(plan)
+                    render: (plan) => formatPlanShape(plan),
                   },
                   {
                     id: "price",
                     header: "Price",
                     align: "right",
-                    render: (plan) => <span className="font-medium text-white">{formatInr(plan.pricePaise)}</span>
+                    render: (plan) => (
+                      <span className="font-medium text-white">{formatInr(plan.pricePaise)}</span>
+                    ),
                   },
                   {
                     id: "state",
                     header: "State",
                     render: (plan) => (
                       <div className="flex flex-wrap gap-2">
-                        <StatusPill value={plan.active ? "Active" : "Paused"} tone={plan.active ? "lime" : "amber"} />
-                        <StatusPill value={plan.publicVisible ? "Public" : "Private"} tone={plan.publicVisible ? "blue" : "neutral"} />
+                        <StatusPill
+                          value={plan.active ? "Active" : "Paused"}
+                          tone={plan.active ? "lime" : "amber"}
+                        />
+                        <StatusPill
+                          value={plan.publicVisible ? "Public" : "Private"}
+                          tone={plan.publicVisible ? "blue" : "neutral"}
+                        />
                       </div>
-                    )
-                  }
+                    ),
+                  },
                 ]}
                 rows={membershipPlans}
                 rowKey={(plan) => plan.id}
@@ -692,13 +787,18 @@ export function DashboardOperationalPanel({
             eyebrow="Orders"
             title="Pickup and fulfillment queue"
             description="These are the live shop orders that the desk can monitor before pickup and fulfillment."
-            badge={<Pill tone={readyOrders.length ? "amber" : "lime"}>{readyOrders.length} ready</Pill>}
+            badge={
+              <Pill tone={readyOrders.length ? "amber" : "lime"}>{readyOrders.length} ready</Pill>
+            }
           />
           <div className="mt-5">
             {shopOrdersState.error ? (
               <ErrorNotice message={shopOrdersState.error} />
             ) : shopOrdersState.loading && shopOrders.length === 0 ? (
-              <EmptyState title="Loading shop orders" description="Pulling the latest order queue for this org." />
+              <EmptyState
+                title="Loading shop orders"
+                description="Pulling the latest order queue for this org."
+              />
             ) : (
               <DataTable
                 columns={[
@@ -708,26 +808,30 @@ export function DashboardOperationalPanel({
                     render: (order) => (
                       <div>
                         <p className="font-medium text-white">{order.id.slice(-8).toUpperCase()}</p>
-                        <p className="mt-1 text-xs text-white/45">{order.items.length} line items</p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {order.items.length} line items
+                        </p>
                       </div>
-                    )
+                    ),
                   },
                   {
                     id: "status",
                     header: "Status",
-                    render: (order) => <StatusPill value={formatEnumLabel(order.status)} />
+                    render: (order) => <StatusPill value={formatEnumLabel(order.status)} />,
                   },
                   {
                     id: "pickup",
                     header: "Pickup",
-                    render: (order) => order.pickupCode ?? "Awaiting code"
+                    render: (order) => order.pickupCode ?? "Awaiting code",
                   },
                   {
                     id: "total",
                     header: "Total",
                     align: "right",
-                    render: (order) => <span className="font-medium text-white">{formatInr(order.totalPaise)}</span>
-                  }
+                    render: (order) => (
+                      <span className="font-medium text-white">{formatInr(order.totalPaise)}</span>
+                    ),
+                  },
                 ]}
                 rows={shopOrders}
                 rowKey={(order) => order.id}
@@ -743,20 +847,32 @@ export function DashboardOperationalPanel({
               eyebrow="Inventory"
               title="Low-stock watch"
               description="Inventory is sorted by stock so desk and owner surfaces can quickly spot refill pressure."
-              badge={<Pill tone={summary.lowStockProducts > 0 ? "amber" : "lime"}>{summary.lowStockProducts} low</Pill>}
+              badge={
+                <Pill tone={summary.lowStockProducts > 0 ? "amber" : "lime"}>
+                  {summary.lowStockProducts} low
+                </Pill>
+              }
             />
             <div className="mt-5 grid gap-3">
               {productsState.error ? (
                 <ErrorNotice message={productsState.error} />
               ) : productsState.loading && inventory.length === 0 ? (
-                <EmptyState title="Loading inventory" description="Pulling product availability and stock thresholds." />
+                <EmptyState
+                  title="Loading inventory"
+                  description="Pulling product availability and stock thresholds."
+                />
               ) : inventory.length ? (
                 inventory.slice(0, 6).map((product) => (
-                  <div key={product.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                  <div
+                    key={product.id}
+                    className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium text-white">{product.name}</p>
-                        <p className="mt-1 text-xs text-white/45">{formatEnumLabel(product.category)} · {formatInr(product.pricePaise)}</p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {formatEnumLabel(product.category)} · {formatInr(product.pricePaise)}
+                        </p>
                       </div>
                       <StatusPill
                         value={`${product.stock} left`}
@@ -766,13 +882,20 @@ export function DashboardOperationalPanel({
                   </div>
                 ))
               ) : (
-                <EmptyState title="Inventory is clear" description="No products have been created for this organization yet." />
+                <EmptyState
+                  title="Inventory is clear"
+                  description="No products have been created for this organization yet."
+                />
               )}
             </div>
           </GlassCard>
 
           <GlassCard>
-            <SectionHeader eyebrow="Queue health" title="Shop posture" description="A quick operational read on how shop traffic is moving right now." />
+            <SectionHeader
+              eyebrow="Queue health"
+              title="Shop posture"
+              description="A quick operational read on how shop traffic is moving right now."
+            />
             <ReadoutGrid
               className="mt-5"
               columns={1}
@@ -780,18 +903,18 @@ export function DashboardOperationalPanel({
                 {
                   label: "Pending payment",
                   value: formatCompactNumber(queuedOrders.length),
-                  meta: "Orders still waiting to settle"
+                  meta: "Orders still waiting to settle",
                 },
                 {
                   label: "Ready for pickup",
                   value: formatCompactNumber(readyOrders.length),
-                  meta: "Desk should keep pickup codes handy"
+                  meta: "Desk should keep pickup codes handy",
                 },
                 {
                   label: "Revenue today",
                   value: formatInr(summary.revenuePaise),
-                  meta: "Shared with membership revenue card"
-                }
+                  meta: "Shared with membership revenue card",
+                },
               ]}
             />
           </GlassCard>
@@ -814,7 +937,10 @@ export function DashboardOperationalPanel({
             {staffState.error ? (
               <ErrorNotice message={staffState.error} />
             ) : staffState.loading && staffAssignments.length === 0 ? (
-              <EmptyState title="Loading staff" description="Pulling role assignments for this organization." />
+              <EmptyState
+                title="Loading staff"
+                description="Pulling role assignments for this organization."
+              />
             ) : (
               <DataTable
                 columns={[
@@ -823,26 +949,35 @@ export function DashboardOperationalPanel({
                     header: "Person",
                     render: (assignment) => (
                       <div>
-                        <p className="font-medium text-white">{staffUsersById.get(assignment.userId)?.name ?? "Staff user"}</p>
-                        <p className="mt-1 text-xs text-white/45">{staffUsersById.get(assignment.userId)?.email ?? assignment.userId}</p>
+                        <p className="font-medium text-white">
+                          {staffUsersById.get(assignment.userId)?.name ?? "Staff user"}
+                        </p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {staffUsersById.get(assignment.userId)?.email ?? assignment.userId}
+                        </p>
                       </div>
-                    )
+                    ),
                   },
                   {
                     id: "role",
                     header: "Role",
-                    render: (assignment) => <StatusPill value={formatEnumLabel(assignment.role)} tone="blue" />
+                    render: (assignment) => (
+                      <StatusPill value={formatEnumLabel(assignment.role)} tone="blue" />
+                    ),
                   },
                   {
                     id: "contact",
                     header: "Contact",
-                    render: (assignment) => staffUsersById.get(assignment.userId)?.phone ?? organization.contactPhone ?? "Desk route"
+                    render: (assignment) =>
+                      staffUsersById.get(assignment.userId)?.phone ??
+                      organization.contactPhone ??
+                      "Desk route",
                   },
                   {
                     id: "created",
                     header: "Assigned",
-                    render: (assignment) => formatDate(assignment.createdAt)
-                  }
+                    render: (assignment) => formatDate(assignment.createdAt),
+                  },
                 ]}
                 rows={staffAssignments}
                 rowKey={(assignment) => assignment.id}
@@ -857,16 +992,26 @@ export function DashboardOperationalPanel({
             eyebrow="Coach Output"
             title="Plan production"
             description="Trainer-authored and AI-assisted plans surface here so owners can sanity-check the delivery load."
-            badge={<Pill tone="amber">{coachPlans.filter((plan) => plan.aiGenerated).length} AI assisted</Pill>}
+            badge={
+              <Pill tone="amber">
+                {coachPlans.filter((plan) => plan.aiGenerated).length} AI assisted
+              </Pill>
+            }
           />
           <div className="mt-5 grid gap-3">
             {coachPlansState.error ? (
               <ErrorNotice message={coachPlansState.error} />
             ) : coachPlansState.loading && coachPlans.length === 0 ? (
-              <EmptyState title="Loading coaching plans" description="Pulling the current training library." />
+              <EmptyState
+                title="Loading coaching plans"
+                description="Pulling the current training library."
+              />
             ) : coachPlans.length ? (
               coachPlans.slice(0, 6).map((plan) => (
-                <div key={plan.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                <div
+                  key={plan.id}
+                  className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium text-white">{plan.title}</p>
@@ -879,11 +1024,16 @@ export function DashboardOperationalPanel({
                       {plan.aiGenerated ? <StatusPill value="AI" tone="amber" /> : null}
                     </div>
                   </div>
-                  <p className="mt-3 text-xs text-white/40">Updated {formatDateTime(plan.updatedAt)}</p>
+                  <p className="mt-3 text-xs text-white/40">
+                    Updated {formatDateTime(plan.updatedAt)}
+                  </p>
                 </div>
               ))
             ) : (
-              <EmptyState title="No coaching plans yet" description="Trainers have not published any plans for this org." />
+              <EmptyState
+                title="No coaching plans yet"
+                description="Trainers have not published any plans for this org."
+              />
             )}
           </div>
         </GlassCard>
@@ -905,7 +1055,10 @@ export function DashboardOperationalPanel({
             {membershipPlansState.error ? (
               <ErrorNotice message={membershipPlansState.error} />
             ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
-              <EmptyState title="Loading membership offers" description="Pulling live plan definitions from the org route." />
+              <EmptyState
+                title="Loading membership offers"
+                description="Pulling live plan definitions from the org route."
+              />
             ) : (
               <DataTable
                 columns={[
@@ -917,29 +1070,37 @@ export function DashboardOperationalPanel({
                         <p className="font-medium text-white">{plan.name}</p>
                         <p className="mt-1 text-xs text-white/45">{formatEnumLabel(plan.type)}</p>
                       </div>
-                    )
+                    ),
                   },
                   {
                     id: "shape",
                     header: "Structure",
-                    render: (plan) => formatPlanShape(plan)
+                    render: (plan) => formatPlanShape(plan),
                   },
                   {
                     id: "visibility",
                     header: "Visibility",
                     render: (plan) => (
                       <div className="flex flex-wrap gap-2">
-                        <StatusPill value={plan.publicVisible ? "Public" : "Private"} tone={plan.publicVisible ? "blue" : "neutral"} />
-                        <StatusPill value={plan.active ? "Active" : "Paused"} tone={plan.active ? "lime" : "amber"} />
+                        <StatusPill
+                          value={plan.publicVisible ? "Public" : "Private"}
+                          tone={plan.publicVisible ? "blue" : "neutral"}
+                        />
+                        <StatusPill
+                          value={plan.active ? "Active" : "Paused"}
+                          tone={plan.active ? "lime" : "amber"}
+                        />
                       </div>
-                    )
+                    ),
                   },
                   {
                     id: "price",
                     header: "Price",
                     align: "right",
-                    render: (plan) => <span className="font-medium text-white">{formatInr(plan.pricePaise)}</span>
-                  }
+                    render: (plan) => (
+                      <span className="font-medium text-white">{formatInr(plan.pricePaise)}</span>
+                    ),
+                  },
                 ]}
                 rows={membershipPlans}
                 rowKey={(plan) => plan.id}
@@ -954,13 +1115,20 @@ export function DashboardOperationalPanel({
             eyebrow="Coaching Library"
             title="Workout and advisory plans"
             description="These are the plans trainers and AI flows are creating inside the organization."
-            badge={<Pill tone="amber">{coachPlans.filter((plan) => plan.reviewed === false).length} pending review</Pill>}
+            badge={
+              <Pill tone="amber">
+                {coachPlans.filter((plan) => plan.reviewed === false).length} pending review
+              </Pill>
+            }
           />
           <div className="mt-5">
             {coachPlansState.error ? (
               <ErrorNotice message={coachPlansState.error} />
             ) : coachPlansState.loading && coachPlans.length === 0 ? (
-              <EmptyState title="Loading coaching library" description="Pulling draft and published plan content." />
+              <EmptyState
+                title="Loading coaching library"
+                description="Pulling draft and published plan content."
+              />
             ) : (
               <DataTable
                 columns={[
@@ -972,29 +1140,32 @@ export function DashboardOperationalPanel({
                         <p className="font-medium text-white">{plan.title}</p>
                         <p className="mt-1 text-xs text-white/45">{formatEnumLabel(plan.type)}</p>
                       </div>
-                    )
+                    ),
                   },
                   {
                     id: "review",
                     header: "Review",
                     render: (plan) => (
                       <div className="flex flex-wrap gap-2">
-                        <StatusPill value={plan.reviewed ? "Reviewed" : "Needs review"} tone={plan.reviewed ? "lime" : "amber"} />
+                        <StatusPill
+                          value={plan.reviewed ? "Reviewed" : "Needs review"}
+                          tone={plan.reviewed ? "lime" : "amber"}
+                        />
                         {plan.aiGenerated ? <StatusPill value="AI assisted" tone="amber" /> : null}
                       </div>
-                    )
+                    ),
                   },
                   {
                     id: "assignment",
                     header: "Assignments",
                     align: "right",
-                    render: (plan) => plan.assignmentCount.toString()
+                    render: (plan) => plan.assignmentCount.toString(),
                   },
                   {
                     id: "updated",
                     header: "Updated",
-                    render: (plan) => formatDateTime(plan.updatedAt)
-                  }
+                    render: (plan) => formatDateTime(plan.updatedAt),
+                  },
                 ]}
                 rows={coachPlans}
                 rowKey={(plan) => plan.id}
@@ -1013,22 +1184,32 @@ export function DashboardOperationalPanel({
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <GlassCard variant="strong">
             <p className="text-sm text-white/48">Manual / offline</p>
-            <div className="metric mt-3 text-4xl font-semibold text-white">{formatInr(summary.cashCollectedPaise)}</div>
+            <div className="metric mt-3 text-4xl font-semibold text-white">
+              {formatInr(summary.cashCollectedPaise)}
+            </div>
             <p className="mt-2 text-xs text-white/55">Collected today via desk-recorded flows.</p>
           </GlassCard>
           <GlassCard variant="strong">
             <p className="text-sm text-white/48">Successful revenue</p>
-            <div className="metric mt-3 text-4xl font-semibold text-white">{formatInr(summary.revenuePaise)}</div>
+            <div className="metric mt-3 text-4xl font-semibold text-white">
+              {formatInr(summary.revenuePaise)}
+            </div>
             <p className="mt-2 text-xs text-white/55">Current settled revenue signal for today.</p>
           </GlassCard>
           <GlassCard variant="strong">
             <p className="text-sm text-white/48">Pending shop payments</p>
-            <div className="metric mt-3 text-4xl font-semibold text-white">{formatCompactNumber(queuedOrders.length)}</div>
-            <p className="mt-2 text-xs text-white/55">Orders waiting for payment completion or desk follow-up.</p>
+            <div className="metric mt-3 text-4xl font-semibold text-white">
+              {formatCompactNumber(queuedOrders.length)}
+            </div>
+            <p className="mt-2 text-xs text-white/55">
+              Orders waiting for payment completion or desk follow-up.
+            </p>
           </GlassCard>
           <GlassCard variant="strong">
             <p className="text-sm text-white/48">Expiring memberships</p>
-            <div className="metric mt-3 text-4xl font-semibold text-white">{formatCompactNumber(summary.expiringMemberships)}</div>
+            <div className="metric mt-3 text-4xl font-semibold text-white">
+              {formatCompactNumber(summary.expiringMemberships)}
+            </div>
             <p className="mt-2 text-xs text-white/55">A useful renewal queue for the front desk.</p>
           </GlassCard>
         </div>
@@ -1039,13 +1220,20 @@ export function DashboardOperationalPanel({
               eyebrow="Settlement Queue"
               title="Orders affecting cashflow"
               description="Shop orders are the clearest current payment queue exposed to the dashboard. This keeps desk staff anchored on what still needs attention."
-              badge={<Pill tone={queuedOrders.length ? "amber" : "lime"}>{queuedOrders.length} unsettled</Pill>}
+              badge={
+                <Pill tone={queuedOrders.length ? "amber" : "lime"}>
+                  {queuedOrders.length} unsettled
+                </Pill>
+              }
             />
             <div className="mt-5">
               {shopOrdersState.error ? (
                 <ErrorNotice message={shopOrdersState.error} />
               ) : shopOrdersState.loading && shopOrders.length === 0 ? (
-                <EmptyState title="Loading settlement queue" description="Pulling live shop order payment states." />
+                <EmptyState
+                  title="Loading settlement queue"
+                  description="Pulling live shop order payment states."
+                />
               ) : (
                 <DataTable
                   columns={[
@@ -1054,28 +1242,37 @@ export function DashboardOperationalPanel({
                       header: "Order",
                       render: (order) => (
                         <div>
-                          <p className="font-medium text-white">{order.id.slice(-8).toUpperCase()}</p>
-                          <p className="mt-1 text-xs text-white/45">{formatDateTime(order.createdAt)}</p>
+                          <p className="font-medium text-white">
+                            {order.id.slice(-8).toUpperCase()}
+                          </p>
+                          <p className="mt-1 text-xs text-white/45">
+                            {formatDateTime(order.createdAt)}
+                          </p>
                         </div>
-                      )
+                      ),
                     },
                     {
                       id: "status",
                       header: "Status",
-                      render: (order) => <StatusPill value={formatEnumLabel(order.status)} />
+                      render: (order) => <StatusPill value={formatEnumLabel(order.status)} />,
                     },
                     {
                       id: "items",
                       header: "Items",
                       align: "right",
-                      render: (order) => order.items.reduce((sum, item) => sum + item.quantity, 0).toString()
+                      render: (order) =>
+                        order.items.reduce((sum, item) => sum + item.quantity, 0).toString(),
                     },
                     {
                       id: "amount",
                       header: "Amount",
                       align: "right",
-                      render: (order) => <span className="font-medium text-white">{formatInr(order.totalPaise)}</span>
-                    }
+                      render: (order) => (
+                        <span className="font-medium text-white">
+                          {formatInr(order.totalPaise)}
+                        </span>
+                      ),
+                    },
                   ]}
                   rows={shopOrders}
                   rowKey={(order) => order.id}
@@ -1098,23 +1295,25 @@ export function DashboardOperationalPanel({
                 {
                   label: "Renewal window",
                   value: formatCompactNumber(summary.expiringMemberships),
-                  meta: "Members expiring in the next 7 days"
+                  meta: "Members expiring in the next 7 days",
                 },
                 {
                   label: "Inventory pressure",
                   value: formatCompactNumber(summary.lowStockProducts),
-                  meta: "Products close to threshold"
+                  meta: "Products close to threshold",
                 },
                 {
                   label: "Notification queue",
                   value: formatCompactNumber(summary.notificationQueueCount),
-                  meta: "Messages still scheduled or failed"
+                  meta: "Messages still scheduled or failed",
                 },
                 {
                   label: "Plan ladder",
-                  value: membershipPlans.length ? `${membershipPlans.length} live plans` : "Load plans",
-                  meta: "Useful while talking renewals at the desk"
-                }
+                  value: membershipPlans.length
+                    ? `${membershipPlans.length} live plans`
+                    : "Load plans",
+                  meta: "Useful while talking renewals at the desk",
+                },
               ]}
             />
           </GlassCard>
@@ -1139,33 +1338,33 @@ export function DashboardOperationalPanel({
               {
                 label: "Active members",
                 value: formatCompactNumber(summary.activeMembers),
-                meta: `${summary.joinRequests} join requests pending`
+                meta: `${summary.joinRequests} join requests pending`,
               },
               {
                 label: "Attendance today",
                 value: formatCompactNumber(summary.todayAttendance),
-                meta: "QR scans with entry codes"
+                meta: "QR scans with entry codes",
               },
               {
                 label: "Revenue today",
                 value: formatInr(summary.revenuePaise),
-                meta: `${formatInr(summary.cashCollectedPaise)} manual or offline`
+                meta: `${formatInr(summary.cashCollectedPaise)} manual or offline`,
               },
               {
                 label: "AI usage",
                 value: formatCompactNumber(summary.aiUsageThisMonth),
-                meta: "This month"
+                meta: "This month",
               },
               {
                 label: "Low stock",
                 value: formatCompactNumber(summary.lowStockProducts),
-                meta: "Products below threshold"
+                meta: "Products below threshold",
               },
               {
                 label: "Trial runway",
                 value: formatDaysRemaining(summary.trialDaysRemaining),
-                meta: formatDate(organization.trialEndAt)
-              }
+                meta: formatDate(organization.trialEndAt),
+              },
             ]}
           />
         </GlassCard>
@@ -1184,18 +1383,21 @@ export function DashboardOperationalPanel({
                 {
                   label: "Audit trail",
                   value: formatCompactNumber(auditLogCount),
-                  meta: "Privileged actions persisted in the log"
+                  meta: "Privileged actions persisted in the log",
                 },
                 {
                   label: "Notification queue",
-                  value: summary.notificationQueueCount > 0 ? `${summary.notificationQueueCount} needs attention` : "Clear",
-                  meta: "Scheduled or failed messages"
+                  value:
+                    summary.notificationQueueCount > 0
+                      ? `${summary.notificationQueueCount} needs attention`
+                      : "Clear",
+                  meta: "Scheduled or failed messages",
                 },
                 {
                   label: "Join mode",
                   value: formatEnumLabel(organization.joinMode),
-                  meta: "Shapes how inbound demand converts"
-                }
+                  meta: "Shapes how inbound demand converts",
+                },
               ]}
             />
           </GlassCard>
@@ -1210,9 +1412,12 @@ export function DashboardOperationalPanel({
               {[
                 "Cross-check expiring memberships with the membership ladder before the evening rush.",
                 "If flagged attendance exceptions spike, send an operational notification before it becomes member-visible.",
-                "Use the audit and AI surfaces together when policy-sensitive trainer or member actions happen."
+                "Use the audit and AI surfaces together when policy-sensitive trainer or member actions happen.",
               ].map((note) => (
-                <div key={note} className="rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-sm leading-6 text-white/58">
+                <div
+                  key={note}
+                  className="rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-sm leading-6 text-white/58"
+                >
                   {note}
                 </div>
               ))}
@@ -1237,7 +1442,10 @@ export function DashboardOperationalPanel({
             {auditLogsState.error ? (
               <ErrorNotice message={auditLogsState.error} />
             ) : auditLogsState.loading && auditLogs.length === 0 ? (
-              <EmptyState title="Loading audit trail" description="Pulling the latest privileged-action log." />
+              <EmptyState
+                title="Loading audit trail"
+                description="Pulling the latest privileged-action log."
+              />
             ) : (
               <DataTable
                 columns={[
@@ -1247,25 +1455,27 @@ export function DashboardOperationalPanel({
                     render: (log) => (
                       <div>
                         <p className="font-medium text-white">{formatEnumLabel(log.action)}</p>
-                        <p className="mt-1 text-xs text-white/45">{formatEnumLabel(log.entityType)}</p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {formatEnumLabel(log.entityType)}
+                        </p>
                       </div>
-                    )
+                    ),
                   },
                   {
                     id: "actor",
                     header: "Actor",
-                    render: (log) => log.actorUserId ?? "System"
+                    render: (log) => log.actorUserId ?? "System",
                   },
                   {
                     id: "entity",
                     header: "Entity",
-                    render: (log) => log.entityId ?? "Not attached"
+                    render: (log) => log.entityId ?? "Not attached",
                   },
                   {
                     id: "time",
                     header: "Created",
-                    render: (log) => formatDateTime(log.createdAt)
-                  }
+                    render: (log) => formatDateTime(log.createdAt),
+                  },
                 ]}
                 rows={auditLogs}
                 rowKey={(log) => log.id}
@@ -1280,16 +1490,26 @@ export function DashboardOperationalPanel({
             eyebrow="AI Oversight"
             title="Recent AI usage"
             description="Review AI output alongside the audit trail when staff are drafting or publishing member-facing plans."
-            badge={<Pill tone={misconfiguredAiCount > 0 ? "amber" : "lime"}>{misconfiguredAiCount} flagged</Pill>}
+            badge={
+              <Pill tone={misconfiguredAiCount > 0 ? "amber" : "lime"}>
+                {misconfiguredAiCount} flagged
+              </Pill>
+            }
           />
           <div className="mt-5 grid gap-3">
             {aiUsageState.error ? (
               <ErrorNotice message={aiUsageState.error} />
             ) : aiUsageState.loading && aiUsage.length === 0 ? (
-              <EmptyState title="Loading AI activity" description="Pulling the latest usage logs for this org." />
+              <EmptyState
+                title="Loading AI activity"
+                description="Pulling the latest usage logs for this org."
+              />
             ) : aiUsage.length ? (
               aiUsage.slice(0, 8).map((usage) => (
-                <div key={usage.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                <div
+                  key={usage.id}
+                  className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-medium text-white">{usage.promptSummary}</p>
                     <div className="flex flex-wrap gap-2">
@@ -1297,14 +1517,20 @@ export function DashboardOperationalPanel({
                       <StatusPill value={formatEnumLabel(usage.requestType)} />
                     </div>
                   </div>
-                  <p className="mt-2 text-sm text-white/55">{usage.responseSummary ?? "Response summary not captured."}</p>
+                  <p className="mt-2 text-sm text-white/55">
+                    {usage.responseSummary ?? "Response summary not captured."}
+                  </p>
                   <p className="mt-3 text-xs text-white/40">
-                    {formatEnumLabel(usage.role)} · {usage.tokenEstimate} tokens · {formatInr(usage.costEstimatePaise)} · {formatDateTime(usage.createdAt)}
+                    {formatEnumLabel(usage.role)} · {usage.tokenEstimate} tokens ·{" "}
+                    {formatInr(usage.costEstimatePaise)} · {formatDateTime(usage.createdAt)}
                   </p>
                 </div>
               ))
             ) : (
-              <EmptyState title="No AI activity yet" description="AI usage logs will appear here once drafting or safety flows run." />
+              <EmptyState
+                title="No AI activity yet"
+                description="AI usage logs will appear here once drafting or safety flows run."
+              />
             )}
           </div>
         </GlassCard>
@@ -1326,7 +1552,10 @@ export function DashboardOperationalPanel({
             {aiUsageState.error ? (
               <ErrorNotice message={aiUsageState.error} />
             ) : aiUsageState.loading && aiUsage.length === 0 ? (
-              <EmptyState title="Loading AI surface" description="Pulling the latest usage signals for this organization." />
+              <EmptyState
+                title="Loading AI surface"
+                description="Pulling the latest usage signals for this organization."
+              />
             ) : (
               <DataTable
                 columns={[
@@ -1336,9 +1565,11 @@ export function DashboardOperationalPanel({
                     render: (usage) => (
                       <div>
                         <p className="font-medium text-white">{usage.promptSummary}</p>
-                        <p className="mt-1 text-xs text-white/45">{usage.responseSummary ?? "No response summary"}</p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {usage.responseSummary ?? "No response summary"}
+                        </p>
                       </div>
-                    )
+                    ),
                   },
                   {
                     id: "shape",
@@ -1348,20 +1579,20 @@ export function DashboardOperationalPanel({
                         <StatusPill value={formatEnumLabel(usage.provider)} tone="blue" />
                         <StatusPill value={formatEnumLabel(usage.requestType)} />
                       </div>
-                    )
+                    ),
                   },
                   {
                     id: "tokens",
                     header: "Tokens",
                     align: "right",
-                    render: (usage) => usage.tokenEstimate.toString()
+                    render: (usage) => usage.tokenEstimate.toString(),
                   },
                   {
                     id: "cost",
                     header: "Cost",
                     align: "right",
-                    render: (usage) => formatInr(usage.costEstimatePaise)
-                  }
+                    render: (usage) => formatInr(usage.costEstimatePaise),
+                  },
                 ]}
                 rows={aiUsage}
                 rowKey={(usage) => usage.id}
@@ -1384,20 +1615,21 @@ export function DashboardOperationalPanel({
               {
                 label: "Usage this month",
                 value: formatCompactNumber(summary.aiUsageThisMonth),
-                meta: "Captured in the org summary"
+                meta: "Captured in the org summary",
               },
               {
                 label: "Safety cues",
-                value: misconfiguredAiCount > 0 ? `${misconfiguredAiCount} prompts flagged` : "Clear",
-                meta: "Based on usage safety metadata"
+                value:
+                  misconfiguredAiCount > 0 ? `${misconfiguredAiCount} prompts flagged` : "Clear",
+                meta: "Based on usage safety metadata",
               },
               {
                 label: "AI-assisted plans",
                 value: coachPlans.filter((plan) => plan.aiGenerated).length
                   ? `${coachPlans.filter((plan) => plan.aiGenerated).length} plans`
                   : "No AI plans yet",
-                meta: "Reviewable training content created so far"
-              }
+                meta: "Reviewable training content created so far",
+              },
             ]}
           />
         </GlassCard>
@@ -1430,33 +1662,36 @@ export function DashboardOperationalPanel({
               {
                 label: "Active members",
                 value: formatCompactNumber(summary.activeMembers),
-                meta: `${summary.joinRequests} inbound requests`
+                meta: `${summary.joinRequests} inbound requests`,
               },
               {
                 label: "Attendance today",
                 value: formatCompactNumber(summary.todayAttendance),
-                meta: "QR scans with entry codes"
+                meta: "QR scans with entry codes",
               },
               {
                 label: "Revenue",
                 value: formatInr(summary.revenuePaise),
-                meta: `${formatInr(summary.cashCollectedPaise)} manual / offline`
+                meta: `${formatInr(summary.cashCollectedPaise)} manual / offline`,
               },
               {
                 label: "Low stock",
                 value: formatCompactNumber(summary.lowStockProducts),
-                meta: "Pickup inventory risk"
+                meta: "Pickup inventory risk",
               },
               {
                 label: "Notification queue",
-                value: summary.notificationQueueCount > 0 ? `${summary.notificationQueueCount} waiting` : "Clear",
-                meta: "Failed or scheduled sends"
+                value:
+                  summary.notificationQueueCount > 0
+                    ? `${summary.notificationQueueCount} waiting`
+                    : "Clear",
+                meta: "Failed or scheduled sends",
               },
               {
                 label: "Trial runway",
                 value: formatDaysRemaining(summary.trialDaysRemaining),
-                meta: formatDate(organization.trialEndAt)
-              }
+                meta: formatDate(organization.trialEndAt),
+              },
             ]}
           />
         </GlassCard>
@@ -1497,18 +1732,18 @@ export function DashboardOperationalPanel({
               {
                 label: "Referral links",
                 value: "Enabled by owner",
-                meta: "Toggle discounts through coupon and referral settings"
+                meta: "Toggle discounts through coupon and referral settings",
               },
               {
                 label: "Share permissions",
                 value: "Role controlled",
-                meta: "Trainer/admin/member referral abilities follow permissions"
+                meta: "Trainer/admin/member referral abilities follow permissions",
               },
               {
                 label: "Cult-style path",
                 value: "Friend discount + reward",
-                meta: "Track discount, referrer, and redemption count"
-              }
+                meta: "Track discount, referrer, and redemption count",
+              },
             ]}
           />
         </GlassCard>
@@ -1541,7 +1776,10 @@ export function DashboardOperationalPanel({
               />
             ) : null}
             {initialNotifications.slice(0, 2).map((notification) => (
-              <div key={notification.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <div
+                key={notification.id}
+                className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-medium text-white">{notification.title}</p>
                   <StatusPill value={formatEnumLabel(notification.status)} />
@@ -1562,29 +1800,41 @@ export function DashboardOperationalPanel({
           />
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">Low-stock products</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                Low-stock products
+              </p>
               <div className="mt-4 grid gap-3">
                 {initialProducts.length ? (
                   initialProducts.slice(0, 4).map((product) => (
                     <div key={product.id} className="flex items-center justify-between gap-3">
                       <div>
                         <p className="font-medium text-white">{product.name}</p>
-                        <p className="text-xs text-white/45">{formatInr(product.pricePaise ?? 0)}</p>
+                        <p className="text-xs text-white/45">
+                          {formatInr(product.pricePaise ?? 0)}
+                        </p>
                       </div>
                       <StatusPill
                         value={`${product.stock ?? 0} left`}
-                        tone={(product.stock ?? 0) <= (product.lowStockThreshold ?? 0) ? "amber" : "blue"}
+                        tone={
+                          (product.stock ?? 0) <= (product.lowStockThreshold ?? 0)
+                            ? "amber"
+                            : "blue"
+                        }
                       />
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-white/48">No low-stock products in the current snapshot.</p>
+                  <p className="text-sm text-white/48">
+                    No low-stock products in the current snapshot.
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">Control posture</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                Control posture
+              </p>
               <ReadoutGrid
                 className="mt-4"
                 columns={1}
@@ -1592,18 +1842,18 @@ export function DashboardOperationalPanel({
                   {
                     label: "Audit trail",
                     value: formatCompactNumber(auditLogCount),
-                    meta: "Privileged action history"
+                    meta: "Privileged action history",
                   },
                   {
                     label: "Join mode",
                     value: formatEnumLabel(organization.joinMode),
-                    meta: `${organization.city}${organization.state ? `, ${organization.state}` : ""}`
+                    meta: `${organization.city}${organization.state ? `, ${organization.state}` : ""}`,
                   },
                   {
                     label: "Contact lane",
                     value: organization.contactEmail ?? organization.contactPhone ?? "Desk-owned",
-                    meta: "Primary escalation route"
-                  }
+                    meta: "Primary escalation route",
+                  },
                 ]}
               />
             </div>

@@ -61,6 +61,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function sessionDefaultRole(session?: AuthSessionSummary): Role | undefined {
+  if (session?.user.isPlatformAdmin) return "PLATFORM_ADMIN";
   const roles = new Set(
     session?.activeOrganization?.roles ?? session?.organizations[0]?.roles ?? [],
   );
@@ -74,6 +75,9 @@ function sessionDefaultRole(session?: AuthSessionSummary): Role | undefined {
 }
 
 function sessionDefaultRoute(role?: Role) {
+  if (role === "PLATFORM_ADMIN") {
+    return "/platform";
+  }
   if (role === "TRAINER") {
     return "/trainer";
   }

@@ -31,7 +31,7 @@ import {
   useRecordManualPayment,
   useRejectAttendance,
 } from "@/lib/query-hooks";
-import { useAuth } from "@/lib/auth";
+import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { receptionApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -84,6 +84,7 @@ export default function Reception() {
   const [paymentNote, setPaymentNote] = useState("");
   const [paymentReason, setPaymentReason] = useState("Desk collected payment");
   const [paymentStatus, setPaymentStatus] = useState("");
+  const [attendanceStatus, setAttendanceStatus] = useState("");
   const queueQuery = useReceptionQueue();
   const todayAttendanceQuery = useOrgAttendanceToday();
   const membersQuery = useOrgMembers();
@@ -196,6 +197,24 @@ export default function Reception() {
 
   async function fulfillOrder(orderId: string) {
     await fulfillOrderMutation.mutateAsync(orderId);
+  }
+
+  async function recordManualAttendance() {
+    if (!member?.id) {
+      return;
+    }
+    setAttendanceStatus("");
+    try {
+      await manualAttendanceMutation.mutateAsync({ memberUserId: member.id, reason });
+      setAttendanceStatus("Manual attendance recorded.");
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      setAttendanceStatus(
+        /already has an attendance record/i.test(message)
+          ? "This member is already checked in today."
+          : message,
+      );
+    }
   }
 
   return (
@@ -427,14 +446,11 @@ export default function Reception() {
               <PrimaryButton
                 icon="create-outline"
                 disabled={!member?.id || manualAttendanceMutation.isPending}
-                onPress={() =>
-                  member?.id
-                    ? void manualAttendanceMutation.mutateAsync({ memberUserId: member.id, reason })
-                    : undefined
-                }
+                onPress={() => void recordManualAttendance()}
               >
-                Record Manual Attendance
+                {manualAttendanceMutation.isPending ? "Recording..." : "Record Manual Attendance"}
               </PrimaryButton>
+              {attendanceStatus ? <Text style={styles.statusText}>{attendanceStatus}</Text> : null}
             </GlassCard>
           </>
         ) : null}
