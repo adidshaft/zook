@@ -10,8 +10,8 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { aiApi } from "@/lib/domain-api";
 import { useMyPlans, useMyProfile, useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -31,7 +31,7 @@ const languagePrompts = [
 export default function AssistantScreen() {
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
-  const { activeOrgId, hasAnyRole, token } = useAuth();
+  const { activeOrgId, activeRole, hasAnyRole, token } = useAuth();
   const profileQuery = useMyProfile();
   const plansQuery = useMyPlans();
   const trainerClientsQuery = useTrainerClients();
@@ -85,14 +85,11 @@ export default function AssistantScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
     try {
-      const result = await mobileApiFetch<{ response: string | Record<string, unknown> }>("/ai/chat", {
-        method: "POST",
+      const result = await aiApi.chat<{ response: string | Record<string, unknown> }>({
         token,
+        role: activeRole === "TRAINER" ? "TRAINER" : "MEMBER",
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
-        body: {
-          prompt: outboundPrompt,
-          ...(activeOrgId ? { orgId: activeOrgId } : {}),
-        },
+        prompt: outboundPrompt,
       });
       const body = typeof result.response === "string" ? result.response : JSON.stringify(result.response);
       setMessages((current) => [...current, { id: `assistant-${Date.now()}`, role: "assistant", body }]);

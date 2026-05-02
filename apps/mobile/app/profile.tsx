@@ -15,8 +15,8 @@ import {
   PrimaryButton,
   ZookScreen,
 } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { memberApi, notificationsApi } from "@/lib/domain-api";
 import { titleCaseFromCode } from "@/lib/formatting";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
 import { usePushNotifications } from "@/lib/push-notifications";
@@ -93,11 +93,10 @@ export default function Profile() {
     try {
       setPreferenceError(undefined);
       setBusyPreferenceKey(key);
-      await mobileApiFetch("/me/notification-preferences", {
-        method: "PATCH",
+      await notificationsApi.updatePreferences({
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
-        body: {
+        preferences: {
           ...(activeOrgId ? { orgId: activeOrgId } : {}),
           [key]: value,
         },
@@ -137,8 +136,7 @@ export default function Profile() {
     setDetailsBusy(true);
     setDetailsStatus("");
     try {
-      await mobileApiFetch("/me/profile", {
-        method: "PATCH",
+      await memberApi.updateProfile({
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
         body: {

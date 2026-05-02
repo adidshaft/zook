@@ -15,7 +15,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth, getApiErrorMessage } from "@/lib/auth";
-import { mobileApiFetch } from "@/lib/api";
+import { memberApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 const workoutTypes = [
@@ -90,8 +90,7 @@ export default function TrackingEntry() {
     }
     setSaving(true);
     try {
-      await mobileApiFetch("/me/tracking/workouts", {
-        method: "POST",
+      await memberApi.createTrackingWorkout({
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
         body: {

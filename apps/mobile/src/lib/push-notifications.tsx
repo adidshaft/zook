@@ -5,9 +5,10 @@ import * as Notifications from "expo-notifications";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Linking, Platform } from "react-native";
-import { getExpoProjectId, getMobilePushEnvironment, mobileApiFetch } from "./api";
+import { getExpoProjectId, getMobilePushEnvironment } from "./api";
 import { getApiErrorMessage, useAuth } from "./auth";
 import { isOfflineDemoMode } from "./demo-mode";
+import { notificationsApi, pushApi } from "./domain-api";
 import { mergeNotificationPreferences } from "./notification-preferences";
 import { mapNotificationPayloadToHref } from "./notification-routing";
 import { useMyNotificationPreferences } from "./query-hooks";
@@ -146,11 +147,10 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       if (!authTokenRef.current) {
         return
       }
-      await mobileApiFetch("/me/notification-preferences", {
-        method: "PATCH",
+      await notificationsApi.updatePreferences({
         token: authTokenRef.current,
         ...(activeOrgIdRef.current ? { orgId: activeOrgIdRef.current } : {}),
-        body: {
+        preferences: {
           ...(activeOrgIdRef.current ? { orgId: activeOrgIdRef.current } : {}),
           pushEnabled: enabled
         }
@@ -172,10 +172,9 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
 
     try {
       setSyncStatus("unregistering")
-      await mobileApiFetch("/push/unregister-device", {
-        method: "POST",
+      await pushApi.unregisterDevice({
         token: currentAuthToken,
-        body: { token: currentPushToken }
+        tokenValue: currentPushToken
       })
     } catch (cause) {
       const message = getApiErrorMessage(cause)
@@ -218,8 +217,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       }
 
       setSyncStatus("registering")
-      await mobileApiFetch("/push/register-device", {
-        method: "POST",
+      await pushApi.registerDevice({
         token: currentAuthToken,
         ...(activeOrgIdRef.current ? { orgId: activeOrgIdRef.current } : {}),
         body: {

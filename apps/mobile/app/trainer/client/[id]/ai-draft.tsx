@@ -15,7 +15,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
+import { plansApi, trainerApi } from "@/lib/domain-api";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
@@ -63,20 +63,15 @@ export default function TrainerAiDraftReview() {
       return;
     }
     const goal = client.summary?.fitnessGoal ?? client.profile?.fitnessGoal ?? "General fitness";
-    const result = await mobileApiFetch<{
+    const result = await trainerApi.generatePlanDraft<{
       response: unknown;
       createdPlan?: { id: string; title: string };
-    }>("/ai/generate-plan", {
-      method: "POST",
+    }>({
       token,
       orgId: activeOrgId,
-      body: {
-        orgId: activeOrgId,
-        title: `${client.user?.name ?? "Client"} workout draft`,
-        type: "WORKOUT",
-        prompt: `Create a safe trainer-reviewed workout plan for ${client.user?.name ?? "this member"} with goal: ${goal}.`,
-        persistDraft: true,
-      },
+      title: `${client.user?.name ?? "Client"} workout draft`,
+      type: "WORKOUT",
+      prompt: `Create a safe trainer-reviewed workout plan for ${client.user?.name ?? "this member"} with goal: ${goal}.`,
     });
     setDraft({
       planId: result.createdPlan?.id,
@@ -90,11 +85,12 @@ export default function TrainerAiDraftReview() {
 
   async function assignDraft() {
     if (!draft?.planId || !client || !activeOrgId || !token) return;
-    await mobileApiFetch(`/orgs/${activeOrgId}/plans/${draft.planId}/assign`, {
-      method: "POST",
+    await plansApi.assign({
       token,
       orgId: activeOrgId,
-      body: { assignedToUserId: client.memberUserId, audience: "selected_member" },
+      planId: draft.planId,
+      assignedToUserId: client.memberUserId,
+      audience: "selected_member",
     });
     setStatus(`${draft.title} assigned. The client can now see it.`);
   }

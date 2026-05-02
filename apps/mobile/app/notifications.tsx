@@ -13,8 +13,8 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { notificationsApi } from "@/lib/domain-api";
 import { formatRelativeDate, titleCaseFromCode } from "@/lib/formatting";
 import { mapNotificationPayloadToHref } from "@/lib/notification-routing";
 import { useMyNotifications } from "@/lib/query-hooks";
@@ -98,10 +98,7 @@ export default function NotificationsScreen() {
     }
     try {
       setBusyId(id);
-      await mobileApiFetch(`/me/notifications/${id}/read`, {
-        method: "POST",
-        token,
-      });
+      await notificationsApi.markRead({ id, token });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
@@ -116,10 +113,7 @@ export default function NotificationsScreen() {
     const unread = notifications.filter((item) => !item.readAt);
     for (const item of unread) {
       try {
-        await mobileApiFetch(`/me/notifications/${item.id}/read`, {
-          method: "POST",
-          token,
-        });
+        await notificationsApi.markRead({ id: item.id, token });
       } catch {
         // continue marking others
       }

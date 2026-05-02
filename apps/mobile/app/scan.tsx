@@ -11,8 +11,8 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { attendanceApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type ScanResult = {
@@ -71,8 +71,7 @@ export default function Scan() {
       if (!token) {
         throw new Error("Sign in again before scanning.");
       }
-      const result = await mobileApiFetch<ScanResult>("/attendance/scan", {
-        method: "POST",
+      const result = await attendanceApi.scan<ScanResult>({
         token,
         body: { qrPayload: payload },
       });

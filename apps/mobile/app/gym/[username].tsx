@@ -16,8 +16,9 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
-import { mobileApiFetch, toWebUrl } from "@/lib/api";
+import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { gymApi } from "@/lib/domain-api";
 import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { useGymProfile } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
@@ -52,13 +53,11 @@ export default function GymProfileScreen() {
     setBusyAction("join-request");
     setStatusMessage(null);
     try {
-      await mobileApiFetch(`/orgs/${gym.id}/join-requests`, {
-        method: "POST",
+      await gymApi.requestMembership({
+        orgId: gym.id,
         token,
-        body: {
-          ...(plans[0]?.id ? { planId: plans[0].id } : {}),
-          ...(effectiveReferral ? { referralCode: effectiveReferral } : {}),
-        },
+        ...(plans[0]?.id ? { planId: plans[0].id } : {}),
+        ...(effectiveReferral ? { referralCode: effectiveReferral } : {}),
       });
       setStatusMessage(
         "Membership request submitted. The gym team can now review it from their dashboard.",
@@ -80,17 +79,12 @@ export default function GymProfileScreen() {
     setBusyAction(planId);
     setStatusMessage(null);
     try {
-      const payload = await mobileApiFetch<{ checkoutUrl: string }>(
-        `/orgs/${gym.id}/subscriptions`,
-        {
-          method: "POST",
-          token,
-          body: {
-            planId,
-            ...(effectiveReferral ? { referralCode: effectiveReferral } : {}),
-          },
-        },
-      );
+      const payload = await gymApi.createSubscriptionCheckout({
+        orgId: gym.id,
+        token,
+        planId,
+        ...(effectiveReferral ? { referralCode: effectiveReferral } : {}),
+      });
       setStatusMessage("Checkout created. Complete the hosted flow to activate your membership.");
       await Linking.openURL(toWebUrl(payload.checkoutUrl));
       await Promise.all([

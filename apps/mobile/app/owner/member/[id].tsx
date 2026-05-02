@@ -10,8 +10,8 @@ import {
   Pill,
   ZookScreen,
 } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { ownerApi } from "@/lib/domain-api";
 import { formatLongDate } from "@/lib/formatting";
 import type { OrgMemberRecord } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
@@ -71,7 +71,7 @@ export default function OwnerMemberDetail() {
   const memberQuery = useQuery({
     queryKey: ["org", resolvedOrgId, "members", id],
     queryFn: () =>
-      mobileApiFetch<{ members: OrgMemberRecord[] }>(`/orgs/${resolvedOrgId}/members`, {
+      ownerApi.members<{ members: OrgMemberRecord[] }>({
         token,
         orgId: resolvedOrgId,
       }),

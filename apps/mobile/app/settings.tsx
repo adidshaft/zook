@@ -12,8 +12,8 @@ import {
   PrimaryButton,
   ZookScreen,
 } from "@/components/primitives";
-import { mobileApiFetch } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { privacyApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function Settings() {
@@ -26,10 +26,7 @@ export default function Settings() {
     if (!token) return;
     setBusy(true);
     try {
-      await mobileApiFetch("/me/data-export-request", {
-        method: "POST",
-        token,
-      });
+      await privacyApi.requestDataExport({ token });
       setPrivacyStatus("Export requested. You'll receive an email when it's ready.");
     } catch (error) {
       setPrivacyStatus(getApiErrorMessage(error));
@@ -42,10 +39,7 @@ export default function Settings() {
     if (!token) return;
     setBusy(true);
     try {
-      await mobileApiFetch("/me/account-deletion-request", {
-        method: "POST",
-        token,
-      });
+      await privacyApi.requestAccountDeletion({ token });
       setPrivacyStatus("Deletion requested. This is being reviewed before execution.");
     } catch (error) {
       setPrivacyStatus(getApiErrorMessage(error));

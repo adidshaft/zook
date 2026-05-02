@@ -2,7 +2,7 @@ import type { AuthSessionSummary, Role } from "@zook/core";
 import { ApiError } from "@zook/core";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { mobileApiFetch } from "./api";
+import { authClient } from "./domain-api";
 import { DEMO_AUTH_TOKEN, getOfflineDemoRoleOverride, isOfflineDemoMode } from "./demo-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hydrate = useCallback(
     async (tokenValue: string, preferredOrgId?: string, preferredRole?: Role) => {
-      const currentSession = await mobileApiFetch<AuthSessionSummary>("/auth/me", {
+      const currentSession = await authClient.me({
         token: tokenValue,
         ...(preferredOrgId ? { orgId: preferredOrgId } : {})
       });
@@ -179,10 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const requestOtp = useCallback(async (email: string) => {
-    const result = await mobileApiFetch<RequestOtpResult>("/auth/request-otp", {
-      method: "POST",
-      body: { email }
-    });
+    const result = await authClient.requestOtp(email);
     setError(undefined);
     return result;
   }, []);
@@ -190,10 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const verifyOtp = useCallback(
     async (email: string, code: string) => {
       const normalizedCode = sanitizeOtpCode(code);
-      const result = await mobileApiFetch<VerifyOtpResult>("/auth/verify-otp", {
-        method: "POST",
-        body: { email, code: normalizedCode }
-      });
+      const result = await authClient.verifyOtp(email, normalizedCode);
       await deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY);
       await setStoredValue(SESSION_STORAGE_KEY, result.token);
       await hydrate(result.token, activeOrgId, activeRole);
@@ -218,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       if (token) {
-        await mobileApiFetch("/auth/logout", { method: "POST", token });
+        await authClient.logout(token);
       }
     } finally {
       if (isOfflineDemoMode()) {
