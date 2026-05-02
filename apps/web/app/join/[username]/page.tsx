@@ -1,9 +1,22 @@
 import Link from "next/link";
 import { CheckCircle2, LockKeyhole } from "lucide-react";
-import { zookDemoFixtures } from "@zook/core";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
 import { formatInr } from "@/lib/format";
+import { getPublicGymProfileData, type PublicGymReferral } from "@/server/public-gym-read-models";
+
+function discountFor(referral: PublicGymReferral | null, planPricePaise: number) {
+  if (!referral || referral.status !== "active") {
+    return 0;
+  }
+  if (referral.discountPaise > 0) {
+    return referral.discountPaise;
+  }
+  if (referral.discountPercentBps) {
+    return Math.floor((planPricePaise * referral.discountPercentBps) / 10_000);
+  }
+  return 0;
+}
 
 export default async function JoinPage({
   params,
@@ -13,15 +26,11 @@ export default async function JoinPage({
   searchParams: Promise<{ plan?: string; ref?: string; mode?: string }>;
 }) {
   const [{ username }, query] = await Promise.all([params, searchParams]);
-  const org = zookDemoFixtures.organizations.find((gym) => gym.username === username) ?? zookDemoFixtures.organizations[0];
-  const selectedPlan =
-    zookDemoFixtures.membershipPlans.find((plan) => plan.id === query.plan) ??
-    zookDemoFixtures.membershipPlans.find((plan) => plan.id === "plan-hybrid-pro") ??
-    zookDemoFixtures.membershipPlans[0];
-  const referral = query.ref
-    ? zookDemoFixtures.referralCodes.find((code) => code.code.toLowerCase() === query.ref?.toLowerCase())
-    : null;
-  const discountPaise = referral?.discountPaise ?? 0;
+  const data = await getPublicGymProfileData(username, query.ref);
+  const org = data?.org;
+  const selectedPlan = data?.plans.find((plan) => plan.id === query.plan) ?? data?.plans[0];
+  const referral = data?.referral ?? null;
+  const discountPaise = discountFor(referral, selectedPlan?.pricePaise ?? 0);
   const finalAmount = Math.max(0, (selectedPlan?.pricePaise ?? 0) - discountPaise);
   const joinMode = query.mode ?? org?.joinMode ?? "OPEN_JOIN";
 
@@ -102,12 +111,21 @@ export default async function JoinPage({
                 <p className="text-sm font-medium text-amber-50">Your membership activates only after payment confirmation.</p>
               </div>
             </div>
-            <Link
-              href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}
-              className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
-            >
-              Continue to Checkout
-            </Link>
+            {data.connected ? (
+              <Link
+                href="/login"
+                className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+              >
+                Sign in to continue
+              </Link>
+            ) : (
+              <Link
+                href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}
+                className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+              >
+                Continue to Demo Checkout
+              </Link>
+            )}
           </GlassCard>
         </section>
       </div>

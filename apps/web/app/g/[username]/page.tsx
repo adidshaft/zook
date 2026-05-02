@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { MapPin, Search, ShieldCheck } from "lucide-react";
-import { zookDemoFixtures } from "@zook/core";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
 import { formatInr } from "@/lib/format";
+import { getPublicGymProfileData } from "@/server/public-gym-read-models";
 
 export default async function GymPublicPage({
   params
@@ -11,13 +11,14 @@ export default async function GymPublicPage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const org = zookDemoFixtures.organizations.find((gym) => gym.username === username) ?? zookDemoFixtures.organizations[0];
-  const plans = zookDemoFixtures.membershipPlans.filter((plan) => plan.orgId === org?.id && plan.publicVisible);
-  const trainers = zookDemoFixtures.users.filter((user) => user.name === "Coach Rhea" || user.name === "Coach Kabir");
+  const data = await getPublicGymProfileData(username);
 
-  if (!org) {
+  if (!data) {
     return <main className="p-8">Gym not found.</main>;
   }
+  const { org, plans, trainers } = data;
+  const minPlanPrice = Math.min(...plans.map((plan) => plan.pricePaise));
+  const defaultPlanId = plans[0]?.id;
 
   return (
     <main className="min-h-screen px-5 py-5">
@@ -62,11 +63,11 @@ export default async function GymPublicPage({
 
           <GlassCard variant="strong" className="h-fit">
             <p className="text-sm text-white/45">Membership preview</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">Plans from {formatInr(149900)}/month</h2>
+            <h2 className="mt-2 text-3xl font-semibold text-white">Plans from {formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/month</h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
               Membership activates only after payment confirmation. Redirects alone are never trusted.
             </p>
-            <Link href={`/join/${org.username}?plan=plan-hybrid-pro`} className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black">
+            <Link href={`/join/${org.username}${defaultPlanId ? `?plan=${defaultPlanId}` : ""}`} className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black">
               Join Now
             </Link>
             <div className="mt-5 rounded-[24px] border border-white/10 bg-black/20 p-4">
@@ -103,18 +104,18 @@ export default async function GymPublicPage({
             <h2 className="text-2xl font-semibold text-white">Visible trainers</h2>
             <div className="mt-5 grid gap-3">
               {trainers.map((trainer) => (
-                <div key={trainer.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                <div key={trainer.userId} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
                   <p className="font-medium text-white">{trainer.name}</p>
-                  <p className="mt-1 text-sm text-white/45">Strength coaching · plan review · PT support</p>
+                  <p className="mt-1 text-sm text-white/45">{trainer.bio ?? "Strength coaching · plan review · PT support"}</p>
                 </div>
               ))}
             </div>
           </GlassCard>
           <GlassCard>
             <h2 className="text-2xl font-semibold text-white">Referral</h2>
-            <p className="mt-3 text-sm leading-6 text-white/55">Have a referral code? Apply it during checkout. Try <span className="font-semibold text-lime-200">RHEA250</span> for the local demo.</p>
-            <Link href={`/join/${org.username}?plan=plan-hybrid-pro&ref=RHEA250`} className="zook-focus mt-5 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm text-white/80">
-              Join with RHEA250
+            <p className="mt-3 text-sm leading-6 text-white/55">Have a referral or invite code? Apply it during checkout so the gym can track the source and any eligible discount.</p>
+            <Link href={`/join/${org.username}${defaultPlanId ? `?plan=${defaultPlanId}` : ""}`} className="zook-focus mt-5 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm text-white/80">
+              Review membership
             </Link>
           </GlassCard>
         </section>
