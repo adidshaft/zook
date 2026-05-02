@@ -1,4 +1,4 @@
-import { zookDemoFixtures } from "@zook/core";
+import { getAppEnv, isTruthy, zookDemoFixtures } from "@zook/core";
 import { getOrganizationDashboardData, getPlatformDashboardData } from "@/server/read-models";
 
 const zeroSummary = {
@@ -101,6 +101,10 @@ function getDemoDashboardData(scope: "org" | "platform") {
   };
 }
 
+function canUseDemoDashboardFallback() {
+  return getAppEnv() === "local" && (process.env.API_MODE === "offline-demo" || isTruthy(process.env.WEB_DEMO_FALLBACK));
+}
+
 export async function getDashboardData(orgId?: string) {
   try {
     if (orgId) {
@@ -141,11 +145,18 @@ export async function getDashboardData(orgId?: string) {
         abuseFlags: data.abuseFlags
       }
     };
-  } catch {
-    if (orgId) {
-      return getDemoDashboardData("org");
+  } catch (error) {
+    if (canUseDemoDashboardFallback()) {
+      if (orgId) {
+        return getDemoDashboardData("org");
+      }
+      return getDemoDashboardData("platform");
     }
-    return getDemoDashboardData("platform");
+    console.error("Dashboard data read failed", error);
+    if (orgId) {
+      return getEmptyDashboardData(orgId);
+    }
+    return getEmptyDashboardData();
   }
 }
 

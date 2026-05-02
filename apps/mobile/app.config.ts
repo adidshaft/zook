@@ -1,6 +1,7 @@
 import type { ExpoConfig } from "expo/config";
 
 type MobileReleaseProfile = "local" | "staging" | "production";
+type MobileApiMode = "backend" | "offline-demo";
 type MobilePushEnvironment = "development" | "preview" | "production";
 
 const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
@@ -86,6 +87,38 @@ function resolveReleaseProfile(): MobileReleaseProfile {
   );
 }
 
+function normalizeApiMode(value?: string | null): MobileApiMode | undefined {
+  switch (value?.trim().toLowerCase()) {
+    case "backend":
+    case "api":
+    case "server":
+      return "backend";
+    case "offline-demo":
+    case "offline_demo":
+    case "demo":
+      return "offline-demo";
+    default:
+      return undefined;
+  }
+}
+
+function legacyOfflineDemoRequested() {
+  return (
+    process.env.EXPO_PUBLIC_OFFLINE_DEMO === "true" ||
+    process.env.EXPO_PUBLIC_DEMO_MODE === "true" ||
+    process.env.MOBILE_OFFLINE_DEMO === "true"
+  );
+}
+
+function resolveApiMode(): MobileApiMode {
+  return (
+    normalizeApiMode(process.env.API_MODE) ??
+    normalizeApiMode(process.env.EXPO_PUBLIC_API_MODE) ??
+    normalizeApiMode(process.env.MOBILE_API_MODE) ??
+    (legacyOfflineDemoRequested() ? "offline-demo" : "backend")
+  );
+}
+
 function resolveUrl(
   explicitValue: string | undefined,
   profile: MobileReleaseProfile,
@@ -106,6 +139,12 @@ function resolvePushEnvironment(profile: MobileReleaseProfile): MobilePushEnviro
 
 export default (): ExpoConfig => {
   const releaseProfile = resolveReleaseProfile();
+  const apiMode = resolveApiMode();
+  if (apiMode === "offline-demo" && releaseProfile !== "local") {
+    throw new Error(
+      `Refusing to build ${releaseProfile} mobile app with API_MODE=offline-demo. Use API_MODE=backend for staging/production.`
+    );
+  }
   const expoProjectId =
     process.env.EXPO_PROJECT_ID ??
     process.env.EAS_PROJECT_ID ??
@@ -129,14 +168,13 @@ export default (): ExpoConfig => {
     },
     extra: {
       ...(baseConfig.extra ?? {}),
+      appEnv: releaseProfile,
+      apiMode,
       releaseProfile,
       appScheme: "zook",
       appVersion,
       runtimeVersion,
-      offlineDemo:
-        process.env.EXPO_PUBLIC_OFFLINE_DEMO === "true" ||
-        process.env.EXPO_PUBLIC_DEMO_MODE === "true" ||
-        process.env.MOBILE_OFFLINE_DEMO === "true",
+      offlineDemo: apiMode === "offline-demo",
       easBuildProfile: process.env.EAS_BUILD_PROFILE ?? "local",
       pushEnvironment: resolvePushEnvironment(releaseProfile),
       ...(expoProjectId ? { expoProjectId } : {}),

@@ -25,6 +25,8 @@ export const playwrightForwardEnvKeys = [
   "DATABASE_URL",
   "SESSION_SECRET",
   "OTP_FIXED_CODE_DEV",
+  "APP_ENV",
+  "API_MODE",
   "ENV_PROFILE",
   "NEXT_PUBLIC_APP_URL",
   "NEXT_PUBLIC_WEB_URL",
@@ -38,7 +40,8 @@ export const playwrightForwardEnvKeys = [
   "PUSH_PROVIDER",
   "MAINTENANCE_MOCK_MODE",
   "SEED_DEMO_USERS_ENABLED",
-  "ALLOW_FIXED_OTP_IN_STAGING"
+  "ALLOW_FIXED_OTP_IN_STAGING",
+  "ALLOW_MOCK_PAYMENT_COMPLETION"
 ] as const;
 
 export const providerSelections = [
@@ -138,7 +141,7 @@ export function isTruthy(value: string | undefined) {
 }
 
 export function resolveEnvProfile(): EnvProfile {
-  const profile = env("ENV_PROFILE")?.toLowerCase();
+  const profile = (env("APP_ENV") ?? env("ENV_PROFILE"))?.toLowerCase();
   if (profile && envProfiles.includes(profile as EnvProfile)) {
     return profile as EnvProfile;
   }

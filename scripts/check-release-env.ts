@@ -47,6 +47,43 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
 
   results.push(pass("Environment profile", `ENV_PROFILE=${profile}.`));
 
+  const apiMode = env("API_MODE") ?? "backend";
+  const legacyOfflineDemoEnabled =
+    isTruthy(env("EXPO_PUBLIC_OFFLINE_DEMO")) ||
+    isTruthy(env("EXPO_PUBLIC_DEMO_MODE")) ||
+    isTruthy(env("MOBILE_OFFLINE_DEMO"));
+  if (!["backend", "offline-demo"].includes(apiMode)) {
+    results.push(
+      fail("API mode", `API_MODE=${apiMode} is not supported.`, "Use API_MODE=backend or API_MODE=offline-demo.")
+    );
+  } else if (apiMode === "offline-demo" && profile !== "local") {
+    results.push(
+      fail("API mode", "Offline demo mode is enabled outside local.", "Use API_MODE=backend for staging and production builds.")
+    );
+  } else if (apiMode === "offline-demo") {
+    results.push(warn("API mode", "API_MODE=offline-demo is active.", "This is only for local demos and screenshot QA."));
+  } else {
+    results.push(pass("API mode", "API_MODE=backend."));
+  }
+
+  if (legacyOfflineDemoEnabled && profile !== "local") {
+    results.push(
+      fail(
+        "Legacy offline demo flags",
+        "One of EXPO_PUBLIC_OFFLINE_DEMO, EXPO_PUBLIC_DEMO_MODE, or MOBILE_OFFLINE_DEMO is enabled outside local.",
+        "Remove legacy demo flags and use API_MODE=backend."
+      )
+    );
+  } else if (legacyOfflineDemoEnabled) {
+    results.push(
+      warn(
+        "Legacy offline demo flags",
+        "Legacy offline demo flags are enabled.",
+        "Prefer API_MODE=offline-demo so the runtime mode is explicit."
+      )
+    );
+  }
+
   if (nodeMajor >= 22) {
     results.push(pass("Node.js", `Detected Node ${nodeVersion}.`));
   } else if (nodeMajor >= 20) {
@@ -169,6 +206,24 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
     results.push(warn("Mock payments", "PAYMENT_PROVIDER=mock is active.", "This is acceptable for local development and controlled staging, but not for normal production traffic."));
   } else {
     results.push(pass("Payment webhook secret", env("RAZORPAY_WEBHOOK_SECRET") ? "Payment webhook secret is configured." : "Payment provider does not require a webhook secret check yet."));
+  }
+
+  if (profile === "production" && isTruthy(env("ALLOW_MOCK_PAYMENT_COMPLETION"))) {
+    results.push(
+      fail(
+        "Mock payment completion",
+        "ALLOW_MOCK_PAYMENT_COMPLETION is enabled in production.",
+        "Unset it before production deploys."
+      )
+    );
+  } else if (profile === "staging" && isTruthy(env("ALLOW_MOCK_PAYMENT_COMPLETION"))) {
+    results.push(
+      warn(
+        "Mock payment completion",
+        "ALLOW_MOCK_PAYMENT_COMPLETION is enabled in staging.",
+        "Use only for controlled internal validation."
+      )
+    );
   }
 
   const pushProvider = env("PUSH_PROVIDER") ?? "mock";

@@ -25,7 +25,7 @@ This repository is currently aligned to the **mock-first Zook MVP product flow**
 ```bash
 pnpm install
 cp .env.example .env
-pnpm preflight
+APP_ENV=local API_MODE=backend pnpm preflight
 pnpm env:check
 pnpm release:preflight
 pnpm db:generate
@@ -36,6 +36,14 @@ pnpm dev:mobile
 ```
 
 Development OTP: `000000`
+
+Runtime modes:
+
+- Backend mode is the default: `APP_ENV=local API_MODE=backend`.
+- Offline demo mode is explicit local-only: `APP_ENV=local API_MODE=offline-demo EXPO_PUBLIC_API_MODE=offline-demo pnpm dev:mobile`.
+- Staging and production mobile builds must use `API_MODE=backend`; the Expo config refuses to build non-local apps with offline demo enabled.
+- `OTP_FIXED_CODE_DEV=000000` is only accepted in local/test, or staging when `ALLOW_FIXED_OTP_IN_STAGING=true`. It is never accepted in production.
+- Mock payment completion is local-only by default. Staging requires `ALLOW_MOCK_PAYMENT_COMPLETION=true`; production always blocks it.
 
 Seed accounts:
 

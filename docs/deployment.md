@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Last updated: 24 April 2026
+Last updated: 3 May 2026
 
 ## Private Pilot Goal
 
@@ -16,7 +16,9 @@ Phase 4 keeps local development mock-first while making staging realistic enough
 
 ### Local
 
+- `APP_ENV=local`
 - `ENV_PROFILE=local`
+- `API_MODE=backend` by default, or `API_MODE=offline-demo` for local fixture-only QA
 - mock providers allowed
 - fixed OTP allowed when `OTP_FIXED_CODE_DEV` is set
 - seeded demo users allowed
@@ -30,10 +32,13 @@ Phase 4 keeps local development mock-first while making staging realistic enough
 
 ### Staging
 
+- `APP_ENV=staging`
 - `ENV_PROFILE=staging`
+- `API_MODE=backend`
 - real database required
 - strong `SESSION_SECRET` required
 - fixed OTP disabled unless `ALLOW_FIXED_OTP_IN_STAGING=1`
+- mock payment completion disabled unless `ALLOW_MOCK_PAYMENT_COMPLETION=1`
 - recommended providers:
   - `PAYMENT_PROVIDER=razorpay` with test-mode keys, or `mock` for internal-only rollout
   - `EMAIL_PROVIDER=smtp|resend|mock`
@@ -44,8 +49,12 @@ Phase 4 keeps local development mock-first while making staging realistic enough
 
 ### Production
 
+- `APP_ENV=production`
 - `ENV_PROFILE=production`
+- `API_MODE=backend`
 - fixed OTP forbidden
+- offline demo mode forbidden
+- mock payment completion forbidden
 - mock email forbidden
 - mock payment forbidden unless `MAINTENANCE_MOCK_MODE=1`
 - strong `SESSION_SECRET` required

@@ -8,6 +8,7 @@ import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800
 import * as SplashScreen from 'expo-splash-screen';
 
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { getMobileRuntimeConfigError, getMobileRuntimeMode, isOfflineDemoMode } from "@/lib/runtime-mode";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { colors } from "@/lib/theme";
 
@@ -53,6 +54,8 @@ function decodeRedirectTarget(rawRedirect: string | string[] | undefined) {
 
 function LayoutContent() {
   const { defaultRoute, hasActiveRole, hasAnyRole, status } = useAuth();
+  const runtimeConfigError = getMobileRuntimeConfigError();
+  const runtimeMode = getMobileRuntimeMode();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
@@ -99,6 +102,18 @@ function LayoutContent() {
     }
   }, [defaultRoute, hasActiveRole, hasAnyRole, pathname, redirectTarget, router, searchParams, status]);
 
+  if (runtimeConfigError) {
+    return (
+      <View style={styles.configError}>
+        <Text style={styles.configErrorTitle}>Zook is not configured for this build.</Text>
+        <Text style={styles.configErrorBody}>{runtimeConfigError}</Text>
+        <Text style={styles.configErrorMeta}>
+          APP_ENV={runtimeMode.appEnv} · API_MODE={runtimeMode.apiMode}
+        </Text>
+      </View>
+    );
+  }
+
   if (status === "loading") {
     return (
       <View style={styles.loading}>
@@ -140,6 +155,11 @@ function LayoutContent() {
         <Stack.Screen name="attendance/[attendanceRecordId]" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="owner/member/[id]" options={{ animation: "slide_from_right" }} />
       </Stack>
+      {isOfflineDemoMode() ? (
+        <View pointerEvents="none" style={styles.demoBadge}>
+          <Text style={styles.demoBadgeText}>DEMO MODE</Text>
+        </View>
+      ) : null}
     </>
   );
 }
@@ -186,5 +206,44 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.text,
     fontSize: 14,
+  },
+  configError: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    justifyContent: "center",
+    padding: 24,
+    gap: 12,
+  },
+  configErrorTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  configErrorBody: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  configErrorMeta: {
+    color: colors.amber,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  demoBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(242,201,76,0.45)",
+    backgroundColor: "rgba(242,201,76,0.16)",
+  },
+  demoBadgeText: {
+    color: colors.amber,
+    fontSize: 11,
+    fontWeight: "900",
   },
 });

@@ -15,6 +15,8 @@ import {
   requestOtpSchema,
   workoutSessionSchema,
   verifyOtpSchema,
+  getAllowedFixedOtp,
+  isMockPaymentCompletionAllowed,
   type AIRequestType,
   type Role
 } from "@zook/core";
@@ -743,9 +745,8 @@ async function startPaymentSessionCheckout(input: {
 }
 
 function guardianConsentCode() {
-  if (process.env.NODE_ENV === "development" && process.env.OTP_FIXED_CODE_DEV) {
-    return process.env.OTP_FIXED_CODE_DEV;
-  }
+  const fixedOtp = getAllowedFixedOtp();
+  if (fixedOtp) return fixedOtp;
   return String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0");
 }
 
@@ -910,10 +911,7 @@ async function verifyGuardianConsentChallenge(input: {
     throw validationError("Guardian OTP has expired.");
   }
 
-  const devCodeAllowed =
-    process.env.NODE_ENV === "development" &&
-    Boolean(process.env.OTP_FIXED_CODE_DEV) &&
-    input.code === process.env.OTP_FIXED_CODE_DEV;
+  const devCodeAllowed = getAllowedFixedOtp() === input.code;
   const matches = challenge.challengeTokenHash === AuthService.hash(input.code) || devCodeAllowed;
   if (!matches) {
     const attempts = challenge.attempts + 1;
@@ -3241,6 +3239,9 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     });
   }
   if (request.method === "POST" && pathMatches(path, ["payments", "mock", /.+/, "complete"])) {
+    if (!isMockPaymentCompletionAllowed()) {
+      throw forbiddenError("Mock payment completion is disabled for this environment.");
+    }
     const sessionId = path[2]!;
     const body = completeMockPaymentSchema.parse(await readJson(request));
     const status = body.status ?? "SUCCEEDED";

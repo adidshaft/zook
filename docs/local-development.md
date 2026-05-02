@@ -18,6 +18,21 @@ pnpm db:push
 pnpm db:seed
 ```
 
+The default local mode is backend-backed:
+
+```bash
+APP_ENV=local API_MODE=backend pnpm dev:web
+APP_ENV=local EXPO_PUBLIC_API_MODE=backend pnpm dev:mobile
+```
+
+Offline demo mode is explicit and local-only:
+
+```bash
+APP_ENV=local API_MODE=offline-demo EXPO_PUBLIC_API_MODE=offline-demo pnpm dev:mobile
+```
+
+Staging and production builds must use `API_MODE=backend`. The mobile Expo config fails the build if offline demo mode is selected outside `APP_ENV=local`.
+
 ## Run The Apps
 
 ```bash
@@ -27,6 +42,7 @@ pnpm dev:mobile
 
 - Web defaults to [http://localhost:3000](http://localhost:3000)
 - Mobile reads `MOBILE_API_BASE_URL` / `EXPO_PUBLIC_API_BASE_URL`
+- Mobile release/native folders and screenshots are generated outputs; `apps/mobile/ios/` and `apps/mobile/screenshots/` are ignored. Regenerate native files with Expo prebuild or EAS when a local native workflow needs them.
 - For simulator/device specifics, see [docs/mobile-runtime.md](./mobile-runtime.md)
 - If you change `.env`, restart the web dev server so `DATABASE_URL`, provider envs, and session secrets are picked up.
 

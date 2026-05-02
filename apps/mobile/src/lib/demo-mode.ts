@@ -1,18 +1,11 @@
-import Constants from "expo-constants";
 import { zookDemoFixtures } from "@zook/core";
 import { roles, type AuthSessionSummary, type Role } from "@zook/core";
+import { isOfflineDemoMode } from "./runtime-mode";
 
 export const DEMO_AUTH_TOKEN = "offline-demo-session";
 export const DEMO_MEMBER_EMAIL = "member@zook.local";
 
-export function isOfflineDemoMode() {
-  return (
-    Constants.expoConfig?.extra?.offlineDemo === true ||
-    process.env.EXPO_PUBLIC_OFFLINE_DEMO === "true" ||
-    process.env.EXPO_PUBLIC_DEMO_MODE === "true" ||
-    process.env.MOBILE_OFFLINE_DEMO === "true"
-  );
-}
+export { isOfflineDemoMode };
 
 export function getOfflineDemoRoleOverride(): Role | undefined {
   const normalized = process.env.EXPO_PUBLIC_OFFLINE_DEMO_ROLE?.trim().toUpperCase();

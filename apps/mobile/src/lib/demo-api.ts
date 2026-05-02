@@ -467,5 +467,5 @@ export async function demoMobileApiFetch<T>(path: string, init: { body?: unknown
     } as T;
   }
 
-  return { ok: true } as T;
+  throw new Error(`Offline demo has no fixture response for ${pathname}. Add an explicit demo handler or use API_MODE=backend.`);
 }

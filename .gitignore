@@ -19,3 +19,13 @@ artifacts
 *.tsbuildinfo
 packages/db/prisma/dev.db
 packages/db/prisma/migrations/*/migration_lock.toml
+
+# Generated Expo/native outputs. Regenerate with Expo prebuild/EAS when needed.
+apps/mobile/ios/
+apps/mobile/screenshots/
+
+# Generated icon-builder exports; canonical mobile assets live in apps/mobile/assets/icons.
+packages/figma-icon-builder/AppIcon-*.png
+packages/figma-icon-builder/exported_icons/
+packages/figma-icon-builder/Android /
+packages/figma-icon-builder/dist/

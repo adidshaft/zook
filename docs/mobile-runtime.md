@@ -13,11 +13,17 @@ Zook currently supports two practical mobile development paths:
 
 ## API Base URL
 
+Mobile API mode is explicit:
+
+- `EXPO_PUBLIC_API_MODE=backend` uses the backend API and is the default for local, staging, and production.
+- `EXPO_PUBLIC_API_MODE=offline-demo` routes through local fixture handlers and is allowed only with `APP_ENV=local`.
+- Legacy flags such as `EXPO_PUBLIC_OFFLINE_DEMO=true` still work locally, but new commands should use `API_MODE=offline-demo` / `EXPO_PUBLIC_API_MODE=offline-demo`.
+
 The mobile app resolves its backend from:
 
 1. `MOBILE_API_BASE_URL`
 2. `EXPO_PUBLIC_API_BASE_URL`
-3. Expo config fallback: `http://127.0.0.1:3000/api`
+3. Expo config fallback for the selected app env
 
 Examples:
 
@@ -33,6 +39,11 @@ Web checkout handoff uses `NEXT_PUBLIC_WEB_URL`.
 - Mobile stores the bearer session token in `expo-secure-store`.
 - OTP verification calls the same backend auth routes as web.
 - Use `000000` locally when `OTP_FIXED_CODE_DEV` is enabled.
+- `000000` is blocked in production and requires `ALLOW_FIXED_OTP_IN_STAGING=true` in staging.
+
+## Native Artifacts
+
+`apps/mobile/ios/`, generated screenshots, and icon-builder exports are ignored outputs. Regenerate native files with Expo prebuild or EAS instead of committing generated `Pods/`, build folders, screenshots, or exported app-icon variants.
 
 ## Camera / QR Testing
 

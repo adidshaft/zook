@@ -2,7 +2,12 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { parseApiResponse } from "@zook/core";
 import { demoMobileApiFetch } from "./demo-api";
-import { isOfflineDemoMode } from "./demo-mode";
+import {
+  getMobileApiMode,
+  getMobileAppEnv,
+  getMobileRuntimeConfigError,
+  isOfflineDemoMode,
+} from "./runtime-mode";
 
 type MobileReleaseProfile = "local" | "staging" | "production";
 type MobilePushEnvironment = "development" | "preview" | "production";
@@ -12,7 +17,7 @@ function normalizePath(path: string) {
 }
 
 function configuredReleaseProfile() {
-  return (Constants.expoConfig?.extra?.releaseProfile as MobileReleaseProfile | undefined) ?? "local";
+  return getMobileAppEnv();
 }
 
 function isLocalAddress(url: string) {
@@ -33,6 +38,13 @@ function ensureConfiguredUrl(configured: string | undefined, label: "API" | "web
 
 export function getMobileReleaseProfile() {
   return configuredReleaseProfile();
+}
+
+export function getMobileRuntimeMode() {
+  return {
+    appEnv: getMobileAppEnv(),
+    apiMode: getMobileApiMode(),
+  };
 }
 
 export function getMobilePushEnvironment() {
@@ -86,6 +98,10 @@ export async function mobileApiFetch<T>(
   } = {},
 ): Promise<T> {
   const { body: rawBody, orgId, token, ...requestInit } = init;
+  const configError = getMobileRuntimeConfigError();
+  if (configError) {
+    throw new Error(configError);
+  }
   if (isOfflineDemoMode()) {
     return demoMobileApiFetch<T>(path, { body: rawBody });
   }
@@ -93,7 +109,9 @@ export async function mobileApiFetch<T>(
   const headers = new Headers(requestInit.headers);
   let body = rawBody;
   const apiBaseUrl = getMobileApiBaseUrl();
+  const requestId = `mob_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
+  headers.set("x-request-id", requestId);
   if (token) {
     headers.set("authorization", `Bearer ${token}`);
   }
@@ -105,21 +123,27 @@ export async function mobileApiFetch<T>(
     body = JSON.stringify(body);
   }
 
-  let response: Response;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
   try {
-    response = await fetch(`${apiBaseUrl}${normalizePath(path)}`, {
+    const response = await fetch(`${apiBaseUrl}${normalizePath(path)}`, {
       ...requestInit,
       headers,
+      signal: requestInit.signal ?? controller.signal,
       ...(body !== undefined ? { body: body as BodyInit | null } : {})
     });
+    return parseApiResponse<T>(response);
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`Request timed out. Try again in a moment. Request ID: ${requestId}`);
+    }
     if (error instanceof Error && isLocalAddress(apiBaseUrl)) {
       throw new Error(
         `Unable to reach ${apiBaseUrl}. On iOS simulator, make sure the local web server is running. On Android emulators use 10.0.2.2, and on physical devices replace localhost with your LAN IP or use staging/production.`
       );
     }
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return parseApiResponse<T>(response);
 }

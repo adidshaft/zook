@@ -8,21 +8,24 @@
       "distribution": "internal",
       "channel": "development",
       "env": {
-        "EXPO_PUBLIC_ENV_PROFILE": "local"
+        "EXPO_PUBLIC_ENV_PROFILE": "local",
+        "EXPO_PUBLIC_API_MODE": "backend"
       }
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_ENV_PROFILE": "staging"
+        "EXPO_PUBLIC_ENV_PROFILE": "staging",
+        "EXPO_PUBLIC_API_MODE": "backend"
       }
     },
     "production": {
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_ENV_PROFILE": "production"
+        "EXPO_PUBLIC_ENV_PROFILE": "production",
+        "EXPO_PUBLIC_API_MODE": "backend"
       }
     }
   },

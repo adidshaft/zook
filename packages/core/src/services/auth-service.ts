@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 import type { EmailProvider } from "../providers/email";
+import { getAllowedFixedOtp } from "../runtime-env";
 
 export interface OtpChallengeRecord {
   id: string;
@@ -40,10 +41,7 @@ export class AuthService {
   }
 
   private createOtpCode(): string {
-    const fixedCode =
-      process.env.NODE_ENV === "development" && process.env.OTP_FIXED_CODE_DEV
-        ? process.env.OTP_FIXED_CODE_DEV
-        : undefined;
+    const fixedCode = getAllowedFixedOtp();
     if (fixedCode) {
       return fixedCode;
     }
@@ -96,10 +94,7 @@ export class AuthService {
     if (challenge.attempts >= challenge.maxAttempts) {
       throw new Error("OTP attempts exceeded");
     }
-    const devCodeAllowed =
-      process.env.NODE_ENV === "development" &&
-      Boolean(process.env.OTP_FIXED_CODE_DEV) &&
-      input.code === process.env.OTP_FIXED_CODE_DEV;
+    const devCodeAllowed = getAllowedFixedOtp() === input.code;
     const matches = challenge.codeHash === AuthService.hash(input.code) || devCodeAllowed;
     if (!matches) {
       await this.repo.incrementOtpAttempt(challenge.id);
