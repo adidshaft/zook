@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { zookDemoFixtures } from "@zook/core";
 import { DataTable, EmptyState, ReadoutGrid, SectionHeader, StatusPill, toneFromStatus } from "./dashboard-primitives";
 import { GlassCard, Pill } from "./glass-card";
 import { formatCompactNumber, formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
@@ -61,26 +60,6 @@ type ProviderDiagnostics = {
   metadata?: Record<string, string | number | boolean | null>;
 };
 
-const demoProviderDiagnostics = Object.fromEntries(
-  zookDemoFixtures.providerDiagnostics.map((diagnostic) => [
-    diagnostic.category,
-    {
-      category: diagnostic.category,
-      selectedProvider: diagnostic.provider,
-      activeProvider: diagnostic.provider,
-      status: diagnostic.status,
-      missingEnv: [],
-      env: {},
-      provider: diagnostic.provider,
-      mode: diagnostic.mode,
-      configured: diagnostic.status === "ready",
-      lastCheckedAt: diagnostic.lastCheckedAt,
-      requestId: diagnostic.requestId,
-      notes: diagnostic.notes
-    } satisfies ProviderDiagnostics
-  ])
-);
-
 export function PlatformOperationsPanel({
   initialOrgs,
   initialFlags
@@ -96,8 +75,7 @@ export function PlatformOperationsPanel({
     initialData: { orgs: initialOrgs }
   });
   const providersState = useOperationalResource<{ providers: Record<string, ProviderDiagnostics> }>({
-    path: "/api/platform/provider-status",
-    initialData: { providers: demoProviderDiagnostics }
+    path: "/api/platform/provider-status"
   });
   const usageState = useOperationalResource<{ usage: PlatformUsageRow[] }>({
     path: "/api/platform/ai-usage"
@@ -144,7 +122,10 @@ export function PlatformOperationsPanel({
             description="These diagnostics come from the backend provider registry. They are safe for admins and intentionally avoid exposing raw secrets or env values."
             badge={<Pill tone={misconfiguredProviders.length ? "red" : "lime"}>{misconfiguredProviders.length} need setup</Pill>}
             action={
-              <button className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black">
+              <button
+                className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
+                onClick={() => providersState.reload()}
+              >
                 Run Readiness Check
               </button>
             }
