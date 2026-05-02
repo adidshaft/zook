@@ -56,6 +56,19 @@ Zook is a pnpm/Turbo monorepo.
 - Harden OTP/mock provider gates so production cannot accept universal demo OTP or mock payment completion.
 - Add focused tests for runtime mode guardrails and demo fallback behavior.
 
+## Progress In This Pass
+
+- Added explicit mobile/backend runtime mode helpers and release guardrails.
+- Ignored generated iOS prebuild output, screenshots, icon exports, and removed the duplicate primitives file.
+- Centralized mobile screen mutations behind named domain clients.
+- Replaced direct public web fixture reads with Prisma-backed public gym read models and local/offline-demo fallback only.
+- Added backend plan update/version/audit support and wired trainer mobile plan create, AI draft edit, save, and assign.
+- Added backend receptionist code verification for entry and pickup codes, deterministic entry codes for backend scans, and real fulfilled-order counts.
+- Removed demo fixture initial provider diagnostics from platform admin.
+- Gated `/checkout/mock/demo` behind mock-payment environment rules and tightened activation copy.
+- Added backend-backed mobile privacy request status display.
+- Added `docs/QA_CHECKLIST.md` and `docs/PRODUCTION_READINESS_HANDOFF.md`.
+
 ## What Stays Mock Or Provider-Ready
 
 - Local provider defaults can remain mock for fast local development.
@@ -87,4 +100,3 @@ Zook is a pnpm/Turbo monorepo.
 - Web dashboard does not silently fall back to demo data outside explicit demo/local mode.
 - Existing backend-backed member, trainer, receptionist, owner/admin flows continue to compile.
 - Tests/checks are run, or exact blockers are documented.
-

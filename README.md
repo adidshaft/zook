@@ -2,7 +2,7 @@
 
 Zook is an India-first operating system for small and medium gyms. This monorepo contains the mobile app, web dashboard, API backend, Prisma database package, shared core domain logic, and provider abstractions for local-first development.
 
-This repository is currently aligned to the **mock-first Zook MVP product flow**: mobile execution apps for members, trainers, receptionists, and owners on the move; web control-room surfaces for owner/admin and platform operations; public join pages; and hosted checkout handoff with mock server confirmation.
+This repository is currently aligned to the **backend-first Zook MVP product flow**: mobile execution apps for members, trainers, receptionists, and owners on the move; web control-room surfaces for owner/admin and platform operations; public join pages; and hosted checkout handoff with local mock providers only when explicitly allowed.
 
 ## What Is Built
 
@@ -70,8 +70,8 @@ Web:
 - `/g/iron-temple`
 - `/join/iron-temple?plan=plan-hybrid-pro&ref=RHEA250`
 - `/r/NISHAFIT`
-- `/checkout/mock/demo`
-- `/checkout/mock/{sessionId}`
+- `/checkout/mock/demo` (local/mock mode only)
+- `/checkout/mock/{sessionId}` (local/mock payment sessions)
 - `/checkout/{sessionId}`
 
 API:
@@ -125,7 +125,7 @@ Mobile:
 - Receptionist: switch to Receptionist in Profile, open Desk, approve pending scan, verify `ZK-7319`, record Direct UPI payment for Aarav, fulfill pickup order.
 - Trainer: switch to Trainer, open Aarav Mehta, generate/review AI draft, assign only after trainer approval.
 - Owner mobile: switch to Owner, open Command, review approvals, revenue, and stock.
-- Public web: open `/g/iron-temple`, select Hybrid Pro, apply `RHEA250`, continue to `/checkout/mock/demo`, then confirm mock payment.
+- Public web: open `/g/iron-temple`, select Hybrid Pro, apply `RHEA250`; backend-connected pages send users to login before checkout, while explicit local demo fallback can continue to `/checkout/mock/demo`.
 - Owner/admin web: open `/dashboard` for Today’s Command Board, Attendance, Notifications, Shop, Reports, Staff, Audit, and Settings.
 - Platform admin: open `/platform` to inspect provider diagnostics and org operations. Diagnostics show request IDs and missing env names only, never secret values.
 
