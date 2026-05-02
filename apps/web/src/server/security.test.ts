@@ -7,6 +7,7 @@ function createMutationRequest(input: {
   fetchSite?: string;
   authorization?: string;
   hasCookieSession?: boolean;
+  nextOrigin?: string;
 }) {
   return {
     method: "POST",
@@ -14,7 +15,7 @@ function createMutationRequest(input: {
       ...(input.origin ? { origin: input.origin } : {}),
       ...(input.referer ? { referer: input.referer } : {}),
       ...(input.fetchSite ? { "sec-fetch-site": input.fetchSite } : {}),
-      ...(input.authorization ? { authorization: input.authorization } : {})
+      ...(input.authorization ? { authorization: input.authorization } : {}),
     }),
     cookies: {
       get(name: string) {
@@ -22,11 +23,11 @@ function createMutationRequest(input: {
           return { name, value: "session-token" };
         }
         return undefined;
-      }
+      },
     },
     nextUrl: {
-      origin: "https://zook.app"
-    }
+      origin: input.nextOrigin ?? "https://zook.app",
+    },
   };
 }
 
@@ -37,9 +38,9 @@ describe("mutation safety", () => {
         createMutationRequest({
           origin: "https://zook.app",
           fetchSite: "same-origin",
-          hasCookieSession: true
-        }) as never
-      )
+          hasCookieSession: true,
+        }) as never,
+      ),
     ).not.toThrow();
   });
 
@@ -48,9 +49,22 @@ describe("mutation safety", () => {
       assertSafeMutationRequest(
         createMutationRequest({
           authorization: "Bearer token",
-          hasCookieSession: false
-        }) as never
-      )
+          hasCookieSession: false,
+        }) as never,
+      ),
+    ).not.toThrow();
+  });
+
+  it("allows equivalent loopback origins in local browser development", () => {
+    expect(() =>
+      assertSafeMutationRequest(
+        createMutationRequest({
+          origin: "http://localhost:3001",
+          fetchSite: "cross-site",
+          hasCookieSession: true,
+          nextOrigin: "http://127.0.0.1:3001",
+        }) as never,
+      ),
     ).not.toThrow();
   });
 
@@ -60,9 +74,9 @@ describe("mutation safety", () => {
         createMutationRequest({
           origin: "https://evil.example",
           fetchSite: "cross-site",
-          hasCookieSession: true
-        }) as never
-      )
+          hasCookieSession: true,
+        }) as never,
+      ),
     ).toThrow(/Cross-site mutation blocked/);
   });
 });

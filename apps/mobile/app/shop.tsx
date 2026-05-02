@@ -1,7 +1,9 @@
 import { Stack } from "expo-router";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomNav,
   EmptyState,
@@ -53,7 +55,11 @@ export default function Shop() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [checkoutState, setCheckoutState] = useState<CheckoutState>("browse");
   const [order, setOrder] = useState<ShopOrderRecord | null>(null);
-  const [checkoutSession, setCheckoutSession] = useState<{ id: string; provider?: string; checkoutUrl?: string } | null>(null);
+  const [checkoutSession, setCheckoutSession] = useState<{
+    id: string;
+    provider?: string;
+    checkoutUrl?: string;
+  } | null>(null);
   const productsQuery = useShopProducts();
   const ordersQuery = useMyShopOrders();
   const createOrder = useCreateShopOrder();
@@ -73,7 +79,10 @@ export default function Shop() {
       return product ? { product, quantity } : null;
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const totalPaise = cartItems.reduce((sum, item) => sum + item.product.pricePaise * item.quantity, 0);
+  const totalPaise = cartItems.reduce(
+    (sum, item) => sum + item.product.pricePaise * item.quantity,
+    0,
+  );
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   function addToCart(productId: string) {
@@ -119,7 +128,11 @@ export default function Shop() {
 
   async function continuePayment() {
     if (!order || !checkoutSession) return;
-    if (checkoutSession.provider && checkoutSession.provider !== "mock" && checkoutSession.checkoutUrl) {
+    if (
+      checkoutSession.provider &&
+      checkoutSession.provider !== "mock" &&
+      checkoutSession.checkoutUrl
+    ) {
       await Linking.openURL(checkoutSession.checkoutUrl);
       return;
     }
@@ -141,13 +154,17 @@ export default function Shop() {
           <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
         </GlassCard>
         <GlassCard variant="compact" contentStyle={styles.stack}>
-          {(order.items.length ? order.items : cartItems.map((item) => ({
-            productId: item.product.id,
-            quantity: item.quantity,
-            unitPaise: item.product.pricePaise,
-            product: item.product,
-          }))).map((item) => {
-            const product = item.product ?? products.find((candidate) => candidate.id === item.productId);
+          {(order.items.length
+            ? order.items
+            : cartItems.map((item) => ({
+                productId: item.product.id,
+                quantity: item.quantity,
+                unitPaise: item.product.pricePaise,
+                product: item.product,
+              }))
+          ).map((item) => {
+            const product =
+              item.product ?? products.find((candidate) => candidate.id === item.productId);
             return (
               <ListRow
                 key={item.productId}
@@ -158,7 +175,9 @@ export default function Shop() {
             );
           })}
         </GlassCard>
-        <ZookButton onPress={() => setCheckoutState("browse")} icon="bag-outline">Back to Shop</ZookButton>
+        <ZookButton onPress={() => setCheckoutState("browse")} icon="bag-outline">
+          Back to Shop
+        </ZookButton>
       </ShopShell>
     );
   }
@@ -168,14 +187,30 @@ export default function Shop() {
       <ShopShell selectedPath="/shop">
         <MobileHeader title="Payment" subtitle="Your item will be ready at the desk." />
         <GlassCard contentStyle={styles.checkoutContent}>
-          <ListRow title="Pay securely" subtitle="Confirm the order" trailing={<StatusChip status="1" tone="neutral" />} />
-          <ListRow title="Get pickup code" subtitle="We will make a code for the desk" trailing={<StatusChip status="2" tone="amber" />} />
-          <ListRow title="Collect at desk" subtitle="Show the code to pick it up" trailing={<StatusChip status="3" tone="lime" />} />
+          <ListRow
+            title="Pay securely"
+            subtitle="Confirm the order"
+            trailing={<StatusChip status="1" tone="neutral" />}
+          />
+          <ListRow
+            title="Get pickup code"
+            subtitle="We will make a code for the desk"
+            trailing={<StatusChip status="2" tone="amber" />}
+          />
+          <ListRow
+            title="Collect at desk"
+            subtitle="Show the code to pick it up"
+            trailing={<StatusChip status="3" tone="lime" />}
+          />
           <View style={styles.checkoutTotal}>
             <Text style={styles.cardBody}>Order total</Text>
             <Text style={styles.totalText}>{formatInr(order.totalPaise)}</Text>
           </View>
-          <ZookButton onPress={() => void continuePayment()} disabled={completeMockPayment.isPending} icon="card-outline">
+          <ZookButton
+            onPress={() => void continuePayment()}
+            disabled={completeMockPayment.isPending}
+            icon="card-outline"
+          >
             {completeMockPayment.isPending ? "Confirming..." : "Continue"}
           </ZookButton>
         </GlassCard>
@@ -199,7 +234,12 @@ export default function Shop() {
                 key={item.product.id}
                 title={item.product.name}
                 subtitle={`${item.quantity} item · ${item.product.stock} in stock`}
-                trailing={<StatusChip status={formatInr(item.product.pricePaise * item.quantity)} tone="neutral" />}
+                trailing={
+                  <StatusChip
+                    status={formatInr(item.product.pricePaise * item.quantity)}
+                    tone="neutral"
+                  />
+                }
               />
             ))
           ) : (
@@ -211,8 +251,14 @@ export default function Shop() {
           <Text style={styles.totalText}>{formatInr(totalPaise)}</Text>
         </GlassCard>
         <View style={styles.actionRow}>
-          <SecondaryButton onPress={() => setCheckoutState("browse")} style={styles.actionHalf}>Back</SecondaryButton>
-          <ZookButton onPress={() => void createCheckout()} disabled={!cartItems.length || createOrder.isPending} style={styles.actionHalf}>
+          <SecondaryButton onPress={() => setCheckoutState("browse")} style={styles.actionHalf}>
+            Back
+          </SecondaryButton>
+          <ZookButton
+            onPress={() => void createCheckout()}
+            disabled={!cartItems.length || createOrder.isPending}
+            style={styles.actionHalf}
+          >
             {createOrder.isPending ? "Creating..." : "Continue"}
           </ZookButton>
         </View>
@@ -220,85 +266,121 @@ export default function Shop() {
     );
   }
 
+  const miniCart =
+    itemCount > 0 ? (
+      <Pressable
+        onPress={() => setCheckoutState("cart")}
+        style={styles.miniCart}
+        accessibilityRole="button"
+        accessibilityLabel="Open mini cart"
+      >
+        <Text style={styles.miniCartText}>
+          {itemCount} items · {formatInr(totalPaise)}
+        </Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.bg} />
+      </Pressable>
+    ) : null;
+
   return (
-    <>
-      <ShopShell selectedPath="/shop">
-        <MobileHeader
-          title="Desk pickup"
-          subtitle={activeOrganization?.name ?? "Active gym"}
-          trailing={
-            <Pressable
-              onPress={() => setCheckoutState("cart")}
-              accessibilityRole="button"
-              accessibilityLabel="Open cart"
-              style={styles.cartIcon}
-            >
-              <Ionicons name="bag-outline" size={22} color={colors.text} />
-              {itemCount ? <View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{itemCount}</Text></View> : null}
-            </Pressable>
-          }
+    <ShopShell selectedPath="/shop" floatingAction={miniCart}>
+      <MobileHeader
+        title="Desk pickup"
+        subtitle={activeOrganization?.name ?? "Active gym"}
+        trailing={
+          <Pressable
+            onPress={() => setCheckoutState("cart")}
+            accessibilityRole="button"
+            accessibilityLabel="Open cart"
+            style={styles.cartIcon}
+          >
+            <Ionicons name="bag-outline" size={22} color={colors.text} />
+            {itemCount ? (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{itemCount}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        }
+      />
+
+      <SearchBar value={query} onChangeText={setQuery} placeholder="Search essentials" />
+      <SegmentedControl options={categories} value={category} onChange={setCategory} />
+
+      {filteredProducts.length ? (
+        <View style={styles.productGrid}>
+          {filteredProducts.map((product) => {
+            const lowStock = product.stock <= product.lowStockThreshold;
+            const fulfillmentLabel =
+              product.stock > 0 ? `${product.stock} in stock` : "Out of stock";
+            return (
+              <ProductCard
+                key={product.id}
+                name={product.name}
+                price={formatInr(product.pricePaise)}
+                stock={lowStock ? "Low stock" : fulfillmentLabel}
+                tone={product.stock <= 0 ? "red" : lowStock ? "amber" : "lime"}
+                imageUrl={(product as { imageUrl?: string | null }).imageUrl}
+                quantity={cart[product.id] ?? 0}
+                icon={iconForCategory(product.category as Category)}
+                onIncrement={() => addToCart(product.id)}
+                onDecrement={() => removeFromCart(product.id)}
+                style={styles.productCard}
+              />
+            );
+          })}
+        </View>
+      ) : productsQuery.isLoading ? (
+        <GlassCard variant="compact" contentStyle={styles.stack}>
+          <ListRow
+            title="Loading products"
+            subtitle="Fetching the desk pickup catalog."
+            icon="hourglass-outline"
+            tone="amber"
+          />
+        </GlassCard>
+      ) : (
+        <EmptyState
+          title="No products found"
+          body="Try a different item or ask the desk for availability."
         />
-
-        <SearchBar value={query} onChangeText={setQuery} placeholder="Search essentials" />
-        <SegmentedControl options={categories} value={category} onChange={setCategory} />
-
-        {filteredProducts.length ? (
-          <View style={styles.productGrid}>
-            {filteredProducts.map((product) => {
-              const lowStock = product.stock <= product.lowStockThreshold;
-              const fulfillmentLabel = product.stock > 0 ? `${product.stock} in stock` : "Out of stock";
-              return (
-                <ProductCard
-                  key={product.id}
-                  name={product.name}
-                  price={formatInr(product.pricePaise)}
-                  stock={lowStock ? "Low stock" : fulfillmentLabel}
-                  tone={product.stock <= 0 ? "red" : lowStock ? "amber" : "lime"}
-                  imageUrl={(product as { imageUrl?: string | null }).imageUrl}
-                  quantity={cart[product.id] ?? 0}
-                  icon={iconForCategory(product.category as Category)}
-                  onIncrement={() => addToCart(product.id)}
-                  onDecrement={() => removeFromCart(product.id)}
-                  style={styles.productCard}
-                />
-              );
-            })}
-          </View>
-        ) : productsQuery.isLoading ? (
-          <GlassCard variant="compact" contentStyle={styles.stack}>
-            <ListRow title="Loading products" subtitle="Fetching the desk pickup catalog." icon="hourglass-outline" tone="amber" />
-          </GlassCard>
-        ) : (
-          <EmptyState title="No products found" body="Try a different item or ask the desk for availability." />
-        )}
-      </ShopShell>
-      {itemCount ? (
-        <Pressable
-          onPress={() => setCheckoutState("cart")}
-          style={styles.miniCart}
-          accessibilityRole="button"
-          accessibilityLabel="Open mini cart"
-        >
-          <Text style={styles.miniCartText}>{itemCount} items · {formatInr(totalPaise)}</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.bg} />
-        </Pressable>
-      ) : null}
-    </>
+      )}
+    </ShopShell>
   );
 }
 
-function ShopShell({ children, selectedPath }: { children: React.ReactNode; selectedPath: string }) {
+function ShopShell({
+  children,
+  selectedPath,
+  floatingAction,
+}: {
+  children: ReactNode;
+  selectedPath: string;
+  floatingAction?: ReactNode;
+}) {
+  const insets = useSafeAreaInsets();
+  const contentPaddingBottom =
+    layout.bottomNavContentPadding + (floatingAction ? layout.stickyActionHeight : 0);
+  const floatingBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + 18;
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <ScrollView
+          style={styles.scroller}
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: contentPaddingBottom }]}
         >
           {children}
         </ScrollView>
+        {floatingAction ? (
+          <View
+            pointerEvents="box-none"
+            style={[styles.floatingAction, { bottom: floatingBottom }]}
+          >
+            {floatingAction}
+          </View>
+        ) : null}
         <BottomNav selectedPath={selectedPath} />
       </ZookScreen>
     </>
@@ -306,6 +388,9 @@ function ShopShell({ children, selectedPath }: { children: React.ReactNode; sele
 }
 
 const styles = StyleSheet.create({
+  scroller: {
+    flex: 1,
+  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
@@ -351,10 +436,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   miniCart: {
-    position: "absolute",
-    left: 20,
-    right: 20,
-    bottom: 104,
     minHeight: 54,
     borderRadius: 999,
     backgroundColor: colors.lime,
@@ -372,6 +453,12 @@ const styles = StyleSheet.create({
   miniCartText: {
     color: colors.bg,
     ...typography.button,
+  },
+  floatingAction: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    zIndex: 4,
   },
   stack: {
     gap: 10,
