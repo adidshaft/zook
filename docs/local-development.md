@@ -12,10 +12,18 @@
 ```bash
 pnpm install
 cp .env.example .env
+pnpm db:local:setup
+```
+
+The setup helper starts the repo Postgres container, waits for it to become healthy, generates Prisma, applies migrations, baselines an older non-empty local `db:push` database only when it has no schema diff, seeds demo data, and runs release preflight.
+
+If you prefer manual setup:
+
+```bash
 docker compose up -d
 pnpm db:generate
-pnpm db:push
-pnpm db:seed
+pnpm db:deploy
+pnpm seed:demo
 ```
 
 The default local mode is backend-backed:

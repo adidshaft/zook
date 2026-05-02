@@ -8,10 +8,17 @@ Use this for normal development.
 
 ```bash
 cp .env.example .env
-APP_ENV=local API_MODE=backend pnpm preflight
+pnpm db:local:setup
+```
+
+Manual equivalent:
+
+```bash
+docker compose up -d postgres
 pnpm db:generate
 pnpm db:deploy
 pnpm seed:demo
+APP_ENV=local API_MODE=backend pnpm preflight
 pnpm dev:web
 pnpm dev:mobile
 ```

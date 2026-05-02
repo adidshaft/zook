@@ -25,19 +25,28 @@ This repository is currently aligned to the **backend-first Zook MVP product flo
 ```bash
 pnpm install
 cp .env.example .env
-APP_ENV=local API_MODE=backend pnpm preflight
-pnpm env:check
-pnpm release:preflight
+pnpm db:local:setup
+pnpm dev:web
+pnpm dev:mobile
+```
+
+Manual database setup, if you do not want the helper:
+
+```bash
+docker compose up -d postgres
 pnpm db:generate
 pnpm db:deploy
 pnpm seed:demo
+APP_ENV=local API_MODE=backend pnpm preflight
+pnpm env:check
+pnpm release:preflight
 pnpm dev:web
 pnpm dev:mobile
 ```
 
 Development OTP: `000000`
 
-For an older disposable local database created with `db:push`, reset/recreate the database before switching to `db:deploy`, or continue using `pnpm db:push` only for throwaway local work. Shared staging and production databases should use the committed Prisma migrations.
+`pnpm db:local:setup` starts the repo Postgres container, applies migrations, safely baselines an older local `db:push` database when it matches the Prisma schema, seeds demo data, and runs release preflight. If Docker says the daemon is unreachable, start Docker Desktop first. For an older disposable local database created with `db:push`, reset/recreate the database before switching to `db:deploy`, or continue using `pnpm db:push` only for throwaway local work. Shared staging and production databases should use the committed Prisma migrations.
 
 Runtime modes:
 
@@ -49,15 +58,15 @@ Runtime modes:
 
 Seed accounts:
 
-| Role | Email |
-| --- | --- |
-| Platform admin | `platform@zook.local` |
-| Owner | `owner@zook.local` |
-| Admin | `admin@zook.local` |
-| Receptionist | `reception@zook.local` |
-| Trainer | `trainer@zook.local` |
-| Member | `member@zook.local` |
-| Minor member | `minor@zook.local` |
+| Role           | Email                  |
+| -------------- | ---------------------- |
+| Platform admin | `platform@zook.local`  |
+| Owner          | `owner@zook.local`     |
+| Admin          | `admin@zook.local`     |
+| Receptionist   | `reception@zook.local` |
+| Trainer        | `trainer@zook.local`   |
+| Member         | `member@zook.local`    |
+| Minor member   | `minor@zook.local`     |
 
 See [docs/local-development.md](docs/local-development.md), [docs/mobile-private-pilot-qa.md](docs/mobile-private-pilot-qa.md), [docs/deployment.md](docs/deployment.md), and [docs/phase-4-results.md](docs/phase-4-results.md) for current run, QA, and rollout guidance.
 
