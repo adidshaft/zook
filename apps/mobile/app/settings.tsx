@@ -8,25 +8,31 @@ import {
   CollapsibleSection,
   GlassCard,
   IconBubble,
+  ListRow,
   MobileHeader,
   PrimaryButton,
   ZookScreen,
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { privacyApi } from "@/lib/domain-api";
+import { useMyConsents } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function Settings() {
   const router = useRouter();
   const { logout, session, token } = useAuth();
+  const privacyQuery = useMyConsents();
   const [privacyStatus, setPrivacyStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const latestExport = privacyQuery.data?.exportRequests?.[0] ?? null;
+  const latestDeletion = privacyQuery.data?.deletionRequests?.[0] ?? null;
 
   async function requestPrivacyExport() {
     if (!token) return;
     setBusy(true);
     try {
       await privacyApi.requestDataExport({ token });
+      await privacyQuery.refetch();
       setPrivacyStatus("Export requested. You'll receive an email when it's ready.");
     } catch (error) {
       setPrivacyStatus(getApiErrorMessage(error));
@@ -40,6 +46,7 @@ export default function Settings() {
     setBusy(true);
     try {
       await privacyApi.requestAccountDeletion({ token });
+      await privacyQuery.refetch();
       setPrivacyStatus("Deletion requested. This is being reviewed before execution.");
     } catch (error) {
       setPrivacyStatus(getApiErrorMessage(error));
@@ -84,6 +91,20 @@ export default function Settings() {
               </PrimaryButton>
             </View>
             {privacyStatus ? <Text style={styles.statusText}>{privacyStatus}</Text> : null}
+            <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
+              <ListRow
+                title="Latest export"
+                subtitle={latestExport ? privacyStatusLine(latestExport.status, latestExport.completedAt ?? latestExport.createdAt) : "No export request yet"}
+                icon="download-outline"
+                tone={latestExport?.status === "ready" ? "lime" : "blue"}
+              />
+              <ListRow
+                title="Latest deletion"
+                subtitle={latestDeletion ? privacyStatusLine(latestDeletion.status, latestDeletion.scheduledFor ?? latestDeletion.createdAt) : "No deletion request yet"}
+                icon="trash-outline"
+                tone={latestDeletion ? "amber" : "neutral"}
+              />
+            </GlassCard>
           </CollapsibleSection>
 
           <CollapsibleSection title="Account" subtitle={session?.user.email ?? "Signed in"} defaultOpen={false}>
@@ -103,6 +124,14 @@ export default function Settings() {
       </ZookScreen>
     </>
   );
+}
+
+function privacyStatusLine(status: string, date?: string | null) {
+  const label = status.replace(/_/g, " ");
+  if (!date) {
+    return label;
+  }
+  return `${label} · ${new Date(date).toLocaleDateString()}`;
 }
 
 const styles = StyleSheet.create({
@@ -139,6 +168,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+  },
+  privacyStatusCard: {
+    gap: spacing.sm,
   },
   accountCopy: {
     flex: 1,

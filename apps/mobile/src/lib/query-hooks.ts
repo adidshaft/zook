@@ -600,6 +600,30 @@ export function useMyPushDevices() {
   });
 }
 
+export type PrivacyRequestRecord = {
+  id: string;
+  status: string;
+  createdAt?: string;
+  completedAt?: string | null;
+  scheduledFor?: string | null;
+  exportUrl?: string | null;
+};
+
+export function useMyConsents() {
+  const { status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "consents"],
+    queryFn: () =>
+      mobileApiFetch<{
+        exportRequests: PrivacyRequestRecord[];
+        deletionRequests: PrivacyRequestRecord[];
+        exportJobs: PrivacyRequestRecord[];
+        deletionJobs: PrivacyRequestRecord[];
+      }>("/me/consents", { token }),
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
 export function useMyGoals() {
   const { status, token } = useAuth();
   return useQuery({
