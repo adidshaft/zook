@@ -18,7 +18,7 @@ export function CheckoutPanel({
       setStatus(nextStatus);
       setMessage(
         nextStatus === "SUCCEEDED"
-          ? "Mock backend confirmation completed. Hybrid Pro is now active for the local demo."
+          ? "Local demo confirmation completed. No live membership changed without a backend payment session."
           : nextStatus === "PENDING"
             ? "Payment is pending. Membership stays inactive until confirmation."
             : "Payment failed. Membership was not activated."

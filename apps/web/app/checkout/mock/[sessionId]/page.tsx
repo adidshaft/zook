@@ -1,3 +1,4 @@
+import { isMockPaymentCompletionAllowed } from "@zook/core";
 import { prisma } from "@zook/db";
 import { CheckoutPanel } from "@/components/checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
@@ -14,7 +15,7 @@ export default async function MockCheckoutPage({
   } catch {
     // Database is optional in local mock checkout.
   }
-  if (!session && sessionId === "demo") {
+  if (!session && sessionId === "demo" && isMockPaymentCompletionAllowed()) {
     session = { id: "demo", amountPaise: 224900, purpose: "MEMBERSHIP", status: "CREATED" };
   }
   return (
