@@ -141,6 +141,10 @@ const attendanceRejectSchema = z.object({
   reason: z.string().trim().min(2).max(200)
 });
 
+const receptionCodeVerifySchema = z.object({
+  code: z.string().trim().min(3).max(40)
+});
+
 const manualAttendanceSchema = z.object({
   memberUserId: z.string(),
   branchId: z.string().optional(),
@@ -379,6 +383,18 @@ function parseMemberProfileNotes(notes?: string | null) {
 
 function dateKey(date = new Date()) {
   return date.toISOString().slice(0, 10);
+}
+
+function entryCodeForAttendanceId(id: string) {
+  let hash = 0;
+  for (let index = 0; index < id.length; index += 1) {
+    hash = (hash * 31 + id.charCodeAt(index)) % 10_000;
+  }
+  return `ZK-${String(hash).padStart(4, "0")}`;
+}
+
+function attendanceWithEntryCode<T extends { id: string }>(record: T) {
+  return { ...record, entryCode: entryCodeForAttendanceId(record.id) };
 }
 
 async function findFileAssetOrThrow(fileId: string) {
@@ -3557,7 +3573,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     ]);
     if (duplicate) {
       return ok({
-        attendance: duplicate,
+        attendance: attendanceWithEntryCode(duplicate),
         status: duplicate.status,
         duplicate: true,
         suspiciousFlags: Array.isArray(duplicate.suspiciousFlags) ? duplicate.suspiciousFlags : ["duplicate_same_day"]
@@ -3625,7 +3641,56 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         multiEntryConsumes: org.multiEntryConsumes
       });
     }
-    return ok({ attendance: record, status, duplicate: false, suspiciousFlags: validation.suspiciousFlags });
+    return ok({ attendance: attendanceWithEntryCode(record), status, duplicate: false, suspiciousFlags: validation.suspiciousFlags });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "reception", "verify-code"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireAuth(ctx);
+    if (!ctx.isPlatformAdmin && (ctx.orgId !== orgId || !ctx.roles.length)) {
+      throw forbiddenError("No organization access");
+    }
+    if (!ctx.isPlatformAdmin && !ctx.permissions.includes("ATTENDANCE_APPROVE") && !ctx.permissions.includes("SHOP_FULFILL_ORDER")) {
+      throw forbiddenError("Permission denied: reception code verification");
+    }
+    const body = receptionCodeVerifySchema.parse(await readJson(request));
+    const code = body.code.toUpperCase();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [attendanceRecords, pickupCode] = await Promise.all([
+      prisma.attendanceRecord.findMany({
+        where: { orgId, checkedInAt: { gte: today } },
+        orderBy: { checkedInAt: "desc" },
+        take: 150
+      }),
+      prisma.pickupCode.findFirst({ where: { orgId, code } })
+    ]);
+    const attendance = attendanceRecords.find((record) => entryCodeForAttendanceId(record.id) === code);
+    if (attendance) {
+      const user = await prisma.user.findUnique({ where: { id: attendance.userId } });
+      return ok({
+        match: {
+          type: "attendance",
+          valid: attendance.status === "APPROVED" || attendance.status === "PENDING_APPROVAL",
+          record: attendanceWithEntryCode(attendance),
+          user: user ? { id: user.id, name: user.name, email: user.email, phone: user.phone } : null
+        }
+      });
+    }
+    if (pickupCode) {
+      const order = await prisma.shopOrder.findFirst({ where: { id: pickupCode.orderId, orgId } });
+      const user = order ? await prisma.user.findUnique({ where: { id: order.userId } }) : null;
+      return ok({
+        match: {
+          type: "pickup",
+          valid: pickupCode.status === "READY_FOR_PICKUP",
+          pickupCode,
+          order,
+          user: user ? { id: user.id, name: user.name, email: user.email, phone: user.phone } : null
+        }
+      });
+    }
+    return ok({ match: null });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "attendance", "live"])) {
     const orgId = path[1]!;
@@ -5170,7 +5235,13 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "SHOP_FULFILL_ORDER");
-    return ok({ orders: await getOrganizationActiveShopOrders(orgId) });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [orders, fulfilledToday] = await Promise.all([
+      getOrganizationActiveShopOrders(orgId),
+      prisma.shopOrder.count({ where: { orgId, status: "FULFILLED", fulfilledAt: { gte: today } } })
+    ]);
+    return ok({ orders, summary: { fulfilledToday } });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "shop", "orders", /.+/, "fulfill"])) {
     const orgId = path[1]!;

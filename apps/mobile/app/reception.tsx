@@ -32,10 +32,21 @@ import {
   useRejectAttendance,
 } from "@/lib/query-hooks";
 import { useAuth } from "@/lib/auth";
+import { receptionApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type DeskView = "desk" | "members" | "payments" | "orders";
 type DeskPaymentMode = Extract<PaymentMode, "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER">;
+type ReceptionCodeVerification = {
+  match: null | {
+    type: "attendance" | "pickup";
+    valid: boolean;
+    record?: { status?: string | null; entryCode?: string | null } | null;
+    pickupCode?: { status?: string | null; code?: string | null } | null;
+    order?: { status?: string | null; totalPaise?: number | null } | null;
+    user?: { name?: string | null; email?: string | null } | null;
+  };
+};
 
 const paymentModes: Array<{ label: string; value: DeskPaymentMode }> = [
   { label: "Cash", value: "CASH" },
@@ -58,7 +69,7 @@ function deskReasonCopy(reason?: string | null) {
 
 export default function Reception() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
-  const { session } = useAuth();
+  const { activeOrgId, session, token } = useAuth();
   const view = normalizeView(params.view);
   const [reason, setReason] = useState("Desk confirmed member identity");
   const [verifyCode, setVerifyCode] = useState("");
@@ -84,7 +95,7 @@ export default function Reception() {
   const flaggedCount = approvalQueue.filter((attempt) => attempt.status === "FLAGGED").length;
   const todayCount = todayAttendanceQuery.data?.records.length ?? 0;
   const readyOrders = ordersQuery.data?.orders ?? [];
-  const fulfilledCount = 0;
+  const fulfilledCount = ordersQuery.data?.summary?.fulfilledToday ?? 0;
   const amountPaise = Math.round(Number(amount || "0") * 100);
   const filteredMembers = useMemo(() => {
     const query = memberSearch.toLowerCase();
@@ -116,8 +127,37 @@ export default function Reception() {
 
   async function verifyEntryCode() {
     const normalized = verifyCode.trim().toUpperCase();
-    const pickup = readyOrders.find((order) => order.pickupCode?.toUpperCase() === normalized);
-    setVerifyMessage(pickup ? "Pickup code verified. Match member identity before handoff." : "No active pickup code found.");
+    if (!normalized) {
+      setVerifyMessage("Enter a code first.");
+      return;
+    }
+    if (!token || !activeOrgId) {
+      setVerifyMessage("Sign in and select a gym before verifying.");
+      return;
+    }
+    const result = await receptionApi.verifyCode<ReceptionCodeVerification>({
+      token,
+      orgId: activeOrgId,
+      code: normalized,
+    });
+    if (!result.match) {
+      setVerifyMessage("No active entry or pickup code found.");
+      return;
+    }
+    const name = result.match.user?.name ?? result.match.user?.email ?? "member";
+    if (result.match.type === "attendance") {
+      setVerifyMessage(
+        result.match.valid
+          ? `Entry code verified for ${name}. Status: ${(result.match.record?.status ?? "approved").replace(/_/g, " ")}.`
+          : `Entry code found for ${name}, but it is not valid for entry.`,
+      );
+      return;
+    }
+    setVerifyMessage(
+      result.match.valid
+        ? `Pickup code verified for ${name}. Match identity before handoff.`
+        : `Pickup code found for ${name}, but status is ${(result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready").replace(/_/g, " ")}.`,
+    );
   }
 
   async function recordPayment() {

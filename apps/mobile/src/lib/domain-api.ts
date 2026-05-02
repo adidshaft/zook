@@ -220,6 +220,14 @@ export const trainerApi = {
 };
 
 export const receptionApi = {
+  verifyCode<T = unknown>(options: RequestOptions & { code: string }) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/reception/verify-code`, {
+      method: "POST",
+      token: options.token,
+      orgId: options.orgId,
+      body: { code: options.code },
+    });
+  },
   manualAttendance(options: RequestOptions & { body: Record<string, unknown> }) {
     return mobileApiFetch(`/orgs/${options.orgId}/attendance/manual`, {
       method: "POST",

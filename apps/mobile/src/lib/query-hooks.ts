@@ -782,7 +782,7 @@ export function useOrgActiveShopOrders(orgId?: string) {
   return useQuery({
     queryKey: ["org", resolvedOrgId, "shop", "orders", "active"],
     queryFn: () =>
-      mobileApiFetch<{ orders: ShopOrderRecord[] }>(
+      mobileApiFetch<{ orders: ShopOrderRecord[]; summary?: { fulfilledToday?: number } }>(
         `/orgs/${resolvedOrgId}/shop/orders/active`,
         { token, orgId: resolvedOrgId },
       ),
