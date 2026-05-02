@@ -461,7 +461,7 @@ export function DashboardOperationalPanel({
                 },
                 {
                   label: "Audience mode",
-                  value: summary.activeMembers > 0 ? "Live member targeting" : "Seed-mode targeting",
+                  value: summary.activeMembers > 0 ? "Live member targeting" : "No active audience yet",
                   meta: "Uses persisted org memberships"
                 },
                 {

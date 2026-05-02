@@ -32,7 +32,7 @@ export default function HomePage() {
               The operating system for modern gyms.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/58">
-              Manage memberships, rolling QR entry, trainer plans, reception approvals, shop pickup, and provider readiness from one operating cockpit.
+              Manage memberships, rolling QR entry, trainer plans, reception approvals, shop pickup, and provider readiness from one operating system.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/login" className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black">

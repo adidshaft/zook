@@ -186,7 +186,7 @@ export default function Reception() {
             <Text style={styles.title}>
               {view === "desk" ? "Desk" : view === "members" ? "Members" : view === "payments" ? "Payments" : "Orders"}
             </Text>
-            <Text style={styles.subtitle}>Receptionist execution mode · {session?.user.name ?? "Signed-in staff"}</Text>
+            <Text style={styles.subtitle}>Desk operations · {session?.user.name ?? "Signed-in staff"}</Text>
           </View>
           <Pill tone="blue">Receptionist</Pill>
         </View>
@@ -199,7 +199,7 @@ export default function Reception() {
               <MetricTile label="Flagged" value={String(flaggedCount)} detail="Needs care" tone="red" icon="alert-circle-outline" style={styles.metricThird} />
             </View>
 
-            <SectionHeader title="Speed Queue" action={<Pill tone="amber">{pendingCount} pending</Pill>} />
+            <SectionHeader title="Review queue" action={<Pill tone="amber">{pendingCount} pending</Pill>} />
             <View style={styles.stack}>
               {approvalQueue.length ? approvalQueue.map((attempt, index) => (
                 <GlassCard key={attempt.id} variant={index === 0 ? "selected" : "compact"} padding={14} contentStyle={styles.queueCard}>

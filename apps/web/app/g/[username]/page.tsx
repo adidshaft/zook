@@ -75,7 +75,7 @@ export default async function GymPublicPage({
                 <ShieldCheck className="text-lime-200" size={22} />
                 <p className="text-sm font-medium text-white">Server-authoritative activation</p>
               </div>
-              <p className="mt-2 text-sm leading-6 text-white/50">Hosted checkout returns to Zook, then the backend/mock service confirms activation.</p>
+              <p className="mt-2 text-sm leading-6 text-white/50">Hosted checkout returns to Zook, then the backend confirms payment before activation.</p>
             </div>
           </GlassCard>
         </section>

@@ -33,13 +33,13 @@ export default function Trainer() {
         >
           <MobileHeader
             eyebrow="Trainer mode"
-            title="Coach cockpit"
+            title="Clients and plans"
             subtitle={`${session?.user.name ?? "Trainer"} · assigned clients only`}
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
 
           <View style={styles.metricGrid}>
-            <MetricTile label="Assigned clients" value={String(clients.length)} detail="Scoped to you" tone="blue" />
+            <MetricTile label="Assigned clients" value={String(clients.length)} detail="Assigned to you" tone="blue" />
             <MetricTile label="Active plans" value={String(clientsWithPlans)} detail="Assigned members" tone="amber" />
             <MetricTile label="PT sessions" value="0" detail="This month" tone="lime" />
             <MetricTile label="Feedback" value="0" detail="From clients" tone="violet" />

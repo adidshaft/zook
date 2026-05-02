@@ -163,7 +163,7 @@ export default function TrainerClientDetail() {
             </View>
             <View style={styles.chipRow}>
               <StatusChip status={`Active plans: ${activePlans}`} tone={activePlans ? "lime" : "neutral"} />
-              <StatusChip status="Trainer scoped" tone="lime" />
+              <StatusChip status="Assigned to you" tone="lime" />
             </View>
           </GlassCard>
 
@@ -208,9 +208,9 @@ export default function TrainerClientDetail() {
 
           {tab === "progress" ? (
             <GlassCard variant="compact" contentStyle={styles.stack}>
-              <ListRow title="Weekly workouts" subtitle="Use member tracking summary for details" trailing={<StatusChip status="Scoped" tone="neutral" />} />
+              <ListRow title="Weekly workouts" subtitle="Use member tracking summary for details" trailing={<StatusChip status="Assigned" tone="neutral" />} />
               <ListRow title="Last check-in" subtitle="Available in owner/member view" trailing={<StatusChip status="QR" tone="neutral" />} />
-              <ListRow title="Assigned plans" subtitle={`${activePlans} active for client`} trailing={<StatusChip status="Scoped" tone="lime" />} />
+              <ListRow title="Assigned plans" subtitle={`${activePlans} active for client`} trailing={<StatusChip status="Assigned" tone="lime" />} />
             </GlassCard>
           ) : null}
 
