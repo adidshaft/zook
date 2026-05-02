@@ -243,6 +243,10 @@ const planContentInputSchema = z.object({
   aiGenerated: z.boolean().default(false)
 });
 
+const planContentUpdateSchema = planContentInputSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, "Provide at least one plan field to update.");
+
 const uploadCategorySchema = z.enum(storageFileCategories);
 
 const profilePhotoAssetSchema = z.object({
@@ -4263,6 +4267,70 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       orgId,
       actorUserId: userId,
       action: "plan.created",
+      entityType: "plan_content",
+      entityId: plan.id,
+      metadata: { title: plan.title, type: plan.type }
+    });
+    return ok({ plan });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "plans", /.+/])) {
+    const orgId = path[1]!;
+    const planId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    const existingPlan = await prisma.planContent.findFirst({ where: { id: planId, orgId } });
+    if (!existingPlan) {
+      throw notFoundError("Plan not found");
+    }
+    const body = planContentUpdateSchema.parse(await readJson(request));
+    const imageAsset = await getOrganizationScopedFileAsset(body.imageAssetId, orgId, ["plan_image", "ai_generated_image"]);
+    const attachments = imageAsset
+      ? ({
+          coverImage: {
+            fileAssetId: imageAsset.id,
+            url: imageAsset.url
+          }
+        } as Prisma.InputJsonValue)
+      : undefined;
+    const plan = await prisma.planContent.update({
+      where: { id: existingPlan.id },
+      data: clean({
+        title: body.title,
+        type: body.type as never,
+        description: body.description,
+        content: body.content as Prisma.InputJsonValue | undefined,
+        attachments,
+        aiGenerated: body.aiGenerated,
+        visibility: body.visibility
+      })
+    });
+    const latestVersion = await prisma.planVersion.aggregate({
+      where: { orgId, planId: plan.id },
+      _max: { versionNo: true }
+    });
+    await prisma.planVersion.create({
+      data: {
+        orgId,
+        planId: plan.id,
+        versionNo: (latestVersion._max.versionNo ?? 0) + 1,
+        content: createPlanVersionSnapshot({
+          title: plan.title,
+          ...clean({
+            description: plan.description,
+            aiGenerated: plan.aiGenerated,
+            visibility: plan.visibility,
+            attachments: plan.attachments
+          }),
+          content: plan.content
+        }) as Prisma.InputJsonValue,
+        createdById: userId
+      }
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "plan.updated",
       entityType: "plan_content",
       entityId: plan.id,
       metadata: { title: plan.title, type: plan.type }

@@ -6,6 +6,7 @@ import {
   BottomNav,
   DetailRow,
   EmptyState,
+  FormField,
   GlassCard,
   IconBubble,
   ListRow,
@@ -56,6 +57,60 @@ export default function TrainerAiDraftReview() {
   const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
   const [draft, setDraft] = useState<Draft | null>(null);
   const [status, setStatus] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  function updateDraft(patch: Partial<Draft>) {
+    setDraft((current) => current ? { ...current, ...patch } : current);
+  }
+
+  function updateSection(index: number, field: "title" | "body", value: string) {
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            sections: current.sections.map((section, sectionIndex) =>
+              sectionIndex === index ? { ...section, [field]: value } : section,
+            ),
+          }
+        : current,
+    );
+  }
+
+  async function saveDraftEdits() {
+    if (!draft?.planId || !activeOrgId || !token) {
+      setStatus("Generate a draft before editing.");
+      return false;
+    }
+    setSaving(true);
+    try {
+      await plansApi.update({
+        token,
+        orgId: activeOrgId,
+        planId: draft.planId,
+        body: {
+          title: draft.title,
+          type: "WORKOUT",
+          description: draft.goal,
+          visibility: "selected",
+          aiGenerated: true,
+          content: {
+            goal: draft.goal,
+            difficulty: draft.difficulty,
+            sections: draft.sections,
+          },
+        },
+      });
+      setEditing(false);
+      setStatus("Draft edits saved.");
+      return true;
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to save draft edits.");
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function generateDraft() {
     if (!token || !activeOrgId || !client) {
@@ -81,18 +136,32 @@ export default function TrainerAiDraftReview() {
       sections: sectionsFromResponse(result.response),
     });
     setStatus("Draft generated. Review is still required.");
+    setEditing(true);
   }
 
   async function assignDraft() {
     if (!draft?.planId || !client || !activeOrgId || !token) return;
-    await plansApi.assign({
-      token,
-      orgId: activeOrgId,
-      planId: draft.planId,
-      assignedToUserId: client.memberUserId,
-      audience: "selected_member",
-    });
-    setStatus(`${draft.title} assigned. The client can now see it.`);
+    if (editing) {
+      const saved = await saveDraftEdits();
+      if (!saved) {
+        return;
+      }
+    }
+    setSaving(true);
+    try {
+      await plansApi.assign({
+        token,
+        orgId: activeOrgId,
+        planId: draft.planId,
+        assignedToUserId: client.memberUserId,
+        audience: "selected_member",
+      });
+      setStatus(`${draft.title} assigned. The client can now see it.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to assign draft.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -128,17 +197,37 @@ export default function TrainerAiDraftReview() {
                 <View style={styles.summaryHeader}>
                   <IconBubble icon="reader-outline" tone="amber" />
                   <View style={styles.summaryCopy}>
-                    <Text style={styles.cardTitle}>{draft.title}</Text>
+                    {editing ? (
+                      <FormField label="Title" value={draft.title} onChangeText={(value) => updateDraft({ title: value })} />
+                    ) : (
+                      <Text style={styles.cardTitle}>{draft.title}</Text>
+                    )}
                     <Text style={styles.cardBody}>Client: {client?.user?.name ?? "Assigned client"}</Text>
                   </View>
                 </View>
-                <DetailRow label="Goal" value={draft.goal || "Muscle gain"} />
-                <DetailRow label="Difficulty" value={draft.difficulty || "Medium"} />
+                {editing ? (
+                  <>
+                    <FormField label="Goal" value={draft.goal} onChangeText={(value) => updateDraft({ goal: value })} />
+                    <FormField label="Difficulty" value={draft.difficulty} onChangeText={(value) => updateDraft({ difficulty: value })} />
+                  </>
+                ) : (
+                  <>
+                    <DetailRow label="Goal" value={draft.goal || "Muscle gain"} />
+                    <DetailRow label="Difficulty" value={draft.difficulty || "Medium"} />
+                  </>
+                )}
               </GlassCard>
 
               <GlassCard variant="compact" contentStyle={styles.stack}>
-                {draft.sections.map((section) => (
-                  <ListRow key={section.title} title={section.title} subtitle={section.body} />
+                {draft.sections.map((section, index) => (
+                  editing ? (
+                    <View key={`${section.title}-${index}`} style={styles.stack}>
+                      <FormField label={`Section ${index + 1}`} value={section.title} onChangeText={(value) => updateSection(index, "title", value)} />
+                      <FormField label="Notes" value={section.body} onChangeText={(value) => updateSection(index, "body", value)} multiline />
+                    </View>
+                  ) : (
+                    <ListRow key={section.title} title={section.title} subtitle={section.body} />
+                  )
                 ))}
               </GlassCard>
 
@@ -151,11 +240,11 @@ export default function TrainerAiDraftReview() {
               </GlassCard>
 
               <View style={styles.actionRow}>
-                <ZookButton onPress={() => void assignDraft()} style={styles.actionHalf} icon="checkmark-circle-outline">
+                <ZookButton onPress={() => void assignDraft()} style={styles.actionHalf} icon="checkmark-circle-outline" disabled={saving}>
                   Assign Plan
                 </ZookButton>
-                <SecondaryButton onPress={() => setStatus("Draft opened for editing.")} style={styles.actionHalf}>
-                  Edit Draft
+                <SecondaryButton onPress={() => editing ? void saveDraftEdits() : setEditing(true)} style={styles.actionHalf} disabled={saving}>
+                  {editing ? "Save Edits" : "Edit Draft"}
                 </SecondaryButton>
               </View>
               <Pressable onPress={() => { setDraft(null); setStatus("Draft discarded before assignment."); }} accessibilityRole="button" style={styles.discardButton}>

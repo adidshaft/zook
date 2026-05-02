@@ -100,6 +100,22 @@ export const attendanceApi = {
 };
 
 export const plansApi = {
+  create<T = unknown>(options: RequestOptions & { body: Record<string, unknown> }) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/plans`, {
+      method: "POST",
+      token: options.token,
+      orgId: options.orgId,
+      body: options.body,
+    });
+  },
+  update<T = unknown>(options: RequestOptions & { planId: string; body: Record<string, unknown> }) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/plans/${options.planId}`, {
+      method: "PATCH",
+      token: options.token,
+      orgId: options.orgId,
+      body: options.body,
+    });
+  },
   assign(options: RequestOptions & { planId: string; assignedToUserId?: string; audience?: string }) {
     return mobileApiFetch(`/orgs/${options.orgId}/plans/${options.planId}/assign`, {
       method: "POST",
