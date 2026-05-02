@@ -197,7 +197,7 @@ export default function Profile() {
 
   return (
     <ZookScreen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <MobileHeader
           title="Profile"
           subtitle={session?.user.email ?? session?.user.phone ?? "Account settings"}
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 10,
-    paddingBottom: layout.bottomNavHeight + 40,
+    paddingBottom: layout.bottomNavContentPadding,
   },
   calloutContent: {
     flexDirection: "row",

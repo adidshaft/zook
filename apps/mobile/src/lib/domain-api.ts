@@ -82,6 +82,13 @@ export const attendanceApi = {
       body: options.body,
     });
   },
+  devScan<T = unknown>(options: RequestOptions) {
+    return mobileApiFetch<T>("/attendance/dev-scan", {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+    });
+  },
   approve(options: RequestOptions & { recordId: string }) {
     return mobileApiFetch(`/orgs/${options.orgId}/attendance/${options.recordId}/approve`, {
       method: "POST",
@@ -116,7 +123,9 @@ export const plansApi = {
       body: options.body,
     });
   },
-  assign(options: RequestOptions & { planId: string; assignedToUserId?: string; audience?: string }) {
+  assign(
+    options: RequestOptions & { planId: string; assignedToUserId?: string; audience?: string },
+  ) {
     return mobileApiFetch(`/orgs/${options.orgId}/plans/${options.planId}/assign`, {
       method: "POST",
       token: options.token,
@@ -127,7 +136,9 @@ export const plansApi = {
       },
     });
   },
-  completeAssignment(options: RequestOptions & { assignmentId: string; body: Record<string, unknown> }) {
+  completeAssignment(
+    options: RequestOptions & { assignmentId: string; body: Record<string, unknown> },
+  ) {
     return mobileApiFetch(`/me/plans/${options.assignmentId}/complete`, {
       method: "POST",
       token: options.token,
@@ -138,7 +149,12 @@ export const plansApi = {
 };
 
 export const shopApi = {
-  createOrder(options: RequestOptions & { orgId: string; items: Array<{ productId: string; quantity: number }> }) {
+  createOrder(
+    options: RequestOptions & {
+      orgId: string;
+      items: Array<{ productId: string; quantity: number }>;
+    },
+  ) {
     return mobileApiFetch("/shop/orders", {
       method: "POST",
       token: options.token,
@@ -156,7 +172,9 @@ export const shopApi = {
 };
 
 export const gymApi = {
-  requestMembership(options: RequestOptions & { orgId: string; planId?: string; referralCode?: string }) {
+  requestMembership(
+    options: RequestOptions & { orgId: string; planId?: string; referralCode?: string },
+  ) {
     return mobileApiFetch(`/orgs/${options.orgId}/join-requests`, {
       method: "POST",
       token: options.token,
@@ -166,7 +184,9 @@ export const gymApi = {
       },
     });
   },
-  createSubscriptionCheckout(options: RequestOptions & { orgId: string; planId: string; referralCode?: string }) {
+  createSubscriptionCheckout(
+    options: RequestOptions & { orgId: string; planId: string; referralCode?: string },
+  ) {
     return mobileApiFetch<{ checkoutUrl: string }>(`/orgs/${options.orgId}/subscriptions`, {
       method: "POST",
       token: options.token,
@@ -203,7 +223,9 @@ export const trainerApi = {
       orgId: options.orgId,
     });
   },
-  generatePlanDraft<T = unknown>(options: RequestOptions & { prompt: string; title?: string; type?: string }) {
+  generatePlanDraft<T = unknown>(
+    options: RequestOptions & { prompt: string; title?: string; type?: string },
+  ) {
     return mobileApiFetch<T>("/ai/generate-plan", {
       method: "POST",
       token: options.token,
@@ -251,12 +273,17 @@ export const ownerApi = {
       orgId: options.orgId,
     });
   },
-  updateJoinRequest(options: RequestOptions & { joinRequestId: string; action: "approve" | "reject" }) {
-    return mobileApiFetch(`/orgs/${options.orgId}/join-requests/${options.joinRequestId}/${options.action}`, {
-      method: "POST",
-      token: options.token,
-      orgId: options.orgId,
-    });
+  updateJoinRequest(
+    options: RequestOptions & { joinRequestId: string; action: "approve" | "reject" },
+  ) {
+    return mobileApiFetch(
+      `/orgs/${options.orgId}/join-requests/${options.joinRequestId}/${options.action}`,
+      {
+        method: "POST",
+        token: options.token,
+        orgId: options.orgId,
+      },
+    );
   },
 };
 

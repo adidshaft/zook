@@ -35,7 +35,7 @@ const tabs: Array<{ label: string; value: ClientTab }> = [
 export default function TrainerClientDetail() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const clientId = id || "user-aarav";
+  const clientId = id ?? "";
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const [tab, setTab] = useState<ClientTab>("summary");
@@ -44,10 +44,15 @@ export default function TrainerClientDetail() {
   const [savingPlan, setSavingPlan] = useState(false);
   const [savedPlan, setSavedPlan] = useState<{ id: string; title: string } | null>(null);
   const clientsQuery = useTrainerClients();
-  const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
-  const aiDraftHref = `/trainer/client/${client?.memberUserId ?? clientId}/ai-draft` as Href;
-  const clientName = client?.user?.name ?? "Assigned client";
-  const fitnessGoal = client?.summary?.fitnessGoal ?? client?.profile?.fitnessGoal ?? "General fitness";
+  const client =
+    clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
+  const aiDraftHref = (
+    client ? `/trainer/client/${client.memberUserId}/ai-draft` : "/trainer?view=clients"
+  ) as Href;
+  const clientName =
+    client?.user?.name ?? (clientsQuery.isLoading ? "Loading client..." : "Client not found");
+  const fitnessGoal =
+    client?.summary?.fitnessGoal ?? client?.profile?.fitnessGoal ?? "General fitness";
   const activePlans = client?.summary?.activePlans ?? 0;
 
   function buildPlanPayload() {
@@ -62,11 +67,11 @@ export default function TrainerClientDetail() {
         sections: [
           {
             title: "Workout focus",
-            body: "Edit this draft with exercises, sets, recovery notes, and coaching cues before assignment."
-          }
+            body: "Edit this draft with exercises, sets, recovery notes, and coaching cues before assignment.",
+          },
         ],
-        exercises: []
-      }
+        exercises: [],
+      },
     };
   }
 
@@ -105,11 +110,13 @@ export default function TrainerClientDetail() {
       const plan =
         savedPlan && savedPlan.title === planTitle
           ? savedPlan
-          : await plansApi.create<{ plan: { id: string; title: string } }>({
-              token,
-              orgId: activeOrgId,
-              body: buildPlanPayload(),
-            }).then((result) => result.plan);
+          : await plansApi
+              .create<{ plan: { id: string; title: string } }>({
+                token,
+                orgId: activeOrgId,
+                body: buildPlanPayload(),
+              })
+              .then((result) => result.plan);
       setSavedPlan({ id: plan.id, title: plan.title });
       await plansApi.assign({
         token,
@@ -133,16 +140,16 @@ export default function TrainerClientDetail() {
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
           <MobileHeader
-            title="Client Detail"
+            title={clientName}
             subtitle="You’re viewing your assigned client only."
             leading={
               <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace("/trainer")}
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer"))}
                 accessibilityRole="button"
                 accessibilityLabel="Back to trainer"
                 style={styles.iconButton}
@@ -162,16 +169,30 @@ export default function TrainerClientDetail() {
               </View>
             </View>
             <View style={styles.chipRow}>
-              <StatusChip status={`Active plans: ${activePlans}`} tone={activePlans ? "lime" : "neutral"} />
+              <StatusChip
+                status={`Active plans: ${activePlans}`}
+                tone={activePlans ? "lime" : "neutral"}
+              />
               <StatusChip status="Assigned to you" tone="lime" />
             </View>
           </GlassCard>
 
           <View style={styles.actionRow}>
-            <ZookButton onPress={() => setTab("plans")} style={styles.actionHalf} icon="add-circle-outline">
+            <ZookButton
+              onPress={() => setTab("plans")}
+              disabled={!client}
+              style={styles.actionHalf}
+              icon="add-circle-outline"
+            >
               Create Plan
             </ZookButton>
-            <ZookButton href={aiDraftHref} tone="secondary" style={styles.actionHalf} icon="sparkles-outline">
+            <ZookButton
+              href={aiDraftHref}
+              disabled={!client}
+              tone="secondary"
+              style={styles.actionHalf}
+              icon="sparkles-outline"
+            >
               Generate AI Draft
             </ZookButton>
           </View>
@@ -180,24 +201,59 @@ export default function TrainerClientDetail() {
 
           {tab === "summary" ? (
             <GlassCard variant="compact" contentStyle={styles.stack}>
-              <ListRow title="Fitness goal" subtitle={fitnessGoal} trailing={<StatusChip status={client?.active ? "Active" : "Assigned"} />} />
-              <ListRow title="Diet note" subtitle={client?.summary?.dietPreference ?? "Not shared"} trailing={<StatusChip status="Visible" tone="neutral" />} />
-              <ListRow title="Allergy note" subtitle={client?.summary?.allergies ?? "None added"} trailing={<StatusChip status="Clear" tone="neutral" />} />
-              <ListRow title="Body progress" subtitle={client?.summary?.weightKg ? `${client.summary.weightKg} kg` : "No recent entry"} trailing={<StatusChip status="Tracking" tone="neutral" />} />
-              <ListRow title="Recent progress" subtitle={`${activePlans} active assigned plans`} trailing={<StatusChip status="Review" tone="amber" />} />
+              <ListRow
+                title="Fitness goal"
+                subtitle={fitnessGoal}
+                trailing={<StatusChip status={client?.active ? "Active" : "Assigned"} />}
+              />
+              <ListRow
+                title="Diet note"
+                subtitle={client?.summary?.dietPreference ?? "Not shared"}
+                trailing={<StatusChip status="Visible" tone="neutral" />}
+              />
+              <ListRow
+                title="Allergy note"
+                subtitle={client?.summary?.allergies ?? "None added"}
+                trailing={<StatusChip status="Clear" tone="neutral" />}
+              />
+              <ListRow
+                title="Body progress"
+                subtitle={
+                  client?.summary?.weightKg ? `${client.summary.weightKg} kg` : "No recent entry"
+                }
+                trailing={<StatusChip status="Tracking" tone="neutral" />}
+              />
+              <ListRow
+                title="Recent progress"
+                subtitle={`${activePlans} active assigned plans`}
+                trailing={<StatusChip status="Review" tone="amber" />}
+              />
             </GlassCard>
           ) : null}
 
           {tab === "plans" ? (
             <GlassCard contentStyle={styles.stack}>
-              <SectionHeader title="Plan builder" subtitle="Create a trainer-owned draft before assigning." />
+              <SectionHeader
+                title="Plan builder"
+                subtitle="Create a trainer-owned draft before assigning."
+              />
               <FormField label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
               <View style={styles.chipRow}>
-                {["Workout", "Diet", "Routine", "Trainer Note", "Machine Guide", "Recovery"].map((label) => (
-                  <StatusChip key={label} status={label} tone={label === "Workout" ? "lime" : "neutral"} />
-                ))}
+                {["Workout", "Diet", "Routine", "Trainer Note", "Machine Guide", "Recovery"].map(
+                  (label) => (
+                    <StatusChip
+                      key={label}
+                      status={label}
+                      tone={label === "Workout" ? "lime" : "neutral"}
+                    />
+                  ),
+                )}
               </View>
-              <ZookButton onPress={() => void saveDraft()} icon="save-outline" disabled={savingPlan}>
+              <ZookButton
+                onPress={() => void saveDraft()}
+                icon="save-outline"
+                disabled={savingPlan}
+              >
                 Save Draft
               </ZookButton>
               <SecondaryButton onPress={() => void assignPlan()} disabled={savingPlan}>
@@ -208,16 +264,34 @@ export default function TrainerClientDetail() {
 
           {tab === "progress" ? (
             <GlassCard variant="compact" contentStyle={styles.stack}>
-              <ListRow title="Weekly workouts" subtitle="Use member tracking summary for details" trailing={<StatusChip status="Assigned" tone="neutral" />} />
-              <ListRow title="Last check-in" subtitle="Available in owner/member view" trailing={<StatusChip status="QR" tone="neutral" />} />
-              <ListRow title="Assigned plans" subtitle={`${activePlans} active for client`} trailing={<StatusChip status="Assigned" tone="lime" />} />
+              <ListRow
+                title="Weekly workouts"
+                subtitle="Use member tracking summary for details"
+                trailing={<StatusChip status="Assigned" tone="neutral" />}
+              />
+              <ListRow
+                title="Last check-in"
+                subtitle="Available in owner/member view"
+                trailing={<StatusChip status="QR" tone="neutral" />}
+              />
+              <ListRow
+                title="Assigned plans"
+                subtitle={`${activePlans} active for client`}
+                trailing={<StatusChip status="Assigned" tone="lime" />}
+              />
             </GlassCard>
           ) : null}
 
           {tab === "notes" ? (
             <GlassCard contentStyle={styles.stack}>
-              <FormField label="Trainer note" multiline placeholder="Add coaching note for your own follow-up..." />
-              <AuditWarning>Only assigned trainers and owners/admins can see trainer notes.</AuditWarning>
+              <FormField
+                label="Trainer note"
+                multiline
+                placeholder="Add coaching note for your own follow-up..."
+              />
+              <AuditWarning>
+                Only assigned trainers and owners/admins can see trainer notes.
+              </AuditWarning>
             </GlassCard>
           ) : null}
 
@@ -226,7 +300,9 @@ export default function TrainerClientDetail() {
               <IconBubble icon="reader-outline" tone="amber" />
               <View style={styles.clientCopy}>
                 <Text style={styles.cardTitle}>AI draft review</Text>
-                <Text style={styles.cardBody}>Generated plans require edits and approval before assigning.</Text>
+                <Text style={styles.cardBody}>
+                  Generated plans require edits and approval before assigning.
+                </Text>
               </View>
             </View>
             <Link href={aiDraftHref} asChild>
@@ -255,7 +331,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: layout.bottomNavHeight + 40,
+    paddingBottom: layout.bottomNavContentPadding,
   },
   iconButton: {
     width: 44,

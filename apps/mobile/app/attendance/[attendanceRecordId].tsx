@@ -87,7 +87,7 @@ export default function AttendanceResultScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, pending ? styles.contentWithoutNav : null]}
         >
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
-    paddingBottom: layout.bottomNavHeight + 40,
+    paddingBottom: layout.bottomNavContentPadding,
     gap: 12,
   },
   contentWithoutNav: {

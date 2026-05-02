@@ -89,7 +89,7 @@ export default function Home() {
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
           refreshControl={
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 12,
-    paddingBottom: layout.bottomNavHeight + 40,
+    paddingBottom: layout.bottomNavContentPadding,
     gap: 12,
   },
   homeHeader: {

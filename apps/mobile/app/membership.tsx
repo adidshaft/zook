@@ -70,7 +70,7 @@ export default function MembershipScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: layout.bottomNavHeight + 40,
+    paddingBottom: layout.bottomNavContentPadding,
   },
   calloutContent: {
     flexDirection: "row",

@@ -4,11 +4,22 @@ import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from '@expo-google-fonts/inter';
-import * as SplashScreen from 'expo-splash-screen';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+  Inter_900Black,
+} from "@expo-google-fonts/inter";
+import * as SplashScreen from "expo-splash-screen";
 
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { getMobileRuntimeConfigError, getMobileRuntimeMode, isOfflineDemoMode } from "@/lib/runtime-mode";
+import {
+  getMobileRuntimeConfigError,
+  getMobileRuntimeMode,
+  isOfflineDemoMode,
+} from "@/lib/runtime-mode";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { colors } from "@/lib/theme";
 
@@ -39,19 +50,6 @@ function encodeRedirectTarget(
   return query ? `${pathname}?${query}` : pathname;
 }
 
-function decodeRedirectTarget(rawRedirect: string | string[] | undefined) {
-  const value = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
-  if (!value) {
-    return undefined;
-  }
-
-  const decoded = decodeURIComponent(value);
-  if (!decoded.startsWith("/") || decoded.startsWith("/login")) {
-    return undefined;
-  }
-  return decoded;
-}
-
 function LayoutContent() {
   const { defaultRoute, hasActiveRole, hasAnyRole, status } = useAuth();
   const runtimeConfigError = getMobileRuntimeConfigError();
@@ -59,7 +57,6 @@ function LayoutContent() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
-  const redirectTarget = decodeRedirectTarget(searchParams.redirect);
 
   useEffect(() => {
     if (status === "loading") {
@@ -74,7 +71,7 @@ function LayoutContent() {
     }
 
     if (pathname === "/login") {
-      router.replace((redirectTarget ?? defaultRoute) as never);
+      router.replace(defaultRoute as never);
       return;
     }
 
@@ -83,13 +80,17 @@ function LayoutContent() {
       return;
     }
 
-    if (pathname.startsWith("/owner") && (!hasAnyRole("OWNER", "ADMIN") || !hasActiveRole("OWNER", "ADMIN"))) {
+    if (
+      pathname.startsWith("/owner") &&
+      (!hasAnyRole("OWNER", "ADMIN") || !hasActiveRole("OWNER", "ADMIN"))
+    ) {
       router.replace(defaultRoute as never);
       return;
     }
     if (
       pathname.startsWith("/reception") &&
-      (!hasAnyRole("RECEPTIONIST", "OWNER", "ADMIN") || !hasActiveRole("RECEPTIONIST", "OWNER", "ADMIN"))
+      (!hasAnyRole("RECEPTIONIST", "OWNER", "ADMIN") ||
+        !hasActiveRole("RECEPTIONIST", "OWNER", "ADMIN"))
     ) {
       router.replace(defaultRoute as never);
       return;
@@ -100,7 +101,7 @@ function LayoutContent() {
     ) {
       router.replace(defaultRoute as never);
     }
-  }, [defaultRoute, hasActiveRole, hasAnyRole, pathname, redirectTarget, router, searchParams, status]);
+  }, [defaultRoute, hasActiveRole, hasAnyRole, pathname, router, searchParams, status]);
 
   if (runtimeConfigError) {
     return (
@@ -152,7 +153,10 @@ function LayoutContent() {
         <Stack.Screen name="trainer/index" options={{ animation: "none" }} />
         <Stack.Screen name="trainer/client/[id]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="attendance/[attendanceRecordId]" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen
+          name="attendance/[attendanceRecordId]"
+          options={{ animation: "slide_from_bottom" }}
+        />
         <Stack.Screen name="owner/member/[id]" options={{ animation: "slide_from_right" }} />
       </Stack>
       {isOfflineDemoMode() ? (

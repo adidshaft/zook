@@ -258,13 +258,14 @@ export function ScreenShell({
   style?: StyleProp<ViewStyle>;
 } & Omit<ScrollViewProps, "contentContainerStyle" | "style">) {
   const contentPaddingBottom =
-    (bottomNav ? layout.bottomNavHeight + 34 : 24) + (stickyAction ? layout.stickyActionHeight : 0);
+    (bottomNav ? layout.bottomNavContentPadding : 24) +
+    (stickyAction ? layout.stickyActionHeight : 0);
   return (
     <ZookScreen ambient={ambient} style={style}>
       {title ? <Text style={styles.legacyTitle}>{title}</Text> : null}
       {scroll ? (
         <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           {...scrollProps}
           contentContainerStyle={[
@@ -276,7 +277,9 @@ export function ScreenShell({
           {children}
         </ScrollView>
       ) : (
-        <View style={[styles.screenShellContent, { paddingBottom: contentPaddingBottom }, contentStyle]}>
+        <View
+          style={[styles.screenShellContent, { paddingBottom: contentPaddingBottom }, contentStyle]}
+        >
           {children}
         </View>
       )}
@@ -343,7 +346,11 @@ export function ProfileShortcut({
         ]}
       >
         {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={styles.profileShortcutImage} contentFit="cover" />
+          <Image
+            source={{ uri: photoUrl }}
+            style={styles.profileShortcutImage}
+            contentFit="cover"
+          />
         ) : (
           <Text style={styles.profileShortcutText}>{initials}</Text>
         )}
@@ -391,7 +398,9 @@ export function GlassCard({
   const inner = (
     <>
       <BlurView intensity={14} tint="dark" style={StyleSheet.absoluteFillObject} />
-      <View style={[styles.glassContent, padding !== undefined ? { padding } : null, contentStyle]}>{children}</View>
+      <View style={[styles.glassContent, padding !== undefined ? { padding } : null, contentStyle]}>
+        {children}
+      </View>
     </>
   );
 
@@ -409,11 +418,7 @@ export function GlassCard({
     );
   }
 
-  return (
-    <View style={cardStyle}>
-      {inner}
-    </View>
-  );
+  return <View style={cardStyle}>{inner}</View>;
 }
 
 export function Card(props: Parameters<typeof GlassCard>[0]) {
@@ -486,10 +491,20 @@ type StatusLabel =
 
 function toneForStatusLabel(status: string): PillTone {
   const normalized = status.toLowerCase();
-  if (normalized.includes("approved") || normalized.includes("active") || normalized.includes("assigned") || normalized.includes("in stock")) {
+  if (
+    normalized.includes("approved") ||
+    normalized.includes("active") ||
+    normalized.includes("assigned") ||
+    normalized.includes("in stock")
+  ) {
     return "lime";
   }
-  if (normalized.includes("pending") || normalized.includes("review") || normalized.includes("desk") || normalized.includes("low")) {
+  if (
+    normalized.includes("pending") ||
+    normalized.includes("review") ||
+    normalized.includes("desk") ||
+    normalized.includes("low")
+  ) {
     return "amber";
   }
   if (normalized.includes("expired") || normalized.includes("flagged")) {
@@ -503,12 +518,7 @@ type StatusChipProps = Omit<Parameters<typeof ZookChip>[0], "children"> & {
   children?: ReactNode;
 };
 
-export function StatusChip({
-  status,
-  children,
-  tone,
-  ...props
-}: StatusChipProps) {
+export function StatusChip({ status, children, tone, ...props }: StatusChipProps) {
   const label = status ?? children;
   const resolvedTone = tone ?? (typeof label === "string" ? toneForStatusLabel(label) : "neutral");
   return (
@@ -544,11 +554,22 @@ export function ModeChip({
   mode,
   selected = false,
 }: {
-  mode: "Direct UPI" | "Manual Approval" | "Open Join" | "Desk Pickup" | "Cash" | "Bank" | "Card" | "Manual";
+  mode:
+    | "Direct UPI"
+    | "Manual Approval"
+    | "Open Join"
+    | "Desk Pickup"
+    | "Cash"
+    | "Bank"
+    | "Card"
+    | "Manual";
   selected?: boolean;
 }) {
   return (
-    <ZookChip tone={selected ? "lime" : "neutral"} icon={selected ? "checkmark-circle-outline" : undefined}>
+    <ZookChip
+      tone={selected ? "lime" : "neutral"}
+      icon={selected ? "checkmark-circle-outline" : undefined}
+    >
       {mode}
     </ZookChip>
   );
@@ -575,7 +596,8 @@ export function MobileHeader({
   showProfileShortcut?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
-  const resolvedLeading = leading ?? (!centered && showProfileShortcut ? <ProfileShortcut /> : null);
+  const resolvedLeading =
+    leading ?? (!centered && showProfileShortcut ? <ProfileShortcut /> : null);
 
   return (
     <View style={[styles.mobileHeader, centered ? styles.mobileHeaderCentered : null, style]}>
@@ -584,7 +606,11 @@ export function MobileHeader({
         {chip}
         {eyebrow ? <Text style={styles.headerEyebrow}>{eyebrow}</Text> : null}
         <Text style={[styles.headerTitle, centered ? styles.centerText : null]}>{title}</Text>
-        {subtitle ? <Text style={[styles.headerSubtitle, centered ? styles.centerText : null]}>{subtitle}</Text> : null}
+        {subtitle ? (
+          <Text style={[styles.headerSubtitle, centered ? styles.centerText : null]}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
       {trailing ? <View style={styles.headerSide}>{trailing}</View> : null}
     </View>
@@ -629,7 +655,13 @@ export function ZookHeader({
     <MobileHeader
       title={title}
       subtitle={subtitle}
-      chip={activeGym ? <ActiveGymPill label={activeGym} /> : role ? <RoleChip role={role} /> : undefined}
+      chip={
+        activeGym ? (
+          <ActiveGymPill label={activeGym} />
+        ) : role ? (
+          <RoleChip role={role} />
+        ) : undefined
+      }
       trailing={trailing}
     />
   );
@@ -646,7 +678,15 @@ export function ScreenHeader({
   subtitle?: string;
   trailing?: ReactNode;
 }) {
-  return <MobileHeader eyebrow={eyebrow} title={title} subtitle={subtitle} trailing={trailing} showProfileShortcut={false} />;
+  return (
+    <MobileHeader
+      eyebrow={eyebrow}
+      title={title}
+      subtitle={subtitle}
+      trailing={trailing}
+      showProfileShortcut={false}
+    />
+  );
 }
 
 export function SectionHeader({
@@ -742,7 +782,9 @@ export function ZookButton({
         <Pressable
           onPressIn={() => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
           accessibilityRole="link"
-          accessibilityLabel={accessibilityLabel ?? (typeof children === "string" ? children : undefined)}
+          accessibilityLabel={
+            accessibilityLabel ?? (typeof children === "string" ? children : undefined)
+          }
           accessibilityState={{ disabled }}
           style={staticButtonStyle}
         >
@@ -760,7 +802,9 @@ export function ZookButton({
       }}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? (typeof children === "string" ? children : undefined)}
+      accessibilityLabel={
+        accessibilityLabel ?? (typeof children === "string" ? children : undefined)
+      }
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.button,
@@ -790,7 +834,9 @@ export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "v
   return <ZookButton {...props} variant="secondary" />;
 }
 
-export function SecondaryGlassButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+export function SecondaryGlassButton(
+  props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">,
+) {
   return <ZookButton {...props} variant="secondary" />;
 }
 
@@ -802,7 +848,9 @@ export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "varia
   return <ZookButton {...props} variant="ghost" />;
 }
 
-export function DangerActionButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+export function DangerActionButton(
+  props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">,
+) {
   return <ZookButton {...props} variant="danger" />;
 }
 
@@ -822,7 +870,13 @@ export function PrimaryLink({
   accessibilityLabel?: string;
 }) {
   return (
-    <ZookButton href={href} tone={tone} style={style} textStyle={textStyle} accessibilityLabel={accessibilityLabel}>
+    <ZookButton
+      href={href}
+      tone={tone}
+      style={style}
+      textStyle={textStyle}
+      accessibilityLabel={accessibilityLabel}
+    >
       {children}
     </ZookButton>
   );
@@ -930,8 +984,12 @@ export function StatusRing({
         ]}
       />
       <View style={styles.statusRingCenter}>
-        {icon ? <Ionicons name={icon} size={Math.round(size * 0.36)} color={palette.color} /> : null}
-        {value ? <Text style={[styles.statusRingValue, { color: palette.color }]}>{value}</Text> : null}
+        {icon ? (
+          <Ionicons name={icon} size={Math.round(size * 0.36)} color={palette.color} />
+        ) : null}
+        {value ? (
+          <Text style={[styles.statusRingValue, { color: palette.color }]}>{value}</Text>
+        ) : null}
         {label ? <Text style={styles.statusRingLabel}>{label}</Text> : null}
       </View>
     </View>
@@ -1036,7 +1094,12 @@ export function TextField({
   const labelSuffix = required ? " *" : optional ? " optional" : "";
   return (
     <View style={[styles.inputGroup, style]}>
-      {label ? <Text style={styles.inputLabel}>{label}{labelSuffix}</Text> : null}
+      {label ? (
+        <Text style={styles.inputLabel}>
+          {label}
+          {labelSuffix}
+        </Text>
+      ) : null}
       <View
         style={[
           styles.inputWrapper,
@@ -1063,7 +1126,11 @@ export function TextField({
         />
         {trailing}
       </View>
-      {error ? <Text accessibilityRole="alert" style={styles.inputError}>{error}</Text> : null}
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.inputError}>
+          {error}
+        </Text>
+      ) : null}
       {!error && hint ? <Text style={styles.inputHint}>{hint}</Text> : null}
     </View>
   );
@@ -1108,7 +1175,13 @@ export function SearchField({
   label,
   ...props
 }: Omit<Parameters<typeof TextField>[0], "leading"> & { label?: string }) {
-  return <TextField label={label ?? "Search"} leading={<Ionicons name="search-outline" size={18} color={colors.subtle} />} {...props} />;
+  return (
+    <TextField
+      label={label ?? "Search"}
+      leading={<Ionicons name="search-outline" size={18} color={colors.subtle} />}
+      {...props}
+    />
+  );
 }
 
 export function ProductCard({
@@ -1145,19 +1218,30 @@ export function ProductCard({
           <Image source={{ uri: imageUrl }} style={styles.productImage} contentFit="cover" />
         ) : (
           <>
-            <View style={[styles.productVisualGlow, { backgroundColor: palette.backgroundColor }]} />
+            <View
+              style={[styles.productVisualGlow, { backgroundColor: palette.backgroundColor }]}
+            />
             <Ionicons name={icon} size={38} color={palette.color} />
           </>
         )}
         {tone === "amber" || tone === "red" ? (
-          <View style={[styles.productBadge, { borderColor: palette.borderColor, backgroundColor: palette.backgroundColor }]}>
+          <View
+            style={[
+              styles.productBadge,
+              { borderColor: palette.borderColor, backgroundColor: palette.backgroundColor },
+            ]}
+          >
             <Text style={[styles.productBadgeText, { color: palette.color }]}>{stock}</Text>
           </View>
         ) : null}
       </View>
       <View style={styles.productInfo}>
-        <Text numberOfLines={2} style={styles.productName}>{name}</Text>
-        <Text numberOfLines={1} style={styles.productMeta}>{stock}</Text>
+        <Text numberOfLines={2} style={styles.productName}>
+          {name}
+        </Text>
+        <Text numberOfLines={1} style={styles.productMeta}>
+          {stock}
+        </Text>
       </View>
       <View style={styles.productFooter}>
         <Text style={styles.productPrice}>{price}</Text>
@@ -1256,7 +1340,10 @@ export function SegmentedControl<T extends string>({
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.75}
-              style={[styles.segmentedOptionText, selected ? styles.segmentedOptionTextSelected : null]}
+              style={[
+                styles.segmentedOptionText,
+                selected ? styles.segmentedOptionTextSelected : null,
+              ]}
             >
               {option.label}
             </Text>
@@ -1332,7 +1419,12 @@ export function ProgressBar({
     <View style={styles.progressBarGroup}>
       {label ? <Text style={styles.progressBarLabel}>{label}</Text> : null}
       <View style={styles.progressBarTrack}>
-        <View style={[styles.progressBarFill, { width: `${percent * 100}%`, backgroundColor: palette.color }]} />
+        <View
+          style={[
+            styles.progressBarFill,
+            { width: `${percent * 100}%`, backgroundColor: palette.color },
+          ]}
+        />
       </View>
     </View>
   );
@@ -1348,10 +1440,26 @@ export function ScannerFrame({
   const palette = tonePalettes[tone];
   return (
     <View style={styles.scannerFrame}>
-      <View style={[styles.scannerCorner, styles.scannerCornerTopLeft, { borderColor: palette.color }]} />
-      <View style={[styles.scannerCorner, styles.scannerCornerTopRight, { borderColor: palette.color }]} />
-      <View style={[styles.scannerCorner, styles.scannerCornerBottomLeft, { borderColor: palette.color }]} />
-      <View style={[styles.scannerCorner, styles.scannerCornerBottomRight, { borderColor: palette.color }]} />
+      <View
+        style={[styles.scannerCorner, styles.scannerCornerTopLeft, { borderColor: palette.color }]}
+      />
+      <View
+        style={[styles.scannerCorner, styles.scannerCornerTopRight, { borderColor: palette.color }]}
+      />
+      <View
+        style={[
+          styles.scannerCorner,
+          styles.scannerCornerBottomLeft,
+          { borderColor: palette.color },
+        ]}
+      />
+      <View
+        style={[
+          styles.scannerCorner,
+          styles.scannerCornerBottomRight,
+          { borderColor: palette.color },
+        ]}
+      />
       <View style={[styles.scannerLine, { backgroundColor: palette.color }]} />
       <View style={styles.scannerFrameContent}>{children}</View>
     </View>
@@ -1369,7 +1477,9 @@ export function SwipeActionRow({
 }) {
   return (
     <View style={styles.swipeActionRow}>
-      <View style={[styles.swipeActionContent, revealed ? styles.swipeActionContentRevealed : null]}>
+      <View
+        style={[styles.swipeActionContent, revealed ? styles.swipeActionContentRevealed : null]}
+      >
         {children}
       </View>
       {revealed ? <View style={styles.swipeAction}>{action}</View> : null}
@@ -1383,7 +1493,10 @@ export function StickyActionBar({ children }: { children: ReactNode }) {
     <BlurView
       intensity={54}
       tint="dark"
-      style={StyleSheet.flatten([styles.stickyActionBar, { paddingBottom: Math.max(insets.bottom, 14) }])}
+      style={StyleSheet.flatten([
+        styles.stickyActionBar,
+        { paddingBottom: Math.max(insets.bottom, 14) },
+      ])}
     >
       {children}
     </BlurView>
@@ -1420,7 +1533,9 @@ export function CollapsibleSection({
           {subtitle ? <Text style={styles.collapsibleSubtitle}>{subtitle}</Text> : null}
         </View>
         <View style={styles.collapsibleTrailing}>
-          {count !== undefined ? <ZookChip tone={open ? "lime" : "neutral"}>{count}</ZookChip> : null}
+          {count !== undefined ? (
+            <ZookChip tone={open ? "lime" : "neutral"}>{count}</ZookChip>
+          ) : null}
           <Ionicons name={open ? "chevron-up" : "chevron-down"} size={22} color={colors.muted} />
         </View>
       </Pressable>
@@ -1452,36 +1567,154 @@ const memberTabs: DockTab[] = [
     matchPath: "/scan",
     raised: true,
   },
-  { href: "/plans", label: "Plan", icon: "barbell-outline", activeIcon: "barbell", matchPath: "/plans" },
+  {
+    href: "/plans",
+    label: "Plan",
+    icon: "barbell-outline",
+    activeIcon: "barbell",
+    matchPath: "/plans",
+  },
 ];
 
 const trainerTabs: DockTab[] = [
-  { href: "/trainer", label: "Home", icon: "home-outline", activeIcon: "home", matchPath: "/trainer" },
-  { href: "/trainer?view=clients" as Href, label: "Clients", icon: "people-outline", activeIcon: "people", matchPath: "/trainer", activeView: "clients" },
-  { href: "/scan", label: "Check in", icon: "scan-outline", activeIcon: "scan", matchPath: "/scan" },
-  { href: "/plans", label: "Plans", icon: "reader-outline", activeIcon: "reader", matchPath: "/plans" },
-  { href: "/notifications", label: "Inbox", icon: "chatbubble-outline", activeIcon: "chatbubble", matchPath: "/notifications" },
+  {
+    href: "/trainer",
+    label: "Home",
+    icon: "home-outline",
+    activeIcon: "home",
+    matchPath: "/trainer",
+  },
+  {
+    href: "/trainer?view=clients" as Href,
+    label: "Clients",
+    icon: "people-outline",
+    activeIcon: "people",
+    matchPath: "/trainer",
+    activeView: "clients",
+  },
+  {
+    href: "/scan",
+    label: "Check in",
+    icon: "scan-outline",
+    activeIcon: "scan",
+    matchPath: "/scan",
+  },
+  {
+    href: "/trainer?view=plans" as Href,
+    label: "Plans",
+    icon: "reader-outline",
+    activeIcon: "reader",
+    matchPath: "/trainer",
+    activeView: "plans",
+  },
+  {
+    href: "/notifications",
+    label: "Inbox",
+    icon: "chatbubble-outline",
+    activeIcon: "chatbubble",
+    matchPath: "/notifications",
+  },
 ];
 
 const receptionTabs: DockTab[] = [
-  { href: "/reception", label: "Desk", icon: "desktop-outline", activeIcon: "desktop", matchPath: "/reception" },
-  { href: "/reception?view=members" as Href, label: "Members", icon: "people-outline", activeIcon: "people", matchPath: "/reception", activeView: "members" },
-  { href: "/reception?view=payments" as Href, label: "Payments", icon: "card-outline", activeIcon: "card", matchPath: "/reception", activeView: "payments" },
-  { href: "/reception?view=orders" as Href, label: "Orders", icon: "cube-outline", activeIcon: "cube", matchPath: "/reception", activeView: "orders" },
+  {
+    href: "/reception",
+    label: "Desk",
+    icon: "desktop-outline",
+    activeIcon: "desktop",
+    matchPath: "/reception",
+  },
+  {
+    href: "/reception?view=members" as Href,
+    label: "Members",
+    icon: "people-outline",
+    activeIcon: "people",
+    matchPath: "/reception",
+    activeView: "members",
+  },
+  {
+    href: "/reception?view=payments" as Href,
+    label: "Payments",
+    icon: "card-outline",
+    activeIcon: "card",
+    matchPath: "/reception",
+    activeView: "payments",
+  },
+  {
+    href: "/reception?view=orders" as Href,
+    label: "Orders",
+    icon: "cube-outline",
+    activeIcon: "cube",
+    matchPath: "/reception",
+    activeView: "orders",
+  },
 ];
 
 const ownerTabs: DockTab[] = [
-  { href: "/owner", label: "Command", icon: "pulse-outline", activeIcon: "pulse", matchPath: "/owner" },
-  { href: "/owner?view=approvals" as Href, label: "Approvals", icon: "checkmark-done-outline", activeIcon: "checkmark-done", matchPath: "/owner", activeView: "approvals" },
-  { href: "/owner?view=revenue" as Href, label: "Revenue", icon: "trending-up-outline", activeIcon: "trending-up", matchPath: "/owner", activeView: "revenue" },
-  { href: "/owner?view=stock" as Href, label: "Stock", icon: "cube-outline", activeIcon: "cube", matchPath: "/owner", activeView: "stock" },
+  {
+    href: "/owner",
+    label: "Command",
+    icon: "pulse-outline",
+    activeIcon: "pulse",
+    matchPath: "/owner",
+  },
+  {
+    href: "/owner?view=approvals" as Href,
+    label: "Approvals",
+    icon: "checkmark-done-outline",
+    activeIcon: "checkmark-done",
+    matchPath: "/owner",
+    activeView: "approvals",
+  },
+  {
+    href: "/owner?view=revenue" as Href,
+    label: "Revenue",
+    icon: "trending-up-outline",
+    activeIcon: "trending-up",
+    matchPath: "/owner",
+    activeView: "revenue",
+  },
+  {
+    href: "/owner?view=stock" as Href,
+    label: "Stock",
+    icon: "cube-outline",
+    activeIcon: "cube",
+    matchPath: "/owner",
+    activeView: "stock",
+  },
 ];
 
 const adminTabs: DockTab[] = [
-  { href: "/owner", label: "Home", icon: "pulse-outline", activeIcon: "pulse", matchPath: "/owner" },
-  { href: "/scan", label: "Check in", icon: "scan-outline", activeIcon: "scan", matchPath: "/scan" },
-  { href: "/owner?view=approvals" as Href, label: "Approvals", icon: "checkmark-done-outline", activeIcon: "checkmark-done", matchPath: "/owner", activeView: "approvals" },
-  { href: "/owner?view=stock" as Href, label: "Stock", icon: "cube-outline", activeIcon: "cube", matchPath: "/owner", activeView: "stock" },
+  {
+    href: "/owner",
+    label: "Home",
+    icon: "pulse-outline",
+    activeIcon: "pulse",
+    matchPath: "/owner",
+  },
+  {
+    href: "/scan",
+    label: "Check in",
+    icon: "scan-outline",
+    activeIcon: "scan",
+    matchPath: "/scan",
+  },
+  {
+    href: "/owner?view=approvals" as Href,
+    label: "Approvals",
+    icon: "checkmark-done-outline",
+    activeIcon: "checkmark-done",
+    matchPath: "/owner",
+    activeView: "approvals",
+  },
+  {
+    href: "/owner?view=stock" as Href,
+    label: "Stock",
+    icon: "cube-outline",
+    activeIcon: "cube",
+    matchPath: "/owner",
+    activeView: "stock",
+  },
 ];
 
 function getTabsForRole(role?: Role): DockTab[] {
@@ -1508,7 +1741,9 @@ export function BottomNav({
   const params = useLocalSearchParams<{ view?: string }>();
   const { activeRole } = useAuth();
   const notificationsQuery = useMyNotifications();
-  const unreadCount = notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt)?.length ?? 0;
+  const unreadCount =
+    notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt)
+      ?.length ?? 0;
   const resolvedRole = role ?? activeRole;
   const resolvedTabs = tabs ?? getTabsForRole(resolvedRole);
   const isMemberNav = !tabs && (!resolvedRole || resolvedRole === "MEMBER");
@@ -1517,79 +1752,81 @@ export function BottomNav({
   const bottom = Math.max(insets.bottom, 12);
 
   const navItems = resolvedTabs.map((tab) => {
-        const currentView = activeView ?? (Array.isArray(params.view) ? params.view[0] : params.view);
-        const clientDetailMatches = tab.label === "Clients" && activePath.startsWith("/trainer/client");
-        const roleRootPath = tab.matchPath === "/trainer" || tab.matchPath === "/reception" || tab.matchPath === "/owner";
-        const viewMatches = clientDetailMatches || (tab.activeView ? currentView === tab.activeView : !currentView);
-        const pathMatches =
-          activePath === tab.matchPath ||
-          (tab.matchPath !== "/" && !roleRootPath && activePath.startsWith(tab.matchPath)) ||
-          clientDetailMatches;
-        const active = pathMatches && viewMatches;
-        const showBadge = unreadCount > 0 && tab.label === "Inbox";
-        const raised = isMemberNav && tab.raised;
-        const showLabel = !(raised && tab.hideLabel);
-        const memberPressProps = isMemberNav
-          ? {
-              onPress: () => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.replace(tab.href as never);
-              },
-            }
-          : {};
-        const item = (
-            <Pressable
-              {...memberPressProps}
-              onPressIn={() => {
-                if (!isMemberNav) {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
-              }}
-              accessibilityRole="tab"
-              accessibilityLabel={tab.accessibilityLabel ?? tab.label}
-              accessibilityState={{ selected: active }}
-              style={StyleSheet.flatten([
-                styles.bottomNavItem,
-                isMemberNav ? styles.memberBottomNavItem : null,
-                raised ? styles.memberBottomNavItemRaised : null,
-                active ? styles.bottomNavItemActive : null,
-                active && raised ? styles.memberBottomNavItemRaisedActive : null,
-              ])}
-            >
-              <View>
-                <Ionicons
-                  name={active ? tab.activeIcon : tab.icon}
-                  size={raised ? 31 : 21}
-                  color={raised ? colors.bg : active ? colors.lime : colors.subtle}
-                />
-                {showBadge ? <View style={styles.navBadge} /> : null}
-              </View>
-              {showLabel ? (
-                <Text
-                  style={[
-                    styles.bottomNavText,
-                    isMemberNav ? styles.memberBottomNavText : null,
-                    raised ? styles.memberBottomNavTextRaised : null,
-                    active ? styles.bottomNavTextActive : null,
-                    active && raised ? styles.memberBottomNavTextRaisedActive : null,
-                  ]}
-                >
-                  {tab.label}
-                </Text>
-              ) : null}
-            </Pressable>
-        );
-
-        if (isMemberNav) {
-          return <View key={`${String(tab.href)}-${tab.label}`}>{item}</View>;
+    const currentView = activeView ?? (Array.isArray(params.view) ? params.view[0] : params.view);
+    const clientDetailMatches = tab.label === "Clients" && activePath.startsWith("/trainer/client");
+    const roleRootPath =
+      tab.matchPath === "/trainer" || tab.matchPath === "/reception" || tab.matchPath === "/owner";
+    const viewMatches =
+      clientDetailMatches || (tab.activeView ? currentView === tab.activeView : !currentView);
+    const pathMatches =
+      activePath === tab.matchPath ||
+      (tab.matchPath !== "/" && !roleRootPath && activePath.startsWith(tab.matchPath)) ||
+      clientDetailMatches;
+    const active = pathMatches && viewMatches;
+    const showBadge = unreadCount > 0 && tab.label === "Inbox";
+    const raised = isMemberNav && tab.raised;
+    const showLabel = !(raised && tab.hideLabel);
+    const memberPressProps = isMemberNav
+      ? {
+          onPress: () => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.replace(tab.href as never);
+          },
         }
+      : {};
+    const item = (
+      <Pressable
+        {...memberPressProps}
+        onPressIn={() => {
+          if (!isMemberNav) {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
+        }}
+        accessibilityRole="tab"
+        accessibilityLabel={tab.accessibilityLabel ?? tab.label}
+        accessibilityState={{ selected: active }}
+        style={StyleSheet.flatten([
+          styles.bottomNavItem,
+          isMemberNav ? styles.memberBottomNavItem : null,
+          raised ? styles.memberBottomNavItemRaised : null,
+          active ? styles.bottomNavItemActive : null,
+          active && raised ? styles.memberBottomNavItemRaisedActive : null,
+        ])}
+      >
+        <View>
+          <Ionicons
+            name={active ? tab.activeIcon : tab.icon}
+            size={raised ? 31 : 21}
+            color={raised ? colors.bg : active ? colors.lime : colors.subtle}
+          />
+          {showBadge ? <View style={styles.navBadge} /> : null}
+        </View>
+        {showLabel ? (
+          <Text
+            style={[
+              styles.bottomNavText,
+              isMemberNav ? styles.memberBottomNavText : null,
+              raised ? styles.memberBottomNavTextRaised : null,
+              active ? styles.bottomNavTextActive : null,
+              active && raised ? styles.memberBottomNavTextRaisedActive : null,
+            ]}
+          >
+            {tab.label}
+          </Text>
+        ) : null}
+      </Pressable>
+    );
 
-        return (
-          <Link key={`${String(tab.href)}-${tab.label}`} href={tab.href} asChild>
-            {item}
-          </Link>
-        );
-      });
+    if (isMemberNav) {
+      return <View key={`${String(tab.href)}-${tab.label}`}>{item}</View>;
+    }
+
+    return (
+      <Link key={`${String(tab.href)}-${tab.label}`} href={tab.href} asChild>
+        {item}
+      </Link>
+    );
+  });
 
   if (isMemberNav) {
     return (

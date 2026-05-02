@@ -1,7 +1,15 @@
 import type { AuthSessionSummary, Role } from "@zook/core";
 import { ApiError } from "@zook/core";
 import type { ReactNode } from "react";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { authClient } from "./domain-api";
 import { DEMO_AUTH_TOKEN, getOfflineDemoRoleOverride, isOfflineDemoMode } from "./demo-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
@@ -13,7 +21,10 @@ const OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY = "zook_offline_demo_logged_out";
 type LogoutCleanup = () => Promise<void> | void;
 
 function sanitizeOtpCode(value: string) {
-  return value.normalize("NFKC").replace(/[^0-9]/g, "").slice(0, 6);
+  return value
+    .normalize("NFKC")
+    .replace(/[^0-9]/g, "")
+    .slice(0, 6);
 }
 
 interface RequestOtpResult {
@@ -50,7 +61,9 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function sessionDefaultRole(session?: AuthSessionSummary): Role | undefined {
-  const roles = new Set(session?.activeOrganization?.roles ?? session?.organizations[0]?.roles ?? []);
+  const roles = new Set(
+    session?.activeOrganization?.roles ?? session?.organizations[0]?.roles ?? [],
+  );
   if (roles.has("MEMBER")) return "MEMBER";
   if (roles.has("TRAINER")) return "TRAINER";
   if (roles.has("RECEPTIONIST")) return "RECEPTIONIST";
@@ -86,17 +99,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (tokenValue: string, preferredOrgId?: string, preferredRole?: Role) => {
       const currentSession = await authClient.me({
         token: tokenValue,
-        ...(preferredOrgId ? { orgId: preferredOrgId } : {})
+        ...(preferredOrgId ? { orgId: preferredOrgId } : {}),
       });
       const resolvedOrgId = currentSession.activeOrgId ?? preferredOrgId;
       if (resolvedOrgId) {
         await setStoredValue(ACTIVE_ORG_STORAGE_KEY, resolvedOrgId);
       }
       const availableRoles = new Set(
-        (currentSession.activeOrganization?.roles ??
-          currentSession.organizations.find((organization) => organization.orgId === resolvedOrgId)?.roles ??
+        currentSession.activeOrganization?.roles ??
+          currentSession.organizations.find((organization) => organization.orgId === resolvedOrgId)
+            ?.roles ??
           currentSession.organizations[0]?.roles ??
-          [])
+          [],
       );
       const resolvedRole =
         preferredRole && availableRoles.has(preferredRole)
@@ -112,14 +126,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus("authenticated");
       setError(undefined);
     },
-    []
+    [],
   );
 
   const clearSession = useCallback(async () => {
     await Promise.all([
       deleteStoredValue(SESSION_STORAGE_KEY),
       deleteStoredValue(ACTIVE_ORG_STORAGE_KEY),
-      deleteStoredValue(ACTIVE_ROLE_STORAGE_KEY)
+      deleteStoredValue(ACTIVE_ROLE_STORAGE_KEY),
     ]);
     setToken(undefined);
     setSession(undefined);
@@ -134,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const [storedOrgId, storedRole, demoLoggedOut] = await Promise.all([
         getStoredValue(ACTIVE_ORG_STORAGE_KEY),
         getStoredValue(ACTIVE_ROLE_STORAGE_KEY),
-        getStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY)
+        getStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY),
       ]);
       if (demoLoggedOut === "true") {
         setToken(undefined);
@@ -155,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [storedToken, storedOrgId, storedRole] = await Promise.all([
       getStoredValue(SESSION_STORAGE_KEY),
       getStoredValue(ACTIVE_ORG_STORAGE_KEY),
-      getStoredValue(ACTIVE_ROLE_STORAGE_KEY)
+      getStoredValue(ACTIVE_ROLE_STORAGE_KEY),
     ]);
 
     if (!storedToken) {
@@ -168,7 +182,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      await hydrate(storedToken, storedOrgId ?? undefined, (storedRole as Role | null) ?? undefined);
+      await hydrate(
+        storedToken,
+        storedOrgId ?? undefined,
+        (storedRole as Role | null) ?? undefined,
+      );
     } catch {
       await clearSession();
     }
@@ -192,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setStoredValue(SESSION_STORAGE_KEY, result.token);
       await hydrate(result.token, activeOrgId, activeRole);
     },
-    [activeOrgId, activeRole, hydrate]
+    [activeOrgId, activeRole, hydrate],
   );
 
   const registerLogoutCleanup = useCallback((cleanup: LogoutCleanup) => {
@@ -232,28 +250,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setStoredValue(ACTIVE_ORG_STORAGE_KEY, orgId);
       await hydrate(token, orgId, activeRole);
     },
-    [activeRole, hydrate, token]
+    [activeRole, hydrate, token],
   );
 
-  const setActiveRole = useCallback(
-    async (role: Role) => {
-      await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, role);
-      setActiveRoleState(role);
-    },
-    []
-  );
+  const setActiveRole = useCallback(async (role: Role) => {
+    await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, role);
+    setActiveRoleState(role);
+  }, []);
 
   const hasAnyRole = useCallback(
     (...roles: Role[]) =>
       Boolean(
-        session?.organizations.some((organization) => organization.roles.some((role) => roles.includes(role)))
+        session?.organizations.some((organization) =>
+          organization.roles.some((role) => roles.includes(role)),
+        ),
       ),
-    [session]
+    [session],
   );
 
   const hasActiveRole = useCallback(
     (...roles: Role[]) => Boolean(activeRole && roles.includes(activeRole)),
-    [activeRole]
+    [activeRole],
   );
 
   const value = useMemo<AuthContextValue>(
@@ -273,7 +290,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       hasAnyRole,
       hasActiveRole,
       registerLogoutCleanup,
-      error
+      error,
     }),
     [
       activeOrgId,
@@ -290,8 +307,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActiveRole,
       status,
       token,
-      verifyOtp
-    ]
+      verifyOtp,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -310,6 +327,9 @@ export function getApiErrorMessage(error: unknown) {
     return error.requestId ? `${error.message} (${error.requestId})` : error.message;
   }
   if (error instanceof Error) {
+    if (/network request failed/i.test(error.message)) {
+      return "We couldn't reach Zook. Check your connection and try again.";
+    }
     return error.message;
   }
   return "Something went wrong.";

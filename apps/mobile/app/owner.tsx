@@ -96,9 +96,11 @@ export default function Owner() {
   const approveJoinRequestMutation = useApproveJoinRequest();
   const rejectJoinRequestMutation = useRejectJoinRequest();
   const dashboard = dashboardQuery.data;
-  const joinRequests = (joinRequestsQuery.data?.joinRequests ?? dashboard?.joinRequests ?? []).filter(
-    (request) => String(request.status ?? "").toLowerCase() === "pending",
-  );
+  const joinRequests = (
+    joinRequestsQuery.data?.joinRequests ??
+    dashboard?.joinRequests ??
+    []
+  ).filter((request) => String(request.status ?? "").toLowerCase() === "pending");
   const firstJoinRequest = joinRequests[0];
   const attentionAttempts = attentionQuery.data?.records ?? [];
   const lowStock = dashboard?.products ?? [];
@@ -114,6 +116,7 @@ export default function Owner() {
       orders.reduce((sum, order) => sum + order.totalPaise, 0);
   const memberSearchTerm = memberSearch.trim().toLowerCase();
   const members = membersQuery.data?.members ?? [];
+  const paymentExceptionCount = payments.filter((payment) => payment.status !== "SUCCEEDED").length;
   const filteredMembers = members.filter((member) => {
     const name = member.user?.name.toLowerCase() ?? "";
     const email = member.user?.email.toLowerCase() ?? "";
@@ -132,16 +135,16 @@ export default function Owner() {
     {
       id: "revenue",
       title: "Payment exceptions",
-      subtitle: `${payments.filter((payment) => payment.status !== "SUCCEEDED").length} transaction ${payments.filter((payment) => payment.status !== "SUCCEEDED").length === 1 ? "needs" : "need"} confirmation`,
-      count: payments.filter((payment) => payment.status !== "SUCCEEDED").length,
-      tone: payments.some((payment) => payment.status !== "SUCCEEDED") ? "amber" : "lime",
+      subtitle: `${paymentExceptionCount} ${paymentExceptionCount === 1 ? "transaction needs" : "transactions need"} confirmation`,
+      count: paymentExceptionCount,
+      tone: paymentExceptionCount ? "amber" : "lime",
       icon: "card-outline",
       target: "revenue",
     },
     {
       id: "stock",
       title: "Low stock",
-      subtitle: `${lowStock.length} product ${lowStock.length === 1 ? "is" : "are"} under threshold`,
+      subtitle: `${lowStock.length} ${lowStock.length === 1 ? "product is" : "products are"} under threshold`,
       count: lowStock.length,
       tone: lowStock.length ? "amber" : "lime",
       icon: "cube-outline",
@@ -168,22 +171,32 @@ export default function Owner() {
   const recentActivity = [
     {
       id: "payment",
-      title: payments[0]?.user?.name ? `${payments[0].user.name} payment recorded` : "Recent payment activity",
-      subtitle: payments[0] ? `${titleCase(payments[0].purpose)} · ${titleCase(payments[0].mode)}` : "Manual payments will appear here",
+      title: payments[0]?.user?.name
+        ? `${payments[0].user.name} payment recorded`
+        : "Recent payment activity",
+      subtitle: payments[0]
+        ? `${titleCase(payments[0].purpose)} · ${titleCase(payments[0].mode)}`
+        : "Manual payments will appear here",
       tone: "lime",
       label: "Audit",
     },
     {
       id: "plan",
-      title: firstJoinRequest?.userName ? `${firstJoinRequest.userName} requested access` : "No new join-request activity",
-      subtitle: firstJoinRequest ? String(firstJoinRequest.status ?? "Pending").replace(/_/g, " ") : "Member plan activity appears in trainer views",
+      title: firstJoinRequest?.userName
+        ? `${firstJoinRequest.userName} requested access`
+        : "No new join-request activity",
+      subtitle: firstJoinRequest
+        ? String(firstJoinRequest.status ?? "Pending").replace(/_/g, " ")
+        : "Member plan activity appears in trainer views",
       tone: "blue",
       label: "Join",
     },
     {
       id: "stock",
       title: lowStock[0] ? `${lowStock[0].name} stock needs review` : "Stock levels healthy",
-      subtitle: lowStock[0] ? `${lowStock[0].stock} left · threshold ${lowStock[0].lowStockThreshold}` : "All products are above threshold",
+      subtitle: lowStock[0]
+        ? `${lowStock[0].stock} left · threshold ${lowStock[0].lowStockThreshold}`
+        : "All products are above threshold",
       tone: lowStock[0] ? "amber" : "neutral",
       label: "Shop",
     },
@@ -206,7 +219,11 @@ export default function Owner() {
 
   return (
     <ZookScreen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
             <ActiveGymPill label={dashboard?.organization?.name ?? "Active gym"} />
@@ -227,7 +244,9 @@ export default function Owner() {
               size={15}
               color={view === "members" ? colors.lime : colors.muted}
             />
-            <Text style={[styles.utilityText, view === "members" ? styles.utilityTextActive : null]}>
+            <Text
+              style={[styles.utilityText, view === "members" ? styles.utilityTextActive : null]}
+            >
               {view === "members" ? "Back to command" : "Members"}
             </Text>
           </Pressable>
@@ -245,10 +264,38 @@ export default function Owner() {
         {view === "command" ? (
           <>
             <View style={styles.metricGrid}>
-              <MetricTile label="Active members" value={formatCompactNumber(activeMembers)} detail="Main Branch" tone="lime" icon="people-outline" style={styles.metricHalf} />
-              <MetricTile label="Today check-ins" value={formatCompactNumber(todayCheckIns)} detail={`${attentionAttempts.length} pending review`} tone="blue" icon="qr-code-outline" style={styles.metricHalf} />
-              <MetricTile label="Revenue" value={formatInr(revenuePaise)} detail="Collected + pickup" tone="amber" icon="trending-up-outline" style={styles.metricHalf} />
-              <MetricTile label="Approvals" value={String(pendingApprovals)} detail="Needs attention" tone="violet" icon="checkmark-done-outline" style={styles.metricHalf} />
+              <MetricTile
+                label="Active members"
+                value={formatCompactNumber(activeMembers)}
+                detail="Main Branch"
+                tone="lime"
+                icon="people-outline"
+                style={styles.metricHalf}
+              />
+              <MetricTile
+                label="Today check-ins"
+                value={formatCompactNumber(todayCheckIns)}
+                detail={`${attentionAttempts.length} pending review`}
+                tone="blue"
+                icon="qr-code-outline"
+                style={styles.metricHalf}
+              />
+              <MetricTile
+                label="Revenue"
+                value={formatInr(revenuePaise)}
+                detail="Collected + pickup"
+                tone="amber"
+                icon="trending-up-outline"
+                style={styles.metricHalf}
+              />
+              <MetricTile
+                label="Approvals"
+                value={String(pendingApprovals)}
+                detail="Needs attention"
+                tone="violet"
+                icon="checkmark-done-outline"
+                style={styles.metricHalf}
+              />
             </View>
 
             <SectionHeader title="Needs attention" />
@@ -267,7 +314,12 @@ export default function Owner() {
             <SectionHeader title="Recent activity" />
             <GlassCard contentStyle={styles.stack}>
               {recentActivity.map((activity) => (
-                <ListRow key={activity.id} title={activity.title} subtitle={activity.subtitle} trailing={<Pill tone={activity.tone}>{activity.label}</Pill>} />
+                <ListRow
+                  key={activity.id}
+                  title={activity.title}
+                  subtitle={activity.subtitle}
+                  trailing={<Pill tone={activity.tone}>{activity.label}</Pill>}
+                />
               ))}
             </GlassCard>
           </>
@@ -313,18 +365,28 @@ export default function Owner() {
                         contentStyle={styles.memberCardContent}
                       >
                         {photoUrl ? (
-                          <Image source={{ uri: photoUrl }} style={styles.memberAvatarImage} contentFit="cover" />
+                          <Image
+                            source={{ uri: photoUrl }}
+                            style={styles.memberAvatarImage}
+                            contentFit="cover"
+                          />
                         ) : (
                           <View style={styles.memberAvatar}>
-                            <Text style={styles.memberAvatarText}>{memberInitials(name, email)}</Text>
+                            <Text style={styles.memberAvatarText}>
+                              {memberInitials(name, email)}
+                            </Text>
                           </View>
                         )}
                         <View style={styles.memberCopy}>
                           <View style={styles.memberTopRow}>
-                            <Text numberOfLines={1} style={styles.memberName}>{name}</Text>
+                            <Text numberOfLines={1} style={styles.memberName}>
+                              {name}
+                            </Text>
                             {goal ? <Pill tone="blue">{goal}</Pill> : null}
                           </View>
-                          <Text numberOfLines={1} style={styles.memberEmail}>{email}</Text>
+                          <Text numberOfLines={1} style={styles.memberEmail}>
+                            {email}
+                          </Text>
                         </View>
                         <Ionicons name="chevron-forward" size={17} color={colors.muted} />
                       </GlassCard>
@@ -338,8 +400,20 @@ export default function Owner() {
         {view === "approvals" ? (
           <>
             <View style={styles.metricGrid}>
-              <MetricTile label="Join requests" value={String(joinRequests.length)} detail="Awaiting owner action" tone="amber" style={styles.metricHalf} />
-              <MetricTile label="Scan reviews" value={String(attentionAttempts.length)} detail="Pending or flagged" tone="red" style={styles.metricHalf} />
+              <MetricTile
+                label="Join requests"
+                value={String(joinRequests.length)}
+                detail="Awaiting owner action"
+                tone="amber"
+                style={styles.metricHalf}
+              />
+              <MetricTile
+                label="Scan reviews"
+                value={String(attentionAttempts.length)}
+                detail="Pending or flagged"
+                tone="red"
+                style={styles.metricHalf}
+              />
             </View>
 
             <SectionHeader title="Join requests" subtitle="Pending review" />
@@ -373,7 +447,10 @@ export default function Owner() {
                 ))
               ) : (
                 <GlassCard variant="compact">
-                  <EmptyState title="No join requests" body="New public join requests will show up here for owner approval." />
+                  <EmptyState
+                    title="No join requests"
+                    body="New public join requests will show up here for owner approval."
+                  />
                 </GlassCard>
               )}
             </View>
@@ -386,8 +463,17 @@ export default function Owner() {
                     <ListRow
                       title={attempt.user?.name ?? attempt.user?.email ?? "Member check-in"}
                       subtitle={`${titleCase(attempt.status)} · ${cleanReviewReason(Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null)}`}
-                      leading={<IconBubble icon={attempt.status === "FLAGGED" ? "alert-outline" : "qr-code-outline"} tone={attempt.status === "FLAGGED" ? "red" : "amber"} />}
-                      trailing={<Pill tone={attempt.status === "FLAGGED" ? "red" : "amber"}>{titleCase(attempt.status)}</Pill>}
+                      leading={
+                        <IconBubble
+                          icon={attempt.status === "FLAGGED" ? "alert-outline" : "qr-code-outline"}
+                          tone={attempt.status === "FLAGGED" ? "red" : "amber"}
+                        />
+                      }
+                      trailing={
+                        <Pill tone={attempt.status === "FLAGGED" ? "red" : "amber"}>
+                          {titleCase(attempt.status)}
+                        </Pill>
+                      }
                     />
                     <PrimaryButton
                       onPress={() => void approveAttendance(attempt.id)}
@@ -400,7 +486,10 @@ export default function Owner() {
                 ))
               ) : (
                 <GlassCard variant="compact">
-                  <EmptyState title="Attendance queue clear" body="Pending and flagged scans will appear here when the desk needs help." />
+                  <EmptyState
+                    title="Attendance queue clear"
+                    body="Pending and flagged scans will appear here when the desk needs help."
+                  />
                 </GlassCard>
               )}
             </View>
@@ -410,8 +499,20 @@ export default function Owner() {
         {view === "revenue" ? (
           <>
             <View style={styles.metricGrid}>
-              <MetricTile label="Revenue today" value={formatInr(revenuePaise)} detail="Membership + shop" tone="lime" style={styles.metricHalf} />
-              <MetricTile label="Manual records" value={formatInr(payments.reduce((sum, payment) => sum + payment.amountPaise, 0))} detail="Cash and direct UPI" tone="amber" style={styles.metricHalf} />
+              <MetricTile
+                label="Revenue today"
+                value={formatInr(revenuePaise)}
+                detail="Membership + shop"
+                tone="lime"
+                style={styles.metricHalf}
+              />
+              <MetricTile
+                label="Manual records"
+                value={formatInr(payments.reduce((sum, payment) => sum + payment.amountPaise, 0))}
+                detail="Cash and direct UPI"
+                tone="amber"
+                style={styles.metricHalf}
+              />
             </View>
             <SectionHeader title="Recent transactions" subtitle="Today" />
             <GlassCard contentStyle={styles.stack}>
@@ -421,12 +522,24 @@ export default function Owner() {
                     key={payment.id}
                     title={payment.user?.name ?? titleCase(payment.purpose)}
                     subtitle={`${titleCase(payment.mode)} · ${titleCase(payment.status)}`}
-                    leading={<IconBubble icon="card-outline" tone={payment.status === "SUCCEEDED" ? "lime" : "amber"} />}
-                    trailing={<Pill tone={payment.status === "SUCCEEDED" ? "lime" : "amber"}>{formatInr(payment.amountPaise)}</Pill>}
+                    leading={
+                      <IconBubble
+                        icon="card-outline"
+                        tone={payment.status === "SUCCEEDED" ? "lime" : "amber"}
+                      />
+                    }
+                    trailing={
+                      <Pill tone={payment.status === "SUCCEEDED" ? "lime" : "amber"}>
+                        {formatInr(payment.amountPaise)}
+                      </Pill>
+                    }
                   />
                 ))
               ) : (
-                <EmptyState title="No payments yet" body="Offline collections and checkout confirmations will appear here." />
+                <EmptyState
+                  title="No payments yet"
+                  body="Offline collections and checkout confirmations will appear here."
+                />
               )}
               {orders.map((order) => (
                 <ListRow
@@ -435,18 +548,29 @@ export default function Owner() {
                   subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
                   leading={<IconBubble icon="bag-outline" tone="lime" />}
                   trailing={<Pill tone="lime">{formatInr(order.totalPaise)}</Pill>}
-                  />
-                ))}
+                />
+              ))}
             </GlassCard>
-
           </>
         ) : null}
 
         {view === "stock" ? (
           <>
             <View style={styles.metricGrid}>
-              <MetricTile label="Low stock" value={String(lowStock.length)} detail="Under threshold" tone="amber" style={styles.metricHalf} />
-              <MetricTile label="Pickups" value={String(orders.length)} detail="Paid or ready" tone="lime" style={styles.metricHalf} />
+              <MetricTile
+                label="Low stock"
+                value={String(lowStock.length)}
+                detail="Under threshold"
+                tone="amber"
+                style={styles.metricHalf}
+              />
+              <MetricTile
+                label="Pickups"
+                value={String(orders.length)}
+                detail="Paid or ready"
+                tone="lime"
+                style={styles.metricHalf}
+              />
             </View>
             <SectionHeader title="Low-stock products" subtitle="Below threshold" />
             <GlassCard contentStyle={styles.stack}>
@@ -461,7 +585,10 @@ export default function Owner() {
                   />
                 ))
               ) : (
-                <EmptyState title="Stock looks healthy" body="Products below their threshold will appear here." />
+                <EmptyState
+                  title="Stock looks healthy"
+                  body="Products below their threshold will appear here."
+                />
               )}
             </GlassCard>
             <SectionHeader title="Pending pickups" />
@@ -477,7 +604,10 @@ export default function Owner() {
                   />
                 ))
               ) : (
-                <EmptyState title="No pickups waiting" body="Paid shop orders will show up here until reception fulfills them." />
+                <EmptyState
+                  title="No pickups waiting"
+                  body="Paid shop orders will show up here until reception fulfills them."
+                />
               )}
             </GlassCard>
           </>
@@ -496,7 +626,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 16,
-    paddingBottom: layout.bottomNavHeight + 40,
+    paddingBottom: layout.bottomNavContentPadding,
   },
   headerRow: {
     flexDirection: "row",

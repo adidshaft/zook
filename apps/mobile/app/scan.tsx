@@ -1,7 +1,15 @@
 import { Stack, useRouter } from "expo-router";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
@@ -12,6 +20,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { attendanceApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -33,7 +42,7 @@ type ScanState = "idle" | "checking" | "accepted" | "failed";
 
 export default function Scan() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { activeOrgId, token } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
   const [scanState, setScanState] = useState<ScanState>("idle");
@@ -46,8 +55,6 @@ export default function Scan() {
       void requestPermission();
     }
   }, [permission, requestPermission]);
-
-
 
   function scanReason(result: ScanResult) {
     if (Array.isArray(result.suspiciousFlags) && result.suspiciousFlags.length) {
@@ -98,8 +105,55 @@ export default function Scan() {
     }
   }
 
+  async function completeDevScan() {
+    if (isOfflineDemoMode()) {
+      await completeScan("zook://qr/org-iron-temple/branch-default/demo-approved");
+      return;
+    }
+    if (completedRef.current) {
+      return;
+    }
+    completedRef.current = true;
+    setBusy(true);
+    setScanState("checking");
+    setErrorMessage("");
+    try {
+      if (!token || !activeOrgId) {
+        throw new Error("Sign in and select a gym before scanning.");
+      }
+      const result = await attendanceApi.devScan<ScanResult>({
+        token,
+        orgId: activeOrgId,
+      });
+      const status = result.status ?? result.attendance.status ?? "APPROVED";
+      setScanState(status === "REJECTED" || status === "FLAGGED" ? "failed" : "accepted");
+      router.push({
+        pathname: "/attendance/[attendanceRecordId]",
+        params: {
+          attendanceRecordId: result.attendance.id,
+          status,
+          entryCode: result.attendance.entryCode ?? "",
+          branchName: result.attendance.branchName ?? "",
+          planName: result.attendance.planName ?? "",
+          checkedInAt: result.attendance.checkedInAt ?? "",
+          reason: scanReason(result),
+        },
+      });
+    } catch (error) {
+      completedRef.current = false;
+      setScanState("failed");
+      setErrorMessage(getApiErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function handleBarcode({ data }: BarcodeScanningResult) {
-    void completeScan(data || "zook-demo-approved");
+    if (data) {
+      void completeScan(data);
+      return;
+    }
+    void completeDevScan();
   }
 
   function submitCode() {
@@ -117,7 +171,7 @@ export default function Scan() {
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
@@ -126,7 +180,7 @@ export default function Scan() {
             subtitle="Scan QR or enter code"
             leading={
               <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
                 style={styles.iconButton}
@@ -149,7 +203,11 @@ export default function Scan() {
                 <Ionicons name="camera-outline" size={32} color={colors.lime} />
                 <Text style={styles.cameraFallbackTitle}>Camera needed</Text>
                 <Text style={styles.cameraFallbackText}>Allow camera access to scan.</Text>
-                <ZookButton onPress={() => void requestPermission()} tone="secondary" style={styles.permissionButton}>
+                <ZookButton
+                  onPress={() => void requestPermission()}
+                  tone="secondary"
+                  style={styles.permissionButton}
+                >
                   Allow camera
                 </ZookButton>
               </View>
@@ -206,7 +264,7 @@ export default function Scan() {
 
           {__DEV__ ? (
             <Pressable
-              onPress={() => void completeScan("zook-demo-approved")}
+              onPress={() => void completeDevScan()}
               accessibilityRole="button"
               accessibilityLabel="Demo scan"
               style={styles.devButton}
@@ -232,7 +290,9 @@ function ValidationMini({ label, state }: { label: string; state: ScanState }) {
       ) : (
         <Ionicons name={icon} size={15} color={color} />
       )}
-      <Text numberOfLines={1} style={styles.validationMiniText}>{label}</Text>
+      <Text numberOfLines={1} style={styles.validationMiniText}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -243,7 +303,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
-    paddingBottom: layout.bottomNavHeight + 40,
+    paddingBottom: layout.bottomNavContentPadding,
     gap: 10,
   },
   iconButton: {

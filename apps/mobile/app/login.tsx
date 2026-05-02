@@ -58,7 +58,7 @@ export default function Login() {
         keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
       >
         <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior="never"
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >

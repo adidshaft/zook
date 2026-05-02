@@ -108,7 +108,7 @@ export default function GymProfileScreen() {
 
   return (
     <ZookScreen>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {gym ? (
           <MobileHeader
             eyebrow="Gym profile"
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 16,
-    paddingBottom: layout.bottomNavHeight + 40,
+    paddingBottom: layout.bottomNavContentPadding,
   },
   heroCard: {
     gap: 16,
