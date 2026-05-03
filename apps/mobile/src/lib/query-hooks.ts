@@ -315,6 +315,7 @@ export interface ReceptionQueueRecord {
   id: string;
   status: string;
   checkedInAt: string;
+  branchName?: string | null;
   source?: string;
   suspiciousFlags?: string[] | null;
   rejectionReason?: string | null;
@@ -354,6 +355,19 @@ export interface OwnerDashboardData {
     notificationQueueCount?: number;
     aiUsageThisMonth?: number;
     trialDaysRemaining?: number;
+  };
+  branchScope?: {
+    selectedBranch?: {
+      id: string;
+      name: string;
+      isDefault?: boolean;
+    } | null;
+    defaultBranch?: {
+      id: string;
+      name: string;
+      isDefault?: boolean;
+    } | null;
+    inventoryScope?: "ORG_WIDE";
   };
   joinRequests?: Array<{
     id: string;

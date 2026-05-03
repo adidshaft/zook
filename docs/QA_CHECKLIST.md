@@ -31,6 +31,8 @@ pnpm dev:mobile
 - Receptionist: pending/flagged queue loads; approve/reject persists; manual attendance requires reason; offline payment requires reason; pickup code verifies via backend; fulfilled count updates after fulfillment.
 - Owner mobile: active members, check-ins, revenue, approvals, stock, and members use backend reads.
 - Owner/admin web: dashboard, members, attendance, plans, payments, notifications, shop, reports, staff, audit, and provider diagnostics load from API/read models.
+- Default Branch: owner dashboard and QR display show Default Branch context; membership plan creation stores the Default Branch; checkout/manual activation use a plan branch when present; `branchId` filters on dashboard/attendance/report endpoints reject branches from another org.
+- Multi-branch limitation: shop inventory, shop orders, payment records, and revenue/manual-cash reports are org-wide in this MVP because those tables do not yet carry `branchId`.
 - Platform admin: provider diagnostics load from `/api/platform/provider-status` and do not expose secret values.
 - Notifications: create a selected-member notification; confirm the in-app inbox receives it, mark-read persists, unread count falls, and tap routing opens the expected plan/order/membership/attendance screen.
 - Push: with `PUSH_PROVIDER=disabled`, product actions must still create in-app notifications and record provider-disabled delivery attempts without returning fake remote success.

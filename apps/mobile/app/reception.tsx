@@ -340,6 +340,7 @@ export default function Reception() {
                           {attempt.user?.name ?? attempt.user?.email ?? "Member check-in"}
                         </Text>
                         <Text style={styles.cardBody}>
+                          {attempt.branchName ?? "Default Branch"} ·{" "}
                           {attempt.plan?.name ?? "Membership"} ·{" "}
                           {deskReasonCopy(
                             Array.isArray(attempt.suspiciousFlags)

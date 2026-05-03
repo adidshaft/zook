@@ -263,6 +263,8 @@ Still open:
 
 ## Phase 7: Default-Branch-Centered Multi-Branch Readiness
 
+Status: partially completed in the 2026-05-03 default-branch readiness pass. Branch-required backend flows now resolve an active org branch through one guard instead of silently writing nullable/default values. Membership plan creation stores the Default Branch, membership checkout/manual activation use the plan branch when present and otherwise the Default Branch, dashboard/report/attendance endpoints validate `branchId` filters, and owner/reception/web surfaces show Default Branch context. Shop inventory and payments remain org-wide because the current schema has no branch field for products, stock movements, orders, or payments.
+
 Deliverables:
 
 - Audit branch usage in attendance, member home, receptionist queue, owner dashboard, shop inventory, plans, payments, and reports.
@@ -272,8 +274,15 @@ Deliverables:
 
 Acceptance:
 
-- No silent null branch for branch-required entities.
+- No silent null branch for branch-required membership/attendance entities.
 - UI and docs clearly say MVP is default-branch-centered but data model is multi-branch-ready.
+
+Still open:
+
+- Shop inventory, shop orders, payment records, and revenue/manual-cash reports are org-wide until branch fields are added.
+- Public member home/current membership responses still center on the active org/latest active membership; a full member-facing branch selector is out of scope.
+- Attendance QR generation is intentionally Default Branch only in this MVP pass.
+- Broader branch selector UI for web owner reports can be added after branch-backed stock/payment semantics exist.
 
 ## Phase 8: Mobile Role UI Retest
 

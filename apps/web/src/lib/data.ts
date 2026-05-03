@@ -93,6 +93,13 @@ function getDemoDashboardData(scope: "org" | "platform") {
     aiUsage: demoAiUsage,
     joinRequests: zookDemoFixtures.joinRequests,
     auditLogCount: zookDemoFixtures.auditLogs.length,
+    branchScope: {
+      branches: [{ id: "branch-default", name: "Default Branch", isDefault: true, active: true }],
+      defaultBranch: { id: "branch-default", name: "Default Branch", isDefault: true, active: true },
+      selectedBranch: { id: "branch-default", name: "Default Branch", isDefault: true, active: true },
+      mode: "default_branch",
+      inventoryScope: "ORG_WIDE"
+    },
     summary,
     platform: {
       aiUsageThisMonth: 18,
@@ -120,6 +127,7 @@ export async function getDashboardData(orgId?: string) {
         aiUsage: data.aiUsage,
         joinRequests: data.joinRequests,
         auditLogCount: data.auditLogCount,
+        branchScope: data.branchScope,
         summary: data.summary,
         platform: {
           aiUsageThisMonth: 0,
@@ -139,6 +147,13 @@ export async function getDashboardData(orgId?: string) {
       aiUsage: [],
       joinRequests: [],
       auditLogCount: 0,
+      branchScope: {
+        branches: [],
+        defaultBranch: null,
+        selectedBranch: null,
+        mode: "org_wide_missing_default",
+        inventoryScope: "ORG_WIDE"
+      },
       summary: zeroSummary,
       platform: {
         aiUsageThisMonth: data.aiUsageThisMonth,
@@ -191,6 +206,13 @@ export async function getEmptyDashboardData(orgId?: string) {
       aiUsage: [],
       joinRequests: [],
       auditLogCount: 0,
+      branchScope: {
+        branches: [],
+        defaultBranch: null,
+        selectedBranch: null,
+        mode: "org_wide_missing_default",
+        inventoryScope: "ORG_WIDE"
+      },
       summary: zeroSummary,
       platform: {
         aiUsageThisMonth: 0,

@@ -4,6 +4,7 @@ Last updated: 2026-05-03
 Branch: `ui-ux-production-polish-pass`
 Audit commit: `973080cd3ea0f76e090dc4601a323e4ab33a0c66`
 Runtime hardening commit: `ce0f9f1`
+Security/rate-limit hardening commit: `ca81cab`
 
 ## Current Status
 
@@ -109,6 +110,7 @@ Known polish themes:
 - AI: OpenAI path has timeout handling, structured response validation, and durable safety-block records. It still needs configured-provider QA, broader safety evaluation, and staging evidence before production readiness is claimed.
 - Storage: production object storage needs configured S3/R2 credentials, upload/download QA, and public/private asset validation against real infrastructure.
 - Rate limiting: local uses in-process memory. Phase 6 added an Upstash Redis REST-backed store, safe diagnostics, and production runtime/preflight guards against memory or disabled rate limiting. A real Upstash database has not been configured or load-tested yet.
+- Branch readiness: the MVP is Default-Branch-centered but multi-branch-ready in the data model. Membership and attendance branch-required flows now fail if the active/default branch is missing; membership checkout/manual activation use the plan branch when a plan is branch-specific. Owner/reception/web surfaces show Default Branch context. Shop inventory, shop orders, payment records, and revenue/manual-cash reports remain org-wide because those tables do not yet carry `branchId`.
 
 Payment-specific hardening gaps found in the audit:
 
@@ -145,7 +147,7 @@ Payment-specific hardening gaps found in the audit:
 - Scheduled notification dispatcher and local/staging test-notification hook.
 - OpenAI provider and safety validation.
 - Full DB-backed acceptance coverage and manual mobile simulator/device pass.
-- Multi-branch assumptions documented in UI and validated in branch-required flows.
+- Full multi-branch product semantics for shop stock, payments, revenue reports, and member-facing branch switching.
 
 ## Checks Run In This Audit
 
@@ -234,11 +236,12 @@ Payment-specific hardening gaps found in the audit:
 - Member workout completion cannot mark empty workout plans complete, and trainer client summaries now read real feedback/workout report records.
 - Storage routes now fail closed for disabled uploads, public local file content requires public `FileAsset` visibility, and file reads/deletes no longer silently use the wrong active provider.
 - Public trainer visibility is enforced on public web/API surfaces, and mobile no longer uses stock media fallbacks for missing backend gym/trainer images.
+- Default Branch handling is now explicit in branch-required membership/attendance flows; `pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web` passed 19 acceptance tests including Default Branch plan/dashboard/QR validation.
 
 ## Intentionally Out Of Scope For This Audit Commit
 
 - Claiming Razorpay, push, OpenAI, or object storage production readiness.
-- Building full multi-branch UI.
+- Building full multi-branch UI or claiming branch-scoped shop/payment semantics.
 - Running remote EAS builds.
 - Running physical-device push or iPhone release QA.
 - Certifying distributed rate limiting with real Upstash Redis credentials and production traffic/load settings.

@@ -22,6 +22,12 @@ function requireDb() {
   }
 }
 
+function todayWindow() {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
 test("dashboard routes redirect unauthenticated users to login", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/login/);
@@ -62,6 +68,97 @@ test("owner login and membership plan creation use the live auth and api path", 
   await createMembershipPlan(page, String(activeOrgId), {
     name: "Playwright Plan"
   });
+});
+
+test("default branch scope is explicit for plans, dashboard filters, and QR tokens", async ({ page }) => {
+  requireDb();
+  await loginWithSessionCookie(page, "owner@zook.local");
+
+  const org = await seedAndGetOrg({ username: "iron-house" });
+  const defaultBranch = await prisma.branch.findFirstOrThrow({
+    where: { orgId: org.id, isDefault: true }
+  });
+  const secondaryBranch = await prisma.branch.create({
+    data: {
+      orgId: org.id,
+      name: `Playwright Secondary ${Date.now()}`,
+      address: org.address,
+      city: org.city,
+      state: org.state,
+      pincode: org.pincode,
+      active: true
+    }
+  });
+  const otherOrg = await seedAndGetOrg({ username: "peaklab" });
+  const otherOrgBranch = await prisma.branch.findFirstOrThrow({
+    where: { orgId: otherOrg.id, isDefault: true }
+  });
+
+  const plan = await createMembershipPlan(page, org.id, {
+    name: `Playwright Default Branch Plan ${Date.now()}`
+  });
+  expect(plan?.branchId).toBe(defaultBranch.id);
+
+  const [defaultUser, secondaryUser] = await Promise.all([
+    prisma.user.create({
+      data: {
+        email: `branch-default-${Date.now()}@zook.local`,
+        name: "Branch Default Member"
+      }
+    }),
+    prisma.user.create({
+      data: {
+        email: `branch-secondary-${Date.now()}@zook.local`,
+        name: "Branch Secondary Member"
+      }
+    })
+  ]);
+  const dateKey = new Date().toISOString().slice(0, 10);
+  await prisma.attendanceRecord.createMany({
+    data: [
+      {
+        orgId: org.id,
+        branchId: defaultBranch.id,
+        userId: defaultUser.id,
+        dateKey,
+        status: "APPROVED"
+      },
+      {
+        orgId: org.id,
+        branchId: secondaryBranch.id,
+        userId: secondaryUser.id,
+        dateKey,
+        status: "APPROVED"
+      }
+    ]
+  });
+  const expectedDefaultBranchAttendance = await prisma.attendanceRecord.count({
+    where: { orgId: org.id, branchId: defaultBranch.id, checkedInAt: { gte: todayWindow() } }
+  });
+
+  const dashboardPayload = await expectApiOk<{
+    branchScope: {
+      selectedBranch: { id: string; name: string; isDefault: boolean };
+      inventoryScope: "ORG_WIDE";
+    };
+    summary: { todayAttendance: number };
+  }>(await page.request.get(`/api/orgs/${org.id}/dashboard?branchId=${defaultBranch.id}`));
+  expect(dashboardPayload.data.branchScope.selectedBranch.id).toBe(defaultBranch.id);
+  expect(dashboardPayload.data.branchScope.selectedBranch.isDefault).toBe(true);
+  expect(dashboardPayload.data.branchScope.inventoryScope).toBe("ORG_WIDE");
+  expect(dashboardPayload.data.summary.todayAttendance).toBe(expectedDefaultBranchAttendance);
+
+  const wrongOrgBranchResponse = await page.request.get(
+    `/api/orgs/${org.id}/dashboard?branchId=${otherOrgBranch.id}`,
+  );
+  expect(wrongOrgBranchResponse.status()).toBe(404);
+
+  await expectApiOk(await page.request.post(`/api/orgs/${org.id}/attendance/qr-token`));
+  const qrToken = await prisma.attendanceQrToken.findFirstOrThrow({
+    where: { orgId: org.id },
+    orderBy: { issuedAt: "desc" }
+  });
+  expect(qrToken.branchId).toBe(defaultBranch.id);
 });
 
 test("member join request and tracking workout creation persist through api routes", async ({ page }) => {

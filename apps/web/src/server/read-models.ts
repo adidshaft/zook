@@ -45,6 +45,34 @@ export interface PlanExerciseSummary {
   completed: boolean;
 }
 
+type DashboardBranchFilter = {
+  branchId?: string;
+};
+
+async function getBranchScope(orgId: string, filters: DashboardBranchFilter = {}) {
+  const branches = await prisma.branch.findMany({
+    where: { orgId, active: true },
+    orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+    select: { id: true, name: true, isDefault: true, active: true }
+  });
+  const defaultBranch = branches.find((branch) => branch.isDefault) ?? null;
+  const selectedBranch = filters.branchId
+    ? branches.find((branch) => branch.id === filters.branchId) ?? null
+    : defaultBranch;
+
+  return {
+    branches,
+    defaultBranch,
+    selectedBranch,
+    mode: selectedBranch
+      ? selectedBranch.isDefault
+        ? "default_branch"
+        : "selected_branch"
+      : "org_wide_missing_default",
+    inventoryScope: "ORG_WIDE" as const
+  };
+}
+
 function optionalString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
@@ -178,12 +206,14 @@ async function enrichAttendanceRecords(records: Awaited<ReturnType<typeof prisma
   });
 }
 
-export async function getOrganizationDashboardData(orgId: string) {
+export async function getOrganizationDashboardData(orgId: string, filters: DashboardBranchFilter = {}) {
   const today = startOfToday();
   const nextWeek = endOfWindow(7);
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
+  const branchScope = await getBranchScope(orgId, filters);
+  const branchWhere = branchScope.selectedBranch ? { branchId: branchScope.selectedBranch.id } : {};
 
   const [
     organization,
@@ -199,17 +229,20 @@ export async function getOrganizationDashboardData(orgId: string) {
     aiUsage,
     aiUsageThisMonth,
     failedNotifications,
-    members,
     auditLogCount
   ] = await Promise.all([
     prisma.organization.findUniqueOrThrow({ where: { id: orgId } }),
-    prisma.memberSubscription.count({ where: { orgId, status: "ACTIVE" } }),
-    prisma.membershipJoinRequest.findMany({ where: { orgId, status: "pending" }, orderBy: { createdAt: "desc" }, take: 20 }),
-    prisma.memberSubscription.count({
-      where: { orgId, status: "ACTIVE", endsAt: { gte: today, lte: nextWeek } }
+    prisma.memberSubscription.count({ where: { orgId, status: "ACTIVE", ...branchWhere } }),
+    prisma.membershipJoinRequest.findMany({
+      where: { orgId, status: "pending", ...branchWhere },
+      orderBy: { createdAt: "desc" },
+      take: 20
     }),
-    prisma.attendanceRecord.count({ where: { orgId, checkedInAt: { gte: today } } }),
-    prisma.attendanceRecord.count({ where: { orgId, status: "PENDING_APPROVAL" } }),
+    prisma.memberSubscription.count({
+      where: { orgId, status: "ACTIVE", endsAt: { gte: today, lte: nextWeek }, ...branchWhere }
+    }),
+    prisma.attendanceRecord.count({ where: { orgId, checkedInAt: { gte: today }, ...branchWhere } }),
+    prisma.attendanceRecord.count({ where: { orgId, status: "PENDING_APPROVAL", ...branchWhere } }),
     prisma.payment.aggregate({
       where: {
         orgId,
@@ -228,7 +261,6 @@ export async function getOrganizationDashboardData(orgId: string) {
     prisma.aIUsageLog.findMany({ where: { orgId }, take: 8, orderBy: { createdAt: "desc" } }),
     prisma.aIUsageLog.count({ where: { orgId, createdAt: { gte: monthStart } } }),
     prisma.notification.count({ where: { orgId, status: { in: ["FAILED", "SCHEDULED"] } } }),
-    prisma.memberProfile.count({ where: { orgId } }),
     prisma.auditLog.count({ where: { orgId } })
   ]);
 
@@ -243,9 +275,20 @@ export async function getOrganizationDashboardData(orgId: string) {
 
   return {
     organization,
+    branchScope,
     metrics: [
-      { label: "Today attendance", value: String(todayAttendance), delta: "QR scans and entry codes" },
-      { label: "Active members", value: String(activeMembers || members), delta: `${joinRequests.length} join requests` },
+      {
+        label: "Today attendance",
+        value: String(todayAttendance),
+        delta: branchScope.selectedBranch
+          ? `${branchScope.selectedBranch.name} QR scans`
+          : "Default Branch missing"
+      },
+      {
+        label: "Active members",
+        value: String(activeMembers),
+        delta: `${joinRequests.length} join requests`
+      },
       { label: "Expiring soon", value: String(expiringMemberships), delta: "next 7 days" },
       {
         label: "Cash collected",
@@ -450,19 +493,23 @@ export async function getActiveMembershipData(userId: string, preferredOrgId?: s
   };
 }
 
-export async function getOrganizationAttendanceToday(orgId: string) {
+export async function getOrganizationAttendanceToday(orgId: string, filters: DashboardBranchFilter = {}) {
   const today = startOfToday();
   const records = await prisma.attendanceRecord.findMany({
-    where: { orgId, checkedInAt: { gte: today } },
+    where: { orgId, checkedInAt: { gte: today }, ...(filters.branchId ? { branchId: filters.branchId } : {}) },
     take: 100,
     orderBy: { checkedInAt: "desc" }
   });
   return enrichAttendanceRecords(records, orgId);
 }
 
-export async function getOrganizationPendingAttendance(orgId: string) {
+export async function getOrganizationPendingAttendance(orgId: string, filters: DashboardBranchFilter = {}) {
   const records = await prisma.attendanceRecord.findMany({
-    where: { orgId, status: { in: ["PENDING_APPROVAL", "FLAGGED"] } },
+    where: {
+      orgId,
+      status: { in: ["PENDING_APPROVAL", "FLAGGED"] },
+      ...(filters.branchId ? { branchId: filters.branchId } : {})
+    },
     take: 100,
     orderBy: { checkedInAt: "desc" }
   });

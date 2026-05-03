@@ -115,6 +115,10 @@ export default function Owner() {
     dashboard?.summary?.revenuePaise ??
     payments.reduce((sum, payment) => sum + payment.amountPaise, 0) +
       orders.reduce((sum, order) => sum + order.totalPaise, 0);
+  const branchName =
+    dashboard?.branchScope?.selectedBranch?.name ??
+    dashboard?.branchScope?.defaultBranch?.name ??
+    "Default Branch";
   const memberSearchTerm = memberSearch.trim().toLowerCase();
   const members = membersQuery.data?.members ?? [];
   const paymentExceptionCount = payments.filter((payment) => payment.status !== "SUCCEEDED").length;
@@ -277,7 +281,7 @@ export default function Owner() {
               <MetricTile
                 label="Active members"
                 value={formatCompactNumber(activeMembers)}
-                detail="Main Branch"
+                detail={branchName}
                 tone="lime"
                 icon="people-outline"
                 style={styles.commandMetric}
@@ -472,7 +476,7 @@ export default function Owner() {
                   <GlassCard key={attempt.id} contentStyle={styles.stack}>
                     <ListRow
                       title={attempt.user?.name ?? attempt.user?.email ?? "Member check-in"}
-                      subtitle={`${titleCase(attempt.status)} · ${cleanReviewReason(Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null)}`}
+                      subtitle={`${attempt.branchName ?? "Default Branch"} · ${titleCase(attempt.status)} · ${cleanReviewReason(Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null)}`}
                       leading={
                         <IconBubble
                           icon={attempt.status === "FLAGGED" ? "alert-outline" : "qr-code-outline"}

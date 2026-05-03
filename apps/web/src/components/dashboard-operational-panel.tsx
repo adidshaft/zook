@@ -67,6 +67,14 @@ type OrganizationSnapshot = {
   contactEmail?: string | null;
 };
 
+type BranchScopeSnapshot = {
+  branches: Array<{ id: string; name: string; isDefault: boolean; active: boolean }>;
+  defaultBranch: { id: string; name: string; isDefault: boolean; active: boolean } | null;
+  selectedBranch: { id: string; name: string; isDefault: boolean; active: boolean } | null;
+  mode: string;
+  inventoryScope: string;
+};
+
 type JoinRequestRow = {
   id: string;
   userId: string;
@@ -295,6 +303,7 @@ export function DashboardOperationalPanel({
   sectionKey,
   organization,
   summary,
+  branchScope,
   auditLogCount,
   initialJoinRequests,
   initialNotifications,
@@ -305,6 +314,7 @@ export function DashboardOperationalPanel({
   sectionKey: string;
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
+  branchScope: BranchScopeSnapshot;
   auditLogCount: number;
   initialJoinRequests: JoinRequestRow[];
   initialNotifications: NotificationSnapshot[];
@@ -369,6 +379,7 @@ export function DashboardOperationalPanel({
   const shopOrders = shopOrdersState.data?.orders ?? [];
   const auditLogs = auditLogsState.data?.auditLogs ?? [];
   const aiUsage = aiUsageState.data?.usage ?? initialAiUsage;
+  const selectedBranchName = branchScope.selectedBranch?.name ?? "Default Branch missing";
 
   const planNamesById = new Map(membershipPlans.map((plan) => [plan.id, plan.name]));
   const staffUsersById = new Map(staffUsers.map((user) => [user.id, user]));
@@ -448,10 +459,17 @@ export function DashboardOperationalPanel({
               <ReadoutGrid
                 className="mt-5"
                 items={[
-                  {
-                    label: "Today scans",
-                    value: formatCompactNumber(summary.todayAttendance),
-                    meta: "Members receive visible entry codes",
+                {
+                  label: "Branch scope",
+                  value: selectedBranchName,
+                  meta: branchScope.selectedBranch
+                    ? "QR and member attendance use this branch"
+                    : "Add a default branch before production launch",
+                },
+                {
+                  label: "Today scans",
+                  value: formatCompactNumber(summary.todayAttendance),
+                  meta: "Members receive visible entry codes",
                   },
                   {
                     label: "Join mode",
@@ -901,6 +919,11 @@ export function DashboardOperationalPanel({
               columns={1}
               items={[
                 {
+                  label: "Stock scope",
+                  value: branchScope.inventoryScope === "ORG_WIDE" ? "Org-wide" : selectedBranchName,
+                  meta: "Branch-level stock is a later multi-branch enhancement",
+                },
+                {
                   label: "Pending payment",
                   value: formatCompactNumber(queuedOrders.length),
                   meta: "Orders still waiting to settle",
@@ -1335,6 +1358,11 @@ export function DashboardOperationalPanel({
             className="mt-5"
             columns={2}
             items={[
+              {
+                label: "Branch scope",
+                value: selectedBranchName,
+                meta: "Attendance and memberships are branch-filterable",
+              },
               {
                 label: "Active members",
                 value: formatCompactNumber(summary.activeMembers),

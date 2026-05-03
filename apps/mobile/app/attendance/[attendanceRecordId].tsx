@@ -89,7 +89,7 @@ export default function AttendanceResultScreen() {
   const code = record.entryCode ?? record.id.slice(-8).toUpperCase();
   const branchName =
     record.branchName === "Default Branch"
-      ? "Default branch"
+      ? "Default Branch"
       : (record.branchName ?? "Assigned branch");
   const planName = record.planName ?? "Active membership";
   const firstTrainerClientWithPlan =

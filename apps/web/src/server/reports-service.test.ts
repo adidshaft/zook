@@ -61,12 +61,14 @@ describe("reports service helpers", () => {
         from: "2026-04-01",
         to: "2026-04-30",
         planId: "plan_1",
-        paymentMode: "CASH"
+        paymentMode: "CASH",
+        branchId: "branch_default"
       })
     );
 
     expect(filters.planId).toBe("plan_1");
     expect(filters.paymentMode).toBe("CASH");
+    expect(filters.branchId).toBe("branch_default");
     expect(filters.from?.getHours()).toBe(0);
     expect(filters.from?.getMinutes()).toBe(0);
     expect(filters.to?.getHours()).toBe(23);

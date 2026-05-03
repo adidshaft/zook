@@ -486,6 +486,21 @@ function attendanceWithEntryCode<T extends { id: string }>(record: T) {
   return { ...record, entryCode: entryCodeForAttendanceId(record.id) };
 }
 
+async function resolveOrgBranch(orgId: string, branchId?: string | null) {
+  const branch = branchId
+    ? await prisma.branch.findFirst({ where: { id: branchId, orgId, active: true } })
+    : await prisma.branch.findFirst({ where: { orgId, isDefault: true, active: true } });
+  if (!branch) {
+    throw notFoundError(branchId ? "Branch not found" : "Default branch not found");
+  }
+  return branch;
+}
+
+function queryBranchId(request: NextRequest) {
+  const value = request.nextUrl.searchParams.get("branchId")?.trim();
+  return value || undefined;
+}
+
 async function enrichAttendanceRecords<
   T extends { id: string; branchId: string; subscriptionId?: string | null }
 >(records: T[]) {
@@ -3354,7 +3369,11 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
-    return ok(await getOrganizationDashboardData(orgId));
+    const branchId = queryBranchId(request);
+    if (branchId) {
+      await resolveOrgBranch(orgId, branchId);
+    }
+    return ok(await getOrganizationDashboardData(orgId, clean({ branchId })));
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members"])) {
     const orgId = path[1]!;
@@ -3366,7 +3385,11 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "ORG_VIEW_REPORTS");
-    return ok(await getOrganizationDashboardData(orgId));
+    const branchId = queryBranchId(request);
+    if (branchId) {
+      await resolveOrgBranch(orgId, branchId);
+    }
+    return ok(await getOrganizationDashboardData(orgId, clean({ branchId })));
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "location", "resolve"])) {
     const orgId = path[1]!;
@@ -3542,6 +3565,9 @@ async function handleReports(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireAuth(ctx);
     const filters = parseReportFilters(request.nextUrl.searchParams);
+    if (filters.branchId) {
+      await resolveOrgBranch(orgId, filters.branchId);
+    }
 
     if (
       !canExportOrgReport({
@@ -3592,13 +3618,14 @@ async function handleReports(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireAuth(ctx);
+    const filters = parseReportFilters(request.nextUrl.searchParams);
+    if (filters.branchId) {
+      await resolveOrgBranch(orgId, filters.branchId);
+    }
     if (!canExportOrgReport({ report: "audit-logs", ctx, actorUserId: userId })) {
       throw forbiddenError("You do not have permission to export audit logs.");
     }
-    const rows = await reportsService.auditLogReport(
-      orgId,
-      parseReportFilters(request.nextUrl.searchParams),
-    );
+    const rows = await reportsService.auditLogReport(orgId, filters);
     await writeAuditLog({
       request,
       orgId,
@@ -3650,11 +3677,11 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_PLAN_MANAGE");
     const body = membershipPlanSchema.parse(await readJson(request));
-    const branch = await prisma.branch.findFirst({ where: { orgId, isDefault: true } });
+    const branch = await resolveOrgBranch(orgId);
     const plan = await prisma.membershipPlan.create({
       data: clean({
         orgId,
-        branchId: branch?.id,
+        branchId: branch.id,
         name: body.name,
         description: body.description,
         type: body.type,
@@ -3700,6 +3727,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         throw notFoundError("Membership plan not found");
       }
     }
+    const defaultBranch = await resolveOrgBranch(orgId);
     await resolveValidatedReferral({
       orgId,
       userId,
@@ -3724,6 +3752,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const requestRow = await prisma.membershipJoinRequest.create({
       data: clean({
         orgId,
+        branchId: defaultBranch.id,
         userId,
         planId: body.planId,
         referralCode: body.referralCode,
@@ -4234,11 +4263,10 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     );
     const orgId = path[1]!;
     const body = subscriptionCheckoutSchema.parse(await readJson(request));
-    const [organization, plan, branch, existingSubscription, approvedJoinRequest, user] =
+    const [organization, plan, existingSubscription, approvedJoinRequest, user] =
       await Promise.all([
         prisma.organization.findUnique({ where: { id: orgId } }),
         prisma.membershipPlan.findFirst({ where: { id: body.planId, orgId, active: true } }),
-        prisma.branch.findFirst({ where: { orgId, isDefault: true } }),
         prisma.memberSubscription.findFirst({
           where: { orgId, memberUserId: userId, status: { in: ["PENDING_PAYMENT", "ACTIVE"] } },
           orderBy: { createdAt: "desc" },
@@ -4249,9 +4277,10 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         }),
         prisma.user.findUniqueOrThrow({ where: { id: userId } }),
       ]);
-    if (!organization || !plan || !branch) {
-      return fail("NOT_FOUND", "Plan or branch not found", 404);
+    if (!organization || !plan) {
+      return fail("NOT_FOUND", "Plan not found", 404);
     }
+    const branch = await resolveOrgBranch(orgId, plan.branchId);
     if (
       organization.status === "SUSPENDED" ||
       organization.status === "CANCELLED" ||
@@ -4433,8 +4462,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ATTENDANCE_QR_DISPLAY");
-    const branch = await prisma.branch.findFirst({ where: { orgId, isDefault: true } });
-    if (!branch) return fail("NOT_FOUND", "Default branch not found", 404);
+    const branch = await resolveOrgBranch(orgId);
     const payload = createSignedQrToken({
       orgId,
       branchId: branch.id,
@@ -4464,8 +4492,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     if (!orgId) {
       throw validationError("Select a gym before using developer scan.");
     }
-    const branch = await prisma.branch.findFirst({ where: { orgId, isDefault: true } });
-    if (!branch) return fail("NOT_FOUND", "Default branch not found", 404);
+    const branch = await resolveOrgBranch(orgId);
     const existing = await prisma.attendanceRecord.findUnique({
       where: {
         orgId_branchId_userId_dateKey: {
@@ -4704,12 +4731,15 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       (record) => entryCodeForAttendanceId(record.id) === code,
     );
     if (attendance) {
-      const user = await prisma.user.findUnique({ where: { id: attendance.userId } });
+      const [user, branch] = await Promise.all([
+        prisma.user.findUnique({ where: { id: attendance.userId } }),
+        prisma.branch.findUnique({ where: { id: attendance.branchId }, select: { name: true } }),
+      ]);
       return ok({
         match: {
           type: "attendance",
           valid: attendance.status === "APPROVED" || attendance.status === "PENDING_APPROVAL",
-          record: attendanceWithEntryCode(attendance),
+          record: { ...attendanceWithEntryCode(attendance), branchName: branch?.name ?? null },
           user: user
             ? { id: user.id, name: user.name, email: user.email, phone: user.phone }
             : null,
@@ -4737,12 +4767,20 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "ATTENDANCE_APPROVE");
+    const branchId = queryBranchId(request);
+    if (branchId) {
+      await resolveOrgBranch(orgId, branchId);
+    }
     const records = await prisma.attendanceRecord.findMany({
-      where: { orgId, status: { in: ["PENDING_APPROVAL", "FLAGGED"] } },
+      where: {
+        orgId,
+        status: { in: ["PENDING_APPROVAL", "FLAGGED"] },
+        ...(branchId ? { branchId } : {}),
+      },
       take: 40,
       orderBy: { checkedInAt: "desc" },
     });
-    const [users, profiles, subscriptions, plans] = await Promise.all([
+    const [users, profiles, subscriptions, plans, branches] = await Promise.all([
       prisma.user.findMany({ where: { id: { in: records.map((record) => record.userId) } } }),
       prisma.memberProfile.findMany({
         where: { orgId, userId: { in: records.map((record) => record.userId) } },
@@ -4768,7 +4806,12 @@ async function handleAttendance(request: NextRequest, path: string[]) {
           },
         },
       }),
+      prisma.branch.findMany({
+        where: { id: { in: [...new Set(records.map((record) => record.branchId))] } },
+        select: { id: true, name: true },
+      }),
     ]);
+    const branchNamesById = new Map(branches.map((branch) => [branch.id, branch.name]));
     return ok({
       records: records.map((record) => {
         const user = users.find((candidate) => candidate.id === record.userId) ?? null;
@@ -4778,7 +4821,14 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         const plan = subscription
           ? (plans.find((candidate) => candidate.id === subscription.planId) ?? null)
           : null;
-        return { ...record, user, profile, subscription, plan };
+        return {
+          ...record,
+          branchName: branchNamesById.get(record.branchId) ?? null,
+          user,
+          profile,
+          subscription,
+          plan,
+        };
       }),
     });
   }
@@ -4786,13 +4836,21 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "ATTENDANCE_APPROVE");
-    return ok({ records: await getOrganizationAttendanceToday(orgId) });
+    const branchId = queryBranchId(request);
+    if (branchId) {
+      await resolveOrgBranch(orgId, branchId);
+    }
+    return ok({ records: await getOrganizationAttendanceToday(orgId, clean({ branchId })) });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "attendance", "pending"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "ATTENDANCE_APPROVE");
-    return ok({ records: await getOrganizationPendingAttendance(orgId) });
+    const branchId = queryBranchId(request);
+    if (branchId) {
+      await resolveOrgBranch(orgId, branchId);
+    }
+    return ok({ records: await getOrganizationPendingAttendance(orgId, clean({ branchId })) });
   }
   if (
     request.method === "POST" &&
@@ -4905,10 +4963,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const body = manualAttendanceSchema.parse(await readJson(request));
     requireManualOverrideReason(body.reason);
     await assertOrgUser({ orgId, userId: body.memberUserId, role: "MEMBER" });
-    const branch = body.branchId
-      ? await prisma.branch.findFirst({ where: { id: body.branchId, orgId } })
-      : await prisma.branch.findFirst({ where: { orgId, isDefault: true } });
-    if (!branch) return fail("NOT_FOUND", "Branch not found", 404);
+    const branch = await resolveOrgBranch(orgId, body.branchId);
     const duplicate = await prisma.attendanceRecord.findUnique({
       where: {
         orgId_branchId_userId_dateKey: {
@@ -5150,13 +5205,11 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       if (!planId) {
         throw validationError("A plan is required for manual membership activation.");
       }
-      const [plan, branch] = await Promise.all([
-        prisma.membershipPlan.findFirst({ where: { id: planId, orgId, active: true } }),
-        prisma.branch.findFirst({ where: { orgId, isDefault: true } }),
-      ]);
-      if (!plan || !branch) {
-        throw notFoundError("Plan or branch not found");
+      const plan = await prisma.membershipPlan.findFirst({ where: { id: planId, orgId, active: true } });
+      if (!plan) {
+        throw notFoundError("Membership plan not found");
       }
+      const branch = await resolveOrgBranch(orgId, plan.branchId);
       const window = computeSubscriptionWindow(
         clean({
           id: plan.id,

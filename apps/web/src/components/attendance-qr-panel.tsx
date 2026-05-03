@@ -38,7 +38,7 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
         <div>
           <h2 className="text-xl font-semibold">Live attendance token</h2>
           <p className="mt-1 text-sm text-white/45">
-            Use this token on the mobile scanner or paste it in simulator mode.
+            Default Branch QR for the mobile scanner or simulator paste flow.
           </p>
         </div>
         <button
@@ -62,6 +62,7 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
             </pre>
             <div className="mt-4 flex flex-wrap gap-2">
               <Pill tone="lime">Backend signed</Pill>
+              <Pill>Default Branch</Pill>
               {expiresAt ? <Pill>Expires {new Date(expiresAt).toLocaleTimeString()}</Pill> : null}
             </div>
           </>

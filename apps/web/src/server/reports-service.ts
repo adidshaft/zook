@@ -151,6 +151,7 @@ export class ReportsService {
       attendanceId: record.id,
       memberId: record.userId,
       memberName: usersById.get(record.userId)?.name ?? "",
+      branchId: record.branchId,
       status: record.status,
       source: record.source,
       checkedInAt: formatDate(record.checkedInAt),
@@ -218,7 +219,8 @@ export class ReportsService {
         orgId,
         status: "ACTIVE",
         endsAt: between(filters.from, filters.to) ?? { not: null },
-        ...(filters.planId ? { planId: filters.planId } : {})
+        ...(filters.planId ? { planId: filters.planId } : {}),
+        ...(filters.branchId ? { branchId: filters.branchId } : {})
       },
       orderBy: { endsAt: "asc" },
       take: 500
@@ -249,7 +251,8 @@ export class ReportsService {
       where: {
         orgId,
         ...(createdAt ? { createdAt } : {}),
-        ...(filters.planId ? { planId: filters.planId } : {})
+        ...(filters.planId ? { planId: filters.planId } : {}),
+        ...(filters.branchId ? { branchId: filters.branchId } : {})
       },
       orderBy: { createdAt: "desc" },
       take: 500

@@ -81,6 +81,7 @@ export function DashboardShell({
   const title = titleFromSection(section);
   const sectionKey = section?.join("/") ?? "";
   const activeOrg = data.orgs[0];
+  const selectedBranch = data.branchScope.selectedBranch;
 
   if (!activeOrg) {
     return (
@@ -153,6 +154,10 @@ export function DashboardShell({
               <div className="mt-4 flex flex-wrap gap-2">
                 <StatusPill value={formatEnumLabel(activeOrg.status)} />
                 <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />
+                <StatusPill
+                  value={selectedBranch?.isDefault ? "Default Branch" : selectedBranch?.name ?? "Default Branch missing"}
+                  tone={selectedBranch ? "lime" : "amber"}
+                />
               </div>
             </div>
 
@@ -193,6 +198,11 @@ export function DashboardShell({
                 columns={1}
                 items={[
                   {
+                    label: "Branch scope",
+                    value: selectedBranch?.name ?? "Default Branch missing",
+                    meta: "MVP mobile flows use the active/default branch",
+                  },
+                  {
                     label: "Attendance mode",
                     value: formatEnumLabel(activeOrg.attendanceMode),
                     meta: `${data.summary.todayAttendance} QR entry scans today`,
@@ -223,6 +233,10 @@ export function DashboardShell({
                   </Pill>
                   <StatusPill value={formatEnumLabel(activeOrg.status)} />
                   <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />
+                  <StatusPill
+                    value={selectedBranch?.isDefault ? "Default Branch" : selectedBranch?.name ?? "Default Branch missing"}
+                    tone={selectedBranch ? "lime" : "amber"}
+                  />
                 </div>
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
                   {title}
@@ -303,6 +317,11 @@ export function DashboardShell({
                       meta: "Current operating geography",
                     },
                     {
+                      label: "Branch scope",
+                      value: selectedBranch?.name ?? "Default Branch missing",
+                      meta: "Branch-ready data, default-branch-centered MVP",
+                    },
+                    {
                       label: "Join mode",
                       value: formatEnumLabel(activeOrg.joinMode),
                       meta: `${data.summary.joinRequests} inbound requests`,
@@ -340,6 +359,7 @@ export function DashboardShell({
               contactPhone: activeOrg.contactPhone,
             }}
             summary={data.summary}
+            branchScope={data.branchScope}
             auditLogCount={data.auditLogCount}
             initialJoinRequests={data.joinRequests}
             initialNotifications={data.notifications}
