@@ -26,9 +26,11 @@ Target modes:
 - `PUSH_PROVIDER=mock|expo|disabled`
 - `STORAGE_PROVIDER=local|s3|r2`
 
-Current implementation accepts `disabled` only as a user-facing concept in docs/product direction, not as a provider registry value. Adding this is the first runtime hardening task.
+Current implementation now accepts `disabled` as a first-class payment, AI, and push provider mode. Production/staging env still needs real provider choices and staging validation before launch.
 
 ## Phase 1: Runtime Configuration And Provider Guards
+
+Status: completed in commit `ce0f9f1`.
 
 Deliverables:
 
@@ -53,6 +55,8 @@ Acceptance:
 - Production cannot silently use local file storage when production file uploads are enabled.
 
 ## Phase 2: Payment Production Hardening
+
+Status: partially completed in the 2026-05-03 payment hardening pass. Backend trust-boundary, expiry, idempotency, provider-failure cleanup, and webhook quarantine work has landed locally; Razorpay certification and full payment UI/reconciliation remain open.
 
 Deliverables:
 
@@ -79,6 +83,24 @@ Acceptance:
 Not certified until:
 
 - Razorpay test credentials and signed webhook delivery are verified on staging.
+
+Completed in this pass:
+
+- Generic checkout rejects membership/shop payment purposes and direct `subscriptionId`/`shopOrderId` metadata.
+- Membership/shop confirmation verifies backend-owned target org, user, purpose, and amount before paid side effects.
+- Mock success completion fails for expired sessions.
+- Checkout provider failures mark payment sessions failed and related pending subscriptions/orders cancelled.
+- `Payment.sessionId` is unique and confirmation uses session-scoped upsert.
+- Shop inventory movement and pickup-code creation happen only after a conditional `PENDING_PAYMENT` order transition.
+- Verified Razorpay webhooks that fail business-state application are quarantined with attempt details.
+- DB-gated acceptance coverage was added for generic checkout boundaries, expired mock completion, and duplicate confirmation idempotency.
+
+Still open:
+
+- Exercise Razorpay test order creation and signed webhook delivery with real test credentials.
+- Complete the non-mock user-facing checkout handoff/result UX.
+- Add owner/platform reconciliation views for event/attempt review.
+- Run high-concurrency duplicate webhook acceptance against staging-like Postgres.
 
 ## Phase 3: Push Notifications And Deep Links
 
@@ -264,6 +286,6 @@ Acceptance:
 
 - Install, lint, typecheck, tests, Prisma generate, local migration deploy, local preflight, web dev start, `/api/health`, `/api/ready`, and Expo production config checks were run on 2026-05-03.
 - Lint passes with seven existing mobile unused-var warnings.
-- `pnpm test` passes but mobile/web package scripts report no files found; coverage remains incomplete.
+- `pnpm test` passes and now runs package-local core, web, and mobile tests. Coverage remains incomplete.
 - Production release preflight correctly fails against local `.env`, which is the right safety behavior.
 - Remote EAS builds, physical-device push QA, OpenAI provider QA, Razorpay webhook QA, object storage QA, and DB-backed acceptance were not run.

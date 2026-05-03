@@ -55,7 +55,10 @@ export async function loginWithOtp(page: Page, email: string) {
   await page.getByRole("button", { name: "Send OTP" }).click();
   const code = await getLatestEmailOtpFromMockOrUseDevCode(page, email);
   await page.getByLabel("OTP").fill(code);
-  await page.getByRole("button", { name: "Verify and continue" }).click();
+  await Promise.all([
+    page.waitForURL(/\/(?:dashboard|platform)(?:$|[/?#])/, { timeout: 10_000 }),
+    page.getByRole("button", { name: "Verify and continue" }).click()
+  ]);
 }
 
 export async function seedAndGetOrg(input: { username?: string; name?: string } = {}) {

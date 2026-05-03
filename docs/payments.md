@@ -1,6 +1,6 @@
 # Payments
 
-Last updated: 24 April 2026
+Last updated: 3 May 2026
 
 ## Policy
 
@@ -24,12 +24,21 @@ Razorpay env:
 
 ## Current Flow
 
+### Backend-Owned Checkout Routes
+
+- membership purchases use `POST /api/orgs/{orgId}/subscriptions`
+- shop purchases use `POST /api/shop/orders`
+- the generic `POST /api/payments/checkout` route cannot create membership or shop-order sessions
+- generic checkout metadata cannot directly reference `subscriptionId` or `shopOrderId`
+- membership/shop activation targets are verified against the session org, user, purpose, and amount before any paid side effect is applied
+
 ### Mock
 
 - default local mode
 - creates a hosted session at `/checkout/mock/{sessionId}`
 - server-side completion happens through `POST /api/payments/mock/{sessionId}/complete`
 - membership activation and shop stock movement happen only after backend completion
+- expired sessions cannot be completed as successful payments
 
 ### Razorpay
 
@@ -64,15 +73,18 @@ Successful server-side payment processing can activate:
 
 Idempotency protections include:
 
+- one `Payment` per `PaymentSession.sessionId`
 - unique provider event tracking
 - no double membership activation
 - no double coupon redemption
 - no double referral redemption
 - no double stock decrement for shop orders
+- conditional shop-order transition from `PENDING_PAYMENT` before inventory movement or pickup-code creation
+- webhook failure quarantine when provider verification succeeds but business-state application fails
 
 ## Reconciliation Data
 
-Phase 4 persists:
+The payment runtime persists:
 
 - `PaymentSession`
 - `Payment`
@@ -87,11 +99,47 @@ This gives pilot operators a durable trail for duplicate, failed, and quarantine
 - staging can use `PAYMENT_PROVIDER=razorpay` with `RAZORPAY_MODE=test`
 - run `pnpm release:preflight` before enabling Razorpay on staging
 
+## Razorpay Test Setup
+
+Use this only for staging or a controlled local tunnel. Do not mark payments production-certified until the signed webhook path has been exercised with real Razorpay test credentials.
+
+1. Set:
+
+```bash
+APP_ENV=staging
+API_MODE=backend
+PAYMENT_PROVIDER=razorpay
+RAZORPAY_MODE=test
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_WEBHOOK_SECRET=...
+```
+
+2. Expose the web app on a public HTTPS URL for webhook testing.
+3. In Razorpay Dashboard, create a webhook pointing to:
+
+```text
+https://<your-web-host>/api/payments/webhooks/razorpay
+```
+
+4. Subscribe to payment/order/refund events used by Zook's parser, including captured, failed, paid, and refunded events.
+5. Run `pnpm release:preflight` with the staging env.
+6. Create a membership or shop checkout through the backend route, complete the Razorpay test checkout, and confirm:
+
+- the redirect/result page only shows status
+- the webhook creates or updates `PaymentEvent` and `PaymentWebhookAttempt`
+- membership activation or shop inventory movement happens only after backend confirmation
+- duplicate webhook delivery returns idempotently
+- signature failures are rejected
+- application failures are quarantined without exposing secrets
+
 ## Known Limitations
 
 - the non-mock checkout handoff page is intentionally conservative and does not embed a direct client-side Razorpay flow
 - refund and dispute lifecycle persistence is wired through the provider/runtime path, but full operations UI for reconciliation is still a Phase 5 candidate
 - production rollout should stay behind a limited pilot until real webhook traffic is observed
+- Razorpay test credentials and real signed webhook delivery were not verified during the 2026-05-03 hardening pass
+- payment application is more idempotent, but high-concurrency webhook behavior still needs staging/DB acceptance under realistic duplicate delivery
 
 ## Future Notes
 

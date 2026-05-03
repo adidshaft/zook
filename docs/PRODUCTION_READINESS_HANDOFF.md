@@ -3,6 +3,7 @@
 Last updated: 2026-05-03
 Branch: `ui-ux-production-polish-pass`
 Audit commit: `973080cd3ea0f76e090dc4601a323e4ab33a0c66`
+Runtime hardening commit: `ce0f9f1`
 
 ## Current Status
 
@@ -37,7 +38,7 @@ Current guardrails:
 - Mock payment completion is server-gated by `isMockPaymentCompletionAllowed`.
 - Provider diagnostics expose provider names, status, missing env names, and boolean env presence only.
 
-Phase 1 runtime hardening adds first-class `disabled` provider diagnostics for payments, AI, and push. Feature routes should surface controlled unavailable errors when disabled is selected.
+Phase 1 runtime hardening adds first-class `disabled` provider diagnostics for payments, AI, and push. Feature routes surface controlled unavailable errors when disabled is selected.
 
 Additional runtime audit findings to keep fixing:
 
@@ -60,7 +61,7 @@ Additional runtime audit findings to keep fixing:
 
 - Mobile offline demo remains in `apps/mobile/src/lib/demo-api.ts` and must stay explicit/local-only.
 - Mock payment provider remains for local checkout and local mock completion. Production completion is blocked.
-- Razorpay provider code supports order creation and signed webhook parsing, but test credentials and webhook delivery were not verified in this audit.
+- Razorpay provider code supports order creation and signed webhook parsing. The 2026-05-03 payment hardening pass tightened backend activation semantics, expiry, idempotency, and webhook quarantine behavior, but test credentials and real webhook delivery were not verified.
 - AI can use mock locally or OpenAI when configured. OpenAI credentials and safety behavior were not verified in this audit.
 - Push persists in-app notifications and device records; Expo push path is provider-ready but physical-device push was not verified.
 - Storage supports local disk and S3/R2-compatible providers; object storage env and signed URL behavior were not verified against real infrastructure.
@@ -99,7 +100,7 @@ Known polish themes:
 
 ## Provider Integration Gaps
 
-- Payments: Razorpay test-mode checkout and webhook must be verified with real test credentials. Live readiness is not claimed. The generic checkout path also needs a stricter trust boundary before production because it accepts caller-supplied purpose, amount, and metadata that payment application later trusts.
+- Payments: Razorpay test-mode checkout and webhook must be verified with real test credentials. Live readiness is not claimed. The generic checkout route no longer accepts membership/shop activation targets, and backend confirmation now verifies org/user/purpose/amount before activating membership or shop records.
 - Push: Expo token/device flow needs physical iOS/Android QA and receipt polling is incomplete.
 - AI: OpenAI path needs configured-provider QA, timeout handling, structured response validation, and durable safety-block records.
 - Storage: production object storage needs configured S3/R2 credentials, upload/download QA, and public/private asset validation.
@@ -107,18 +108,17 @@ Known polish themes:
 
 Payment-specific hardening gaps found in the audit:
 
-- Generic checkout metadata must not be trusted for subscription/order activation without org/user ownership and amount verification.
-- Razorpay currently returns checkout data but no complete user-facing Razorpay Checkout/result flow.
-- Provider failure during checkout creation can leave pending subscriptions/orders without a retry/cleanup path.
-- Payment application should be made more atomic for real webhook concurrency.
-- Webhook processing needs local failure/quarantine updates when business-state application throws.
-- Session expiry is recorded but not consistently enforced during mock completion/status application.
+- Razorpay currently returns checkout data but no complete embedded user-facing Razorpay Checkout flow.
+- Payment application is more idempotent, but high-concurrency duplicate webhook delivery still needs DB-backed staging validation.
+- Owner/platform reconciliation screens for webhook events and attempts remain basic.
+- Refund/dispute operations UI is still incomplete.
+- Existing environments should be checked for duplicate `Payment.sessionId` rows before applying the unique-index migration outside this local database.
 
 ## Test Coverage Gaps
 
-- `pnpm test` passes core tests but reports no package-local mobile/web tests through their package scripts because current include/exclude patterns miss or exclude those files.
+- `pnpm test` now discovers core, web server, and mobile utility tests through package scripts.
 - Existing tests cover provider registry, runtime env basics, auth service, storage, push provider, payment provider, service helpers, mobile notification routing/preferences, and several web server helpers.
-- DB-backed acceptance and Playwright coverage were not run in this audit.
+- Fast Playwright smoke coverage runs with `pnpm test:web`. Additional payment hardening acceptance tests are DB-gated behind `RUN_DB_WEB_TESTS=1`.
 - Missing or incomplete automated coverage remains for full payment confirmation flows, trainer plan assignment E2E, shop pickup E2E, web dashboard org scoping, public profile/join modes, mobile role flows, provider-disabled UX, and wrong-org/wrong-role denial across every API route.
 
 ## Deployment Gaps
@@ -131,8 +131,8 @@ Payment-specific hardening gaps found in the audit:
 
 ## Launch Blockers
 
-- Payment trust-boundary hardening for generic checkout metadata, amount validation, idempotency, concurrency, expiry, and webhook failure handling.
 - Razorpay provider certification with test credentials and webhook delivery.
+- Full payment provider handoff UI and reconciliation workflows beyond the hardened backend confirmation path.
 - Production secrets, real URLs, non-demo seed posture, real email provider, and provider env configuration.
 - Fail-closed runtime profile validation and aligned mobile/server runtime precedence.
 - Distributed/shared rate limiting.
@@ -158,13 +158,40 @@ Payment-specific hardening gaps found in the audit:
 - `GET /api/health` on the dev server: returned 200.
 - `GET /api/ready` on the dev server: returned 200 with local mock/local provider diagnostics.
 
+## Additional Checks Run After Phase 1 Runtime Hardening
+
+- `pnpm --filter @zook/core test`: passed 57 tests.
+- `pnpm --filter @zook/web test`: passed 9 web server test files and 26 tests.
+- `pnpm --filter @zook/mobile test`: passed 2 mobile utility test files and 12 tests.
+- `pnpm typecheck`: passed.
+- `pnpm lint`: passed with the same 7 existing mobile unused-var warnings.
+- `pnpm test`: passed and now exercises core, web, and mobile package tests.
+- `APP_ENV=local API_MODE=backend pnpm preflight`: passed with local warnings.
+- Production-like `pnpm release:preflight` with disabled payment/AI/push, object storage selected, strong secrets, and non-local URLs: passed with warnings for intentionally disabled AI/push.
+- `APP_ENV=production API_MODE=offline-demo pnpm release:preflight`: failed as expected.
+- Invalid `APP_ENV=prodution` release preflight: failed as expected.
+- Production mobile config with backend API mode: passed.
+- Production mobile config with offline demo: failed as expected.
+- Local web dev smoke: `/api/health` and `/api/ready` returned 200.
+
+## Additional Checks Run During Payment Hardening
+
+- `pnpm db:generate`: passed after adding the payment session uniqueness migration.
+- `pnpm db:deploy`: applied `20260503010000_payment_session_unique` locally.
+- `pnpm --filter @zook/web typecheck`: passed.
+- `pnpm --filter @zook/db typecheck`: passed.
+- `pnpm --filter @zook/web test`: passed 9 web server test files and 26 tests.
+- `pnpm test:web`: passed 4 browser smoke tests; 9 DB-gated acceptance tests were skipped because `RUN_DB_WEB_TESTS` was not enabled.
+- `RUN_DB_WEB_TESTS=1 pnpm test:web`: passed 12 DB/browser acceptance tests; 1 guardian-minor test skipped because this local seeded minor already had a membership in progress.
+
 ## What This Phase Should Fix
 
-- Add central runtime validation for server and provider modes.
-- Add first-class disabled provider modes for payment, AI, and push.
-- Block production local storage when production upload is enabled.
-- Tighten diagnostics and tests so provider states are safe and explicit.
-- Update env/docs to match actual accepted provider selections.
+- Runtime validation and disabled provider modes are implemented.
+- Payment activation now trusts backend-owned membership/shop routes, not caller-supplied generic checkout metadata.
+- Mock success completion enforces session expiry.
+- Provider checkout failures mark the pending session and related membership/order as failed or cancelled.
+- Duplicate confirmation is guarded with a unique `Payment.sessionId` and conditional shop-order state transition.
+- Razorpay webhook processing quarantines verified events when business-state application fails.
 
 ## Intentionally Out Of Scope For This Audit Commit
 

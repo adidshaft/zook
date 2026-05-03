@@ -3598,6 +3598,12 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     );
     const body = checkoutSchema.parse(await readJson(request));
     getPaymentProviderOrThrow();
+    if (body.purpose === "MEMBERSHIP" || body.purpose === "SHOP_ORDER") {
+      throw validationError("Use the membership or shop checkout route for this payment purpose.");
+    }
+    if (body.metadata?.subscriptionId || body.metadata?.shopOrderId) {
+      throw validationError("Checkout metadata cannot directly reference membership or shop records.");
+    }
     if (body.userId && body.userId !== userId && !ctx.isPlatformAdmin) {
       throw forbiddenError("You cannot create a checkout session for another user.");
     }
@@ -3617,14 +3623,23 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
       }),
     });
-    const started = await startPaymentSessionCheckout({
-      session,
-      customer: clean({
-        name: customer?.name,
-        email: customer?.email,
-        phone: customer?.phone ?? undefined,
-      }),
-    });
+    let started;
+    try {
+      started = await startPaymentSessionCheckout({
+        session,
+        customer: clean({
+          name: customer?.name,
+          email: customer?.email,
+          phone: customer?.phone ?? undefined,
+        }),
+      });
+    } catch (error) {
+      await prisma.paymentSession.update({
+        where: { id: session.id },
+        data: { status: "FAILED", completedAt: new Date() },
+      });
+      throw error;
+    }
     return ok({
       session: started.session,
       checkoutUrl: started.checkoutUrl,
@@ -3798,18 +3813,52 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       return ok({ received: true, quarantined: true, providerEventId });
     }
 
-    const processed = await applyPaymentSessionStatus({
-      sessionId: paymentSession.id,
-      nextStatus: parsed?.paymentStatus ?? "FAILED",
-      provider: "razorpay",
-      ...((parsed?.providerPaymentId ?? parsed?.providerOrderId)
-        ? { providerRef: parsed?.providerPaymentId ?? parsed?.providerOrderId }
-        : {}),
-      paymentMode: "CARD",
-      ...(parsed?.amountPaise !== undefined ? { expectedAmountPaise: parsed.amountPaise } : {}),
-      createNotification: createDirectNotification,
-      ensureMembership: ensureOrganizationMembership,
-    });
+    let processed;
+    try {
+      processed = await applyPaymentSessionStatus({
+        sessionId: paymentSession.id,
+        nextStatus: parsed?.paymentStatus ?? "FAILED",
+        provider: "razorpay",
+        ...((parsed?.providerPaymentId ?? parsed?.providerOrderId)
+          ? { providerRef: parsed?.providerPaymentId ?? parsed?.providerOrderId }
+          : {}),
+        paymentMode: "CARD",
+        ...(parsed?.amountPaise !== undefined ? { expectedAmountPaise: parsed.amountPaise } : {}),
+        createNotification: createDirectNotification,
+        ensureMembership: ensureOrganizationMembership,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Payment application failed.";
+      await prisma.paymentEvent.update({
+        where: { id: event.id },
+        data: {
+          orgId: paymentSession.orgId,
+          userId: paymentSession.userId,
+          sessionId: paymentSession.id,
+          status: "QUARANTINED",
+          processedAt: new Date(),
+          processingError: errorMessage,
+        },
+      });
+      await prisma.paymentWebhookAttempt.update({
+        where: {
+          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+        },
+        data: {
+          status: "FAILED",
+          httpStatusCode: 200,
+          durationMs: Date.now() - startedAt,
+          completedAt: new Date(),
+          errorCode: "payment_application_failed",
+          errorMessage,
+          result: {
+            quarantined: true,
+            reason: "payment_application_failed",
+          } as Prisma.InputJsonValue,
+        },
+      });
+      return ok({ received: true, quarantined: true, providerEventId });
+    }
 
     await prisma.paymentEvent.update({
       where: { id: event.id },
@@ -3857,6 +3906,13 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const currentSession = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
     if (!currentSession) {
       throw notFoundError("Payment session not found");
+    }
+    if (
+      status === "SUCCEEDED" &&
+      currentSession.status !== "SUCCEEDED" &&
+      currentSession.expiresAt.getTime() < Date.now()
+    ) {
+      throw conflictError("Payment session expired. Create a new checkout session.");
     }
     const providerEventId = `mock:${sessionId}:${status}`;
     const existingEvent = await prisma.paymentEvent.findUnique({
@@ -4004,14 +4060,29 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
       },
     });
-    const started = await startPaymentSessionCheckout({
-      session,
-      customer: clean({
-        name: user.name,
-        email: user.email,
-        phone: user.phone ?? undefined,
-      }),
-    });
+    let started;
+    try {
+      started = await startPaymentSessionCheckout({
+        session,
+        customer: clean({
+          name: user.name,
+          email: user.email,
+          phone: user.phone ?? undefined,
+        }),
+      });
+    } catch (error) {
+      await prisma.$transaction([
+        prisma.paymentSession.update({
+          where: { id: session.id },
+          data: { status: "FAILED", completedAt: new Date() },
+        }),
+        prisma.memberSubscription.update({
+          where: { id: subscription.id },
+          data: { status: "CANCELLED" },
+        }),
+      ]);
+      throw error;
+    }
     return ok({
       subscription,
       checkoutUrl: started.checkoutUrl,
@@ -6056,18 +6127,33 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
       },
     });
-    const started = await startPaymentSessionCheckout({
-      session,
-      customer: clean({
-        name: user?.name ?? undefined,
-        email: user?.email ?? undefined,
-        phone: user?.phone ?? undefined,
-      }),
-    });
-    await prisma.shopOrder.update({
-      where: { id: order.id },
-      data: { paymentSessionId: session.id },
-    });
+    let started;
+    try {
+      started = await startPaymentSessionCheckout({
+        session,
+        customer: clean({
+          name: user?.name ?? undefined,
+          email: user?.email ?? undefined,
+          phone: user?.phone ?? undefined,
+        }),
+      });
+      await prisma.shopOrder.update({
+        where: { id: order.id },
+        data: { paymentSessionId: session.id },
+      });
+    } catch (error) {
+      await prisma.$transaction([
+        prisma.paymentSession.update({
+          where: { id: session.id },
+          data: { status: "FAILED", completedAt: new Date() },
+        }),
+        prisma.shopOrder.update({
+          where: { id: order.id },
+          data: { status: "CANCELLED", paymentSessionId: session.id },
+        }),
+      ]);
+      throw error;
+    }
     return ok({
       order,
       checkoutUrl: started.checkoutUrl,

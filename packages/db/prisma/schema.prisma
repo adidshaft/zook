@@ -1008,7 +1008,7 @@ model Payment {
   id            String         @id @default(cuid())
   orgId         String?
   userId        String?
-  sessionId     String?
+  sessionId     String?        @unique
   purpose       PaymentPurpose
   amountPaise   Int
   currency      String         @default("INR")
@@ -1027,7 +1027,6 @@ model Payment {
 
   @@index([orgId, status])
   @@index([userId])
-  @@index([sessionId])
 }
 
 model PaymentEvent {

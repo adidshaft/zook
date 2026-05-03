@@ -52,6 +52,69 @@ type PaymentSessionMetadata = {
   joinRequestId?: string;
 };
 
+function assertNotExpiredForSuccess(input: {
+  expiresAt: Date;
+  status: PaymentStatus;
+  nextStatus: PaymentStatus;
+}) {
+  if (
+    input.expiresAt.getTime() < Date.now() &&
+    input.nextStatus === "SUCCEEDED" &&
+    input.status !== "SUCCEEDED"
+  ) {
+    throw new Error("Payment session expired");
+  }
+}
+
+async function assertPaymentSessionTargetIntegrity(input: {
+  session: {
+    id: string;
+    orgId: string | null;
+    userId: string | null;
+    purpose: string;
+    amountPaise: number;
+  };
+  metadata: PaymentSessionMetadata;
+}) {
+  if (input.metadata.subscriptionId) {
+    if (input.session.purpose !== "MEMBERSHIP") {
+      throw new Error("Payment session target mismatch");
+    }
+    const subscription = await prisma.memberSubscription.findUnique({
+      where: { id: input.metadata.subscriptionId }
+    });
+    if (
+      !subscription ||
+      subscription.orgId !== input.session.orgId ||
+      subscription.memberUserId !== input.session.userId
+    ) {
+      throw new Error("Payment session target mismatch");
+    }
+    const plan = await prisma.membershipPlan.findFirst({
+      where: { id: subscription.planId, orgId: subscription.orgId }
+    });
+    if (!plan || input.session.amountPaise > plan.pricePaise) {
+      throw new Error("Payment session amount mismatch");
+    }
+  }
+
+  if (input.metadata.shopOrderId) {
+    if (input.session.purpose !== "SHOP_ORDER") {
+      throw new Error("Payment session target mismatch");
+    }
+    const order = await prisma.shopOrder.findUnique({ where: { id: input.metadata.shopOrderId } });
+    if (
+      !order ||
+      order.orgId !== input.session.orgId ||
+      order.userId !== input.session.userId ||
+      order.totalPaise !== input.session.amountPaise ||
+      (order.paymentSessionId && order.paymentSessionId !== input.session.id)
+    ) {
+      throw new Error("Payment session target mismatch");
+    }
+  }
+}
+
 export async function applyPaymentSessionStatus(input: {
   sessionId: string;
   nextStatus: PaymentStatus;
@@ -83,6 +146,12 @@ export async function applyPaymentSessionStatus(input: {
     throw new Error("Payment session not found");
   }
 
+  assertNotExpiredForSuccess({
+    expiresAt: currentSession.expiresAt,
+    status: currentSession.status,
+    nextStatus: input.nextStatus
+  });
+
   const nextState = transitionPaymentSession(
     {
       id: currentSession.id,
@@ -103,6 +172,9 @@ export async function applyPaymentSessionStatus(input: {
       ? new Date()
       : undefined;
 
+  const metadata = ((currentSession.metadata ?? {}) as PaymentSessionMetadata) ?? {};
+  await assertPaymentSessionTargetIntegrity({ session: currentSession, metadata });
+
   const session = await prisma.paymentSession.update({
     where: { id: input.sessionId },
     data: clean({
@@ -113,42 +185,32 @@ export async function applyPaymentSessionStatus(input: {
     })
   });
 
-  const metadata = ((session.metadata ?? {}) as PaymentSessionMetadata) ?? {};
-  let payment =
-    (await prisma.payment.findFirst({
-      where: { sessionId: session.id },
-      orderBy: { createdAt: "desc" }
-    })) ?? null;
+  let payment = await prisma.payment.findUnique({ where: { sessionId: session.id } });
 
   if (session.status === "SUCCEEDED") {
-    if (!payment) {
-      payment = await prisma.payment.create({
-        data: {
-          ...(session.orgId ? { orgId: session.orgId } : {}),
-          ...(session.userId ? { userId: session.userId } : {}),
-          sessionId: session.id,
-          purpose: session.purpose,
-          amountPaise: session.amountPaise,
-          currency: session.currency,
-          status: "SUCCEEDED",
-          mode: input.paymentMode,
-          provider: input.provider,
-          providerRef: input.providerRef ?? session.providerRef ?? session.id,
-          recordedAt: new Date()
-        }
-      });
-    } else if (payment.status !== "SUCCEEDED") {
-      payment = await prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: "SUCCEEDED",
-          mode: input.paymentMode,
-          provider: input.provider,
-          providerRef: input.providerRef ?? session.providerRef ?? payment.providerRef,
-          recordedAt: payment.recordedAt ?? new Date()
-        }
-      });
-    }
+    payment = await prisma.payment.upsert({
+      where: { sessionId: session.id },
+      create: {
+        ...(session.orgId ? { orgId: session.orgId } : {}),
+        ...(session.userId ? { userId: session.userId } : {}),
+        sessionId: session.id,
+        purpose: session.purpose,
+        amountPaise: session.amountPaise,
+        currency: session.currency,
+        status: "SUCCEEDED",
+        mode: input.paymentMode,
+        provider: input.provider,
+        providerRef: input.providerRef ?? session.providerRef ?? session.id,
+        recordedAt: new Date()
+      },
+      update: {
+        status: "SUCCEEDED",
+        mode: input.paymentMode,
+        provider: input.provider,
+        providerRef: input.providerRef ?? session.providerRef ?? payment?.providerRef ?? null,
+        recordedAt: payment?.recordedAt ?? new Date()
+      }
+    });
 
     if (metadata.subscriptionId) {
       const [planSub, user] = await Promise.all([
@@ -157,7 +219,15 @@ export async function applyPaymentSessionStatus(input: {
       ]);
       const plan = planSub ? await prisma.membershipPlan.findUnique({ where: { id: planSub.planId } }) : null;
 
-      if (planSub && plan && session.userId && user && planSub.status !== "ACTIVE") {
+      if (
+        planSub &&
+        plan &&
+        session.userId &&
+        user &&
+        planSub.orgId === session.orgId &&
+        planSub.memberUserId === session.userId &&
+        planSub.status !== "ACTIVE"
+      ) {
         assertMinorConsentGranted({
           isMinor: user.isMinor,
           guardianPending: user.guardianPending,
@@ -237,7 +307,13 @@ export async function applyPaymentSessionStatus(input: {
 
     if (metadata.shopOrderId) {
       const existingOrder = await prisma.shopOrder.findUnique({ where: { id: metadata.shopOrderId } });
-      if (existingOrder && existingOrder.status === "PENDING_PAYMENT") {
+      if (
+        existingOrder &&
+        existingOrder.status === "PENDING_PAYMENT" &&
+        existingOrder.orgId === session.orgId &&
+        existingOrder.userId === session.userId &&
+        existingOrder.totalPaise === session.amountPaise
+      ) {
         const items = await prisma.shopOrderItem.findMany({ where: { orderId: existingOrder.id } });
         const orderProducts = await prisma.product.findMany({
           where: { id: { in: items.map((item) => item.productId) } }
@@ -256,7 +332,22 @@ export async function applyPaymentSessionStatus(input: {
           `ZK-${session.id.slice(-6).toUpperCase()}`
         );
 
+        let orderActivated = false;
         await prisma.$transaction(async (tx) => {
+          const updated = await tx.shopOrder.updateMany({
+            where: { id: existingOrder.id, status: "PENDING_PAYMENT" },
+            data: clean({
+              status: readyOrder.status,
+              paymentId: payment?.id,
+              pickupCode: readyOrder.pickupCode,
+              paymentSessionId: session.id
+            })
+          });
+          if (updated.count !== 1) {
+            return;
+          }
+          orderActivated = true;
+
           await Promise.all(
             calculation.stockDeltas.map(async (delta) => {
               await tx.product.update({
@@ -276,15 +367,6 @@ export async function applyPaymentSessionStatus(input: {
             })
           );
 
-          await tx.shopOrder.update({
-            where: { id: existingOrder.id },
-            data: clean({
-              status: readyOrder.status,
-              paymentId: payment?.id,
-              pickupCode: readyOrder.pickupCode,
-              paymentSessionId: session.id
-            })
-          });
           await tx.pickupCode.upsert({
             where: { orderId: existingOrder.id },
             update: {
@@ -300,20 +382,22 @@ export async function applyPaymentSessionStatus(input: {
           });
         });
 
-        await input.createNotification({
-          orgId: existingOrder.orgId,
-          ...(session.userId ? { createdById: session.userId } : {}),
-          type: "TRANSACTIONAL",
-          title: "Order ready for pickup",
-          body: `Your pickup code is ${readyOrder.pickupCode}. Show it at reception to collect the order.`,
-          audience: "selected_member",
-          userIds: [existingOrder.userId],
-          pushEnabled: true,
-          metadata: {
-            orderId: existingOrder.id,
-            ...(readyOrder.pickupCode ? { pickupCode: readyOrder.pickupCode } : {})
-          } as Prisma.InputJsonValue
-        });
+        if (orderActivated) {
+          await input.createNotification({
+            orgId: existingOrder.orgId,
+            ...(session.userId ? { createdById: session.userId } : {}),
+            type: "TRANSACTIONAL",
+            title: "Order ready for pickup",
+            body: `Your pickup code is ${readyOrder.pickupCode}. Show it at reception to collect the order.`,
+            audience: "selected_member",
+            userIds: [existingOrder.userId],
+            pushEnabled: true,
+            metadata: {
+              orderId: existingOrder.id,
+              ...(readyOrder.pickupCode ? { pickupCode: readyOrder.pickupCode } : {})
+            } as Prisma.InputJsonValue
+          });
+        }
       }
     }
 
@@ -339,15 +423,28 @@ export async function applyPaymentSessionStatus(input: {
         data: { status: "ACTIVE" }
       });
     }
-  } else if (payment && payment.status !== session.status) {
-    payment = await prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: session.status,
-        provider: input.provider,
-        providerRef: input.providerRef ?? payment.providerRef
-      }
-    });
+
+    return { session, payment };
+  }
+
+  if (
+    session.status === "FAILED" ||
+    session.status === "CANCELLED" ||
+    session.status === "EXPIRED" ||
+    session.status === "REFUNDED"
+  ) {
+    if (metadata.subscriptionId) {
+      await prisma.memberSubscription.updateMany({
+        where: { id: metadata.subscriptionId, status: "PENDING_PAYMENT" },
+        data: { status: session.status === "REFUNDED" ? "REFUNDED" : "CANCELLED" }
+      });
+    }
+    if (metadata.shopOrderId) {
+      await prisma.shopOrder.updateMany({
+        where: { id: metadata.shopOrderId, status: "PENDING_PAYMENT" },
+        data: { status: session.status === "REFUNDED" ? "REFUNDED" : "CANCELLED" }
+      });
+    }
   }
 
   return { session, payment };
