@@ -19,6 +19,7 @@ import {
   isMockPaymentCompletionAllowed,
   validateRuntimeConfig,
   type AIRequestType,
+  type PlanType,
   type Role,
 } from "@zook/core";
 import {
@@ -45,6 +46,7 @@ import {
   AuthService,
   calculateShopOrder,
   buildAIQuotaState,
+  AIGuardError,
   canReceiveNotification,
   canAssignPlanToUser,
   canSendNotification,
@@ -121,6 +123,7 @@ import {
   getOrganizationMembers,
   getOrganizationPendingAttendance,
   getOrganizationRecentPayments,
+  extractPlanExercises,
   getPlanExercisesForUser,
 } from "./read-models";
 
@@ -376,7 +379,7 @@ const ptSubscriptionSchema = z.object({
 
 const planAssignSchema = z.object({
   assignedToUserId: z.string().optional(),
-  audience: z.string().default("selected_member"),
+  audience: z.enum(["selected_member"]).default("selected_member"),
 });
 
 const planProgressInputSchema = z.object({
@@ -413,7 +416,8 @@ const aiChatSchema = z.object({
 
 const aiGenerateSchema = z.object({
   prompt: z.string().trim().min(2).max(2_000),
-  orgId: z.string().optional(),
+  orgId: z.string(),
+  targetUserId: z.string().optional(),
   title: z.string().trim().min(2).max(120).optional(),
   type: z
     .enum([
@@ -1409,13 +1413,66 @@ async function generateUserDataExport(input: { userId: string; orgId?: string })
 }
 
 function currentAIProviderType(): "MOCK" | "OPENAI" {
-  return process.env.AI_PROVIDER === "openai" && Boolean(process.env.OPENAI_API_KEY)
-    ? "OPENAI"
-    : "MOCK";
+  return getAIProviderDiagnostics().activeProvider === "openai" ? "OPENAI" : "MOCK";
 }
 
 function summarizeAIResponse(response: string | Record<string, unknown>) {
   return (typeof response === "string" ? response : JSON.stringify(response)).slice(0, 120);
+}
+
+function aiConsentAllowed(user: { aiConsent: boolean }) {
+  return user.aiConsent || process.env.NODE_ENV === "development";
+}
+
+function planRequiresExercises(type: PlanType) {
+  return ["WORKOUT", "EXERCISE_ROUTINE", "TRANSFORMATION_PROGRAM", "MACHINE_GUIDE", "RECOVERY"].includes(type);
+}
+
+function normalizedStructuredPlanContent(response: string | Record<string, unknown>) {
+  if (typeof response === "string") {
+    return {
+      title: "Trainer plan",
+      type: "WORKOUT",
+      days: [
+        {
+          name: "Draft notes",
+          exercises: response
+            .split(/\n+/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .slice(0, 8)
+            .map((line) => ({ name: line }))
+        }
+      ],
+      notes: "Generated text was normalized into a trainer-reviewed draft."
+    };
+  }
+  if (Array.isArray(response.days) || Array.isArray(response.exercises)) {
+    return response;
+  }
+  if (Array.isArray(response.sections)) {
+    const exercises = response.sections
+      .flatMap((section) => {
+        if (!section || typeof section !== "object") {
+          return [];
+        }
+        const record = section as Record<string, unknown>;
+        const body = typeof record.body === "string" ? record.body : "";
+        return body
+          .split(/\n+|[.;]/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => ({ name: line.slice(0, 120) }));
+      })
+      .slice(0, 12);
+    return exercises.length
+      ? {
+          ...response,
+          days: [{ name: "Draft session", exercises }],
+        }
+      : response;
+  }
+  return response;
 }
 
 async function resolveAIQuotaState(input: {
@@ -1490,6 +1547,44 @@ async function persistAiConversation(input: {
   });
 
   return conversation;
+}
+
+async function persistBlockedAiAttempt(input: {
+  request: NextRequest;
+  orgId?: string;
+  userId: string;
+  role: Exclude<Role, "PLATFORM_ADMIN">;
+  requestType: AIRequestType;
+  prompt: string;
+  error: AIGuardError;
+}) {
+  await prisma.aIUsageLog.create({
+    data: clean({
+      orgId: input.orgId,
+      userId: input.userId,
+      role: input.role,
+      provider: currentAIProviderType(),
+      requestType: input.requestType,
+      promptSummary: input.prompt.slice(0, 120),
+      responseSummary: input.error.message.slice(0, 120),
+      quotaConsumed: 0,
+      safetyFlags: input.error.safetyFlags as Prisma.InputJsonValue,
+    }),
+  });
+  if (input.orgId) {
+    await writeAuditLog({
+      request: input.request,
+      orgId: input.orgId,
+      actorUserId: input.userId,
+      action: "ai.request_blocked",
+      entityType: "ai_usage",
+      metadata: {
+        reason: input.error.reason,
+        requestType: input.requestType,
+        flags: input.error.safetyFlags,
+      },
+    });
+  }
 }
 
 function notificationPreferenceAllowsType(
@@ -2220,6 +2315,40 @@ async function handleTracking(request: NextRequest, path: string[]) {
     const userId = requireAuth(ctx);
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const body = workoutSessionSchema.parse(await readJson(request));
+    let organizationId = body.organizationId;
+    if (body.planAssignmentId) {
+      const assignment = await prisma.planAssignment.findFirst({
+        where: { id: body.planAssignmentId, assignedToUserId: userId, active: true },
+      });
+      if (!assignment) {
+        throw forbiddenError("Plan assignment does not belong to this user.");
+      }
+      if (organizationId && organizationId !== assignment.orgId) {
+        throw forbiddenError("Workout organization does not match the plan assignment.");
+      }
+      organizationId = assignment.orgId;
+    }
+    if (organizationId) {
+      const membership = await prisma.organizationUser.findFirst({
+        where: { orgId: organizationId, userId, status: "active" },
+      });
+      if (!membership && !ctx.isPlatformAdmin) {
+        throw forbiddenError("No organization access for workout tracking.");
+      }
+    }
+    if (body.attendanceRecordId) {
+      const attendanceRecord = await prisma.attendanceRecord.findFirst({
+        where: {
+          id: body.attendanceRecordId,
+          userId,
+          ...(organizationId ? { orgId: organizationId } : {}),
+        },
+      });
+      if (!attendanceRecord) {
+        throw forbiddenError("Attendance record does not belong to this user.");
+      }
+      organizationId = attendanceRecord.orgId;
+    }
     const visibility = personalTrackingService.normalizeVisibility({
       isMinor: user.isMinor,
       guardianConsentGranted: !user.guardianPending,
@@ -2239,7 +2368,7 @@ async function handleTracking(request: NextRequest, path: string[]) {
     const workout = await prisma.workoutSession.create({
       data: {
         userId,
-        ...(body.organizationId ? { organizationId: body.organizationId } : {}),
+        ...(organizationId ? { organizationId } : {}),
         ...(body.planAssignmentId ? { planAssignmentId: body.planAssignmentId } : {}),
         ...(body.attendanceRecordId ? { attendanceRecordId: body.attendanceRecordId } : {}),
         title: baseWorkout.title,
@@ -5011,17 +5140,18 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       where: { orgId, trainerUserId: trainerId, active: true },
       orderBy: { createdAt: "desc" },
     });
-    const [users, profiles, bodyProgressEntries, planAssignments] = await Promise.all([
+    const memberUserIds = assignments.map((assignment) => assignment.memberUserId);
+    const [users, profiles, bodyProgressEntries, planAssignments, planProgressEntries, trainerVisibleWorkouts] = await Promise.all([
       prisma.user.findMany({
-        where: { id: { in: assignments.map((assignment) => assignment.memberUserId) } },
+        where: { id: { in: memberUserIds } },
       }),
       prisma.memberProfile.findMany({
-        where: { orgId, userId: { in: assignments.map((assignment) => assignment.memberUserId) } },
+        where: { orgId, userId: { in: memberUserIds } },
       }),
       prisma.bodyProgressEntry.findMany({
         where: {
           organizationId: orgId,
-          userId: { in: assignments.map((assignment) => assignment.memberUserId) },
+          userId: { in: memberUserIds },
         },
         orderBy: { measuredAt: "desc" },
         take: Math.max(assignments.length * 3, 10),
@@ -5029,9 +5159,28 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       prisma.planAssignment.findMany({
         where: {
           orgId,
-          assignedToUserId: { in: assignments.map((assignment) => assignment.memberUserId) },
+          assignedToUserId: { in: memberUserIds },
           active: true,
         },
+      }),
+      prisma.planProgress.findMany({
+        where: {
+          orgId,
+          userId: { in: memberUserIds },
+          OR: [{ feedback: { not: null } }, { completionPct: { gt: 0 } }],
+        },
+        orderBy: { updatedAt: "desc" },
+        take: Math.max(assignments.length * 5, 10),
+      }),
+      prisma.workoutSession.findMany({
+        where: {
+          organizationId: orgId,
+          userId: { in: memberUserIds },
+          visibility: "TRAINER_VISIBLE",
+          deletedAt: null,
+        },
+        orderBy: { startedAt: "desc" },
+        take: Math.max(assignments.length * 5, 10),
       }),
     ]);
     return ok({
@@ -5055,6 +5204,26 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
             activePlans: planAssignments.filter(
               (plan) => plan.assignedToUserId === assignment.memberUserId,
             ).length,
+            recentFeedback: planProgressEntries
+              .filter((entry) => entry.userId === assignment.memberUserId)
+              .slice(0, 3)
+              .map((entry) => ({
+                assignmentId: entry.assignmentId,
+                completionPct: entry.completionPct,
+                feedback: entry.feedback,
+                updatedAt: entry.updatedAt,
+              })),
+            recentWorkouts: trainerVisibleWorkouts
+              .filter((workout) => workout.userId === assignment.memberUserId)
+              .slice(0, 3)
+              .map((workout) => ({
+                id: workout.id,
+                title: workout.title,
+                workoutType: workout.workoutType,
+                startedAt: workout.startedAt,
+                durationMinutes: workout.durationMinutes,
+                notes: workout.notes,
+              })),
           },
         };
       }),
@@ -5291,6 +5460,42 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     });
     return ok({ plan });
   }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plans", /.+/, "review"])) {
+    const orgId = path[1]!;
+    const planId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    const existingPlan = await prisma.planContent.findFirst({ where: { id: planId, orgId } });
+    if (!existingPlan) {
+      throw notFoundError("Plan not found");
+    }
+    const canReview =
+      existingPlan.creatorUserId === userId ||
+      ctx.permissions.includes("PLANS_PUBLISH_ALL") ||
+      ctx.roles.includes("OWNER") ||
+      ctx.roles.includes("ADMIN");
+    if (!canReview) {
+      throw forbiddenError("You can only review your own draft or use owner/admin plan publishing permissions.");
+    }
+    const exercises = extractPlanExercises(existingPlan.content);
+    if (planRequiresExercises(existingPlan.type as PlanType) && !exercises.length) {
+      throw validationError("Workout plan drafts need at least one exercise before review.");
+    }
+    const plan = await prisma.planContent.update({
+      where: { id: existingPlan.id },
+      data: { reviewed: true, reviewedById: userId },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "plan.reviewed",
+      entityType: "plan_content",
+      entityId: plan.id,
+      metadata: { aiGenerated: plan.aiGenerated },
+    });
+    return ok({ plan });
+  }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plans", /.+/, "assign"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -5298,6 +5503,12 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const existingPlan = await prisma.planContent.findFirst({ where: { id: path[3]!, orgId } });
     if (!existingPlan) {
       throw notFoundError("Plan not found");
+    }
+    if (existingPlan.aiGenerated && !existingPlan.reviewed) {
+      throw conflictError("AI-generated drafts must be reviewed before assignment.");
+    }
+    if (planRequiresExercises(existingPlan.type as PlanType) && !extractPlanExercises(existingPlan.content).length) {
+      throw validationError("Workout plans need at least one exercise before assignment.");
     }
     const body = planAssignSchema.parse(await readJson(request));
     if (body.assignedToUserId) {
@@ -5402,6 +5613,9 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     if (!assignment) {
       throw notFoundError("Plan assignment not found");
     }
+    if (body.orgId && body.orgId !== assignment.orgId) {
+      throw forbiddenError("Progress organization does not match the plan assignment.");
+    }
     const progress = await prisma.planProgress.upsert({
       where: { assignmentId_userId: { assignmentId: path[2]!, userId } },
       update: clean({
@@ -5410,7 +5624,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         feedback: body.feedback,
       }),
       create: clean({
-        orgId: body.orgId ?? assignment.orgId,
+        orgId: assignment.orgId,
         assignmentId: path[2]!,
         userId,
         progressJson: body.progressJson as Prisma.InputJsonValue,
@@ -5426,6 +5640,12 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const detail = await getPlanExercisesForUser(userId, path[2]!);
     if (!detail) {
       throw notFoundError("Plan assignment not found");
+    }
+    if (planRequiresExercises(detail.plan.type as PlanType) && !detail.exercises.length) {
+      throw validationError("Workout plans need at least one exercise before completion.");
+    }
+    if (body.orgId && body.orgId !== detail.assignment.orgId) {
+      throw forbiddenError("Completion organization does not match the plan assignment.");
     }
     const completedExercises = body.exercises.length
       ? body.exercises.filter((exercise) => exercise.completed).map((exercise) => exercise.name)
@@ -5444,7 +5664,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         feedback: body.feedback,
       }),
       create: clean({
-        orgId: body.orgId ?? detail.assignment.orgId,
+        orgId: detail.assignment.orgId,
         assignmentId: path[2]!,
         userId,
         progressJson: progressJson as Prisma.InputJsonValue,
@@ -5508,20 +5728,40 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const role = (ctx.roles.find((candidate) => candidate !== "PLATFORM_ADMIN") ??
       "MEMBER") as Exclude<Role, "PLATFORM_ADMIN">;
     const quota = await resolveAIQuotaState({ userId, role });
-    const result = await runAIGuardedRequest({
-      provider: getAIProviderOrThrow(),
-      prompt: body.prompt,
-      role,
-      requestType: "CHAT",
-      quota,
-      user: {
-        isMinor: user.isMinor,
-        guardianConsentGranted: !user.guardianPending,
-        marketingOptIn: user.marketingOptIn,
-        aiConsent: user.aiConsent || process.env.NODE_ENV === "development",
-        hasProfilePhoto: Boolean(user.profilePhotoUrl),
-      },
-    });
+    let result: Awaited<ReturnType<typeof runAIGuardedRequest>>;
+    try {
+      result = await runAIGuardedRequest({
+        provider: getAIProviderOrThrow(),
+        prompt: body.prompt,
+        role,
+        requestType: "CHAT",
+        quota,
+        user: {
+          isMinor: user.isMinor,
+          guardianConsentGranted: !user.guardianPending,
+          marketingOptIn: user.marketingOptIn,
+          aiConsent: aiConsentAllowed(user),
+          hasProfilePhoto: Boolean(user.profilePhotoUrl),
+        },
+      });
+    } catch (error) {
+      if (error instanceof AIGuardError) {
+        await persistBlockedAiAttempt({
+          request,
+          ...(body.orgId ? { orgId: body.orgId } : {}),
+          userId,
+          role,
+          requestType: "CHAT",
+          prompt: body.prompt,
+          error,
+        });
+        throw validationError(error.message, {
+          reason: error.reason,
+          flags: error.safetyFlags,
+        });
+      }
+      throw error;
+    }
     const conversation = await persistAiConversation({
       userId,
       prompt: body.prompt,
@@ -5560,34 +5800,72 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     );
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const requestType: AIRequestType = path[1] === "generate-image" ? "IMAGE" : "STRUCTURED_PLAN";
-    if (body.orgId) {
-      requireOrgPermission(
-        ctx,
-        body.orgId,
-        requestType === "IMAGE" ? "AI_GENERATE_IMAGE" : "AI_GENERATE_PLAN",
-      );
-    }
+    requireOrgPermission(
+      ctx,
+      body.orgId,
+      requestType === "IMAGE" ? "AI_GENERATE_IMAGE" : "AI_GENERATE_PLAN",
+    );
     const role = (ctx.roles.find((candidate) => candidate !== "PLATFORM_ADMIN") ??
-      "TRAINER") as Exclude<Role, "PLATFORM_ADMIN">;
+      "MEMBER") as Exclude<Role, "PLATFORM_ADMIN">;
+    if (requestType === "STRUCTURED_PLAN" && !ctx.roles.includes("TRAINER")) {
+      throw forbiddenError("Trainer plan generation requires a trainer role.");
+    }
+    if (requestType === "STRUCTURED_PLAN" && body.persistDraft && !body.targetUserId) {
+      throw validationError("A targetUserId is required for trainer AI drafts.");
+    }
+    if (requestType === "STRUCTURED_PLAN" && body.targetUserId) {
+      const assignment = await prisma.trainerAssignment.findFirst({
+        where: {
+          orgId: body.orgId,
+          trainerUserId: userId,
+          memberUserId: body.targetUserId,
+          active: true,
+        },
+      });
+      if (!assignment) {
+        throw forbiddenError("Trainer AI drafts can only target assigned clients.");
+      }
+    }
     const quota = await resolveAIQuotaState({ userId, role });
-    const result = await runAIGuardedRequest({
-      provider: getAIProviderOrThrow(),
-      prompt: body.prompt,
-      role,
-      requestType,
-      quota,
-      user: {
-        isMinor: user.isMinor,
-        guardianConsentGranted: !user.guardianPending,
-        marketingOptIn: user.marketingOptIn,
-        aiConsent: true,
-        hasProfilePhoto: Boolean(user.profilePhotoUrl),
-      },
-    });
+    let result: Awaited<ReturnType<typeof runAIGuardedRequest>>;
+    try {
+      result = await runAIGuardedRequest({
+        provider: getAIProviderOrThrow(),
+        prompt: body.prompt,
+        role,
+        requestType,
+        quota,
+        user: {
+          isMinor: user.isMinor,
+          guardianConsentGranted: !user.guardianPending,
+          marketingOptIn: user.marketingOptIn,
+          aiConsent: user.aiConsent,
+          hasProfilePhoto: Boolean(user.profilePhotoUrl),
+        },
+      });
+    } catch (error) {
+      if (error instanceof AIGuardError) {
+        await persistBlockedAiAttempt({
+          request,
+          orgId: body.orgId,
+          userId,
+          role,
+          requestType,
+          prompt: body.prompt,
+          error,
+        });
+        throw validationError(error.message, {
+          reason: error.reason,
+          flags: error.safetyFlags,
+        });
+      }
+      throw error;
+    }
     let createdPlan: Prisma.PlanContentGetPayload<object> | undefined;
     if (requestType === "STRUCTURED_PLAN" && body.orgId && body.persistDraft) {
       const planType = body.type ?? "WORKOUT";
       const title = body.title ?? `${planType === "DIET" ? "Nutrition" : "Workout"} AI draft`;
+      const content = normalizedStructuredPlanContent(result.response);
       createdPlan = await prisma.planContent.create({
         data: {
           orgId: body.orgId,
@@ -5595,7 +5873,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
           type: planType as never,
           title,
           description: "AI-generated draft. Review before publishing.",
-          content: result.response as Prisma.InputJsonValue,
+          content: content as Prisma.InputJsonValue,
           aiGenerated: true,
           visibility: "assigned",
         },
@@ -5610,7 +5888,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
             description: "AI-generated draft. Review before publishing.",
             aiGenerated: true,
             visibility: "assigned",
-            content: result.response as Record<string, unknown>,
+            content,
           }) as Prisma.InputJsonValue,
           createdById: userId,
         },
@@ -5622,7 +5900,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         action: "plan.ai_draft_created",
         entityType: "plan_content",
         entityId: createdPlan.id,
-        metadata: { type: planType },
+        metadata: { type: planType, targetUserId: body.targetUserId },
       });
     }
     await prisma.aIUsageLog.create({

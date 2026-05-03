@@ -6,6 +6,7 @@ import {
   expectApiOk,
   findLatestAuditLog,
   loginWithOtp,
+  loginWithSessionCookie,
   seedAndGetOrg
 } from "./helpers";
 
@@ -376,6 +377,7 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
     }),
   );
 
+  await prisma.organization.update({ where: { id: ironHouse.id }, data: { joinMode: "OPEN_JOIN" } });
   const checkoutPayload = await expectApiOk<{ session: { id: string } }>(
     await page.request.post(`/api/orgs/${ironHouse.id}/subscriptions`, {
       data: { planId }
@@ -391,6 +393,194 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
       (subscription) => subscription.orgId === ironHouse.id && subscription.status === "ACTIVE",
     ),
   ).toBe(true);
+});
+
+test("trainer AI draft requires assigned client, consent, review, and then assignment", async ({ page }) => {
+  requireDb();
+  await loginWithSessionCookie(page, "trainer@zook.local");
+
+  const org = await seedAndGetOrg({ username: "iron-house" });
+  const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
+  const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
+  const assignment = await prisma.trainerAssignment.findFirstOrThrow({
+    where: { orgId: org.id, trainerUserId: trainer.id, active: true }
+  });
+
+  await prisma.user.update({ where: { id: trainer.id }, data: { aiConsent: false } });
+  try {
+    const blockedConsent = await page.request.post("/api/ai/generate-plan", {
+      data: {
+        orgId: org.id,
+        targetUserId: assignment.memberUserId,
+        prompt: "Create a safe gym workout plan for strength.",
+        title: "Consent blocked draft",
+        type: "WORKOUT"
+      }
+    });
+    expect(blockedConsent.status()).toBe(400);
+    expect(await blockedConsent.text()).toContain("AI personalization consent");
+    const blockedLog = await prisma.aIUsageLog.findFirst({
+      where: { userId: trainer.id, responseSummary: { contains: "AI personalization consent" } },
+      orderBy: { createdAt: "desc" }
+    });
+    expect(blockedLog?.quotaConsumed).toBe(0);
+  } finally {
+    await prisma.user.update({ where: { id: trainer.id }, data: { aiConsent: true } });
+  }
+
+  const blockedClient = await page.request.post("/api/ai/generate-plan", {
+    data: {
+      orgId: org.id,
+      targetUserId: owner.id,
+      prompt: "Create a safe gym workout plan for strength.",
+      title: "Wrong client draft",
+      type: "WORKOUT"
+    }
+  });
+  expect(blockedClient.status()).toBe(403);
+  expect(await blockedClient.text()).toContain("assigned clients");
+
+  const draftPayload = await expectApiOk<{
+    response: Record<string, unknown>;
+    createdPlan: { id: string; reviewed: boolean; content: { days?: unknown[] } };
+  }>(
+    await page.request.post("/api/ai/generate-plan", {
+      data: {
+        orgId: org.id,
+        targetUserId: assignment.memberUserId,
+        prompt: "Create a safe gym workout plan for strength.",
+        title: "Playwright AI draft",
+        type: "WORKOUT"
+      }
+    }),
+  );
+  expect(draftPayload.data.createdPlan.reviewed).toBe(false);
+  expect(draftPayload.data.createdPlan.content.days?.length).toBeGreaterThan(0);
+
+  const assignBeforeReview = await page.request.post(
+    `/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/assign`,
+    {
+      data: { assignedToUserId: assignment.memberUserId, audience: "selected_member" }
+    },
+  );
+  expect(assignBeforeReview.status()).toBe(409);
+  expect(await assignBeforeReview.text()).toContain("reviewed before assignment");
+
+  await expectApiOk(await page.request.post(`/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/review`));
+  await expectApiOk(
+    await page.request.post(`/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/assign`, {
+      data: { assignedToUserId: assignment.memberUserId, audience: "selected_member" }
+    }),
+  );
+  const planNotification = await prisma.notificationRecipient.findFirst({
+    where: { userId: assignment.memberUserId },
+    orderBy: { createdAt: "desc" }
+  });
+  expect(planNotification?.readAt).toBeNull();
+});
+
+test("member workout reports are assignment-scoped and visible to the trainer", async ({ page }) => {
+  requireDb();
+  const org = await seedAndGetOrg({ username: "iron-house" });
+  const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
+  const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+  const minor = await prisma.user.findUniqueOrThrow({ where: { email: "minor@zook.local" } });
+  const plan = await prisma.planContent.create({
+    data: {
+      orgId: org.id,
+      creatorUserId: trainer.id,
+      type: "WORKOUT",
+      title: `Playwright report plan ${Date.now()}`,
+      description: "Backend report visibility test.",
+      content: {
+        days: [
+          {
+            name: "Day 1",
+            exercises: [{ name: "Goblet squat", sets: "3", reps: "10" }]
+          }
+        ]
+      },
+      reviewed: true,
+      reviewedById: trainer.id,
+      visibility: "assigned"
+    }
+  });
+  const memberAssignment = await prisma.planAssignment.create({
+    data: {
+      orgId: org.id,
+      planId: plan.id,
+      assignedById: trainer.id,
+      assignedToUserId: member.id,
+      audience: "selected_member"
+    }
+  });
+  const wrongAssignment = await prisma.planAssignment.create({
+    data: {
+      orgId: org.id,
+      planId: plan.id,
+      assignedById: trainer.id,
+      assignedToUserId: minor.id,
+      audience: "selected_member"
+    }
+  });
+
+  await loginWithSessionCookie(page, "member@zook.local");
+  const blockedWorkout = await page.request.post("/api/me/tracking/workouts", {
+    data: {
+      organizationId: org.id,
+      planAssignmentId: wrongAssignment.id,
+      title: "Cross assignment workout",
+      workoutType: "strength",
+      startedAt: new Date().toISOString(),
+      visibility: "TRAINER_VISIBLE",
+      exercises: []
+    }
+  });
+  expect(blockedWorkout.status()).toBe(403);
+  expect(await blockedWorkout.text()).toContain("does not belong");
+
+  await expectApiOk(
+    await page.request.post("/api/me/tracking/workouts", {
+      data: {
+        planAssignmentId: memberAssignment.id,
+        title: "Assigned workout report",
+        workoutType: "strength",
+        startedAt: new Date().toISOString(),
+        visibility: "TRAINER_VISIBLE",
+        exercises: [
+          {
+            exerciseName: "Goblet squat",
+            orderIndex: 0,
+            setsCompleted: 3,
+            reps: 10,
+            completed: true
+          }
+        ]
+      }
+    }),
+  );
+  await expectApiOk(
+    await page.request.post(`/api/me/plans/${memberAssignment.id}/complete`, {
+      data: {
+        feedback: "Felt strong, increase load next week.",
+        exercises: [{ name: "Goblet squat", completed: true, setsCompleted: 3, reps: 10 }]
+      }
+    }),
+  );
+
+  await loginWithSessionCookie(page, "trainer@zook.local");
+  const clientsPayload = await expectApiOk<{
+    clients: Array<{
+      memberUserId: string;
+      summary?: {
+        recentFeedback?: Array<{ feedback?: string | null; completionPct: number }>;
+        recentWorkouts?: Array<{ title: string }>;
+      };
+    }>;
+  }>(await page.request.get(`/api/orgs/${org.id}/trainers/${trainer.id}/clients`));
+  const memberClient = clientsPayload.data.clients.find((client) => client.memberUserId === member.id);
+  expect(memberClient?.summary?.recentFeedback?.[0]?.feedback).toContain("increase load");
+  expect(memberClient?.summary?.recentWorkouts?.some((workout) => workout.title === "Assigned workout report")).toBe(true);
 });
 
 test("platform admin can inspect providers and suspend then reactivate an organization", async ({ page }) => {

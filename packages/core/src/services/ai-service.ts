@@ -10,6 +10,18 @@ const defaultQuotaByRole: Record<Exclude<Role, "PLATFORM_ADMIN">, Pick<AIQuotaSt
   MEMBER: { textDailyLimit: 5, textMonthLimit: 50, imageMonthLimit: 0 }
 };
 
+export class AIGuardError extends Error {
+  readonly reason: string;
+  readonly safetyFlags: string[];
+
+  constructor(reason: string, message: string, safetyFlags: string[] = []) {
+    super(message);
+    this.name = "AIGuardError";
+    this.reason = reason;
+    this.safetyFlags = safetyFlags;
+  }
+}
+
 export function defaultAIQuotaForRole(role: Exclude<Role, "PLATFORM_ADMIN">): AIQuotaState {
   const limits = defaultQuotaByRole[role];
   return { ...limits, usedTextDaily: 0, usedTextMonth: 0, usedImagesMonth: 0 };
@@ -32,22 +44,22 @@ export function assertAIAllowed(input: {
   user: UserSafetyState;
 }): void {
   if (input.user.isMinor && !input.user.guardianConsentGranted) {
-    throw new Error("Guardian consent required for AI");
+    throw new AIGuardError("guardian_consent_required", "Guardian consent required for AI", ["minor_guardian_consent"]);
   }
   if (!input.user.aiConsent) {
-    throw new Error("AI personalization consent required");
+    throw new AIGuardError("ai_consent_required", "AI personalization consent required", ["ai_consent_required"]);
   }
   if (isImageRequest(input.requestType) && input.role === "MEMBER") {
-    throw new Error("Members cannot generate images");
+    throw new AIGuardError("image_generation_not_allowed", "Members cannot generate images", ["member_image_blocked"]);
   }
   if (isImageRequest(input.requestType) && input.quota.usedImagesMonth >= input.quota.imageMonthLimit) {
-    throw new Error("Image quota exceeded");
+    throw new AIGuardError("quota_exceeded", "Image quota exceeded", ["image_quota_exceeded"]);
   }
   if (!isImageRequest(input.requestType) && input.quota.usedTextDaily >= input.quota.textDailyLimit) {
-    throw new Error("Daily text quota exceeded");
+    throw new AIGuardError("quota_exceeded", "Daily text quota exceeded", ["daily_text_quota_exceeded"]);
   }
   if (!isImageRequest(input.requestType) && input.quota.usedTextMonth >= input.quota.textMonthLimit) {
-    throw new Error("Monthly text quota exceeded");
+    throw new AIGuardError("quota_exceeded", "Monthly text quota exceeded", ["monthly_text_quota_exceeded"]);
   }
 }
 
@@ -66,10 +78,10 @@ export async function runAIGuardedRequest(input: {
     input.provider.classifySafety(input.prompt)
   ]);
   if (!scope.inScope) {
-    throw new Error(scope.reason ?? "AI request out of scope");
+    throw new AIGuardError("out_of_scope", scope.reason ?? "AI request out of scope", ["out_of_scope"]);
   }
   if (!safety.allowed) {
-    throw new Error(safety.redirect ?? "AI request blocked for safety");
+    throw new AIGuardError("safety_blocked", safety.redirect ?? "AI request blocked for safety", safety.flags);
   }
   if (input.requestType === "IMAGE") {
     const image = await input.provider.generateImage({ prompt: input.prompt });

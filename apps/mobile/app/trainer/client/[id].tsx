@@ -54,6 +54,8 @@ export default function TrainerClientDetail() {
   const fitnessGoal =
     client?.summary?.fitnessGoal ?? client?.profile?.fitnessGoal ?? "General fitness";
   const activePlans = client?.summary?.activePlans ?? 0;
+  const recentFeedback = client?.summary?.recentFeedback ?? [];
+  const recentWorkouts = client?.summary?.recentWorkouts ?? [];
 
   function buildPlanPayload() {
     return {
@@ -277,16 +279,36 @@ export default function TrainerClientDetail() {
 
           {tab === "progress" ? (
             <GlassCard variant="compact" contentStyle={styles.stack}>
-              <ListRow
-                title="Weekly workouts"
-                subtitle="Use member tracking summary for details"
-                trailing={<StatusChip status="Assigned" tone="neutral" />}
-              />
-              <ListRow
-                title="Last check-in"
-                subtitle="Available in owner/member view"
-                trailing={<StatusChip status="QR" tone="neutral" />}
-              />
+              {recentFeedback.length ? (
+                recentFeedback.map((entry) => (
+                  <ListRow
+                    key={`${entry.assignmentId}-${entry.updatedAt ?? "feedback"}`}
+                    title={entry.feedback ? "Plan feedback" : "Plan progress"}
+                    subtitle={entry.feedback ?? `${entry.completionPct}% complete`}
+                    trailing={<StatusChip status={`${entry.completionPct}%`} tone="lime" />}
+                  />
+                ))
+              ) : (
+                <ListRow
+                  title="Plan feedback"
+                  subtitle="No member feedback yet."
+                  trailing={<StatusChip status="Waiting" tone="neutral" />}
+                />
+              )}
+              {recentWorkouts.map((workout) => (
+                <ListRow
+                  key={workout.id}
+                  title={workout.title}
+                  subtitle={[
+                    workout.workoutType,
+                    workout.durationMinutes ? `${workout.durationMinutes} min` : null,
+                    workout.notes,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  trailing={<StatusChip status="Logged" tone="blue" />}
+                />
+              ))}
               <ListRow
                 title="Assigned plans"
                 subtitle={`${activePlans} active for client`}

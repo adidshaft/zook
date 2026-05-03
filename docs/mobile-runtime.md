@@ -47,10 +47,20 @@ Web checkout handoff uses `NEXT_PUBLIC_WEB_URL`.
 Production builds should use backend mode and explicit provider selections:
 
 - `PAYMENT_PROVIDER=razorpay` for provider-backed checkout, or `PAYMENT_PROVIDER=disabled` only when purchases are intentionally unavailable.
-- `AI_PROVIDER=openai` for trainer planning, or `AI_PROVIDER=disabled` to show controlled unavailable states.
+- `AI_PROVIDER=openai` for backend-only trainer planning, or `AI_PROVIDER=disabled` to show controlled unavailable states.
 - `PUSH_PROVIDER=expo` for remote push, or `PUSH_PROVIDER=disabled` while relying on the in-app inbox.
 
 `mock` providers are local/demo tools and should not be used for production builds.
+
+AI provider settings are server-only. Do not expose `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, or `OPENAI_TIMEOUT_MS` through Expo public env vars. Mobile only receives the controlled API response: a generated draft, a validation/safety block, or a provider-unavailable error.
+
+Trainer AI planning is intentionally human-reviewed:
+
+- Trainers can generate drafts only for assigned clients in the active organization.
+- Draft assignment requires an explicit backend review step first.
+- Members cannot generate trainer plan drafts or AI images.
+- AI safety/consent blocks are persisted as usage/audit records.
+- Live OpenAI behavior is not considered certified until tested with configured credentials in staging.
 
 ## Notifications And Push
 

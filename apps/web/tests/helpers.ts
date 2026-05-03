@@ -1,4 +1,5 @@
 import { expect, type APIResponse, type Page } from "@playwright/test";
+import { AuthService } from "@zook/core/services";
 import { prisma, type MembershipPlan, type Organization } from "@zook/db";
 
 export async function expectApiOk<T = unknown>(response: APIResponse) {
@@ -59,6 +60,31 @@ export async function loginWithOtp(page: Page, email: string) {
     page.waitForURL(/\/(?:dashboard|platform)(?:$|[/?#])/, { timeout: 10_000 }),
     page.getByRole("button", { name: "Verify and continue" }).click()
   ]);
+}
+
+export async function loginWithSessionCookie(page: Page, email: string) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+  const token = AuthService.createToken();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  await prisma.userSession.create({
+    data: {
+      userId: user.id,
+      tokenHash: AuthService.hash(token),
+      expiresAt
+    }
+  });
+  await page.context().clearCookies();
+  await page.context().addCookies([
+    {
+      name: "zook_session",
+      value: token,
+      url: "http://127.0.0.1:3120",
+      httpOnly: true,
+      sameSite: "Lax",
+      expires: Math.floor(expiresAt.getTime() / 1000)
+    }
+  ]);
+  return user;
 }
 
 export async function seedAndGetOrg(input: { username?: string; name?: string } = {}) {

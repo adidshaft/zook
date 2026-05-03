@@ -143,6 +143,8 @@ Still open:
 
 ## Phase 4: AI Provider And Trainer Planning
 
+Status: partially completed in the 2026-05-03 AI/trainer hardening pass. Backend role/tenant gates, assigned-client draft scope, safety-block persistence, structured plan validation, review-before-assign, member workout completion safeguards, and trainer-visible report summaries landed locally. Live OpenAI credential QA remains open.
+
 Deliverables:
 
 - Audit AI provider selection, safety classification, draft generation, persistence, edit/save, assign, usage records, and role gating.
@@ -162,6 +164,26 @@ Acceptance:
 Not certified until:
 
 - OpenAI credentials, safety prompts, and structured output behavior are verified.
+
+Completed in this pass:
+
+- OpenAI provider now uses server-side Responses API calls for text/structured plan generation with JSON-schema-shaped output validation and timeout handling.
+- OpenAI image generation now calls the server-side image generation endpoint instead of returning a synthetic URL.
+- AI generate-plan requires an organization context, trainer permission, active trainer assignment for the target client, and the user's actual AI consent.
+- AI safety, consent, guardian, out-of-scope, and quota blocks throw controlled guard errors and persist usage/audit records with zero quota consumed.
+- AI-generated trainer drafts are saved as unreviewed plan content and cannot be assigned until the review endpoint marks them reviewed.
+- Workout-like plans with no exercises cannot be reviewed, assigned, or completed as a member workout.
+- Member workout report creation now derives org context from the assignment/attendance record and rejects cross-user or cross-org ids.
+- Trainer client summaries now include recent member feedback and trainer-visible workout sessions from real persisted records.
+- Mobile trainer AI draft screens handle loading/error states, send `targetUserId`, preserve structured exercises when saving edits, and call review before assignment.
+- Core/provider and DB-backed acceptance tests cover structured OpenAI request shape, server-side image generation, assigned-client draft restrictions, review-before-assign, safety/consent logging, member notification on assignment, and trainer-visible workout reports.
+
+Still open:
+
+- Exercise OpenAI mode with real staging credentials and model responses.
+- Add broader AI safety evaluation beyond deterministic keyword/scope guards.
+- Store generated AI images through the file-storage boundary once storage is production-certified.
+- Add richer trainer planning UX for comparing draft versions and explaining safety blocks.
 
 ## Phase 5: File Storage And Media
 
@@ -305,4 +327,4 @@ Acceptance:
 - Lint passes with seven existing mobile unused-var warnings.
 - `pnpm test` passes and now runs package-local core, web, and mobile tests. Coverage remains incomplete.
 - Production release preflight correctly fails against local `.env`, which is the right safety behavior.
-- Remote EAS builds, physical-device push QA, OpenAI provider QA, Razorpay webhook QA, object storage QA, and DB-backed acceptance were not run.
+- DB-backed acceptance has now been run locally for the covered payment/push/AI paths. Remote EAS builds, physical-device push QA, OpenAI live-provider QA, Razorpay webhook QA with real credentials, and object storage QA were not run.

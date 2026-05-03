@@ -136,6 +136,13 @@ export const plansApi = {
       },
     });
   },
+  review<T = unknown>(options: RequestOptions & { planId: string }) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/plans/${options.planId}/review`, {
+      method: "POST",
+      token: options.token,
+      orgId: options.orgId,
+    });
+  },
   completeAssignment(
     options: RequestOptions & { assignmentId: string; body: Record<string, unknown> },
   ) {
@@ -224,7 +231,7 @@ export const trainerApi = {
     });
   },
   generatePlanDraft<T = unknown>(
-    options: RequestOptions & { prompt: string; title?: string; type?: string },
+    options: RequestOptions & { prompt: string; targetUserId: string; title?: string; type?: string },
   ) {
     return mobileApiFetch<T>("/ai/generate-plan", {
       method: "POST",
@@ -232,6 +239,7 @@ export const trainerApi = {
       orgId: options.orgId,
       body: {
         orgId: options.orgId,
+        targetUserId: options.targetUserId,
         prompt: options.prompt,
         title: options.title,
         type: options.type,

@@ -164,6 +164,20 @@ export interface TrainerClientRecord {
     allergies?: string;
     summaryNote?: string;
     activePlans?: number;
+    recentFeedback?: Array<{
+      assignmentId: string;
+      completionPct: number;
+      feedback?: string | null;
+      updatedAt?: string;
+    }>;
+    recentWorkouts?: Array<{
+      id: string;
+      title: string;
+      workoutType: string;
+      startedAt?: string;
+      durationMinutes?: number | null;
+      notes?: string | null;
+    }>;
   };
 }
 

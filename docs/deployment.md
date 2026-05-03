@@ -138,6 +138,8 @@ AI:
 - `AI_PROVIDER=mock|openai|disabled`
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
+- `OPENAI_IMAGE_MODEL`
+- `OPENAI_TIMEOUT_MS`
 
 Maps:
 

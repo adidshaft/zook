@@ -9,7 +9,7 @@ Runtime hardening commit: `ce0f9f1`
 
 Zook is a backend-first full-stack MVP skeleton moving toward a durable production-shaped application. Backend mode is the default, offline demo mode is explicit/local-only, core role flows are increasingly persisted through Prisma, and provider behavior is selected through server-side registries and runtime checks.
 
-This is not a production launch certification. Razorpay, Expo push, OpenAI, object storage, distributed rate limiting, full mobile simulator/device QA, and complete E2E coverage still require staging or device validation before production claims.
+This is not a production launch certification. Razorpay, Expo push, OpenAI, object storage, distributed rate limiting, full mobile simulator/device QA, and complete E2E coverage still require staging or device validation before production claims. The 2026-05-03 AI/trainer hardening pass made trainer planning more permanent and testable, but did not certify live OpenAI behavior.
 
 ## Stack Summary
 
@@ -52,7 +52,7 @@ Additional runtime audit findings to keep fixing:
 - Member home, memberships, attendance, plan assignments/progress, shop orders, notifications, profile/settings, and privacy requests.
 - QR attendance with backend scan validation and deterministic entry code for approved scans.
 - Receptionist queue, approve/reject, manual attendance, backend entry/pickup code verification, offline payment records, and pickup fulfillment.
-- Trainer assigned-client list, AI draft generation, editable draft save, plan assignment, plan update/versioning, and assignment notifications.
+- Trainer assigned-client list, assigned-client-only AI draft generation, editable draft save, review-before-assign, plan assignment, plan update/versioning, assignment notifications, and trainer-visible feedback/workout report summaries.
 - Owner/admin mobile metrics for approvals, revenue, stock, members, and command-style summaries.
 - Owner/admin web dashboard and platform diagnostics from API/read-model endpoints.
 - Public gym and join pages read from Prisma first, with fixture fallback only in explicit local/offline-demo conditions.
@@ -62,7 +62,7 @@ Additional runtime audit findings to keep fixing:
 - Mobile offline demo remains in `apps/mobile/src/lib/demo-api.ts` and must stay explicit/local-only.
 - Mock payment provider remains for local checkout and local mock completion. Production completion is blocked.
 - Razorpay provider code supports order creation and signed webhook parsing. The 2026-05-03 payment hardening pass tightened backend activation semantics, expiry, idempotency, and webhook quarantine behavior, but test credentials and real webhook delivery were not verified.
-- AI can use mock locally or OpenAI when configured. OpenAI credentials and safety behavior were not verified in this audit.
+- AI can use mock locally or OpenAI when configured. The OpenAI provider path is server-only, uses structured plan response validation and server-side image generation requests, and blocks unsafe/consent/guardian/out-of-scope cases through persisted usage/audit records. OpenAI credentials, live model output behavior, and safety behavior were not verified in this audit.
 - Push persists in-app notifications, device records, and delivery attempts. The Phase 3 slice now records provider-disabled/provider-failure attempts without breaking product actions, hides scheduled recipients from the member inbox before dispatch, and maps join-request notifications to membership continuation. Expo physical-device push was not verified.
 - Storage supports local disk and S3/R2-compatible providers; object storage env and signed URL behavior were not verified against real infrastructure.
 - Web and dashboard fixture fallback must remain constrained to explicit local/offline-demo paths.
@@ -97,13 +97,14 @@ Known polish themes:
 - Owner setup persistence needs deeper coverage for username uniqueness, amenities/facilities, gallery, trainer details, app links, and join mode.
 - Dashboard heavy tables still need pagination/search hardening in several areas.
 - Platform diagnostics are safe today but should surface disabled/misconfigured provider states more explicitly once disabled modes exist.
+- DB-backed platform admin acceptance currently passes but logs a Next.js warning about Prisma `Decimal` latitude/longitude values crossing a Server-to-Client component boundary. Normalize those values before the web hardening pass claims that surface is clean.
 
 ## Provider Integration Gaps
 
 - Payments: Razorpay test-mode checkout and webhook must be verified with real test credentials. Live readiness is not claimed. The generic checkout route no longer accepts membership/shop activation targets, and backend confirmation now verifies org/user/purpose/amount before activating membership or shop records.
 - Push: Expo token/device flow needs physical iOS/Android QA and receipt polling is incomplete.
 - Push scheduling: scheduled notification rows are hidden until dispatch, but the scheduler/worker to send them is still not implemented.
-- AI: OpenAI path needs configured-provider QA, timeout handling, structured response validation, and durable safety-block records.
+- AI: OpenAI path has timeout handling, structured response validation, and durable safety-block records. It still needs configured-provider QA, broader safety evaluation, and staging evidence before production readiness is claimed.
 - Storage: production object storage needs configured S3/R2 credentials, upload/download QA, and public/private asset validation.
 - Rate limiting: current store is in-process memory and not distributed-ready for production replicas.
 
@@ -120,7 +121,7 @@ Payment-specific hardening gaps found in the audit:
 - `pnpm test` now discovers core, web server, and mobile utility tests through package scripts.
 - Existing tests cover provider registry, runtime env basics, auth service, storage, push provider, payment provider, service helpers, mobile notification routing/preferences, and several web server helpers.
 - Fast Playwright smoke coverage runs with `pnpm test:web`. Additional payment hardening acceptance tests are DB-gated behind `RUN_DB_WEB_TESTS=1`.
-- Missing or incomplete automated coverage remains for full payment confirmation flows, trainer plan assignment E2E, shop pickup E2E, web dashboard org scoping, public profile/join modes, mobile role flows, provider-disabled UX, and wrong-org/wrong-role denial across every API route.
+- Missing or incomplete automated coverage remains for full Razorpay confirmation flows with real credentials, shop pickup E2E, web dashboard org scoping, public profile/join modes, mobile role flows, provider-disabled UX, and wrong-org/wrong-role denial across every API route. Trainer AI draft assignment and trainer-visible workout reports now have DB-backed acceptance coverage.
 
 ## Deployment Gaps
 
@@ -195,6 +196,17 @@ Payment-specific hardening gaps found in the audit:
 - `pnpm test`: passed.
 - `pnpm lint`: passed with the same 7 existing mobile unused-var warnings.
 
+## Additional Checks Run During AI/Trainer Hardening
+
+- `pnpm --filter @zook/core typecheck`: passed.
+- `pnpm --filter @zook/web typecheck`: passed.
+- `pnpm --filter @zook/mobile typecheck`: passed.
+- `pnpm --filter @zook/core test`: passed 11 core test files and 59 tests.
+- `pnpm --filter @zook/web test`: passed 10 web server test files and 28 tests.
+- `pnpm --filter @zook/mobile test`: passed 2 mobile utility test files and 13 tests.
+- `pnpm test:web`: passed 4 browser smoke tests with 11 DB-gated tests skipped when `RUN_DB_WEB_TESTS` was not enabled.
+- `pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web`: passed 15 DB-backed browser acceptance tests.
+
 ## What This Phase Should Fix
 
 - Runtime validation and disabled provider modes are implemented.
@@ -203,6 +215,10 @@ Payment-specific hardening gaps found in the audit:
 - Provider checkout failures mark the pending session and related membership/order as failed or cancelled.
 - Duplicate confirmation is guarded with a unique `Payment.sessionId` and conditional shop-order state transition.
 - Razorpay webhook processing quarantines verified events when business-state application fails.
+- Trainer AI generation is now scoped to the active org, trainer role, an assigned target client, and real AI consent.
+- AI safety/consent blocks persist usage and audit records instead of disappearing as transient validation failures.
+- AI-generated workout drafts require exercise content and a human review step before assignment.
+- Member workout completion cannot mark empty workout plans complete, and trainer client summaries now read real feedback/workout report records.
 
 ## Intentionally Out Of Scope For This Audit Commit
 
@@ -212,3 +228,4 @@ Payment-specific hardening gaps found in the audit:
 - Running physical-device push or iPhone release QA.
 - Replacing in-process rate limiting.
 - Completing all web/mobile UI polish and E2E flows in a single commit.
+- Claiming OpenAI live-provider readiness without staging credentials and safety QA.

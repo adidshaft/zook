@@ -17,7 +17,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { plansApi, trainerApi } from "@/lib/domain-api";
-import { useAuth } from "@/lib/auth";
+import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -30,6 +30,35 @@ type Draft = {
 };
 
 function sectionsFromResponse(response: unknown): Array<{ title: string; body: string }> {
+  if (response && typeof response === "object" && "days" in response) {
+    const days = (response as { days?: unknown }).days;
+    if (Array.isArray(days)) {
+      return days
+        .map((day) => {
+          if (!day || typeof day !== "object") return null;
+          const record = day as Record<string, unknown>;
+          const exercises = Array.isArray(record.exercises) ? record.exercises : [];
+          return {
+            title: typeof record.name === "string" ? record.name : "Training day",
+            body: exercises
+              .map((exercise) => {
+                if (!exercise || typeof exercise !== "object") return "";
+                const item = exercise as Record<string, unknown>;
+                return [
+                  typeof item.name === "string" ? item.name : "Exercise",
+                  typeof item.sets === "string" ? item.sets : null,
+                  typeof item.reps === "string" ? item.reps : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
+              })
+              .filter(Boolean)
+              .join("\n"),
+          };
+        })
+        .filter((section): section is { title: string; body: string } => Boolean(section));
+    }
+  }
   if (response && typeof response === "object" && "sections" in response) {
     const sections = (response as { sections?: unknown }).sections;
     if (Array.isArray(sections)) {
@@ -48,6 +77,23 @@ function sectionsFromResponse(response: unknown): Array<{ title: string; body: s
   return [{ title: "Generated draft", body: typeof response === "string" ? response : JSON.stringify(response ?? {}) }];
 }
 
+function exercisesFromSections(sections: Array<{ title: string; body: string }>) {
+  return sections
+    .flatMap((section) =>
+      section.body
+        .split(/\n+|[.;]/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line, index) => ({
+          id: `${section.title}-${index}`,
+          name: line.slice(0, 120),
+          raw: line,
+          day: section.title,
+        })),
+    )
+    .slice(0, 16);
+}
+
 export default function TrainerAiDraftReview() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -59,6 +105,7 @@ export default function TrainerAiDraftReview() {
   const [status, setStatus] = useState("");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   function updateDraft(patch: Partial<Draft>) {
     setDraft((current) => current ? { ...current, ...patch } : current);
@@ -98,6 +145,7 @@ export default function TrainerAiDraftReview() {
             goal: draft.goal,
             difficulty: draft.difficulty,
             sections: draft.sections,
+            exercises: exercisesFromSections(draft.sections),
           },
         },
       });
@@ -117,26 +165,35 @@ export default function TrainerAiDraftReview() {
       setStatus("Select an assigned client before generating.");
       return;
     }
+    setGenerating(true);
+    setStatus("");
     const goal = client.summary?.fitnessGoal ?? client.profile?.fitnessGoal ?? "General fitness";
-    const result = await trainerApi.generatePlanDraft<{
-      response: unknown;
-      createdPlan?: { id: string; title: string };
-    }>({
-      token,
-      orgId: activeOrgId,
-      title: `${client.user?.name ?? "Client"} workout draft`,
-      type: "WORKOUT",
-      prompt: `Create a safe trainer-reviewed workout plan for ${client.user?.name ?? "this member"} with goal: ${goal}.`,
-    });
-    setDraft({
-      planId: result.createdPlan?.id,
-      title: result.createdPlan?.title ?? "AI workout draft",
-      goal,
-      difficulty: "Coach review",
-      sections: sectionsFromResponse(result.response),
-    });
-    setStatus("Draft generated. Review is still required.");
-    setEditing(true);
+    try {
+      const result = await trainerApi.generatePlanDraft<{
+        response: unknown;
+        createdPlan?: { id: string; title: string };
+      }>({
+        token,
+        orgId: activeOrgId,
+        targetUserId: client.memberUserId,
+        title: `${client.user?.name ?? "Client"} workout draft`,
+        type: "WORKOUT",
+        prompt: `Create a safe trainer-reviewed workout plan for ${client.user?.name ?? "this member"} with goal: ${goal}.`,
+      });
+      setDraft({
+        planId: result.createdPlan?.id,
+        title: result.createdPlan?.title ?? "AI workout draft",
+        goal,
+        difficulty: "Coach review",
+        sections: sectionsFromResponse(result.response),
+      });
+      setStatus("Draft generated. Review is still required.");
+      setEditing(true);
+    } catch (error) {
+      setStatus(getApiErrorMessage(error));
+    } finally {
+      setGenerating(false);
+    }
   }
 
   async function assignDraft() {
@@ -149,6 +206,7 @@ export default function TrainerAiDraftReview() {
     }
     setSaving(true);
     try {
+      await plansApi.review({ token, orgId: activeOrgId, planId: draft.planId });
       await plansApi.assign({
         token,
         orgId: activeOrgId,
@@ -240,10 +298,10 @@ export default function TrainerAiDraftReview() {
               </GlassCard>
 
               <View style={styles.actionRow}>
-                <ZookButton onPress={() => void assignDraft()} style={styles.actionHalf} icon="checkmark-circle-outline" disabled={saving}>
+                <ZookButton onPress={() => void assignDraft()} style={styles.actionHalf} icon="checkmark-circle-outline" disabled={saving || generating}>
                   Assign Plan
                 </ZookButton>
-                <SecondaryButton onPress={() => editing ? void saveDraftEdits() : setEditing(true)} style={styles.actionHalf} disabled={saving}>
+                <SecondaryButton onPress={() => editing ? void saveDraftEdits() : setEditing(true)} style={styles.actionHalf} disabled={saving || generating}>
                   {editing ? "Save Edits" : "Edit Draft"}
                 </SecondaryButton>
               </View>
@@ -255,7 +313,7 @@ export default function TrainerAiDraftReview() {
             <EmptyState
               title="No draft ready"
               body="Generate a draft only after confirming the client goal and constraints."
-              action={<ZookButton onPress={() => void generateDraft()} icon="sparkles-outline">Generate Draft</ZookButton>}
+              action={<ZookButton onPress={() => void generateDraft()} icon="sparkles-outline" disabled={generating}>{generating ? "Generating..." : "Generate Draft"}</ZookButton>}
             />
           )}
 

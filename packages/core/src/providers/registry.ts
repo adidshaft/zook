@@ -501,7 +501,7 @@ function resolveMapProvider(): ProviderResolution<MapProvider> {
 function resolveAIProvider(): ProviderResolution<AIProvider> {
   const selectionValue = env(process.env.AI_PROVIDER);
   const selectedProvider = selectionValue ?? "mock";
-  const envState = envFlags(["AI_PROVIDER", "OPENAI_API_KEY", "OPENAI_MODEL"]);
+  const envState = envFlags(["AI_PROVIDER", "OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_IMAGE_MODEL"]);
 
   if (selectedProvider === "mock") {
     return createReadyResolution({
@@ -536,7 +536,8 @@ function resolveAIProvider(): ProviderResolution<AIProvider> {
         env: envState,
         mode: "live",
         metadata: {
-          model: env(process.env.OPENAI_MODEL) ?? "gpt-4.1-mini"
+          model: env(process.env.OPENAI_MODEL) ?? "gpt-4.1-mini",
+          imageModel: env(process.env.OPENAI_IMAGE_MODEL) ?? "gpt-image-1"
         }
       });
     }

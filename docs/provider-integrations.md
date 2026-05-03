@@ -130,6 +130,8 @@ Known envs:
 
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
+- `OPENAI_IMAGE_MODEL`
+- `OPENAI_TIMEOUT_MS`
 
 Current behavior:
 
@@ -137,7 +139,7 @@ Current behavior:
 - `openai`: supported when `OPENAI_API_KEY` is present
 - `disabled`: supported as an explicit unavailable state
 
-Diagnostics may expose the selected `OPENAI_MODEL`, but never the API key.
+Diagnostics may expose selected model names and boolean env presence, but never the API key. The OpenAI path uses server-side Responses API calls for text/structured trainer-plan generation and server-side image generation requests. Live OpenAI credentials, structured-output behavior, and safety behavior still require staging validation before production readiness is claimed.
 
 ## Storage
 
