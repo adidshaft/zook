@@ -134,6 +134,7 @@ Payment-specific hardening gaps found in the audit:
 - Existing tests cover provider registry, runtime env basics, auth service, storage, push provider, payment provider, service helpers, mobile notification routing/preferences, and several web server helpers.
 - Fast Playwright smoke coverage runs with `pnpm test:web`. Additional payment hardening acceptance tests are DB-gated behind `RUN_DB_WEB_TESTS=1`.
 - Missing or incomplete automated coverage remains for full Razorpay confirmation flows with real credentials, shop pickup E2E, complete web dashboard org scoping, public result fallback modes, mobile role flows, provider-disabled UX, and wrong-org/wrong-role denial across every API route. Trainer AI draft assignment, trainer-visible workout reports, default-branch routing, join-mode query-override denial, referral username links, and QR target selection now have automated coverage.
+- `docs/E2E_PRODUCT_FLOWS.md` maps the six primary product journeys to current automated evidence and manual/device/provider gaps.
 
 ## Deployment Gaps
 
@@ -252,6 +253,10 @@ Payment-specific hardening gaps found in the audit:
 - `pnpm lint`: passed.
 - `git diff --check`: passed.
 - Local Chrome smoke with env-loaded Next dev server checked `/g/iron-house` and `/join/iron-house?mode=OPEN_JOIN`; no Brave or Safari was used. The first dev-server attempt without `.env` failed on missing Prisma `DATABASE_URL`, then the env-loaded retry rendered correctly.
+
+## Additional Checks Run During E2E Flow Documentation
+
+- `git diff --check`: passed for this docs-only pass.
 
 ## What This Phase Should Fix
 

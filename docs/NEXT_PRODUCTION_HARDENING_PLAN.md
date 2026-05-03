@@ -361,6 +361,8 @@ Acceptance:
 
 ## Phase 10: E2E Product Flows
 
+Status: completed as a documentation/evidence mapping pass in `docs/E2E_PRODUCT_FLOWS.md`. This phase did not certify provider/device flows; it maps current DB-backed automation to each journey and names the manual/device gaps.
+
 Create `docs/E2E_PRODUCT_FLOWS.md` and verify/document:
 
 - Member purchase and check-in.
@@ -369,6 +371,17 @@ Create `docs/E2E_PRODUCT_FLOWS.md` and verify/document:
 - Shop pickup.
 - Owner/admin operations.
 - Privacy export/delete request.
+
+Completed in this pass:
+
+- Created `docs/E2E_PRODUCT_FLOWS.md`.
+- Mapped the six primary journeys to existing DB-backed Playwright tests, core tests, mobile utility tests, and manual QA.
+- Marked partial or missing automation for receptionist approve/reject, shop fulfillment, privacy export/delete, draft-edit-before-assign, mobile backend flow retest, physical camera, push deep links, Razorpay, OpenAI, and object storage.
+
+Still open:
+
+- Add missing DB-backed acceptance tests in Phase 11 for privacy export/delete and receptionist/shop fulfillment paths.
+- Continue treating provider/device flows as staging/manual until actually run.
 
 Automate what is practical, and mark manual-only mobile/device steps honestly.
 

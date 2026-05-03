@@ -2,6 +2,8 @@
 
 Last updated: 2026-05-03
 
+Use `docs/E2E_PRODUCT_FLOWS.md` for the six product-level journey checklists and the current automation/manual gap map.
+
 ## Local Backend Mode
 
 Use this for normal development.
