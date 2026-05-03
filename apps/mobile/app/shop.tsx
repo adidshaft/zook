@@ -13,7 +13,7 @@ import {
   ProductCard,
   SearchBar,
   SecondaryButton,
-  SegmentedControl,
+  SectionHeader,
   StatusChip,
   ZookButton,
   ZookScreen,
@@ -304,7 +304,41 @@ export default function Shop() {
       />
 
       <SearchBar value={query} onChangeText={setQuery} placeholder="Search essentials" />
-      <SegmentedControl options={categories} value={category} onChange={setCategory} />
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryRail}
+      >
+        {categories.map((option) => {
+          const selected = option.value === category;
+          return (
+            <Pressable
+              key={option.value}
+              onPress={() => setCategory(option.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              style={[styles.categoryChip, selected ? styles.categoryChipActive : null]}
+            >
+              <Ionicons
+                name={iconForCategory(option.value)}
+                size={15}
+                color={selected ? colors.bg : colors.muted}
+              />
+              <Text
+                style={[styles.categoryChipText, selected ? styles.categoryChipTextActive : null]}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      <SectionHeader
+        title="Available now"
+        subtitle={`${filteredProducts.length} ${filteredProducts.length === 1 ? "item" : "items"}`}
+      />
 
       {filteredProducts.length ? (
         <View style={styles.productGrid}>
@@ -393,10 +427,11 @@ const styles = StyleSheet.create({
   },
   content: {
     width: "100%",
-    maxWidth: layout.contentWidth,
+    maxWidth: layout.contentWidth + layout.screenPadding * 2,
     alignSelf: "center",
+    paddingHorizontal: layout.screenPadding,
     paddingTop: 14,
-    gap: 14,
+    gap: 12,
     paddingBottom: layout.bottomNavContentPadding,
   },
   cartIcon: {
@@ -434,6 +469,33 @@ const styles = StyleSheet.create({
   productCard: {
     flexBasis: "47%",
     flexGrow: 1,
+    minHeight: 238,
+  },
+  categoryRail: {
+    gap: 8,
+    paddingRight: layout.screenPadding,
+  },
+  categoryChip: {
+    minHeight: 38,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  categoryChipActive: {
+    borderColor: "rgba(185,244,85,0.44)",
+    backgroundColor: colors.lime,
+  },
+  categoryChipText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  categoryChipTextActive: {
+    color: colors.bg,
   },
   miniCart: {
     minHeight: 54,

@@ -26,7 +26,7 @@ The goal of this pass was not just "does it render", but "does the role land on 
 
 ## Fix Pass Status
 
-Addressed after this audit:
+Addressed in code after earlier and current audit passes:
 
 - Platform admin now routes to an explicit mobile web-handoff screen instead of falling into the member shell.
 - Admin keeps the owner/admin command shell but is labeled and docked as Admin.
@@ -34,11 +34,19 @@ Addressed after this audit:
 - Reception manual attendance catches duplicate-attendance API errors inline instead of leaking an unhandled app-level exception.
 - Shared bottom-dock scroll padding was increased for docked mobile surfaces.
 - Web now has a gym setup entry point and a real Public Profile editor for owners.
-- The shared gym profile route now renders backend/public profile content, facilities, gallery photos, and app handoff links instead of appearing blank.
+- The shared gym profile route now hydrates backend/public profile data, facilities, gallery photos, and app links, but the mobile simulator render still needs a layout fix.
 - Trainer home no longer shows hardcoded PT/feedback metrics; its headline client shortcut links directly to an assigned client.
 - Attendance success now routes trainers back to trainer plan work instead of dropping them into the member plan library.
 - Rejected/flagged attendance results now show a desk-help-needed state instead of the approved check-in treatment.
 - Owner payment exception copy now reads as a review state, including a clean zero state.
+- Reception now exposes a visible sign-out action from the desk shell.
+- Expo Go no longer registers push notifications or shows the persistent warning banner during simulator QA.
+- `http://localhost:3001/login` now loads correctly in Chrome during local web QA.
+- Current pass increased shared dock-safe padding again and tightened the first viewport on owner, trainer, settings, reception, shop, and gym profile screens.
+- Member shop now uses an explicit search/category/product section stack instead of a cramped segmented rail directly above the docked grid.
+- Reception now exposes both `Settings` and `Sign out` from the main desk shell.
+- Owner command metrics now use a horizontal summary rail so `Needs attention` begins higher on standard iPhone simulator heights.
+- Gym profile and settings now use explicit flex scroll frames with horizontal screen padding to avoid blank/off-canvas renders.
 
 ## Screenshots
 
@@ -51,18 +59,18 @@ Addressed after this audit:
 
 ### Broken
 
-- **Unhandled error toast persists across the whole app**
-  - **Observed:** After reception triggered a duplicate attendance error, the raw toast `Uncaught (in promise, id: 0) ApiError: Member already has an attendance record for today.` stayed visible across role switches, settings, logout, and even back on the login screen.
-  - **Why it matters:** One runtime error can pollute every later screen and makes the app feel unstable even when the next flow is fine.
-  - **Likely fix:** Catch and normalize domain/API errors before they reach the global unhandled promise path. Also clear transient toast/error state on route change and logout.
+- **Trainer home vertical offset needs re-test**
+  - **Observed:** Even after reloading the bundle and switching tabs, trainer home opened with a large dead zone above the first meaningful content and lower cards pushed into the dock zone.
+  - **Why it matters:** This reads as a broken screen composition, not just a cramped layout.
+  - **Current fix:** Reduced trainer screen top padding/gaps and made the priority client card the direct shortcut. Needs simulator confirmation.
 
 - **Bottom dock overlaps content on multiple surfaces**
-  - **Observed:** The bottom nav still sits on top of content on member, trainer, owner, and settings surfaces. In a few places it visually clips CTAs or lower cards.
+  - **Observed:** The bottom nav still sits on top of content on member, trainer, owner, reception, and settings surfaces. In a few places it visually clips CTAs, lower cards, or form controls.
   - **Why it matters:** Some actions feel half-hidden, and screens read like they were not padded for the dock height.
-  - **Likely fix:** Add a consistent bottom safe-area spacer/content inset for all docked screens instead of per-screen guesses.
+  - **Current fix:** Shared `bottomNavContentPadding` was raised to `224`, with additional per-screen breathing room on owner, trainer, reception, and settings. Needs simulator confirmation.
 
 - **Role routing is inconsistent**
-  - **Observed:** `admin@zook.local` lands in the owner shell with an `Owner` badge. `platform@zook.local` lands in the member shell. This is not just copy drift; it is wrong surface routing.
+  - **Observed:** Earlier in the day, `admin@zook.local` landed in the owner shell with an `Owner` badge and `platform@zook.local` landed in the member shell. Those two roles were not re-tested in the latest overflow follow-up, so this remains an unresolved routing risk until re-verified.
   - **Why it matters:** It hides real permission boundaries and makes role testing misleading.
   - **Likely fix:** Stop falling back to the member shell for unsupported roles and add explicit routes/default shells for `ADMIN` and `PLATFORM_ADMIN`.
 
@@ -72,6 +80,11 @@ Addressed after this audit:
   - **Observed:** OTP request/verify, member home, trainer clients, reception desk, reception pickup verification, and owner dashboard data all loaded from the running local stack.
   - **Why it matters:** Most problems in this pass were UI/state-management issues rather than total backend disconnects.
   - **Likely fix:** No backend emergency here; focus first on routing, error handling, and layout.
+
+- **Web and mobile are sharing the same live org state**
+  - **Observed:** Chrome at `http://localhost:3001/` and the simulator both showed coherent owner/reception numbers during this pass, including `2` attendance scans and the current pickup/stock state.
+  - **Why it matters:** The integration problem is mostly presentation consistency, not missing data.
+  - **Likely fix:** Keep using the shared backend as the truth source while stabilizing mobile layout.
 
 ## Member
 
@@ -117,16 +130,16 @@ Addressed after this audit:
   - **Why it matters:** A member should not be editing the training plan structure directly.
   - **Likely fix:** Remove trainer-authoring controls from the member plan detail or make the screen read-only for member role.
 
-- **Shop layout is severely broken**
+- **Shop layout was severely broken**
   - **Observed:** The member shop had header/content stacking issues, category rail/nav overlap, and general broken composition even though product data loaded.
   - **Why it matters:** The data is there, but the screen does not look production-usable.
-  - **Likely fix:** Rebuild the shop screen layout with explicit vertical sections and bottom inset padding. Do not rely on content naturally avoiding the floating dock.
+  - **Current fix:** Replaced the cramped segmented category rail with a horizontal chip rail, added an explicit `Available now` section, and made the shell horizontally padded/dock-aware. Needs simulator confirmation.
 
-- **Gym details screen renders visually blank**
+- **Gym details screen rendered visually blank**
   - **Observed:** `Open gym details` produced an almost empty dark screen with only the bottom nav visible.
   - **Screenshot:** `/tmp/zook-audit-member-gym-blank.png`
   - **Why it matters:** This looks like a hard broken route to users.
-  - **Likely fix:** Inspect the gym details route for a container/scroll/view style bug or content color/opacity issue. The underlying data appears to exist, so the render tree is likely there but not visible.
+  - **Current fix:** Added an explicit flex scroll frame and screen padding to the shared gym profile route. Needs simulator confirmation.
 
 ## Trainer
 
@@ -197,6 +210,10 @@ Addressed after this audit:
   - **Observed:** The members screen rendered correctly and timestamp formatting looked human-readable.
   - **Likely fix:** None.
 
+- **Desk sign-out**
+  - **Observed:** The new reception `Sign out` action is visible from the desk header and returns cleanly to the login screen.
+  - **Likely fix:** None for the logout action itself.
+
 - **Orders verification**
   - **Observed:** Entering `IH-PICK-101` enabled the button, `Verify Pickup Code` succeeded, and `Mark Picked Up` cleared the queue and updated counts from Ready `1` / Done `0` to Ready `0` / Done `1`.
   - **Why it matters:** This is a meaningful improvement over the earlier desk-state drift.
@@ -206,24 +223,32 @@ Addressed after this audit:
   - **Observed:** `Audited Collection` rendered with payment modes, amount, reference, desk note, and audit reason fields.
   - **Likely fix:** None for initial render.
 
+- **Duplicate manual attendance now fails inline**
+  - **Observed:** Re-recording attendance for an already checked-in member now shows `This member is already checked in today.` inline on the screen instead of leaking a raw app-level exception.
+  - **Likely fix:** None for the domain error path itself.
+
+- **Audited payment rejection now stays in-domain**
+  - **Observed:** Submitting `Record Audited Payment` against an already-active subscription now shows `This membership is already active...` inline instead of throwing a noisy technical error.
+  - **Likely fix:** None for the handled error path itself.
+
 ### Partial
 
-- **Payments submission not exercised in this pass**
-  - **Observed:** I verified render/state presence but did not submit `Record Audited Payment` in this run.
-  - **Why it matters:** The screen may still hide submit-time errors.
-  - **Likely fix:** Do one dedicated audited payment pass after the global error-toast issue is fixed, so the result is easier to trust.
+- **Members screen composition**
+  - **Observed:** The `Member Snapshot` card and manual-attendance controls are usable, but the dock initially sits on top of the lower portion of the form until the user scrolls.
+  - **Why it matters:** A desk flow should not hide the very button the receptionist needs most.
+  - **Likely fix:** Reserve explicit bottom breathing room for long operational forms and avoid placing critical controls inside the default dock collision zone.
+
+- **Payments form composition**
+  - **Observed:** The lower part of the audited-collection form, especially the audit warning and submit region, starts behind the dock on first render.
+  - **Why it matters:** Finance actions look unfinished even when the underlying validation is working.
+  - **Likely fix:** Shorten the first viewport or move the submit section into a sticky footer that stays above the dock.
 
 ### Broken
 
-- **Duplicate manual attendance throws a raw unhandled promise error**
-  - **Observed:** Recording manual attendance for an already-checked-in member produced a raw app-level error toast rather than a desk-friendly validation response.
-  - **Why it matters:** Reception sees a technical exception instead of an operational explanation.
-  - **Likely fix:** Catch this API error in the attendance action and show an inline/domain toast like `This member is already checked in today.`
-
-- **The raw reception error pollutes later screens**
-  - **Observed:** The same attendance error toast remained visible on Orders, Settings, logout, the login screen, and later role sessions.
-  - **Why it matters:** This is the clearest example of the global error-state leak.
-  - **Likely fix:** Same as global issue: catch locally and clear transient errors on route change/logout.
+- **Reception previously lacked settings/profile access from its main shell**
+  - **Observed:** After adding sign-out, the reception shell still lacked an obvious path to profile or settings from its primary desk header.
+  - **Why it matters:** Desk staff can exit, but they still do not have the same account-management affordances as other roles.
+  - **Current fix:** Added a `Settings` utility action next to `Sign out`.
 
 ## Owner
 
@@ -262,22 +287,22 @@ Addressed after this audit:
 
 ### Broken
 
-- **Bottom area still collides with dock/toast**
-  - **Observed:** Lower cards and lower-page content still fight with the persistent toast and bottom dock.
-  - **Why it matters:** The owner shell is readable, but not comfortably scroll-safe.
-  - **Likely fix:** Apply the same global bottom inset treatment and clear the persistent error overlay.
+- **Owner command first viewport needs re-test**
+  - **Observed:** On command, the fourth metric card (`Expiring soon`) begins under the dock, and the transition into `Needs attention`/`Recent activity` feels clipped in the initial viewport.
+  - **Why it matters:** The most important summary screen still looks cramped and unfinished on a standard iPhone simulator size.
+  - **Current fix:** Replaced the wrapping command metric grid with a shorter horizontal summary rail.
 
-- **Copy quality issue**
-  - **Observed:** `0 transactions need confirmation` reads awkwardly.
-  - **Why it matters:** Not a blocker, but it lowers polish on a dashboard intended for operators.
-  - **Likely fix:** Update to `0 transactions need confirmation` -> `0 transactions need review` or `No transactions need confirmation`.
+- **Owner approvals and stock still clip their lower empty-state cards**
+  - **Observed:** The lower halves of the empty-state cards on `Approvals` and `Stock` sit too close to or partly behind the dock at rest.
+  - **Why it matters:** Even healthy zero states should look intentionally laid out, not merely technically reachable by scrolling.
+  - **Likely fix:** Add role-screen-specific vertical spacing rules for empty-state panels rather than relying on generic card stacking.
 
 ## Admin
 
 ### Broken
 
 - **Admin account lands in owner shell and is labeled as Owner**
-  - **Observed:** Logging in with `admin@zook.local` produced the same owner command surface with an `Owner` badge and owner bottom nav.
+  - **Observed:** Earlier in the day, logging in with `admin@zook.local` produced the same owner command surface with an `Owner` badge and owner bottom nav. I did not re-test admin during the latest overflow follow-up, so this needs a fresh confirmation pass.
   - **Why it matters:** This hides whether admin-specific routing and permissions actually work.
   - **Likely fix:** If admin is intentionally owner-equivalent, change the badge/copy to reflect that clearly. If not intentional, restore the admin-specific dock and route mapping.
 
@@ -290,18 +315,18 @@ The former `minor@zook.local` QA track is folded into member QA for this MVP. Gu
 ### Broken
 
 - **Platform admin is routed into the member shell**
-  - **Observed:** `platform@zook.local` landed on a member-style home with greeting `Good morning, Platform`, a membership card, and member tabs.
+  - **Observed:** Earlier in the day, `platform@zook.local` landed on a member-style home with greeting `Good morning, Platform`, a membership card, and member tabs. I did not re-test platform admin during the latest overflow follow-up, so this also needs fresh confirmation.
   - **Screenshot:** `/tmp/zook-audit-platform-home.png`
   - **Why it matters:** This role currently has no usable mobile control surface and is effectively misclassified.
   - **Likely fix:** Add an explicit platform-admin default route and shell, or block mobile access with a clear unsupported message until the platform surface exists.
 
 ## Suggested Fix Order
 
-1. Fix global unhandled error/toast lifecycle.
-2. Re-test bottom dock safe-area/content inset handling after the shared padding increase.
-3. Re-test role routing for `ADMIN` and `PLATFORM_ADMIN`.
-4. Rebuild member shop layout.
-5. Do a second focused pass on reception payments submit behavior after the global error leak is fixed.
+1. Re-test dock-safe layout on the highest-friction screens after the current code pass: trainer home, member shop, member gym details, owner command, reception members, and reception payments.
+2. Re-test role routing for `ADMIN` and `PLATFORM_ADMIN`.
+3. Rebuild member shop further only if simulator still shows stacking after the category rail/product section change.
+4. Confirm the shared gym profile data is visible instead of rendering off-canvas.
+5. Re-test a successful reception payment record once a valid pending subscription fixture exists.
 6. Keep guardian/minor policy gates backend-ready, but do not maintain a separate minor mobile QA track for MVP.
 
 ## Coverage Gaps
@@ -310,7 +335,7 @@ These are the areas I did not fully exercise in this pass:
 
 - Real camera-based scanning flow
 - Push notification deep links
-- Reception `Record Audited Payment` submit result
+- Reception `Record Audited Payment` successful submit result
 - Owner/admin destructive management actions
 
 Even with those gaps, the current audit is enough to start a meaningful stabilization pass because the major issues are already clear and reproducible.

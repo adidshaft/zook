@@ -4609,22 +4609,21 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     if (!memberUser) {
       throw notFoundError("Member not found");
     }
-    const payment = await prisma.payment.create({
-      data: clean({
-        orgId,
-        userId: body.memberUserId,
-        purpose: "MEMBERSHIP",
-        amountPaise: body.amountPaise,
-        status: "SUCCEEDED",
-        mode: body.mode,
-        proofAssetId: proofAsset?.id,
-        receiptNumber: body.receiptNumber,
-        notes: body.notes,
-        recordedById: userId,
-        recordedAt: new Date(),
-      }),
+    const paymentData = clean({
+      orgId,
+      userId: body.memberUserId,
+      purpose: "MEMBERSHIP",
+      amountPaise: body.amountPaise,
+      status: "SUCCEEDED",
+      mode: body.mode,
+      proofAssetId: proofAsset?.id,
+      receiptNumber: body.receiptNumber,
+      notes: body.notes,
+      recordedById: userId,
+      recordedAt: new Date(),
     });
-    let subscription = null;
+    let payment: Awaited<ReturnType<typeof prisma.payment.create>>;
+    let subscription = null as Awaited<ReturnType<typeof prisma.memberSubscription.create>> | null;
     if (body.subscriptionId) {
       const existingSubscription = await prisma.memberSubscription.findFirst({
         where: { id: body.subscriptionId, orgId, memberUserId: body.memberUserId },
@@ -4658,6 +4657,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
           publicVisible: plan.publicVisible,
         }),
       );
+      payment = await prisma.payment.create({ data: paymentData });
       subscription = await prisma.memberSubscription.update({
         where: { id: existingSubscription.id },
         data: clean({
@@ -4698,6 +4698,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
           publicVisible: plan.publicVisible,
         }),
       );
+      payment = await prisma.payment.create({ data: paymentData });
       subscription = await prisma.memberSubscription.create({
         data: clean({
           orgId,

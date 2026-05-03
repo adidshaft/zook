@@ -18,7 +18,6 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { DashboardOperationalPanel } from "./dashboard-operational-panel";
 import {
   EmptyState,
   MetricCard,
@@ -27,6 +26,7 @@ import {
   StatusPill,
 } from "./dashboard-primitives";
 import { GlassCard, Pill, type PillTone } from "./glass-card";
+import { DashboardOperationalPanelShell } from "./dashboard-operational-panel-shell";
 import { ZookLogo } from "./zook-logo";
 import { formatDate, formatDaysRemaining, formatEnumLabel, titleFromSection } from "@/lib/format";
 
@@ -324,7 +324,7 @@ export function DashboardShell({
             </div>
           )}
 
-          <DashboardOperationalPanel
+          <DashboardOperationalPanelShell
             orgId={activeOrg.id}
             sectionKey={sectionKey}
             organization={{

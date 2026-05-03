@@ -7,7 +7,6 @@ import {
   BottomNav,
   EmptyState,
   GlassCard,
-  IconBubble,
   InfoRow,
   LoadingState,
   MobileHeader,
@@ -111,6 +110,7 @@ export default function GymProfileScreen() {
   return (
     <ZookScreen>
       <ScrollView
+        style={styles.scroller}
         contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
@@ -538,10 +538,14 @@ function toneForJoinMode(joinMode?: string) {
 }
 
 const styles = StyleSheet.create({
+  scroller: {
+    flex: 1,
+  },
   content: {
     width: "100%",
-    maxWidth: layout.contentWidth,
+    maxWidth: layout.contentWidth + layout.screenPadding * 2,
     alignSelf: "center",
+    paddingHorizontal: layout.screenPadding,
     paddingTop: 14,
     gap: 16,
     paddingBottom: layout.bottomNavContentPadding,

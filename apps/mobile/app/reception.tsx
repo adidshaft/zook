@@ -1,6 +1,6 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { PaymentMode } from "@zook/core";
 import {
   ActiveGymPill,
@@ -72,7 +72,8 @@ function deskReasonCopy(reason?: string | null) {
 
 export default function Reception() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
-  const { activeOrgId, session, token } = useAuth();
+  const router = useRouter();
+  const { activeOrgId, logout, session, token } = useAuth();
   const view = normalizeView(params.view);
   const [reason, setReason] = useState("Desk confirmed member identity");
   const [verifyCode, setVerifyCode] = useState("");
@@ -182,17 +183,27 @@ export default function Reception() {
 
   async function recordPayment() {
     if (!member?.id || !membership?.id) return;
-    const payment = await recordPaymentMutation.mutateAsync({
-      memberUserId: member.id,
-      subscriptionId: membership.id,
-      amountPaise,
-      mode: paymentMode,
-      ...(referenceId ? { receiptNumber: referenceId } : {}),
-      notes: [paymentReason, paymentNote].filter(Boolean).join(" · "),
-    });
-    setPaymentStatus(
-      `Recorded ${formatInr(payment.payment.amountPaise)} by ${payment.payment.mode.replace(/_/g, " ")}.`,
-    );
+    setPaymentStatus("");
+    try {
+      const payment = await recordPaymentMutation.mutateAsync({
+        memberUserId: member.id,
+        subscriptionId: membership.id,
+        amountPaise,
+        mode: paymentMode,
+        ...(referenceId ? { receiptNumber: referenceId } : {}),
+        notes: [paymentReason, paymentNote].filter(Boolean).join(" · "),
+      });
+      setPaymentStatus(
+        `Recorded ${formatInr(payment.payment.amountPaise)} by ${payment.payment.mode.replace(/_/g, " ")}.`,
+      );
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      setPaymentStatus(
+        /already active/i.test(message)
+          ? "This membership is already active. Choose a pending subscription or create a new manual activation."
+          : message,
+      );
+    }
   }
 
   async function fulfillOrder(orderId: string) {
@@ -247,6 +258,27 @@ export default function Reception() {
             </Text>
           </View>
           <Pill tone="blue">Receptionist</Pill>
+        </View>
+
+        <View style={styles.utilityRow}>
+          <Pressable
+            onPress={() => router.push("/settings")}
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+            style={styles.utilityPill}
+          >
+            <IconBubble icon="settings-outline" tone="blue" size={28} />
+            <Text style={styles.utilityText}>Settings</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => void logout()}
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+            style={[styles.utilityPill, styles.signOutPill]}
+          >
+            <IconBubble icon="log-out-outline" tone="red" size={28} />
+            <Text style={[styles.utilityText, styles.signOutText]}>Sign out</Text>
+          </Pressable>
         </View>
 
         {view === "desk" ? (
@@ -335,7 +367,7 @@ export default function Reception() {
                       <PrimaryButton
                         icon="checkmark-circle-outline"
                         disabled={approveAttendanceMutation.isPending}
-                        onPress={() => void approveAttendance(attempt.id)}
+                        onPress={() => approveAttendance(attempt.id)}
                         style={styles.actionHalf}
                       >
                         Approve
@@ -343,7 +375,7 @@ export default function Reception() {
                       <SecondaryButton
                         icon="close-circle-outline"
                         disabled={rejectAttendanceMutation.isPending}
-                        onPress={() => void rejectAttendance(attempt.id)}
+                        onPress={() => rejectAttendance(attempt.id)}
                         style={styles.actionHalf}
                       >
                         Reject
@@ -379,7 +411,7 @@ export default function Reception() {
               <PrimaryButton
                 icon="scan-outline"
                 disabled={!canVerifyCode}
-                onPress={() => void verifyEntryCode()}
+                onPress={verifyEntryCode}
               >
                 Verify Code
               </PrimaryButton>
@@ -446,7 +478,7 @@ export default function Reception() {
               <PrimaryButton
                 icon="create-outline"
                 disabled={!member?.id || manualAttendanceMutation.isPending}
-                onPress={() => void recordManualAttendance()}
+                onPress={recordManualAttendance}
               >
                 {manualAttendanceMutation.isPending ? "Recording..." : "Record Manual Attendance"}
               </PrimaryButton>
@@ -540,7 +572,7 @@ export default function Reception() {
               <PrimaryButton
                 icon="shield-checkmark-outline"
                 disabled={!canRecordPayment || recordPaymentMutation.isPending}
-                onPress={() => void recordPayment()}
+                onPress={recordPayment}
               >
                 Record Audited Payment
               </PrimaryButton>
@@ -584,7 +616,7 @@ export default function Reception() {
               <PrimaryButton
                 icon="scan-outline"
                 disabled={!canVerifyCode}
-                onPress={() => void verifyEntryCode()}
+                onPress={verifyEntryCode}
               >
                 Verify Pickup Code
               </PrimaryButton>
@@ -630,7 +662,7 @@ export default function Reception() {
                     <PrimaryButton
                       icon="bag-check-outline"
                       disabled={fulfillOrderMutation.isPending}
-                      onPress={() => void fulfillOrder(order.id)}
+                      onPress={() => fulfillOrder(order.id)}
                     >
                       Mark Picked Up
                     </PrimaryButton>
@@ -663,7 +695,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 16,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingBottom: layout.bottomNavContentPadding + 48,
   },
   headerRow: {
     flexDirection: "row",
@@ -674,6 +706,36 @@ const styles = StyleSheet.create({
   headerCopy: {
     flex: 1,
     gap: 8,
+  },
+  utilityRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  utilityPill: {
+    minHeight: 40,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    paddingLeft: 6,
+    paddingRight: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    flex: 1,
+  },
+  utilityText: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  signOutPill: {
+    borderColor: "rgba(255,90,61,0.28)",
+    backgroundColor: "rgba(255,90,61,0.08)",
+  },
+  signOutText: {
+    color: colors.red,
   },
   title: {
     color: colors.text,

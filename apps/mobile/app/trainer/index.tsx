@@ -65,6 +65,24 @@ export default function Trainer() {
 
           {view === "home" ? (
             <>
+              {firstPlannedClientId ? (
+                <GlassCard
+                  variant="compact"
+                  contentStyle={styles.priorityClientCard}
+                  pressable
+                  onPress={() => openClient(firstPlannedClientId)}
+                >
+                  <ListRow
+                    title={
+                      plannedClients[0]?.user?.name ?? clients[0]?.user?.name ?? "Assigned client"
+                    }
+                    subtitle={`${plannedClients[0]?.summary?.activePlans ?? clients[0]?.summary?.activePlans ?? 0} active ${(plannedClients[0]?.summary?.activePlans ?? clients[0]?.summary?.activePlans ?? 0) === 1 ? "plan" : "plans"} · ${plannedClients[0]?.summary?.fitnessGoal ?? plannedClients[0]?.profile?.fitnessGoal ?? clients[0]?.summary?.fitnessGoal ?? clients[0]?.profile?.fitnessGoal ?? "General fitness"}`}
+                    leading={<IconBubble icon="person-outline" tone="lime" />}
+                    trailing={<StatusChip status="Priority client" tone="amber" />}
+                  />
+                </GlassCard>
+              ) : null}
+
               <View style={styles.metricGrid}>
                 <MetricTile
                   label="Assigned clients"
@@ -85,7 +103,6 @@ export default function Trainer() {
                   tone="lime"
                 />
               </View>
-
               {clientsWithPlans ? (
                 <GlassCard variant="warning" contentStyle={styles.attentionContent}>
                   <View style={styles.attentionHeader}>
@@ -98,16 +115,6 @@ export default function Trainer() {
                       </Text>
                     </View>
                   </View>
-                  <ZookButton
-                    href={
-                      firstPlannedClientId ? `/trainer/client/${firstPlannedClientId}` : undefined
-                    }
-                    disabled={!firstPlannedClientId}
-                    tone="secondary"
-                    icon="reader-outline"
-                  >
-                    Open Client
-                  </ZookButton>
                 </GlassCard>
               ) : null}
 
@@ -221,9 +228,12 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
-    gap: 14,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingTop: 8,
+    gap: 10,
+    paddingBottom: layout.bottomNavContentPadding + 32,
+  },
+  priorityClientCard: {
+    gap: spacing.md,
   },
   metricGrid: {
     flexDirection: "row",

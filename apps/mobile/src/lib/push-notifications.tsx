@@ -3,7 +3,15 @@ import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import type { ReactNode } from "react";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Linking, Platform } from "react-native";
 import { getExpoProjectId, getMobilePushEnvironment } from "./api";
 import { getApiErrorMessage, useAuth } from "./auth";
@@ -16,16 +24,19 @@ import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const INSTALLATION_ID_STORAGE_KEY = "zook_mobile_installation_id";
 const REGISTERED_PUSH_TOKEN_STORAGE_KEY = "zook_registered_push_token";
+const isExpoGoEnvironment = Constants.executionEnvironment === "storeClient";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false
-  })
-});
+if (!isExpoGoEnvironment) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 type PushPermissionState = "unknown" | "undetermined" | "granted" | "denied" | "unsupported";
 type PushSyncStatus =
@@ -52,7 +63,9 @@ interface PushNotificationsContextValue {
   openSystemSettings: () => Promise<void>;
 }
 
-const PushNotificationsContext = createContext<PushNotificationsContextValue | undefined>(undefined);
+const PushNotificationsContext = createContext<PushNotificationsContextValue | undefined>(
+  undefined,
+);
 
 const offlineDemoPushValue: PushNotificationsContextValue = {
   permissionState: "unsupported",
@@ -65,7 +78,20 @@ const offlineDemoPushValue: PushNotificationsContextValue = {
   openSystemSettings: async () => {},
 };
 
-function normalizePermissionState(status: Notifications.NotificationPermissionsStatus): PushPermissionState {
+const expoGoPushValue: PushNotificationsContextValue = {
+  permissionState: "unsupported",
+  syncStatus: "unsupported",
+  isExpoGo: true,
+  projectIdConfigured: Boolean(getExpoProjectId()),
+  requestEnablePush: async () => false,
+  disablePush: async () => {},
+  refreshRegistration: async () => {},
+  openSystemSettings: async () => {},
+};
+
+function normalizePermissionState(
+  status: Notifications.NotificationPermissionsStatus,
+): PushPermissionState {
   if (status.granted) {
     return "granted";
   }
@@ -85,138 +111,151 @@ function platformForRegistration() {
 function trimErrorMessage(error: unknown) {
   const message = getApiErrorMessage(error);
   if (/physical device|real device/i.test(message)) {
-    return "Expo push tokens require a physical iPhone or Android device. Simulators and emulators can still use the in-app notification center."
+    return "Expo push tokens require a physical iPhone or Android device. Simulators and emulators can still use the in-app notification center.";
   }
   if (/project.?id/i.test(message)) {
-    return "Expo push registration needs a project ID. Set EXPO_PROJECT_ID for local/dev builds or use an EAS build with extra.eas.projectId."
+    return "Expo push registration needs a project ID. Set EXPO_PROJECT_ID for local/dev builds or use an EAS build with extra.eas.projectId.";
   }
-  return message
+  return message;
 }
 
 async function getOrCreateInstallationId() {
-  const existingId = await getStoredValue(INSTALLATION_ID_STORAGE_KEY)
+  const existingId = await getStoredValue(INSTALLATION_ID_STORAGE_KEY);
   if (existingId) {
-    return existingId
+    return existingId;
   }
 
-  const generatedId = `mobile_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
-  await setStoredValue(INSTALLATION_ID_STORAGE_KEY, generatedId)
-  return generatedId
+  const generatedId = `mobile_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  await setStoredValue(INSTALLATION_ID_STORAGE_KEY, generatedId);
+  return generatedId;
 }
 
 export function PushNotificationsProvider({ children }: { children: ReactNode }) {
   if (isOfflineDemoMode()) {
-    return <PushNotificationsContext.Provider value={offlineDemoPushValue}>{children}</PushNotificationsContext.Provider>
+    return (
+      <PushNotificationsContext.Provider value={offlineDemoPushValue}>
+        {children}
+      </PushNotificationsContext.Provider>
+    );
   }
 
-  const { activeOrgId, registerLogoutCleanup, status, token } = useAuth()
-  const router = useRouter()
-  const queryClient = useQueryClient()
-  const preferencesQuery = useMyNotificationPreferences()
+  if (isExpoGoEnvironment) {
+    return (
+      <PushNotificationsContext.Provider value={expoGoPushValue}>
+        {children}
+      </PushNotificationsContext.Provider>
+    );
+  }
+
+  const { activeOrgId, registerLogoutCleanup, status, token } = useAuth();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const preferencesQuery = useMyNotificationPreferences();
   const effectivePreferences = useMemo(
     () => mergeNotificationPreferences(preferencesQuery.data?.preferences, activeOrgId),
-    [activeOrgId, preferencesQuery.data?.preferences]
-  )
-  const pushEnabledRef = useRef(effectivePreferences.pushEnabled)
-  const authTokenRef = useRef<string | undefined>(token)
-  const activeOrgIdRef = useRef<string | undefined>(activeOrgId)
-  const handledResponseIdsRef = useRef(new Set<string>())
-  const registeredSignatureRef = useRef<string | undefined>(undefined)
-  const [permissionState, setPermissionState] = useState<PushPermissionState>("unknown")
-  const [syncStatus, setSyncStatus] = useState<PushSyncStatus>("idle")
-  const [pushToken, setPushToken] = useState<string | undefined>()
-  const [error, setError] = useState<string | undefined>()
-  const [pendingHref, setPendingHref] = useState<string | undefined>()
-  const isExpoGo = Constants.executionEnvironment === "storeClient"
-  const projectIdConfigured = Boolean(getExpoProjectId())
+    [activeOrgId, preferencesQuery.data?.preferences],
+  );
+  const pushEnabledRef = useRef(effectivePreferences.pushEnabled);
+  const authTokenRef = useRef<string | undefined>(token);
+  const activeOrgIdRef = useRef<string | undefined>(activeOrgId);
+  const handledResponseIdsRef = useRef(new Set<string>());
+  const registeredSignatureRef = useRef<string | undefined>(undefined);
+  const [permissionState, setPermissionState] = useState<PushPermissionState>("unknown");
+  const [syncStatus, setSyncStatus] = useState<PushSyncStatus>("idle");
+  const [pushToken, setPushToken] = useState<string | undefined>();
+  const [error, setError] = useState<string | undefined>();
+  const [pendingHref, setPendingHref] = useState<string | undefined>();
+  const isExpoGo = Constants.executionEnvironment === "storeClient";
+  const projectIdConfigured = Boolean(getExpoProjectId());
 
   useEffect(() => {
-    pushEnabledRef.current = effectivePreferences.pushEnabled
-  }, [effectivePreferences.pushEnabled])
+    pushEnabledRef.current = effectivePreferences.pushEnabled;
+  }, [effectivePreferences.pushEnabled]);
 
   useEffect(() => {
-    authTokenRef.current = token
-  }, [token])
+    authTokenRef.current = token;
+  }, [token]);
 
   useEffect(() => {
-    activeOrgIdRef.current = activeOrgId
-  }, [activeOrgId])
+    activeOrgIdRef.current = activeOrgId;
+  }, [activeOrgId]);
 
   const updatePushPreference = useCallback(
     async (enabled: boolean) => {
       if (!authTokenRef.current) {
-        return
+        return;
       }
       await notificationsApi.updatePreferences({
         token: authTokenRef.current,
         ...(activeOrgIdRef.current ? { orgId: activeOrgIdRef.current } : {}),
         preferences: {
           ...(activeOrgIdRef.current ? { orgId: activeOrgIdRef.current } : {}),
-          pushEnabled: enabled
-        }
-      })
-      await queryClient.invalidateQueries({ queryKey: ["me", "notification-preferences"] })
+          pushEnabled: enabled,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["me", "notification-preferences"] });
     },
-    [queryClient]
-  )
+    [queryClient],
+  );
 
   const unregisterCurrentDevice = useCallback(async () => {
-    const currentAuthToken = authTokenRef.current
-    const currentPushToken = pushToken ?? (await getStoredValue(REGISTERED_PUSH_TOKEN_STORAGE_KEY)) ?? undefined
+    const currentAuthToken = authTokenRef.current;
+    const currentPushToken =
+      pushToken ?? (await getStoredValue(REGISTERED_PUSH_TOKEN_STORAGE_KEY)) ?? undefined;
     if (!currentAuthToken || !currentPushToken) {
-      await deleteStoredValue(REGISTERED_PUSH_TOKEN_STORAGE_KEY)
-      registeredSignatureRef.current = undefined
-      setPushToken(undefined)
-      return
+      await deleteStoredValue(REGISTERED_PUSH_TOKEN_STORAGE_KEY);
+      registeredSignatureRef.current = undefined;
+      setPushToken(undefined);
+      return;
     }
 
     try {
-      setSyncStatus("unregistering")
+      setSyncStatus("unregistering");
       await pushApi.unregisterDevice({
         token: currentAuthToken,
-        tokenValue: currentPushToken
-      })
+        tokenValue: currentPushToken,
+      });
     } catch (cause) {
-      const message = getApiErrorMessage(cause)
+      const message = getApiErrorMessage(cause);
       if (!/not found/i.test(message)) {
-        throw cause
+        throw cause;
       }
     } finally {
-      await deleteStoredValue(REGISTERED_PUSH_TOKEN_STORAGE_KEY)
-      registeredSignatureRef.current = undefined
-      setPushToken(undefined)
-      await queryClient.invalidateQueries({ queryKey: ["me", "push-devices"] })
+      await deleteStoredValue(REGISTERED_PUSH_TOKEN_STORAGE_KEY);
+      registeredSignatureRef.current = undefined;
+      setPushToken(undefined);
+      await queryClient.invalidateQueries({ queryKey: ["me", "push-devices"] });
     }
-  }, [pushToken, queryClient])
+  }, [pushToken, queryClient]);
 
   const ensureAndroidChannel = useCallback(async () => {
     if (Platform.OS !== "android") {
-      return
+      return;
     }
     await Notifications.setNotificationChannelAsync("default", {
       name: "Default",
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#B9F455"
-    })
-  }, [])
+      lightColor: "#B9F455",
+    });
+  }, []);
 
   const registerExpoPushToken = useCallback(
     async (tokenValue: string) => {
-      const currentAuthToken = authTokenRef.current
+      const currentAuthToken = authTokenRef.current;
       if (!currentAuthToken) {
-        return false
+        return false;
       }
 
-      const installationId = await getOrCreateInstallationId()
-      const signature = `${activeOrgIdRef.current ?? "global"}:${tokenValue}`
+      const installationId = await getOrCreateInstallationId();
+      const signature = `${activeOrgIdRef.current ?? "global"}:${tokenValue}`;
       if (registeredSignatureRef.current === signature) {
-        setPushToken(tokenValue)
-        setSyncStatus("registered")
-        return true
+        setPushToken(tokenValue);
+        setSyncStatus("registered");
+        return true;
       }
 
-      setSyncStatus("registering")
+      setSyncStatus("registering");
       await pushApi.registerDevice({
         token: currentAuthToken,
         ...(activeOrgIdRef.current ? { orgId: activeOrgIdRef.current } : {}),
@@ -230,195 +269,199 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
             (Constants.expoConfig?.extra?.appVersion as string | undefined) ??
             Constants.expoConfig?.version ??
             "0.1.0",
-          environment: getMobilePushEnvironment()
-        }
-      })
+          environment: getMobilePushEnvironment(),
+        },
+      });
 
-      await setStoredValue(REGISTERED_PUSH_TOKEN_STORAGE_KEY, tokenValue)
-      registeredSignatureRef.current = signature
-      setPushToken(tokenValue)
-      setError(undefined)
-      setSyncStatus("registered")
-      await queryClient.invalidateQueries({ queryKey: ["me", "push-devices"] })
-      return true
+      await setStoredValue(REGISTERED_PUSH_TOKEN_STORAGE_KEY, tokenValue);
+      registeredSignatureRef.current = signature;
+      setPushToken(tokenValue);
+      setError(undefined);
+      setSyncStatus("registered");
+      await queryClient.invalidateQueries({ queryKey: ["me", "push-devices"] });
+      return true;
     },
-    [queryClient]
-  )
+    [queryClient],
+  );
 
   const ensureRegistered = useCallback(
     async ({ promptForPermission }: { promptForPermission: boolean }) => {
       if (Platform.OS === "web") {
-        setPermissionState("unsupported")
-        setSyncStatus("unsupported")
-        setError("Native push registration only runs on iOS and Android builds.")
-        return false
+        setPermissionState("unsupported");
+        setSyncStatus("unsupported");
+        setError("Native push registration only runs on iOS and Android builds.");
+        return false;
       }
 
-      const projectId = getExpoProjectId()
+      const projectId = getExpoProjectId();
       if (!projectId) {
-        setSyncStatus("error")
+        setSyncStatus("error");
         setError(
-          "Expo project ID is missing. Set EXPO_PROJECT_ID for local builds or configure extra.eas.projectId in the mobile app config."
-        )
-        return false
+          "Expo project ID is missing. Set EXPO_PROJECT_ID for local builds or configure extra.eas.projectId in the mobile app config.",
+        );
+        return false;
       }
 
-      setSyncStatus("checking")
+      setSyncStatus("checking");
 
-      let permissionStatus = await Notifications.getPermissionsAsync()
-      setPermissionState(normalizePermissionState(permissionStatus))
+      let permissionStatus = await Notifications.getPermissionsAsync();
+      setPermissionState(normalizePermissionState(permissionStatus));
 
       if (!permissionStatus.granted && promptForPermission) {
         permissionStatus = await Notifications.requestPermissionsAsync({
           ios: {
             allowAlert: true,
             allowBadge: true,
-            allowSound: true
-          }
-        })
-        setPermissionState(normalizePermissionState(permissionStatus))
+            allowSound: true,
+          },
+        });
+        setPermissionState(normalizePermissionState(permissionStatus));
       }
 
       if (!permissionStatus.granted) {
-        setSyncStatus(permissionStatus.canAskAgain ? "disabled" : "denied")
+        setSyncStatus(permissionStatus.canAskAgain ? "disabled" : "denied");
         setError(
           permissionStatus.canAskAgain
             ? "Push permission has not been granted yet."
-            : "Push permission is denied for this device. Enable it from system settings to receive banners."
-        )
-        return false
+            : "Push permission is denied for this device. Enable it from system settings to receive banners.",
+        );
+        return false;
       }
 
       try {
-        await ensureAndroidChannel()
+        await ensureAndroidChannel();
         const nextToken = await Notifications.getExpoPushTokenAsync({
           projectId,
-          ...(Platform.OS === "ios" ? { development: getMobilePushEnvironment() === "development" } : {})
-        })
-        return await registerExpoPushToken(nextToken.data)
+          ...(Platform.OS === "ios"
+            ? { development: getMobilePushEnvironment() === "development" }
+            : {}),
+        });
+        return await registerExpoPushToken(nextToken.data);
       } catch (cause) {
-        setSyncStatus("error")
-        setError(trimErrorMessage(cause))
-        return false
+        setSyncStatus("error");
+        setError(trimErrorMessage(cause));
+        return false;
       }
     },
-    [ensureAndroidChannel, registerExpoPushToken]
-  )
+    [ensureAndroidChannel, registerExpoPushToken],
+  );
 
   const requestEnablePush = useCallback(async () => {
-    const registered = await ensureRegistered({ promptForPermission: true })
-    await updatePushPreference(registered)
-    return registered
-  }, [ensureRegistered, updatePushPreference])
+    const registered = await ensureRegistered({ promptForPermission: true });
+    await updatePushPreference(registered);
+    return registered;
+  }, [ensureRegistered, updatePushPreference]);
 
   const disablePush = useCallback(async () => {
     try {
-      await unregisterCurrentDevice()
+      await unregisterCurrentDevice();
     } finally {
-      await updatePushPreference(false)
-      setSyncStatus("disabled")
-      setError(undefined)
+      await updatePushPreference(false);
+      setSyncStatus("disabled");
+      setError(undefined);
     }
-  }, [unregisterCurrentDevice, updatePushPreference])
+  }, [unregisterCurrentDevice, updatePushPreference]);
 
   const refreshRegistration = useCallback(async () => {
     if (!pushEnabledRef.current) {
-      setSyncStatus("disabled")
-      return
+      setSyncStatus("disabled");
+      return;
     }
-    await ensureRegistered({ promptForPermission: false })
-  }, [ensureRegistered])
+    await ensureRegistered({ promptForPermission: false });
+  }, [ensureRegistered]);
 
   const handleNotificationResponse = useCallback(
     async (response: Notifications.NotificationResponse | null) => {
       if (!response) {
-        return
+        return;
       }
 
-      const identifier = response.notification.request.identifier
+      const identifier = response.notification.request.identifier;
       if (handledResponseIdsRef.current.has(identifier)) {
-        return
+        return;
       }
 
-      handledResponseIdsRef.current.add(identifier)
-      const href = mapNotificationPayloadToHref(response.notification.request.content.data)
+      handledResponseIdsRef.current.add(identifier);
+      const href = mapNotificationPayloadToHref(response.notification.request.content.data);
       if (status === "authenticated") {
-        router.push(href as never)
+        router.push(href as never);
       } else {
-        setPendingHref(href)
+        setPendingHref(href);
       }
 
       try {
-        await Notifications.clearLastNotificationResponseAsync()
+        await Notifications.clearLastNotificationResponseAsync();
       } catch {
         // Clearing cached responses is best effort only.
       }
     },
-    [router, status]
-  )
+    [router, status],
+  );
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function syncPermissionState() {
       if (status !== "authenticated" || Platform.OS === "web") {
-        return
+        return;
       }
 
       try {
-        const permissionStatus = await Notifications.getPermissionsAsync()
+        const permissionStatus = await Notifications.getPermissionsAsync();
         if (!cancelled) {
-          setPermissionState(normalizePermissionState(permissionStatus))
+          setPermissionState(normalizePermissionState(permissionStatus));
           if (!pushEnabledRef.current) {
-            setSyncStatus("disabled")
+            setSyncStatus("disabled");
           }
         }
       } catch (cause) {
         if (!cancelled) {
-          setError(trimErrorMessage(cause))
+          setError(trimErrorMessage(cause));
         }
       }
     }
 
-    void syncPermissionState()
+    void syncPermissionState();
 
     return () => {
-      cancelled = true
-    }
-  }, [status])
+      cancelled = true;
+    };
+  }, [status]);
 
   useEffect(() => {
     if (status !== "authenticated" || !effectivePreferences.pushEnabled) {
       if (status === "authenticated") {
-        setSyncStatus("disabled")
+        setSyncStatus("disabled");
       }
-      return
+      return;
     }
 
-    void ensureRegistered({ promptForPermission: false })
-  }, [effectivePreferences.pushEnabled, ensureRegistered, status, activeOrgId])
+    void ensureRegistered({ promptForPermission: false });
+  }, [effectivePreferences.pushEnabled, ensureRegistered, status, activeOrgId]);
 
   useEffect(() => {
     const subscription = Notifications.addPushTokenListener((nextToken) => {
       if (!pushEnabledRef.current) {
-        return
+        return;
       }
-      void registerExpoPushToken(nextToken.data)
-    })
+      void registerExpoPushToken(nextToken.data);
+    });
 
     return () => {
-      subscription.remove()
-    }
-  }, [registerExpoPushToken])
+      subscription.remove();
+    };
+  }, [registerExpoPushToken]);
 
   useEffect(() => {
     if (Platform.OS === "web") {
       return;
     }
 
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      void handleNotificationResponse(response);
-    });
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        void handleNotificationResponse(response);
+      },
+    );
 
     void Notifications.getLastNotificationResponseAsync().then((response) => {
       void handleNotificationResponse(response);
@@ -431,14 +474,14 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
 
   useEffect(() => {
     if (status === "authenticated" && pendingHref) {
-      router.push(pendingHref as never)
-      setPendingHref(undefined)
+      router.push(pendingHref as never);
+      setPendingHref(undefined);
     }
-  }, [pendingHref, router, status])
+  }, [pendingHref, router, status]);
 
   useEffect(() => {
-    return registerLogoutCleanup(() => unregisterCurrentDevice())
-  }, [registerLogoutCleanup, unregisterCurrentDevice])
+    return registerLogoutCleanup(() => unregisterCurrentDevice());
+  }, [registerLogoutCleanup, unregisterCurrentDevice]);
 
   const value = useMemo<PushNotificationsContextValue>(
     () => ({
@@ -451,7 +494,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       requestEnablePush,
       disablePush,
       refreshRegistration,
-      openSystemSettings: () => Linking.openSettings()
+      openSystemSettings: () => Linking.openSettings(),
     }),
     [
       disablePush,
@@ -462,17 +505,19 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       pushToken,
       refreshRegistration,
       requestEnablePush,
-      syncStatus
-    ]
-  )
+      syncStatus,
+    ],
+  );
 
-  return <PushNotificationsContext.Provider value={value}>{children}</PushNotificationsContext.Provider>
+  return (
+    <PushNotificationsContext.Provider value={value}>{children}</PushNotificationsContext.Provider>
+  );
 }
 
 export function usePushNotifications() {
-  const context = useContext(PushNotificationsContext)
+  const context = useContext(PushNotificationsContext);
   if (!context) {
-    throw new Error("usePushNotifications must be used inside PushNotificationsProvider")
+    throw new Error("usePushNotifications must be used inside PushNotificationsProvider");
   }
-  return context
+  return context;
 }

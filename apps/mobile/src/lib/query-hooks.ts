@@ -832,7 +832,7 @@ export function useOrgActiveShopOrders(orgId?: string) {
   });
 }
 
-export function useTrainerClients(orgId?: string, trainerUserId?: string) {
+export function useTrainerClients(orgId?: string, trainerUserId?: string, enabled = true) {
   const { activeOrgId, session, status, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
   const resolvedTrainerId = trainerUserId ?? session?.user.id;
@@ -844,6 +844,7 @@ export function useTrainerClients(orgId?: string, trainerUserId?: string) {
         { token, orgId: resolvedOrgId },
       ),
     enabled:
+      enabled &&
       status === "authenticated" &&
       Boolean(token) &&
       Boolean(resolvedOrgId) &&

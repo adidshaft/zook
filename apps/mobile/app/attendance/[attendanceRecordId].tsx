@@ -1,4 +1,4 @@
-import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Link, Stack, type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -14,7 +14,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
-import { useMyAttendance } from "@/lib/query-hooks";
+import { useMyAttendance, useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type AttendanceRecord = {
@@ -60,6 +60,7 @@ export default function AttendanceResultScreen() {
   }>();
   const { activeRole } = useAuth();
   const attendanceQuery = useMyAttendance();
+  const trainerClientsQuery = useTrainerClients(undefined, undefined, activeRole === "TRAINER");
   const records = (attendanceQuery.data?.attendance ?? []) as AttendanceRecord[];
   const attendanceRecordId = firstParam(routeParams.attendanceRecordId);
   const routeStatus = firstParam(routeParams.status);
@@ -91,7 +92,15 @@ export default function AttendanceResultScreen() {
       ? "Default branch"
       : (record.branchName ?? "Assigned branch");
   const planName = record.planName ?? "Active membership";
-  const planTarget = activeRole === "TRAINER" ? "/trainer?view=plans" : "/plans?view=detail";
+  const firstTrainerClientWithPlan =
+    trainerClientsQuery.data?.clients.find((client) => (client.summary?.activePlans ?? 0) > 0)
+      ?.memberUserId ?? null;
+  const planTarget: Href =
+    activeRole === "TRAINER" && firstTrainerClientWithPlan
+      ? `/trainer/client/${firstTrainerClientWithPlan}`
+      : activeRole === "TRAINER"
+        ? "/trainer?view=plans"
+        : "/plans?view=detail";
 
   return (
     <>

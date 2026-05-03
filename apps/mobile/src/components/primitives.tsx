@@ -184,9 +184,16 @@ function variantFromTone(tone: ButtonTone): ButtonVariant {
   return tone;
 }
 
-function pressWithHaptics(callback?: () => void) {
+type PressHandler = () => void | Promise<void>;
+
+function pressWithHaptics(callback?: PressHandler) {
   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  callback?.();
+  const result = callback?.();
+  if (result && typeof (result as Promise<void>).catch === "function") {
+    void (result as Promise<void>).catch((error) => {
+      console.error("Zook press action failed", error);
+    });
+  }
 }
 
 function initialsForName(name?: string | null) {
@@ -380,7 +387,7 @@ export function GlassCard({
   radius?: number;
   pressable?: boolean;
   disabled?: boolean;
-  onPress?: () => void;
+  onPress?: PressHandler;
 }) {
   const palette = glassCardVariants[variant];
   const cardStyle = [
@@ -753,7 +760,7 @@ export function ZookButton({
   accessibilityLabel,
 }: {
   children: ReactNode;
-  onPress?: () => void;
+  onPress?: PressHandler;
   href?: Href;
   tone?: ButtonTone;
   variant?: ButtonVariant;
@@ -1204,7 +1211,7 @@ export function ProductCard({
   icon?: IconName;
   imageUrl?: string | null;
   quantity?: number;
-  onPress?: () => void;
+  onPress?: PressHandler;
   onIncrement?: () => void;
   onDecrement?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -1293,7 +1300,7 @@ export function ExerciseRow({
   detail: string;
   sets?: string;
   complete?: boolean;
-  onPress?: () => void;
+  onPress?: PressHandler;
   style?: StyleProp<ViewStyle>;
 }) {
   return (

@@ -60,6 +60,7 @@ export default function Settings() {
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <ScrollView
+          style={styles.scroller}
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
@@ -69,7 +70,7 @@ export default function Settings() {
             subtitle="Account and privacy"
             leading={
               <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
                 style={styles.iconButton}
@@ -81,12 +82,24 @@ export default function Settings() {
           />
 
           <CollapsibleSection title="Privacy" subtitle="Export or delete data" defaultOpen>
-            <AuditWarning>These requests are saved and reviewed before anything changes.</AuditWarning>
+            <AuditWarning>
+              These requests are saved and reviewed before anything changes.
+            </AuditWarning>
             <View style={styles.actionRow}>
-              <PrimaryButton onPress={() => void requestPrivacyExport()} tone="secondary" style={styles.actionHalf} disabled={busy}>
+              <PrimaryButton
+                onPress={() => void requestPrivacyExport()}
+                tone="secondary"
+                style={styles.actionHalf}
+                disabled={busy}
+              >
                 Export
               </PrimaryButton>
-              <PrimaryButton onPress={() => void requestPrivacyDeletion()} tone="danger" style={styles.actionHalf} disabled={busy}>
+              <PrimaryButton
+                onPress={() => void requestPrivacyDeletion()}
+                tone="danger"
+                style={styles.actionHalf}
+                disabled={busy}
+              >
                 Delete
               </PrimaryButton>
             </View>
@@ -94,25 +107,45 @@ export default function Settings() {
             <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
               <ListRow
                 title="Latest export"
-                subtitle={latestExport ? privacyStatusLine(latestExport.status, latestExport.completedAt ?? latestExport.createdAt) : "No export request yet"}
+                subtitle={
+                  latestExport
+                    ? privacyStatusLine(
+                        latestExport.status,
+                        latestExport.completedAt ?? latestExport.createdAt,
+                      )
+                    : "No export request yet"
+                }
                 icon="download-outline"
                 tone={latestExport?.status === "ready" ? "lime" : "blue"}
               />
               <ListRow
                 title="Latest deletion"
-                subtitle={latestDeletion ? privacyStatusLine(latestDeletion.status, latestDeletion.scheduledFor ?? latestDeletion.createdAt) : "No deletion request yet"}
+                subtitle={
+                  latestDeletion
+                    ? privacyStatusLine(
+                        latestDeletion.status,
+                        latestDeletion.scheduledFor ?? latestDeletion.createdAt,
+                      )
+                    : "No deletion request yet"
+                }
                 icon="trash-outline"
                 tone={latestDeletion ? "amber" : "neutral"}
               />
             </GlassCard>
           </CollapsibleSection>
 
-          <CollapsibleSection title="Account" subtitle={session?.user.email ?? "Signed in"} defaultOpen={false}>
+          <CollapsibleSection
+            title="Account"
+            subtitle={session?.user.email ?? "Signed in"}
+            defaultOpen={false}
+          >
             <GlassCard variant="compact" contentStyle={styles.accountContent}>
               <IconBubble icon="person-outline" tone="blue" size={36} />
               <View style={styles.accountCopy}>
                 <Text style={styles.accountName}>{session?.user.name ?? "Zook user"}</Text>
-                <Text style={styles.accountEmail}>{session?.user.email ?? session?.user.phone ?? ""}</Text>
+                <Text style={styles.accountEmail}>
+                  {session?.user.email ?? session?.user.phone ?? ""}
+                </Text>
               </View>
             </GlassCard>
             <PrimaryButton onPress={() => void logout()} tone="danger">
@@ -135,12 +168,16 @@ function privacyStatusLine(status: string, date?: string | null) {
 }
 
 const styles = StyleSheet.create({
+  scroller: {
+    flex: 1,
+  },
   content: {
     width: "100%",
-    maxWidth: layout.contentWidth,
+    maxWidth: layout.contentWidth + layout.screenPadding * 2,
     alignSelf: "center",
+    paddingHorizontal: layout.screenPadding,
     paddingTop: 14,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingBottom: layout.bottomNavContentPadding + 32,
     gap: 12,
   },
   iconButton: {

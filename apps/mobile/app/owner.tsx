@@ -269,14 +269,18 @@ export default function Owner() {
 
         {view === "command" ? (
           <>
-            <View style={styles.metricGrid}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.commandMetricRail}
+            >
               <MetricTile
                 label="Active members"
                 value={formatCompactNumber(activeMembers)}
                 detail="Main Branch"
                 tone="lime"
                 icon="people-outline"
-                style={styles.metricHalf}
+                style={styles.commandMetric}
               />
               <MetricTile
                 label="Today check-ins"
@@ -284,7 +288,7 @@ export default function Owner() {
                 detail={`${attentionAttempts.length} pending review`}
                 tone="blue"
                 icon="qr-code-outline"
-                style={styles.metricHalf}
+                style={styles.commandMetric}
               />
               <MetricTile
                 label="Revenue"
@@ -292,7 +296,7 @@ export default function Owner() {
                 detail="Collected + pickup"
                 tone="amber"
                 icon="trending-up-outline"
-                style={styles.metricHalf}
+                style={styles.commandMetric}
               />
               <MetricTile
                 label="Approvals"
@@ -300,9 +304,9 @@ export default function Owner() {
                 detail="Needs attention"
                 tone="violet"
                 icon="checkmark-done-outline"
-                style={styles.metricHalf}
+                style={styles.commandMetric}
               />
-            </View>
+            </ScrollView>
 
             <SectionHeader title="Needs attention" />
             <GlassCard contentStyle={styles.stack}>
@@ -631,8 +635,8 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
-    gap: 16,
-    paddingBottom: layout.bottomNavContentPadding,
+    gap: 14,
+    paddingBottom: layout.bottomNavContentPadding + 32,
   },
   headerRow: {
     flexDirection: "row",
@@ -688,6 +692,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
+  },
+  commandMetricRail: {
+    gap: 10,
+    paddingRight: layout.screenPadding,
+  },
+  commandMetric: {
+    width: 154,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   metricHalf: {
     flexBasis: "47%",
