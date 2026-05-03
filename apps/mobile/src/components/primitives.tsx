@@ -327,42 +327,42 @@ export function BrandMark({
 
 export function ProfileShortcut({
   size = 44,
-  accessibilityLabel = "Open profile",
+  accessibilityLabel = "Open account settings",
 }: {
   size?: number;
   accessibilityLabel?: string;
 }) {
   const { session, status } = useAuth();
+  const router = useRouter();
 
   if (status !== "authenticated") return null;
 
   const name = session?.user.name ?? "Aarav Mehta";
   const initials = initialsForName(name);
-  const photoUrl = session?.user.profilePhotoUrl;
+  const photoUrl = session?.user.profilePhotoUrl?.trim();
+  const remotePhotoUrl = photoUrl && /^https?:\/\//.test(photoUrl) ? photoUrl : undefined;
 
   return (
-    <Link href="/profile" asChild>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        onPressIn={() => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-        style={({ pressed }) => [
-          styles.profileShortcut,
-          { width: size, height: size, borderRadius: size / 2 },
-          pressed ? styles.pressed : null,
-        ]}
-      >
-        {photoUrl ? (
-          <Image
-            source={{ uri: photoUrl }}
-            style={styles.profileShortcutImage}
-            contentFit="cover"
-          />
-        ) : (
-          <Text style={styles.profileShortcutText}>{initials}</Text>
-        )}
-      </Pressable>
-    </Link>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={() => pressWithHaptics(() => router.push("/settings"))}
+      style={({ pressed }) => [
+        styles.profileShortcut,
+        { width: size, height: size, borderRadius: size / 2 },
+        pressed ? styles.pressed : null,
+      ]}
+    >
+      {remotePhotoUrl ? (
+        <Image
+          source={{ uri: remotePhotoUrl }}
+          style={styles.profileShortcutImage}
+          contentFit="cover"
+        />
+      ) : (
+        <Text style={styles.profileShortcutText}>{initials}</Text>
+      )}
+    </Pressable>
   );
 }
 
@@ -1860,10 +1860,6 @@ export function BottomNav({
   );
 }
 
-export function Dock() {
-  return <BottomNav />;
-}
-
 export function LoadingState({
   title = "Loading",
   body = "Pulling the latest details from your gym.",
@@ -2677,6 +2673,7 @@ const styles = StyleSheet.create({
   },
   bottomNav: {
     position: "absolute",
+    zIndex: 30,
     left: layout.screenPadding,
     right: layout.screenPadding,
     height: layout.bottomNavHeight,
@@ -2693,6 +2690,7 @@ const styles = StyleSheet.create({
   },
   memberBottomNavShell: {
     position: "absolute",
+    zIndex: 30,
     left: 28,
     right: 28,
     height: 86,

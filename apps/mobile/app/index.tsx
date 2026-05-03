@@ -3,7 +3,7 @@ import type { Href } from "expo-router";
 import { BlurView } from "expo-blur";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
@@ -17,10 +17,6 @@ import { useAuth } from "@/lib/auth";
 import { titleCaseFromCode } from "@/lib/formatting";
 import { useMemberHome } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
-
-const dietOptions = ["Vegetarian", "High protein", "Jain", "No preference"];
-const goalOptions = ["Muscle gain", "Fat loss", "Strength", "Mobility"];
-const allergyOptions = ["Peanuts", "Lactose", "Gluten", "Soy"];
 
 function initialsFor(name: string) {
   return name
@@ -44,16 +40,7 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [gymsOpen, setGymsOpen] = useState(false);
-  const [healthOpen, setHealthOpen] = useState(false);
-  const [dietOpen, setDietOpen] = useState(false);
-  const [goalOpen, setGoalOpen] = useState(false);
-  const [weight, setWeight] = useState("");
-  const [dob, setDob] = useState("");
-  const [diet, setDiet] = useState("");
-  const [goal, setGoal] = useState("");
-  const [allergies, setAllergies] = useState<string[]>([]);
-  const [trainerNote, setTrainerNote] = useState("");
-  const { activeOrgId, session } = useAuth();
+  const { activeOrgId, session, setActiveOrgId } = useAuth();
   const homeQuery = useMemberHome();
   const memberHome = homeQuery.data;
   const sessionOrganization =
@@ -106,7 +93,7 @@ export default function Home() {
               onPress={() => setProfileOpen(true)}
               style={({ pressed }) => pressed ? styles.pressedAvatar : null}
               accessibilityRole="button"
-              accessibilityLabel="Open profile"
+              accessibilityLabel="Open account drawer"
             >
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{initials}</Text>
@@ -230,78 +217,38 @@ export default function Home() {
                 />
                 {gymsOpen ? (
                   <View style={styles.drawerGymList}>
-                    {enrolledGyms.map((gym) => (
-                      <View key={`${gym.name}-${gym.city}`} style={styles.drawerGymRow}>
-                        <View style={styles.drawerGymLogo}>
-                          <Text style={styles.drawerGymLogoText}>{initialsFor(gym.name)}</Text>
-                        </View>
-                        <View style={styles.drawerGymCopy}>
-                          <Text numberOfLines={1} style={styles.drawerGymName}>{gym.name}</Text>
-                          <Text numberOfLines={1} style={styles.drawerMuted}>{gym.city}, {gym.state}</Text>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                ) : null}
-
-                <DrawerToggle
-                  title="Health"
-                  open={healthOpen}
-                  onPress={() => setHealthOpen((current) => !current)}
-                  subtitle={[weight ? `${weight} kg` : null, goal || null].filter(Boolean).join(" · ") || "Add details"}
-                />
-                {healthOpen ? (
-                  <View style={styles.healthPanel}>
-                    <View style={styles.healthPair}>
-                      <Field label="Weight" value={weight} onChangeText={(value) => setWeight(value.replace(/[^0-9.]/g, ""))} keyboardType="decimal-pad" />
-                      <Field label="DOB" value={dob} onChangeText={setDob} />
-                    </View>
-                    <DropField
-                      label="Diet"
-                      value={diet}
-                      open={dietOpen}
-                      options={dietOptions}
-                      onToggle={() => setDietOpen((current) => !current)}
-                      onSelect={(value) => {
-                        setDiet(value);
-                        setDietOpen(false);
-                      }}
-                    />
-                    <DropField
-                      label="Goal"
-                      value={goal}
-                      open={goalOpen}
-                      options={goalOptions}
-                      onToggle={() => setGoalOpen((current) => !current)}
-                      onSelect={(value) => {
-                        setGoal(value);
-                        setGoalOpen(false);
-                      }}
-                    />
-                    <View style={styles.allergyWrap}>
-                      {allergyOptions.map((item) => {
-                        const selected = allergies.includes(item);
-                        return (
-                          <Pressable
-                            key={item}
-                            onPress={() => setAllergies((current) => selected ? current.filter((entry) => entry !== item) : [...current, item])}
-                            accessibilityRole="button"
-                            accessibilityLabel={item}
-                            style={[styles.allergyChip, selected ? styles.allergyChipActive : null]}
+                    {enrolledGyms.map((gym) => {
+                      const selected = gym.orgId === activeOrgId;
+                      return (
+                        <Pressable
+                          key={`${gym.name}-${gym.city}`}
+                          onPress={() => void setActiveOrgId(gym.orgId)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Switch to ${gym.name}`}
+                          style={[
+                            styles.drawerGymRow,
+                            selected ? styles.drawerGymRowActive : null,
+                          ]}
+                        >
+                          <View style={styles.drawerGymLogo}>
+                            <Text style={styles.drawerGymLogoText}>{initialsFor(gym.name)}</Text>
+                          </View>
+                          <View style={styles.drawerGymCopy}>
+                            <Text numberOfLines={1} style={styles.drawerGymName}>{gym.name}</Text>
+                            <Text numberOfLines={1} style={styles.drawerMuted}>
+                              {gym.city}, {gym.state}
+                            </Text>
+                          </View>
+                          <Text
+                            style={
+                              selected ? styles.drawerGymActiveText : styles.drawerGymSwitchText
+                            }
                           >
-                            <Text style={[styles.allergyText, selected ? styles.allergyTextActive : null]}>{item}</Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                    <TextInput
-                      value={trainerNote}
-                      onChangeText={setTrainerNote}
-                      placeholder="Trainer note"
-                      placeholderTextColor={colors.subtle}
-                      multiline
-                      style={styles.trainerNote}
-                    />
+                            {selected ? "Active" : "Switch"}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 ) : null}
               </ScrollView>
@@ -363,68 +310,6 @@ function DrawerToggle({
       </View>
       <Ionicons name={open ? "chevron-up" : "chevron-down"} size={18} color={colors.muted} />
     </Pressable>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChangeText,
-  keyboardType,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  keyboardType?: "decimal-pad";
-}) {
-  return (
-    <View style={styles.fieldBox}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        placeholderTextColor={colors.subtle}
-        style={styles.fieldInput}
-      />
-    </View>
-  );
-}
-
-function DropField({
-  label,
-  value,
-  open,
-  options,
-  onToggle,
-  onSelect,
-}: {
-  label: string;
-  value: string;
-  open: boolean;
-  options: string[];
-  onToggle: () => void;
-  onSelect: (value: string) => void;
-}) {
-  return (
-    <View style={styles.dropBox}>
-      <Pressable onPress={onToggle} accessibilityRole="button" style={styles.dropHeader}>
-        <View>
-          <Text style={styles.fieldLabel}>{label}</Text>
-          <Text style={styles.dropValue}>{value}</Text>
-        </View>
-        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={17} color={colors.muted} />
-      </Pressable>
-      {open ? (
-        <View style={styles.dropOptions}>
-          {options.map((option) => (
-            <Pressable key={option} onPress={() => onSelect(option)} accessibilityRole="button" style={styles.dropOption}>
-              <Text style={styles.dropOptionText}>{option}</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-    </View>
   );
 }
 
@@ -723,6 +608,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
+  drawerGymRowActive: {
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.12)",
+  },
   drawerGymLogo: {
     width: 38,
     height: 38,
@@ -746,109 +635,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.bodyStrong,
   },
-  healthPanel: {
-    gap: 10,
-  },
-  healthPair: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  fieldBox: {
-    flex: 1,
-    minHeight: 60,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 2,
-  },
-  fieldLabel: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  fieldInput: {
-    minHeight: 28,
-    color: colors.text,
-    padding: 0,
-    ...typography.bodyStrong,
-  },
-  dropBox: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    overflow: "hidden",
-  },
-  dropHeader: {
-    minHeight: 58,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  dropValue: {
-    color: colors.text,
-    ...typography.bodyStrong,
-  },
-  dropOptions: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    padding: 6,
-    gap: 4,
-  },
-  dropOption: {
-    minHeight: 34,
-    borderRadius: 11,
-    justifyContent: "center",
-    paddingHorizontal: 8,
-    backgroundColor: "rgba(255,255,255,0.035)",
-  },
-  dropOptionText: {
-    color: colors.text,
-    ...typography.small,
-  },
-  allergyWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  allergyChip: {
-    minHeight: 30,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    paddingHorizontal: 10,
-    justifyContent: "center",
-  },
-  allergyChipActive: {
-    borderColor: colors.limeBorder,
-    backgroundColor: "rgba(185,244,85,0.13)",
-  },
-  allergyText: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  allergyTextActive: {
+  drawerGymActiveText: {
     color: colors.lime,
+    ...typography.caption,
   },
-  trainerNote: {
-    minHeight: 76,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    color: colors.text,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-    textAlignVertical: "top",
-    ...typography.small,
+  drawerGymSwitchText: {
+    color: colors.muted,
+    ...typography.caption,
   },
   drawerSettings: {
     position: "absolute",

@@ -147,7 +147,6 @@ function LayoutContent() {
         <Stack.Screen name="tracking" options={{ animation: "none" }} />
         <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="notifications" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="profile" options={{ animation: "slide_from_left" }} />
         <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="membership" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="find-gyms" options={{ animation: "slide_from_right" }} />

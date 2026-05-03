@@ -1,5 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import type { Role } from "@zook/core";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
@@ -15,17 +16,21 @@ import {
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { privacyApi } from "@/lib/domain-api";
+import { titleCaseFromCode } from "@/lib/formatting";
 import { useMyConsents } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function Settings() {
   const router = useRouter();
-  const { logout, session, token } = useAuth();
+  const { activeRole, logout, session, setActiveRole, token } = useAuth();
   const privacyQuery = useMyConsents();
   const [privacyStatus, setPrivacyStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const latestExport = privacyQuery.data?.exportRequests?.[0] ?? null;
   const latestDeletion = privacyQuery.data?.deletionRequests?.[0] ?? null;
+  const allRoles = Array.from(
+    new Set(session?.organizations.flatMap((organization) => organization.roles) ?? []),
+  );
 
   async function requestPrivacyExport() {
     if (!token) return;
@@ -55,6 +60,11 @@ export default function Settings() {
     }
   }
 
+  async function switchRole(role: Role) {
+    await setActiveRole(role);
+    router.replace(routeForRole(role));
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -81,7 +91,58 @@ export default function Settings() {
             showProfileShortcut={false}
           />
 
-          <CollapsibleSection title="Privacy" subtitle="Export or delete data" defaultOpen>
+          <CollapsibleSection
+            title="Account"
+            subtitle={session?.user.email ?? "Signed in"}
+            defaultOpen
+          >
+            <GlassCard variant="compact" contentStyle={styles.accountContent}>
+              <IconBubble icon="person-outline" tone="blue" size={36} />
+              <View style={styles.accountCopy}>
+                <Text style={styles.accountName}>{session?.user.name ?? "Zook user"}</Text>
+                <Text style={styles.accountEmail}>
+                  {session?.user.email ?? session?.user.phone ?? ""}
+                </Text>
+              </View>
+            </GlassCard>
+            {allRoles.length > 1 ? (
+              <View style={styles.roleGrid}>
+                <Text style={styles.sectionMiniLabel}>Use Zook as</Text>
+                <View style={styles.roleRow}>
+                  {allRoles.map((role) => (
+                    <Pressable
+                      key={role}
+                      onPress={() => void switchRole(role)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Switch to ${titleCaseFromCode(role)}`}
+                      style={[
+                        styles.roleButton,
+                        role === activeRole ? styles.roleButtonActive : null,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.roleButtonText,
+                          role === activeRole ? styles.roleButtonTextActive : null,
+                        ]}
+                      >
+                        {titleCaseFromCode(role)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+            <PrimaryButton onPress={() => void logout()} tone="danger">
+              Logout
+            </PrimaryButton>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Privacy"
+            subtitle="Export or delete data"
+            defaultOpen={false}
+          >
             <AuditWarning>
               These requests are saved and reviewed before anything changes.
             </AuditWarning>
@@ -133,30 +194,19 @@ export default function Settings() {
               />
             </GlassCard>
           </CollapsibleSection>
-
-          <CollapsibleSection
-            title="Account"
-            subtitle={session?.user.email ?? "Signed in"}
-            defaultOpen={false}
-          >
-            <GlassCard variant="compact" contentStyle={styles.accountContent}>
-              <IconBubble icon="person-outline" tone="blue" size={36} />
-              <View style={styles.accountCopy}>
-                <Text style={styles.accountName}>{session?.user.name ?? "Zook user"}</Text>
-                <Text style={styles.accountEmail}>
-                  {session?.user.email ?? session?.user.phone ?? ""}
-                </Text>
-              </View>
-            </GlassCard>
-            <PrimaryButton onPress={() => void logout()} tone="danger">
-              Logout
-            </PrimaryButton>
-          </CollapsibleSection>
         </ScrollView>
         <BottomNav />
       </ZookScreen>
     </>
   );
+}
+
+function routeForRole(role: Role) {
+  if (role === "TRAINER") return "/trainer";
+  if (role === "RECEPTIONIST") return "/reception";
+  if (role === "OWNER" || role === "ADMIN") return "/owner";
+  if (role === "PLATFORM_ADMIN") return "/platform";
+  return "/";
 }
 
 function privacyStatusLine(status: string, date?: string | null) {
@@ -220,5 +270,37 @@ const styles = StyleSheet.create({
   accountEmail: {
     color: colors.muted,
     ...typography.small,
+  },
+  roleGrid: {
+    gap: spacing.sm,
+  },
+  roleRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  roleButton: {
+    minHeight: 36,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    paddingHorizontal: 12,
+    justifyContent: "center",
+  },
+  roleButtonActive: {
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.14)",
+  },
+  roleButtonText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  roleButtonTextActive: {
+    color: colors.lime,
+  },
+  sectionMiniLabel: {
+    color: colors.muted,
+    ...typography.eyebrow,
   },
 });

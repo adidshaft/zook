@@ -147,7 +147,11 @@ export default function Shop() {
   if (checkoutState === "pickup" && order) {
     return (
       <ShopShell selectedPath="/shop">
-        <MobileHeader title="Ready for pickup" subtitle="Show this code at the front desk." />
+        <MobileHeader
+          title="Ready for pickup"
+          subtitle="Show this code at the front desk."
+          showProfileShortcut={false}
+        />
         <GlassCard variant="success" contentStyle={styles.pickupContent}>
           <Text style={styles.pickupLabel}>Pickup code</Text>
           <Text style={styles.pickupCode}>{order.pickupCode ?? "Pending"}</Text>
@@ -185,7 +189,11 @@ export default function Shop() {
   if (checkoutState === "checkout" && order) {
     return (
       <ShopShell selectedPath="/shop">
-        <MobileHeader title="Payment" subtitle="Your item will be ready at the desk." />
+        <MobileHeader
+          title="Payment"
+          subtitle="Your item will be ready at the desk."
+          showProfileShortcut={false}
+        />
         <GlassCard contentStyle={styles.checkoutContent}>
           <ListRow
             title="Pay securely"
@@ -226,6 +234,7 @@ export default function Shop() {
           title="Review order"
           subtitle="Pick it up at the front desk after payment."
           chip={<StatusChip status={`${itemCount} items`} tone="lime" />}
+          showProfileShortcut={false}
         />
         <GlassCard variant="compact" contentStyle={styles.stack}>
           {cartItems.length ? (
@@ -286,6 +295,7 @@ export default function Shop() {
       <MobileHeader
         title="Desk pickup"
         subtitle={activeOrganization?.name ?? "Active gym"}
+        showProfileShortcut={false}
         trailing={
           <Pressable
             onPress={() => setCheckoutState("cart")}
@@ -395,6 +405,7 @@ function ShopShell({
   const contentPaddingBottom =
     layout.bottomNavContentPadding + (floatingAction ? layout.stickyActionHeight : 0);
   const floatingBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + 18;
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -403,9 +414,9 @@ function ShopShell({
           style={styles.scroller}
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.content, { paddingBottom: contentPaddingBottom }]}
+          contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
         >
-          {children}
+          <View style={styles.content}>{children}</View>
         </ScrollView>
         {floatingAction ? (
           <View
@@ -432,7 +443,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
     paddingTop: 14,
     gap: 12,
-    paddingBottom: layout.bottomNavContentPadding,
   },
   cartIcon: {
     width: 48,
