@@ -4,6 +4,7 @@ import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,
   Inter_400Regular,
@@ -52,6 +53,7 @@ function encodeRedirectTarget(
 
 function LayoutContent() {
   const { defaultRoute, hasActiveRole, hasAnyRole, status } = useAuth();
+  const insets = useSafeAreaInsets();
   const runtimeConfigError = getMobileRuntimeConfigError();
   const runtimeMode = getMobileRuntimeMode();
   const pathname = usePathname();
@@ -165,7 +167,7 @@ function LayoutContent() {
         <Stack.Screen name="owner/member/[id]" options={{ animation: "slide_from_right" }} />
       </Stack>
       {isOfflineDemoMode() ? (
-        <View pointerEvents="none" style={styles.demoBadge}>
+        <View pointerEvents="none" style={[styles.demoBadge, { top: Math.max(insets.top + 8, 12) }]}>
           <Text style={styles.demoBadgeText}>DEMO MODE</Text>
         </View>
       ) : null}
@@ -241,8 +243,10 @@ const styles = StyleSheet.create({
   },
   demoBadge: {
     position: "absolute",
-    top: 12,
-    right: 12,
+    left: "50%",
+    minWidth: 104,
+    alignItems: "center",
+    transform: [{ translateX: -52 }],
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,

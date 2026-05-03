@@ -33,12 +33,6 @@ interface RequestOtpResult {
   devOtp?: string;
 }
 
-interface VerifyOtpResult {
-  token: string;
-  expiresAt: string;
-  session?: AuthSessionSummary;
-}
-
 interface AuthContextValue {
   status: "loading" | "authenticated" | "unauthenticated";
   token?: string;

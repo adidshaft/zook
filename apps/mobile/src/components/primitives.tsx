@@ -1660,7 +1660,7 @@ const receptionTabs: DockTab[] = [
 const ownerTabs: DockTab[] = [
   {
     href: "/owner",
-    label: "Command",
+    label: "Needs",
     icon: "pulse-outline",
     activeIcon: "pulse",
     matchPath: "/owner",

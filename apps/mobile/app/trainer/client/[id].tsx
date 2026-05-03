@@ -25,6 +25,10 @@ import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type ClientTab = "summary" | "plans" | "progress" | "notes";
 
+function planCountLabel(count: number) {
+  return `${count} active ${count === 1 ? "plan" : "plans"}`;
+}
+
 const tabs: Array<{ label: string; value: ClientTab }> = [
   { label: "Summary", value: "summary" },
   { label: "Plans", value: "plans" },
@@ -79,7 +83,7 @@ export default function TrainerClientDetail() {
 
   async function saveDraft() {
     if (!token || !activeOrgId || !client) {
-      setStatus("Select an assigned client before saving.");
+      setStatus("Select a client before saving.");
       return null;
     }
     setSavingPlan(true);
@@ -103,7 +107,7 @@ export default function TrainerClientDetail() {
 
   async function assignPlan() {
     if (!token || !activeOrgId || !client) {
-      setStatus("Select an assigned client before assigning.");
+      setStatus("Select a client before assigning.");
       return;
     }
     setSavingPlan(true);
@@ -148,7 +152,7 @@ export default function TrainerClientDetail() {
         >
           <MobileHeader
             title={clientName}
-            subtitle="Assigned client workspace"
+            subtitle="Client Detail"
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer"))}
@@ -171,11 +175,11 @@ export default function TrainerClientDetail() {
               title="Goal"
               subtitle={fitnessGoal}
               leading={<IconBubble icon="flag-outline" tone="lime" />}
-              trailing={<StatusChip status={client?.active ? "Active" : "Assigned"} />}
+              trailing={<StatusChip status={client?.active ? "Active" : "Paused"} />}
             />
             <ListRow
               title="Plan load"
-              subtitle={`${activePlans} active assigned ${activePlans === 1 ? "plan" : "plans"}`}
+              subtitle={`${activePlans} active ${activePlans === 1 ? "plan" : "plans"}`}
               leading={<IconBubble icon="reader-outline" tone={activePlans ? "blue" : "neutral"} />}
               trailing={
                 <StatusChip
@@ -219,7 +223,7 @@ export default function TrainerClientDetail() {
               <ListRow
                 title="Fitness goal"
                 subtitle={fitnessGoal}
-                trailing={<StatusChip status={client?.active ? "Active" : "Assigned"} />}
+                trailing={<StatusChip status={client?.active ? "Active" : "Paused"} />}
               />
               <ListRow
                 title="Diet note"
@@ -240,7 +244,7 @@ export default function TrainerClientDetail() {
               />
               <ListRow
                 title="Recent progress"
-                subtitle={`${activePlans} active assigned plans`}
+                subtitle={planCountLabel(activePlans)}
                 trailing={<StatusChip status="Review" tone="amber" />}
               />
             </GlassCard>
@@ -310,9 +314,9 @@ export default function TrainerClientDetail() {
                 />
               ))}
               <ListRow
-                title="Assigned plans"
+                title="Plans"
                 subtitle={`${activePlans} active for client`}
-                trailing={<StatusChip status="Assigned" tone="lime" />}
+                trailing={<StatusChip status="Active" tone="lime" />}
               />
             </GlassCard>
           ) : null}

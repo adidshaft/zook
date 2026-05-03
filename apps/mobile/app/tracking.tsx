@@ -5,15 +5,12 @@ import {
   BottomNav,
   GlassCard,
   IconBubble,
-  ListRow,
   MobileHeader,
   SectionHeader,
-  StatusChip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import {
-  TrackingSectionHeader,
   TrackingSummaryTile,
   WorkoutLogCard
 } from "@/components/tracking";

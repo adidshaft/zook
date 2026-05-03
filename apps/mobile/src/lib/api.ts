@@ -36,7 +36,7 @@ function ensureConfiguredUrl(configured: string | undefined, label: "API" | "web
   return value.replace(/\/$/, "");
 }
 
-export function getMobileReleaseProfile() {
+export function getMobileReleaseProfile(): MobileReleaseProfile {
   return configuredReleaseProfile();
 }
 

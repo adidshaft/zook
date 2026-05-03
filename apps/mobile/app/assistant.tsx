@@ -7,7 +7,6 @@ import {
   GlassCard,
   IconBubble,
   MobileHeader,
-  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
@@ -67,7 +66,7 @@ export default function AssistantScreen() {
         profile?.wellness?.weightKg ? `Weight: ${profile.wellness.weightKg} kg` : null,
         profile?.wellness?.dietPreference ? `Diet: ${profile.wellness.dietPreference}` : null,
         profile?.wellness?.allergies ? `Allergies: ${profile.wellness.allergies}` : null,
-        `Assigned plans: ${plansCount}`,
+        `Plans: ${plansCount}`,
       ].filter(Boolean).join("\n");
 
   async function askAssistant(override?: string) {

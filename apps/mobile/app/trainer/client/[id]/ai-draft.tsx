@@ -162,7 +162,7 @@ export default function TrainerAiDraftReview() {
 
   async function generateDraft() {
     if (!token || !activeOrgId || !client) {
-      setStatus("Select an assigned client before generating.");
+      setStatus("Select a client before generating.");
       return;
     }
     setGenerating(true);
@@ -260,7 +260,7 @@ export default function TrainerAiDraftReview() {
                     ) : (
                       <Text style={styles.cardTitle}>{draft.title}</Text>
                     )}
-                    <Text style={styles.cardBody}>Client: {client?.user?.name ?? "Assigned client"}</Text>
+                    <Text style={styles.cardBody}>Client: {client?.user?.name ?? "Client"}</Text>
                   </View>
                 </View>
                 {editing ? (

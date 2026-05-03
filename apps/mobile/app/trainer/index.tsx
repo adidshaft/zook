@@ -19,6 +19,10 @@ import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type TrainerView = "home" | "clients" | "plans";
 
+function planCountLabel(count: number) {
+  return `${count} active ${count === 1 ? "plan" : "plans"}`;
+}
+
 function normalizeTrainerView(value: string | string[] | undefined): TrainerView {
   const raw = Array.isArray(value) ? value[0] : value;
   if (raw === "clients" || raw === "plans") return raw;
@@ -59,7 +63,7 @@ export default function Trainer() {
           <MobileHeader
             eyebrow="Trainer mode"
             title={title}
-            subtitle={`${session?.user.name ?? "Trainer"} · assigned clients only`}
+            subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
 
@@ -74,7 +78,7 @@ export default function Trainer() {
                 >
                   <ListRow
                     title={
-                      plannedClients[0]?.user?.name ?? clients[0]?.user?.name ?? "Assigned client"
+                      plannedClients[0]?.user?.name ?? clients[0]?.user?.name ?? "Client"
                     }
                     subtitle={`${plannedClients[0]?.summary?.activePlans ?? clients[0]?.summary?.activePlans ?? 0} active ${(plannedClients[0]?.summary?.activePlans ?? clients[0]?.summary?.activePlans ?? 0) === 1 ? "plan" : "plans"} · ${plannedClients[0]?.summary?.fitnessGoal ?? plannedClients[0]?.profile?.fitnessGoal ?? clients[0]?.summary?.fitnessGoal ?? clients[0]?.profile?.fitnessGoal ?? "General fitness"}`}
                     leading={<IconBubble icon="person-outline" tone="lime" />}
@@ -85,21 +89,21 @@ export default function Trainer() {
 
               <View style={styles.metricGrid}>
                 <MetricTile
-                  label="Assigned clients"
+                  label="Clients"
                   value={String(clients.length)}
-                  detail="Assigned to you"
+                  detail="Ready for coaching"
                   tone="blue"
                 />
                 <MetricTile
                   label="Active plans"
                   value={String(clientsWithPlans)}
-                  detail="Assigned members"
+                  detail="With active plans"
                   tone="amber"
                 />
                 <MetricTile
                   label="Needs plan"
                   value={String(clientsNeedingPlans)}
-                  detail="Assigned clients"
+                  detail="Create Plan next"
                   tone="lime"
                 />
               </View>
@@ -110,8 +114,7 @@ export default function Trainer() {
                     <View style={styles.attentionCopy}>
                       <Text style={styles.cardTitle}>Plans in motion</Text>
                       <Text style={styles.cardBody}>
-                        {clientsWithPlans} assigned{" "}
-                        {clientsWithPlans === 1 ? "client has" : "clients have"} active plan work.
+                        {clientsWithPlans} {clientsWithPlans === 1 ? "client has" : "clients have"} active plan work.
                       </Text>
                     </View>
                   </View>
@@ -130,7 +133,7 @@ export default function Trainer() {
 
           {view === "clients" ? (
             <>
-              <SectionHeader title="Assigned clients" />
+              <SectionHeader title="Clients" />
               <View style={styles.stack}>
                 {clientsQuery.isLoading ? (
                   <GlassCard variant="compact" contentStyle={styles.attentionHeader}>
@@ -138,31 +141,34 @@ export default function Trainer() {
                     <Text style={styles.cardTitle}>Loading clients...</Text>
                   </GlassCard>
                 ) : clients.length ? (
-                  clients.map((client) => (
-                    <Link
-                      key={client.id ?? client.memberUserId}
-                      href={`/trainer/client/${client.memberUserId}`}
-                      asChild
-                    >
-                      <Pressable accessibilityRole="button">
-                        <ListRow
-                          title={client.user?.name ?? "Assigned client"}
-                          subtitle={`${client.summary?.fitnessGoal ?? client.profile?.fitnessGoal ?? "General fitness"} · ${client.summary?.activePlans ?? 0} active plans`}
-                          leading={<IconBubble icon="person-outline" tone="lime" />}
-                          trailing={
-                            <StatusChip
-                              status={client.active ? "Active" : "Assigned"}
-                              tone="lime"
-                            />
-                          }
-                        />
-                      </Pressable>
-                    </Link>
-                  ))
+                  clients.map((client) => {
+                    const activePlanCount = client.summary?.activePlans ?? 0;
+                    return (
+                      <Link
+                        key={client.id ?? client.memberUserId}
+                        href={`/trainer/client/${client.memberUserId}`}
+                        asChild
+                      >
+                        <Pressable accessibilityRole="button">
+                          <ListRow
+                            title={client.user?.name ?? "Client"}
+                            subtitle={`${client.summary?.fitnessGoal ?? client.profile?.fitnessGoal ?? "General fitness"} · ${planCountLabel(activePlanCount)}`}
+                            leading={<IconBubble icon="person-outline" tone="lime" />}
+                            trailing={
+                              <StatusChip
+                                status={client.active ? "Active" : "Paused"}
+                                tone="lime"
+                              />
+                            }
+                          />
+                        </Pressable>
+                      </Link>
+                    );
+                  })
                 ) : (
                   <EmptyState
-                    title="No assigned clients"
-                    body="Assigned members will appear here when your gym adds them."
+                    title="No clients yet"
+                    body="Clients will appear here when your gym adds them."
                   />
                 )}
               </View>
@@ -189,7 +195,7 @@ export default function Trainer() {
                       contentStyle={styles.planCard}
                     >
                       <ListRow
-                        title={client.user?.name ?? "Assigned client"}
+                        title={client.user?.name ?? "Client"}
                         subtitle={`${client.summary?.activePlans ?? 0} active ${(client.summary?.activePlans ?? 0) === 1 ? "plan" : "plans"} · ${client.summary?.fitnessGoal ?? client.profile?.fitnessGoal ?? "General fitness"}`}
                         leading={<IconBubble icon="reader-outline" tone="amber" />}
                         trailing={<StatusChip status="Open" tone="amber" />}
@@ -199,14 +205,14 @@ export default function Trainer() {
                         tone="secondary"
                         icon="reader-outline"
                       >
-                        Review Client
+                        Client Detail
                       </ZookButton>
                     </GlassCard>
                   ))
                 ) : (
                   <EmptyState
                     title="No active plan work"
-                    body="Assigned client plans will appear here after you create or assign them."
+                    body="Client plans will appear here after you create or assign them."
                   />
                 )}
               </View>

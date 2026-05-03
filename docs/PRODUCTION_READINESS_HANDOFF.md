@@ -79,12 +79,20 @@ Additional runtime audit findings to keep fixing:
 
 ## Mobile UI Polish Gaps
 
+Phase 8 spot retest completed:
+
+- iOS Simulator: iPhone 15 Pro / iOS 26.2, Expo Go, `APP_ENV=local API_MODE=offline-demo`.
+- Confirmed trainer home, clients, trainer client detail, AI Draft Review, generated draft lower controls, profile role switching, and owner `Needs attention` render without major CTA overlap.
+- The local/offline Demo Mode badge remains visible and was moved away from owner role/header controls.
+- Mobile role copy was tightened to remove `Command`, `Scoped`, `Coach cockpit`, and excessive `Assigned client` framing from searched role surfaces.
+
 Simulator/device retest is still needed for:
 
-- Trainer home, client detail, AI draft, and draft editor lower controls.
 - Member shop, gym details, plan detail, notifications, and privacy/settings.
 - Receptionist desk, member search, manual attendance, payment entry, and pickup verification.
 - Owner/admin command, approvals, revenue, stock, members, and member detail.
+- Backend login mode for the same role surfaces.
+- Physical-device camera and push behavior.
 
 Known polish themes:
 
@@ -92,7 +100,7 @@ Known polish themes:
 - Tighten dense staff surfaces without doing a full redesign.
 - Keep member language simple: Check in, Plan, Progress, Shop, Pickup, Renew.
 - Keep owner/admin mobile lightweight and avoid platform-admin framing on mobile.
-- Recheck safe-area spacing for bottom controls.
+- Recheck safe-area spacing for bottom controls on the remaining untested routes.
 
 ## Web And Dashboard Gaps
 

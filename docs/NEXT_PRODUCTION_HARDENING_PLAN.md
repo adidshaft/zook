@@ -286,6 +286,8 @@ Still open:
 
 ## Phase 8: Mobile Role UI Retest
 
+Status: partially completed in the 2026-05-03 mobile role polish pass. A local Expo Go iOS Simulator spot pass was run on iPhone 15 Pro / iOS 26.2 in explicit `APP_ENV=local API_MODE=offline-demo` mode. Trainer home, clients, trainer client detail, AI Draft Review, generated draft lower controls, profile role switching, and owner `Needs attention` were visually checked. This is not physical-device QA and does not certify native push.
+
 Deliverables:
 
 - Simulator/device pass for member, trainer, receptionist, and owner/admin surfaces.
@@ -293,6 +295,21 @@ Deliverables:
 - Reduce dense staff text and internal jargon.
 - Keep bottom controls safe-area-aware.
 - Preserve the approved dark glass/lime visual direction.
+
+Completed in this pass:
+
+- Removed mobile `Command`, `Scoped`, `Coach cockpit`, and excessive `Assigned client` framing from searched role surfaces.
+- Owner mobile now labels the command surface as `Needs attention`; the compact bottom tab uses `Needs`.
+- Trainer home/client copy now uses `Clients`, `Create Plan`, `Client Detail`, `AI Draft Review`, and `Assign Plan` language.
+- Trainer active-plan copy now pluralizes correctly.
+- The global local/offline demo badge is centered below the iOS safe area so it remains visible without overlapping owner role controls.
+- AI draft editor lower controls were visible above the bottom dock after scrolling in the simulator.
+- Mobile lint warnings from unused symbols were removed.
+
+Still open:
+
+- Full simulator/device retest for member shop, gym details, settings/privacy, receptionist desk/manual attendance/payment/pickup, owner approvals/revenue/stock/member detail, and backend login mode.
+- Physical-device QA for camera and push remains open.
 
 Acceptance:
 

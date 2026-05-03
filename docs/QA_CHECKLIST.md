@@ -47,6 +47,7 @@ APP_ENV=local API_MODE=offline-demo EXPO_PUBLIC_API_MODE=offline-demo pnpm dev:m
 ```
 
 - Mobile shows the visible `DEMO MODE` badge.
+- On iOS simulator/device, the `DEMO MODE` badge must not overlap role chips, account controls, or primary CTAs.
 - Demo login supports role shortcuts and local demo OTP only in this mode.
 - Offline demo API calls are contained in `apps/mobile/src/lib/demo-api.ts`.
 - Push can no-op, but in-app demo notifications should still render.

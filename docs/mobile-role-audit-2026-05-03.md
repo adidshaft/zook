@@ -52,6 +52,10 @@ Addressed in code after earlier and current audit passes:
 - Platform web handoff now opens a prefilled web login with `redirect=/platform`; if the browser already has a web session, `/login` forwards to the intended platform/dashboard surface.
 - Profile, trainer client detail, reception member operations, owner member detail, owner approvals, and owner stock received a duplicate-copy cleanup pass so first viewports move faster into new context/actions.
 - Notification rows now say whether a tap will open a linked route or simply mark the item read.
+- Phase 8 Expo Go simulator spot pass confirmed trainer home, clients, trainer client detail, AI Draft Review, generated draft lower controls, profile role switching, and owner `Needs attention` on iPhone 15 Pro / iOS 26.2 in explicit local offline-demo mode.
+- The local/offline `DEMO MODE` badge now sits in a centered safe-area position and no longer overlaps owner role/header controls in the simulator spot pass.
+- Mobile role copy now removes `Command`, `Scoped`, `Coach cockpit`, and excessive `Assigned client` framing from searched role surfaces. Owner mobile uses `Needs attention`; trainer surfaces use `Clients`, `Create Plan`, `Client Detail`, `AI Draft Review`, and `Assign Plan` language.
+- This pass did not certify physical-device camera, real push, or backend-login role QA.
 
 ## Screenshots
 

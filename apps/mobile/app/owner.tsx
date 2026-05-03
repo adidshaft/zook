@@ -62,7 +62,7 @@ function titleCase(value: string) {
 }
 
 function titleForView(view: OwnerView) {
-  if (view === "command") return "Command";
+  if (view === "command") return "Needs attention";
   if (view === "approvals") return "Approvals";
   if (view === "revenue") return "Revenue";
   if (view === "members") return "Members";
