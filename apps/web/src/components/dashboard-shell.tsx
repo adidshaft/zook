@@ -82,6 +82,11 @@ export function DashboardShell({
   const sectionKey = section?.join("/") ?? "";
   const activeOrg = data.orgs[0];
   const selectedBranch = data.branchScope.selectedBranch;
+  const runtimeLabel = data.connected
+    ? "Live environment"
+    : data.fallbackMode === "demo"
+      ? "Demo Mode"
+      : "Read model unavailable";
 
   if (!activeOrg) {
     return (
@@ -229,7 +234,7 @@ export function DashboardShell({
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Pill tone={data.connected ? "lime" : "amber"}>
-                    {data.connected ? "Live environment" : "Demo Mode"}
+                    {runtimeLabel}
                   </Pill>
                   <StatusPill value={formatEnumLabel(activeOrg.status)} />
                   <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />

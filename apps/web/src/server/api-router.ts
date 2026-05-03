@@ -4442,11 +4442,18 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "referrals"])) {
     const userId = requireAuth(await getRequestContext(request));
     const orgId = path[1]!;
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { username: true },
+    });
+    if (!org) {
+      return fail("NOT_FOUND", "Gym not found", 404);
+    }
     const code = `ZK${randomBytes(4).toString("hex").toUpperCase()}`;
     const referral = await prisma.referralCode.create({
       data: { orgId, referrerUserId: userId, code, createdByRole: "MEMBER", maxUses: 20 },
     });
-    return ok({ referral, links: { web: `/join/${orgId}?ref=${code}`, short: `/r/${code}` } });
+    return ok({ referral, links: { web: `/join/${org.username}?ref=${code}`, short: `/r/${code}` } });
   }
   if (request.method === "GET" && pathMatches(path, ["r", /.+/])) {
     const referral = await prisma.referralCode.findUnique({ where: { code: path[1]! } });

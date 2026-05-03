@@ -18,21 +18,43 @@ function discountFor(referral: PublicGymReferral | null, planPricePaise: number)
   return 0;
 }
 
+function joinPath(username: string, planId: string, referral?: PublicGymReferral | null) {
+  return `/join/${username}?plan=${planId}${referral ? `&ref=${referral.code}` : ""}`;
+}
+
+function loginRedirect(path: string) {
+  return `/login?redirect=${encodeURIComponent(path)}`;
+}
+
+function validityLabel(plan: { durationDays: number | null; type: string }) {
+  if (plan.durationDays) {
+    return `${plan.durationDays} days`;
+  }
+  return plan.type === "TRIAL" ? "Trial access" : "Visit pack";
+}
+
+function visitLabel(visitLimit: number | null) {
+  if (!visitLimit) {
+    return "Unlimited visits";
+  }
+  return `${visitLimit} ${visitLimit === 1 ? "visit" : "visits"}`;
+}
+
 export default async function JoinPage({
   params,
   searchParams
 }: {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ plan?: string; ref?: string; mode?: string }>;
+  searchParams: Promise<{ plan?: string; ref?: string }>;
 }) {
   const [{ username }, query] = await Promise.all([params, searchParams]);
   const data = await getPublicGymProfileData(username, query.ref);
   const org = data?.org;
   const selectedPlan = data?.plans.find((plan) => plan.id === query.plan) ?? data?.plans[0];
-  const referral = data?.referral ?? null;
+  const referral = data?.referral?.status === "active" ? data.referral : null;
   const discountPaise = discountFor(referral, selectedPlan?.pricePaise ?? 0);
   const finalAmount = Math.max(0, (selectedPlan?.pricePaise ?? 0) - discountPaise);
-  const joinMode = query.mode ?? org?.joinMode ?? "OPEN_JOIN";
+  const joinMode = org?.joinMode ?? "OPEN_JOIN";
 
   if (!org || !selectedPlan) {
     return <main className="p-8">Join flow unavailable.</main>;
@@ -44,11 +66,17 @@ export default async function JoinPage({
         <div className="absolute left-5 top-5"><ZookLogo /></div>
         <GlassCard className="max-w-xl">
           <Pill tone="amber">Approval required</Pill>
-          <h1 className="mt-5 text-3xl font-semibold text-white">Join request submitted</h1>
+          <h1 className="mt-5 text-3xl font-semibold text-white">Approval required</h1>
           <p className="mt-3 text-sm leading-6 text-white/55">
-            The owner/admin approves the request first. Once approved, Zook creates a checkout link and sends an in-app notification.
+            This gym reviews access before checkout. Sign in to request access; Zook will show the request status in your inbox.
           </p>
-          <Link href={`/g/${org.username}`} className="zook-focus mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70">
+          <Link
+            href={loginRedirect(selectedPlan ? joinPath(org.username, selectedPlan.id, referral) : `/g/${org.username}`)}
+            className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
+          >
+            Sign in to request access
+          </Link>
+          <Link href={`/g/${org.username}`} className="zook-focus ml-3 mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70">
             Back to gym
           </Link>
         </GlassCard>
@@ -64,8 +92,11 @@ export default async function JoinPage({
           <Pill tone="red">Invite only</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-white">Invite code required</h1>
           <p className="mt-3 text-sm leading-6 text-white/55">
-            This gym requires a valid referral or invite code before checkout can start.
+            This gym requires an active referral or invite code before checkout can start.
           </p>
+          <Link href={`/g/${org.username}`} className="zook-focus mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70">
+            Back to gym
+          </Link>
         </GlassCard>
       </main>
     );
@@ -88,8 +119,8 @@ export default async function JoinPage({
             <div className="mt-6 grid gap-3">
               <Readout label="Gym" value={`${org.name} · ${org.city}`} />
               <Readout label="Plan" value={selectedPlan.name} />
-              <Readout label="Validity" value={`${selectedPlan.durationDays} days`} />
-              <Readout label="Visits" value={`${selectedPlan.visitLimit || 12} visits`} />
+              <Readout label="Validity" value={validityLabel(selectedPlan)} />
+              <Readout label="Visits" value={visitLabel(selectedPlan.visitLimit)} />
               <Readout label="Referral applied" value={referral ? `-${formatInr(discountPaise)} (${referral.code})` : "None"} />
             </div>
           </GlassCard>
@@ -113,7 +144,7 @@ export default async function JoinPage({
             </div>
             {data.connected ? (
               <Link
-                href="/login"
+                href={loginRedirect(joinPath(org.username, selectedPlan.id, referral))}
                 className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
               >
                 Sign in to continue

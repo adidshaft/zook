@@ -357,9 +357,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
         },
       });
       setPayload(nextPayload);
-      setForm((current) =>
-        current ? { ...current, username: nextPayload.org.username } : formFromPayload(nextPayload),
-      );
+      setForm(formFromPayload(nextPayload));
       setStatus("Gym profile saved. Public pages and join QR now use these details.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to save gym profile.");

@@ -70,6 +70,7 @@ function getDemoDashboardData(scope: "org" | "platform") {
   return {
     scope,
     connected: false,
+    fallbackMode: "demo" as const,
     metrics:
       scope === "org"
         ? [
@@ -119,6 +120,7 @@ export async function getDashboardData(orgId?: string) {
       return {
         scope: "org" as const,
         connected: true,
+        fallbackMode: null,
         metrics: data.metrics,
         orgs: [data.organization],
         products: data.products,
@@ -139,6 +141,7 @@ export async function getDashboardData(orgId?: string) {
     return {
       scope: "platform" as const,
       connected: true,
+      fallbackMode: null,
       metrics: data.metrics,
       orgs: data.orgs,
       products: [],
@@ -198,6 +201,7 @@ export async function getEmptyDashboardData(orgId?: string) {
     return {
       scope: orgId ? ("org" as const) : ("platform" as const),
       connected: false,
+      fallbackMode: "unavailable" as const,
       metrics: zeroMetrics,
       orgs: [],
       products: [],

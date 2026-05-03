@@ -54,7 +54,7 @@ export type PublicGymProfileData = {
   connected: boolean;
 };
 
-function canUsePublicDemoFallback() {
+export function canUsePublicDemoFallback() {
   return (
     getAppEnv() === "local" &&
     (process.env.API_MODE === "offline-demo" || isTruthy(process.env.WEB_DEMO_FALLBACK))
@@ -74,7 +74,7 @@ function settingsRecord(value: unknown): Record<string, unknown> {
 }
 
 function publicTrainerPhotoUrl(value: string | null | undefined) {
-  if (!value || value.startsWith("/api/files/")) {
+  if (!value || value.includes("..") || value.startsWith("file:")) {
     return null;
   }
   return value;
@@ -84,9 +84,7 @@ function demoPublicGymProfile(
   username: string,
   referralCode?: string,
 ): PublicGymProfileData | null {
-  const org =
-    zookDemoFixtures.organizations.find((gym) => gym.username === username) ??
-    zookDemoFixtures.organizations[0];
+  const org = zookDemoFixtures.organizations.find((gym) => gym.username === username);
   if (!org) {
     return null;
   }

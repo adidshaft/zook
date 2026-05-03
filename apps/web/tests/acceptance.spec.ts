@@ -228,6 +228,35 @@ test("public gym profile hides trainers not visible to members", async ({ page }
   expect(payload.data.trainers.some((trainer) => trainer.userId === trainerRole.userId)).toBe(false);
 });
 
+test("public join page honors backend join mode instead of query overrides", async ({ page }) => {
+  requireDb();
+  const org = await seedAndGetOrg({ username: "iron-house" });
+  await prisma.organization.update({
+    where: { id: org.id },
+    data: { joinMode: "APPROVAL_REQUIRED" }
+  });
+
+  await page.goto(`/join/${org.username}?mode=OPEN_JOIN`);
+  await expect(page.getByRole("heading", { name: "Approval required" })).toBeVisible();
+  await expect(page.getByText("Join request submitted")).toHaveCount(0);
+  await expect(page.getByText("Hosted checkout handoff")).toHaveCount(0);
+});
+
+test("referral creation returns username-based web links", async ({ page }) => {
+  requireDb();
+  await loginWithSessionCookie(page, "member@zook.local");
+  const org = await seedAndGetOrg({ username: "iron-house" });
+
+  const response = await page.request.post(`/api/orgs/${org.id}/referrals`);
+  const payload = await expectApiOk<{
+    referral: { code: string };
+    links: { web: string; short: string };
+  }>(response);
+
+  expect(payload.data.links.web).toBe(`/join/${org.username}?ref=${payload.data.referral.code}`);
+  expect(payload.data.links.short).toBe(`/r/${payload.data.referral.code}`);
+});
+
 test("open join checkout activates membership and shop order success stays server-backed", async ({ page }) => {
   requireDb();
   const email = `playwright-shop-${Date.now()}@zook.local`;

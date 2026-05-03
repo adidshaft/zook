@@ -15,6 +15,7 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
   const { org, plans, trainers } = data;
   const minPlanPrice = Math.min(...plans.map((plan) => plan.pricePaise));
   const defaultPlanId = plans[0]?.id;
+  const hasPublicPlans = plans.length > 0;
   const gallery = org.gallery.length
     ? org.gallery
     : [org.coverImageUrl].filter((imageUrl): imageUrl is string => Boolean(imageUrl));
@@ -95,7 +96,9 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
           <GlassCard variant="strong" className="h-fit">
             <p className="text-sm text-white/45">Membership preview</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">
-              Plans from {formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/month
+              {hasPublicPlans
+                ? `Plans from ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}`
+                : "Memberships not published yet"}
             </h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
               Membership activates only after payment confirmation. Redirects alone are never
@@ -108,12 +111,18 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                 className="aspect-square w-full rounded-[18px]"
               />
             </div>
-            <Link
-              href={`/join/${org.username}${defaultPlanId ? `?plan=${defaultPlanId}` : ""}`}
-              className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
-            >
-              Join Now
-            </Link>
+            {hasPublicPlans ? (
+              <Link
+                href={`/join/${org.username}${defaultPlanId ? `?plan=${defaultPlanId}` : ""}`}
+                className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+              >
+                Join Now
+              </Link>
+            ) : (
+              <div className="mt-6 rounded-[24px] border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/55">
+                This gym has not published a public membership plan yet.
+              </div>
+            )}
             <a
               href={`zook://join/${org.username}`}
               className="zook-focus mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm text-white/72"
@@ -135,31 +144,46 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
         </section>
 
         <section className="grid gap-4 lg:grid-cols-3">
-          {plans.map((plan) => (
-            <GlassCard key={plan.id}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <Pill tone={plan.id === "plan-hybrid-pro" ? "lime" : "neutral"}>
-                    {plan.type.replaceAll("_", " ")}
-                  </Pill>
-                  <h2 className="mt-4 text-2xl font-semibold text-white">{plan.name}</h2>
+          {plans.length ? (
+            plans.map((plan) => (
+              <GlassCard key={plan.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <Pill tone={plan.id === "plan-hybrid-pro" ? "lime" : "neutral"}>
+                      {plan.type.replaceAll("_", " ")}
+                    </Pill>
+                    <h2 className="mt-4 text-2xl font-semibold text-white">{plan.name}</h2>
+                  </div>
+                  <p className="metric text-2xl font-semibold text-lime-200">
+                    {formatInr(plan.pricePaise)}
+                  </p>
                 </div>
-                <p className="metric text-2xl font-semibold text-lime-200">
-                  {formatInr(plan.pricePaise)}
+                <p className="mt-3 text-sm leading-6 text-white/52">{plan.description}</p>
+                <p className="mt-4 text-sm text-white/45">
+                {plan.durationDays
+                  ? `${plan.durationDays} days`
+                  : plan.type === "TRIAL"
+                    ? "Trial"
+                    : "Visit pack"} ·{" "}
+                {plan.visitLimit || "Unlimited"} {plan.visitLimit === 1 ? "visit" : "visits"}
                 </p>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-white/52">{plan.description}</p>
-              <p className="mt-4 text-sm text-white/45">
-                {plan.durationDays} days · {plan.visitLimit || "Unlimited"} visits
+                <Link
+                  href={`/join/${org.username}?plan=${plan.id}`}
+                  className="zook-focus mt-5 inline-flex rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/8"
+                >
+                  Select plan
+                </Link>
+              </GlassCard>
+            ))
+          ) : (
+            <GlassCard className="lg:col-span-3">
+              <Pill tone="amber">Plans unavailable</Pill>
+              <h2 className="mt-4 text-2xl font-semibold text-white">No public plans yet</h2>
+              <p className="mt-3 text-sm leading-6 text-white/55">
+                This gym can still use Zook internally, but public checkout starts only after an owner publishes a membership plan.
               </p>
-              <Link
-                href={`/join/${org.username}?plan=${plan.id}`}
-                className="zook-focus mt-5 inline-flex rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/8"
-              >
-                Select plan
-              </Link>
             </GlassCard>
-          ))}
+          )}
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
@@ -229,17 +253,32 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
           <GlassCard>
             <h2 className="text-2xl font-semibold text-white">Visible trainers</h2>
             <div className="mt-5 grid gap-3">
-              {trainers.map((trainer) => (
-                <div
-                  key={trainer.userId}
-                  className="rounded-[22px] border border-white/10 bg-black/20 p-4"
-                >
-                  <p className="font-medium text-white">{trainer.name}</p>
-                  <p className="mt-1 text-sm text-white/45">
-                    {trainer.bio ?? "Strength coaching · plan review · PT support"}
-                  </p>
-                </div>
-              ))}
+              {trainers.length ? (
+                trainers.map((trainer) => (
+                  <div
+                    key={trainer.userId}
+                    className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4"
+                  >
+                    {trainer.profilePhotoUrl ? (
+                      <img
+                        src={trainer.profilePhotoUrl}
+                        alt=""
+                        className="h-11 w-11 rounded-2xl border border-white/10 object-cover"
+                      />
+                    ) : null}
+                    <div>
+                      <p className="font-medium text-white">{trainer.name}</p>
+                      <p className="mt-1 text-sm text-white/45">
+                        {trainer.bio ?? "Trainer details will appear after the gym publishes them."}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/50">
+                  Trainer profiles will appear after the gym publishes them.
+                </p>
+              )}
             </div>
           </GlassCard>
           <GlassCard>

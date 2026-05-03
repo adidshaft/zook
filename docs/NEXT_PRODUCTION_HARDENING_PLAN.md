@@ -319,6 +319,8 @@ Acceptance:
 
 ## Phase 9: Web/Public/Control-Room Hardening
 
+Status: partially completed in the 2026-05-03 public web hardening pass. Public profile, join, referral, and dashboard fallback semantics were tightened, and a DB-backed acceptance test now proves the join page honors persisted backend join mode instead of URL query overrides. This pass did not complete every owner setup/dashboard table requirement.
+
 Deliverables:
 
 - Audit `/g/[username]`, `/in/[username]`, `/join/[username]`, `/qr/[username]`, and `/r/[code]`.
@@ -327,10 +329,34 @@ Deliverables:
 - Add loading/error/empty states and pagination/debounced search where heavy tables need it.
 - Keep platform diagnostics safe.
 
+Completed in this pass:
+
+- `/g/[username]` no longer presents a fake zero-rupee membership CTA when no public plans exist; it shows a real empty state and only exposes join CTAs for published public plans.
+- Public trainer sections use stored profile photos when present and show an honest empty state when no public trainers are visible.
+- `/join/[username]` no longer trusts `?mode=` overrides. It reads the persisted org join mode, preserves plan/referral handoff through login, and avoids fake "submitted" success copy before an authenticated request exists.
+- Invite-only join mode requires an active referral code. Invalid or inactive referral codes do not silently proceed.
+- `/r/[code]` no longer hardcodes `iron-house` fallback outside explicit local/demo fixture mode; unknown referral codes 404.
+- Referral creation now returns `/join/{username}?ref={code}` web links instead of leaking org IDs into username routes.
+- Join QR images now encode `/join/{username}` for `target=join`, keep `/in/{username}?source=qr` for profile QR, and use the public read model so known local demo gyms can render QR images only in explicit demo fallback.
+- Dashboard/platform runtime pills distinguish explicit Demo Mode from a backend read-model unavailable state.
+- Public trainer image URLs keep approved `/api/files/{id}/content` file assets while still rejecting empty, path-traversal, and `file:` URLs.
+- Explicit demo fixture fallback now returns only known fixture usernames instead of rewriting unknown public slugs to the first fixture gym.
+
+Still open:
+
+- `/in/[username]`, `/qr/[username]`, and `/r/[code]` need a broader manual browser pass across hidden org, invite, and expired-code cases.
+- Owner setup persistence still needs deeper browser coverage for username uniqueness, facilities/amenities, gallery/photos, trainer public details, app links, and join mode.
+- Heavy dashboard tables still need pagination/debounced-search hardening.
+- Platform provider diagnostics remain safe, but the broader UI still needs staging data and provider-disabled visual QA.
+- The known Prisma `Decimal` Server-to-Client warning on platform admin location fields is still open.
+
 Acceptance:
 
-- Public profile found/not-found and join modes are tested.
-- Dashboard data scopes by org.
+- Public profile empty-plan/trainer states are honest.
+- Join mode is persisted/backend-owned and query parameters cannot force open checkout.
+- Referral fallback is explicit demo-only; unknown codes fail closed.
+- Referral and QR links target username-based public routes.
+- Dashboard fallback wording does not mislabel read-model failures as Demo Mode.
 - Provider diagnostics hide secrets.
 
 ## Phase 10: E2E Product Flows

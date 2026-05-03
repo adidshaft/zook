@@ -22,6 +22,11 @@ function metricTone(label: string) {
 export default async function PlatformPage() {
   await requirePlatformSession();
   const data = await getDashboardData();
+  const runtimeLabel = data.connected
+    ? "Platform database online"
+    : data.fallbackMode === "demo"
+      ? "Demo fallback"
+      : "Read model unavailable";
 
   return (
     <main className="min-h-screen px-5 py-5">
@@ -31,7 +36,7 @@ export default async function PlatformPage() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <Pill tone={data.connected ? "lime" : "amber"}>
-                  {data.connected ? "Platform database online" : "Demo fallback"}
+                  {runtimeLabel}
                 </Pill>
                 <Pill tone="amber">Platform super-admin</Pill>
               </div>

@@ -104,10 +104,10 @@ Known polish themes:
 
 ## Web And Dashboard Gaps
 
-- Public profile, join, QR, referral, and result pages need full real-data fallback audit outside demo/local.
+- Public profile, join, referral, and join-QR pages now fail closed more honestly outside explicit local/demo fallback: no fake zero-rupee plan CTA when no public plans exist, no URL query override of persisted join mode, no fake approval success before auth/request submission, invite-only requires an active referral, unknown referral codes no longer hardcode `iron-house`, demo fixture fallback no longer rewrites unknown public slugs to the first fixture gym, referral creation returns username-based web links, and `target=join` QR images point to `/join/{username}`. Result pages still need the same depth of fallback audit.
 - Owner setup persistence needs deeper coverage for username uniqueness, amenities/facilities, gallery, trainer details, app links, and join mode.
 - Dashboard heavy tables still need pagination/search hardening in several areas.
-- Platform diagnostics are safe today but should surface disabled/misconfigured provider states more explicitly once disabled modes exist.
+- Dashboard/platform runtime pills now distinguish explicit Demo Mode from backend read-model unavailable state. Platform diagnostics are safe today but still need broader staging data/provider-disabled visual QA.
 - DB-backed platform admin acceptance currently passes but logs a Next.js warning about Prisma `Decimal` latitude/longitude values crossing a Server-to-Client component boundary. Normalize those values before the web hardening pass claims that surface is clean.
 
 ## Provider Integration Gaps
@@ -133,7 +133,7 @@ Payment-specific hardening gaps found in the audit:
 - `pnpm test` now discovers core, web server, and mobile utility tests through package scripts.
 - Existing tests cover provider registry, runtime env basics, auth service, storage, push provider, payment provider, service helpers, mobile notification routing/preferences, and several web server helpers.
 - Fast Playwright smoke coverage runs with `pnpm test:web`. Additional payment hardening acceptance tests are DB-gated behind `RUN_DB_WEB_TESTS=1`.
-- Missing or incomplete automated coverage remains for full Razorpay confirmation flows with real credentials, shop pickup E2E, web dashboard org scoping, public profile/join modes, mobile role flows, provider-disabled UX, and wrong-org/wrong-role denial across every API route. Trainer AI draft assignment and trainer-visible workout reports now have DB-backed acceptance coverage.
+- Missing or incomplete automated coverage remains for full Razorpay confirmation flows with real credentials, shop pickup E2E, complete web dashboard org scoping, public result fallback modes, mobile role flows, provider-disabled UX, and wrong-org/wrong-role denial across every API route. Trainer AI draft assignment, trainer-visible workout reports, default-branch routing, join-mode query-override denial, referral username links, and QR target selection now have automated coverage.
 
 ## Deployment Gaps
 
@@ -230,6 +230,29 @@ Payment-specific hardening gaps found in the audit:
 - `pnpm lint`: passed with the same 7 existing mobile unused-var warnings.
 - `pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web`: passed 16 DB-backed browser acceptance tests.
 
+## Additional Checks Run During Mobile Role Polish
+
+- `pnpm --filter @zook/mobile typecheck`: passed.
+- `pnpm --filter @zook/mobile lint`: passed after removing the remaining mobile unused-symbol warnings.
+- `pnpm --filter @zook/mobile test`: passed 2 mobile utility test files and 13 tests.
+- `APP_ENV=local API_MODE=offline-demo pnpm --filter @zook/mobile exec expo export --platform ios --output-dir /tmp/zook-mobile-export-phase8`: passed.
+- `pnpm typecheck`: passed.
+- `pnpm test`: passed.
+- `pnpm lint`: passed.
+- `git diff --check`: passed.
+
+## Additional Checks Run During Public Web Hardening
+
+- `pnpm --filter @zook/web typecheck`: passed.
+- `pnpm --filter @zook/web lint`: passed.
+- `pnpm --filter @zook/web test`: passed 11 web server test files and 34 tests.
+- `pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web`: passed 21 DB-backed browser acceptance tests after adding the join-mode query-override and referral-link regressions.
+- `pnpm typecheck`: passed.
+- `pnpm test`: passed.
+- `pnpm lint`: passed.
+- `git diff --check`: passed.
+- Local Chrome smoke with env-loaded Next dev server checked `/g/iron-house` and `/join/iron-house?mode=OPEN_JOIN`; no Brave or Safari was used. The first dev-server attempt without `.env` failed on missing Prisma `DATABASE_URL`, then the env-loaded retry rendered correctly.
+
 ## What This Phase Should Fix
 
 - Runtime validation and disabled provider modes are implemented.
@@ -245,6 +268,7 @@ Payment-specific hardening gaps found in the audit:
 - Storage routes now fail closed for disabled uploads, public local file content requires public `FileAsset` visibility, and file reads/deletes no longer silently use the wrong active provider.
 - Public trainer visibility is enforced on public web/API surfaces, and mobile no longer uses stock media fallbacks for missing backend gym/trainer images.
 - Default Branch handling is now explicit in branch-required membership/attendance flows; `pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web` passed 19 acceptance tests including Default Branch plan/dashboard/QR validation.
+- Public web join/profile/referral/QR semantics are now stricter: persisted join mode wins over URL overrides, approval/invite states no longer imply fake success, unknown referral codes and unknown public demo slugs fail closed outside explicit demo fallback, generated referral links target public usernames, join QR images target `/join/{username}`, public trainer/file assets use persisted data, and dashboard fallback copy no longer calls read-model outages Demo Mode.
 
 ## Intentionally Out Of Scope For This Audit Commit
 
@@ -255,3 +279,4 @@ Payment-specific hardening gaps found in the audit:
 - Certifying distributed rate limiting with real Upstash Redis credentials and production traffic/load settings.
 - Completing all web/mobile UI polish and E2E flows in a single commit.
 - Claiming OpenAI live-provider readiness without staging credentials and safety QA.
+- Claiming complete web control-room hardening; owner setup persistence, heavy-table pagination/search, QR/result fallback audit, and platform staging visual QA remain open.

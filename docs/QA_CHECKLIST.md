@@ -31,6 +31,12 @@ pnpm dev:mobile
 - Receptionist: pending/flagged queue loads; approve/reject persists; manual attendance requires reason; offline payment requires reason; pickup code verifies via backend; fulfilled count updates after fulfillment.
 - Owner mobile: active members, check-ins, revenue, approvals, stock, and members use backend reads.
 - Owner/admin web: dashboard, members, attendance, plans, payments, notifications, shop, reports, staff, audit, and provider diagnostics load from API/read models.
+- Public web: `/g/{username}` shows persisted public plans/trainers/gallery when present and honest empty states when not; no join CTA appears when no public membership plan is published.
+- Public join: `/join/{username}` must honor the persisted backend join mode even if the URL includes `?mode=OPEN_JOIN`; approval-required mode must not claim a request was submitted before an authenticated request exists.
+- Referral web: `/r/{code}` must resolve only active referral codes. Unknown, inactive, or hidden-org codes should not silently fall back to `iron-house` outside explicit local/offline-demo fixture mode.
+- Referral creation: `/api/orgs/{orgId}/referrals` must return `/join/{username}?ref={code}` and `/r/{code}` links, never `/join/{orgId}`.
+- Public QR: `/qr/{username}?target=join` must encode `/join/{username}`; default/profile QR must encode `/in/{username}?source=qr`; local demo fallback should only work for known fixture usernames.
+- Dashboard fallback: explicit offline demo may show `Demo Mode`; backend/read-model failures outside demo must show an unavailable/error state, not a demo-success label.
 - Default Branch: owner dashboard and QR display show Default Branch context; membership plan creation stores the Default Branch; checkout/manual activation use a plan branch when present; `branchId` filters on dashboard/attendance/report endpoints reject branches from another org.
 - Multi-branch limitation: shop inventory, shop orders, payment records, and revenue/manual-cash reports are org-wide in this MVP because those tables do not yet carry `branchId`.
 - Platform admin: provider diagnostics load from `/api/platform/provider-status` and do not expose secret values.

@@ -1,7 +1,34 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { zookDemoFixtures } from "@zook/core";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
+import { canUsePublicDemoFallback } from "@/server/public-gym-read-models";
+
+async function referralUsername(code: string) {
+  const normalizedCode = code.trim().toUpperCase();
+  try {
+    const referral = await prisma.referralCode.findUnique({ where: { code: normalizedCode } });
+    if (!referral || referral.status !== "active") {
+      return null;
+    }
+    const org = await prisma.organization.findUnique({ where: { id: referral.orgId } });
+    return org && org.visibility !== "HIDDEN" ? org.username : null;
+  } catch (error) {
+    if (!canUsePublicDemoFallback()) {
+      throw error;
+    }
+  }
+
+  const referral = zookDemoFixtures.referralCodes.find(
+    (candidate) => candidate.code.toUpperCase() === normalizedCode && candidate.status === "active",
+  );
+  const org = referral
+    ? zookDemoFixtures.organizations.find((candidate) => candidate.id === referral.orgId)
+    : null;
+  return org?.username ?? null;
+}
 
 export default async function ReferralPage({
   params
@@ -9,13 +36,10 @@ export default async function ReferralPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  let username = "iron-house";
-  try {
-    const referral = await prisma.referralCode.findUnique({ where: { code } });
-    const org = referral ? await prisma.organization.findUnique({ where: { id: referral.orgId } }) : null;
-    if (org) username = org.username;
-  } catch {
-    // Database is optional for static preview; referral fallback remains usable.
+  const normalizedCode = code.trim().toUpperCase();
+  const username = await referralUsername(normalizedCode);
+  if (!username) {
+    notFound();
   }
 
   return (
@@ -24,12 +48,12 @@ export default async function ReferralPage({
         <ZookLogo />
       </div>
       <GlassCard className="max-w-lg text-center">
-        <Pill tone="amber">Referral {code}</Pill>
+        <Pill tone="amber">Referral {normalizedCode}</Pill>
         <h1 className="mt-5 text-3xl font-semibold">Open Zook to join this gym</h1>
         <p className="mt-3 text-sm leading-6 text-white/55">
-          Deep link target: zook://join/{username}?ref={code}
+          Deep link target: zook://join/{username}?ref={normalizedCode}
         </p>
-        <Link href={`/join/${username}?ref=${code}`} className="mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 font-semibold text-black">
+        <Link href={`/join/${username}?ref=${normalizedCode}`} className="mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 font-semibold text-black">
           Continue
         </Link>
       </GlassCard>

@@ -1,26 +1,20 @@
 import QRCode from "qrcode";
 import { NextResponse, type NextRequest } from "next/server";
-import { prisma } from "@zook/db";
-
-function absoluteUrl(request: NextRequest, path: string) {
-  return new URL(path, request.nextUrl.origin).toString();
-}
+import { getPublicGymProfileData } from "../../../src/server/public-gym-read-models";
+import { buildPublicQrData } from "../../../src/server/public-qr";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> },
 ) {
   const { username } = await params;
-  const org = await prisma.organization.findUnique({ where: { username } });
-  if (!org || org.visibility === "HIDDEN") {
+  const profile = await getPublicGymProfileData(username);
+  if (!profile) {
     return new NextResponse("Gym not found", { status: 404 });
   }
 
   const target = request.nextUrl.searchParams.get("target");
-  const data =
-    target === "app"
-      ? `zook://join/${org.username}`
-      : absoluteUrl(request, `/in/${org.username}?source=qr`);
+  const data = buildPublicQrData(request.nextUrl.origin, profile.org.username, target);
   const svg = await QRCode.toString(data, {
     type: "svg",
     errorCorrectionLevel: "M",
@@ -36,7 +30,10 @@ export async function GET(
     "cache-control": "no-store",
   });
   if (request.nextUrl.searchParams.get("download") === "1") {
-    headers.set("content-disposition", `attachment; filename="${org.username}-zook-join-qr.svg"`);
+    headers.set(
+      "content-disposition",
+      `attachment; filename="${profile.org.username}-zook-join-qr.svg"`,
+    );
   }
   return new NextResponse(svg, { headers });
 }
