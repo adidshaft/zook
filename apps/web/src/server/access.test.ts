@@ -51,4 +51,31 @@ describe("request access guards", () => {
     expect(requireAuth(ctx)).toBe("platform_1");
     expect(requirePlatformAdmin(ctx)).toBe("platform_1");
   });
+
+  it("does not let platform admins mutate tenant routes without tenant membership", () => {
+    const ctx: RequestContext = {
+      userId: "platform_1",
+      roles: ["PLATFORM_ADMIN"],
+      permissions: ["PLATFORM_MANAGE_ORGS"],
+      isPlatformAdmin: true
+    };
+
+    expect(() => requireOrgPermission(ctx, "org_a", "PAYMENTS_RECORD_OFFLINE")).toThrow(
+      "No organization access"
+    );
+  });
+
+  it("blocks operations for suspended organizations", () => {
+    const ctx: RequestContext = {
+      userId: "owner_1",
+      orgId: "org_a",
+      orgStatus: "SUSPENDED",
+      roles: ["OWNER"],
+      permissions: ["PAYMENTS_VIEW"]
+    };
+
+    expect(() => requireOrgPermission(ctx, "org_a", "PAYMENTS_VIEW")).toThrow(
+      "Organization is not active"
+    );
+  });
 });

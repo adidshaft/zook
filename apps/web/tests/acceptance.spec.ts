@@ -202,6 +202,53 @@ test("open join checkout activates membership and shop order success stays serve
   ).toBe(true);
 });
 
+test("payment sessions require owner or org payment access", async ({ page, request }) => {
+  requireDb();
+  await loginWithOtp(page, `playwright-session-access-${Date.now()}@zook.local`);
+
+  const gymPayload = await expectApiOk<{
+    org: { id: string };
+    plans: Array<{ id: string }>;
+  }>(await page.request.get("/api/orgs/public/iron-house"));
+  const orgId = String(gymPayload.data.org.id);
+  const planId = String(gymPayload.data.plans[0]?.id);
+  await prisma.organization.update({
+    where: { id: orgId },
+    data: { joinMode: "OPEN_JOIN" }
+  });
+
+  const checkoutPayload = await expectApiOk<{ session: { id: string } }>(
+    await page.request.post(`/api/orgs/${orgId}/subscriptions`, {
+      data: { planId }
+    }),
+  );
+
+  const unauthenticatedResponse = await request.get(`/api/payments/session/${checkoutPayload.data.session.id}`);
+  expect(unauthenticatedResponse.status()).toBe(401);
+
+  const ownedResponse = await page.request.get(`/api/payments/session/${checkoutPayload.data.session.id}`);
+  await expectApiOk(ownedResponse);
+});
+
+test("platform admins cannot perform tenant operations through org routes", async ({ page }) => {
+  requireDb();
+  await loginWithSessionCookie(page, "platform@zook.local");
+
+  const org = await seedAndGetOrg({ username: "iron-house" });
+  const memberRole = await prisma.organizationRoleAssignment.findFirstOrThrow({
+    where: { orgId: org.id, role: "MEMBER" }
+  });
+
+  const response = await page.request.post(`/api/orgs/${org.id}/attendance/manual`, {
+    data: {
+      memberUserId: memberRole.userId,
+      reason: "Security regression check"
+    }
+  });
+
+  expect(response.status()).toBe(403);
+});
+
 test("generic checkout cannot claim membership or shop payment targets", async ({ page }) => {
   requireDb();
   await loginWithOtp(page, `playwright-payment-boundary-${Date.now()}@zook.local`);
@@ -610,7 +657,7 @@ test("member workout reports are assignment-scoped and visible to the trainer", 
 
 test("platform admin can inspect providers and suspend then reactivate an organization", async ({ page }) => {
   requireDb();
-  await loginWithOtp(page, "platform@zook.local");
+  await loginWithSessionCookie(page, "platform@zook.local");
 
   const orgsPayload = await expectApiOk<{ orgs: Array<{ id: string; status: string }> }>(
     await page.request.get("/api/platform/orgs"),

@@ -9,7 +9,7 @@ Runtime hardening commit: `ce0f9f1`
 
 Zook is a backend-first full-stack MVP skeleton moving toward a durable production-shaped application. Backend mode is the default, offline demo mode is explicit/local-only, core role flows are increasingly persisted through Prisma, and provider behavior is selected through server-side registries and runtime checks.
 
-This is not a production launch certification. Razorpay, Expo push, OpenAI, object storage, distributed rate limiting, full mobile simulator/device QA, and complete E2E coverage still require staging or device validation before production claims. The 2026-05-03 AI/trainer hardening pass made trainer planning more permanent and testable, but did not certify live OpenAI behavior.
+This is not a production launch certification. Razorpay, Expo push, OpenAI, object storage, distributed rate limiting with real Upstash Redis credentials, full mobile simulator/device QA, and complete E2E coverage still require staging or device validation before production claims. The 2026-05-03 AI/trainer hardening pass made trainer planning more permanent and testable, but did not certify live OpenAI behavior.
 
 ## Stack Summary
 
@@ -28,6 +28,7 @@ This is not a production launch certification. Razorpay, Expo push, OpenAI, obje
 - `AI_PROVIDER=mock|openai|disabled`
 - `PUSH_PROVIDER=mock|expo|disabled`
 - `STORAGE_PROVIDER=local|s3|r2|disabled`
+- `RATE_LIMIT_PROVIDER=memory|upstash|disabled`
 
 Current guardrails:
 
@@ -37,6 +38,7 @@ Current guardrails:
 - Production release checks fail for fixed demo OTP, seeded demo users, mock payments, mock email, weak secrets, and localhost mobile URLs.
 - Mock payment completion is server-gated by `isMockPaymentCompletionAllowed`.
 - Provider diagnostics expose provider names, status, missing env names, and boolean env presence only.
+- Production runtime validation rejects in-process memory or disabled rate limiting; use `RATE_LIMIT_PROVIDER=upstash` with `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
 
 Phase 1 runtime hardening adds first-class `disabled` provider diagnostics for payments, AI, and push. Feature routes surface controlled unavailable errors when disabled is selected.
 
@@ -106,7 +108,7 @@ Known polish themes:
 - Push scheduling: scheduled notification rows are hidden until dispatch, but the scheduler/worker to send them is still not implemented.
 - AI: OpenAI path has timeout handling, structured response validation, and durable safety-block records. It still needs configured-provider QA, broader safety evaluation, and staging evidence before production readiness is claimed.
 - Storage: production object storage needs configured S3/R2 credentials, upload/download QA, and public/private asset validation against real infrastructure.
-- Rate limiting: current store is in-process memory and not distributed-ready for production replicas.
+- Rate limiting: local uses in-process memory. Phase 6 added an Upstash Redis REST-backed store, safe diagnostics, and production runtime/preflight guards against memory or disabled rate limiting. A real Upstash database has not been configured or load-tested yet.
 
 Payment-specific hardening gaps found in the audit:
 
@@ -137,7 +139,7 @@ Payment-specific hardening gaps found in the audit:
 - Full payment provider handoff UI and reconciliation workflows beyond the hardened backend confirmation path.
 - Production secrets, real URLs, non-demo seed posture, real email provider, and provider env configuration.
 - Fail-closed runtime profile validation and aligned mobile/server runtime precedence.
-- Distributed/shared rate limiting.
+- Distributed/shared rate limiting configured and validated with real Upstash Redis credentials.
 - Object storage staging validation.
 - Expo push device QA.
 - Scheduled notification dispatcher and local/staging test-notification hook.
@@ -239,6 +241,6 @@ Payment-specific hardening gaps found in the audit:
 - Building full multi-branch UI.
 - Running remote EAS builds.
 - Running physical-device push or iPhone release QA.
-- Replacing in-process rate limiting.
+- Certifying distributed rate limiting with real Upstash Redis credentials and production traffic/load settings.
 - Completing all web/mobile UI polish and E2E flows in a single commit.
 - Claiming OpenAI live-provider readiness without staging credentials and safety QA.

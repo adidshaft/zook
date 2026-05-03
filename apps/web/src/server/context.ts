@@ -52,6 +52,7 @@ export async function createRequestContext(
   return {
     userId: session.user.id,
     ...(activeOrganization ? { orgId: activeOrganization.orgId } : {}),
+    ...(activeOrganization ? { orgStatus: activeOrganization.status } : {}),
     roles,
     permissions,
     isPlatformAdmin: session.user.isPlatformAdmin,

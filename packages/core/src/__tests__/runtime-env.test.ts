@@ -85,7 +85,7 @@ describe("runtime env guardrails", () => {
     ).toBe(false);
   });
 
-  it("flags production mock AI, mock push, and local storage", () => {
+  it("flags production mock AI, mock push, local storage, and memory rate limiting", () => {
     expect(
       validateRuntimeConfig({
         APP_ENV: "production",
@@ -94,13 +94,32 @@ describe("runtime env guardrails", () => {
         AI_PROVIDER: "mock",
         PUSH_PROVIDER: "mock",
         STORAGE_PROVIDER: "local",
+        RATE_LIMIT_PROVIDER: "memory",
       } as NodeJS.ProcessEnv).issues,
     ).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: "PRODUCTION_MOCK_AI_PROVIDER" }),
         expect.objectContaining({ code: "PRODUCTION_MOCK_PUSH_PROVIDER" }),
         expect.objectContaining({ code: "PRODUCTION_LOCAL_STORAGE" }),
+        expect.objectContaining({ code: "PRODUCTION_MEMORY_RATE_LIMIT" }),
       ]),
+    );
+  });
+
+  it("allows production with distributed rate limiting selected", () => {
+    const issues = validateRuntimeConfig({
+      APP_ENV: "production",
+      API_MODE: "backend",
+      PAYMENT_PROVIDER: "disabled",
+      AI_PROVIDER: "disabled",
+      PUSH_PROVIDER: "disabled",
+      STORAGE_PROVIDER: "disabled",
+      FILE_UPLOADS_ENABLED: "false",
+      RATE_LIMIT_PROVIDER: "upstash",
+    } as NodeJS.ProcessEnv).issues;
+
+    expect(issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "PRODUCTION_MEMORY_RATE_LIMIT" })]),
     );
   });
 });

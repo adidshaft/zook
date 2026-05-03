@@ -164,6 +164,7 @@ export type ConsentStatus = "PENDING" | "GRANTED" | "REVOKED" | "DENIED";
 export interface RequestContext {
   userId?: string;
   orgId?: string;
+  orgStatus?: OrganizationStatus;
   branchId?: string;
   roles: Role[];
   permissions: Permission[];

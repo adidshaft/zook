@@ -228,6 +228,8 @@ Still open:
 
 ## Phase 6: Backend Security, RBAC, Tenant Isolation, Rate Limiting
 
+Status: partially completed in the 2026-05-03 security hardening pass. The rate limiter now has a memory local provider and an Upstash Redis REST provider with safe diagnostics; production runtime/preflight rejects memory or disabled rate limiting. Platform admins no longer bypass normal tenant routes automatically, suspended/cancelled orgs are blocked at the shared org-permission guard, payment session reads require ownership or org payment permission, and several target-user flows now validate active same-org member/trainer membership.
+
 Deliverables:
 
 - Route-by-route RBAC audit for auth, members, attendance, plans, shop, payments, trainer, owner, notifications, privacy, files, AI, and platform admin.
@@ -241,6 +243,23 @@ Acceptance:
 
 - Wrong role and wrong org tests deny access.
 - Rate limits trigger for OTP, login/session, attendance scan, AI, payment session, file upload, and notification send.
+
+Implemented in this pass:
+
+- `RATE_LIMIT_PROVIDER=memory|upstash|disabled` with `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, and optional `RATE_LIMIT_NAMESPACE`.
+- Safe rate-limit diagnostics are included in readiness/provider status without exposing Redis URL or token.
+- Production rejects `RATE_LIMIT_PROVIDER=memory` and `RATE_LIMIT_PROVIDER=disabled`.
+- Platform admin is web/platform-first and no longer acts as an unaudited blanket tenant operator through `requireOrgPermission`.
+- `GET /api/payments/session/:id` now requires the session owner or same-org `PAYMENTS_VIEW`.
+- Manual attendance, offline payment, selected notification recipients, PT routes, and plan assignment now validate active same-org target users.
+
+Still open:
+
+- Route-by-route RBAC review is not complete.
+- Add broader automated wrong-role/wrong-org tests for every route family.
+- Consider a dedicated audited break-glass/impersonation path for platform support.
+- Add rate limits to additional non-core mutation routes such as join requests, referral redemption, reception code verify, staff/permission mutation, and platform status changes.
+- Expand audit metadata for before/after/risk-level fields.
 
 ## Phase 7: Default-Branch-Centered Multi-Branch Readiness
 

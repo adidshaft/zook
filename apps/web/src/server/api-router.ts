@@ -17,6 +17,8 @@ import {
   verifyOtpSchema,
   getAllowedFixedOtp,
   isMockPaymentCompletionAllowed,
+  permissions,
+  roles,
   validateRuntimeConfig,
   type AIRequestType,
   type PlanType,
@@ -88,7 +90,7 @@ import { fail, ok, readJson } from "./response";
 import { resolveSessionSummaryFromToken } from "./session";
 import { writeAuditLog } from "./audit";
 import { getDevOtpResponseValue } from "./auth-response";
-import { assertRateLimit } from "./rate-limit";
+import { assertRateLimit, getRateLimitDiagnostics } from "./rate-limit";
 import { createRequestId, currentRequestId, runWithRequestState } from "./request-state";
 import { getErrorReporter } from "./error-reporter";
 import { assertSafeMutationRequest, getClientIp } from "./security";
@@ -189,6 +191,20 @@ const notificationComposerSchema = notificationSchema.extend({
   selectedUserIds: z.array(z.string()).default([]),
   planId: z.string().optional(),
   excludeMinors: z.boolean().default(false),
+});
+
+const staffInviteSchema = z.object({
+  email: z.string().trim().email(),
+  role: z.enum(["ADMIN", "RECEPTIONIST", "TRAINER"]),
+});
+
+const permissionOverrideSchema = z.object({
+  role: z.enum(roles).refine((role) => role !== "PLATFORM_ADMIN", "Platform admin permissions are not tenant scoped."),
+  permission: z.enum(permissions).refine(
+    (permission) => !permission.startsWith("PLATFORM_"),
+    "Platform permissions are not tenant scoped.",
+  ),
+  enabled: z.boolean(),
 });
 
 const notificationPreferenceSchema = z.object({
@@ -834,6 +850,35 @@ function publicTrainerPhotoUrl(value: string | null | undefined) {
     return null;
   }
   return value;
+}
+
+async function assertOrgUser(input: { orgId: string; userId: string; role?: Exclude<Role, "PLATFORM_ADMIN"> }) {
+  const membership = await prisma.organizationUser.findUnique({
+    where: { orgId_userId: { orgId: input.orgId, userId: input.userId } },
+  });
+  if (!membership || membership.status !== "active") {
+    throw forbiddenError("Target user is not active in this organization.");
+  }
+  if (input.role) {
+    const roleAssignment = await prisma.organizationRoleAssignment.findFirst({
+      where: { orgId: input.orgId, userId: input.userId, role: input.role },
+    });
+    if (!roleAssignment) {
+      throw forbiddenError(`Target user is not an organization ${input.role.toLowerCase()}.`);
+    }
+  }
+}
+
+function assertActiveContextOrg(ctx: { orgId?: string; orgStatus?: string }, orgId?: string) {
+  if (!orgId) {
+    return;
+  }
+  if (ctx.orgId !== orgId) {
+    throw forbiddenError("No organization access");
+  }
+  if (ctx.orgStatus === "SUSPENDED" || ctx.orgStatus === "CANCELLED") {
+    throw forbiddenError("Organization is not active.");
+  }
 }
 
 function getPaymentProviderOrThrow() {
@@ -1692,10 +1737,19 @@ async function resolveNotificationRecipients(input: {
     return [];
   }
 
+  const memberships = await prisma.organizationUser.findMany({
+    where: { orgId: input.orgId, userId: { in: uniqueUserIds }, status: "active" },
+    select: { userId: true },
+  });
+  const orgUserIds = memberships.map((membership) => membership.userId);
+  if (!orgUserIds.length) {
+    return [];
+  }
+
   const [users, preferences] = await Promise.all([
-    prisma.user.findMany({ where: { id: { in: uniqueUserIds } } }),
+    prisma.user.findMany({ where: { id: { in: orgUserIds } } }),
     prisma.userNotificationPreference.findMany({
-      where: { userId: { in: uniqueUserIds }, OR: [{ orgId: input.orgId }, { orgId: null }] },
+      where: { userId: { in: orgUserIds }, OR: [{ orgId: input.orgId }, { orgId: null }] },
     }),
   ]);
   const preferenceByUserId = new Map<string, (typeof preferences)[number]>();
@@ -2045,8 +2099,8 @@ async function handleAuth(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["auth", "request-otp"])) {
     const body = requestOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
-    assertRateLimit("otpRequestByEmail", body.email, "Too many OTP requests for this email.");
-    assertRateLimit("otpRequestByIp", ipAddress, "Too many OTP requests from this IP.");
+    await assertRateLimit("otpRequestByEmail", body.email, "Too many OTP requests for this email.");
+    await assertRateLimit("otpRequestByIp", ipAddress, "Too many OTP requests from this IP.");
     await getUserByEmailOrCreate(body.email);
     const challenge = await auth.requestOtp(
       body.email,
@@ -2061,12 +2115,12 @@ async function handleAuth(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["auth", "verify-otp"])) {
     const body = verifyOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
-    assertRateLimit(
+    await assertRateLimit(
       "otpVerifyByEmail",
       body.email,
       "Too many OTP verification attempts for this email.",
     );
-    assertRateLimit("otpVerifyByIp", ipAddress, "Too many OTP verification attempts from this IP.");
+    await assertRateLimit("otpVerifyByIp", ipAddress, "Too many OTP verification attempts from this IP.");
     const user = await getUserByEmailOrCreate(body.email);
     const session = await auth.verifyOtp(
       clean({
@@ -2141,9 +2195,11 @@ async function handleMeData(request: NextRequest, path: string[]) {
     return ok(await getMemberHomeData(userId, ctx.orgId));
   }
   if (request.method === "GET" && pathMatches(path, ["me", "profile"])) {
-    const ctx = await getRequestContext(request);
+    const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
+    const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
     const userId = requireAuth(ctx);
-    const orgId = ctx.orgId ?? request.nextUrl.searchParams.get("orgId") ?? undefined;
+    assertActiveContextOrg(ctx, requestedOrgId);
+    const orgId = requestedOrgId ?? ctx.orgId;
     const [user, profile, latestBodyProgress] = await Promise.all([
       prisma.user.findUniqueOrThrow({ where: { id: userId } }),
       orgId
@@ -2168,6 +2224,7 @@ async function handleMeData(request: NextRequest, path: string[]) {
     const body = memberWellnessProfileSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, body.orgId);
     const orgId = body.orgId ?? ctx.orgId;
     const dateOfBirth = body.dateOfBirth ? new Date(body.dateOfBirth) : undefined;
     if (dateOfBirth && Number.isNaN(dateOfBirth.getTime())) {
@@ -2237,6 +2294,7 @@ async function handleMeData(request: NextRequest, path: string[]) {
     const body = profilePhotoAssetSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, body.orgId);
     const asset = await getUserScopedFileAsset({
       fileAssetId: body.fileAssetId,
       userId,
@@ -2711,7 +2769,7 @@ async function handleFiles(request: NextRequest, path: string[]) {
     const upload = await parseFileUploadRequest(request);
     const ctx = await getRequestContext(request, upload.orgId ? { orgId: upload.orgId } : {});
     const userId = requireAuth(ctx);
-    assertRateLimit(
+    await assertRateLimit(
       "fileUploadByActor",
       `${upload.orgId ?? "global"}:${userId}`,
       "Too many file uploads requested.",
@@ -3769,7 +3827,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["payments", "checkout"])) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
-    assertRateLimit(
+    await assertRateLimit(
       "paymentSessionByActor",
       userId ?? getClientIp(request),
       "Too many payment sessions requested.",
@@ -3827,7 +3885,23 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
   }
   if (request.method === "GET" && pathMatches(path, ["payments", "session", /.+/])) {
     const session = await prisma.paymentSession.findUnique({ where: { id: path[2]! } });
-    return session ? ok({ session }) : fail("NOT_FOUND", "Payment session not found", 404);
+    if (!session) {
+      return fail("NOT_FOUND", "Payment session not found", 404);
+    }
+    const ctx = await getRequestContext(request, session.orgId ? { orgId: session.orgId } : {});
+    const userId = requireAuth(ctx);
+    const canReadOwnSession = Boolean(session.userId && session.userId === userId);
+    const canReadOrgSession = Boolean(
+      session.orgId &&
+        ctx.orgId === session.orgId &&
+        ctx.permissions.includes("PAYMENTS_VIEW") &&
+        ctx.orgStatus !== "SUSPENDED" &&
+        ctx.orgStatus !== "CANCELLED",
+    );
+    if (!canReadOwnSession && !canReadOrgSession) {
+      throw forbiddenError("No payment session access.");
+    }
+    return ok({ session });
   }
   if (request.method === "POST" && pathMatches(path, ["payments", "webhooks", "razorpay"])) {
     const provider = getPaymentProviderOrThrow();
@@ -4153,7 +4227,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "subscriptions"])) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
-    assertRateLimit(
+    await assertRateLimit(
       "paymentSessionByActor",
       `${path[1]!}:${userId}`,
       "Too many membership checkout attempts.",
@@ -4453,7 +4527,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
     const body = attendanceScanSchema.parse(await readJson(request));
-    assertRateLimit(
+    await assertRateLimit(
       "qrScanByActor",
       `${userId}:${body.deviceId ?? "unknown-device"}`,
       "Too many attendance scans. Please wait before trying again.",
@@ -4830,6 +4904,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const userId = requireOrgPermission(ctx, orgId, "ATTENDANCE_MANUAL_OVERRIDE");
     const body = manualAttendanceSchema.parse(await readJson(request));
     requireManualOverrideReason(body.reason);
+    await assertOrgUser({ orgId, userId: body.memberUserId, role: "MEMBER" });
     const branch = body.branchId
       ? await prisma.branch.findFirst({ where: { id: body.branchId, orgId } })
       : await prisma.branch.findFirst({ where: { orgId, isDefault: true } });
@@ -4938,7 +5013,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_STAFF");
-    const body = (await readJson(request)) as { email: string; role: Role };
+    const body = staffInviteSchema.parse(await readJson(request));
     const invite = await prisma.staffInvitation.create({
       data: {
         orgId,
@@ -4972,16 +5047,16 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_PERMISSIONS");
-    const body = (await readJson(request)) as { role: Role; permission: string; enabled: boolean };
+    const body = permissionOverrideSchema.parse(await readJson(request));
     const permission = await prisma.organizationRolePermission.upsert({
       where: {
-        orgId_role_permission: { orgId, role: body.role, permission: body.permission as never },
+        orgId_role_permission: { orgId, role: body.role, permission: body.permission },
       },
       update: { enabled: body.enabled, overriddenByUserId: userId },
       create: {
         orgId,
         role: body.role,
-        permission: body.permission as never,
+        permission: body.permission,
         enabled: body.enabled,
         overriddenByUserId: userId,
       },
@@ -5009,6 +5084,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     if (!memberUser) {
       throw notFoundError("Member not found");
     }
+    await assertOrgUser({ orgId, userId: body.memberUserId, role: "MEMBER" });
     const paymentData = clean({
       orgId,
       userId: body.memberUserId,
@@ -5285,6 +5361,8 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "PT_RECORD");
+    const trainerUserId = path[3]!;
+    await assertOrgUser({ orgId, userId: trainerUserId, role: "TRAINER" });
     const body = (await readJson(request)) as {
       name: string;
       description?: string;
@@ -5295,7 +5373,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const plan = await prisma.personalTrainingPlan.create({
       data: clean({
         orgId,
-        trainerUserId: path[3]!,
+        trainerUserId,
         name: body.name,
         description: body.description,
         sessionCount: body.sessionCount,
@@ -5311,6 +5389,18 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
     const body = ptSubscriptionSchema.parse(await readJson(request));
     const memberUser = await prisma.user.findUniqueOrThrow({ where: { id: body.memberUserId } });
+    await Promise.all([
+      assertOrgUser({ orgId, userId: body.memberUserId, role: "MEMBER" }),
+      assertOrgUser({ orgId, userId: body.trainerUserId, role: "TRAINER" }),
+    ]);
+    if (body.ptPlanId) {
+      const ptPlan = await prisma.personalTrainingPlan.findFirst({
+        where: { id: body.ptPlanId, orgId, trainerUserId: body.trainerUserId },
+      });
+      if (!ptPlan) {
+        throw notFoundError("Personal training plan not found for this trainer.");
+      }
+    }
     try {
       assertMinorConsentGranted({
         isMinor: memberUser.isMinor,
@@ -5561,6 +5651,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     }
     const body = planAssignSchema.parse(await readJson(request));
     if (body.assignedToUserId) {
+      await assertOrgUser({ orgId, userId: body.assignedToUserId, role: "MEMBER" });
       const targetUser = await prisma.user.findUniqueOrThrow({
         where: { id: body.assignedToUserId },
       });
@@ -5765,7 +5856,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const body = aiChatSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
-    assertRateLimit(
+    await assertRateLimit(
       "aiRequestByUser",
       userId,
       "Too many AI requests. Please slow down and try again shortly.",
@@ -5842,7 +5933,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const body = aiGenerateSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
-    assertRateLimit(
+    await assertRateLimit(
       "aiRequestByUser",
       userId,
       "Too many AI requests. Please slow down and try again shortly.",
@@ -5986,7 +6077,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
-    assertRateLimit(
+    await assertRateLimit(
       "notificationSendByActor",
       `${orgId}:${userId}`,
       "Too many notification sends from this account.",
@@ -6165,10 +6256,8 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const body = pushRegisterDeviceSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
-    if (body.orgId && ctx.orgId !== body.orgId && !ctx.isPlatformAdmin) {
-      throw forbiddenError("No organization access");
-    }
-    assertRateLimit(
+    assertActiveContextOrg(ctx, body.orgId);
+    await assertRateLimit(
       "pushRegisterByActor",
       `${body.orgId ?? "global"}:${userId}`,
       "Too many push device registrations from this account.",
@@ -6586,7 +6675,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   if (request.method === "POST" && pathMatches(path, ["me", "guardian-consent", "request"])) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
-    assertRateLimit(
+    await assertRateLimit(
       "guardianConsentByActor",
       `${ctx.orgId ?? "global"}:${userId}`,
       "Too many guardian consent requests from this account.",
@@ -6800,7 +6889,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   if (request.method === "POST" && pathMatches(path, ["me", "data-export-request"])) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
-    assertRateLimit(
+    await assertRateLimit(
       "privacyRequestByActor",
       `${ctx.orgId ?? "global"}:${userId}:export`,
       "Too many data export requests from this account.",
@@ -6905,7 +6994,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   if (request.method === "POST" && pathMatches(path, ["me", "account-deletion-request"])) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
-    assertRateLimit(
+    await assertRateLimit(
       "privacyRequestByActor",
       `${ctx.orgId ?? "global"}:${userId}:deletion`,
       "Too many account deletion requests from this account.",
@@ -6996,7 +7085,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   if (request.method === "GET" && pathMatches(path, ["platform", "provider-status"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
-    return ok({ providers: getProviderRegistryDiagnostics() });
+    return ok({ providers: { ...getProviderRegistryDiagnostics(), rateLimit: getRateLimitDiagnostics() } });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "abuse-flags"])) {
     const ctx = await getRequestContext(request);

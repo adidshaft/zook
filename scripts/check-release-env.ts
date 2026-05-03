@@ -69,7 +69,10 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
         "INVALID_EXPO_PUBLIC_API_MODE",
         "STAGING_IMPLICIT_PAYMENT_PROVIDER",
         "STAGING_IMPLICIT_AI_PROVIDER",
-        "STAGING_IMPLICIT_PUSH_PROVIDER"
+        "STAGING_IMPLICIT_PUSH_PROVIDER",
+        "STAGING_IMPLICIT_RATE_LIMIT_PROVIDER",
+        "PRODUCTION_MEMORY_RATE_LIMIT",
+        "PRODUCTION_DISABLED_RATE_LIMIT"
       ].includes(issue.code)
     ) {
       results.push(
@@ -309,6 +312,24 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
         "Set S3_ENDPOINT explicitly or provide R2_ACCOUNT_ID so the runtime can derive the Cloudflare R2 endpoint."
       )
     );
+  }
+
+  const rateLimitProvider = env("RATE_LIMIT_PROVIDER") ?? "memory";
+  if (profile === "production" && rateLimitProvider === "memory") {
+    results.push(fail("Production rate limiting", "RATE_LIMIT_PROVIDER=memory in production profile.", "Use RATE_LIMIT_PROVIDER=upstash with UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN."));
+  } else if (profile === "production" && rateLimitProvider === "disabled") {
+    results.push(fail("Production rate limiting", "RATE_LIMIT_PROVIDER=disabled in production profile.", "Use RATE_LIMIT_PROVIDER=upstash for production deploys."));
+  } else if (rateLimitProvider === "upstash") {
+    const missing = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"].filter((key) => !env(key));
+    results.push(
+      missing.length
+        ? fail("Distributed rate limiting", `RATE_LIMIT_PROVIDER=upstash is missing ${missing.join(", ")}.`, "Set the Upstash Redis REST URL and token.")
+        : pass("Distributed rate limiting", "RATE_LIMIT_PROVIDER=upstash is configured.")
+    );
+  } else if (rateLimitProvider === "memory") {
+    results.push(warn("Rate limiting", "RATE_LIMIT_PROVIDER=memory is active.", "This is acceptable for local development and single-process staging only."));
+  } else {
+    results.push(warn("Rate limiting", `RATE_LIMIT_PROVIDER=${rateLimitProvider} is active.`, "Supported production value is upstash."));
   }
 
   results.push(pass("Map provider status", `MAP_PROVIDER=${env("MAP_PROVIDER") ?? "mock"}.`));

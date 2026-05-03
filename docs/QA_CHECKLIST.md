@@ -61,6 +61,7 @@ APP_ENV=staging API_MODE=backend pnpm db:deploy
 - Mock payment completion must be disabled unless `ALLOW_MOCK_PAYMENT_COMPLETION=true`.
 - Provider diagnostics should show configured, disabled, missing, or unsupported providers without secrets.
 - If testing storage, set `STORAGE_PROVIDER=s3` or `r2` with the required bucket credentials and confirm public asset URLs actually resolve from the bucket/CDN. If storage is intentionally off, set `STORAGE_PROVIDER=disabled` and `FILE_UPLOADS_ENABLED=false`.
+- If testing distributed rate limiting, set `RATE_LIMIT_PROVIDER=upstash`, `UPSTASH_REDIS_REST_URL`, and `UPSTASH_REDIS_REST_TOKEN`, then exhaust an OTP/payment/AI limit from two web server processes and confirm the shared counter blocks both. Diagnostics must not expose the Redis URL or token.
 - If testing OpenAI, set `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, and `OPENAI_TIMEOUT_MS`, then generate a trainer draft for an assigned client and document whether structured output, timeout behavior, and review-before-assign work end to end.
 - If testing Expo push, register a real device token from an EAS/dev-client build, send a transactional test notification, and document whether the tap opened the intended deep link.
 
@@ -75,6 +76,7 @@ APP_ENV=production API_MODE=backend pnpm release:preflight
 - Mock payment completion must be blocked.
 - Mock payment, AI, and push providers must be blocked; use provider-backed mode or `disabled` for a controlled unavailable state.
 - If a required provider is missing, the feature should fail closed or show unavailable state.
+- `RATE_LIMIT_PROVIDER=memory` and `RATE_LIMIT_PROVIDER=disabled` must be blocked; production should use `RATE_LIMIT_PROVIDER=upstash`.
 
 ## iPhone Release Build
 

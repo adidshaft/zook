@@ -240,6 +240,20 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
         message: "STORAGE_PROVIDER=local is not allowed in production while file uploads are enabled.",
       });
     }
+    if (normalizedProvider(env, "RATE_LIMIT_PROVIDER", "memory") === "memory") {
+      issues.push({
+        level: "error",
+        code: "PRODUCTION_MEMORY_RATE_LIMIT",
+        message: "RATE_LIMIT_PROVIDER=memory is not durable enough for production. Use upstash/redis.",
+      });
+    }
+    if (normalizedProvider(env, "RATE_LIMIT_PROVIDER", "memory") === "disabled") {
+      issues.push({
+        level: "error",
+        code: "PRODUCTION_DISABLED_RATE_LIMIT",
+        message: "RATE_LIMIT_PROVIDER=disabled is not allowed in production.",
+      });
+    }
   }
 
   if (appEnv === "staging") {
@@ -251,6 +265,13 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
         level: "warning",
         code: `STAGING_IMPLICIT_${key}`,
         message: `${key}=mock is implicit in staging. Set it explicitly so diagnostics reflect an intentional mock mode.`,
+      });
+    }
+    if (normalizedProvider(env, "RATE_LIMIT_PROVIDER", "memory") === "memory" && !env.RATE_LIMIT_PROVIDER?.trim()) {
+      issues.push({
+        level: "warning",
+        code: "STAGING_IMPLICIT_RATE_LIMIT_PROVIDER",
+        message: "RATE_LIMIT_PROVIDER=memory is implicit in staging. Set RATE_LIMIT_PROVIDER=upstash for distributed checks or memory explicitly for a controlled pilot.",
       });
     }
   }

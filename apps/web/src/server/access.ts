@@ -18,11 +18,11 @@ export function requireOrgPermission(ctx: RequestContext, orgId: string, permiss
   if (!ctx.userId) {
     throw unauthorizedError();
   }
-  if (ctx.isPlatformAdmin) {
-    return ctx.userId;
-  }
   if (ctx.orgId !== orgId || !ctx.roles.length) {
     throw forbiddenError("No organization access");
+  }
+  if (ctx.orgStatus === "SUSPENDED" || ctx.orgStatus === "CANCELLED") {
+    throw forbiddenError("Organization is not active.");
   }
   if (!ctx.permissions.includes(permission)) {
     throw forbiddenError(`Permission denied: ${permission}`);

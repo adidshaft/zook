@@ -29,6 +29,7 @@ Phase 4 keeps local development mock-first while making staging realistic enough
   - `AI_PROVIDER=mock`
   - `PUSH_PROVIDER=mock`
   - `STORAGE_PROVIDER=local`
+  - `RATE_LIMIT_PROVIDER=memory`
 
 ### Staging
 
@@ -46,6 +47,7 @@ Phase 4 keeps local development mock-first while making staging realistic enough
   - `AI_PROVIDER=openai|mock|disabled`
   - `PUSH_PROVIDER=expo|mock|disabled`
   - `STORAGE_PROVIDER=local|s3|r2|disabled`
+  - `RATE_LIMIT_PROVIDER=upstash` for distributed staging, or explicit `memory` only for single-process internal pilots
 
 ### Production
 
@@ -60,6 +62,7 @@ Phase 4 keeps local development mock-first while making staging realistic enough
 - strong `SESSION_SECRET` required
 - public URLs required
 - seed demo users disabled by default
+- `RATE_LIMIT_PROVIDER=upstash` required for durable shared limits
 
 ## Required Checks
 
@@ -109,6 +112,13 @@ Push:
 - `EXPO_PROJECT_ID`
 - `EXPO_ACCESS_TOKEN` optional
 - `PUSH_ENVIRONMENT=development|preview|production`
+
+Rate limiting:
+
+- `RATE_LIMIT_PROVIDER=memory|upstash|disabled`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- `RATE_LIMIT_NAMESPACE` optional
 
 Email:
 

@@ -20,6 +20,7 @@ const playwrightForwardEnvKeys = [
   "MAP_PROVIDER",
   "STORAGE_PROVIDER",
   "PUSH_PROVIDER",
+  "RATE_LIMIT_PROVIDER",
   "MAINTENANCE_MOCK_MODE",
   "SEED_DEMO_USERS_ENABLED",
   "ALLOW_FIXED_OTP_IN_STAGING"
@@ -83,7 +84,8 @@ export default defineConfig({
       CI: process.env.CI ?? "",
       ...pickDefinedEnv(playwrightForwardEnvKeys, {
         NEXT_PUBLIC_APP_URL: webServerUrl,
-        NEXT_PUBLIC_WEB_URL: webServerUrl
+        NEXT_PUBLIC_WEB_URL: webServerUrl,
+        RATE_LIMIT_PROVIDER: process.env.PLAYWRIGHT_RATE_LIMIT_PROVIDER ?? "disabled"
       })
     },
     url: webServerUrl,
