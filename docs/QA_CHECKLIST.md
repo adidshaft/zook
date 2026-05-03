@@ -88,6 +88,7 @@ APP_ENV=production API_MODE=backend pnpm release:preflight
 - Mock payment, AI, and push providers must be blocked; use provider-backed mode or `disabled` for a controlled unavailable state.
 - If a required provider is missing, the feature should fail closed or show unavailable state.
 - `RATE_LIMIT_PROVIDER=memory` and `RATE_LIMIT_PROVIDER=disabled` must be blocked; production should use `RATE_LIMIT_PROVIDER=upstash`.
+- Follow the launch runbook in `docs/deployment.md` before treating a build as a release candidate.
 
 ## iPhone Release Build
 

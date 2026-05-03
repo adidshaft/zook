@@ -138,7 +138,8 @@ Payment-specific hardening gaps found in the audit:
 
 ## Deployment Gaps
 
-- Staging/prod env values are not configured in this local audit.
+- The deployment, mobile runtime, EAS, QA, and README runbooks now document release commands, env modes, fail-safe UX, observability, and provider/device certification limits.
+- Staging/prod env values are not configured in this local audit, and the launch runbook has not been executed against a real staging environment.
 - Production release preflight correctly fails with the current local env because secrets are weak, local URLs are selected, fixed OTP is enabled, seeded demo users are enabled, and mock payment/email providers are active.
 - Prisma baseline migration exists and local deploy reports no pending migrations; this still needs staging apply/rollback rehearsal.
 - Remote EAS builds were not run.
@@ -155,7 +156,7 @@ Payment-specific hardening gaps found in the audit:
 - Expo push device QA.
 - Scheduled notification dispatcher and local/staging test-notification hook.
 - OpenAI provider and safety validation.
-- Full DB-backed acceptance coverage and manual mobile simulator/device pass.
+- Broader mobile/browser E2E coverage, full wrong-role/wrong-org route matrix, and manual mobile simulator/device pass.
 - Full multi-branch product semantics for shop stock, payments, revenue reports, and member-facing branch switching.
 
 ## Checks Run In This Audit
@@ -269,6 +270,12 @@ Payment-specific hardening gaps found in the audit:
 - `pnpm test`: passed. Core ran 63 tests; mobile ran 13 utility tests; web ran 34 server tests.
 - `git diff --check`: passed.
 
+## Additional Checks Run During Deployment Readiness
+
+- Docs-only release-readiness pass updated `README.md`, `docs/deployment.md`, `docs/eas-builds.md`, `docs/mobile-runtime.md`, `docs/QA_CHECKLIST.md`, and `docs/NEXT_PRODUCTION_HARDENING_PLAN.md`.
+- The release runbook, iPhone install checklist, and fail-safe UX checklist were documented but not executed against staging or a physical iPhone.
+- `git diff --check`: passed for the docs-only release-readiness pass.
+
 ## What This Phase Should Fix
 
 - Runtime validation and disabled provider modes are implemented.
@@ -286,6 +293,7 @@ Payment-specific hardening gaps found in the audit:
 - Default Branch handling is now explicit in branch-required membership/attendance flows; DB-backed acceptance includes Default Branch plan/dashboard/QR validation.
 - Public web join/profile/referral/QR semantics are now stricter: persisted join mode wins over URL overrides, approval/invite states no longer imply fake success, unknown referral codes and unknown public demo slugs fail closed outside explicit demo fallback, generated referral links target public usernames, join QR images target `/join/{username}`, public trainer/file assets use persisted data, and dashboard fallback copy no longer calls read-model outages Demo Mode.
 - Regression coverage now includes receptionist attendance approve/reject with member notifications and audit logs, shop pickup code verification/fulfillment, and privacy export/delete request job and audit persistence.
+- Deployment readiness docs now include a launch runbook, production/mobile release preflights, iPhone install QA, observability, and fail-safe UX guidance. This pass did not run real staging provider checks or install a release build.
 
 ## Intentionally Out Of Scope For This Audit Commit
 

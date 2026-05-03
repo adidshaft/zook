@@ -52,6 +52,15 @@ Production builds should use backend mode and explicit provider selections:
 
 `mock` providers are local/demo tools and should not be used for production builds.
 
+Production mobile release builds must be preflighted from the repo root:
+
+```bash
+APP_ENV=production API_MODE=backend pnpm release:preflight
+APP_ENV=production API_MODE=backend EXPO_PUBLIC_API_MODE=backend pnpm --filter @zook/mobile exec expo config --type public
+```
+
+The public config must resolve a non-local backend URL and `offlineDemo=false`. If backend URL or runtime config is missing, the app should show a fatal configuration state instead of silently loading demo data.
+
 AI provider settings are server-only. Do not expose `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, or `OPENAI_TIMEOUT_MS` through Expo public env vars. Mobile only receives the controlled API response: a generated draft, a validation/safety block, or a provider-unavailable error.
 
 Trainer AI planning is intentionally human-reviewed:
@@ -70,6 +79,8 @@ Trainer AI planning is intentionally human-reviewed:
 - Notification tap routing supports assigned plans, shop orders/pickup, attendance, membership/payment, join request status, trainer progress context, and generic inbox fallback.
 - Scheduled notification dispatch still requires a backend worker/cron; scheduled recipients should not be treated as delivered inbox items before dispatch.
 
+Physical push QA requires an EAS development, preview, or production build on a real iOS/Android device. Expo Go and simulators are acceptable for inbox/routing checks, but they do not certify production push.
+
 ## Native Artifacts
 
 `apps/mobile/ios/`, generated screenshots, and icon-builder exports are ignored outputs. Regenerate native files with Expo prebuild or EAS instead of committing generated `Pods/`, build folders, screenshots, or exported app-icon variants.
@@ -81,6 +92,26 @@ Trainer AI planning is intentionally human-reviewed:
   - manual token paste for simulator and development fallback
 - Generate a live token from `/dashboard/attendance/qr-display`.
 - Pasted tokens are the recommended path when camera access is unavailable.
+
+## Run Modes
+
+Local backend mode:
+
+```bash
+APP_ENV=local API_MODE=backend EXPO_PUBLIC_API_MODE=backend pnpm dev:mobile
+```
+
+Explicit local offline demo:
+
+```bash
+APP_ENV=local API_MODE=offline-demo EXPO_PUBLIC_API_MODE=offline-demo pnpm dev:mobile
+```
+
+Production candidate config check:
+
+```bash
+APP_ENV=production API_MODE=backend EXPO_PUBLIC_API_MODE=backend pnpm --filter @zook/mobile exec expo config --type public
+```
 
 ## Known Limitations
 

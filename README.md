@@ -17,7 +17,7 @@ This repository is currently aligned to the **backend-first Zook MVP product flo
 - Real QR attendance validation, approval queue actions, visit consumption, and manual override logging.
 - Persisted in-app notifications with recipient fanout, read state, preference records, push devices, and push delivery tracking.
 - Shop stock movement, pickup code creation, and inventory adjustment records tied to mock payment success.
-- Mock product fixtures for Iron Temple Gym in Pune, plus existing database seed flows for local/pilot operations.
+- Mock product fixtures for local pilot gyms, plus existing database seed flows for local/pilot operations.
 - Vitest unit tests for core business rules and Playwright smoke tests for web flows.
 
 ## Quick Start
@@ -55,6 +55,7 @@ Runtime modes:
 - Staging and production mobile builds must use `API_MODE=backend`; the Expo config refuses to build non-local apps with offline demo enabled.
 - `OTP_FIXED_CODE_DEV=000000` is only accepted in local/test, or staging when `ALLOW_FIXED_OTP_IN_STAGING=true`. It is never accepted in production.
 - Mock payment completion is local-only by default. Staging requires `ALLOW_MOCK_PAYMENT_COMPLETION=true`; production always blocks it.
+- Production release checks also require durable rate limiting and reject silent offline demo, fixed OTP, weak secrets, localhost mobile URLs, seeded demo users, mock email, and mock payment completion.
 
 Seed accounts:
 
@@ -78,8 +79,8 @@ Web:
 - `/dashboard`
 - `/dashboard/attendance/qr-display`
 - `/platform`
-- `/g/iron-temple`
-- `/join/iron-temple?plan=plan-hybrid-pro&ref=RHEA250`
+- `/g/iron-house`
+- `/join/iron-house?plan=plan-hybrid-pro&ref=RHEA250`
 - `/r/NISHAFIT`
 - `/checkout/mock/demo` (local/mock mode only)
 - `/checkout/mock/{sessionId}` (local/mock payment sessions)
@@ -135,8 +136,8 @@ Mobile:
 - Member: login as `member@zook.local`, open Home, scan QR, simulate approved or pending, open Push Day, mark progress, add Protein Shake and Zook Shaker, confirm mock checkout, show pickup code.
 - Receptionist: switch to Receptionist in Profile, open Desk, approve pending scan, verify `ZK-7319`, record Direct UPI payment for Aarav, fulfill pickup order.
 - Trainer: switch to Trainer, open Aarav Mehta, generate/review AI draft, assign only after trainer approval.
-- Owner mobile: switch to Owner, open Command, review approvals, revenue, and stock.
-- Public web: open `/g/iron-temple`, select Hybrid Pro, apply `RHEA250`; backend-connected pages send users to login before checkout, while explicit local demo fallback can continue to `/checkout/mock/demo`.
+- Owner mobile: switch to Owner, open Needs attention, review approvals, revenue, and stock.
+- Public web: open `/g/iron-house`, select Hybrid Pro, apply `RHEA250`; backend-connected pages send users to login before checkout, while explicit local demo fallback can continue to `/checkout/mock/demo`.
 - Owner/admin web: open `/dashboard` for Today’s Command Board, Attendance, Notifications, Shop, Reports, Staff, Audit, and Settings.
 - Platform admin: open `/platform` to inspect provider diagnostics and org operations. Diagnostics show request IDs and missing env names only, never secret values.
 
@@ -185,6 +186,7 @@ pnpm test:acceptance:db
 Database-backed Playwright login/mutation checks are gated with:
 
 ```bash
+pnpm test:db:prepare
 RUN_DB_WEB_TESTS=1 pnpm test:web
 ```
 
@@ -211,9 +213,11 @@ If `RUN_DB_WEB_TESTS=1 pnpm test:web` is skipped or fails before the OTP field a
 
 ## Known Pilot Limitations
 
-- Razorpay is webhook-ready and test-mode ready, but the web/mobile handoff is still a controlled pilot flow rather than a full embedded hosted checkout integration.
-- Expo push is backend-ready, but the native mobile client still needs fuller permission/token wiring for real-device pilot use.
-- Multi-branch data model exists, but the UI still centers one branch.
+- Razorpay is provider-ready with backend confirmation and webhook signature handling, but real test credentials and signed webhook delivery were not verified in the 2026-05-03 hardening pass.
+- Expo push is provider-bound and in-app notifications are canonical, but physical-device push delivery and deep-link tap QA are not certified yet.
+- OpenAI is server-only with structured response validation and safety/audit records, but live provider credentials and model behavior still need staging validation.
+- S3/R2-compatible object storage is implemented behind the storage boundary, but production bucket/CDN behavior is not certified yet.
+- Multi-branch data model exists; the MVP UI is still Default-Branch-centered and shop/payments remain org-wide.
 - QR scan simulator testing still works best with the manual-token path.
 - Sentry remains a scaffold rather than a full production SDK integration.
 

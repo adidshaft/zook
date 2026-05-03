@@ -425,6 +425,8 @@ Still open:
 
 ## Phase 12: Deployment And Release Readiness
 
+Status: completed as a documentation/readiness pass on 2026-05-03. The deployment guide, mobile runtime guide, EAS build guide, README, QA checklist, and production handoff now describe release commands, env modes, provider-disabled states, mobile/iPhone checks, observability, fail-safe UX, and the fact that provider/device certifications were not run in this local pass.
+
 Deliverables:
 
 - Backend/web env checklist.
@@ -441,6 +443,19 @@ Acceptance:
 - Release preflight passes only with real non-local production/staging env.
 - Offline demo is disabled for production builds.
 - Provider unavailable states are controlled and visible.
+
+Completed in this pass:
+
+- Added a launch runbook to `docs/deployment.md` covering env load, preflight, DB deploy, web/API checks, provider validation order, and mobile release gating.
+- Updated `docs/eas-builds.md` with explicit `APP_ENV/API_MODE` build commands, production Expo config preflight, iPhone install QA, and push/deep-link caveats.
+- Updated `docs/mobile-runtime.md` with release config checks, backend/offline run commands, fatal-config expectations, and physical push QA limits.
+- Updated `README.md` with current backend/default runtime posture, DB acceptance setup, owner mobile language, and honest provider limitations.
+
+Still open:
+
+- Run the launch runbook against a real staging environment.
+- Capture Razorpay test checkout/webhook evidence, Expo physical-device push evidence, OpenAI live provider evidence, Upstash distributed rate-limit evidence, and S3/R2 object-storage evidence.
+- Install and QA an iPhone release candidate.
 
 ## Current Audit Results To Carry Forward
 
