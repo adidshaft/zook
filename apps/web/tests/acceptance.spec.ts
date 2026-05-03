@@ -321,11 +321,38 @@ test("open join checkout activates membership and shop order success stays serve
 
   const ordersResponse = await page.request.get("/api/me/shop-orders");
   const ordersPayload = await expectApiOk<{
-    orders: Array<{ orgId: string; status: string; pickupCode?: string | null }>;
+    orders: Array<{ id: string; orgId: string; status: string; pickupCode?: string | null }>;
   }>(ordersResponse);
-  expect(
-    ordersPayload.data.orders.some((order: { orgId: string; status: string; pickupCode?: string | null }) => order.orgId === orgId && order.status === "READY_FOR_PICKUP" && order.pickupCode),
-  ).toBe(true);
+  const readyOrder = ordersPayload.data.orders.find(
+    (order) => order.orgId === orgId && order.status === "READY_FOR_PICKUP" && order.pickupCode,
+  );
+  expect(readyOrder).toBeTruthy();
+
+  await loginWithSessionCookie(page, "reception@zook.local");
+  const verifyPayload = await expectApiOk<{
+    match: { type: string; valid: boolean; order?: { id: string } | null };
+  }>(
+    await page.request.post(`/api/orgs/${orgId}/reception/verify-code`, {
+      data: { code: readyOrder?.pickupCode }
+    }),
+  );
+  expect(verifyPayload.data.match?.type).toBe("pickup");
+  expect(verifyPayload.data.match?.valid).toBe(true);
+  expect(verifyPayload.data.match?.order?.id).toBe(readyOrder?.id);
+
+  const fulfilledPayload = await expectApiOk<{ order: { id: string; status: string } }>(
+    await page.request.post(`/api/orgs/${orgId}/shop/orders/${readyOrder?.id}/fulfill`),
+  );
+  expect(fulfilledPayload.data.order.status).toBe("FULFILLED");
+  await expect(
+    prisma.pickupCode.findUniqueOrThrow({
+      where: { orderId: String(readyOrder?.id) },
+      select: { status: true, fulfilledAt: true }
+    }),
+  ).resolves.toMatchObject({ status: "FULFILLED" });
+  await expect(
+    findLatestAuditLog({ orgId, action: "shop_order.fulfilled" }),
+  ).resolves.toMatchObject({ entityId: readyOrder?.id });
 });
 
 test("payment sessions require owner or org payment access", async ({ page, request }) => {
@@ -373,6 +400,102 @@ test("platform admins cannot perform tenant operations through org routes", asyn
   });
 
   expect(response.status()).toBe(403);
+});
+
+test("receptionist approval queue updates attendance notifications and audit", async ({ page }) => {
+  requireDb();
+  await loginWithSessionCookie(page, "reception@zook.local");
+
+  const org = await seedAndGetOrg({ username: "iron-house" });
+  const branch = await prisma.branch.findFirstOrThrow({
+    where: { orgId: org.id, isDefault: true }
+  });
+  const [approvedUser, rejectedUser] = await Promise.all([
+    prisma.user.create({
+      data: {
+        email: `attendance-approve-${Date.now()}@zook.local`,
+        name: "Attendance Approve Member"
+      }
+    }),
+    prisma.user.create({
+      data: {
+        email: `attendance-reject-${Date.now()}@zook.local`,
+        name: "Attendance Reject Member"
+      }
+    })
+  ]);
+  await prisma.organizationRoleAssignment.createMany({
+    data: [
+      { orgId: org.id, userId: approvedUser.id, role: "MEMBER" },
+      { orgId: org.id, userId: rejectedUser.id, role: "MEMBER" }
+    ],
+    skipDuplicates: true
+  });
+  const dateKey = new Date().toISOString().slice(0, 10);
+  const [approveRecord, rejectRecord] = await Promise.all([
+    prisma.attendanceRecord.create({
+      data: {
+        orgId: org.id,
+        branchId: branch.id,
+        userId: approvedUser.id,
+        dateKey,
+        status: "PENDING_APPROVAL",
+        source: "QR_SCAN",
+        suspiciousFlags: ["acceptance_pending"]
+      }
+    }),
+    prisma.attendanceRecord.create({
+      data: {
+        orgId: org.id,
+        branchId: branch.id,
+        userId: rejectedUser.id,
+        dateKey,
+        status: "PENDING_APPROVAL",
+        source: "QR_SCAN",
+        suspiciousFlags: ["acceptance_pending"]
+      }
+    })
+  ]);
+
+  const pendingPayload = await expectApiOk<{ records: Array<{ id: string }> }>(
+    await page.request.get(`/api/orgs/${org.id}/attendance/pending`),
+  );
+  expect(pendingPayload.data.records.some((record) => record.id === approveRecord.id)).toBe(true);
+  expect(pendingPayload.data.records.some((record) => record.id === rejectRecord.id)).toBe(true);
+
+  await expectApiOk(await page.request.post(`/api/orgs/${org.id}/attendance/${approveRecord.id}/approve`));
+  await expectApiOk(
+    await page.request.post(`/api/orgs/${org.id}/attendance/${rejectRecord.id}/reject`, {
+      data: { reason: "Photo did not match member profile" }
+    }),
+  );
+
+  await expect(
+    prisma.attendanceRecord.findUniqueOrThrow({
+      where: { id: approveRecord.id },
+      select: { status: true, approvedById: true }
+    }),
+  ).resolves.toMatchObject({ status: "APPROVED" });
+  await expect(
+    prisma.attendanceRecord.findUniqueOrThrow({
+      where: { id: rejectRecord.id },
+      select: { status: true, rejectionReason: true }
+    }),
+  ).resolves.toMatchObject({
+    status: "REJECTED",
+    rejectionReason: "Photo did not match member profile"
+  });
+  await expect(
+    prisma.notificationRecipient.count({
+      where: { userId: { in: [approvedUser.id, rejectedUser.id] } }
+    }),
+  ).resolves.toBeGreaterThanOrEqual(2);
+  await expect(
+    findLatestAuditLog({ orgId: org.id, action: "attendance.approved" }),
+  ).resolves.toMatchObject({ entityId: approveRecord.id });
+  await expect(
+    findLatestAuditLog({ orgId: org.id, action: "attendance.rejected" }),
+  ).resolves.toMatchObject({ entityId: rejectRecord.id });
 });
 
 test("generic checkout cannot claim membership or shop payment targets", async ({ page }) => {
@@ -535,6 +658,63 @@ test("owner can configure pilot settings, export a report, and leave an audit tr
     action: "organization.join_mode_updated"
   });
   expect(auditLog?.entityId).toBe(activeOrgId);
+});
+
+test("member privacy export and deletion requests create jobs and audit trail", async ({ page }) => {
+  requireDb();
+  const email = `playwright-privacy-${Date.now()}@zook.local`;
+  await loginWithOtp(page, email);
+  const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+
+  const exportPayload = await expectApiOk<{
+    request: { id: string; status: string; exportUrl?: string | null };
+    job: { id: string; status: string; exportUrl?: string | null };
+  }>(await page.request.post("/api/me/data-export-request"));
+  expect(exportPayload.data.request.status).toBe("ready");
+  expect(exportPayload.data.job.status).toBe("SUCCEEDED");
+  expect(exportPayload.data.request.exportUrl).toBeTruthy();
+
+  const deletionPayload = await expectApiOk<{
+    request: { id: string; status: string; scheduledFor?: string | null };
+    job: { id: string; status: string; scheduledFor?: string | null };
+  }>(await page.request.post("/api/me/account-deletion-request"));
+  expect(deletionPayload.data.request.status).toBe("requested");
+  expect(deletionPayload.data.job.status).toBe("QUEUED");
+  expect(deletionPayload.data.request.scheduledFor).toBeTruthy();
+
+  const consentsPayload = await expectApiOk<{
+    exportRequests: Array<{ id: string; status: string }>;
+    deletionRequests: Array<{ id: string; status: string }>;
+    exportJobs: Array<{ id: string; status: string }>;
+    deletionJobs: Array<{ id: string; status: string }>;
+  }>(await page.request.get("/api/me/consents"));
+  expect(
+    consentsPayload.data.exportRequests.some(
+      (request) => request.id === exportPayload.data.request.id && request.status === "ready",
+    ),
+  ).toBe(true);
+  expect(
+    consentsPayload.data.deletionRequests.some(
+      (request) => request.id === deletionPayload.data.request.id && request.status === "requested",
+    ),
+  ).toBe(true);
+  expect(
+    consentsPayload.data.exportJobs.some(
+      (job) => job.id === exportPayload.data.job.id && job.status === "SUCCEEDED",
+    ),
+  ).toBe(true);
+  expect(
+    consentsPayload.data.deletionJobs.some(
+      (job) => job.id === deletionPayload.data.job.id && job.status === "QUEUED",
+    ),
+  ).toBe(true);
+
+  await expect(
+    findLatestAuditLog({ actorUserId: user.id, action: "privacy.data_export_requested" }),
+  ).resolves.toMatchObject({ entityId: exportPayload.data.request.id });
+  await expect(
+    findLatestAuditLog({ actorUserId: user.id, action: "privacy.account_deletion_requested" }),
+  ).resolves.toMatchObject({ entityId: deletionPayload.data.request.id });
 });
 
 test("minor guardian web consent flow unblocks membership checkout", async ({ page }) => {

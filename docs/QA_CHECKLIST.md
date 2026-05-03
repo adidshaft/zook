@@ -119,8 +119,9 @@ pnpm release:preflight
 Database-backed acceptance:
 
 ```bash
+pnpm test:db:prepare
 RUN_DB_WEB_TESTS=1 pnpm test:web
 pnpm test:acceptance:db
 ```
 
-Only run DB-backed checks when `DATABASE_URL` points to a seeded disposable database.
+Only run DB-backed checks when `DATABASE_URL` points to a seeded disposable database. The current DB-backed suite covers local mock checkout activation, shop pickup verification/fulfillment, receptionist attendance approve/reject with notifications/audit, trainer AI assignment, member workout reports, privacy export/delete request jobs, platform diagnostics, and selected RBAC/payment boundaries; provider/device certification remains manual.

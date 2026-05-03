@@ -7,6 +7,7 @@ pnpm test:unit
 pnpm test:services
 pnpm test:web
 pnpm test:acceptance
+pnpm test:acceptance:db
 pnpm lint
 pnpm typecheck
 ```
@@ -49,8 +50,11 @@ Two layers exist:
 Enable DB-backed web acceptance flows with:
 
 ```bash
+pnpm test:db:prepare
 RUN_DB_WEB_TESTS=1 pnpm test:web
 ```
+
+`pnpm test:acceptance:db` runs the same DB-backed acceptance suite through the shortcut script.
 
 Those acceptance flows now cover:
 
@@ -58,11 +62,17 @@ Those acceptance flows now cover:
 - owner dashboard access
 - membership plan creation
 - public gym discovery surfaces
-- join request creation
+- join-mode guards and referral username links
 - membership checkout and activation
-- shop order success
+- payment access/idempotency boundaries
+- shop order success, pickup code verification, and fulfillment
+- default-branch filters and QR target behavior
+- receptionist attendance approve/reject with member notifications and audit logs
 - notification creation
 - tracking workout creation
+- trainer AI draft assignment and trainer-visible workout reports
+- privacy export/delete job creation and audit logs
+- platform diagnostics and organization status controls
 - QR display route rendering
 
 ## Manual Acceptance Flows

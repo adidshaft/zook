@@ -380,12 +380,14 @@ Completed in this pass:
 
 Still open:
 
-- Add missing DB-backed acceptance tests in Phase 11 for privacy export/delete and receptionist/shop fulfillment paths.
+- Continue broadening full-journey browser/mobile automation after Phase 11; provider/device flows remain staging/manual.
 - Continue treating provider/device flows as staging/manual until actually run.
 
 Automate what is practical, and mark manual-only mobile/device steps honestly.
 
 ## Phase 11: Regression Coverage
+
+Status: partially completed in the 2026-05-03 regression coverage pass. DB-backed Playwright now exercises receptionist attendance approval/rejection with member notifications and audit logs, shop pickup code verification and fulfillment after paid state, and privacy export/delete request job creation with audit logs. Full mobile E2E, provider/device certification, every route family's wrong-role/wrong-org matrix, and high-concurrency provider tests remain open.
 
 Prioritize meaningful backend integration tests over superficial UI tests.
 
@@ -406,6 +408,20 @@ Minimum test expansion:
 - Wrong-org/wrong-role denial.
 
 Also fix test script discovery so mobile/web package tests do not report false "no files found" when useful tests exist.
+
+Completed in this pass:
+
+- Extended the open-join checkout acceptance path to verify receptionist pickup-code lookup, order fulfillment, pickup-code fulfillment status, and `shop_order.fulfilled` audit logging after payment confirmation.
+- Added DB-backed receptionist queue coverage for pending attendance approve/reject, status persistence, member notification recipients, and `attendance.approved`/`attendance.rejected` audit logs.
+- Added DB-backed privacy coverage for member data export request/job, account deletion request/job, `/api/me/consents` visibility, and `privacy.data_export_requested`/`privacy.account_deletion_requested` audit logs.
+- Updated `docs/E2E_PRODUCT_FLOWS.md`, `docs/testing.md`, and this plan so the documented automation map matches the current suite.
+
+Still open:
+
+- Full browser-plus-mobile journeys for member purchase/check-in, trainer/member plan UI consumption, and owner mobile operations.
+- Real Razorpay, Expo push, OpenAI, Upstash, and object storage staging/device tests.
+- Exhaustive wrong-role/wrong-org coverage across every API route family.
+- High-concurrency duplicate payment/webhook and rate-limit behavior against staging-like infrastructure.
 
 ## Phase 12: Deployment And Release Readiness
 

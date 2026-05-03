@@ -132,8 +132,8 @@ Payment-specific hardening gaps found in the audit:
 
 - `pnpm test` now discovers core, web server, and mobile utility tests through package scripts.
 - Existing tests cover provider registry, runtime env basics, auth service, storage, push provider, payment provider, service helpers, mobile notification routing/preferences, and several web server helpers.
-- Fast Playwright smoke coverage runs with `pnpm test:web`. Additional payment hardening acceptance tests are DB-gated behind `RUN_DB_WEB_TESTS=1`.
-- Missing or incomplete automated coverage remains for full Razorpay confirmation flows with real credentials, shop pickup E2E, complete web dashboard org scoping, public result fallback modes, mobile role flows, provider-disabled UX, and wrong-org/wrong-role denial across every API route. Trainer AI draft assignment, trainer-visible workout reports, default-branch routing, join-mode query-override denial, referral username links, and QR target selection now have automated coverage.
+- Fast Playwright smoke coverage runs with `pnpm test:web`. DB-backed acceptance coverage is gated behind `RUN_DB_WEB_TESTS=1` or `pnpm test:acceptance:db`.
+- Missing or incomplete automated coverage remains for full Razorpay confirmation flows with real credentials, complete web dashboard org scoping, public result fallback modes, mobile role flows, provider-disabled UX, high-concurrency payment/webhook/rate-limit behavior, and wrong-org/wrong-role denial across every API route. Trainer AI draft assignment, trainer-visible workout reports, default-branch routing, join-mode query-override denial, referral username links, QR target selection, receptionist attendance approve/reject, shop pickup verification/fulfillment, and privacy export/delete request jobs now have automated coverage.
 - `docs/E2E_PRODUCT_FLOWS.md` maps the six primary product journeys to current automated evidence and manual/device/provider gaps.
 
 ## Deployment Gaps
@@ -258,6 +258,17 @@ Payment-specific hardening gaps found in the audit:
 
 - `git diff --check`: passed for this docs-only pass.
 
+## Additional Checks Run During Regression Coverage
+
+- `pnpm --filter @zook/web typecheck`: passed.
+- `pnpm --filter @zook/web lint`: passed.
+- `pnpm --filter @zook/web test`: passed 11 web server test files and 34 tests.
+- `pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web`: passed 23 DB-backed browser acceptance tests after adding receptionist approve/reject, shop pickup fulfillment, and privacy export/delete coverage. Expected negative-path server error logs appeared during failure-mode assertions.
+- `pnpm typecheck`: passed.
+- `pnpm lint`: passed.
+- `pnpm test`: passed. Core ran 63 tests; mobile ran 13 utility tests; web ran 34 server tests.
+- `git diff --check`: passed.
+
 ## What This Phase Should Fix
 
 - Runtime validation and disabled provider modes are implemented.
@@ -272,8 +283,9 @@ Payment-specific hardening gaps found in the audit:
 - Member workout completion cannot mark empty workout plans complete, and trainer client summaries now read real feedback/workout report records.
 - Storage routes now fail closed for disabled uploads, public local file content requires public `FileAsset` visibility, and file reads/deletes no longer silently use the wrong active provider.
 - Public trainer visibility is enforced on public web/API surfaces, and mobile no longer uses stock media fallbacks for missing backend gym/trainer images.
-- Default Branch handling is now explicit in branch-required membership/attendance flows; `pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web` passed 19 acceptance tests including Default Branch plan/dashboard/QR validation.
+- Default Branch handling is now explicit in branch-required membership/attendance flows; DB-backed acceptance includes Default Branch plan/dashboard/QR validation.
 - Public web join/profile/referral/QR semantics are now stricter: persisted join mode wins over URL overrides, approval/invite states no longer imply fake success, unknown referral codes and unknown public demo slugs fail closed outside explicit demo fallback, generated referral links target public usernames, join QR images target `/join/{username}`, public trainer/file assets use persisted data, and dashboard fallback copy no longer calls read-model outages Demo Mode.
+- Regression coverage now includes receptionist attendance approve/reject with member notifications and audit logs, shop pickup code verification/fulfillment, and privacy export/delete request job and audit persistence.
 
 ## Intentionally Out Of Scope For This Audit Commit
 

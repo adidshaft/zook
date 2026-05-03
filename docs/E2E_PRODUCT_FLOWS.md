@@ -11,7 +11,7 @@ pnpm test:db:prepare
 RUN_DB_WEB_TESTS=1 pnpm test:web
 ```
 
-The DB-backed Playwright suite lives in `apps/web/tests/acceptance.spec.ts`. It currently covers public gym/join behavior, checkout activation semantics, shop order payment state, owner operations, trainer AI assignment, trainer-visible workout reports, provider diagnostics, and selected RBAC boundaries.
+The DB-backed Playwright suite lives in `apps/web/tests/acceptance.spec.ts`. It currently covers public gym/join behavior, checkout activation semantics, shop order payment state and pickup fulfillment, receptionist attendance approval/rejection, owner operations, trainer AI assignment, trainer-visible workout reports, privacy export/delete request persistence, provider diagnostics, and selected RBAC boundaries.
 
 ## Flow 1: Member Purchase And Check-In
 
@@ -32,6 +32,7 @@ Automated evidence:
 - `public gym and referral fallbacks render`
 - `public join page honors backend join mode instead of query overrides`
 - `open join checkout activates membership and shop order success stays server-backed`
+- `receptionist approval queue updates attendance notifications and audit`
 - `default branch scope is explicit for plans, dashboard filters, and QR tokens`
 - Core attendance duplicate/status mapping in `packages/core/src/__tests__/services.test.ts`
 - Mobile notification and routing utilities in `apps/mobile/src/lib/*.test.ts`
@@ -65,6 +66,7 @@ Target journey:
 Automated evidence:
 
 - Core pending/approval behavior in `packages/core/src/__tests__/mock-services.test.ts`.
+- `receptionist approval queue updates attendance notifications and audit`
 - API route coverage asserts manual attendance permission boundaries in `platform admins cannot perform tenant operations through org routes`.
 - Default Branch attendance token/filter behavior is covered in DB-backed Playwright.
 
@@ -79,7 +81,7 @@ Manual QA checklist:
 
 Open gaps:
 
-- DB-backed acceptance does not yet create a pending scan and approve/reject it through receptionist APIs in one automated flow.
+- DB-backed acceptance creates pending attendance records directly and approves/rejects through receptionist APIs; it does not yet drive the actual member QR scan into a pending state.
 - Device scan and live notification tap are manual.
 
 ## Flow 3: Trainer Plan Assignment
@@ -132,7 +134,7 @@ Target journey:
 
 Automated evidence:
 
-- `open join checkout activates membership and shop order success stays server-backed` verifies shop order payment confirmation, idempotent payment creation, `READY_FOR_PICKUP`, and pickup code generation.
+- `open join checkout activates membership and shop order success stays server-backed` verifies shop order payment confirmation, idempotent payment creation, `READY_FOR_PICKUP`, pickup code generation, receptionist code verification, fulfillment, pickup-code status update, and fulfillment audit.
 - Payment boundary tests prevent generic checkout metadata from activating shop records.
 
 Manual QA checklist:
@@ -147,7 +149,6 @@ Manual QA checklist:
 
 Open gaps:
 
-- DB-backed acceptance does not yet automate receptionist code verification plus fulfillment after payment.
 - Razorpay payment confirmation and refund/cancel flows are provider-ready but not certified.
 - Shop inventory remains org-wide in the MVP schema.
 
@@ -198,6 +199,7 @@ Target journey:
 Automated evidence:
 
 - Privacy routes are implemented in `apps/web/src/server/api-router.ts`.
+- `member privacy export and deletion requests create jobs and audit trail`
 - Storage provider tests cover private JSON export file typing in `packages/core/src/__tests__/storage-provider.test.ts`.
 - Mobile profile/query hooks expose privacy request state.
 
@@ -212,12 +214,11 @@ Manual QA checklist:
 
 Open gaps:
 
-- DB-backed acceptance does not yet automate export and deletion request creation plus audit verification.
 - Production background workers, retention policy, and operator privacy-job dashboards remain out of scope.
 - Object storage for production privacy exports is provider-ready but not certified.
 
 ## Current E2E Coverage Summary
 
-- Covered with DB-backed automation: public profile/join fallback semantics, local mock checkout activation, payment idempotency, shop pickup code generation, owner setup/report/audit basics, notifications composer persistence, platform diagnostics/status controls, trainer assigned-client AI flow, member workout report visibility.
-- Partially covered: member purchase/check-in, pending attendance approval, shop fulfillment, owner mobile operations, privacy export/delete.
+- Covered with DB-backed automation: public profile/join fallback semantics, local mock checkout activation, payment idempotency, shop pickup code generation and fulfillment, pending attendance approve/reject, privacy export/delete job creation, owner setup/report/audit basics, notifications composer persistence, platform diagnostics/status controls, trainer assigned-client AI flow, member workout report visibility.
+- Partially covered: member purchase/check-in, owner mobile operations, mobile trainer/member plan UI consumption.
 - Manual/device-only today: camera scan reliability, physical push delivery/deep-link taps, iPhone release install, real provider checkout/webhook, live OpenAI behavior, object-storage download/upload.
