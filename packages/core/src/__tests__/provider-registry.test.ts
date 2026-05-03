@@ -121,6 +121,45 @@ describe("provider registry", () => {
     });
   });
 
+  it("supports explicit disabled payment, AI, and push providers", () => {
+    clearProviderEnv();
+    process.env.PAYMENT_PROVIDER = "disabled";
+    process.env.AI_PROVIDER = "disabled";
+    process.env.PUSH_PROVIDER = "disabled";
+
+    expect(() => getPaymentProvider()).toThrowError(ProviderSetupError);
+    expect(() => getPaymentProvider()).toThrowError(/PAYMENT_PROVIDER=disabled/);
+    expect(() => getAIProvider()).toThrowError(ProviderSetupError);
+    expect(() => getPushProvider()).toThrowError(ProviderSetupError);
+
+    expect(getProviderRegistryDiagnostics()).toMatchObject({
+      payment: {
+        selectedProvider: "disabled",
+        activeProvider: null,
+        status: "disabled",
+        provider: "disabled",
+        mode: "disabled",
+        configured: false
+      },
+      ai: {
+        selectedProvider: "disabled",
+        activeProvider: null,
+        status: "disabled",
+        provider: "disabled",
+        mode: "disabled",
+        configured: false
+      },
+      push: {
+        selectedProvider: "disabled",
+        activeProvider: null,
+        status: "disabled",
+        provider: "disabled",
+        mode: "disabled",
+        configured: false
+      }
+    });
+  });
+
   it("uses real providers only when the selected env is fully configured", () => {
     process.env.AI_PROVIDER = "openai";
     process.env.OPENAI_API_KEY = "sk-test";

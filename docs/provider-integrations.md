@@ -4,6 +4,7 @@ Zook remains mock-first in Phase 4, but the registry now supports pilot-ready pa
 
 - If no live provider is selected, Zook uses the safe default provider for that channel.
 - If a live provider is explicitly selected, the registry must be fully configured or it throws a `ProviderSetupError`.
+- If `disabled` is selected for payment, AI, or push, diagnostics report a disabled state and feature routes return controlled unavailable errors.
 - Diagnostics are safe to expose to admins because they report provider names, env presence, and non-secret metadata only. Raw keys and secrets are never returned.
 
 ## Selection And Diagnostics
@@ -35,6 +36,7 @@ Each provider factory reports one of these states:
 - `ready`: the selector env is set and the chosen provider is available with the required env in place.
 - `misconfigured`: a live provider was selected, but one or more required env vars are missing. Calling the factory throws `ProviderSetupError`.
 - `unsupported`: a provider value was selected that is not implemented in the current registry. Calling the factory throws `ProviderSetupError`.
+- `disabled`: the feature is intentionally unavailable. Calling the factory throws `ProviderSetupError`, and API routes should surface a controlled unavailable state.
 
 Diagnostics include:
 
@@ -70,7 +72,7 @@ Current behavior:
 
 Selector env:
 
-- `PAYMENT_PROVIDER=mock|razorpay`
+- `PAYMENT_PROVIDER=mock|razorpay|disabled`
 
 Known envs:
 
@@ -84,6 +86,7 @@ Current behavior:
 
 - `mock`: supported and default
 - `razorpay`: supported when the required Razorpay env is present
+- `disabled`: supported as an explicit unavailable state
 
 Phase 4 payment readiness now includes:
 
@@ -121,7 +124,7 @@ Operational beta map support now includes:
 
 Selector env:
 
-- `AI_PROVIDER=mock|openai`
+- `AI_PROVIDER=mock|openai|disabled`
 
 Known envs:
 
@@ -132,6 +135,7 @@ Current behavior:
 
 - `mock`: supported and default
 - `openai`: supported when `OPENAI_API_KEY` is present
+- `disabled`: supported as an explicit unavailable state
 
 Diagnostics may expose the selected `OPENAI_MODEL`, but never the API key.
 
@@ -185,7 +189,7 @@ Local storage writes to `STORAGE_LOCAL_DIR` and returns signed internal URLs for
 
 Selector env:
 
-- `PUSH_PROVIDER=mock|expo`
+- `PUSH_PROVIDER=mock|expo|disabled`
 
 Known envs:
 
@@ -197,6 +201,7 @@ Current behavior:
 
 - `mock`: supported and default
 - `expo`: supported when `EXPO_PROJECT_ID` is present
+- `disabled`: supported as an explicit unavailable state; in-app notifications remain canonical
 
 Phase 4 push readiness now includes:
 

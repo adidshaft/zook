@@ -23,9 +23,9 @@ This is not a production launch certification. Razorpay, Expo push, OpenAI, obje
 
 - `APP_ENV=local|staging|production`
 - `API_MODE=backend|offline-demo`
-- `PAYMENT_PROVIDER=mock|razorpay`
-- `AI_PROVIDER=mock|openai`
-- `PUSH_PROVIDER=mock|expo`
+- `PAYMENT_PROVIDER=mock|razorpay|disabled`
+- `AI_PROVIDER=mock|openai|disabled`
+- `PUSH_PROVIDER=mock|expo|disabled`
 - `STORAGE_PROVIDER=local|s3|r2`
 
 Current guardrails:
@@ -37,16 +37,12 @@ Current guardrails:
 - Mock payment completion is server-gated by `isMockPaymentCompletionAllowed`.
 - Provider diagnostics expose provider names, status, missing env names, and boolean env presence only.
 
-Phase 1 should still add first-class `disabled` provider modes because the target runtime contract includes `PAYMENT_PROVIDER=disabled`, `AI_PROVIDER=disabled`, and `PUSH_PROVIDER=disabled`, but the current provider registry does not yet accept those values.
+Phase 1 runtime hardening adds first-class `disabled` provider diagnostics for payments, AI, and push. Feature routes should surface controlled unavailable errors when disabled is selected.
 
-Additional runtime audit findings to fix early:
+Additional runtime audit findings to keep fixing:
 
-- Invalid `APP_ENV` values currently fall back to local in core/scripts instead of failing closed.
-- Mobile profile precedence does not fully match core precedence; `APP_ENV` should be authoritative.
-- Web API module load eagerly resolves email, maps, AI, and storage providers, which can prevent health/readiness diagnostics from responding if a provider is misconfigured.
-- `/api/ready` should redact raw database error messages.
-- Production release checks currently fail mock payment/email but only warn or pass for mock push, mock AI, and local storage.
-- R2 preflight requirements differ from runtime requirements.
+- Production release checks must be rerun with real staging/production env after provider choices are selected.
+- R2/object-storage configuration still needs staging validation.
 
 ## Backend-Backed Flows
 

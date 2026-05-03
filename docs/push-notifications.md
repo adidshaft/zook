@@ -12,7 +12,7 @@ Last updated: 24 April 2026
 
 Selector env:
 
-- `PUSH_PROVIDER=mock|expo`
+- `PUSH_PROVIDER=mock|expo|disabled`
 
 Expo env:
 
@@ -60,6 +60,12 @@ The in-app notification center remains canonical if native push is unavailable.
 - use `PUSH_PROVIDER=mock` locally
 - in-app notifications can still be tested end to end
 - mock push delivery is recorded without requiring Expo credentials
+
+## Disabled Mode
+
+- use `PUSH_PROVIDER=disabled` when remote push is intentionally unavailable
+- in-app notifications remain the source of truth
+- backend push routes return a controlled unavailable state instead of recording fake remote success
 
 ## Staging
 

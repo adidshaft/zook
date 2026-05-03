@@ -12,7 +12,7 @@ Last updated: 24 April 2026
 
 Selector env:
 
-- `PAYMENT_PROVIDER=mock|razorpay`
+- `PAYMENT_PROVIDER=mock|razorpay|disabled`
 
 Razorpay env:
 
@@ -37,6 +37,12 @@ Razorpay env:
 - Zook stores the provider reference on the payment session
 - non-secret checkout metadata is returned to the client and persisted for the handoff page
 - webhook verification and status processing happen on the server
+
+### Disabled
+
+- returns a controlled unavailable state from checkout routes
+- should be used only when purchases are intentionally turned off
+- is preferred over `mock` for production environments where payments are not ready
 
 ## Webhook Route
 

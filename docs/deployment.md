@@ -40,11 +40,11 @@ Phase 4 keeps local development mock-first while making staging realistic enough
 - fixed OTP disabled unless `ALLOW_FIXED_OTP_IN_STAGING=1`
 - mock payment completion disabled unless `ALLOW_MOCK_PAYMENT_COMPLETION=1`
 - recommended providers:
-  - `PAYMENT_PROVIDER=razorpay` with test-mode keys, or `mock` for internal-only rollout
+  - `PAYMENT_PROVIDER=razorpay` with test-mode keys, `disabled` if purchases are intentionally unavailable, or explicit `mock` for internal-only rollout
   - `EMAIL_PROVIDER=smtp|resend|mock`
   - `MAP_PROVIDER=google|mock`
-  - `AI_PROVIDER=openai|mock`
-  - `PUSH_PROVIDER=expo|mock`
+  - `AI_PROVIDER=openai|mock|disabled`
+  - `PUSH_PROVIDER=expo|mock|disabled`
   - `STORAGE_PROVIDER=local|s3|r2`
 
 ### Production
@@ -96,7 +96,7 @@ Core env:
 
 Payments:
 
-- `PAYMENT_PROVIDER=mock|razorpay`
+- `PAYMENT_PROVIDER=mock|razorpay|disabled`
 - `RAZORPAY_KEY_ID`
 - `RAZORPAY_KEY_SECRET`
 - `RAZORPAY_WEBHOOK_SECRET`
@@ -105,7 +105,7 @@ Payments:
 
 Push:
 
-- `PUSH_PROVIDER=mock|expo`
+- `PUSH_PROVIDER=mock|expo|disabled`
 - `EXPO_PROJECT_ID`
 - `EXPO_ACCESS_TOKEN` optional
 - `PUSH_ENVIRONMENT=development|preview|production`
@@ -135,7 +135,7 @@ Storage:
 
 AI:
 
-- `AI_PROVIDER=mock|openai`
+- `AI_PROVIDER=mock|openai|disabled`
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
 

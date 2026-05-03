@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { validateRuntimeConfig } from "@zook/core";
 import {
   env,
   evaluateProviderSelection,
@@ -41,11 +42,43 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
   loadLocalEnvironment();
 
   const results: CheckResult[] = [];
-  const profile = resolveEnvProfile();
+  let profile = "local" as ReturnType<typeof resolveEnvProfile>;
   const nodeVersion = process.versions.node;
   const nodeMajor = Number(nodeVersion.split(".")[0] ?? "0");
 
-  results.push(pass("Environment profile", `ENV_PROFILE=${profile}.`));
+  try {
+    profile = resolveEnvProfile();
+    results.push(pass("Environment profile", `ENV_PROFILE=${profile}.`));
+  } catch (error) {
+    results.push(
+      fail(
+        "Environment profile",
+        error instanceof Error ? error.message : "APP_ENV/ENV_PROFILE is invalid.",
+        "Set APP_ENV to local, staging, or production."
+      )
+    );
+  }
+
+  for (const issue of validateRuntimeConfig(process.env).issues) {
+    if (
+      [
+        "INVALID_APP_ENV",
+        "INVALID_ENV_PROFILE",
+        "INVALID_EXPO_PUBLIC_APP_ENV",
+        "INVALID_API_MODE",
+        "INVALID_EXPO_PUBLIC_API_MODE",
+        "STAGING_IMPLICIT_PAYMENT_PROVIDER",
+        "STAGING_IMPLICIT_AI_PROVIDER",
+        "STAGING_IMPLICIT_PUSH_PROVIDER"
+      ].includes(issue.code)
+    ) {
+      results.push(
+        issue.level === "error"
+          ? fail(`Runtime guard ${issue.code}`, issue.message)
+          : warn(`Runtime guard ${issue.code}`, issue.message)
+      );
+    }
+  }
 
   const apiMode = env("API_MODE") ?? "backend";
   const legacyOfflineDemoEnabled =
@@ -227,10 +260,21 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
   }
 
   const pushProvider = env("PUSH_PROVIDER") ?? "mock";
-  if (pushProvider === "mock") {
+  if (profile === "production" && pushProvider === "mock") {
+    results.push(fail("Production push", "PUSH_PROVIDER=mock in production profile.", "Use PUSH_PROVIDER=expo or PUSH_PROVIDER=disabled."));
+  } else if (pushProvider === "disabled") {
+    results.push(warn("Push provider", "PUSH_PROVIDER=disabled is active.", "In-app notifications remain canonical; remote push delivery is unavailable."));
+  } else if (pushProvider === "mock") {
     results.push(warn("Push provider", "PUSH_PROVIDER=mock is active.", "In-app notifications will still work, but remote push delivery will stay simulated."));
   } else {
     results.push(pass("Push provider", `PUSH_PROVIDER=${pushProvider} is selected.`));
+  }
+
+  const aiProvider = env("AI_PROVIDER") ?? "mock";
+  if (profile === "production" && aiProvider === "mock") {
+    results.push(fail("Production AI", "AI_PROVIDER=mock in production profile.", "Use AI_PROVIDER=openai or AI_PROVIDER=disabled."));
+  } else if (aiProvider === "disabled") {
+    results.push(warn("AI provider", "AI_PROVIDER=disabled is active.", "AI planning features must show unavailable states."));
   }
 
   const emailProvider = env("EMAIL_PROVIDER") ?? "mock";
@@ -241,16 +285,31 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
   }
 
   const storageProvider = env("STORAGE_PROVIDER") ?? "local";
-  if (storageProvider === "local" && !env("STORAGE_LOCAL_DIR")) {
+  if (
+    profile === "production" &&
+    storageProvider === "local" &&
+    !["0", "false", "no", "off"].includes((env("FILE_UPLOADS_ENABLED") ?? "").toLowerCase())
+  ) {
+    results.push(fail("Production storage", "STORAGE_PROVIDER=local in production profile while uploads are enabled.", "Use STORAGE_PROVIDER=s3 or r2, or set FILE_UPLOADS_ENABLED=false if uploads are intentionally disabled."));
+  } else if (storageProvider === "local" && !env("STORAGE_LOCAL_DIR")) {
     results.push(
       warn("Storage path", "STORAGE_PROVIDER=local but STORAGE_LOCAL_DIR is not set.", "The app will fall back to the default local uploads directory.")
     );
   } else {
     results.push(pass("Storage provider status", `STORAGE_PROVIDER=${storageProvider}.`));
   }
+  if (storageProvider === "r2" && !env("S3_ENDPOINT") && !env("R2_ACCOUNT_ID")) {
+    results.push(
+      fail(
+        "R2 endpoint",
+        "STORAGE_PROVIDER=r2 requires S3_ENDPOINT or R2_ACCOUNT_ID.",
+        "Set S3_ENDPOINT explicitly or provide R2_ACCOUNT_ID so the runtime can derive the Cloudflare R2 endpoint."
+      )
+    );
+  }
 
   results.push(pass("Map provider status", `MAP_PROVIDER=${env("MAP_PROVIDER") ?? "mock"}.`));
-  results.push(pass("AI provider status", `AI_PROVIDER=${env("AI_PROVIDER") ?? "mock"}.`));
+  results.push(pass("AI provider status", `AI_PROVIDER=${aiProvider}.`));
   results.push(pass("Email provider status", `EMAIL_PROVIDER=${emailProvider}.`));
 
   return results;

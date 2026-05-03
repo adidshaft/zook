@@ -17,6 +17,7 @@ import {
   verifyOtpSchema,
   getAllowedFixedOtp,
   isMockPaymentCompletionAllowed,
+  validateRuntimeConfig,
   type AIRequestType,
   type Role,
 } from "@zook/core";
@@ -24,14 +25,18 @@ import {
   LocalStorageProvider,
   buildStorageKey,
   getAIProvider,
+  getAIProviderDiagnostics,
   getEmailProvider,
+  getEmailProviderDiagnostics,
   getMapProvider,
+  getMapProviderDiagnostics,
   getPaymentProvider,
   getPaymentProviderDiagnostics,
   getPushProvider,
   getPushProviderDiagnostics,
   getProviderRegistryDiagnostics,
   getStorageProvider,
+  getStorageProviderDiagnostics,
   storageFileCategories,
   verifyLocalStorageSignature,
   type StorageFileCategory,
@@ -119,10 +124,6 @@ import {
   getPlanExercisesForUser,
 } from "./read-models";
 
-const emailProvider = getEmailProvider();
-const mapProvider = getMapProvider();
-const aiProvider = getAIProvider();
-const storageProvider = getStorageProvider();
 const reportsService = new ReportsService();
 const personalTrackingService = new PersonalTrackingService();
 
@@ -559,6 +560,7 @@ async function resolveFileUrl(
   asset: { storageKey: string; visibility: string | null },
   signed = false,
 ) {
+  const storageProvider = getStorageProviderOrThrow();
   if (!signed && asset.visibility === "public") {
     return storageProvider.getPublicUrl({ key: asset.storageKey });
   }
@@ -577,6 +579,7 @@ async function parseFileUploadRequest(request: NextRequest) {
   }
 
   const visibility = resolveFileVisibility(category, rawVisibility);
+  const storageProvider = getStorageProviderOrThrow();
   let validated;
   try {
     validated = storageProvider.validateFile({
@@ -809,9 +812,11 @@ function getObjectMetadata(value: Prisma.JsonValue | null | undefined) {
 
 function getPaymentProviderOrThrow() {
   const diagnostics = getPaymentProviderDiagnostics();
-  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported") {
+  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
     throw validationError(
-      diagnostics.missingEnv.length
+      diagnostics.status === "disabled"
+        ? "Payment provider is disabled for this environment."
+        : diagnostics.missingEnv.length
         ? `Payment provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
         : "Payment provider is unavailable for this environment.",
     );
@@ -819,16 +824,85 @@ function getPaymentProviderOrThrow() {
   return getPaymentProvider();
 }
 
+function getEmailProviderOrThrow() {
+  const diagnostics = getEmailProviderDiagnostics();
+  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
+    throw validationError(
+      diagnostics.status === "disabled"
+        ? "Email provider is disabled for this environment."
+        : diagnostics.missingEnv.length
+          ? `Email provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
+          : "Email provider is unavailable for this environment.",
+    );
+  }
+  return getEmailProvider();
+}
+
+function getMapProviderOrThrow() {
+  const diagnostics = getMapProviderDiagnostics();
+  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
+    throw validationError(
+      diagnostics.status === "disabled"
+        ? "Map provider is disabled for this environment."
+        : diagnostics.missingEnv.length
+          ? `Map provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
+          : "Map provider is unavailable for this environment.",
+    );
+  }
+  return getMapProvider();
+}
+
+function getAIProviderOrThrow() {
+  const diagnostics = getAIProviderDiagnostics();
+  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
+    throw validationError(
+      diagnostics.status === "disabled"
+        ? "AI provider is disabled for this environment."
+        : diagnostics.missingEnv.length
+          ? `AI provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
+          : "AI provider is unavailable for this environment.",
+    );
+  }
+  return getAIProvider();
+}
+
+function getStorageProviderOrThrow() {
+  const diagnostics = getStorageProviderDiagnostics();
+  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
+    throw validationError(
+      diagnostics.status === "disabled"
+        ? "Storage provider is disabled for this environment."
+        : diagnostics.missingEnv.length
+          ? `Storage provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
+          : "Storage provider is unavailable for this environment.",
+    );
+  }
+  return getStorageProvider();
+}
+
 function getPushProviderOrThrow() {
   const diagnostics = getPushProviderDiagnostics();
-  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported") {
+  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
     throw validationError(
-      diagnostics.missingEnv.length
+      diagnostics.status === "disabled"
+        ? "Push provider is disabled for this environment."
+        : diagnostics.missingEnv.length
         ? `Push provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
         : "Push provider is unavailable for this environment.",
     );
   }
   return getPushProvider();
+}
+
+function assertServerRuntimeConfig(path: string[]) {
+  if (pathMatches(path, ["health"]) || pathMatches(path, ["ready"])) {
+    return;
+  }
+  const result = validateRuntimeConfig();
+  const errors = result.issues.filter((issue) => issue.level === "error");
+  if (errors.length) {
+    throw validationError(errors.map((issue) => issue.message).join(" "));
+  }
 }
 
 async function startPaymentSessionCheckout(input: {
@@ -985,7 +1059,7 @@ async function createGuardianConsentChallenge(input: {
   const consentUrl = consentUrlBase
     ? `${consentUrlBase}/guardian/consent/${challenge.id}`
     : undefined;
-  await emailProvider.sendGuardianConsentEmail({
+  await getEmailProviderOrThrow().sendGuardianConsentEmail({
     to: input.guardianEmail,
     minorName: input.userName,
     organizationName: input.organizationName ?? process.env.NEXT_PUBLIC_APP_NAME ?? "Zook",
@@ -1274,6 +1348,7 @@ async function generateUserDataExport(input: { userId: string; orgId?: string })
     ownerUserId: input.userId,
     originalName: `zook-data-export-${input.userId}.json`,
   });
+  const storageProvider = getStorageProviderOrThrow();
   const upload = await storageProvider.uploadFile({
     category: "privacy_export",
     key,
@@ -1849,7 +1924,7 @@ class PrismaAuthRepo {
 }
 
 async function handleAuth(request: NextRequest, path: string[]) {
-  const auth = new AuthService(new PrismaAuthRepo(), emailProvider);
+  const auth = new AuthService(new PrismaAuthRepo(), getEmailProviderOrThrow());
   if (request.method === "POST" && pathMatches(path, ["auth", "request-otp"])) {
     const body = requestOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
@@ -2431,6 +2506,7 @@ async function handleTracking(request: NextRequest, path: string[]) {
 }
 
 async function handleFiles(request: NextRequest, path: string[]) {
+  const storageProvider = getStorageProviderOrThrow();
   if (request.method === "GET" && pathMatches(path, ["files", "local"])) {
     if (!(storageProvider instanceof LocalStorageProvider)) {
       throw notFoundError("Local storage route is unavailable for the active provider.");
@@ -2661,7 +2737,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       ...(nearLat && nearLng
         ? { near: { latitude: Number(nearLat), longitude: Number(nearLng) } }
         : {}),
-      mapProvider,
+      mapProvider: getMapProviderOrThrow(),
     });
     return ok({ gyms: results });
   }
@@ -3067,6 +3143,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       state?: string;
       pincode?: string;
     };
+    const mapProvider = getMapProviderOrThrow();
     const result = body.googleMapsUrl
       ? await mapProvider.resolveGoogleMapsLink(body.googleMapsUrl)
       : await mapProvider.geocodeAddress({
@@ -3094,6 +3171,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_LOCATION");
     const body = organizationLocationSchema.parse(await readJson(request));
+    const mapProvider = getMapProviderOrThrow();
     const resolvedFromLink = body.googleMapsUrl
       ? await mapProvider.resolveGoogleMapsLink(body.googleMapsUrl)
       : null;
@@ -5360,7 +5438,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       "MEMBER") as Exclude<Role, "PLATFORM_ADMIN">;
     const quota = await resolveAIQuotaState({ userId, role });
     const result = await runAIGuardedRequest({
-      provider: aiProvider,
+      provider: getAIProviderOrThrow(),
       prompt: body.prompt,
       role,
       requestType: "CHAT",
@@ -5422,7 +5500,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       "TRAINER") as Exclude<Role, "PLATFORM_ADMIN">;
     const quota = await resolveAIQuotaState({ userId, role });
     const result = await runAIGuardedRequest({
-      provider: aiProvider,
+      provider: getAIProviderOrThrow(),
       prompt: body.prompt,
       role,
       requestType,
@@ -6516,6 +6594,7 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
     try {
       assertSafeMutationRequest(request);
       const path = rawPath.filter(Boolean);
+      assertServerRuntimeConfig(path);
       for (const handler of [
         handleHealthReadiness,
         handleAuth,

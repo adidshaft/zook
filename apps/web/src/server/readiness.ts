@@ -1,4 +1,5 @@
 import { prisma } from "@zook/db";
+import { getAppEnv } from "@zook/core";
 import { summarizeProviderDiagnostics } from "./request-logger";
 
 function buildVersion() {
@@ -9,34 +10,42 @@ export function getHealthPayload() {
   return {
     alive: true,
     version: buildVersion(),
-    envProfile: process.env.ENV_PROFILE ?? "local",
+    envProfile: safeEnvProfile(),
     timestamp: new Date().toISOString()
   };
 }
 
+function safeEnvProfile() {
+  try {
+    return getAppEnv();
+  } catch {
+    return "invalid";
+  }
+}
+
 export async function getReadinessPayload() {
   let dbReachable = false;
-  let databaseError: string | undefined;
+  let databaseErrorCode: string | undefined;
 
   try {
     await prisma.$queryRawUnsafe("select 1 as ready");
     dbReachable = true;
   } catch (error) {
     dbReachable = false;
-    databaseError = error instanceof Error ? error.message : "Database readiness check failed.";
+    databaseErrorCode = error instanceof Error ? error.name : "DatabaseReadinessError";
   }
 
   return {
     ready: dbReachable,
     version: buildVersion(),
-    envProfile: process.env.ENV_PROFILE ?? "local",
+    envProfile: safeEnvProfile(),
     timestamp: new Date().toISOString(),
     prisma: {
       clientReady: true
     },
     database: {
       reachable: dbReachable,
-      ...(databaseError ? { error: databaseError } : {})
+      ...(databaseErrorCode ? { error: "Database readiness check failed.", errorCode: databaseErrorCode } : {})
     },
     providers: summarizeProviderDiagnostics()
   };

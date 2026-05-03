@@ -55,7 +55,7 @@ APP_ENV=staging API_MODE=backend pnpm db:deploy
 - `API_MODE=offline-demo` must fail release checks and mobile config.
 - `OTP_FIXED_CODE_DEV` must not work unless `ALLOW_FIXED_OTP_IN_STAGING=true`.
 - Mock payment completion must be disabled unless `ALLOW_MOCK_PAYMENT_COMPLETION=true`.
-- Provider diagnostics should show configured, missing, or unsupported providers without secrets.
+- Provider diagnostics should show configured, disabled, missing, or unsupported providers without secrets.
 
 ## Production Mode
 
@@ -66,6 +66,7 @@ APP_ENV=production API_MODE=backend pnpm release:preflight
 - Offline demo must be blocked.
 - Universal fixed OTP must be blocked.
 - Mock payment completion must be blocked.
+- Mock payment, AI, and push providers must be blocked; use provider-backed mode or `disabled` for a controlled unavailable state.
 - If a required provider is missing, the feature should fail closed or show unavailable state.
 
 ## iPhone Release Build

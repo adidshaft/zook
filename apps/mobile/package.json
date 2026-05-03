@@ -10,7 +10,7 @@
     "web": "node ../../scripts/run-expo-mobile.mjs start --web",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "cd ../.. && vitest run apps/mobile/src/lib/*.test.ts --passWithNoTests"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.4",

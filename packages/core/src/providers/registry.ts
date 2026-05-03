@@ -13,7 +13,7 @@ import { MockPaymentProvider, RazorpayPaymentProvider, type PaymentProvider } fr
 import { ExpoPushProvider, MockPushProvider, type PushProvider } from "./push";
 import { LocalStorageProvider, S3CompatibleStorageProvider, type StorageProvider } from "./storage";
 
-type ProviderSetupErrorKind = "misconfigured" | "unsupported";
+type ProviderSetupErrorKind = "misconfigured" | "unsupported" | "disabled";
 
 type ProviderResolution<T> = {
   provider: T | null;
@@ -53,7 +53,9 @@ export class ProviderSetupError extends Error {
     const message =
       input.kind === "misconfigured"
         ? `${label} provider "${input.selectedProvider}" is selected via ${input.selectionEnv} but is missing required env: ${missingEnv.join(", ")}. Set the missing env or switch ${input.selectionEnv}=${input.defaultProvider}.`
-        : `${label} provider "${input.selectedProvider}" is not supported yet. Supported values for ${input.selectionEnv}: ${input.supportedProviders.join(", ")}.`;
+        : input.kind === "disabled"
+          ? `${label} provider is disabled via ${input.selectionEnv}=disabled. Enable one of: ${input.supportedProviders.filter((provider) => provider !== "disabled").join(", ")}.`
+          : `${label} provider "${input.selectedProvider}" is not supported yet. Supported values for ${input.selectionEnv}: ${input.supportedProviders.join(", ")}.`;
     super(message);
     this.name = "ProviderSetupError";
     this.kind = input.kind;
@@ -209,6 +211,43 @@ function createUnsupportedResolution<T>(input: {
   };
 }
 
+function createDisabledResolution<T>(input: {
+  category: ProviderCategory;
+  selectionEnv: string;
+  defaultProvider: string;
+  supportedProviders: readonly string[];
+  env: Record<string, boolean>;
+  metadata?: ProviderDiagnosticMetadata;
+}): ProviderResolution<T> {
+  const error = new ProviderSetupError({
+    kind: "disabled",
+    category: input.category,
+    selectionEnv: input.selectionEnv,
+    selectedProvider: "disabled",
+    defaultProvider: input.defaultProvider,
+    supportedProviders: input.supportedProviders
+  });
+
+  return {
+    provider: null,
+    error,
+    diagnostics: createDiagnostics({
+      category: input.category,
+      selectedProvider: "disabled",
+      activeProvider: null,
+      status: "disabled",
+      missingEnv: [],
+      env: input.env,
+      instance: {
+        provider: "disabled",
+        mode: "disabled",
+        configured: false,
+        ...(input.metadata ? { metadata: input.metadata } : {})
+      }
+    })
+  };
+}
+
 function requireProvider<T>(resolution: ProviderResolution<T>): T {
   if (resolution.error || !resolution.provider) {
     throw resolution.error ?? new Error("Provider resolution failed without diagnostics.");
@@ -339,6 +378,16 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
     });
   }
 
+  if (selectedProvider === "disabled") {
+    return createDisabledResolution({
+      category: "payment",
+      selectionEnv: "PAYMENT_PROVIDER",
+      defaultProvider: "mock",
+      supportedProviders: ["mock", "razorpay", "disabled"],
+      env: envState
+    });
+  }
+
   if (selectedProvider === "razorpay") {
     const keyId = env(process.env.RAZORPAY_KEY_ID);
     const keySecret = env(process.env.RAZORPAY_KEY_SECRET);
@@ -355,7 +404,7 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
         selectionEnv: "PAYMENT_PROVIDER",
         selectedProvider,
         defaultProvider: "mock",
-        supportedProviders: ["mock", "razorpay"],
+        supportedProviders: ["mock", "razorpay", "disabled"],
         missingEnv,
         env: envState,
         mode: "test",
@@ -388,7 +437,7 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
     selectionEnv: "PAYMENT_PROVIDER",
     selectedProvider,
     defaultProvider: "mock",
-    supportedProviders: ["mock", "razorpay"],
+    supportedProviders: ["mock", "razorpay", "disabled"],
     env: envState,
     mode: "live"
   });
@@ -464,6 +513,16 @@ function resolveAIProvider(): ProviderResolution<AIProvider> {
     });
   }
 
+  if (selectedProvider === "disabled") {
+    return createDisabledResolution({
+      category: "ai",
+      selectionEnv: "AI_PROVIDER",
+      defaultProvider: "mock",
+      supportedProviders: ["mock", "openai", "disabled"],
+      env: envState
+    });
+  }
+
   if (selectedProvider === "openai") {
     const apiKey = env(process.env.OPENAI_API_KEY);
     if (!apiKey) {
@@ -472,7 +531,7 @@ function resolveAIProvider(): ProviderResolution<AIProvider> {
         selectionEnv: "AI_PROVIDER",
         selectedProvider,
         defaultProvider: "mock",
-        supportedProviders: ["mock", "openai"],
+        supportedProviders: ["mock", "openai", "disabled"],
         missingEnv: ["OPENAI_API_KEY"],
         env: envState,
         mode: "live",
@@ -496,7 +555,7 @@ function resolveAIProvider(): ProviderResolution<AIProvider> {
     selectionEnv: "AI_PROVIDER",
     selectedProvider,
     defaultProvider: "mock",
-    supportedProviders: ["mock", "openai"],
+    supportedProviders: ["mock", "openai", "disabled"],
     env: envState,
     mode: "live"
   });
@@ -646,6 +705,16 @@ function resolvePushProvider(): ProviderResolution<PushProvider> {
     });
   }
 
+  if (selectedProvider === "disabled") {
+    return createDisabledResolution({
+      category: "push",
+      selectionEnv: "PUSH_PROVIDER",
+      defaultProvider: "mock",
+      supportedProviders: ["mock", "expo", "disabled"],
+      env: envState
+    });
+  }
+
   if (selectedProvider === "expo") {
     const projectId = env(process.env.EXPO_PROJECT_ID);
     if (!projectId) {
@@ -654,7 +723,7 @@ function resolvePushProvider(): ProviderResolution<PushProvider> {
         selectionEnv: "PUSH_PROVIDER",
         selectedProvider,
         defaultProvider: "mock",
-        supportedProviders: ["mock", "expo"],
+        supportedProviders: ["mock", "expo", "disabled"],
         missingEnv: ["EXPO_PROJECT_ID"],
         env: envState,
         mode: "live"
@@ -686,7 +755,7 @@ function resolvePushProvider(): ProviderResolution<PushProvider> {
     selectionEnv: "PUSH_PROVIDER",
     selectedProvider,
     defaultProvider: "mock",
-    supportedProviders: ["mock", "expo"],
+    supportedProviders: ["mock", "expo", "disabled"],
     env: envState,
     mode: "live"
   });

@@ -49,28 +49,60 @@ function legacyOfflineDemoRequested() {
   );
 }
 
+function resolveAppEnv() {
+  const candidates: Array<[string, string | undefined]> = [
+    ["APP_ENV", process.env.APP_ENV],
+    ["EXPO_CONFIG_APP_ENV", Constants.expoConfig?.extra?.appEnv as string | undefined],
+    ["EXPO_CONFIG_RELEASE_PROFILE", Constants.expoConfig?.extra?.releaseProfile as string | undefined],
+    ["EXPO_PUBLIC_APP_ENV", process.env.EXPO_PUBLIC_APP_ENV],
+    ["EXPO_PUBLIC_ENV_PROFILE", process.env.EXPO_PUBLIC_ENV_PROFILE],
+  ];
+  for (const [key, value] of candidates) {
+    const raw = value?.trim();
+    if (!raw) {
+      continue;
+    }
+    const normalized = normalizeAppEnv(raw);
+    if (!normalized) {
+      return {
+        appEnv: "local" as MobileAppEnv,
+        error: `${key}=${raw} is not supported. Use APP_ENV=local, staging, or production.`,
+      };
+    }
+    return { appEnv: normalized };
+  }
+  return { appEnv: "local" as MobileAppEnv };
+}
+
+function resolveApiMode() {
+  const candidates: Array<[string, string | undefined]> = [
+    ["API_MODE", process.env.API_MODE],
+    ["EXPO_CONFIG_API_MODE", Constants.expoConfig?.extra?.apiMode as string | undefined],
+    ["EXPO_PUBLIC_API_MODE", process.env.EXPO_PUBLIC_API_MODE],
+  ];
+  for (const [key, value] of candidates) {
+    const raw = value?.trim();
+    if (!raw) {
+      continue;
+    }
+    const normalized = normalizeApiMode(raw);
+    if (!normalized) {
+      return {
+        apiMode: "backend" as MobileApiMode,
+        error: `${key}=${raw} is not supported. Use API_MODE=backend or offline-demo.`,
+      };
+    }
+    return { apiMode: normalized };
+  }
+  return { apiMode: legacyOfflineDemoRequested() ? "offline-demo" as const : "backend" as const };
+}
+
 export function getMobileAppEnv(): MobileAppEnv {
-  return (
-    normalizeAppEnv(Constants.expoConfig?.extra?.appEnv as string | undefined) ??
-    normalizeAppEnv(Constants.expoConfig?.extra?.releaseProfile as string | undefined) ??
-    normalizeAppEnv(process.env.EXPO_PUBLIC_APP_ENV) ??
-    normalizeAppEnv(process.env.APP_ENV) ??
-    normalizeAppEnv(process.env.EXPO_PUBLIC_ENV_PROFILE) ??
-    "local"
-  );
+  return resolveAppEnv().appEnv;
 }
 
 export function getMobileApiMode(): MobileApiMode {
-  const explicitMode =
-    normalizeApiMode(Constants.expoConfig?.extra?.apiMode as string | undefined) ??
-    normalizeApiMode(process.env.EXPO_PUBLIC_API_MODE) ??
-    normalizeApiMode(process.env.API_MODE);
-
-  if (explicitMode) {
-    return explicitMode;
-  }
-
-  return legacyOfflineDemoRequested() ? "offline-demo" : "backend";
+  return resolveApiMode().apiMode;
 }
 
 export function getMobileRuntimeMode() {
@@ -85,8 +117,18 @@ export function isOfflineDemoMode() {
 }
 
 export function getMobileRuntimeConfigError() {
-  const appEnv = getMobileAppEnv();
-  const apiMode = getMobileApiMode();
+  const appEnvResult = resolveAppEnv();
+  const apiModeResult = resolveApiMode();
+  const appEnv = appEnvResult.appEnv;
+  const apiMode = apiModeResult.apiMode;
+
+  if (appEnvResult.error) {
+    return appEnvResult.error;
+  }
+
+  if (apiModeResult.error) {
+    return apiModeResult.error;
+  }
 
   if (apiMode === "offline-demo" && appEnv !== "local") {
     return `Offline demo mode is only available for local builds. Current APP_ENV is ${appEnv}.`;

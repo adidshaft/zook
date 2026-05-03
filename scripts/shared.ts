@@ -59,9 +59,10 @@ export const providerSelections = [
     label: "Payment provider",
     envKey: "PAYMENT_PROVIDER",
     defaultValue: "mock",
-    implementedProviders: ["mock", "razorpay"],
+    implementedProviders: ["mock", "razorpay", "disabled"],
     liveProviders: {
-      razorpay: ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"]
+      razorpay: ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"],
+      disabled: []
     }
   },
   {
@@ -71,7 +72,7 @@ export const providerSelections = [
     implementedProviders: ["local", "s3", "r2"],
     liveProviders: {
       s3: ["S3_BUCKET", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"],
-      r2: ["S3_ENDPOINT", "S3_BUCKET", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"]
+      r2: ["S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"]
     }
   },
   {
@@ -87,18 +88,20 @@ export const providerSelections = [
     label: "AI provider",
     envKey: "AI_PROVIDER",
     defaultValue: "mock",
-    implementedProviders: ["mock", "openai"],
+    implementedProviders: ["mock", "openai", "disabled"],
     liveProviders: {
-      openai: ["OPENAI_API_KEY"]
+      openai: ["OPENAI_API_KEY"],
+      disabled: []
     }
   },
   {
     label: "Push provider",
     envKey: "PUSH_PROVIDER",
     defaultValue: "mock",
-    implementedProviders: ["mock", "expo"],
+    implementedProviders: ["mock", "expo", "disabled"],
     liveProviders: {
-      expo: ["EXPO_PROJECT_ID"]
+      expo: ["EXPO_PROJECT_ID"],
+      disabled: []
     }
   }
 ] as const;
@@ -144,6 +147,9 @@ export function resolveEnvProfile(): EnvProfile {
   const profile = (env("APP_ENV") ?? env("ENV_PROFILE"))?.toLowerCase();
   if (profile && envProfiles.includes(profile as EnvProfile)) {
     return profile as EnvProfile;
+  }
+  if (profile) {
+    throw new Error(`APP_ENV/ENV_PROFILE=${profile} is not supported. Use one of: ${envProfiles.join(", ")}.`);
   }
   return "local";
 }
@@ -265,6 +271,9 @@ export function evaluateProviderSelection(
   }
 
   const requiredKeys = selection.liveProviders[selectedProvider as keyof typeof selection.liveProviders];
+  if (!requiredKeys?.length) {
+    return pass(selection.label, `${selection.envKey}=${selectedProvider} is selected.`);
+  }
   const missingKeys = requiredKeys.filter((key) => !env(key));
   if (missingKeys.length > 0) {
     return fail(

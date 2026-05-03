@@ -76,15 +76,26 @@ function normalizeProfile(value?: string | null): MobileReleaseProfile | undefin
 }
 
 function resolveReleaseProfile(): MobileReleaseProfile {
-  return (
-    normalizeProfile(process.env.MOBILE_ENV_PROFILE) ??
-    normalizeProfile(process.env.EXPO_PUBLIC_ENV_PROFILE) ??
-    normalizeProfile(process.env.ENV_PROFILE) ??
-    normalizeProfile(process.env.APP_ENV) ??
-    normalizeProfile(process.env.EXPO_PUBLIC_APP_ENV) ??
-    normalizeProfile(process.env.EAS_BUILD_PROFILE) ??
-    "local"
-  );
+  const candidates = [
+    "APP_ENV",
+    "ENV_PROFILE",
+    "EXPO_PUBLIC_APP_ENV",
+    "MOBILE_ENV_PROFILE",
+    "EXPO_PUBLIC_ENV_PROFILE",
+    "EAS_BUILD_PROFILE"
+  ] as const;
+  for (const key of candidates) {
+    const value = process.env[key]?.trim();
+    if (!value) {
+      continue;
+    }
+    const normalized = normalizeProfile(value);
+    if (!normalized) {
+      throw new Error(`${key}=${value} is not supported. Use APP_ENV=local, staging, or production.`);
+    }
+    return normalized;
+  }
+  return "local";
 }
 
 function normalizeApiMode(value?: string | null): MobileApiMode | undefined {
@@ -111,12 +122,19 @@ function legacyOfflineDemoRequested() {
 }
 
 function resolveApiMode(): MobileApiMode {
-  return (
-    normalizeApiMode(process.env.API_MODE) ??
-    normalizeApiMode(process.env.EXPO_PUBLIC_API_MODE) ??
-    normalizeApiMode(process.env.MOBILE_API_MODE) ??
-    (legacyOfflineDemoRequested() ? "offline-demo" : "backend")
-  );
+  const candidates = ["API_MODE", "EXPO_PUBLIC_API_MODE", "MOBILE_API_MODE"] as const;
+  for (const key of candidates) {
+    const value = process.env[key]?.trim();
+    if (!value) {
+      continue;
+    }
+    const normalized = normalizeApiMode(value);
+    if (!normalized) {
+      throw new Error(`${key}=${value} is not supported. Use API_MODE=backend or offline-demo.`);
+    }
+    return normalized;
+  }
+  return legacyOfflineDemoRequested() ? "offline-demo" : "backend";
 }
 
 function resolveUrl(

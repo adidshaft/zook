@@ -1,5 +1,28 @@
 export type AppEnv = "local" | "staging" | "production";
 export type ApiMode = "backend" | "offline-demo";
+export type RuntimeIssueLevel = "error" | "warning";
+
+export interface RuntimeValidationIssue {
+  level: RuntimeIssueLevel;
+  code: string;
+  message: string;
+}
+
+export interface RuntimeValidationResult {
+  appEnv: AppEnv;
+  apiMode: ApiMode;
+  issues: RuntimeValidationIssue[];
+}
+
+export class RuntimeConfigError extends Error {
+  readonly issues: RuntimeValidationIssue[];
+
+  constructor(issues: RuntimeValidationIssue[]) {
+    super(issues.map((issue) => issue.message).join(" "));
+    this.name = "RuntimeConfigError";
+    this.issues = issues;
+  }
+}
 
 function normalizeAppEnv(value?: string | null): AppEnv | undefined {
   switch (value?.trim().toLowerCase()) {
@@ -19,13 +42,73 @@ function normalizeAppEnv(value?: string | null): AppEnv | undefined {
   }
 }
 
+function normalizeApiMode(value?: string | null): ApiMode | undefined {
+  switch (value?.trim().toLowerCase()) {
+    case "backend":
+    case "api":
+    case "server":
+      return "backend";
+    case "offline-demo":
+    case "offline_demo":
+    case "demo":
+      return "offline-demo";
+    default:
+      return undefined;
+  }
+}
+
+function readFirstExplicit(env: NodeJS.ProcessEnv, keys: string[]) {
+  for (const key of keys) {
+    const value = env[key]?.trim();
+    if (value) {
+      return { key, value };
+    }
+  }
+  return undefined;
+}
+
+function invalidValueIssue(input: { key: string; value: string; supported: string[] }): RuntimeValidationIssue {
+  return {
+    level: "error",
+    code: `INVALID_${input.key}`,
+    message: `${input.key}=${input.value} is not supported. Use one of: ${input.supported.join(", ")}.`,
+  };
+}
+
 export function getAppEnv(env: NodeJS.ProcessEnv = process.env): AppEnv {
-  return (
-    normalizeAppEnv(env.APP_ENV) ??
-    normalizeAppEnv(env.ENV_PROFILE) ??
-    normalizeAppEnv(env.EXPO_PUBLIC_APP_ENV) ??
-    "local"
-  );
+  const explicit = readFirstExplicit(env, ["APP_ENV", "ENV_PROFILE", "EXPO_PUBLIC_APP_ENV"]);
+  if (!explicit) {
+    return "local";
+  }
+  const normalized = normalizeAppEnv(explicit.value);
+  if (!normalized) {
+    throw new RuntimeConfigError([
+      invalidValueIssue({
+        key: explicit.key,
+        value: explicit.value,
+        supported: ["local", "staging", "production"],
+      }),
+    ]);
+  }
+  return normalized;
+}
+
+export function getApiMode(env: NodeJS.ProcessEnv = process.env): ApiMode {
+  const explicit = readFirstExplicit(env, ["API_MODE", "EXPO_PUBLIC_API_MODE"]);
+  if (!explicit) {
+    return "backend";
+  }
+  const normalized = normalizeApiMode(explicit.value);
+  if (!normalized) {
+    throw new RuntimeConfigError([
+      invalidValueIssue({
+        key: explicit.key,
+        value: explicit.value,
+        supported: ["backend", "offline-demo"],
+      }),
+    ]);
+  }
+  return normalized;
 }
 
 export function isTruthy(value?: string | null) {
@@ -74,3 +157,112 @@ export function isMockPaymentCompletionAllowed(env: NodeJS.ProcessEnv = process.
   return true;
 }
 
+function normalizedProvider(env: NodeJS.ProcessEnv, key: string, defaultValue: string) {
+  return env[key]?.trim().toLowerCase() || defaultValue;
+}
+
+export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): RuntimeValidationResult {
+  const issues: RuntimeValidationIssue[] = [];
+  let appEnv: AppEnv = "local";
+  let apiMode: ApiMode = "backend";
+
+  try {
+    appEnv = getAppEnv(env);
+  } catch (error) {
+    if (error instanceof RuntimeConfigError) {
+      issues.push(...error.issues);
+    } else {
+      issues.push({ level: "error", code: "INVALID_APP_ENV", message: "Unable to resolve APP_ENV." });
+    }
+  }
+
+  try {
+    apiMode = getApiMode(env);
+  } catch (error) {
+    if (error instanceof RuntimeConfigError) {
+      issues.push(...error.issues);
+    } else {
+      issues.push({ level: "error", code: "INVALID_API_MODE", message: "Unable to resolve API_MODE." });
+    }
+  }
+
+  if (apiMode === "offline-demo" && appEnv !== "local") {
+    issues.push({
+      level: "error",
+      code: "OFFLINE_DEMO_NON_LOCAL",
+      message: "API_MODE=offline-demo is only allowed with APP_ENV=local.",
+    });
+  }
+
+  if (appEnv === "production") {
+    if (env.OTP_FIXED_CODE_DEV?.trim()) {
+      issues.push({
+        level: "error",
+        code: "PRODUCTION_FIXED_OTP",
+        message: "OTP_FIXED_CODE_DEV must be unset in production.",
+      });
+    }
+    if (isTruthy(env.ALLOW_MOCK_PAYMENT_COMPLETION)) {
+      issues.push({
+        level: "error",
+        code: "PRODUCTION_MOCK_PAYMENT_COMPLETION",
+        message: "ALLOW_MOCK_PAYMENT_COMPLETION must be unset in production.",
+      });
+    }
+    if (normalizedProvider(env, "PAYMENT_PROVIDER", "mock") === "mock") {
+      issues.push({
+        level: "error",
+        code: "PRODUCTION_MOCK_PAYMENT_PROVIDER",
+        message: "PAYMENT_PROVIDER=mock is not allowed in production. Use razorpay or disabled.",
+      });
+    }
+    if (normalizedProvider(env, "AI_PROVIDER", "mock") === "mock") {
+      issues.push({
+        level: "error",
+        code: "PRODUCTION_MOCK_AI_PROVIDER",
+        message: "AI_PROVIDER=mock is not allowed in production. Use openai or disabled.",
+      });
+    }
+    if (normalizedProvider(env, "PUSH_PROVIDER", "mock") === "mock") {
+      issues.push({
+        level: "error",
+        code: "PRODUCTION_MOCK_PUSH_PROVIDER",
+        message: "PUSH_PROVIDER=mock is not allowed in production. Use expo or disabled.",
+      });
+    }
+    if (
+      normalizedProvider(env, "STORAGE_PROVIDER", "local") === "local" &&
+      !/^(0|false|no|off)$/i.test(env.FILE_UPLOADS_ENABLED ?? "")
+    ) {
+      issues.push({
+        level: "error",
+        code: "PRODUCTION_LOCAL_STORAGE",
+        message: "STORAGE_PROVIDER=local is not allowed in production while file uploads are enabled.",
+      });
+    }
+  }
+
+  if (appEnv === "staging") {
+    const mockProviders = ["PAYMENT_PROVIDER", "AI_PROVIDER", "PUSH_PROVIDER"].filter(
+      (key) => normalizedProvider(env, key, "mock") === "mock" && !env[key]?.trim(),
+    );
+    for (const key of mockProviders) {
+      issues.push({
+        level: "warning",
+        code: `STAGING_IMPLICIT_${key}`,
+        message: `${key}=mock is implicit in staging. Set it explicitly so diagnostics reflect an intentional mock mode.`,
+      });
+    }
+  }
+
+  return { appEnv, apiMode, issues };
+}
+
+export function assertRuntimeConfig(env: NodeJS.ProcessEnv = process.env) {
+  const result = validateRuntimeConfig(env);
+  const errors = result.issues.filter((issue) => issue.level === "error");
+  if (errors.length) {
+    throw new RuntimeConfigError(errors);
+  }
+  return result;
+}

@@ -18,6 +18,7 @@ Mobile API mode is explicit:
 - `EXPO_PUBLIC_API_MODE=backend` uses the backend API and is the default for local, staging, and production.
 - `EXPO_PUBLIC_API_MODE=offline-demo` routes through local fixture handlers and is allowed only with `APP_ENV=local`.
 - Legacy flags such as `EXPO_PUBLIC_OFFLINE_DEMO=true` still work locally, but new commands should use `API_MODE=offline-demo` / `EXPO_PUBLIC_API_MODE=offline-demo`.
+- `APP_ENV` is authoritative when multiple profile env vars are present. Invalid `APP_ENV` or `API_MODE` values now produce a fatal configuration screen or build-time error instead of silently falling back to local/backend defaults.
 
 The mobile app resolves its backend from:
 
@@ -40,6 +41,16 @@ Web checkout handoff uses `NEXT_PUBLIC_WEB_URL`.
 - OTP verification calls the same backend auth routes as web.
 - Use `000000` locally when `OTP_FIXED_CODE_DEV` is enabled.
 - `000000` is blocked in production and requires `ALLOW_FIXED_OTP_IN_STAGING=true` in staging.
+
+## Provider Runtime
+
+Production builds should use backend mode and explicit provider selections:
+
+- `PAYMENT_PROVIDER=razorpay` for provider-backed checkout, or `PAYMENT_PROVIDER=disabled` only when purchases are intentionally unavailable.
+- `AI_PROVIDER=openai` for trainer planning, or `AI_PROVIDER=disabled` to show controlled unavailable states.
+- `PUSH_PROVIDER=expo` for remote push, or `PUSH_PROVIDER=disabled` while relying on the in-app inbox.
+
+`mock` providers are local/demo tools and should not be used for production builds.
 
 ## Native Artifacts
 
