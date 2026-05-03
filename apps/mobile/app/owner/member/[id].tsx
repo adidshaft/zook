@@ -57,7 +57,9 @@ function ContactRow({
       <IconBubble icon={icon} tone="blue" size={40} />
       <View style={styles.contactCopy}>
         <Text style={styles.rowLabel}>{label}</Text>
-        <Text selectable style={styles.rowValue}>{value}</Text>
+        <Text selectable style={styles.rowValue}>
+          {value}
+        </Text>
       </View>
     </View>
   );
@@ -96,9 +98,13 @@ export default function OwnerMemberDetail() {
         >
           <MobileHeader
             title={name}
-            subtitle={email}
+            subtitle="Owner member profile"
             leading={
-              <BackButton onPress={() => router.canGoBack() ? router.back() : router.replace("/owner?view=members")} />
+              <BackButton
+                onPress={() =>
+                  router.canGoBack() ? router.back() : router.replace("/owner?view=members")
+                }
+              />
             }
             showProfileShortcut={false}
           />
@@ -124,10 +130,9 @@ export default function OwnerMemberDetail() {
                   <Text style={styles.largeAvatarText}>{initialsFor(name, email)}</Text>
                 </View>
                 <View style={styles.profileCopy}>
-                  <Text selectable style={styles.memberName}>{name}</Text>
-                  <Text selectable style={styles.memberEmail}>{email}</Text>
-                  {phone ? <Text selectable style={styles.memberPhone}>{phone}</Text> : null}
-                  <Pill tone="lime">Joined {formatLongDate(member.profile.createdAt)}</Pill>
+                  <Text style={styles.memberName}>Member since</Text>
+                  <Text style={styles.memberEmail}>{formatLongDate(member.profile.createdAt)}</Text>
+                  <Pill tone="lime">{member.activeSubscription?.status ?? "Profile"}</Pill>
                 </View>
               </GlassCard>
 
@@ -142,7 +147,9 @@ export default function OwnerMemberDetail() {
                 {notes ? (
                   <View style={styles.notesBox}>
                     <Text style={styles.rowLabel}>Notes</Text>
-                    <Text selectable style={styles.notesText}>{notes}</Text>
+                    <Text selectable style={styles.notesText}>
+                      {notes}
+                    </Text>
                   </View>
                 ) : null}
               </GlassCard>
@@ -167,7 +174,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingBottom: layout.bottomNavContentPadding + 32,
   },
   iconButton: {
     width: 44,

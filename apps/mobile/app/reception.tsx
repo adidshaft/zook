@@ -86,6 +86,7 @@ export default function Reception() {
   const [paymentReason, setPaymentReason] = useState("Desk collected payment");
   const [paymentStatus, setPaymentStatus] = useState("");
   const [attendanceStatus, setAttendanceStatus] = useState("");
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const queueQuery = useReceptionQueue();
   const todayAttendanceQuery = useOrgAttendanceToday();
   const membersQuery = useOrgMembers();
@@ -113,7 +114,10 @@ export default function Reception() {
       return !query || name.includes(query) || email.includes(query) || phone.includes(query);
     });
   }, [memberSearch, membersQuery.data?.members]);
-  const memberRecord = filteredMembers[0] ?? membersQuery.data?.members[0] ?? null;
+  const selectedMemberRecord =
+    filteredMembers.find((record) => record.profile.userId === selectedMemberId) ?? null;
+  const memberRecord =
+    selectedMemberRecord ?? filteredMembers[0] ?? membersQuery.data?.members[0] ?? null;
   const member = memberRecord?.user ?? null;
   const membership = memberRecord?.activeSubscription ?? null;
   const profile = memberRecord?.profile ?? null;
@@ -428,33 +432,47 @@ export default function Reception() {
               placeholder="Search member by name, email, phone, member ID"
             />
             <View style={styles.stack}>
-              {filteredMembers.slice(0, 4).map((user) => (
-                <ListRow
-                  key={user.profile.userId}
-                  title={user.user?.name ?? "Member"}
-                  subtitle={`${user.user?.email ?? "No email"} · ${user.user?.phone ?? "No phone"}`}
-                  leading={
-                    <IconBubble
-                      icon="person-outline"
-                      tone={user.activeSubscription?.status === "ACTIVE" ? "lime" : "neutral"}
+              {filteredMembers.slice(0, 4).map((user) => {
+                const selected = user.profile.userId === memberRecord?.profile.userId;
+                return (
+                  <GlassCard
+                    key={user.profile.userId}
+                    variant={selected ? "selected" : "compact"}
+                    padding={12}
+                    pressable
+                    onPress={() => setSelectedMemberId(user.profile.userId)}
+                  >
+                    <ListRow
+                      title={user.user?.name ?? "Member"}
+                      subtitle={`${user.user?.email ?? "No email"} · ${user.user?.phone ?? "No phone"}`}
+                      leading={
+                        <IconBubble
+                          icon="person-outline"
+                          tone={user.activeSubscription?.status === "ACTIVE" ? "lime" : "neutral"}
+                        />
+                      }
+                      trailing={
+                        <Pill
+                          tone={user.activeSubscription?.status === "ACTIVE" ? "lime" : "amber"}
+                        >
+                          {selected
+                            ? "Selected"
+                            : (user.activeSubscription?.status ?? "No membership")}
+                        </Pill>
+                      }
                     />
-                  }
-                  trailing={
-                    <Pill tone={user.activeSubscription?.status === "ACTIVE" ? "lime" : "amber"}>
-                      {user.activeSubscription?.status ?? "No membership"}
-                    </Pill>
-                  }
-                />
-              ))}
+                  </GlassCard>
+                );
+              })}
             </View>
             <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
-                title="Member Snapshot"
-                subtitle="Front desk view for fast decisions."
+                title="Desk actions"
+                subtitle={member?.name ? `${member.name} selected` : "Search or select a member"}
               />
               <ListRow
-                title={member?.name ?? "Select a member"}
-                subtitle={`${member?.email ?? "Search by name, email, or phone"} · ${member?.fitnessGoal ?? profile?.fitnessGoal ?? "General fitness"}`}
+                title="Membership"
+                subtitle={member?.fitnessGoal ?? profile?.fitnessGoal ?? "General fitness"}
                 trailing={
                   <Pill tone={membership?.status === "ACTIVE" ? "lime" : "amber"}>
                     {membership?.status ?? "No membership"}
@@ -695,7 +713,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 16,
-    paddingBottom: layout.bottomNavContentPadding + 48,
+    paddingBottom: layout.bottomNavContentPadding + 80,
   },
   headerRow: {
     flexDirection: "row",

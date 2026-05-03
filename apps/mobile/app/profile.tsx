@@ -24,7 +24,8 @@ import { useMyNotificationPreferences, useMyProfile } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function Profile() {
-  const { activeOrgId, activeRole, logout, session, setActiveOrgId, setActiveRole, token } = useAuth();
+  const { activeOrgId, activeRole, logout, session, setActiveOrgId, setActiveRole, token } =
+    useAuth();
   const router = useRouter();
   const {
     disablePush,
@@ -161,7 +162,7 @@ export default function Profile() {
     }
   }
 
-  async function switchRole(role: typeof allRoles[number]) {
+  async function switchRole(role: (typeof allRoles)[number]) {
     await setActiveRole(role);
     if (role === "TRAINER") {
       router.replace("/trainer");
@@ -197,11 +198,13 @@ export default function Profile() {
 
   return (
     <ZookScreen>
-      <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <MobileHeader
-          title="Profile"
-          subtitle={session?.user.email ?? session?.user.phone ?? "Account settings"}
-        />
+      <ScrollView
+        style={styles.scroller}
+        contentInsetAdjustmentBehavior="never"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
+        <MobileHeader title="Profile" subtitle={`${activeRoleLabel} account settings`} />
 
         {routeParams.focus === "membership" ? (
           <GlassCard variant="selected" contentStyle={styles.calloutContent}>
@@ -253,17 +256,24 @@ export default function Profile() {
 
         <CollapsibleSection
           title="Gym"
-          subtitle={activeOrganization ? `${activeOrganization.city}, ${activeOrganization.state}` : "Pick your gym"}
+          subtitle={
+            activeOrganization
+              ? `${activeOrganization.city}, ${activeOrganization.state}`
+              : "Pick your gym"
+          }
           count={session?.organizations.length ?? 0}
           defaultOpen={false}
         >
           <View style={styles.rowStack}>
             <DetailRow label="Active gym" value={activeOrganization?.name ?? "None selected"} />
-            <DetailRow
-              label="Status"
-              value={titleCaseFromCode(activeOrganization?.status)}
+            <DetailRow label="Status" value={titleCaseFromCode(activeOrganization?.status)} />
+            <QuickActionTile
+              onPress={() => router.push("/find-gyms")}
+              icon="search-outline"
+              label="Explore gyms"
+              value="Find more"
+              fullWidth
             />
-            <QuickActionTile onPress={() => router.push("/find-gyms")} icon="search-outline" label="Explore gyms" value="Find more" fullWidth />
           </View>
           <View style={styles.orgList}>
             {session?.organizations.map((organization) => {
@@ -285,13 +295,19 @@ export default function Profile() {
                         {organization.city}, {organization.state}
                       </Text>
                     </View>
-                    <Pill tone={selected ? "lime" : "neutral"}>{selected ? "Active" : "Switch"}</Pill>
+                    <Pill tone={selected ? "lime" : "neutral"}>
+                      {selected ? "Active" : "Switch"}
+                    </Pill>
                   </View>
                   <View style={styles.roleRow}>
                     {organization.roles.map((role) => (
                       <Pill
                         key={`${organization.orgId}-${role}`}
-                        tone={organization.orgId === activeOrgId && role === activeRole ? "lime" : "neutral"}
+                        tone={
+                          organization.orgId === activeOrgId && role === activeRole
+                            ? "lime"
+                            : "neutral"
+                        }
                       >
                         {titleCaseFromCode(role)}
                       </Pill>
@@ -305,7 +321,9 @@ export default function Profile() {
 
         <CollapsibleSection
           title="Health"
-          subtitle={[fitnessGoal || "Goal not added", weightKg ? `${weightKg} kg` : null].filter(Boolean).join(" · ")}
+          subtitle={[fitnessGoal || "Goal not added", weightKg ? `${weightKg} kg` : null]
+            .filter(Boolean)
+            .join(" · ")}
           count={ageLabel}
           defaultOpen={false}
         >
@@ -369,13 +387,9 @@ export default function Profile() {
           defaultOpen={false}
         >
           {pushError || preferenceError ? (
-            <Text style={styles.errorText}>
-              {preferenceError ?? pushError}
-            </Text>
+            <Text style={styles.errorText}>{preferenceError ?? pushError}</Text>
           ) : null}
-          <Text style={styles.syncStatusText}>
-            Push sync: {syncStatus}
-          </Text>
+          <Text style={styles.syncStatusText}>Push sync: {syncStatus}</Text>
           <PreferenceToggleRow
             label="Push notifications"
             hint="Stay updated with your gym."
@@ -451,13 +465,17 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
+  scroller: {
+    flex: 1,
+  },
   content: {
     width: "100%",
-    maxWidth: layout.contentWidth,
+    maxWidth: layout.contentWidth + layout.screenPadding * 2,
     alignSelf: "center",
+    paddingHorizontal: layout.screenPadding,
     paddingTop: 14,
     gap: 10,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingBottom: layout.bottomNavContentPadding + 32,
   },
   calloutContent: {
     flexDirection: "row",
@@ -741,12 +759,8 @@ function PreferenceToggleRow({
   return (
     <View style={styles.toggleRow}>
       <View style={styles.toggleCopy}>
-        <Text style={styles.toggleLabel}>
-          {label}
-        </Text>
-        <Text style={styles.toggleHint}>
-          {hint}
-        </Text>
+        <Text style={styles.toggleLabel}>{label}</Text>
+        <Text style={styles.toggleHint}>{hint}</Text>
       </View>
       <Switch
         value={value}
@@ -787,8 +801,12 @@ function QuickActionTile({
         <Ionicons name={icon} size={18} color={colors.lime} />
       </View>
       <View style={styles.quickCopy}>
-        <Text numberOfLines={1} style={styles.quickLabel}>{label}</Text>
-        <Text numberOfLines={1} style={styles.quickValue}>{value}</Text>
+        <Text numberOfLines={1} style={styles.quickLabel}>
+          {label}
+        </Text>
+        <Text numberOfLines={1} style={styles.quickValue}>
+          {value}
+        </Text>
       </View>
     </Pressable>
   );
@@ -797,8 +815,12 @@ function QuickActionTile({
 function SummaryTile({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.summaryTile}>
-      <Text numberOfLines={1} style={styles.summaryLabel}>{label}</Text>
-      <Text numberOfLines={1} style={styles.summaryValue}>{value}</Text>
+      <Text numberOfLines={1} style={styles.summaryLabel}>
+        {label}
+      </Text>
+      <Text numberOfLines={1} style={styles.summaryValue}>
+        {value}
+      </Text>
     </View>
   );
 }

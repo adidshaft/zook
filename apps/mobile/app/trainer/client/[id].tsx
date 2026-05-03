@@ -146,7 +146,7 @@ export default function TrainerClientDetail() {
         >
           <MobileHeader
             title={clientName}
-            subtitle="You’re viewing your assigned client only."
+            subtitle="Assigned client workspace"
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer"))}
@@ -160,21 +160,34 @@ export default function TrainerClientDetail() {
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
 
-          <GlassCard contentStyle={styles.clientContent}>
-            <View style={styles.clientTop}>
-              <IconBubble icon="person-outline" tone="lime" size={54} />
-              <View style={styles.clientCopy}>
-                <Text style={styles.clientName}>{clientName}</Text>
-                <Text style={styles.cardBody}>Assigned member · Goal: {fitnessGoal}</Text>
-              </View>
-            </View>
-            <View style={styles.chipRow}>
-              <StatusChip
-                status={`Active plans: ${activePlans}`}
-                tone={activePlans ? "lime" : "neutral"}
-              />
-              <StatusChip status="Assigned to you" tone="lime" />
-            </View>
+          <GlassCard variant="compact" contentStyle={styles.snapshotContent}>
+            <SectionHeader
+              title="Coaching snapshot"
+              subtitle="Goal, plan load, and access before plan work."
+            />
+            <ListRow
+              title="Goal"
+              subtitle={fitnessGoal}
+              leading={<IconBubble icon="flag-outline" tone="lime" />}
+              trailing={<StatusChip status={client?.active ? "Active" : "Assigned"} />}
+            />
+            <ListRow
+              title="Plan load"
+              subtitle={`${activePlans} active assigned ${activePlans === 1 ? "plan" : "plans"}`}
+              leading={<IconBubble icon="reader-outline" tone={activePlans ? "blue" : "neutral"} />}
+              trailing={
+                <StatusChip
+                  status={activePlans ? "Review" : "Create"}
+                  tone={activePlans ? "amber" : "neutral"}
+                />
+              }
+            />
+            <ListRow
+              title="Access"
+              subtitle="Visible to assigned trainers and gym admins."
+              leading={<IconBubble icon="lock-closed-outline" tone="neutral" />}
+              trailing={<StatusChip status="Private" tone="neutral" />}
+            />
           </GlassCard>
 
           <View style={styles.actionRow}>
@@ -329,9 +342,9 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
-    gap: 14,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingTop: 8,
+    gap: 12,
+    paddingBottom: layout.bottomNavContentPadding + 32,
   },
   iconButton: {
     width: 44,
@@ -350,6 +363,9 @@ const styles = StyleSheet.create({
   },
   clientContent: {
     gap: 14,
+  },
+  snapshotContent: {
+    gap: 10,
   },
   clientTop: {
     flexDirection: "row",

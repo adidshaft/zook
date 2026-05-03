@@ -8,14 +8,11 @@ import {
   GlassCard,
   IconBubble,
   MobileHeader,
-  SectionHeader,
-  StatusChip,
-  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { notificationsApi } from "@/lib/domain-api";
-import { formatRelativeDate, titleCaseFromCode } from "@/lib/formatting";
+import { formatRelativeDate } from "@/lib/formatting";
 import { mapNotificationPayloadToHref } from "@/lib/notification-routing";
 import { useMyNotifications } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
@@ -190,7 +187,9 @@ export default function NotificationsScreen() {
             <GlassCard variant="selected" contentStyle={styles.calloutContent}>
               <IconBubble icon="notifications" tone="blue" size={36} />
               <Text style={styles.calloutText}>
-                {routeParams.focus === "attendance" ? "Attendance alert received" : "Opened from push notification"}
+                {routeParams.focus === "attendance"
+                  ? "Attendance alert received"
+                  : "Opened from push notification"}
               </Text>
             </GlassCard>
           ) : null}
@@ -227,7 +226,9 @@ export default function NotificationsScreen() {
               <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={styles.emptyTitle}>No notifications yet</Text>
-                <Text style={styles.emptyBody}>Gym updates, payment alerts, and plan messages will appear here.</Text>
+                <Text style={styles.emptyBody}>
+                  Gym updates, payment alerts, and plan messages will appear here.
+                </Text>
               </View>
             </GlassCard>
           ) : null}
@@ -270,6 +271,12 @@ function NotificationRow({
   const notification = item.notification;
   const unread = !item.readAt;
   const type = notification?.type;
+  const href = mapNotificationPayloadToHref({
+    notificationId: notification?.id,
+    type,
+    ...(notification?.metadata ?? {}),
+  });
+  const opensRoute = !href.startsWith("/notifications");
 
   return (
     <Pressable
@@ -295,12 +302,15 @@ function NotificationRow({
               {notification?.body ?? "No details available."}
             </Text>
             <Text style={styles.notificationTime}>
-              {notification?.createdAt
-                ? formatRelativeDate(notification.createdAt)
-                : ""}
-              {busy ? " · Opening..." : ""}
+              {notification?.createdAt ? formatRelativeDate(notification.createdAt) : ""}
+              {busy ? " · Opening..." : ` · ${opensRoute ? "Open" : "Mark read"}`}
             </Text>
           </View>
+          <Ionicons
+            name={opensRoute ? "chevron-forward" : "checkmark-circle-outline"}
+            size={18}
+            color={opensRoute ? colors.muted : colors.lime}
+          />
         </View>
       </GlassCard>
     </Pressable>

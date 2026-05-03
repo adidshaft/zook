@@ -16,6 +16,10 @@ import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function PlatformMobile() {
   const { logout, session } = useAuth();
+  const platformEmail = encodeURIComponent(session?.user.email ?? "platform@zook.local");
+  const platformWebUrl = toWebUrl(
+    `/login?redirect=${encodeURIComponent("/platform")}&email=${platformEmail}`,
+  );
 
   return (
     <>
@@ -31,7 +35,17 @@ export default function PlatformMobile() {
             title="Use the web control room"
             subtitle={`${session?.user.name ?? "Platform team"} · mobile access is intentionally limited`}
             chip={<StatusChip status="Web only" tone="amber" />}
+            centered
+            showProfileShortcut={false}
           />
+
+          <ZookButton
+            icon="open-outline"
+            onPress={() => void Linking.openURL(platformWebUrl)}
+            style={styles.primaryAction}
+          >
+            Continue on Web
+          </ZookButton>
 
           <GlassCard contentStyle={styles.heroContent}>
             <IconBubble icon="shield-checkmark-outline" tone="amber" size={52} />
@@ -40,15 +54,10 @@ export default function PlatformMobile() {
               <Text style={styles.body}>
                 Provider diagnostics, org moderation, readiness checks, and platform audit trails
                 need the full dashboard workspace. The mobile app is reserved for daily gym
-                execution roles.
+                execution roles. The browser may ask for OTP once before opening the platform
+                dashboard.
               </Text>
             </View>
-            <ZookButton
-              icon="open-outline"
-              onPress={() => void Linking.openURL(toWebUrl("/platform"))}
-            >
-              Open Platform Web
-            </ZookButton>
           </GlassCard>
 
           <GlassCard variant="compact" contentStyle={styles.stack}>
@@ -83,6 +92,9 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     gap: 16,
     paddingBottom: layout.bottomNavContentPadding,
+  },
+  primaryAction: {
+    alignSelf: "stretch",
   },
   heroContent: {
     gap: spacing.md,

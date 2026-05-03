@@ -8,10 +8,15 @@ import { webApiFetch } from "@/lib/api-client";
 
 export function LoginPanel() {
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("owner@zook.local");
+  const initialEmail = searchParams.get("email") ?? "owner@zook.local";
+  const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("000000");
   const [stage, setStage] = useState<"email" | "otp">("email");
-  const [message, setMessage] = useState("Use the seeded accounts with development OTP 000000.");
+  const [message, setMessage] = useState(
+    searchParams.get("redirect") === "/platform"
+      ? "Sign in on web to continue to the platform control room."
+      : "Use the seeded accounts with development OTP 000000.",
+  );
 
   async function requestOtp() {
     try {

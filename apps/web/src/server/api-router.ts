@@ -463,6 +463,58 @@ function attendanceWithEntryCode<T extends { id: string }>(record: T) {
   return { ...record, entryCode: entryCodeForAttendanceId(record.id) };
 }
 
+async function enrichAttendanceRecords<
+  T extends { id: string; branchId: string; subscriptionId?: string | null }
+>(records: T[]) {
+  if (!records.length) {
+    return [];
+  }
+
+  const branchIds = [...new Set(records.map((record) => record.branchId))];
+  const subscriptionIds = [
+    ...new Set(
+      records
+        .map((record) => record.subscriptionId)
+        .filter((subscriptionId): subscriptionId is string => Boolean(subscriptionId)),
+    ),
+  ];
+
+  const [branches, subscriptions] = await Promise.all([
+    prisma.branch.findMany({
+      where: { id: { in: branchIds } },
+      select: { id: true, name: true },
+    }),
+    subscriptionIds.length
+      ? prisma.memberSubscription.findMany({
+          where: { id: { in: subscriptionIds } },
+          select: { id: true, planId: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const planIds = [...new Set(subscriptions.map((subscription) => subscription.planId))];
+  const plans = planIds.length
+    ? await prisma.membershipPlan.findMany({
+        where: { id: { in: planIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+
+  const branchNamesById = new Map(branches.map((branch) => [branch.id, branch.name]));
+  const planIdsBySubscriptionId = new Map(
+    subscriptions.map((subscription) => [subscription.id, subscription.planId]),
+  );
+  const planNamesById = new Map(plans.map((plan) => [plan.id, plan.name]));
+
+  return records.map((record) => ({
+    ...attendanceWithEntryCode(record),
+    branchName: branchNamesById.get(record.branchId) ?? null,
+    planName: record.subscriptionId
+      ? (planNamesById.get(planIdsBySubscriptionId.get(record.subscriptionId) ?? "") ?? null)
+      : null,
+  }));
+}
+
 async function findFileAssetOrThrow(fileId: string) {
   const asset = await prisma.fileAsset.findUnique({ where: { id: fileId } });
   if (!asset || asset.deletedAt) {
@@ -2041,12 +2093,13 @@ async function handleMeData(request: NextRequest, path: string[]) {
   }
   if (request.method === "GET" && pathMatches(path, ["me", "attendance"])) {
     const userId = requireAuth(await getRequestContext(request));
+    const records = await prisma.attendanceRecord.findMany({
+      where: { userId },
+      orderBy: { checkedInAt: "desc" },
+      take: 50,
+    });
     return ok({
-      attendance: await prisma.attendanceRecord.findMany({
-        where: { userId },
-        orderBy: { checkedInAt: "desc" },
-        take: 50,
-      }),
+      attendance: await enrichAttendanceRecords(records),
     });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "shop-orders"])) {
@@ -4026,6 +4079,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       return ok({
         attendance: {
           ...attendanceWithEntryCode(existing),
+          checkedInAt: existing.checkedInAt,
           branchName: branch.name,
           planName: "Local developer scan",
         },
@@ -4059,6 +4113,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     return ok({
       attendance: {
         ...attendanceWithEntryCode(record),
+        checkedInAt: record.checkedInAt,
         branchName: branch.name,
         planName: "Local developer scan",
       },
@@ -4092,7 +4147,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     ) {
       throw validationError("QR token is invalid or expired.");
     }
-    const [org, memberProfile, scanUser, subscription, duplicate] = await Promise.all([
+    const [org, memberProfile, scanUser, subscription, duplicate, branch] = await Promise.all([
       prisma.organization.findUnique({ where: { id: decoded.orgId } }),
       prisma.memberProfile.findUnique({
         where: { orgId_userId: { orgId: decoded.orgId, userId } },
@@ -4112,10 +4167,24 @@ async function handleAttendance(request: NextRequest, path: string[]) {
           },
         },
       }),
+      prisma.branch.findUnique({
+        where: { id: decoded.branchId },
+        select: { id: true, name: true },
+      }),
     ]);
+    const plan = subscription
+      ? await prisma.membershipPlan.findUnique({
+          where: { id: subscription.planId },
+        })
+      : null;
     if (duplicate) {
       return ok({
-        attendance: attendanceWithEntryCode(duplicate),
+        attendance: {
+          ...attendanceWithEntryCode(duplicate),
+          checkedInAt: duplicate.checkedInAt,
+          branchName: branch?.name ?? null,
+          planName: plan?.name ?? null,
+        },
         status: duplicate.status,
         duplicate: true,
         suspiciousFlags: Array.isArray(duplicate.suspiciousFlags)
@@ -4139,7 +4208,6 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         400,
       );
     }
-    const plan = await prisma.membershipPlan.findUnique({ where: { id: subscription.planId } });
     if (!plan) return fail("PLAN_NOT_FOUND", "Plan not found", 400);
     const validation = validateAttendanceScan({
       subscription: clean({
@@ -4194,7 +4262,12 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       });
     }
     return ok({
-      attendance: attendanceWithEntryCode(record),
+      attendance: {
+        ...attendanceWithEntryCode(record),
+        checkedInAt: record.checkedInAt,
+        branchName: branch?.name ?? null,
+        planName: plan.name,
+      },
       status,
       duplicate: false,
       suspiciousFlags: validation.suspiciousFlags,

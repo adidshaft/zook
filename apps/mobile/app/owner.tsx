@@ -426,7 +426,7 @@ export default function Owner() {
               />
             </View>
 
-            <SectionHeader title="Join requests" subtitle="Pending review" />
+            <SectionHeader title="Request list" subtitle="Pending join decisions" />
             <View style={styles.stack}>
               {joinRequests.length ? (
                 joinRequests.map((request) => (
@@ -465,7 +465,7 @@ export default function Owner() {
               )}
             </View>
 
-            <SectionHeader title="Attendance review" subtitle="Pending and flagged scans." />
+            <SectionHeader title="Scan review queue" subtitle="Pending and flagged scans." />
             <View style={styles.stack}>
               {attentionAttempts.length ? (
                 attentionAttempts.map((attempt) => (
@@ -582,7 +582,7 @@ export default function Owner() {
                 style={styles.metricHalf}
               />
             </View>
-            <SectionHeader title="Low-stock products" subtitle="Below threshold" />
+            <SectionHeader title="Products to reorder" subtitle="Below threshold" />
             <GlassCard contentStyle={styles.stack}>
               {lowStock.length ? (
                 lowStock.map((product) => (
@@ -601,7 +601,7 @@ export default function Owner() {
                 />
               )}
             </GlassCard>
-            <SectionHeader title="Pending pickups" />
+            <SectionHeader title="Orders awaiting handoff" />
             <GlassCard contentStyle={styles.stack}>
               {orders.length ? (
                 orders.map((order) => (
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: layout.bottomNavContentPadding + 32,
+    paddingBottom: layout.bottomNavContentPadding + 64,
   },
   headerRow: {
     flexDirection: "row",

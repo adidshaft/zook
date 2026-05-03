@@ -141,7 +141,7 @@ export default function AttendanceResultScreen() {
                 ? "Your check-in was received. Show this code at the front desk."
                 : blocked
                   ? (record.reason ?? "Please ask the front desk to review this check-in.")
-                  : "Entry approved for your gym"}
+                  : (record.reason ?? "Entry approved for your gym")}
             </Text>
           </View>
 

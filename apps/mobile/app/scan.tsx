@@ -1,6 +1,7 @@
 import { Stack, useRouter } from "expo-router";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ActivityIndicator,
   Pressable,
@@ -42,6 +43,7 @@ type ScanState = "idle" | "checking" | "accepted" | "failed";
 
 export default function Scan() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
@@ -84,6 +86,8 @@ export default function Scan() {
       });
       const status = result.status ?? result.attendance.status ?? "APPROVED";
       setScanState(status === "REJECTED" || status === "FLAGGED" ? "failed" : "accepted");
+      void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
+      void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       router.push({
         pathname: "/attendance/[attendanceRecordId]",
         params: {
@@ -127,6 +131,8 @@ export default function Scan() {
       });
       const status = result.status ?? result.attendance.status ?? "APPROVED";
       setScanState(status === "REJECTED" || status === "FLAGGED" ? "failed" : "accepted");
+      void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
+      void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       router.push({
         pathname: "/attendance/[attendanceRecordId]",
         params: {
