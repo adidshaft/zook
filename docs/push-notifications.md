@@ -1,6 +1,6 @@
 # Push Notifications
 
-Last updated: 24 April 2026
+Last updated: 3 May 2026
 
 ## Source Of Truth
 
@@ -35,12 +35,16 @@ Expo env:
 - invalidates bad tokens when the provider reports them
 - respects user push preference records
 - keeps push secrets server-side
+- records provider-disabled and provider-send failures as `PushDelivery` failures instead of failing the originating product action
+- treats device registrations as user/global device records so switching active org does not move the same phone token away from another org's notifications
 
 ## Delivery Rules
 
 - transactional and security notifications can still be created in-app even if push fails
 - promotional delivery respects notification preferences
 - minor users stay excluded from promotional and engagement messaging by default
+- scheduled notifications create scheduled recipient rows but are hidden from the member inbox until dispatched
+- scheduled dispatch still needs a worker/cron before it can be considered production complete
 
 ## Mobile Status
 
@@ -52,6 +56,7 @@ Phase 5 mobile readiness now includes:
 - notification preference toggles in the mobile profile
 - device registry visibility for QA
 - tap routing for plan, order, membership, attendance, and generic inbox flows
+- tap routing also handles membership join request approval/rejection payloads
 
 The in-app notification center remains canonical if native push is unavailable.
 
@@ -65,7 +70,8 @@ The in-app notification center remains canonical if native push is unavailable.
 
 - use `PUSH_PROVIDER=disabled` when remote push is intentionally unavailable
 - in-app notifications remain the source of truth
-- backend push routes return a controlled unavailable state instead of recording fake remote success
+- backend device registration returns a controlled unavailable state instead of recording fake remote success
+- product notifications still persist to the in-app inbox; if active devices exist, delivery attempts are recorded as provider-disabled failures
 
 ## Staging
 
@@ -87,5 +93,7 @@ Current tap routing targets:
 ## Known Limitations
 
 - receipt polling for Expo tickets is not fully implemented yet
+- scheduled notification dispatch has no production scheduler in this repo slice
 - the current pilot prioritizes persistence and invalid-token handling over advanced delivery analytics
 - Expo Go should not be used as the final push-validation environment for the private pilot
+- physical-device push and deep-link QA were not performed in the 2026-05-03 hardening pass

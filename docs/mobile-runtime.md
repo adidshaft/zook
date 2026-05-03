@@ -52,6 +52,14 @@ Production builds should use backend mode and explicit provider selections:
 
 `mock` providers are local/demo tools and should not be used for production builds.
 
+## Notifications And Push
+
+- The in-app inbox is canonical. Push is a best-effort delivery layer on top of persisted notifications.
+- Push registration requires a backend session and a selected provider. `PUSH_PROVIDER=disabled` keeps the inbox usable and returns controlled unavailable states for device registration.
+- Device records are stored against the signed-in user so switching active org does not silently move the same device token away from another gym's notifications.
+- Notification tap routing supports assigned plans, shop orders/pickup, attendance, membership/payment, join request status, trainer progress context, and generic inbox fallback.
+- Scheduled notification dispatch still requires a backend worker/cron; scheduled recipients should not be treated as delivered inbox items before dispatch.
+
 ## Native Artifacts
 
 `apps/mobile/ios/`, generated screenshots, and icon-builder exports are ignored outputs. Regenerate native files with Expo prebuild or EAS instead of committing generated `Pods/`, build folders, screenshots, or exported app-icon variants.
@@ -66,6 +74,6 @@ Production builds should use backend mode and explicit provider selections:
 
 ## Known Limitations
 
-- Expo Go remains the safest default. Native-only push flows are still mocked.
+- Expo Go remains the safest default for general development, but it is not final proof for native push. Real push QA requires a physical iOS/Android build.
 - Physical iOS dev builds may require provisioning cleanup if push entitlements are reintroduced.
 - Camera-based QR testing is best on a simulator/device with real camera support; pasted tokens are kept specifically to keep local QA unblocked.

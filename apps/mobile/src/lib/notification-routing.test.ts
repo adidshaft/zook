@@ -62,6 +62,24 @@ describe("mapNotificationPayloadToHref", () => {
     });
   });
 
+  it("routes join request notifications to membership continuation", () => {
+    const mapped = parseHref(
+      mapNotificationPayloadToHref({
+        joinRequestId: "join_1",
+        notificationId: "notif_join",
+        orgId: "org_1",
+      }),
+    );
+
+    expect(mapped.path).toBe("/membership");
+    expect(mapped.params).toEqual({
+      focus: "join-request",
+      joinRequestId: "join_1",
+      notificationId: "notif_join",
+      orgId: "org_1",
+    });
+  });
+
   it("routes plan notifications to the plan alias", () => {
     const mapped = parseHref(
       mapNotificationPayloadToHref({ assignmentId: "assign_1", notificationId: "notif_3" }),

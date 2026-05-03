@@ -73,7 +73,11 @@ export async function deliverPushForNotification(input: {
   const recipientByUserId = new Map(notificationRecipients.map((recipient) => [recipient.userId, recipient]));
 
   const diagnostics = getPushProviderDiagnostics();
-  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported") {
+  if (
+    diagnostics.status === "misconfigured" ||
+    diagnostics.status === "unsupported" ||
+    diagnostics.status === "disabled"
+  ) {
     await prisma.pushDelivery.createMany({
       data: devices.map((device) => ({
         orgId: input.orgId ?? null,
@@ -84,10 +88,13 @@ export async function deliverPushForNotification(input: {
         provider: diagnostics.selectedProvider,
         status: "FAILED",
         attemptCount: 1,
-        failureCode: "provider_unavailable",
-        failureReason: diagnostics.missingEnv.length
-          ? `Push provider is missing env: ${diagnostics.missingEnv.join(", ")}`
-          : "Push provider is unavailable for this environment.",
+        failureCode: diagnostics.status === "disabled" ? "provider_disabled" : "provider_unavailable",
+        failureReason:
+          diagnostics.status === "disabled"
+            ? "Push provider is disabled for this environment."
+            : diagnostics.missingEnv.length
+              ? `Push provider is missing env: ${diagnostics.missingEnv.join(", ")}`
+              : "Push provider is unavailable for this environment.",
         payload: notificationData(input.notification.metadata, {
           notificationId: input.notification.id,
           type: input.notification.type
@@ -112,7 +119,18 @@ export async function deliverPushForNotification(input: {
     })
   }));
 
-  const results = await provider.sendBatch(payloads);
+  let results;
+  try {
+    results = await provider.sendBatch(payloads);
+  } catch {
+    results = payloads.map((payload, index) => ({
+      deliveryId: `${provider.providerName}_failed_${index + 1}`,
+      status: "failed" as const,
+      providerMessageId: payload.token,
+      errorCode: "provider_exception",
+      errorMessage: "Push provider send failed."
+    }));
+  }
 
   await prisma.pushDelivery.createMany({
     data: results.map((result, index) => {

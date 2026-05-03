@@ -63,7 +63,7 @@ Additional runtime audit findings to keep fixing:
 - Mock payment provider remains for local checkout and local mock completion. Production completion is blocked.
 - Razorpay provider code supports order creation and signed webhook parsing. The 2026-05-03 payment hardening pass tightened backend activation semantics, expiry, idempotency, and webhook quarantine behavior, but test credentials and real webhook delivery were not verified.
 - AI can use mock locally or OpenAI when configured. OpenAI credentials and safety behavior were not verified in this audit.
-- Push persists in-app notifications and device records; Expo push path is provider-ready but physical-device push was not verified.
+- Push persists in-app notifications, device records, and delivery attempts. The Phase 3 slice now records provider-disabled/provider-failure attempts without breaking product actions, hides scheduled recipients from the member inbox before dispatch, and maps join-request notifications to membership continuation. Expo physical-device push was not verified.
 - Storage supports local disk and S3/R2-compatible providers; object storage env and signed URL behavior were not verified against real infrastructure.
 - Web and dashboard fixture fallback must remain constrained to explicit local/offline-demo paths.
 
@@ -102,6 +102,7 @@ Known polish themes:
 
 - Payments: Razorpay test-mode checkout and webhook must be verified with real test credentials. Live readiness is not claimed. The generic checkout route no longer accepts membership/shop activation targets, and backend confirmation now verifies org/user/purpose/amount before activating membership or shop records.
 - Push: Expo token/device flow needs physical iOS/Android QA and receipt polling is incomplete.
+- Push scheduling: scheduled notification rows are hidden until dispatch, but the scheduler/worker to send them is still not implemented.
 - AI: OpenAI path needs configured-provider QA, timeout handling, structured response validation, and durable safety-block records.
 - Storage: production object storage needs configured S3/R2 credentials, upload/download QA, and public/private asset validation.
 - Rate limiting: current store is in-process memory and not distributed-ready for production replicas.
@@ -138,6 +139,7 @@ Payment-specific hardening gaps found in the audit:
 - Distributed/shared rate limiting.
 - Object storage staging validation.
 - Expo push device QA.
+- Scheduled notification dispatcher and local/staging test-notification hook.
 - OpenAI provider and safety validation.
 - Full DB-backed acceptance coverage and manual mobile simulator/device pass.
 - Multi-branch assumptions documented in UI and validated in branch-required flows.
@@ -183,6 +185,15 @@ Payment-specific hardening gaps found in the audit:
 - `pnpm --filter @zook/web test`: passed 9 web server test files and 26 tests.
 - `pnpm test:web`: passed 4 browser smoke tests; 9 DB-gated acceptance tests were skipped because `RUN_DB_WEB_TESTS` was not enabled.
 - `RUN_DB_WEB_TESTS=1 pnpm test:web`: passed 12 DB/browser acceptance tests; 1 guardian-minor test skipped because this local seeded minor already had a membership in progress.
+
+## Additional Checks Run During Push Hardening
+
+- `pnpm --filter @zook/web test`: passed 10 web server test files and 28 tests.
+- `pnpm --filter @zook/mobile test`: passed 2 mobile utility test files and 13 tests.
+- `pnpm --filter @zook/web typecheck`: passed.
+- `pnpm typecheck`: passed.
+- `pnpm test`: passed.
+- `pnpm lint`: passed with the same 7 existing mobile unused-var warnings.
 
 ## What This Phase Should Fix
 

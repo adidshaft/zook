@@ -31,6 +31,8 @@ pnpm dev:mobile
 - Owner mobile: active members, check-ins, revenue, approvals, stock, and members use backend reads.
 - Owner/admin web: dashboard, members, attendance, plans, payments, notifications, shop, reports, staff, audit, and provider diagnostics load from API/read models.
 - Platform admin: provider diagnostics load from `/api/platform/provider-status` and do not expose secret values.
+- Notifications: create a selected-member notification; confirm the in-app inbox receives it, mark-read persists, unread count falls, and tap routing opens the expected plan/order/membership/attendance screen.
+- Push: with `PUSH_PROVIDER=disabled`, product actions must still create in-app notifications and record provider-disabled delivery attempts without returning fake remote success.
 
 ## Offline Demo Mode
 
@@ -56,6 +58,7 @@ APP_ENV=staging API_MODE=backend pnpm db:deploy
 - `OTP_FIXED_CODE_DEV` must not work unless `ALLOW_FIXED_OTP_IN_STAGING=true`.
 - Mock payment completion must be disabled unless `ALLOW_MOCK_PAYMENT_COMPLETION=true`.
 - Provider diagnostics should show configured, disabled, missing, or unsupported providers without secrets.
+- If testing Expo push, register a real device token from an EAS/dev-client build, send a transactional test notification, and document whether the tap opened the intended deep link.
 
 ## Production Mode
 
@@ -81,6 +84,8 @@ APP_ENV=production API_MODE=backend EXPO_PUBLIC_API_MODE=backend pnpm exec eas b
 - Confirm it does not show `DEMO MODE`.
 - Confirm missing backend URL produces a fatal configuration screen, not silent demo data.
 - Confirm login, role selection, scan, notifications, and logout work against the selected backend.
+- Confirm push permission denial keeps the in-app inbox usable.
+- Confirm remote push only when installed on a physical device; do not treat Expo Go or simulator behavior as production push QA.
 
 ## Regression Checks
 

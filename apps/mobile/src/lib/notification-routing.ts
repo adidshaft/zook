@@ -152,6 +152,7 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
   const planId = pickFirstString(input, ["planId"]);
   const orderId = pickFirstString(input, ["orderId", "shopOrderId"]);
   const subscriptionId = pickFirstString(input, ["subscriptionId", "membershipId"]);
+  const joinRequestId = pickFirstString(input, ["joinRequestId"]);
   const attendanceRecordId = pickFirstString(input, ["attendanceRecordId"]);
   const notificationType = readString(input?.type)?.toUpperCase();
 
@@ -162,11 +163,16 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
     );
   }
 
-  if (subscriptionId || messageText(input).includes("membership")) {
+  if (subscriptionId || joinRequestId || messageText(input).includes("membership")) {
     return buildHref(
       "/membership",
       maybeAttachNotificationId(
-        { ...params, ...(subscriptionId ? { subscriptionId } : {}), focus: "membership" },
+        {
+          ...params,
+          ...(subscriptionId ? { subscriptionId } : {}),
+          ...(joinRequestId ? { joinRequestId } : {}),
+          focus: joinRequestId ? "join-request" : "membership",
+        },
         input,
       ),
     );

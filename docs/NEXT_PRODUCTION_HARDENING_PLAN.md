@@ -104,6 +104,8 @@ Still open:
 
 ## Phase 3: Push Notifications And Deep Links
 
+Status: partially completed in the 2026-05-03 push hardening pass. In-app persistence remains canonical, provider-disabled/provider-failure push attempts no longer break product actions, scheduled inbox leakage is blocked, and join-request tap routing is covered. Physical-device Expo push QA remains open.
+
 Deliverables:
 
 - Validate notification route payloads and role/org visibility.
@@ -123,6 +125,21 @@ Acceptance:
 Not certified until:
 
 - Physical iOS/Android device push and deep-link QA are documented.
+
+Completed in this pass:
+
+- Disabled push provider delivery attempts are recorded as `provider_disabled` failures instead of trying to resolve a disabled provider.
+- Expo/provider send exceptions are recorded as failed `PushDelivery` rows instead of failing the originating attendance/payment/plan action after in-app records exist.
+- Scheduled notification recipients are hidden from `/me/notifications` until dispatch changes their delivery status.
+- Push devices are stored as user/global device records so switching active org does not move a token out of another org's notification scope.
+- Mobile notification routing handles membership join request approval/rejection payloads.
+- Focused web/mobile tests cover provider-disabled delivery recording, provider-send failure recording, and join-request deep-link routing.
+
+Still open:
+
+- Build the scheduled notification dispatcher/worker.
+- Add a local/staging admin-only test notification endpoint or surface.
+- Perform physical-device push registration, delivery, receipt, and tap-through QA with an EAS/dev-client build.
 
 ## Phase 4: AI Provider And Trainer Planning
 

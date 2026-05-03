@@ -5764,7 +5764,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   if (request.method === "GET" && pathMatches(path, ["me", "notifications"])) {
     const userId = requireAuth(await getRequestContext(request));
     const recipients = await prisma.notificationRecipient.findMany({
-      where: { userId },
+      where: { userId, deliveryStatus: { not: "scheduled" } },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
@@ -5838,6 +5838,9 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const body = pushRegisterDeviceSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
+    if (body.orgId && ctx.orgId !== body.orgId && !ctx.isPlatformAdmin) {
+      throw forbiddenError("No organization access");
+    }
     assertRateLimit(
       "pushRegisterByActor",
       `${body.orgId ?? "global"}:${userId}`,
@@ -5873,21 +5876,24 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         },
       },
       update: clean({
-        orgId: body.orgId ?? undefined,
+        orgId: null,
         userId,
         platform: normalizedPlatform,
         status: "ACTIVE",
         deviceLabel: body.deviceName,
         deviceFingerprint: body.deviceId,
         appVersion: body.appVersion,
-        metadata: { environment: body.environment } as Prisma.InputJsonValue,
+        metadata: clean({
+          environment: body.environment,
+          activeOrgId: body.orgId,
+        }) as Prisma.InputJsonValue,
         revokedAt: null,
         lastSeenAt: new Date(),
         lastRegisteredAt: new Date(),
         failureReason: null,
       }),
       create: clean({
-        orgId: body.orgId ?? undefined,
+        orgId: null,
         userId,
         provider: provider.providerName,
         token: registration.normalizedToken,
@@ -5896,7 +5902,10 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         deviceLabel: body.deviceName,
         deviceFingerprint: body.deviceId,
         appVersion: body.appVersion,
-        metadata: { environment: body.environment } as Prisma.InputJsonValue,
+        metadata: clean({
+          environment: body.environment,
+          activeOrgId: body.orgId,
+        }) as Prisma.InputJsonValue,
         lastSeenAt: new Date(),
         lastRegisteredAt: new Date(),
       }),
@@ -5915,8 +5924,10 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     if (!device) {
       throw notFoundError("Push device not found");
     }
-    const provider = getPushProviderOrThrow();
-    await provider.unregisterDevice({ token: device.token });
+    const diagnostics = getPushProviderDiagnostics();
+    if (diagnostics.status !== "misconfigured" && diagnostics.status !== "unsupported" && diagnostics.status !== "disabled") {
+      await getPushProvider().unregisterDevice({ token: device.token });
+    }
     await prisma.pushDevice.update({
       where: { id: device.id },
       data: {
@@ -5944,8 +5955,10 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     if (!device) {
       throw notFoundError("Push device not found");
     }
-    const provider = getPushProviderOrThrow();
-    await provider.unregisterDevice({ token: device.token });
+    const diagnostics = getPushProviderDiagnostics();
+    if (diagnostics.status !== "misconfigured" && diagnostics.status !== "unsupported" && diagnostics.status !== "disabled") {
+      await getPushProvider().unregisterDevice({ token: device.token });
+    }
     const updated = await prisma.pushDevice.update({
       where: { id: device.id },
       data: {
