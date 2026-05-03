@@ -152,11 +152,17 @@ export default function FindGyms() {
                 <Pressable accessibilityRole="link" style={({ pressed }) => [pressed ? styles.pressed : null]}>
                   <GlassCard contentStyle={styles.gymContent}>
                     <View style={styles.gymHeader}>
-                      <Image
-                        source={{ uri: gym.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=400&h=400&fit=crop" }}
-                        style={styles.gymThumbnail}
-                        contentFit="cover"
-                      />
+                      {gym.coverImageUrl ? (
+                        <Image
+                          source={{ uri: gym.coverImageUrl }}
+                          style={styles.gymThumbnail}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={styles.gymThumbnailFallback}>
+                          <IconBubble icon="business-outline" tone="lime" size={34} />
+                        </View>
+                      )}
                       <View style={styles.gymCopy}>
                         <Text numberOfLines={1} style={styles.gymTitle}>
                           {gym.name}
@@ -355,6 +361,14 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  gymThumbnailFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "rgba(185,244,85,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   gymCopy: {
     flex: 1,

@@ -121,16 +121,18 @@ describe("provider registry", () => {
     });
   });
 
-  it("supports explicit disabled payment, AI, and push providers", () => {
+  it("supports explicit disabled payment, AI, push, and storage providers", () => {
     clearProviderEnv();
     process.env.PAYMENT_PROVIDER = "disabled";
     process.env.AI_PROVIDER = "disabled";
     process.env.PUSH_PROVIDER = "disabled";
+    process.env.STORAGE_PROVIDER = "disabled";
 
     expect(() => getPaymentProvider()).toThrowError(ProviderSetupError);
     expect(() => getPaymentProvider()).toThrowError(/PAYMENT_PROVIDER=disabled/);
     expect(() => getAIProvider()).toThrowError(ProviderSetupError);
     expect(() => getPushProvider()).toThrowError(ProviderSetupError);
+    expect(() => getStorageProvider()).toThrowError(ProviderSetupError);
 
     expect(getProviderRegistryDiagnostics()).toMatchObject({
       payment: {
@@ -150,6 +152,14 @@ describe("provider registry", () => {
         configured: false
       },
       push: {
+        selectedProvider: "disabled",
+        activeProvider: null,
+        status: "disabled",
+        provider: "disabled",
+        mode: "disabled",
+        configured: false
+      },
+      storage: {
         selectedProvider: "disabled",
         activeProvider: null,
         status: "disabled",

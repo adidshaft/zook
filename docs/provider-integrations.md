@@ -145,7 +145,7 @@ Diagnostics may expose selected model names and boolean env presence, but never 
 
 Selector env:
 
-- `STORAGE_PROVIDER=local|s3|r2`
+- `STORAGE_PROVIDER=local|s3|r2|disabled`
 
 Known envs:
 
@@ -161,9 +161,12 @@ Known envs:
 
 Current behavior:
 
-- `local`: supported and default
+- `local`: supported and default for local development
+- `disabled`: supported as an explicit unavailable state
 - `s3`: supported when `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` are present
 - `r2`: supported when `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and either `S3_ENDPOINT` or `R2_ACCOUNT_ID` are present
+
+Local storage public-file serving consults `FileAsset.visibility` before returning bytes. Upload validation rejects content-type/filename extension mismatches so local content delivery does not serve a file under a misleading MIME type.
 
 Storage-backed upload routes now exist for the operational beta:
 
@@ -181,6 +184,7 @@ Supported file categories:
 - `trainer_upi_qr`
 - `org_logo`
 - `org_cover`
+- `org_gallery`
 - `ai_generated_image`
 - `body_progress_photo`
 - `privacy_export`

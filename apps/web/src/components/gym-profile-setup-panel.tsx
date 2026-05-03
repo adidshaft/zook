@@ -601,7 +601,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
           <SectionHeader
             eyebrow="Photos"
             title="Images and gallery"
-            description="Use public image URLs for this MVP. File upload categories for logo and cover already exist for provider-backed storage."
+            description="Provider-backed logo, cover, and gallery assets are supported; URL fields remain for migration and local setup."
           />
           <div className="mt-5 grid gap-4">
             <Field

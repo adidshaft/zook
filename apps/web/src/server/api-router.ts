@@ -97,6 +97,7 @@ import { getHealthPayload, getReadinessPayload } from "./readiness";
 import { logApiRequest } from "./request-logger";
 import {
   assertCanAccessFileAsset,
+  assertCanServeLocalPublicFileAsset,
   assertFileAssetBelongsToOrg,
   assertFileAssetOwnedByUser,
   assertFileUploadPermission,
@@ -353,6 +354,7 @@ const organizationPublicProfileSchema = z.object({
   coverImageUrl: z.string().trim().url().optional().or(z.literal("")),
   tagline: z.string().trim().max(160).optional(),
   gallery: z.array(z.string().trim().url()).max(8).default([]),
+  galleryAssetIds: z.array(z.string()).max(8).optional(),
   facilities: z.array(z.string().trim().min(2).max(80)).max(24).default([]),
   gymType: z.string().trim().max(80).optional(),
   openingHoursSummary: z.string().trim().max(160).optional(),
@@ -561,14 +563,27 @@ async function getUserScopedFileAsset(input: {
 }
 
 async function resolveFileUrl(
-  asset: { storageKey: string; visibility: string | null },
+  asset: { storageKey: string; visibility: string | null; storageProvider?: string | null },
   signed = false,
 ) {
   const storageProvider = getStorageProviderOrThrow();
+  assertFileStorageProviderMatches(asset, storageProvider.getDiagnostics().provider);
   if (!signed && asset.visibility === "public") {
     return storageProvider.getPublicUrl({ key: asset.storageKey });
   }
   return storageProvider.getSignedUrl({ key: asset.storageKey, expiresInSeconds: 10 * 60 });
+}
+
+function assertFileStorageProviderMatches(
+  asset: { storageProvider?: string | null },
+  activeProvider: string,
+) {
+  const storedProvider = asset.storageProvider ?? "local";
+  if (storedProvider !== activeProvider) {
+    throw validationError(
+      `File was stored with ${storedProvider}, but the active storage provider is ${activeProvider}.`,
+    );
+  }
 }
 
 async function parseFileUploadRequest(request: NextRequest) {
@@ -812,6 +827,13 @@ function getObjectMetadata(value: Prisma.JsonValue | null | undefined) {
     return {} as Record<string, unknown>;
   }
   return value as Record<string, unknown>;
+}
+
+function publicTrainerPhotoUrl(value: string | null | undefined) {
+  if (!value || value.startsWith("/api/files/")) {
+    return null;
+  }
+  return value;
 }
 
 function getPaymentProviderOrThrow() {
@@ -2635,8 +2657,8 @@ async function handleTracking(request: NextRequest, path: string[]) {
 }
 
 async function handleFiles(request: NextRequest, path: string[]) {
-  const storageProvider = getStorageProviderOrThrow();
   if (request.method === "GET" && pathMatches(path, ["files", "local"])) {
+    const storageProvider = getStorageProviderOrThrow();
     if (!(storageProvider instanceof LocalStorageProvider)) {
       throw notFoundError("Local storage route is unavailable for the active provider.");
     }
@@ -2656,6 +2678,7 @@ async function handleFiles(request: NextRequest, path: string[]) {
     });
   }
   if (request.method === "GET" && pathMatches(path, ["files", "local", "public"])) {
+    const storageProvider = getStorageProviderOrThrow();
     if (!(storageProvider instanceof LocalStorageProvider)) {
       throw notFoundError("Local storage route is unavailable for the active provider.");
     }
@@ -2663,6 +2686,14 @@ async function handleFiles(request: NextRequest, path: string[]) {
     if (!key) {
       throw validationError("Missing file key.");
     }
+    const asset = await prisma.fileAsset.findFirst({
+      where: { storageKey: key, deletedAt: null },
+    });
+    if (!asset) {
+      throw notFoundError("File not found");
+    }
+    assertCanServeLocalPublicFileAsset(asset);
+    assertFileStorageProviderMatches(asset, storageProvider.getDiagnostics().provider);
     const file = await storageProvider.readObject({ key });
     return new NextResponse(new Uint8Array(file.body), {
       headers: {
@@ -2673,6 +2704,10 @@ async function handleFiles(request: NextRequest, path: string[]) {
     });
   }
   if (request.method === "POST" && pathMatches(path, ["files", "upload"])) {
+    if (/^(0|false|no|off)$/i.test(process.env.FILE_UPLOADS_ENABLED ?? "")) {
+      throw validationError("File uploads are disabled for this environment.");
+    }
+    const storageProvider = getStorageProviderOrThrow();
     const upload = await parseFileUploadRequest(request);
     const ctx = await getRequestContext(request, upload.orgId ? { orgId: upload.orgId } : {});
     const userId = requireAuth(ctx);
@@ -2779,6 +2814,7 @@ async function handleFiles(request: NextRequest, path: string[]) {
     return redirectTo(await resolveFileUrl(asset));
   }
   if (request.method === "DELETE" && pathMatches(path, ["files", /.+/])) {
+    const storageProvider = getStorageProviderOrThrow();
     const asset = await findFileAssetOrThrow(path[1]!);
     const ctx = await getRequestContext(request, asset.orgId ? { orgId: asset.orgId } : {});
     const userId = requireAuth(ctx);
@@ -2805,6 +2841,7 @@ async function handleFiles(request: NextRequest, path: string[]) {
       throw forbiddenError("You do not have permission to delete this file.");
     }
 
+    assertFileStorageProviderMatches(asset, storageProvider.getDiagnostics().provider);
     await storageProvider.deleteFile({ key: asset.storageKey });
     const deleted = await prisma.fileAsset.update({
       where: { id: asset.id },
@@ -2963,19 +3000,21 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           typeof settingValues.playStoreUrl === "string" ? settingValues.playStoreUrl : null,
       },
       branches,
-      trainers: trainerAssignments.map((assignment) => {
-        const user = trainerUsers.find((candidate) => candidate.id === assignment.userId) ?? null;
-        const profile =
-          trainerProfiles.find((candidate) => candidate.userId === assignment.userId) ?? null;
-        return {
-          userId: assignment.userId,
-          name: user?.name ?? "Trainer",
-          profilePhotoUrl: user?.profilePhotoUrl ?? null,
-          bio: profile?.bio ?? null,
-          specialties: profile?.specialties ?? null,
-          visibleToMembers: profile?.visibleToMembers ?? true,
-        };
-      }),
+      trainers: trainerAssignments
+        .map((assignment) => {
+          const user = trainerUsers.find((candidate) => candidate.id === assignment.userId) ?? null;
+          const profile =
+            trainerProfiles.find((candidate) => candidate.userId === assignment.userId) ?? null;
+          return {
+            userId: assignment.userId,
+            name: user?.name ?? "Trainer",
+            profilePhotoUrl: publicTrainerPhotoUrl(user?.profilePhotoUrl),
+            bio: profile?.bio ?? null,
+            specialties: profile?.specialties ?? null,
+            visibleToMembers: profile?.visibleToMembers ?? true,
+          };
+        })
+        .filter((trainer) => trainer.visibleToMembers !== false),
       plans,
       viewerState: viewerUserId
         ? {
@@ -3136,6 +3175,16 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
         throw conflictError("This public username is already taken.");
       }
     }
+    const galleryAssets = body.galleryAssetIds?.length
+      ? await Promise.all(
+          body.galleryAssetIds.map((assetId) =>
+            getOrganizationScopedFileAsset(assetId, orgId, ["org_gallery"]),
+          ),
+        )
+      : null;
+    const gallery = galleryAssets
+      ? galleryAssets.map((asset) => asset?.url).filter((url): url is string => Boolean(url))
+      : body.gallery;
     const org = await prisma.$transaction(async (tx) => {
       const updated = await tx.organization.update({
         where: { id: orgId },
@@ -3174,7 +3223,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           keyValues: {
             ...currentValues,
             tagline: body.tagline ?? "",
-            gallery: body.gallery,
+            gallery,
             facilities: body.facilities,
             gymType: body.gymType ?? "",
             openingHoursSummary: body.openingHoursSummary ?? "",
@@ -3186,7 +3235,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           keyValues: {
             ...currentValues,
             tagline: body.tagline ?? "",
-            gallery: body.gallery,
+            gallery,
             facilities: body.facilities,
             gymType: body.gymType ?? "",
             openingHoursSummary: body.openingHoursSummary ?? "",
@@ -3227,7 +3276,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       org: {
         ...org,
         tagline: body.tagline ?? "",
-        gallery: body.gallery,
+        gallery,
         facilities: body.facilities,
         gymType: body.gymType ?? "",
         openingHoursSummary: body.openingHoursSummary ?? "",

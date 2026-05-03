@@ -35,14 +35,7 @@ export default function GymProfileScreen() {
   const gym = gymQuery.data?.org ?? null;
   const plans = gymQuery.data?.plans ?? [];
   const trainers = gymQuery.data?.trainers ?? [];
-  const gallery = gym?.gallery?.length
-    ? gym.gallery
-    : [
-        gym?.coverImageUrl ||
-          "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&h=500&fit=crop",
-        "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800&h=500&fit=crop",
-        "https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=800&h=500&fit=crop",
-      ];
+  const gallery = gym?.gallery?.length ? gym.gallery : gym?.coverImageUrl ? [gym.coverImageUrl] : [];
   const facilities = gym?.facilities?.length ? gym.facilities : (gym?.amenities ?? []);
   const viewerState = gymQuery.data?.viewerState;
   const effectiveReferral = referralCode ?? gymQuery.data?.referral?.code ?? undefined;
@@ -150,15 +143,13 @@ export default function GymProfileScreen() {
           <>
             <GlassCard contentStyle={styles.heroCard}>
               <View style={styles.coverPlaceholder}>
-                <Image
-                  source={{
-                    uri:
-                      gym.coverImageUrl ||
-                      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&h=400&fit=crop",
-                  }}
-                  style={[StyleSheet.absoluteFill, { opacity: 0.6 }]}
-                  contentFit="cover"
-                />
+                {gym.coverImageUrl ? (
+                  <Image
+                    source={{ uri: gym.coverImageUrl }}
+                    style={[StyleSheet.absoluteFill, { opacity: 0.6 }]}
+                    contentFit="cover"
+                  />
+                ) : null}
                 <View style={styles.coverGlow} />
                 <Text style={styles.coverEyebrow}>{gym.tagline ?? gym.name}</Text>
                 <Text style={styles.coverTitle}>{plans.length} plans available</Text>
@@ -246,20 +237,22 @@ export default function GymProfileScreen() {
               </View>
             </GlassCard>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.galleryRow}
-            >
-              {gallery.map((imageUrl, index) => (
-                <Image
-                  key={`${imageUrl}-${index}`}
-                  source={{ uri: imageUrl }}
-                  style={styles.galleryImage}
-                  contentFit="cover"
-                />
-              ))}
-            </ScrollView>
+            {gallery.length ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.galleryRow}
+              >
+                {gallery.map((imageUrl, index) => (
+                  <Image
+                    key={`${imageUrl}-${index}`}
+                    source={{ uri: imageUrl }}
+                    style={styles.galleryImage}
+                    contentFit="cover"
+                  />
+                ))}
+              </ScrollView>
+            ) : null}
 
             <SectionHeader
               eyebrow="Coaches"
@@ -273,15 +266,17 @@ export default function GymProfileScreen() {
                   .filter((trainer) => trainer.visibleToMembers !== false)
                   .map((trainer) => (
                     <GlassCard key={trainer.userId} contentStyle={styles.trainerCard}>
-                      <Image
-                        source={{
-                          uri:
-                            trainer.profilePhotoUrl ||
-                            "https://images.unsplash.com/photo-1594381898411-846e7d193883?q=80&w=300&h=300&fit=crop",
-                        }}
-                        style={styles.trainerImage}
-                        contentFit="cover"
-                      />
+                      {trainer.profilePhotoUrl ? (
+                        <Image
+                          source={{ uri: trainer.profilePhotoUrl }}
+                          style={styles.trainerImage}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={styles.trainerImageFallback}>
+                          <Text style={styles.trainerImageText}>{initialsForName(trainer.name)}</Text>
+                        </View>
+                      )}
                       <View style={styles.trainerCopy}>
                         <Text style={styles.trainerName}>{trainer.name}</Text>
                         <Text style={styles.sectionBody} numberOfLines={2}>
@@ -301,8 +296,8 @@ export default function GymProfileScreen() {
                   ))
               ) : (
                 <EmptyState
-                  title="Trainer profiles coming soon"
-                  body="The gym can publish coach bios, expertise, and photos from the owner dashboard."
+                  title="No public trainer profiles"
+                  body="This gym has not published trainer profiles yet."
                 />
               )}
             </View>
@@ -505,6 +500,11 @@ function normalizeSpecialties(value: unknown) {
   return ["Strength", "Mobility", "Nutrition"];
 }
 
+function initialsForName(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return (parts[0]?.[0] ?? "T").concat(parts[1]?.[0] ?? "").toUpperCase();
+}
+
 function buildPlanHighlights(plan: {
   durationDays?: number | null;
   visitLimit?: number | null;
@@ -621,6 +621,20 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 22,
     backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  trainerImageFallback: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: "rgba(185,244,85,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  trainerImageText: {
+    color: colors.lime,
+    ...typography.headerTitle,
   },
   trainerCopy: {
     flex: 1,

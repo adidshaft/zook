@@ -34,6 +34,7 @@ pnpm dev:mobile
 - Platform admin: provider diagnostics load from `/api/platform/provider-status` and do not expose secret values.
 - Notifications: create a selected-member notification; confirm the in-app inbox receives it, mark-read persists, unread count falls, and tap routing opens the expected plan/order/membership/attendance screen.
 - Push: with `PUSH_PROVIDER=disabled`, product actions must still create in-app notifications and record provider-disabled delivery attempts without returning fake remote success.
+- Storage: upload a valid `org_logo`, `org_cover`, or `org_gallery` file and confirm public pages use the returned `/api/files/{id}/content` URL; private categories must require auth and wrong-org files must be denied.
 
 ## Offline Demo Mode
 
@@ -59,6 +60,7 @@ APP_ENV=staging API_MODE=backend pnpm db:deploy
 - `OTP_FIXED_CODE_DEV` must not work unless `ALLOW_FIXED_OTP_IN_STAGING=true`.
 - Mock payment completion must be disabled unless `ALLOW_MOCK_PAYMENT_COMPLETION=true`.
 - Provider diagnostics should show configured, disabled, missing, or unsupported providers without secrets.
+- If testing storage, set `STORAGE_PROVIDER=s3` or `r2` with the required bucket credentials and confirm public asset URLs actually resolve from the bucket/CDN. If storage is intentionally off, set `STORAGE_PROVIDER=disabled` and `FILE_UPLOADS_ENABLED=false`.
 - If testing OpenAI, set `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, and `OPENAI_TIMEOUT_MS`, then generate a trainer draft for an assigned client and document whether structured output, timeout behavior, and review-before-assign work end to end.
 - If testing Expo push, register a real device token from an EAS/dev-client build, send a transactional test notification, and document whether the tap opened the intended deep link.
 

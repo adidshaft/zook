@@ -27,7 +27,7 @@ This is not a production launch certification. Razorpay, Expo push, OpenAI, obje
 - `PAYMENT_PROVIDER=mock|razorpay|disabled`
 - `AI_PROVIDER=mock|openai|disabled`
 - `PUSH_PROVIDER=mock|expo|disabled`
-- `STORAGE_PROVIDER=local|s3|r2`
+- `STORAGE_PROVIDER=local|s3|r2|disabled`
 
 Current guardrails:
 
@@ -64,7 +64,7 @@ Additional runtime audit findings to keep fixing:
 - Razorpay provider code supports order creation and signed webhook parsing. The 2026-05-03 payment hardening pass tightened backend activation semantics, expiry, idempotency, and webhook quarantine behavior, but test credentials and real webhook delivery were not verified.
 - AI can use mock locally or OpenAI when configured. The OpenAI provider path is server-only, uses structured plan response validation and server-side image generation requests, and blocks unsafe/consent/guardian/out-of-scope cases through persisted usage/audit records. OpenAI credentials, live model output behavior, and safety behavior were not verified in this audit.
 - Push persists in-app notifications, device records, and delivery attempts. The Phase 3 slice now records provider-disabled/provider-failure attempts without breaking product actions, hides scheduled recipients from the member inbox before dispatch, and maps join-request notifications to membership continuation. Expo physical-device push was not verified.
-- Storage supports local disk and S3/R2-compatible providers; object storage env and signed URL behavior were not verified against real infrastructure.
+- Storage supports local disk, explicit disabled mode, and S3/R2-compatible providers. The storage hardening pass blocks local public-file serving unless a `FileAsset` is public, rejects MIME/extension mismatches, avoids resolving storage on unrelated API paths, adds file-backed org gallery assets, and prevents current-provider reads/deletes for files stored under another provider. Object storage env and signed URL behavior were not verified against real infrastructure.
 - Web and dashboard fixture fallback must remain constrained to explicit local/offline-demo paths.
 
 ## Remaining Hardcoded Values
@@ -105,7 +105,7 @@ Known polish themes:
 - Push: Expo token/device flow needs physical iOS/Android QA and receipt polling is incomplete.
 - Push scheduling: scheduled notification rows are hidden until dispatch, but the scheduler/worker to send them is still not implemented.
 - AI: OpenAI path has timeout handling, structured response validation, and durable safety-block records. It still needs configured-provider QA, broader safety evaluation, and staging evidence before production readiness is claimed.
-- Storage: production object storage needs configured S3/R2 credentials, upload/download QA, and public/private asset validation.
+- Storage: production object storage needs configured S3/R2 credentials, upload/download QA, and public/private asset validation against real infrastructure.
 - Rate limiting: current store is in-process memory and not distributed-ready for production replicas.
 
 Payment-specific hardening gaps found in the audit:
@@ -207,6 +207,17 @@ Payment-specific hardening gaps found in the audit:
 - `pnpm test:web`: passed 4 browser smoke tests with 11 DB-gated tests skipped when `RUN_DB_WEB_TESTS` was not enabled.
 - `pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web`: passed 15 DB-backed browser acceptance tests.
 
+## Additional Checks Run During Storage Hardening
+
+- `pnpm --filter @zook/core test`: passed 11 core test files and 62 tests.
+- `pnpm --filter @zook/web test`: passed 10 web server test files and 29 tests.
+- `pnpm --filter @zook/mobile test`: passed 2 mobile utility test files and 13 tests.
+- `pnpm --filter @zook/core typecheck`: passed.
+- `pnpm --filter @zook/web typecheck`: passed.
+- `pnpm --filter @zook/mobile typecheck`: passed.
+- `pnpm lint`: passed with the same 7 existing mobile unused-var warnings.
+- `pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web`: passed 16 DB-backed browser acceptance tests.
+
 ## What This Phase Should Fix
 
 - Runtime validation and disabled provider modes are implemented.
@@ -219,6 +230,8 @@ Payment-specific hardening gaps found in the audit:
 - AI safety/consent blocks persist usage and audit records instead of disappearing as transient validation failures.
 - AI-generated workout drafts require exercise content and a human review step before assignment.
 - Member workout completion cannot mark empty workout plans complete, and trainer client summaries now read real feedback/workout report records.
+- Storage routes now fail closed for disabled uploads, public local file content requires public `FileAsset` visibility, and file reads/deletes no longer silently use the wrong active provider.
+- Public trainer visibility is enforced on public web/API surfaces, and mobile no longer uses stock media fallbacks for missing backend gym/trainer images.
 
 ## Intentionally Out Of Scope For This Audit Commit
 

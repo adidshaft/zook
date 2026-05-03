@@ -73,6 +73,13 @@ function settingsRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function publicTrainerPhotoUrl(value: string | null | undefined) {
+  if (!value || value.startsWith("/api/files/")) {
+    return null;
+  }
+  return value;
+}
+
 function demoPublicGymProfile(
   username: string,
   referralCode?: string,
@@ -228,18 +235,20 @@ async function publicGymProfileFromDb(
       visitLimit: plan.visitLimit,
       publicVisible: plan.publicVisible,
     })),
-    trainers: trainerAssignments.map((assignment) => {
-      const user = trainerUsersById.get(assignment.userId) ?? null;
-      const profile = trainerProfilesByUserId.get(assignment.userId) ?? null;
-      return {
-        userId: assignment.userId,
-        name: user?.name ?? "Trainer",
-        profilePhotoUrl: user?.profilePhotoUrl ?? null,
-        bio: profile?.bio ?? null,
-        specialties: profile?.specialties ?? null,
-        visibleToMembers: profile?.visibleToMembers ?? true,
-      };
-    }),
+    trainers: trainerAssignments
+      .map((assignment) => {
+        const user = trainerUsersById.get(assignment.userId) ?? null;
+        const profile = trainerProfilesByUserId.get(assignment.userId) ?? null;
+        return {
+          userId: assignment.userId,
+          name: user?.name ?? "Trainer",
+          profilePhotoUrl: publicTrainerPhotoUrl(user?.profilePhotoUrl),
+          bio: profile?.bio ?? null,
+          specialties: profile?.specialties ?? null,
+          visibleToMembers: profile?.visibleToMembers ?? true,
+        };
+      })
+      .filter((trainer) => trainer.visibleToMembers !== false),
     referral:
       referral && referralBelongsToOrg
         ? {

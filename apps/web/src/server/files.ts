@@ -21,7 +21,8 @@ const privateReadPermissionsByCategory: Partial<Record<StorageFileCategory, Perm
   body_progress_photo: ["MEMBERS_VIEW"],
   privacy_export: ["PRIVACY_VIEW_AUDIT"],
   org_logo: ["ORG_MANAGE_PROFILE"],
-  org_cover: ["ORG_MANAGE_PROFILE"]
+  org_cover: ["ORG_MANAGE_PROFILE"],
+  org_gallery: ["ORG_MANAGE_PROFILE"]
 };
 
 const uploadPermissionsByCategory: Partial<Record<StorageFileCategory, Permission>> = {
@@ -30,7 +31,8 @@ const uploadPermissionsByCategory: Partial<Record<StorageFileCategory, Permissio
   product_image: "SHOP_MANAGE_PRODUCTS",
   plan_image: "PLANS_CREATE",
   ai_generated_image: "AI_GENERATE_IMAGE",
-  trainer_upi_qr: "PT_RECORD"
+  trainer_upi_qr: "PT_RECORD",
+  org_gallery: "ORG_MANAGE_PROFILE"
 };
 
 const allowedVisibilityByCategory: Record<StorageFileCategory, StorageFileVisibility[]> = {
@@ -41,6 +43,7 @@ const allowedVisibilityByCategory: Record<StorageFileCategory, StorageFileVisibi
   trainer_upi_qr: ["private", "org"],
   org_logo: ["public"],
   org_cover: ["public"],
+  org_gallery: ["public"],
   ai_generated_image: ["org", "public"],
   body_progress_photo: ["private"],
   privacy_export: ["private"]
@@ -54,6 +57,7 @@ const defaultVisibilityByCategory: Record<StorageFileCategory, StorageFileVisibi
   trainer_upi_qr: "org",
   org_logo: "public",
   org_cover: "public",
+  org_gallery: "public",
   ai_generated_image: "org",
   body_progress_photo: "private",
   privacy_export: "private"
@@ -124,6 +128,15 @@ export function assertCanAccessFileAsset(asset: FileAssetLike, ctx: RequestConte
   const permissions = privateReadPermissionsByCategory[category] ?? [];
   if (!permissions.some((permission) => ctx.permissions.includes(permission))) {
     throw forbiddenError("You do not have permission to access this private file.");
+  }
+}
+
+export function assertCanServeLocalPublicFileAsset(asset: FileAssetLike) {
+  if (asset.deletedAt) {
+    throw forbiddenError("File is no longer available.");
+  }
+  if (asset.visibility !== "public") {
+    throw forbiddenError("This file is not public.");
   }
 }
 

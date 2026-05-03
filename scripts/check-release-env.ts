@@ -285,12 +285,15 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
   }
 
   const storageProvider = env("STORAGE_PROVIDER") ?? "local";
+  const uploadsEnabled = !["0", "false", "no", "off"].includes((env("FILE_UPLOADS_ENABLED") ?? "").toLowerCase());
   if (
     profile === "production" &&
     storageProvider === "local" &&
-    !["0", "false", "no", "off"].includes((env("FILE_UPLOADS_ENABLED") ?? "").toLowerCase())
+    uploadsEnabled
   ) {
     results.push(fail("Production storage", "STORAGE_PROVIDER=local in production profile while uploads are enabled.", "Use STORAGE_PROVIDER=s3 or r2, or set FILE_UPLOADS_ENABLED=false if uploads are intentionally disabled."));
+  } else if (storageProvider === "disabled" && uploadsEnabled) {
+    results.push(warn("Storage provider", "STORAGE_PROVIDER=disabled while file uploads are enabled.", "Upload routes will return a controlled unavailable error. Set FILE_UPLOADS_ENABLED=false if uploads are intentionally off."));
   } else if (storageProvider === "local" && !env("STORAGE_LOCAL_DIR")) {
     results.push(
       warn("Storage path", "STORAGE_PROVIDER=local but STORAGE_LOCAL_DIR is not set.", "The app will fall back to the default local uploads directory.")

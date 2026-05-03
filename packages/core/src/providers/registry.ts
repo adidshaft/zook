@@ -588,6 +588,16 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
     });
   }
 
+  if (selectedProvider === "disabled") {
+    return createDisabledResolution({
+      category: "storage",
+      selectionEnv: "STORAGE_PROVIDER",
+      defaultProvider: "local",
+      supportedProviders: ["local", "s3", "r2", "disabled"],
+      env: envState
+    });
+  }
+
   if (selectedProvider === "s3") {
     const bucket = env(process.env.S3_BUCKET);
     const region = env(process.env.S3_REGION);
@@ -606,7 +616,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
         selectionEnv: "STORAGE_PROVIDER",
         selectedProvider,
         defaultProvider: "local",
-        supportedProviders: ["local", "s3", "r2"],
+        supportedProviders: ["local", "s3", "r2", "disabled"],
         missingEnv,
         env: envState,
         mode: "live",
@@ -652,7 +662,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
         selectionEnv: "STORAGE_PROVIDER",
         selectedProvider,
         defaultProvider: "local",
-        supportedProviders: ["local", "s3", "r2"],
+        supportedProviders: ["local", "s3", "r2", "disabled"],
         missingEnv,
         env: envState,
         mode: "live",
@@ -685,7 +695,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
     selectionEnv: "STORAGE_PROVIDER",
     selectedProvider,
     defaultProvider: "local",
-    supportedProviders: ["local", "s3", "r2"],
+    supportedProviders: ["local", "s3", "r2", "disabled"],
     env: envState,
     mode: "live"
   });

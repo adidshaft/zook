@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RequestContext } from "@zook/core";
-import { assertCanAccessFileAsset, resolveFileVisibility } from "./files";
+import { assertCanAccessFileAsset, assertCanServeLocalPublicFileAsset, resolveFileVisibility } from "./files";
 
 function baseContext(overrides: Partial<RequestContext> = {}): RequestContext {
   return {
@@ -67,6 +67,30 @@ describe("file access rules", () => {
 
   it("enforces category-specific visibility rules", () => {
     expect(resolveFileVisibility("org_logo", "public")).toBe("public");
+    expect(resolveFileVisibility("org_gallery", "public")).toBe("public");
     expect(() => resolveFileVisibility("payment_proof", "public")).toThrow(/cannot use visibility/);
+  });
+
+  it("allows the local public file route to serve only public assets", () => {
+    expect(() =>
+      assertCanServeLocalPublicFileAsset({
+        id: "file_public",
+        orgId: "org_a",
+        ownerUserId: "owner",
+        category: "org_logo",
+        visibility: "public",
+        deletedAt: null
+      })
+    ).not.toThrow();
+    expect(() =>
+      assertCanServeLocalPublicFileAsset({
+        id: "file_private",
+        orgId: "org_a",
+        ownerUserId: "owner",
+        category: "profile_photo",
+        visibility: "private",
+        deletedAt: null
+      })
+    ).toThrow(/not public/);
   });
 });

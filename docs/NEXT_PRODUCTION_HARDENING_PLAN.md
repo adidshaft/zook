@@ -24,7 +24,7 @@ Target modes:
 - `PAYMENT_PROVIDER=mock|razorpay|disabled`
 - `AI_PROVIDER=mock|openai|disabled`
 - `PUSH_PROVIDER=mock|expo|disabled`
-- `STORAGE_PROVIDER=local|s3|r2`
+- `STORAGE_PROVIDER=local|s3|r2|disabled`
 
 Current implementation now accepts `disabled` as a first-class payment, AI, and push provider mode. Production/staging env still needs real provider choices and staging validation before launch.
 
@@ -187,6 +187,8 @@ Still open:
 
 ## Phase 5: File Storage And Media
 
+Status: partially completed in the 2026-05-03 storage hardening pass. Local storage safety, explicit disabled storage diagnostics, public-file access checks, file-backed org gallery category support, public trainer visibility, and mobile public-media fallbacks were tightened. Object storage remains provider-ready, not certified.
+
 Deliverables:
 
 - Audit upload/download/public asset routes.
@@ -204,6 +206,25 @@ Acceptance:
 Not certified until:
 
 - S3/R2-compatible object storage is configured and tested.
+
+Completed in this pass:
+
+- `STORAGE_PROVIDER=disabled` is a first-class diagnostics state.
+- File upload routes return a controlled disabled error when `FILE_UPLOADS_ENABLED=false`.
+- Local public file serving now requires a matching non-deleted `FileAsset` with `visibility=public`.
+- File reads/deletes now fail clearly if the file was stored under a different provider than the active storage provider.
+- Upload validation rejects filename extension and MIME-type mismatches, including JSON export typing.
+- Added `org_gallery` as a public, provider-backed file category for gym gallery assets.
+- Owner profile update can now accept file-backed gallery asset IDs and persist their delivery URLs.
+- Public trainer read models and mobile public gym APIs filter out trainers with `visibleToMembers=false`.
+- Mobile public gym discovery/profile screens no longer substitute Unsplash images when backend media is missing.
+
+Still open:
+
+- Wire owner web upload controls for logo, cover, and gallery instead of relying on URL fields for local setup.
+- Validate S3/R2 public object delivery with a real bucket/CDN policy.
+- Add API-level upload/content/delete acceptance tests with multipart files.
+- Migrate any existing raw external public media URLs into `FileAsset` records before production.
 
 ## Phase 6: Backend Security, RBAC, Tenant Isolation, Rate Limiting
 

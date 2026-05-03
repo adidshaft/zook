@@ -13,6 +13,7 @@ export const storageFileCategories = [
   "trainer_upi_qr",
   "org_logo",
   "org_cover",
+  "org_gallery",
   "ai_generated_image",
   "body_progress_photo",
   "privacy_export"
@@ -124,6 +125,13 @@ const fileRules: Record<
     allowedVisibilities: ["public"],
     defaultExtension: "jpg"
   },
+  org_gallery: {
+    maxSizeBytes: 8 * megabyte,
+    contentTypes: ["image/jpeg", "image/png", "image/webp"],
+    defaultVisibility: "public",
+    allowedVisibilities: ["public"],
+    defaultExtension: "jpg"
+  },
   ai_generated_image: {
     maxSizeBytes: 6 * megabyte,
     contentTypes: ["image/jpeg", "image/png", "image/webp", "image/svg+xml"],
@@ -153,7 +161,8 @@ const contentTypeByExtension: Record<string, string> = {
   png: "image/png",
   webp: "image/webp",
   svg: "image/svg+xml",
-  pdf: "application/pdf"
+  pdf: "application/pdf",
+  json: "application/json"
 };
 
 const extensionByContentType: Record<string, string> = {
@@ -161,7 +170,8 @@ const extensionByContentType: Record<string, string> = {
   "image/png": "png",
   "image/webp": "webp",
   "image/svg+xml": "svg",
-  "application/pdf": "pdf"
+  "application/pdf": "pdf",
+  "application/json": "json"
 };
 
 function normalizeOriginalName(originalName?: string) {
@@ -196,7 +206,10 @@ function splitNameParts(fileName: string) {
 function resolveExtension(originalName: string | undefined, contentType: string, defaultExtension: string) {
   const fromName = originalName ? splitNameParts(originalName).extension : "";
   const fromType = extensionByContentType[contentType];
-  return fromName || fromType || defaultExtension;
+  if (fromName && contentTypeByExtension[fromName] && contentTypeByExtension[fromName] !== contentType) {
+    throw new Error(`File extension .${fromName} does not match MIME type ${contentType}.`);
+  }
+  return fromType || fromName || defaultExtension;
 }
 
 function normalizeVisibility(category: StorageFileCategory, requested?: StorageFileVisibility) {

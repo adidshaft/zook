@@ -106,6 +106,31 @@ test("member join request and tracking workout creation persist through api rout
   await expectApiOk(trackingResponse);
 });
 
+test("public gym profile hides trainers not visible to members", async ({ page }) => {
+  requireDb();
+  const org = await seedAndGetOrg({ username: "iron-house" });
+  const trainerRole = await prisma.organizationRoleAssignment.findFirstOrThrow({
+    where: { orgId: org.id, role: "TRAINER" }
+  });
+  await prisma.trainerProfile.upsert({
+    where: { orgId_userId: { orgId: org.id, userId: trainerRole.userId } },
+    create: {
+      orgId: org.id,
+      userId: trainerRole.userId,
+      bio: "Hidden public profile",
+      visibleToMembers: false
+    },
+    update: {
+      bio: "Hidden public profile",
+      visibleToMembers: false
+    }
+  });
+
+  const response = await page.request.get(`/api/orgs/public/${org.username}`);
+  const payload = await expectApiOk<{ trainers: Array<{ userId: string; visibleToMembers: boolean }> }>(response);
+  expect(payload.data.trainers.some((trainer) => trainer.userId === trainerRole.userId)).toBe(false);
+});
+
 test("open join checkout activates membership and shop order success stays server-backed", async ({ page }) => {
   requireDb();
   const email = `playwright-shop-${Date.now()}@zook.local`;

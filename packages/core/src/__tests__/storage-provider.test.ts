@@ -40,6 +40,42 @@ describe("storage provider", () => {
     ).toThrow(/File exceeds/);
   });
 
+  it("rejects filenames whose extension disagrees with the MIME type", () => {
+    expect(() =>
+      validateStorageFile({
+        category: "org_logo",
+        contentType: "image/png",
+        sizeBytes: 1024,
+        originalName: "logo.svg",
+        visibility: "public"
+      })
+    ).toThrow(/does not match MIME type/);
+  });
+
+  it("keeps JSON export files typed as JSON", () => {
+    expect(
+      validateStorageFile({
+        category: "privacy_export",
+        contentType: "application/json",
+        sizeBytes: 128,
+        originalName: "export.json",
+        visibility: "private"
+      })
+    ).toMatchObject({ extension: "json", contentType: "application/json" });
+  });
+
+  it("validates public organization gallery assets", () => {
+    expect(
+      validateStorageFile({
+        category: "org_gallery",
+        contentType: "image/webp",
+        sizeBytes: 2048,
+        originalName: "floor.webp",
+        visibility: "public"
+      })
+    ).toMatchObject({ extension: "webp", visibility: "public" });
+  });
+
   it("stores local files on disk and produces verifiable signed urls", async () => {
     const rootDir = await mkdtemp(path.join(tmpdir(), "zook-storage-"));
     tempDirs.push(rootDir);

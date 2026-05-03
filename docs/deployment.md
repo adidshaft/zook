@@ -45,7 +45,7 @@ Phase 4 keeps local development mock-first while making staging realistic enough
   - `MAP_PROVIDER=google|mock`
   - `AI_PROVIDER=openai|mock|disabled`
   - `PUSH_PROVIDER=expo|mock|disabled`
-  - `STORAGE_PROVIDER=local|s3|r2`
+  - `STORAGE_PROVIDER=local|s3|r2|disabled`
 
 ### Production
 
@@ -123,7 +123,7 @@ Email:
 
 Storage:
 
-- `STORAGE_PROVIDER=local|s3|r2`
+- `STORAGE_PROVIDER=local|s3|r2|disabled`
 - `STORAGE_LOCAL_DIR`
 - `S3_BUCKET`
 - `S3_REGION`
