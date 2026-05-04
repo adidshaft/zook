@@ -1566,6 +1566,13 @@ type DockTab = {
 const memberTabs: DockTab[] = [
   { href: "/", label: "Home", icon: "home-outline", activeIcon: "home", matchPath: "/" },
   {
+    href: "/tracking",
+    label: "Track",
+    icon: "pulse-outline",
+    activeIcon: "pulse",
+    matchPath: "/tracking",
+  },
+  {
     href: "/scan",
     label: "Check in",
     accessibilityLabel: "Check in",
@@ -2723,7 +2730,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 18,
     paddingVertical: 0,
-    gap: 18,
+    gap: 10,
     overflow: "visible",
   },
   bottomNavItem: {

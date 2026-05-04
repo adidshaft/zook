@@ -42,24 +42,20 @@ function slugFromName(value: string) {
 }
 
 export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
-  const [name, setName] = useState("Iron Fitness Sim");
-  const [username, setUsername] = useState("irnfitnesssim");
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [gymType, setGymType] = useState(gymTypes[0] ?? "Strength gym");
-  const [contactPhone, setContactPhone] = useState("+91 90000 00000");
+  const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState(ownerEmail);
-  const [address, setAddress] = useState("Main road, Pune");
-  const [city, setCity] = useState("Pune");
-  const [state, setState] = useState("Maharashtra");
-  const [pincode, setPincode] = useState("411001");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
   const [joinMode, setJoinMode] = useState<"OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY">(
     "OPEN_JOIN",
   );
   const [visibility, setVisibility] = useState<"PUBLIC" | "INVITE_ONLY" | "HIDDEN">("PUBLIC");
-  const [amenities, setAmenities] = useState<string[]>([
-    "Certified trainers",
-    "QR entry",
-    "Personal training",
-  ]);
+  const [amenities, setAmenities] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -70,6 +66,10 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
   }
 
   async function createGym() {
+    if (!name.trim() || !username.trim() || !city.trim() || !state.trim()) {
+      setMessage("Add gym name, public username, city, and state before creating the gym.");
+      return;
+    }
     setBusy(true);
     setMessage("");
     try {
@@ -140,6 +140,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                   setUsername(slugFromName(event.target.value));
                 }
               }}
+              placeholder="Your gym name"
               className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
             />
           </label>
@@ -152,6 +153,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
               onChange={(event) =>
                 setUsername(event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
               }
+              placeholder="your-gym"
               className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
             />
           </label>
@@ -178,6 +180,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
             <input
               value={contactEmail}
               onChange={(event) => setContactEmail(event.target.value)}
+              placeholder="owner@example.com"
               className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
             />
           </label>
@@ -188,6 +191,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
             <input
               value={contactPhone}
               onChange={(event) => setContactPhone(event.target.value)}
+              placeholder="+91"
               className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
             />
           </label>
@@ -198,6 +202,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
             <input
               value={address}
               onChange={(event) => setAddress(event.target.value)}
+              placeholder="Street, area, landmark"
               className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
             />
           </label>
@@ -208,6 +213,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
             <input
               value={city}
               onChange={(event) => setCity(event.target.value)}
+              placeholder="City"
               className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
             />
           </label>
@@ -218,6 +224,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
             <input
               value={state}
               onChange={(event) => setState(event.target.value)}
+              placeholder="State"
               className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
             />
           </label>
@@ -230,6 +237,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
               onChange={(event) =>
                 setPincode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))
               }
+              placeholder="6-digit pincode"
               className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
             />
           </label>

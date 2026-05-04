@@ -16,12 +16,13 @@ type NotificationRow = {
 
 export function NotificationComposerPanel({ orgId }: { orgId: string }) {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
-  const [title, setTitle] = useState("Operational update");
-  const [body, setBody] = useState("Gym floor maintenance starts at 7 PM today.");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
   const [type, setType] = useState<"OPERATIONAL" | "PROMOTIONAL" | "PLAN">("OPERATIONAL");
   const [audience, setAudience] = useState<
-    "all_active_members" | "expiring_soon" | "assigned_clients" | "selected_members"
+    "all_active_members" | "expiring_soon" | "assigned_clients"
   >("all_active_members");
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -39,6 +40,10 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
   }, [loadNotifications]);
 
   async function submitNotification() {
+    if (!title.trim() || !body.trim()) {
+      setError("Add a title and message before sending.");
+      return;
+    }
     try {
       setSaving(true);
       setError("");
@@ -49,8 +54,7 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
           body,
           type,
           audience,
-          pushEnabled: false,
-          selectedUserIds: []
+          pushEnabled
         }
       });
       await loadNotifications();
@@ -72,6 +76,7 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
+              placeholder="Short title"
               className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
             />
           </label>
@@ -80,6 +85,7 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
             <textarea
               value={body}
               onChange={(event) => setBody(event.target.value)}
+              placeholder="Write the member-facing message"
               rows={4}
               className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
             />
@@ -107,9 +113,26 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
                 <option value="all_active_members">All active members</option>
                 <option value="expiring_soon">Expiring soon</option>
                 <option value="assigned_clients">Assigned clients</option>
-                <option value="selected_members">Selected members</option>
               </select>
             </label>
+          </div>
+          <label className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/60">
+            <span>Also attempt push delivery</span>
+            <input
+              type="checkbox"
+              checked={pushEnabled}
+              onChange={(event) => setPushEnabled(event.target.checked)}
+              className="h-4 w-4 accent-lime-300"
+            />
+          </label>
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+              Preview
+            </p>
+            <p className="mt-3 font-medium text-white">{title || "Notification title"}</p>
+            <p className="mt-2 text-sm leading-6 text-white/55">
+              {body || "Message preview appears here before you send."}
+            </p>
           </div>
           {error ? <p className="text-sm text-red-200">{error}</p> : null}
           <button

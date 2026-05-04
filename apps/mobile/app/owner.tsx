@@ -81,7 +81,7 @@ function memberInitials(name?: string | null, email?: string | null) {
 
 export default function Owner() {
   const router = useRouter();
-  const { activeRole, logout } = useAuth();
+  const { activeRole } = useAuth();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const view = normalizeView(params.view ?? offlineDemoViewOverride());
   const [memberSearch, setMemberSearch] = useState("");
@@ -260,31 +260,18 @@ export default function Owner() {
               {view === "members" ? "Back to command" : "Members"}
             </Text>
           </Pressable>
-          <Pressable
-            onPress={() => void logout()}
-            accessibilityRole="button"
-            accessibilityLabel="Sign out"
-            style={[styles.utilityPill, styles.signOutPill]}
-          >
-            <Ionicons name="log-out-outline" size={15} color={colors.red} />
-            <Text style={[styles.utilityText, styles.signOutText]}>Sign out</Text>
-          </Pressable>
         </View>
 
         {view === "command" ? (
           <>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.commandMetricRail}
-            >
+            <View style={styles.metricGrid}>
               <MetricTile
                 label="Active members"
                 value={formatCompactNumber(activeMembers)}
                 detail={branchName}
                 tone="lime"
                 icon="people-outline"
-                style={styles.commandMetric}
+                style={styles.metricHalf}
               />
               <MetricTile
                 label="Today check-ins"
@@ -292,7 +279,7 @@ export default function Owner() {
                 detail={`${attentionAttempts.length} pending review`}
                 tone="blue"
                 icon="qr-code-outline"
-                style={styles.commandMetric}
+                style={styles.metricHalf}
               />
               <MetricTile
                 label="Revenue"
@@ -300,7 +287,7 @@ export default function Owner() {
                 detail="Collected + pickup"
                 tone="amber"
                 icon="trending-up-outline"
-                style={styles.commandMetric}
+                style={styles.metricHalf}
               />
               <MetricTile
                 label="Approvals"
@@ -308,20 +295,32 @@ export default function Owner() {
                 detail="Needs attention"
                 tone="violet"
                 icon="checkmark-done-outline"
-                style={styles.commandMetric}
+                style={styles.metricHalf}
               />
-            </ScrollView>
+            </View>
 
             <SectionHeader title="Needs attention" />
             <GlassCard contentStyle={styles.stack}>
               {needsAttention.map((item) => (
-                <ListRow
+                <Pressable
                   key={item.id}
-                  title={item.title}
-                  subtitle={item.subtitle}
-                  leading={<IconBubble icon={item.icon} tone={item.tone} />}
-                  trailing={<Pill tone={item.tone}>{String(item.count)}</Pill>}
-                />
+                  onPress={() => router.replace(`/owner?view=${item.target}`)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${item.title}`}
+                  style={styles.attentionRow}
+                >
+                  <ListRow
+                    title={item.title}
+                    subtitle={item.subtitle}
+                    leading={<IconBubble icon={item.icon} tone={item.tone} />}
+                    trailing={
+                      <View style={styles.attentionTrailing}>
+                        <Pill tone={item.tone}>{String(item.count)}</Pill>
+                        <Ionicons name="chevron-forward" size={17} color={colors.muted} />
+                      </View>
+                    }
+                  />
+                </Pressable>
               ))}
             </GlassCard>
 
@@ -681,13 +680,6 @@ const styles = StyleSheet.create({
   utilityTextActive: {
     color: colors.lime,
   },
-  signOutPill: {
-    borderColor: "rgba(255,107,107,0.34)",
-    backgroundColor: "rgba(255,107,107,0.08)",
-  },
-  signOutText: {
-    color: colors.red,
-  },
   title: {
     color: colors.text,
     ...typography.screenTitle,
@@ -697,18 +689,17 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 12,
   },
-  commandMetricRail: {
-    gap: 10,
-    paddingRight: layout.screenPadding,
-  },
-  commandMetric: {
-    width: 154,
-    flexGrow: 0,
-    flexShrink: 0,
-  },
   metricHalf: {
     flexBasis: "47%",
     flexGrow: 1,
+  },
+  attentionRow: {
+    borderRadius: 16,
+  },
+  attentionTrailing: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   stack: {
     gap: 12,

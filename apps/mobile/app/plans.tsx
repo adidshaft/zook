@@ -83,7 +83,7 @@ export default function Plans() {
     plans[0] ??
     null;
   const exercisesQuery = usePlanExercises(selectedAssignment?.id);
-  const coachName = "Coach";
+  const coachName = selectedAssignment?.assignedById ? "Assigned by coach" : "Your coach";
   const completedCount = exercises.filter((exercise) => completed.has(exercise.name)).length;
   const progress = completedCount / Math.max(exercises.length, 1);
 
@@ -179,7 +179,7 @@ export default function Plans() {
                   {planTitle(selectedAssignment)}
                 </Text>
                 <Text numberOfLines={1} style={styles.detailSubtitle}>
-                  Coach {coachName}
+                  {coachName}
                 </Text>
               </View>
               <Pressable

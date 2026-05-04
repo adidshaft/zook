@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, QrCode, Search, ShieldCheck, Smartphone } from "lucide-react";
+import { MapPin, QrCode, ShieldCheck, Smartphone } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
 import { formatInr } from "@/lib/format";
@@ -27,10 +27,6 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
         <header className="flex flex-wrap items-center justify-between gap-3">
           <ZookLogo />
           <div className="flex flex-wrap items-center gap-2">
-            <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/45 md:flex">
-              <Search size={16} />
-              Search gyms, city, referral
-            </div>
             <Link
               href="/login"
               className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
@@ -71,8 +67,8 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                 <MapPin size={18} /> {org.address} · {org.city}, {org.state}
               </p>
               <p className="mt-5 max-w-2xl text-base leading-7 text-white/62">
-                {org.tagline ||
-                  "India-first gym operations powered by Zook: hosted checkout, QR entry, trainer plans, desk pickup, and member execution in one flow."}
+              {org.tagline ||
+                  "Join this gym, choose a plan, check in with QR, follow assigned plans, and pick up desk orders through Zook."}
               </p>
               {org.openingHoursSummary ? (
                 <p className="mt-3 text-sm text-lime-100/75">{org.openingHoursSummary}</p>
@@ -101,8 +97,8 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                 : "Memberships not published yet"}
             </h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
-              Membership activates only after payment confirmation. Redirects alone are never
-              trusted.
+              Choose a plan here, then continue in Zook for check-ins, workouts, notifications,
+              and desk pickup.
             </p>
             <div className="mt-5 rounded-[28px] border border-white/10 bg-white p-4">
               <img
@@ -133,11 +129,10 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
             <div className="mt-5 rounded-[24px] border border-white/10 bg-black/20 p-4">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="text-lime-200" size={22} />
-                <p className="text-sm font-medium text-white">Server-authoritative activation</p>
+                <p className="text-sm font-medium text-white">Secure hosted checkout</p>
               </div>
               <p className="mt-2 text-sm leading-6 text-white/50">
-                Hosted checkout returns to Zook, then the backend confirms payment before
-                activation.
+                Your membership is activated after payment confirmation from the gym checkout.
               </p>
             </div>
           </GlassCard>

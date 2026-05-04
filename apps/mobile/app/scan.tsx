@@ -1,5 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
+import * as Haptics from "expo-haptics";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,6 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
+  CollapsibleSection,
   GlassCard,
   MobileHeader,
   ScannerFrame,
@@ -85,7 +87,11 @@ export default function Scan() {
         body: { qrPayload: payload },
       });
       const status = result.status ?? result.attendance.status ?? "APPROVED";
-      setScanState(status === "REJECTED" || status === "FLAGGED" ? "failed" : "accepted");
+      const failed = status === "REJECTED" || status === "FLAGGED";
+      setScanState(failed ? "failed" : "accepted");
+      void Haptics.notificationAsync(
+        failed ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Success,
+      );
       void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       router.push({
@@ -103,6 +109,7 @@ export default function Scan() {
     } catch (error) {
       completedRef.current = false;
       setScanState("failed");
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setErrorMessage(getApiErrorMessage(error));
     } finally {
       setBusy(false);
@@ -130,7 +137,11 @@ export default function Scan() {
         orgId: activeOrgId,
       });
       const status = result.status ?? result.attendance.status ?? "APPROVED";
-      setScanState(status === "REJECTED" || status === "FLAGGED" ? "failed" : "accepted");
+      const failed = status === "REJECTED" || status === "FLAGGED";
+      setScanState(failed ? "failed" : "accepted");
+      void Haptics.notificationAsync(
+        failed ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Success,
+      );
       void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       router.push({
@@ -148,6 +159,7 @@ export default function Scan() {
     } catch (error) {
       completedRef.current = false;
       setScanState("failed");
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setErrorMessage(getApiErrorMessage(error));
     } finally {
       setBusy(false);
@@ -167,6 +179,7 @@ export default function Scan() {
     if (!cleanCode) {
       return;
     }
+    void Haptics.selectionAsync();
     void completeScan(cleanCode);
   }
 
@@ -233,11 +246,11 @@ export default function Scan() {
             <ValidationMini label="Check in" state={scanState} />
           </View>
 
-          <GlassCard variant="compact" contentStyle={styles.codeContent}>
-            <View style={styles.codeHeader}>
-              <Text style={styles.codeTitle}>Can’t scan?</Text>
-              <Text style={styles.codeHint}>Enter code</Text>
-            </View>
+          <CollapsibleSection
+            title="Enter code instead"
+            subtitle="Use this when the camera cannot read the QR."
+            defaultOpen={false}
+          >
             <View style={styles.codeRow}>
               <TextInput
                 value={code}
@@ -259,7 +272,7 @@ export default function Scan() {
                 <Ionicons name="arrow-forward" size={18} color={colors.bg} />
               </Pressable>
             </View>
-          </GlassCard>
+          </CollapsibleSection>
 
           {errorMessage ? (
             <GlassCard variant="warning" contentStyle={styles.errorContent}>

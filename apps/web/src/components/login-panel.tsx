@@ -8,14 +8,14 @@ import { webApiFetch } from "@/lib/api-client";
 
 export function LoginPanel() {
   const searchParams = useSearchParams();
-  const initialEmail = searchParams.get("email") ?? "owner@zook.local";
+  const initialEmail = searchParams.get("email") ?? "";
   const [email, setEmail] = useState(initialEmail);
-  const [code, setCode] = useState("000000");
+  const [code, setCode] = useState("");
   const [stage, setStage] = useState<"email" | "otp">("email");
   const [message, setMessage] = useState(
     searchParams.get("redirect") === "/platform"
       ? "Sign in on web to continue to the platform control room."
-      : "Use the seeded accounts with development OTP 000000.",
+      : "Enter your email to receive a one-time password.",
   );
 
   async function requestOtp() {
@@ -62,6 +62,8 @@ export function LoginPanel() {
         <label className="text-xs font-medium uppercase text-white/45">Email</label>
         <input
           aria-label="Email"
+          type="email"
+          placeholder="you@example.com"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
@@ -71,6 +73,8 @@ export function LoginPanel() {
             <label className="text-xs font-medium uppercase text-white/45">OTP</label>
             <input
               aria-label="OTP"
+              inputMode="numeric"
+              placeholder="6-digit code"
               value={code}
               onChange={(event) => setCode(event.target.value)}
               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"

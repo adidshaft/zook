@@ -324,6 +324,36 @@ export function DashboardOperationalPanel({
   const mode = resolveMode(sectionKey);
   const [queueBusyId, setQueueBusyId] = useState<string | null>(null);
   const [queueError, setQueueError] = useState("");
+  const [planForm, setPlanForm] = useState({
+    name: "",
+    type: "HYBRID" as "DURATION" | "VISIT_PACK" | "DATE_RANGE" | "HYBRID" | "TRIAL",
+    priceRupees: "",
+    durationDays: "",
+    visitLimit: "",
+    description: "",
+    publicVisible: true,
+  });
+  const [productForm, setProductForm] = useState({
+    name: "",
+    category: "OTHER" as
+      | "WATER"
+      | "PROTEIN_SHAKE"
+      | "SHAKER"
+      | "TOWEL"
+      | "SUPPLEMENT"
+      | "OTHER",
+    priceRupees: "",
+    stock: "",
+    lowStockThreshold: "5",
+    description: "",
+  });
+  const [staffInvite, setStaffInvite] = useState({
+    email: "",
+    role: "TRAINER" as "ADMIN" | "RECEPTIONIST" | "TRAINER",
+  });
+  const [formStatus, setFormStatus] = useState("");
+  const [formError, setFormError] = useState("");
+  const [formBusy, setFormBusy] = useState<"plan" | "product" | "staff" | null>(null);
 
   const membersState = useOperationalResource<{ members: MemberRow[] }>({
     path: `/api/orgs/${orgId}/members`,
@@ -435,6 +465,95 @@ export function DashboardOperationalPanel({
       setQueueError(cause instanceof Error ? cause.message : "Unable to update the join request.");
     } finally {
       setQueueBusyId(null);
+    }
+  }
+
+  async function createMembershipPlan() {
+    try {
+      setFormBusy("plan");
+      setFormError("");
+      setFormStatus("");
+      await webApiFetch(`/api/orgs/${orgId}/membership-plans`, {
+        method: "POST",
+        body: {
+          name: planForm.name,
+          description: planForm.description || undefined,
+          type: planForm.type,
+          pricePaise: Math.round(Number(planForm.priceRupees || 0) * 100),
+          durationDays: planForm.durationDays ? Number(planForm.durationDays) : undefined,
+          visitLimit: planForm.visitLimit ? Number(planForm.visitLimit) : undefined,
+          validityDays: planForm.durationDays ? Number(planForm.durationDays) : undefined,
+          publicVisible: planForm.publicVisible,
+        },
+      });
+      setPlanForm({
+        name: "",
+        type: "HYBRID",
+        priceRupees: "",
+        durationDays: "",
+        visitLimit: "",
+        description: "",
+        publicVisible: true,
+      });
+      membershipPlansState.reload();
+      setFormStatus("Membership plan created.");
+    } catch (cause) {
+      setFormError(cause instanceof Error ? cause.message : "Unable to create membership plan.");
+    } finally {
+      setFormBusy(null);
+    }
+  }
+
+  async function createProduct() {
+    try {
+      setFormBusy("product");
+      setFormError("");
+      setFormStatus("");
+      await webApiFetch(`/api/orgs/${orgId}/products`, {
+        method: "POST",
+        body: {
+          name: productForm.name,
+          description: productForm.description || undefined,
+          category: productForm.category,
+          pricePaise: Math.round(Number(productForm.priceRupees || 0) * 100),
+          stock: Number(productForm.stock || 0),
+          lowStockThreshold: Number(productForm.lowStockThreshold || 0),
+          active: true,
+        },
+      });
+      setProductForm({
+        name: "",
+        category: "OTHER",
+        priceRupees: "",
+        stock: "",
+        lowStockThreshold: "5",
+        description: "",
+      });
+      productsState.reload();
+      setFormStatus("Shop product created.");
+    } catch (cause) {
+      setFormError(cause instanceof Error ? cause.message : "Unable to create product.");
+    } finally {
+      setFormBusy(null);
+    }
+  }
+
+  async function inviteStaff() {
+    try {
+      setFormBusy("staff");
+      setFormError("");
+      setFormStatus("");
+      await webApiFetch(`/api/orgs/${orgId}/staff/invite`, {
+        method: "POST",
+        body: staffInvite,
+      });
+      setStaffInvite({ email: "", role: "TRAINER" });
+      staffState.reload();
+      setFormStatus("Staff invite created.");
+    } catch (cause) {
+      setFormError(cause instanceof Error ? cause.message : "Unable to invite staff.");
+    } finally {
+      setFormBusy(null);
     }
   }
 
@@ -871,6 +990,79 @@ export function DashboardOperationalPanel({
                 </Pill>
               }
             />
+            <div className="mt-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium text-white">Add shop product</p>
+                  <p className="mt-1 text-xs text-white/45">Creates a real inventory item.</p>
+                </div>
+                <Pill tone="blue">Create</Pill>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <input
+                  value={productForm.name}
+                  onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))}
+                  placeholder="Product name"
+                  className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+                />
+                <select
+                  value={productForm.category}
+                  onChange={(event) =>
+                    setProductForm((current) => ({
+                      ...current,
+                      category: event.target.value as typeof productForm.category,
+                    }))
+                  }
+                  className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+                >
+                  {["WATER", "PROTEIN_SHAKE", "SHAKER", "TOWEL", "SUPPLEMENT", "OTHER"].map((category) => (
+                    <option key={category} value={category} className="bg-black">
+                      {formatEnumLabel(category)}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={productForm.priceRupees}
+                  onChange={(event) => setProductForm((current) => ({ ...current, priceRupees: event.target.value }))}
+                  placeholder="Price in rupees"
+                  inputMode="decimal"
+                  className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+                />
+                <input
+                  value={productForm.stock}
+                  onChange={(event) => setProductForm((current) => ({ ...current, stock: event.target.value }))}
+                  placeholder="Opening stock"
+                  inputMode="numeric"
+                  className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+                />
+              </div>
+              <div className="grid gap-3 md:grid-cols-[1fr_140px]">
+                <input
+                  value={productForm.description}
+                  onChange={(event) => setProductForm((current) => ({ ...current, description: event.target.value }))}
+                  placeholder="Short description"
+                  className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+                />
+                <input
+                  value={productForm.lowStockThreshold}
+                  onChange={(event) =>
+                    setProductForm((current) => ({ ...current, lowStockThreshold: event.target.value }))
+                  }
+                  placeholder="Low stock"
+                  inputMode="numeric"
+                  className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+                />
+              </div>
+              <button
+                onClick={() => void createProduct()}
+                disabled={formBusy === "product"}
+                className="zook-focus w-full rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+              >
+                {formBusy === "product" ? "Creating..." : "Add product"}
+              </button>
+              {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
+              {formStatus ? <p className="text-sm text-lime-100">{formStatus}</p> : null}
+            </div>
             <div className="mt-5 grid gap-3">
               {productsState.error ? (
                 <ErrorNotice message={productsState.error} />
@@ -950,6 +1142,47 @@ export function DashboardOperationalPanel({
     return (
       <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <GlassCard>
+          <div className="mb-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-medium text-white">Invite staff</p>
+                <p className="mt-1 text-xs text-white/45">Adds a real role assignment for this gym.</p>
+              </div>
+              <Pill tone="lime">Invite</Pill>
+            </div>
+            <div className="grid gap-3 md:grid-cols-[1fr_180px]">
+              <input
+                value={staffInvite.email}
+                onChange={(event) => setStaffInvite((current) => ({ ...current, email: event.target.value }))}
+                placeholder="staff@example.com"
+                type="email"
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              />
+              <select
+                value={staffInvite.role}
+                onChange={(event) =>
+                  setStaffInvite((current) => ({
+                    ...current,
+                    role: event.target.value as typeof staffInvite.role,
+                  }))
+                }
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              >
+                <option value="TRAINER" className="bg-black">Trainer</option>
+                <option value="RECEPTIONIST" className="bg-black">Receptionist</option>
+                <option value="ADMIN" className="bg-black">Admin</option>
+              </select>
+            </div>
+            <button
+              onClick={() => void inviteStaff()}
+              disabled={formBusy === "staff"}
+              className="zook-focus w-full rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+            >
+              {formBusy === "staff" ? "Inviting..." : "Invite staff"}
+            </button>
+            {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
+            {formStatus ? <p className="text-sm text-lime-100">{formStatus}</p> : null}
+          </div>
           <SectionHeader
             eyebrow="Team"
             title="Operational roles"
@@ -1074,6 +1307,86 @@ export function DashboardOperationalPanel({
             description="The commercial ladder below drives public join, approvals, and manual sales paths."
             badge={<Pill tone="blue">{membershipPlans.length} offers</Pill>}
           />
+          <div className="mt-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-medium text-white">Create membership plan</p>
+                <p className="mt-1 text-xs text-white/45">Publishes into join, sales, and approval flows.</p>
+              </div>
+              <Pill tone="lime">Live</Pill>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <input
+                value={planForm.name}
+                onChange={(event) => setPlanForm((current) => ({ ...current, name: event.target.value }))}
+                placeholder="Plan name"
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              />
+              <select
+                value={planForm.type}
+                onChange={(event) =>
+                  setPlanForm((current) => ({
+                    ...current,
+                    type: event.target.value as typeof planForm.type,
+                  }))
+                }
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              >
+                {["HYBRID", "DURATION", "VISIT_PACK", "DATE_RANGE", "TRIAL"].map((type) => (
+                  <option key={type} value={type} className="bg-black">
+                    {formatEnumLabel(type)}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={planForm.priceRupees}
+                onChange={(event) => setPlanForm((current) => ({ ...current, priceRupees: event.target.value }))}
+                placeholder="Price in rupees"
+                inputMode="decimal"
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              />
+              <input
+                value={planForm.durationDays}
+                onChange={(event) => setPlanForm((current) => ({ ...current, durationDays: event.target.value }))}
+                placeholder="Duration days"
+                inputMode="numeric"
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              />
+              <input
+                value={planForm.visitLimit}
+                onChange={(event) => setPlanForm((current) => ({ ...current, visitLimit: event.target.value }))}
+                placeholder="Visit limit"
+                inputMode="numeric"
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              />
+              <label className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/55">
+                Public
+                <input
+                  type="checkbox"
+                  checked={planForm.publicVisible}
+                  onChange={(event) =>
+                    setPlanForm((current) => ({ ...current, publicVisible: event.target.checked }))
+                  }
+                  className="h-4 w-4 accent-lime-300"
+                />
+              </label>
+            </div>
+            <input
+              value={planForm.description}
+              onChange={(event) => setPlanForm((current) => ({ ...current, description: event.target.value }))}
+              placeholder="Short public description"
+              className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+            />
+            <button
+              onClick={() => void createMembershipPlan()}
+              disabled={formBusy === "plan"}
+              className="zook-focus w-full rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+            >
+              {formBusy === "plan" ? "Creating..." : "Create plan"}
+            </button>
+            {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
+            {formStatus ? <p className="text-sm text-lime-100">{formStatus}</p> : null}
+          </div>
           <div className="mt-5">
             {membershipPlansState.error ? (
               <ErrorNotice message={membershipPlansState.error} />

@@ -20,11 +20,16 @@ type ChatMessage = {
   body: string;
 };
 
-const languagePrompts = [
-  { label: "English", prompt: "Build a simple plan for today's workout." },
-  { label: "हिन्दी", prompt: "आज की workout planning आसान भाषा में समझाओ." },
-  { label: "मराठी", prompt: "आजचा workout plan सोप्या भाषेत सांग." },
-  { label: "தமிழ்", prompt: "இன்றைய workout-ஐ எளிமையாக திட்டமிடுங்கள்." },
+const memberPrompts = [
+  "What should I focus on today?",
+  "Make my workout easier to follow.",
+  "What should I eat after training?",
+];
+
+const trainerPrompts = [
+  "Draft a 4-week hypertrophy plan.",
+  "Summarize this client's progress.",
+  "Suggest safe exercise swaps.",
 ];
 
 export default function AssistantScreen() {
@@ -104,6 +109,21 @@ export default function AssistantScreen() {
     }
   }
 
+  function resetConversation() {
+    setMessages([
+      {
+        id: `hello-${Date.now()}`,
+        role: "assistant",
+        body: isTrainer
+          ? "Send a client summary, workout data, or a natural-language question. I can help draft plans, diet notes, and recovery guidance."
+          : "Ask in any language. I can help with your assigned plans, diet preferences, recovery, and gym routine.",
+      },
+    ]);
+    setDraft("");
+  }
+
+  const suggestedPrompts = isTrainer ? trainerPrompts : memberPrompts;
+
   if (!canUseAi) {
     return (
       <ZookScreen>
@@ -143,7 +163,6 @@ export default function AssistantScreen() {
           showProfileShortcut={false}
         />
 
-        {/* Controls bar */}
         <View style={styles.controlsRow}>
           <Pressable
             onPress={() => setAttachSummary((value) => !value)}
@@ -156,21 +175,32 @@ export default function AssistantScreen() {
               {isTrainer ? "Client data" : "My profile"}
             </Text>
           </Pressable>
-          <View style={styles.languageRow}>
-            {languagePrompts.map((item) => (
+          <Pressable
+            onPress={resetConversation}
+            style={styles.controlChip}
+            accessibilityRole="button"
+            accessibilityLabel="Clear conversation"
+          >
+            <Ionicons name="refresh-outline" size={16} color={colors.muted} />
+            <Text style={styles.controlChipText}>Clear</Text>
+          </Pressable>
+        </View>
+
+        {messages.length <= 1 ? (
+          <View style={styles.suggestionRow}>
+            {suggestedPrompts.map((prompt) => (
               <Pressable
-                key={item.label}
-                onPress={() => setDraft(item.prompt)}
+                key={prompt}
+                onPress={() => setDraft(prompt)}
                 accessibilityRole="button"
-                style={styles.languageChip}
+                style={styles.suggestionChip}
               >
-                <Text style={styles.languageText}>{item.label}</Text>
+                <Text style={styles.suggestionText}>{prompt}</Text>
               </Pressable>
             ))}
           </View>
-        </View>
+        ) : null}
 
-        {/* Attached context preview */}
         {attachSummary && contextSummary ? (
           <GlassCard variant="compact" contentStyle={styles.contextContent}>
             <View style={styles.contextHeader}>
@@ -181,7 +211,6 @@ export default function AssistantScreen() {
           </GlassCard>
         ) : null}
 
-        {/* Chat messages */}
         <View style={styles.chatStack}>
           {messages.map((message) => (
             <View
@@ -211,7 +240,8 @@ export default function AssistantScreen() {
           ) : null}
         </View>
 
-        {/* Composer */}
+      </ScrollView>
+      <View style={styles.stickyComposer}>
         <GlassCard contentStyle={styles.composerContent}>
           <TextInput
             value={draft}
@@ -244,7 +274,7 @@ export default function AssistantScreen() {
             </Pressable>
           </View>
         </GlassCard>
-      </ScrollView>
+      </View>
       <BottomNav />
     </ZookScreen>
   );
@@ -257,7 +287,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingBottom: layout.bottomNavContentPadding + 92,
   },
   aiMark: {
     width: 44,
@@ -293,12 +323,12 @@ const styles = StyleSheet.create({
   controlChipTextActive: {
     color: colors.bg,
   },
-  languageRow: {
+  suggestionRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },
-  languageChip: {
+  suggestionChip: {
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
@@ -306,7 +336,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  languageText: {
+  suggestionText: {
     color: colors.text,
     ...typography.small,
   },
@@ -374,6 +404,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     gap: spacing.sm,
+  },
+  stickyComposer: {
+    position: "absolute",
+    left: layout.screenPadding,
+    right: layout.screenPadding,
+    bottom: 104,
+    zIndex: 25,
   },
   input: {
     flex: 1,

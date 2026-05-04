@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { ArrowRight, Dumbbell, MapPin, QrCode, ShieldCheck, type LucideIcon } from "lucide-react";
+import { ArrowRight, Bell, QrCode, Smartphone, Store, Users, type LucideIcon } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
 
 export default function HomePage() {
   const featureCards: Array<[LucideIcon, string, string]> = [
-    [Dumbbell, "Active plan", "Hybrid Pro"],
-    [MapPin, "Pune gym", "Iron Temple"],
-    [ShieldCheck, "Secure access", "Server QR"],
+    [Users, "Owners", "Control room"],
+    [Smartphone, "Members", "Daily app"],
+    [Bell, "Staff", "Desk and coaching"],
   ];
 
   return (
@@ -56,10 +56,10 @@ export default function HomePage() {
                 Start a gym
               </Link>
               <Link
-                href="/in/iron-house"
+                href="/find-gyms"
                 className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-5 py-3 text-white/75"
               >
-                View gym profile
+                Find gyms
               </Link>
             </div>
           </div>
@@ -68,15 +68,21 @@ export default function HomePage() {
             <GlassCard className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-white/45">Iron Temple Gym · Pune</p>
-                  <h2 className="mt-1 text-3xl font-semibold">Ready for today?</h2>
+                  <p className="text-sm text-white/45">Owner dashboard</p>
+                  <h2 className="mt-1 text-3xl font-semibold">Run gym operations from web.</h2>
                 </div>
                 <QrCode className="text-lime-200" />
               </div>
-              <button className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-lime-300 py-4 text-lg font-semibold text-black">
-                <QrCode />
-                Scan QR
-              </button>
+              <div className="mt-8 grid gap-3 md:grid-cols-2">
+                <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
+                  <Store className="text-amber-100" />
+                  <p className="mt-4 text-sm text-white/45">Sell memberships and shop items</p>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
+                  <QrCode className="text-lime-200" />
+                  <p className="mt-4 text-sm text-white/45">Publish join links and QR codes</p>
+                </div>
+              </div>
             </GlassCard>
             <div className="grid gap-4 md:grid-cols-3">
               {featureCards.map(([Icon, label, value]) => (

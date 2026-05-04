@@ -10,7 +10,6 @@ import {
   GlassCard,
   IconBubble,
   SectionHeader,
-  StatusRing,
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
@@ -59,10 +58,13 @@ export default function Home() {
     : ("/find-gyms" as Href);
   const daysLeft = memberHome?.activeMembership?.daysLeft ?? 0;
   const remainingVisits = memberHome?.activeMembership?.remainingVisits ?? 0;
-  const activePlan = memberHome?.activePlan;
-  const totalDays = activePlan?.durationDays ?? activePlan?.validityDays ?? 30;
-  const usedPercent = activePlan && totalDays > 0 ? Math.min(100, Math.round(((totalDays - daysLeft) / totalDays) * 100)) : 0;
   const planName = memberHome?.todayPlanName ?? memberHome?.activePlan?.name ?? "No plan assigned";
+  const lastCheckIn = memberHome?.recentAttendance?.[0]?.checkedInAt
+    ? new Date(memberHome.recentAttendance[0].checkedInAt).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+      })
+    : "None";
   const enrolledGyms = session?.organizations ?? [];
 
   const onRefresh = async () => {
@@ -112,11 +114,6 @@ export default function Home() {
                 </View>
               </Pressable>
             </Link>
-            <Link href="/shop" asChild>
-              <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open shop">
-                <Ionicons name="storefront-outline" size={21} color={colors.text} />
-              </Pressable>
-            </Link>
             <Link href="/notifications" asChild>
               <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open notifications">
                 <Ionicons name="notifications-outline" size={21} color={colors.text} />
@@ -138,15 +135,13 @@ export default function Home() {
                 </View>
                 <Text style={styles.mutedBody}>{remainingVisits} visits remaining</Text>
               </View>
-              <StatusRing tone="lime" value={`${usedPercent}%`} label="used" size={76} />
+              <Link href="/membership" asChild>
+                <Pressable accessibilityRole="link" style={styles.membershipCta}>
+                  <Text style={styles.membershipCtaText}>Renew</Text>
+                </Pressable>
+              </Link>
             </View>
           </GlassCard>
-
-          <View style={styles.metricsRow}>
-            <MiniMetric label="Visits" value={`${remainingVisits}`} />
-            <MiniMetric label="Streak" value={`${memberHome?.streakDays ?? 0}`} />
-            <MiniMetric label="Plans" value={`${memberHome?.assignedPlans ?? 0}`} />
-          </View>
 
           <SectionHeader
             title="Today's Plan"
@@ -176,6 +171,18 @@ export default function Home() {
               </GlassCard>
             </Pressable>
           </Link>
+
+          <View style={styles.quickActions}>
+            <QuickAction href="/scan" icon="scan-outline" label="Check in" tone="lime" />
+            <QuickAction href="/tracking" icon="pulse-outline" label="Track" tone="blue" />
+            <QuickAction href="/shop" icon="storefront-outline" label="Shop" tone="amber" />
+          </View>
+
+          <View style={styles.metricsRow}>
+            <MiniMetric label="Visits left" value={`${remainingVisits}`} />
+            <MiniMetric label="Streak" value={`${memberHome?.streakDays ?? 0}`} />
+            <MiniMetric label="Last visit" value={lastCheckIn} />
+          </View>
 
         </ScrollView>
         {profileOpen ? (
@@ -270,6 +277,27 @@ export default function Home() {
         <BottomNav />
       </ZookScreen>
     </>
+  );
+}
+
+function QuickAction({
+  href,
+  icon,
+  label,
+  tone,
+}: {
+  href: Href;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  tone: "lime" | "blue" | "amber";
+}) {
+  return (
+    <Link href={href} asChild>
+      <Pressable accessibilityRole="link" accessibilityLabel={label} style={styles.quickAction}>
+        <IconBubble icon={icon} tone={tone} size={38} />
+        <Text style={styles.quickActionText}>{label}</Text>
+      </Pressable>
+    </Link>
   );
 }
 
@@ -476,6 +504,18 @@ const styles = StyleSheet.create({
     color: colors.lime,
     ...typography.bodyStrong,
   },
+  membershipCta: {
+    minHeight: 38,
+    borderRadius: 19,
+    backgroundColor: colors.lime,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  membershipCtaText: {
+    color: colors.bg,
+    ...typography.caption,
+  },
   sectionAction: {
     flexDirection: "row",
     alignItems: "center",
@@ -502,6 +542,25 @@ const styles = StyleSheet.create({
   planTitle: {
     color: colors.text,
     ...typography.bodyStrong,
+  },
+  quickActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  quickAction: {
+    flex: 1,
+    minHeight: 72,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  quickActionText: {
+    color: colors.text,
+    ...typography.caption,
   },
   drawerScene: {
     ...StyleSheet.absoluteFillObject,
