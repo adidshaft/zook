@@ -197,16 +197,7 @@ export default function Scan() {
           <MobileHeader
             title="Check in"
             subtitle="Scan QR or enter code"
-            leading={
-              <Pressable
-                onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                style={styles.iconButton}
-              >
-                <Ionicons name="chevron-back" size={20} color={colors.text} />
-              </Pressable>
-            }
+            showProfileShortcut={false}
           />
 
           <View style={styles.cameraCard}>
@@ -324,16 +315,6 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: layout.bottomNavContentPadding,
     gap: 10,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-    alignItems: "center",
-    justifyContent: "center",
   },
   cameraCard: {
     height: 304,

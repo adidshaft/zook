@@ -36,7 +36,6 @@ export default function GymProfileScreen() {
   const plans = gymQuery.data?.plans ?? [];
   const trainers = gymQuery.data?.trainers ?? [];
   const gallery = gym?.gallery?.length ? gym.gallery : gym?.coverImageUrl ? [gym.coverImageUrl] : [];
-  const facilities = gym?.facilities?.length ? gym.facilities : (gym?.amenities ?? []);
   const viewerState = gymQuery.data?.viewerState;
   const effectiveReferral = referralCode ?? gymQuery.data?.referral?.code ?? undefined;
 
@@ -210,7 +209,7 @@ export default function GymProfileScreen() {
               subtitle="Facility, trainers, access, and location details."
             />
 
-            <GlassCard contentStyle={styles.profileDetailsCard}>
+            <GlassCard style={styles.firstFoldEndCard} contentStyle={styles.profileDetailsCard}>
               <InfoRow
                 label="Address"
                 value={gym.address ?? `${gym.city}, ${gym.state}`}
@@ -218,23 +217,6 @@ export default function GymProfileScreen() {
               />
               <InfoRow label="Entry" value="Scan QR and show entry code" tone="lime" />
               <InfoRow label="Trial flow" value="Tour + optional body check" tone="amber" />
-            </GlassCard>
-
-            <GlassCard contentStyle={styles.facilityCard}>
-              <Text style={styles.sectionTitle}>Facilities</Text>
-              <View style={styles.tagRow}>
-                {facilities.length ? (
-                  facilities.slice(0, 10).map((facility) => (
-                    <Pill key={facility} tone="blue">
-                      {facility}
-                    </Pill>
-                  ))
-                ) : (
-                  <Text style={styles.sectionBody}>
-                    Facilities will appear once the gym publishes them.
-                  </Text>
-                )}
-              </View>
             </GlassCard>
 
             {gallery.length ? (
@@ -595,8 +577,8 @@ const styles = StyleSheet.create({
   profileDetailsCard: {
     gap: 10,
   },
-  facilityCard: {
-    gap: 12,
+  firstFoldEndCard: {
+    marginBottom: 150,
   },
   galleryRow: {
     gap: spacing.md,

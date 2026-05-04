@@ -64,13 +64,13 @@ export function WorkoutLogCard({
   const visibleExercises = compact ? entry.exercises.slice(0, 3) : entry.exercises;
 
   return (
-    <View style={styles.logCard}>
+    <View style={[styles.logCard, compact ? styles.logCardCompact : null]}>
       <View style={styles.logHeader}>
         <View style={{ flex: 1, gap: 4 }}>
           <Text style={styles.logDate}>
             {entry.dateLabel}
           </Text>
-          <Text style={styles.logTitle}>
+          <Text style={[styles.logTitle, compact ? styles.logTitleCompact : null]}>
             {entry.workoutName}
           </Text>
         </View>
@@ -81,10 +81,10 @@ export function WorkoutLogCard({
         </View>
       </View>
 
-      <View style={styles.metaRow}>
-        <MetaPill label="Start" value={entry.startTimeLabel} />
-        <MetaPill label="End" value={entry.endTimeLabel} />
-        <MetaPill label="Duration" value={entry.durationLabel} />
+      <View style={[styles.metaRow, compact ? styles.metaRowCompact : null]}>
+        <MetaPill label="Start" value={entry.startTimeLabel} compact={compact} />
+        <MetaPill label="End" value={entry.endTimeLabel} compact={compact} />
+        <MetaPill label="Duration" value={entry.durationLabel} compact={compact} />
       </View>
 
       <Text style={styles.focusText}>
@@ -121,7 +121,7 @@ export function WorkoutLogCard({
         ))}
       </View>
 
-      <Text style={styles.notesText}>
+      <Text style={[styles.notesText, compact ? styles.notesTextCompact : null]} numberOfLines={compact ? 2 : undefined}>
         {entry.notes}
       </Text>
     </View>
@@ -161,9 +161,9 @@ export function WorkoutHistorySummary({ series }: { series: WorkoutHistorySeries
   );
 }
 
-function MetaPill({ label, value }: { label: string; value: string }) {
+function MetaPill({ label, value, compact = false }: { label: string; value: string; compact?: boolean }) {
   return (
-    <View style={styles.metaPill}>
+    <View style={[styles.metaPill, compact ? styles.metaPillCompact : null]}>
       <Text style={styles.metaLabel}>
         {label}
       </Text>
@@ -193,9 +193,9 @@ const styles = StyleSheet.create({
   summaryTile: {
     width: "48%",
     borderRadius: 26,
-    padding: 16,
-    minHeight: 148,
-    gap: 10
+    padding: 14,
+    minHeight: 112,
+    gap: 7
   },
   summaryLabel: {
     fontSize: 13,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   summaryDetail: {
     fontSize: 13,
-    lineHeight: 19
+    lineHeight: 18
   },
   logCard: {
     borderRadius: 30,
@@ -217,6 +217,11 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 18,
     gap: 14
+  },
+  logCardCompact: {
+    borderRadius: 24,
+    padding: 14,
+    gap: 10
   },
   logHeader: {
     flexDirection: "row",
@@ -233,6 +238,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "900",
     lineHeight: 28
+  },
+  logTitleCompact: {
+    fontSize: 20,
+    lineHeight: 24
   },
   effortPill: {
     borderRadius: radii.pill,
@@ -251,12 +260,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10
   },
+  metaRowCompact: {
+    gap: 8
+  },
   metaPill: {
     flex: 1,
     borderRadius: 18,
     backgroundColor: "rgba(255,255,255,0.05)",
     padding: 12,
     gap: 4
+  },
+  metaPillCompact: {
+    borderRadius: 14,
+    padding: 9,
+    gap: 2
   },
   metaLabel: {
     color: colors.muted,
@@ -316,6 +333,10 @@ const styles = StyleSheet.create({
   notesText: {
     color: colors.muted,
     lineHeight: 20
+  },
+  notesTextCompact: {
+    fontSize: 12,
+    lineHeight: 17
   },
   historyCard: {
     borderRadius: 30,

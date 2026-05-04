@@ -1,6 +1,7 @@
 import { Link, Stack } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import type { WorkoutLogEntry } from "@zook/core";
 import {
   BottomNav,
   GlassCard,
@@ -11,8 +12,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import {
-  TrackingSummaryTile,
-  WorkoutLogCard
+  TrackingSummaryTile
 } from "@/components/tracking";
 import { useMyTracking } from "@/lib/query-hooks";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
@@ -116,7 +116,7 @@ export default function TrackingDashboard() {
               <Text style={styles.loadingText}>Loading history...</Text>
             </GlassCard>
           ) : latestWorkout ? (
-            <WorkoutLogCard entry={latestWorkout} />
+            <TodaySessionPreview entry={latestWorkout} />
           ) : (
             <GlassCard variant="compact" contentStyle={styles.emptyContent}>
               <IconBubble icon="barbell-outline" tone="neutral" size={42} />
@@ -127,22 +127,33 @@ export default function TrackingDashboard() {
               <ZookButton href="/tracking-entry" icon="add-outline">Log workout</ZookButton>
             </GlassCard>
           )}
-
-          {/* Recent activity */}
-          {recentWorkouts.length > 1 ? (
-            <>
-              <SectionHeader title="Recent Activity" />
-              <View style={styles.logList}>
-                {recentWorkouts.slice(1, 4).map((workout) => (
-                  <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact />
-                ))}
-              </View>
-            </>
-          ) : null}
         </ScrollView>
         <BottomNav />
       </ZookScreen>
     </>
+  );
+}
+
+function TodaySessionPreview({ entry }: { entry: WorkoutLogEntry }) {
+  const firstExercise = entry.exercises[0];
+
+  return (
+    <GlassCard variant="compact" contentStyle={styles.todayPreview}>
+      <View style={styles.todayPreviewCopy}>
+        <Text style={styles.todayDate}>{entry.dateLabel}</Text>
+        <Text style={styles.todayTitle} numberOfLines={1}>
+          {entry.workoutName}
+        </Text>
+        <Text style={styles.todayMeta} numberOfLines={1}>
+          {firstExercise
+            ? `${firstExercise.name} · ${firstExercise.setsLabel} · ${entry.durationLabel}`
+            : `Focus: ${entry.focusLabel} · ${entry.durationLabel}`}
+        </Text>
+      </View>
+      <View style={styles.todayStatusPill}>
+        <Text style={styles.todayStatusText}>{entry.effortLabel}</Text>
+      </View>
+    </GlassCard>
   );
 }
 
@@ -152,7 +163,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
-    gap: 14,
+    gap: 12,
     paddingBottom: layout.bottomNavContentPadding,
   },
   heroContent: {
@@ -253,7 +264,37 @@ const styles = StyleSheet.create({
     ...typography.body,
     textAlign: "center",
   },
-  logList: {
-    gap: 10,
+  todayPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  todayPreviewCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  todayDate: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  todayTitle: {
+    color: colors.text,
+    ...typography.headerTitle,
+  },
+  todayMeta: {
+    color: colors.amber,
+    ...typography.caption,
+  },
+  todayStatusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "rgba(185,244,85,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.28)",
+  },
+  todayStatusText: {
+    color: colors.lime,
+    ...typography.caption,
   },
 });

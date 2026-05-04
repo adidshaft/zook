@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomNav,
   GlassCard,
@@ -35,6 +36,7 @@ const trainerPrompts = [
 export default function AssistantScreen() {
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
   const { activeOrgId, activeRole, hasAnyRole, token } = useAuth();
   const profileQuery = useMyProfile();
   const plansQuery = useMyPlans();
@@ -123,6 +125,7 @@ export default function AssistantScreen() {
   }
 
   const suggestedPrompts = isTrainer ? trainerPrompts : memberPrompts;
+  const composerBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + spacing.lg;
 
   if (!canUseAi) {
     return (
@@ -241,7 +244,7 @@ export default function AssistantScreen() {
         </View>
 
       </ScrollView>
-      <View style={styles.stickyComposer}>
+      <View style={[styles.stickyComposer, { bottom: composerBottom }]}>
         <GlassCard contentStyle={styles.composerContent}>
           <TextInput
             value={draft}
@@ -409,7 +412,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: layout.screenPadding,
     right: layout.screenPadding,
-    bottom: 104,
     zIndex: 25,
   },
   input: {

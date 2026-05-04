@@ -366,6 +366,7 @@ export default function Shop() {
                 imageUrl={(product as { imageUrl?: string | null }).imageUrl}
                 quantity={cart[product.id] ?? 0}
                 icon={iconForCategory(product.category as Category)}
+                compact
                 onIncrement={() => addToCart(product.id)}
                 onDecrement={() => removeFromCart(product.id)}
                 style={styles.productCard}
@@ -479,7 +480,7 @@ const styles = StyleSheet.create({
   productCard: {
     flexBasis: "47%",
     flexGrow: 1,
-    minHeight: 238,
+    minHeight: 190,
   },
   categoryRail: {
     gap: 8,
@@ -530,7 +531,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 20,
     right: 20,
-    zIndex: 4,
+    zIndex: 35,
+    elevation: 35,
   },
   stack: {
     gap: 10,

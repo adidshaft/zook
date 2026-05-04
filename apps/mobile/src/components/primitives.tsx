@@ -834,7 +834,7 @@ export function ZookButton({
 }
 
 export function PrimaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
-  return <ZookButton {...props} variant="primary" />;
+  return <ZookButton {...props} />;
 }
 
 export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
@@ -1198,6 +1198,7 @@ export function ProductCard({
   tone = "neutral",
   icon = "bag-outline",
   imageUrl,
+  compact = false,
   quantity = 0,
   onPress,
   onIncrement,
@@ -1210,6 +1211,7 @@ export function ProductCard({
   tone?: PillTone;
   icon?: IconName;
   imageUrl?: string | null;
+  compact?: boolean;
   quantity?: number;
   onPress?: PressHandler;
   onIncrement?: () => void;
@@ -1219,8 +1221,11 @@ export function ProductCard({
   const palette = tonePalettes[tone];
   const increment = onIncrement ?? onPress;
   return (
-    <GlassCard style={[styles.productCard, style]} contentStyle={styles.productContent}>
-      <View style={styles.productVisual}>
+    <GlassCard
+      style={[styles.productCard, style]}
+      contentStyle={[styles.productContent, compact ? styles.productContentCompact : null]}
+    >
+      <View style={[styles.productVisual, compact ? styles.productVisualCompact : null]}>
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.productImage} contentFit="cover" />
         ) : (
@@ -1277,7 +1282,7 @@ export function ProductCard({
             onPress={() => pressWithHaptics(increment)}
             accessibilityRole="button"
             accessibilityLabel={`Add ${name}`}
-            style={styles.productAdd}
+            style={[styles.productAdd, compact ? styles.productAddCompact : null]}
           >
             <Text style={styles.productAddText}>ADD</Text>
             <Ionicons name="add" size={16} color={colors.lime} />
@@ -1566,13 +1571,6 @@ type DockTab = {
 const memberTabs: DockTab[] = [
   { href: "/", label: "Home", icon: "home-outline", activeIcon: "home", matchPath: "/" },
   {
-    href: "/tracking",
-    label: "Track",
-    icon: "pulse-outline",
-    activeIcon: "pulse",
-    matchPath: "/tracking",
-  },
-  {
     href: "/scan",
     label: "Check in",
     accessibilityLabel: "Check in",
@@ -1846,6 +1844,7 @@ export function BottomNav({
     return (
       <View style={[styles.memberBottomNavShell, { bottom }]}>
         <BlurView intensity={86} tint="dark" style={styles.memberBottomNavBlur} />
+        <View pointerEvents="none" style={styles.memberBottomNavPlate} />
         <View style={styles.memberBottomNavItems}>{navItems}</View>
       </View>
     );
@@ -2313,6 +2312,9 @@ const styles = StyleSheet.create({
     padding: 8,
     gap: 8,
   },
+  productContentCompact: {
+    gap: 7,
+  },
   productVisual: {
     height: 122,
     borderRadius: 16,
@@ -2322,6 +2324,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+  },
+  productVisualCompact: {
+    height: 86,
+    borderRadius: 14,
   },
   productImage: {
     width: "100%",
@@ -2383,6 +2389,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 3,
+  },
+  productAddCompact: {
+    minWidth: 62,
+    height: 32,
   },
   productAddText: {
     color: colors.lime,
@@ -2719,6 +2729,15 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 12 },
   },
+  memberBottomNavPlate: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 86,
+    borderRadius: 24,
+    backgroundColor: "rgba(7,9,8,0.94)",
+  },
   memberBottomNavItems: {
     position: "absolute",
     left: 0,
@@ -2730,7 +2749,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 18,
     paddingVertical: 0,
-    gap: 10,
+    gap: 18,
     overflow: "visible",
   },
   bottomNavItem: {

@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
@@ -57,7 +57,6 @@ function exerciseFromApi(exercise: PlanExerciseRecord): PlanExercise {
 }
 
 export default function Plans() {
-  const router = useRouter();
   const params = useLocalSearchParams<{
     view?: string | string[];
     assignmentId?: string | string[];
@@ -306,16 +305,6 @@ export default function Plans() {
         >
           <MobileHeader
             title="Plan"
-            leading={
-              <Pressable
-                onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-                accessibilityRole="button"
-                accessibilityLabel="Back"
-                style={styles.iconButton}
-              >
-                <Ionicons name="chevron-back" size={21} color={colors.text} />
-              </Pressable>
-            }
             showProfileShortcut={false}
           />
 

@@ -114,6 +114,11 @@ export default function Home() {
                 </View>
               </Pressable>
             </Link>
+            <Link href="/shop" asChild>
+              <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open shop">
+                <Ionicons name="storefront-outline" size={21} color={colors.text} />
+              </Pressable>
+            </Link>
             <Link href="/notifications" asChild>
               <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open notifications">
                 <Ionicons name="notifications-outline" size={21} color={colors.text} />
@@ -145,14 +150,6 @@ export default function Home() {
 
           <SectionHeader
             title="Today's Plan"
-            action={
-              <Link href="/plans" asChild>
-                <Pressable accessibilityRole="link" style={styles.sectionAction}>
-                  <Text style={styles.sectionActionText}>View all</Text>
-                  <Ionicons name="chevron-forward" size={13} color={colors.lime} />
-                </Pressable>
-              </Link>
-            }
           />
 
           <Link href="/plans" asChild>
@@ -172,11 +169,22 @@ export default function Home() {
             </Pressable>
           </Link>
 
-          <View style={styles.quickActions}>
-            <QuickAction href="/scan" icon="scan-outline" label="Check in" tone="lime" />
-            <QuickAction href="/tracking" icon="pulse-outline" label="Track" tone="blue" />
-            <QuickAction href="/shop" icon="storefront-outline" label="Shop" tone="amber" />
-          </View>
+          <Link href="/tracking" asChild>
+            <Pressable accessibilityRole="link" accessibilityLabel="Open workout tracking">
+              <GlassCard contentStyle={styles.trackContent}>
+                <View style={styles.trackRow}>
+                  <IconBubble icon="pulse-outline" tone="blue" size={42} />
+                  <View style={styles.trackCopy}>
+                    <Text style={styles.trackTitle}>Track progress</Text>
+                    <Text numberOfLines={1} style={styles.mutedSmall}>
+                      Log workouts and view your streak.
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                </View>
+              </GlassCard>
+            </Pressable>
+          </Link>
 
           <View style={styles.metricsRow}>
             <MiniMetric label="Visits left" value={`${remainingVisits}`} />
@@ -274,30 +282,9 @@ export default function Home() {
             </View>
           </View>
         ) : null}
-        <BottomNav />
+        {!profileOpen ? <BottomNav /> : null}
       </ZookScreen>
     </>
-  );
-}
-
-function QuickAction({
-  href,
-  icon,
-  label,
-  tone,
-}: {
-  href: Href;
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  label: string;
-  tone: "lime" | "blue" | "amber";
-}) {
-  return (
-    <Link href={href} asChild>
-      <Pressable accessibilityRole="link" accessibilityLabel={label} style={styles.quickAction}>
-        <IconBubble icon={icon} tone={tone} size={38} />
-        <Text style={styles.quickActionText}>{label}</Text>
-      </Pressable>
-    </Link>
   );
 }
 
@@ -516,16 +503,6 @@ const styles = StyleSheet.create({
     color: colors.bg,
     ...typography.caption,
   },
-  sectionAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    minHeight: 28,
-  },
-  sectionActionText: {
-    color: colors.lime,
-    ...typography.small,
-  },
   planContent: {
     padding: 14,
   },
@@ -543,28 +520,27 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.bodyStrong,
   },
-  quickActions: {
+  trackContent: {
+    padding: 14,
+  },
+  trackRow: {
+    minHeight: 52,
     flexDirection: "row",
-    gap: 8,
-  },
-  quickAction: {
-    flex: 1,
-    minHeight: 72,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
+    gap: spacing.md,
   },
-  quickActionText: {
+  trackCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  trackTitle: {
     color: colors.text,
-    ...typography.caption,
+    ...typography.bodyStrong,
   },
   drawerScene: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 20,
+    zIndex: 80,
+    elevation: 80,
     flexDirection: "row",
     backgroundColor: "rgba(0,0,0,0.26)",
   },
