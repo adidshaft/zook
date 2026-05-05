@@ -1,4 +1,4 @@
-import { isMockPaymentCompletionAllowed } from "@zook/core";
+import { getAppEnv, isMockPaymentCompletionAllowed } from "@zook/core";
 import { prisma } from "@zook/db";
 import { CheckoutPanel } from "@/components/checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
@@ -33,7 +33,8 @@ export default async function MockCheckoutPage({
   } catch {
     // Database is optional in local mock checkout.
   }
-  if (!session && sessionId === "demo" && isMockPaymentCompletionAllowed()) {
+  const canRenderLocalDemo = sessionId === "demo" && getAppEnv() !== "production";
+  if (!session && (isMockPaymentCompletionAllowed() || canRenderLocalDemo)) {
     session = { id: "demo", amountPaise: 224900, purpose: "MEMBERSHIP", status: "CREATED" };
   }
   const sessionMetadata = session && "metadata" in session ? session.metadata : null;

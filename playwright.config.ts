@@ -16,6 +16,7 @@ const playwrightForwardEnvKeys = [
   "ZOOK_QR_SECRET",
   "AI_PROVIDER",
   "PAYMENT_PROVIDER",
+  "ALLOW_MOCK_PAYMENT_COMPLETION",
   "EMAIL_PROVIDER",
   "MAP_PROVIDER",
   "STORAGE_PROVIDER",
@@ -23,7 +24,7 @@ const playwrightForwardEnvKeys = [
   "RATE_LIMIT_PROVIDER",
   "MAINTENANCE_MOCK_MODE",
   "SEED_DEMO_USERS_ENABLED",
-  "ALLOW_FIXED_OTP_IN_STAGING"
+  "ALLOW_FIXED_OTP_IN_STAGING",
 ] as const;
 
 function loadOrderedEnvironment() {
@@ -71,7 +72,7 @@ export default defineConfig({
   expect: { timeout: 5_000 },
   use: {
     baseURL: webServerUrl,
-    trace: "on-first-retry"
+    trace: "on-first-retry",
   },
   webServer: {
     command: "pnpm --filter @zook/web exec next dev --hostname 127.0.0.1 --port 3120",
@@ -85,17 +86,19 @@ export default defineConfig({
       ...pickDefinedEnv(playwrightForwardEnvKeys, {
         NEXT_PUBLIC_APP_URL: webServerUrl,
         NEXT_PUBLIC_WEB_URL: webServerUrl,
-        RATE_LIMIT_PROVIDER: process.env.PLAYWRIGHT_RATE_LIMIT_PROVIDER ?? "disabled"
-      })
+        PAYMENT_PROVIDER: process.env.PLAYWRIGHT_PAYMENT_PROVIDER ?? "mock",
+        ALLOW_MOCK_PAYMENT_COMPLETION: "true",
+        RATE_LIMIT_PROVIDER: process.env.PLAYWRIGHT_RATE_LIMIT_PROVIDER ?? "disabled",
+      }),
     },
     url: webServerUrl,
     reuseExistingServer: false,
-    timeout: 120_000
+    timeout: 120_000,
   },
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] }
-    }
-  ]
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
 });

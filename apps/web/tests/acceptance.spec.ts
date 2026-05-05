@@ -194,10 +194,6 @@ test("owner can manage branches and public offers", async ({ page }) => {
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
   const org = await seedAndGetOrg({ username: "iron-house" });
-  const plan = await createMembershipPlan(page, org.id, {
-    name: `Offer Plan ${Date.now()}`,
-    pricePaise: 200000,
-  });
 
   const branchPayload = await expectApiOk<{ branch: { id: string; isDefault: boolean } }>(
     await page.request.post(`/api/orgs/${org.id}/branches`, {
@@ -212,6 +208,11 @@ test("owner can manage branches and public offers", async ({ page }) => {
     }),
   );
   expect(branchPayload.data.branch.isDefault).toBe(true);
+
+  const plan = await createMembershipPlan(page, org.id, {
+    name: `Offer Plan ${Date.now()}`,
+    pricePaise: 200000,
+  });
 
   const offerPayload = await expectApiOk<{ offer: { id: string; active: boolean } }>(
     await page.request.post(`/api/orgs/${org.id}/offers`, {

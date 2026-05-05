@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   getAIProvider,
   getEmailProvider,
@@ -20,7 +20,7 @@ import {
   RazorpayPaymentProvider,
   ResendEmailProvider,
   S3CompatibleStorageProvider,
-  SMTPEmailProvider
+  SMTPEmailProvider,
 } from "../providers";
 
 const originalEnv = { ...process.env };
@@ -65,9 +65,11 @@ function clearProviderEnv() {
 }
 
 describe("provider registry", () => {
-  it("returns mock and local providers by default", () => {
+  beforeEach(() => {
     clearProviderEnv();
+  });
 
+  it("returns mock and local providers by default", () => {
     expect(getAIProvider()).toBeInstanceOf(MockAIProvider);
     expect(getEmailProvider()).toBeInstanceOf(MockEmailProvider);
     expect(getMapProvider()).toBeInstanceOf(MockMapProvider);
@@ -82,8 +84,8 @@ describe("provider registry", () => {
         activeProvider: "mock",
         env: {
           AI_PROVIDER: false,
-          OPENAI_API_KEY: false
-        }
+          OPENAI_API_KEY: false,
+        },
       },
       email: {
         status: "default",
@@ -91,8 +93,8 @@ describe("provider registry", () => {
         activeProvider: "mock",
         env: {
           EMAIL_PROVIDER: false,
-          RESEND_API_KEY: false
-        }
+          RESEND_API_KEY: false,
+        },
       },
       map: {
         status: "default",
@@ -100,24 +102,24 @@ describe("provider registry", () => {
         activeProvider: "mock",
         env: {
           MAP_PROVIDER: false,
-          GOOGLE_MAPS_API_KEY: false
-        }
+          GOOGLE_MAPS_API_KEY: false,
+        },
       },
       payment: {
         status: "default",
         provider: "mock",
-        activeProvider: "mock"
+        activeProvider: "mock",
       },
       push: {
         status: "default",
         provider: "mock",
-        activeProvider: "mock"
+        activeProvider: "mock",
       },
       storage: {
         status: "default",
         provider: "local",
-        activeProvider: "local"
-      }
+        activeProvider: "local",
+      },
     });
   });
 
@@ -141,7 +143,7 @@ describe("provider registry", () => {
         status: "disabled",
         provider: "disabled",
         mode: "disabled",
-        configured: false
+        configured: false,
       },
       ai: {
         selectedProvider: "disabled",
@@ -149,7 +151,7 @@ describe("provider registry", () => {
         status: "disabled",
         provider: "disabled",
         mode: "disabled",
-        configured: false
+        configured: false,
       },
       push: {
         selectedProvider: "disabled",
@@ -157,7 +159,7 @@ describe("provider registry", () => {
         status: "disabled",
         provider: "disabled",
         mode: "disabled",
-        configured: false
+        configured: false,
       },
       storage: {
         selectedProvider: "disabled",
@@ -165,8 +167,8 @@ describe("provider registry", () => {
         status: "disabled",
         provider: "disabled",
         mode: "disabled",
-        configured: false
-      }
+        configured: false,
+      },
     });
   });
 
@@ -206,44 +208,44 @@ describe("provider registry", () => {
         provider: "openai",
         mode: "live",
         metadata: {
-          model: "gpt-4.1-mini"
-        }
+          model: "gpt-4.1-mini",
+        },
       },
       email: {
         status: "ready",
         selectedProvider: "resend",
         activeProvider: "resend",
         provider: "resend",
-        mode: "live"
+        mode: "live",
       },
       map: {
         status: "ready",
         selectedProvider: "google",
         activeProvider: "google",
         provider: "google",
-        mode: "live"
+        mode: "live",
       },
       payment: {
         status: "ready",
         selectedProvider: "razorpay",
         activeProvider: "razorpay",
         provider: "razorpay",
-        mode: "test"
+        mode: "test",
       },
       push: {
         status: "ready",
         selectedProvider: "expo",
         activeProvider: "expo",
         provider: "expo",
-        mode: "live"
+        mode: "live",
       },
       storage: {
         status: "ready",
         selectedProvider: "s3",
         activeProvider: "s3",
         provider: "s3",
-        mode: "live"
-      }
+        mode: "live",
+      },
     });
   });
 
@@ -262,8 +264,8 @@ describe("provider registry", () => {
       activeProvider: "smtp",
       metadata: {
         host: "smtp.example.com",
-        port: 587
-      }
+        port: 587,
+      },
     });
   });
 
@@ -303,33 +305,33 @@ describe("provider registry", () => {
       ai: {
         status: "misconfigured",
         activeProvider: null,
-        missingEnv: ["OPENAI_API_KEY"]
+        missingEnv: ["OPENAI_API_KEY"],
       },
       email: {
         status: "misconfigured",
         activeProvider: null,
-        missingEnv: ["RESEND_API_KEY"]
+        missingEnv: ["RESEND_API_KEY"],
       },
       map: {
         status: "misconfigured",
         activeProvider: null,
-        missingEnv: ["GOOGLE_MAPS_API_KEY"]
+        missingEnv: ["GOOGLE_MAPS_API_KEY"],
       },
       payment: {
         status: "misconfigured",
         activeProvider: null,
-        missingEnv: ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"]
+        missingEnv: ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"],
       },
       push: {
         status: "misconfigured",
         activeProvider: null,
-        missingEnv: ["EXPO_PROJECT_ID"]
+        missingEnv: ["EXPO_PROJECT_ID"],
       },
       storage: {
         status: "misconfigured",
         activeProvider: null,
-        missingEnv: ["S3_BUCKET", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"]
-      }
+        missingEnv: ["S3_BUCKET", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"],
+      },
     });
   });
 
@@ -344,7 +346,7 @@ describe("provider registry", () => {
     expect(getProviderRegistryDiagnostics().email).toMatchObject({
       status: "misconfigured",
       selectedProvider: "smtp",
-      activeProvider: null
+      activeProvider: null,
     });
   });
 

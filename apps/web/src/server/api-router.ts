@@ -3224,6 +3224,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     ] = await Promise.all([
       prisma.membershipPlan.findMany({
         where: { orgId: org.id, active: true, publicVisible: true },
+        orderBy: { createdAt: "desc" },
         take: 10,
       }),
       viewerUserId
