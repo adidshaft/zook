@@ -1,8 +1,18 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useState } from "react";
-import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AppState,
+  type AppStateStatus,
+  Linking,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import {
   BottomNav,
   GlassCard,
@@ -27,11 +37,13 @@ type MembershipRecord = {
   remainingVisits?: number | null;
   createdAt?: string | null;
   planId?: string | null;
-  plan?: (PublicPlanSummary & {
-    id?: string | null;
-    name?: string | null;
-    type?: string | null;
-  }) | null;
+  plan?:
+    | (PublicPlanSummary & {
+        id?: string | null;
+        name?: string | null;
+        type?: string | null;
+      })
+    | null;
   organization?: {
     id?: string | null;
     name?: string | null;
@@ -41,7 +53,8 @@ type MembershipRecord = {
 
 function toneForStatus(status?: string | null) {
   if (status === "ACTIVE") return "lime" as const;
-  if (status === "PENDING" || status === "PENDING_PAYMENT" || status === "PAST_DUE") return "amber" as const;
+  if (status === "PENDING" || status === "PENDING_PAYMENT" || status === "PAST_DUE")
+    return "amber" as const;
   if (status === "EXPIRED" || status === "CANCELLED") return "red" as const;
   return "blue" as const;
 }
@@ -97,6 +110,8 @@ export default function MembershipScreen() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | undefined>();
   const [renewalStatus, setRenewalStatus] = useState("");
   const [renewing, setRenewing] = useState(false);
+  const refreshAfterCheckoutRef = useRef(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const selectedPlan = useMemo(
     () => availablePlans.find((plan) => plan.id === selectedPlanId) ?? renewalTarget?.plan ?? null,
     [availablePlans, renewalTarget?.plan, selectedPlanId],
@@ -106,6 +121,26 @@ export default function MembershipScreen() {
     if (!renewalTarget) return;
     setSelectedPlanId(planIdFor(renewalTarget) ?? availablePlans[0]?.id);
   }, [availablePlans, renewalTarget]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      const wasAway = appStateRef.current === "inactive" || appStateRef.current === "background";
+      appStateRef.current = nextState;
+      if (nextState !== "active" || !wasAway || !refreshAfterCheckoutRef.current) {
+        return;
+      }
+      refreshAfterCheckoutRef.current = false;
+      setRenewalStatus("Refreshing membership status...");
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]).finally(() => {
+        setRenewalOpen(false);
+        setRenewalStatus("");
+      });
+    });
+    return () => subscription.remove();
+  }, [queryClient]);
 
   function openRenewal(subscription: MembershipRecord) {
     setRenewalTarget(subscription);
@@ -131,6 +166,7 @@ export default function MembershipScreen() {
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
       ]);
       if (url) {
+        refreshAfterCheckoutRef.current = true;
         await Linking.openURL(url);
       }
     } catch (error) {
@@ -165,7 +201,9 @@ export default function MembershipScreen() {
               <View style={styles.calloutCopy}>
                 <Text style={styles.calloutTitle}>Membership update</Text>
                 <Text style={styles.calloutBody}>
-                  {routeParams.subscriptionId ? "Your subscription has been updated." : "Showing your current status."}
+                  {routeParams.subscriptionId
+                    ? "Your subscription has been updated."
+                    : "Showing your current status."}
                 </Text>
               </View>
             </GlassCard>
@@ -185,7 +223,9 @@ export default function MembershipScreen() {
                 <Text style={styles.emptyTitle}>No memberships yet</Text>
                 <Text style={styles.emptyBody}>Join a gym to see your membership here.</Text>
               </View>
-              <ZookButton href="/find-gyms" icon="search-outline">Browse gyms</ZookButton>
+              <ZookButton href="/find-gyms" icon="search-outline">
+                Browse gyms
+              </ZookButton>
             </GlassCard>
           ) : null}
 
@@ -197,7 +237,11 @@ export default function MembershipScreen() {
                 contentStyle={styles.featuredContent}
               >
                 <View style={styles.featuredHeader}>
-                  <IconBubble icon="card-outline" tone={toneForStatus(latestSubscription.status)} size={40} />
+                  <IconBubble
+                    icon="card-outline"
+                    tone={toneForStatus(latestSubscription.status)}
+                    size={40}
+                  />
                   <View style={styles.featuredCopy}>
                     <Text style={styles.featuredTitle}>
                       {latestSubscription.plan?.name ?? "Membership"}
@@ -223,7 +267,12 @@ export default function MembershipScreen() {
                       />
                     </View>
                     <View style={styles.progressLabels}>
-                      <Text style={[styles.progressText, latestDaysLeft <= 7 ? styles.progressTextWarning : null]}>
+                      <Text
+                        style={[
+                          styles.progressText,
+                          latestDaysLeft <= 7 ? styles.progressTextWarning : null,
+                        ]}
+                      >
                         {latestDaysLeft} day{latestDaysLeft !== 1 ? "s" : ""} left
                       </Text>
                       <Text style={styles.progressTextMuted}>
@@ -233,10 +282,13 @@ export default function MembershipScreen() {
                   </View>
                 ) : null}
 
-                {latestSubscription.remainingVisits !== null && latestSubscription.remainingVisits !== undefined ? (
+                {latestSubscription.remainingVisits !== null &&
+                latestSubscription.remainingVisits !== undefined ? (
                   <View style={styles.membershipMetaLine}>
                     <Ionicons name="walk-outline" size={14} color={colors.lime} />
-                    <Text style={styles.membershipMetaText}>{latestSubscription.remainingVisits} visits remaining</Text>
+                    <Text style={styles.membershipMetaText}>
+                      {latestSubscription.remainingVisits} visits remaining
+                    </Text>
                   </View>
                 ) : null}
 
@@ -252,14 +304,19 @@ export default function MembershipScreen() {
               <SectionHeader title="History" />
               <View style={styles.stack}>
                 {sortedSubscriptions.slice(1).map((subscription) => (
-                  <GlassCard key={subscription.id} variant="compact" contentStyle={styles.historyContent}>
+                  <GlassCard
+                    key={subscription.id}
+                    variant="compact"
+                    contentStyle={styles.historyContent}
+                  >
                     <View style={styles.historyRow}>
                       <View style={styles.historyCopy}>
                         <Text numberOfLines={1} style={styles.historyTitle}>
                           {subscription.plan?.name ?? "Membership"}
                         </Text>
                         <Text numberOfLines={1} style={styles.historyBody}>
-                          {subscription.organization?.name ?? "Gym"} · {subscription.endsAt ? formatLongDate(subscription.endsAt) : "No expiry"}
+                          {subscription.organization?.name ?? "Gym"} ·{" "}
+                          {subscription.endsAt ? formatLongDate(subscription.endsAt) : "No expiry"}
                         </Text>
                       </View>
                       <Pill tone={toneForStatus(subscription.status)}>
@@ -328,21 +385,38 @@ function RenewalSheet({
   setSelectedPlanId: (planId: string) => void;
   status: string;
 }) {
-  const plans = availablePlans.length ? availablePlans : currentPlan?.id ? [currentPlan as PublicPlanSummary] : [];
+  const plans = availablePlans.length
+    ? availablePlans
+    : currentPlan?.id
+      ? [currentPlan as PublicPlanSummary]
+      : [];
 
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.sheetBackdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close renewal sheet" />
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityLabel="Close renewal sheet"
+        />
         <View style={styles.sheet}>
           <View style={styles.sheetGrabber} />
           <View style={styles.sheetHeader}>
             <View style={styles.sheetTitleCopy}>
               <Text style={styles.sheetEyebrow}>Renew membership</Text>
-              <Text style={styles.sheetTitle}>{selectedPlan?.name ?? currentPlan?.name ?? "Current plan"}</Text>
-              <Text style={styles.sheetBody}>Continue at {gymName} with the same plan or choose another available option.</Text>
+              <Text style={styles.sheetTitle}>
+                {selectedPlan?.name ?? currentPlan?.name ?? "Current plan"}
+              </Text>
+              <Text style={styles.sheetBody}>
+                Continue at {gymName} with the same plan or choose another available option.
+              </Text>
             </View>
-            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={styles.closeButton}>
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              style={styles.closeButton}
+            >
               <Ionicons name="close" size={18} color={colors.text} />
             </Pressable>
           </View>
@@ -350,7 +424,9 @@ function RenewalSheet({
           <View style={styles.planSelector}>
             {loadingPlans ? <Text style={styles.loadingText}>Loading plan options...</Text> : null}
             {!loadingPlans && !plans.length ? (
-              <Text style={styles.emptyBody}>No alternate plans are published yet. Same-plan renewal will be requested.</Text>
+              <Text style={styles.emptyBody}>
+                No alternate plans are published yet. Same-plan renewal will be requested.
+              </Text>
             ) : null}
             {plans.map((plan) => {
               const selected = selectedPlanId === plan.id;
@@ -368,7 +444,9 @@ function RenewalSheet({
                       {titleCaseFromCode(plan.type ?? "MEMBERSHIP")} · {formatInr(plan.pricePaise)}
                     </Text>
                   </View>
-                  {selected ? <Ionicons name="checkmark-circle" size={20} color={colors.lime} /> : null}
+                  {selected ? (
+                    <Ionicons name="checkmark-circle" size={20} color={colors.lime} />
+                  ) : null}
                 </Pressable>
               );
             })}
@@ -378,7 +456,9 @@ function RenewalSheet({
             <GlassCard variant="compact" contentStyle={styles.renewalSummary}>
               <Text style={styles.summaryTitle}>Renewal summary</Text>
               <Text style={styles.summaryBody}>
-                {selectedPlan.durationDays ? `${selectedPlan.durationDays} days` : "Gym-defined validity"}
+                {selectedPlan.durationDays
+                  ? `${selectedPlan.durationDays} days`
+                  : "Gym-defined validity"}
                 {selectedPlan.visitLimit ? ` · ${selectedPlan.visitLimit} visits` : ""}
               </Text>
             </GlassCard>
@@ -386,8 +466,15 @@ function RenewalSheet({
 
           {status ? <Text style={styles.statusMessage}>{status}</Text> : null}
           <View style={styles.sheetActions}>
-            <ZookButton tone="secondary" onPress={onClose} style={styles.actionHalf}>Cancel</ZookButton>
-            <ZookButton onPress={onRenew} disabled={renewing} icon="refresh-outline" style={styles.actionHalf}>
+            <ZookButton tone="secondary" onPress={onClose} style={styles.actionHalf}>
+              Cancel
+            </ZookButton>
+            <ZookButton
+              onPress={onRenew}
+              disabled={renewing}
+              icon="refresh-outline"
+              style={styles.actionHalf}
+            >
               {renewing ? "Starting..." : "Continue"}
             </ZookButton>
           </View>
