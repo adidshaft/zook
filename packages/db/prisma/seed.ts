@@ -39,7 +39,7 @@ import {
   PushDeviceStatus,
   PushPlatform,
   Role,
-  SubscriptionStatus
+  SubscriptionStatus,
 } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -74,7 +74,7 @@ const receptionistPermissions = [
   Permission.ATTENDANCE_MANUAL_OVERRIDE,
   Permission.SHOP_FULFILL_ORDER,
   Permission.NOTIFICATION_CREATE_DRAFT,
-  Permission.NOTIFICATION_SEND_OPERATIONAL
+  Permission.NOTIFICATION_SEND_OPERATIONAL,
 ];
 
 const trainerPermissions = [
@@ -87,7 +87,7 @@ const trainerPermissions = [
   Permission.AI_GENERATE_IMAGE,
   Permission.NOTIFICATION_CREATE_DRAFT,
   Permission.NOTIFICATION_SEND_ASSIGNED,
-  Permission.NOTIFICATION_SEND_PLAN
+  Permission.NOTIFICATION_SEND_PLAN,
 ];
 
 async function clear() {
@@ -185,7 +185,7 @@ async function main() {
       ["reception", "Riya Reception", "reception@zook.local", false, false],
       ["trainer", "Kabir Trainer", "trainer@zook.local", false, false],
       ["member", "Nisha Member", "member@zook.local", false, false],
-      ["minor", "Isha Minor", "minor@zook.local", false, true]
+      ["minor", "Isha Minor", "minor@zook.local", false, true],
     ].map(([key, name, email, isPlatformAdmin, isMinor]) =>
       prisma.user.create({
         data: {
@@ -200,8 +200,8 @@ async function main() {
           guardianPending: Boolean(isMinor),
           marketingOptIn: !isMinor,
           aiConsent: !isMinor,
-          emailVerifiedAt: new Date()
-        }
+          emailVerifiedAt: new Date(),
+        },
       }),
     ),
   );
@@ -217,9 +217,11 @@ async function main() {
   await prisma.otpChallenge.create({
     data: {
       email: "member@zook.local",
+      identifier: "member@zook.local",
+      channel: "email",
       codeHash: hash("000000"),
-      expiresAt: days(1)
-    }
+      expiresAt: days(1),
+    },
   });
 
   const ironHouse = await prisma.organization.create({
@@ -242,8 +244,8 @@ async function main() {
       trialStartAt: new Date(),
       trialEndAt: days(30),
       createdByUserId: owner.id,
-      settings: { allowReferrals: true, broadcastApprovalRequired: true }
-    }
+      settings: { allowReferrals: true, broadcastApprovalRequired: true },
+    },
   });
 
   const peakLab = await prisma.organization.create({
@@ -265,8 +267,8 @@ async function main() {
       joinMode: GymJoinMode.APPROVAL_REQUIRED,
       trialStartAt: new Date(),
       trialEndAt: days(30),
-      createdByUserId: owner.id
-    }
+      createdByUserId: owner.id,
+    },
   });
 
   const ironBranch = await prisma.branch.create({
@@ -280,8 +282,8 @@ async function main() {
       latitude: ironHouse.latitude,
       longitude: ironHouse.longitude,
       locationSource: LocationSource.MOCK,
-      isDefault: true
-    }
+      isDefault: true,
+    },
   });
 
   const peakBranch = await prisma.branch.create({
@@ -295,8 +297,8 @@ async function main() {
       latitude: peakLab.latitude,
       longitude: peakLab.longitude,
       locationSource: LocationSource.MOCK,
-      isDefault: true
-    }
+      isDefault: true,
+    },
   });
 
   for (const org of [ironHouse, peakLab]) {
@@ -304,8 +306,8 @@ async function main() {
       data: {
         orgId: org.id,
         trialStartAt: org.trialStartAt,
-        trialEndAt: org.trialEndAt
-      }
+        trialEndAt: org.trialEndAt,
+      },
     });
     await prisma.organizationSetting.create({
       data: {
@@ -313,9 +315,9 @@ async function main() {
         keyValues: {
           attendanceMode: "EXCEPTION_APPROVAL",
           multiEntryConsumes: false,
-          minorsMarketingOff: true
-        }
-      }
+          minorsMarketingOff: true,
+        },
+      },
     });
   }
 
@@ -325,39 +327,39 @@ async function main() {
     [reception.id, Role.RECEPTIONIST],
     [trainer.id, Role.TRAINER],
     [member.id, Role.MEMBER],
-    [minor.id, Role.MEMBER]
+    [minor.id, Role.MEMBER],
   ] as const;
 
   for (const [userId, role] of orgUsers) {
     await prisma.organizationUser.create({ data: { orgId: ironHouse.id, userId } });
     await prisma.organizationRoleAssignment.create({
-      data: { orgId: ironHouse.id, userId, role, assignedById: owner.id }
+      data: { orgId: ironHouse.id, userId, role, assignedById: owner.id },
     });
   }
 
   await prisma.organizationUser.create({ data: { orgId: peakLab.id, userId: owner.id } });
   await prisma.organizationRoleAssignment.create({
-    data: { orgId: peakLab.id, userId: owner.id, role: Role.OWNER, assignedById: owner.id }
+    data: { orgId: peakLab.id, userId: owner.id, role: Role.OWNER, assignedById: owner.id },
   });
 
   for (const permission of ownerPermissions) {
     await prisma.organizationRolePermission.create({
-      data: { orgId: ironHouse.id, role: Role.OWNER, permission }
+      data: { orgId: ironHouse.id, role: Role.OWNER, permission },
     });
   }
   for (const permission of adminPermissions) {
     await prisma.organizationRolePermission.create({
-      data: { orgId: ironHouse.id, role: Role.ADMIN, permission }
+      data: { orgId: ironHouse.id, role: Role.ADMIN, permission },
     });
   }
   for (const permission of receptionistPermissions) {
     await prisma.organizationRolePermission.create({
-      data: { orgId: ironHouse.id, role: Role.RECEPTIONIST, permission }
+      data: { orgId: ironHouse.id, role: Role.RECEPTIONIST, permission },
     });
   }
   for (const permission of trainerPermissions) {
     await prisma.organizationRolePermission.create({
-      data: { orgId: ironHouse.id, role: Role.TRAINER, permission }
+      data: { orgId: ironHouse.id, role: Role.TRAINER, permission },
     });
   }
 
@@ -368,8 +370,8 @@ async function main() {
       role: Role.TRAINER,
       token: "seed-trainer-invite",
       invitedById: owner.id,
-      expiresAt: days(7)
-    }
+      expiresAt: days(7),
+    },
   });
 
   await prisma.memberProfile.createMany({
@@ -380,27 +382,29 @@ async function main() {
         profilePhotoUrl: member.profilePhotoUrl,
         profilePhotoConsentAt: new Date(),
         marketingOptIn: true,
-        joinedViaReferralCodeId: null
+        joinedViaReferralCodeId: null,
       },
       {
         orgId: ironHouse.id,
         userId: minor.id,
         profilePhotoUrl: minor.profilePhotoUrl,
-        marketingOptIn: false
-      }
-    ]
+        marketingOptIn: false,
+      },
+    ],
   });
 
   const guardianOtpChallenge = await prisma.otpChallenge.create({
     data: {
       email: "guardian@zook.local",
+      identifier: "guardian@zook.local",
+      channel: "email",
       codeHash: hash("111111"),
       purpose: "guardian_consent",
       attempts: 1,
       maxAttempts: 3,
       ipAddress: "203.0.113.24",
-      expiresAt: days(2)
-    }
+      expiresAt: days(2),
+    },
   });
 
   const guardianConsent = await prisma.guardianConsent.create({
@@ -416,9 +420,9 @@ async function main() {
       challengedAt: new Date(),
       metadata: {
         reviewQueue: "private-pilot-guardians",
-        challengePurpose: "parental_approval"
-      }
-    }
+        challengePurpose: "parental_approval",
+      },
+    },
   });
 
   const guardianConsentChallenge = await prisma.guardianConsentChallenge.create({
@@ -437,16 +441,16 @@ async function main() {
       userAgent: "Pilot guardian mailbox",
       metadata: {
         reminderScheduledAt: days(1).toISOString(),
-        escalationOwner: owner.email
-      }
-    }
+        escalationOwner: owner.email,
+      },
+    },
   });
 
   await prisma.guardianConsent.update({
     where: { id: guardianConsent.id },
     data: {
-      activeChallengeId: guardianConsentChallenge.id
-    }
+      activeChallengeId: guardianConsentChallenge.id,
+    },
   });
 
   await prisma.consentRecord.createMany({
@@ -456,21 +460,21 @@ async function main() {
         userId: member.id,
         type: ConsentType.PROFILE_PHOTO_ATTENDANCE,
         status: ConsentStatus.GRANTED,
-        recordedById: member.id
+        recordedById: member.id,
       },
       {
         orgId: ironHouse.id,
         userId: member.id,
         type: ConsentType.AI_PERSONALIZATION,
         status: ConsentStatus.GRANTED,
-        recordedById: member.id
+        recordedById: member.id,
       },
       {
         orgId: ironHouse.id,
         userId: minor.id,
         type: ConsentType.MARKETING,
         status: ConsentStatus.DENIED,
-        recordedById: minor.id
+        recordedById: minor.id,
       },
       {
         orgId: ironHouse.id,
@@ -480,24 +484,24 @@ async function main() {
         recordedById: owner.id,
         metadata: {
           guardianConsentId: guardianConsent.id,
-          challengeId: guardianConsentChallenge.id
-        }
+          challengeId: guardianConsentChallenge.id,
+        },
       },
       {
         orgId: ironHouse.id,
         userId: member.id,
         type: ConsentType.DATA_EXPORT,
         status: ConsentStatus.GRANTED,
-        recordedById: member.id
+        recordedById: member.id,
       },
       {
         orgId: ironHouse.id,
         userId: member.id,
         type: ConsentType.ACCOUNT_DELETION,
         status: ConsentStatus.PENDING,
-        recordedById: member.id
-      }
-    ]
+        recordedById: member.id,
+      },
+    ],
   });
 
   const exportAsset = await prisma.fileAsset.create({
@@ -512,9 +516,9 @@ async function main() {
       purpose: "data_export",
       category: "privacy",
       metadata: {
-        source: "private_pilot_seed"
-      }
-    }
+        source: "private_pilot_seed",
+      },
+    },
   });
 
   const exportRequest = await prisma.dataExportRequest.create({
@@ -528,8 +532,8 @@ async function main() {
       notes: "Private pilot self-serve export example.",
       processedById: owner.id,
       processedAt: minutesFromNow(-30),
-      completedAt: minutesFromNow(-30)
-    }
+      completedAt: minutesFromNow(-30),
+    },
   });
 
   const exportJob = await prisma.dataExportJob.create({
@@ -551,16 +555,16 @@ async function main() {
       expiresAt: days(7),
       metadata: {
         includes: ["profile", "payments", "attendance", "consents"],
-        piiReview: "complete"
-      }
-    }
+        piiReview: "complete",
+      },
+    },
   });
 
   await prisma.dataExportRequest.update({
     where: { id: exportRequest.id },
     data: {
-      latestJobId: exportJob.id
-    }
+      latestJobId: exportJob.id,
+    },
   });
 
   const deletionRequest = await prisma.accountDeletionRequest.create({
@@ -572,8 +576,8 @@ async function main() {
       notes: "Dry-run deletion retained for pilot validation.",
       processedById: platform.id,
       processedAt: minutesFromNow(-10),
-      scheduledFor: days(14)
-    }
+      scheduledFor: days(14),
+    },
   });
 
   const deletionJob = await prisma.accountDeletionJob.create({
@@ -589,20 +593,20 @@ async function main() {
       dryRunReport: {
         delete: ["member_profile", "attendance_records", "notifications"],
         retain: ["audit_logs", "billing_records"],
-        anonymize: ["payment_notes"]
+        anonymize: ["payment_notes"],
       },
       metadata: {
         mode: "pilot_rehearsal",
-        approvalTicket: "PRIV-204"
-      }
-    }
+        approvalTicket: "PRIV-204",
+      },
+    },
   });
 
   await prisma.accountDeletionRequest.update({
     where: { id: deletionRequest.id },
     data: {
-      latestJobId: deletionJob.id
-    }
+      latestJobId: deletionJob.id,
+    },
   });
 
   const monthly = await prisma.membershipPlan.create({
@@ -615,8 +619,8 @@ async function main() {
       pricePaise: paise(1999),
       durationDays: 30,
       createdById: owner.id,
-      terms: "Valid for one member only."
-    }
+      terms: "Valid for one member only.",
+    },
   });
 
   await prisma.membershipPlan.create({
@@ -628,8 +632,8 @@ async function main() {
       type: MembershipPlanType.DURATION,
       pricePaise: paise(17999),
       durationDays: 365,
-      createdById: owner.id
-    }
+      createdById: owner.id,
+    },
   });
 
   const visits = await prisma.membershipPlan.create({
@@ -642,8 +646,8 @@ async function main() {
       pricePaise: paise(3499),
       visitLimit: 30,
       validityDays: 180,
-      createdById: owner.id
-    }
+      createdById: owner.id,
+    },
   });
 
   await prisma.membershipPlan.create({
@@ -656,8 +660,8 @@ async function main() {
       pricePaise: 0,
       visitLimit: 1,
       validityDays: 7,
-      createdById: owner.id
-    }
+      createdById: owner.id,
+    },
   });
 
   await prisma.membershipPlan.create({
@@ -669,8 +673,8 @@ async function main() {
       type: MembershipPlanType.DURATION,
       pricePaise: paise(2499),
       durationDays: 30,
-      createdById: owner.id
-    }
+      createdById: owner.id,
+    },
   });
 
   const welcome = await prisma.coupon.create({
@@ -684,8 +688,8 @@ async function main() {
       validUntil: days(45),
       maxRedemptions: 100,
       perUserLimit: 1,
-      createdById: owner.id
-    }
+      createdById: owner.id,
+    },
   });
 
   await prisma.coupon.create({
@@ -698,8 +702,8 @@ async function main() {
       validFrom: pastDays(2),
       validUntil: days(45),
       applicablePlanId: monthly.id,
-      createdById: owner.id
-    }
+      createdById: owner.id,
+    },
   });
 
   const referral = await prisma.referralCode.create({
@@ -709,8 +713,8 @@ async function main() {
       code: "NISHAFIT",
       couponId: welcome.id,
       createdByRole: Role.MEMBER,
-      maxUses: 20
-    }
+      maxUses: 20,
+    },
   });
 
   const paymentSession = await prisma.paymentSession.create({
@@ -726,11 +730,11 @@ async function main() {
       providerRef: "sess_mock_membership_seed",
       metadata: {
         planName: monthly.name,
-        cohort: "private_pilot_rc"
+        cohort: "private_pilot_rc",
       },
       expiresAt: days(1),
-      completedAt: minutesFromNow(-75)
-    }
+      completedAt: minutesFromNow(-75),
+    },
   });
 
   const payment = await prisma.payment.create({
@@ -746,8 +750,8 @@ async function main() {
       providerRef: "mock_seed_membership",
       receiptNumber: "IH-REC-240424-001",
       notes: "Private pilot online payment linked to hardened webhook examples.",
-      recordedAt: new Date()
-    }
+      recordedAt: new Date(),
+    },
   });
 
   const paymentCapturedPayload = {
@@ -755,11 +759,11 @@ async function main() {
     sessionId: paymentSession.id,
     status: "captured",
     amountPaise: payment.amountPaise,
-    currency: payment.currency
+    currency: payment.currency,
   };
   const paymentCapturedHeaders = {
     "x-zook-signature": "sig_mock_membership_paid",
-    "x-zook-delivery": "pilot-seed-1"
+    "x-zook-delivery": "pilot-seed-1",
   };
 
   const paymentCapturedEvent = await prisma.paymentEvent.create({
@@ -786,20 +790,20 @@ async function main() {
       attemptCount: 1,
       riskFlags: {
         replayDetected: false,
-        manualReview: false
-      }
-    }
+        manualReview: false,
+      },
+    },
   });
 
   const paymentRefundPayload = {
     paymentId: payment.id,
     refundRequestId: "refund_req_private_pilot_001",
     status: "pending_review",
-    amountPaise: paise(500)
+    amountPaise: paise(500),
   };
   const paymentRefundHeaders = {
     "x-zook-signature": "sig_mock_membership_refund",
-    "x-zook-delivery": "pilot-seed-2"
+    "x-zook-delivery": "pilot-seed-2",
   };
 
   const paymentRefundEvent = await prisma.paymentEvent.create({
@@ -828,9 +832,9 @@ async function main() {
       processingError: "Refund reference missing from pilot ledger, manual review required.",
       riskFlags: {
         manualReview: true,
-        reason: "missing_refund_reference"
-      }
-    }
+        reason: "missing_refund_reference",
+      },
+    },
   });
 
   await prisma.paymentWebhookAttempt.createMany({
@@ -845,8 +849,8 @@ async function main() {
         durationMs: 184,
         httpStatusCode: 200,
         result: {
-          sideEffects: ["payment_confirmed", "subscription_activation_ready"]
-        }
+          sideEffects: ["payment_confirmed", "subscription_activation_ready"],
+        },
       },
       {
         paymentEventId: paymentRefundEvent.id,
@@ -860,8 +864,8 @@ async function main() {
         errorCode: "MISSING_REFUND_REFERENCE",
         errorMessage: "Refund reference not found in pilot ledger.",
         result: {
-          retryable: true
-        }
+          retryable: true,
+        },
       },
       {
         paymentEventId: paymentRefundEvent.id,
@@ -876,10 +880,10 @@ async function main() {
         errorMessage: "Manual review requested after second failed attempt.",
         result: {
           retryable: true,
-          escalated: true
-        }
-      }
-    ]
+          escalated: true,
+        },
+      },
+    ],
   });
 
   const subscription = await prisma.memberSubscription.create({
@@ -893,8 +897,8 @@ async function main() {
       endsAt: days(25),
       paymentId: payment.id,
       referralCodeId: referral.id,
-      activatedById: owner.id
-    }
+      activatedById: owner.id,
+    },
   });
 
   await prisma.memberSubscription.create({
@@ -907,8 +911,8 @@ async function main() {
       startsAt: days(30),
       endsAt: days(210),
       remainingVisits: 30,
-      notes: "Early renewal starts after current plan."
-    }
+      notes: "Early renewal starts after current plan.",
+    },
   });
 
   const attendance = await prisma.attendanceRecord.create({
@@ -923,8 +927,8 @@ async function main() {
       checkedInAt: new Date(),
       approvedById: reception.id,
       approvedAt: new Date(),
-      suspiciousFlags: []
-    }
+      suspiciousFlags: [],
+    },
   });
 
   await prisma.membershipUsage.create({
@@ -932,8 +936,8 @@ async function main() {
       orgId: ironHouse.id,
       subscriptionId: subscription.id,
       attendanceId: attendance.id,
-      usedVisits: 0
-    }
+      usedVisits: 0,
+    },
   });
 
   await prisma.attendanceOverride.create({
@@ -943,8 +947,8 @@ async function main() {
       userId: member.id,
       reason: "system issue",
       notes: "Seeded example override audit trail.",
-      createdById: reception.id
-    }
+      createdById: reception.id,
+    },
   });
 
   await prisma.trainerProfile.create({
@@ -955,8 +959,8 @@ async function main() {
       specialties: ["Strength", "Fat loss", "Beginner technique"],
       availability: { mon: "07:00-12:00", wed: "17:00-21:00" },
       upiId: "kabir@upi",
-      visibleToMembers: true
-    }
+      visibleToMembers: true,
+    },
   });
 
   await prisma.trainerAssignment.create({
@@ -964,8 +968,8 @@ async function main() {
       orgId: ironHouse.id,
       trainerUserId: trainer.id,
       memberUserId: member.id,
-      assignedById: owner.id
-    }
+      assignedById: owner.id,
+    },
   });
 
   const ptPack = await prisma.personalTrainingPlan.create({
@@ -975,8 +979,8 @@ async function main() {
       name: "12 Session Pack",
       description: "Technique and progression coaching.",
       sessionCount: 12,
-      pricePaise: paise(9000)
-    }
+      pricePaise: paise(9000),
+    },
   });
 
   await prisma.personalTrainingPlan.create({
@@ -986,8 +990,8 @@ async function main() {
       name: "Monthly PT",
       description: "One month guided training.",
       durationDays: 30,
-      pricePaise: paise(12000)
-    }
+      pricePaise: paise(12000),
+    },
   });
 
   const ptSub = await prisma.personalTrainingSubscription.create({
@@ -1004,8 +1008,8 @@ async function main() {
       amountPaise: paise(9000),
       paymentMode: PaymentMode.DIRECT_UPI,
       notes: "Paid directly to trainer.",
-      recordedById: trainer.id
-    }
+      recordedById: trainer.id,
+    },
   });
 
   await prisma.personalTrainingSessionLog.create({
@@ -1014,8 +1018,8 @@ async function main() {
       subscriptionId: ptSub.id,
       trainerUserId: trainer.id,
       memberUserId: member.id,
-      notes: "Squat technique and RPE calibration."
-    }
+      notes: "Squat technique and RPE calibration.",
+    },
   });
 
   const plan = await prisma.planContent.create({
@@ -1028,15 +1032,15 @@ async function main() {
       content: {
         days: [
           { name: "Day 1", work: ["Goblet squat 3x10", "Push-up 3x8", "Row 3x12"] },
-          { name: "Day 2", work: ["Deadlift pattern 3x8", "Press 3x8", "Carry 4x30m"] }
-        ]
+          { name: "Day 2", work: ["Deadlift pattern 3x8", "Press 3x8", "Carry 4x30m"] },
+        ],
       },
       aiGenerated: true,
       reviewed: true,
       reviewedById: trainer.id,
       status: PlanStatus.PUBLISHED,
-      visibility: "assigned"
-    }
+      visibility: "assigned",
+    },
   });
 
   await prisma.planVersion.create({
@@ -1045,8 +1049,8 @@ async function main() {
       planId: plan.id,
       versionNo: 1,
       content: { title: "Starter Strength Week" },
-      createdById: trainer.id
-    }
+      createdById: trainer.id,
+    },
   });
 
   const assignment = await prisma.planAssignment.create({
@@ -1055,8 +1059,8 @@ async function main() {
       planId: plan.id,
       assignedById: trainer.id,
       assignedToUserId: member.id,
-      audience: "selected_member"
-    }
+      audience: "selected_member",
+    },
   });
 
   await prisma.planProgress.create({
@@ -1066,8 +1070,8 @@ async function main() {
       userId: member.id,
       progressJson: { completed: ["Day 1"] },
       completionPct: 50,
-      feedback: "Felt strong on goblet squats."
-    }
+      feedback: "Felt strong on goblet squats.",
+    },
   });
 
   await prisma.resourceLibraryItem.create({
@@ -1077,16 +1081,16 @@ async function main() {
       summary: "Prefer technique quality and gradual progression over load.",
       content: "Warm up, keep movements pain-free, and consult a professional for injuries.",
       approved: true,
-      createdById: trainer.id
-    }
+      createdById: trainer.id,
+    },
   });
 
   const conversation = await prisma.aIConversation.create({
     data: {
       orgId: ironHouse.id,
       userId: member.id,
-      title: "Plan clarification"
-    }
+      title: "Plan clarification",
+    },
   });
 
   await prisma.aIMessage.createMany({
@@ -1094,14 +1098,14 @@ async function main() {
       {
         conversationId: conversation.id,
         role: "user",
-        content: "How should I warm up for today?"
+        content: "How should I warm up for today?",
       },
       {
         conversationId: conversation.id,
         role: "assistant",
-        content: "Start with five minutes easy cardio and two light sets of your first lift."
-      }
-    ]
+        content: "Start with five minutes easy cardio and two light sets of your first lift.",
+      },
+    ],
   });
 
   await prisma.aIUsageLog.createMany({
@@ -1115,7 +1119,7 @@ async function main() {
         promptSummary: "Warm-up advice",
         responseSummary: "Basic safe warm-up guidance",
         tokenEstimate: 120,
-        quotaConsumed: 1
+        quotaConsumed: 1,
       },
       {
         orgId: ironHouse.id,
@@ -1127,9 +1131,9 @@ async function main() {
         responseSummary: "Created reviewed draft",
         tokenEstimate: 600,
         quotaConsumed: 1,
-        createdPlanId: plan.id
-      }
-    ]
+        createdPlanId: plan.id,
+      },
+    ],
   });
 
   await prisma.aIQuota.createMany({
@@ -1142,7 +1146,7 @@ async function main() {
         textMonthLimit: 50,
         imageMonthLimit: 0,
         resetDailyAt: days(1),
-        resetMonthAt: days(30)
+        resetMonthAt: days(30),
       },
       {
         orgId: ironHouse.id,
@@ -1152,7 +1156,7 @@ async function main() {
         textMonthLimit: 300,
         imageMonthLimit: 10,
         resetDailyAt: days(1),
-        resetMonthAt: days(30)
+        resetMonthAt: days(30),
       },
       {
         orgId: ironHouse.id,
@@ -1161,9 +1165,9 @@ async function main() {
         textMonthLimit: 500,
         imageMonthLimit: 20,
         resetDailyAt: days(1),
-        resetMonthAt: days(30)
-      }
-    ]
+        resetMonthAt: days(30),
+      },
+    ],
   });
 
   const notification = await prisma.notification.create({
@@ -1176,8 +1180,8 @@ async function main() {
       body: "Cardio zone opens at 7 PM today after maintenance.",
       audience: "all_active_members",
       sentAt: new Date(),
-      pushEnabled: true
-    }
+      pushEnabled: true,
+    },
   });
 
   const memberRecipient = await prisma.notificationRecipient.create({
@@ -1185,8 +1189,8 @@ async function main() {
       notificationId: notification.id,
       userId: member.id,
       deliveredAt: new Date(),
-      deliveryStatus: "push_delivered"
-    }
+      deliveryStatus: "push_delivered",
+    },
   });
 
   const guardianReminderNotification = await prisma.notification.create({
@@ -1201,17 +1205,17 @@ async function main() {
       sentAt: minutesFromNow(-12),
       pushEnabled: true,
       metadata: {
-        guardianConsentId: guardianConsent.id
-      }
-    }
+        guardianConsentId: guardianConsent.id,
+      },
+    },
   });
 
   const minorRecipient = await prisma.notificationRecipient.create({
     data: {
       notificationId: guardianReminderNotification.id,
       userId: minor.id,
-      deliveryStatus: "push_failed"
-    }
+      deliveryStatus: "push_failed",
+    },
   });
 
   await prisma.notificationTemplate.create({
@@ -1222,8 +1226,8 @@ async function main() {
       title: "Your membership expires soon",
       body: "Renew before {date} to keep check-ins active.",
       active: true,
-      createdById: owner.id
-    }
+      createdById: owner.id,
+    },
   });
 
   await prisma.userNotificationPreference.createMany({
@@ -1235,7 +1239,7 @@ async function main() {
         operational: true,
         promotional: true,
         engagement: true,
-        pushEnabled: true
+        pushEnabled: true,
       },
       {
         orgId: ironHouse.id,
@@ -1244,9 +1248,9 @@ async function main() {
         operational: true,
         promotional: false,
         engagement: false,
-        pushEnabled: false
-      }
-    ]
+        pushEnabled: false,
+      },
+    ],
   });
 
   const pushDevices = await prisma.pushDevice.createManyAndReturn({
@@ -1268,8 +1272,8 @@ async function main() {
         lastRegisteredAt: pastDays(2),
         metadata: {
           buildChannel: "private-pilot",
-          notificationsEnabled: true
-        }
+          notificationsEnabled: true,
+        },
       },
       {
         orgId: ironHouse.id,
@@ -1290,10 +1294,10 @@ async function main() {
         failureReason: "Expo reported DeviceNotRegistered after beta reinstall.",
         metadata: {
           buildChannel: "private-pilot",
-          notificationsEnabled: false
-        }
-      }
-    ]
+          notificationsEnabled: false,
+        },
+      },
+    ],
   });
 
   const memberPushDevice = must(pushDevices[0], "member push device");
@@ -1315,12 +1319,12 @@ async function main() {
       deliveredAt: minutesFromNow(-19),
       payload: {
         title: notification.title,
-        audience: notification.audience
+        audience: notification.audience,
       },
       response: {
-        ticketStatus: "ok"
-      }
-    }
+        ticketStatus: "ok",
+      },
+    },
   });
 
   const failedPushDelivery = await prisma.pushDelivery.create({
@@ -1340,12 +1344,12 @@ async function main() {
       failureReason: "Push token invalidated after app reinstall.",
       payload: {
         title: guardianReminderNotification.title,
-        audience: guardianReminderNotification.audience
+        audience: guardianReminderNotification.audience,
       },
       response: {
-        error: "DeviceNotRegistered"
-      }
-    }
+        error: "DeviceNotRegistered",
+      },
+    },
   });
 
   await prisma.badge.createMany({
@@ -1353,8 +1357,8 @@ async function main() {
       { code: "FIRST_CHECKIN", name: "First Check-in", description: "Completed your first visit." },
       { code: "SEVEN_DAY_STREAK", name: "7-Day Streak", description: "Seven consistent days." },
       { code: "TWELVE_VISITS", name: "12 Visits", description: "Twelve visits logged." },
-      { code: "PLAN_FINISHER", name: "Plan Finisher", description: "Completed an assigned plan." }
-    ]
+      { code: "PLAN_FINISHER", name: "Plan Finisher", description: "Completed an assigned plan." },
+    ],
   });
 
   const firstBadge = await prisma.badge.findUniqueOrThrow({ where: { code: "FIRST_CHECKIN" } });
@@ -1363,8 +1367,8 @@ async function main() {
       orgId: ironHouse.id,
       userId: member.id,
       badgeId: firstBadge.id,
-      metadata: { source: "attendance" }
-    }
+      metadata: { source: "attendance" },
+    },
   });
 
   await prisma.userGoal.create({
@@ -1375,8 +1379,8 @@ async function main() {
       title: "Attend 4 times this week",
       targetValue: 4,
       currentValue: 2,
-      period: "week"
-    }
+      period: "week",
+    },
   });
 
   const habit = await prisma.habitChecklist.create({
@@ -1384,8 +1388,8 @@ async function main() {
       orgId: ironHouse.id,
       userId: member.id,
       title: "Recovery basics",
-      items: ["Hydration", "8k steps", "Sleep reminder"]
-    }
+      items: ["Hydration", "8k steps", "Sleep reminder"],
+    },
   });
 
   await prisma.habitCompletion.create({
@@ -1393,8 +1397,8 @@ async function main() {
       habitId: habit.id,
       userId: member.id,
       dateKey: new Date().toISOString().slice(0, 10),
-      completedItems: ["Hydration", "8k steps"]
-    }
+      completedItems: ["Hydration", "8k steps"],
+    },
   });
 
   const workoutSession = await prisma.workoutSession.create({
@@ -1408,8 +1412,8 @@ async function main() {
       durationMinutes: 75,
       intensity: "RPE 7",
       notes: "Solid pressing day and shoulder warm-up.",
-      visibility: "TRAINER_VISIBLE"
-    }
+      visibility: "TRAINER_VISIBLE",
+    },
   });
 
   await prisma.workoutExerciseEntry.createMany({
@@ -1421,7 +1425,7 @@ async function main() {
         setsCompleted: 4,
         reps: 8,
         weightKg: new Prisma.Decimal("60"),
-        completed: true
+        completed: true,
       },
       {
         workoutSessionId: workoutSession.id,
@@ -1430,9 +1434,9 @@ async function main() {
         setsCompleted: 4,
         reps: 10,
         weightKg: new Prisma.Decimal("40"),
-        completed: true
-      }
-    ]
+        completed: true,
+      },
+    ],
   });
 
   await prisma.bodyProgressEntry.create({
@@ -1443,8 +1447,8 @@ async function main() {
       weightKg: new Prisma.Decimal("68.4"),
       waistCm: new Prisma.Decimal("79.0"),
       visibility: "PRIVATE",
-      notes: "Post-cut baseline"
-    }
+      notes: "Post-cut baseline",
+    },
   });
 
   const memberHabit = await prisma.memberHabit.create({
@@ -1456,8 +1460,8 @@ async function main() {
       targetValue: 3,
       unit: "litres",
       frequency: "DAILY",
-      visibility: "PRIVATE"
-    }
+      visibility: "PRIVATE",
+    },
   });
 
   await prisma.memberHabitLog.create({
@@ -1466,8 +1470,8 @@ async function main() {
       loggedAt: new Date(),
       value: 3,
       completed: true,
-      notes: "Hit the daily water target."
-    }
+      notes: "Hit the daily water target.",
+    },
   });
 
   const challenge = await prisma.challenge.create({
@@ -1479,8 +1483,8 @@ async function main() {
       startsAt: pastDays(1),
       endsAt: days(6),
       optInOnly: true,
-      leaderboardEnabled: false
-    }
+      leaderboardEnabled: false,
+    },
   });
 
   await prisma.challengeParticipant.create({
@@ -1488,8 +1492,8 @@ async function main() {
       orgId: ironHouse.id,
       challengeId: challenge.id,
       userId: member.id,
-      visibleOnLeaderboard: false
-    }
+      visibleOnLeaderboard: false,
+    },
   });
 
   await prisma.challengeProgress.create({
@@ -1498,8 +1502,8 @@ async function main() {
       challengeId: challenge.id,
       userId: member.id,
       value: 2,
-      metadata: { visits: 2 }
-    }
+      metadata: { visits: 2 },
+    },
   });
 
   const products = await prisma.product.createManyAndReturn({
@@ -1512,7 +1516,7 @@ async function main() {
         pricePaise: paise(399),
         stock: 24,
         lowStockThreshold: 5,
-        imageUrl: "/seed/products/water-bottle.svg"
+        imageUrl: "/seed/products/water-bottle.svg",
       },
       {
         orgId: ironHouse.id,
@@ -1522,7 +1526,7 @@ async function main() {
         pricePaise: paise(149),
         stock: 18,
         lowStockThreshold: 6,
-        imageUrl: "/seed/products/protein-shake.svg"
+        imageUrl: "/seed/products/protein-shake.svg",
       },
       {
         orgId: ironHouse.id,
@@ -1532,9 +1536,9 @@ async function main() {
         pricePaise: paise(299),
         stock: 8,
         lowStockThreshold: 4,
-        imageUrl: "/seed/products/shaker.svg"
-      }
-    ]
+        imageUrl: "/seed/products/shaker.svg",
+      },
+    ],
   });
 
   const waterBottle = must(products[0], "water bottle product");
@@ -1546,8 +1550,8 @@ async function main() {
       userId: member.id,
       status: OrderStatus.READY_FOR_PICKUP,
       totalPaise: paise(548),
-      pickupCode: "IH-PICK-101"
-    }
+      pickupCode: "IH-PICK-101",
+    },
   });
 
   await prisma.shopOrderItem.createMany({
@@ -1557,16 +1561,16 @@ async function main() {
         orderId: shopOrder.id,
         productId: waterBottle.id,
         quantity: 1,
-        unitPaise: paise(399)
+        unitPaise: paise(399),
       },
       {
         orgId: ironHouse.id,
         orderId: shopOrder.id,
         productId: proteinShake.id,
         quantity: 1,
-        unitPaise: paise(149)
-      }
-    ]
+        unitPaise: paise(149),
+      },
+    ],
   });
 
   await prisma.pickupCode.create({
@@ -1574,8 +1578,8 @@ async function main() {
       orgId: ironHouse.id,
       orderId: shopOrder.id,
       code: "IH-PICK-101",
-      expiresAt: days(14)
-    }
+      expiresAt: days(14),
+    },
   });
 
   await prisma.inventoryMovement.createMany({
@@ -1586,7 +1590,7 @@ async function main() {
         delta: -1,
         reason: "paid_order",
         orderId: shopOrder.id,
-        createdById: member.id
+        createdById: member.id,
       },
       {
         orgId: ironHouse.id,
@@ -1594,9 +1598,9 @@ async function main() {
         delta: -1,
         reason: "paid_order",
         orderId: shopOrder.id,
-        createdById: member.id
-      }
-    ]
+        createdById: member.id,
+      },
+    ],
   });
 
   await prisma.membershipJoinRequest.create({
@@ -1605,16 +1609,16 @@ async function main() {
       branchId: peakBranch.id,
       userId: member.id,
       status: "pending",
-      message: "Looking for a functional training plan."
-    }
+      message: "Looking for a functional training plan.",
+    },
   });
 
   await prisma.platformSetting.create({
     data: {
       key: "global_ai_limits",
       value: { memberDaily: 5, trainerDaily: 25, orgMonthly: 500 },
-      updatedById: platform.id
-    }
+      updatedById: platform.id,
+    },
   });
 
   await prisma.organizationAbuseFlag.create({
@@ -1623,8 +1627,8 @@ async function main() {
       userId: member.id,
       type: "repeated_manual_override",
       severity: "low",
-      metadata: { count: 1, note: "Seed example only" }
-    }
+      metadata: { count: 1, note: "Seed example only" },
+    },
   });
 
   const paymentHealthCheck = await prisma.providerHealthCheck.create({
@@ -1639,9 +1643,9 @@ async function main() {
       message: "Webhook verification and capture flow healthy.",
       metadata: {
         queueDepth: 0,
-        source: "private_pilot_monitor"
-      }
-    }
+        source: "private_pilot_monitor",
+      },
+    },
   });
 
   const pushHealthCheck = await prisma.providerHealthCheck.create({
@@ -1658,9 +1662,9 @@ async function main() {
       consecutiveFailures: 2,
       metadata: {
         invalidTokenRate: 0.18,
-        cohort: "private_pilot_rc"
-      }
-    }
+        cohort: "private_pilot_rc",
+      },
+    },
   });
 
   await prisma.incidentLog.createMany({
@@ -1682,8 +1686,8 @@ async function main() {
         acknowledgedAt: minutesFromNow(-8),
         metadata: {
           providerHealthCheckId: paymentHealthCheck.id,
-          nextRetryAt: minutesFromNow(30).toISOString()
-        }
+          nextRetryAt: minutesFromNow(30).toISOString(),
+        },
       },
       {
         orgId: ironHouse.id,
@@ -1702,10 +1706,10 @@ async function main() {
         resolutionSummary: "Monitoring after in-app re-registration prompt shipped.",
         metadata: {
           providerHealthCheckId: pushHealthCheck.id,
-          guardianConsentId: guardianConsent.id
-        }
-      }
-    ]
+          guardianConsentId: guardianConsent.id,
+        },
+      },
+    ],
   });
 
   await prisma.auditLog.createMany({
@@ -1718,10 +1722,10 @@ async function main() {
         entityId: ironHouse.id,
         after: {
           status: "TRIAL_ACTIVE",
-          visibility: "PUBLIC"
+          visibility: "PUBLIC",
         },
         riskLevel: AuditRiskLevel.LOW,
-        metadata: { seed: true }
+        metadata: { seed: true },
       },
       {
         orgId: ironHouse.id,
@@ -1730,14 +1734,14 @@ async function main() {
         entityType: "Payment",
         entityId: payment.id,
         before: {
-          status: "PENDING"
+          status: "PENDING",
         },
         after: {
           status: "SUCCEEDED",
-          notes: payment.notes
+          notes: payment.notes,
         },
         riskLevel: AuditRiskLevel.MEDIUM,
-        metadata: { mode: "mock_online" }
+        metadata: { mode: "mock_online" },
       },
       {
         orgId: ironHouse.id,
@@ -1747,14 +1751,14 @@ async function main() {
         entityId: exportJob.id,
         after: {
           status: "SUCCEEDED",
-          format: "JSON"
+          format: "JSON",
         },
         riskLevel: AuditRiskLevel.HIGH,
         metadata: {
-          requestId: exportRequest.id
-        }
-      }
-    ]
+          requestId: exportRequest.id,
+        },
+      },
+    ],
   });
 
   console.log("Zook seed completed.");
@@ -1768,7 +1772,7 @@ async function main() {
     minor: minor.email,
     otp: "000000",
     ironHouse: "iron-house",
-    peakLab: "peaklab"
+    peakLab: "peaklab",
   });
 }
 

@@ -18,12 +18,14 @@ import { useMemberHome } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 function initialsFor(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "AM";
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "AM"
+  );
 }
 
 function greetingForHour() {
@@ -45,9 +47,7 @@ export default function Home() {
   const sessionOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization;
-  const activeOrganization =
-    memberHome?.activeOrganization ??
-    sessionOrganization;
+  const activeOrganization = memberHome?.activeOrganization ?? sessionOrganization;
   const memberName = session?.user.name || "Member";
   const firstName = memberName.split(" ")[0] || "Hey";
   const initials = initialsFor(memberName);
@@ -103,7 +103,7 @@ export default function Home() {
           <BlurView intensity={58} tint="dark" style={styles.homeHeader}>
             <Pressable
               onPress={() => setProfileOpen(true)}
-              style={({ pressed }) => pressed ? styles.pressedAvatar : null}
+              style={({ pressed }) => (pressed ? styles.pressedAvatar : null)}
               accessibilityRole="button"
               accessibilityLabel="Open account drawer"
             >
@@ -117,22 +117,34 @@ export default function Home() {
                 accessibilityLabel="Open gym details"
                 style={styles.headerCopy}
               >
-                <Text numberOfLines={1} style={styles.greeting}>{greetingForHour()}, {firstName}</Text>
+                <Text numberOfLines={1} style={styles.greeting}>
+                  {greetingForHour()}, {firstName}
+                </Text>
                 <View style={styles.gymLineRow}>
-                  <Text numberOfLines={1} style={styles.gymLine}>{orgName}, {city}</Text>
+                  <Text numberOfLines={1} style={styles.gymLine}>
+                    {orgName}, {city}
+                  </Text>
                   <Ionicons name="chevron-down" size={14} color={colors.muted} />
                 </View>
               </Pressable>
             </Link>
             <Link href="/notifications" asChild>
-              <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open notifications">
+              <Pressable
+                style={styles.iconButton}
+                accessibilityRole="button"
+                accessibilityLabel="Open notifications"
+              >
                 <Ionicons name="notifications-outline" size={21} color={colors.text} />
-                {(memberHome?.unreadNotifications ?? 0) > 0 ? <View style={styles.unreadDot} /> : null}
+                {(memberHome?.unreadNotifications ?? 0) > 0 ? (
+                  <View style={styles.unreadDot} />
+                ) : null}
               </Pressable>
             </Link>
           </BlurView>
 
-          {firstRunState ? <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} /> : null}
+          {firstRunState ? (
+            <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} />
+          ) : null}
 
           {hasMembership ? (
             <Link href="/scan" asChild>
@@ -163,7 +175,9 @@ export default function Home() {
                     <Text style={styles.mutedSmall}>Active Membership</Text>
                   </View>
                   <View style={styles.membershipTitleRow}>
-                    <Text style={styles.membershipTitle}>{memberHome?.activePlan?.name ?? "Membership"}</Text>
+                    <Text style={styles.membershipTitle}>
+                      {memberHome?.activePlan?.name ?? "Membership"}
+                    </Text>
                     <Text style={styles.daysLeft}>{daysLeft} days left</Text>
                   </View>
                   <Text style={styles.mutedBody}>{remainingVisits} visits remaining</Text>
@@ -186,9 +200,13 @@ export default function Home() {
                   <View style={styles.planRow}>
                     <IconBubble icon="barbell-outline" tone="lime" size={44} />
                     <View style={styles.planCopy}>
-                      <Text numberOfLines={1} style={styles.planTitle}>{planName}</Text>
+                      <Text numberOfLines={1} style={styles.planTitle}>
+                        {planName}
+                      </Text>
                       <Text numberOfLines={1} style={styles.mutedSmall}>
-                        {memberHome?.activePlan?.type ? titleCaseFromCode(memberHome.activePlan.type) : "Tap to view"}
+                        {memberHome?.activePlan?.type
+                          ? titleCaseFromCode(memberHome.activePlan.type)
+                          : "Tap to view"}
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={colors.muted} />
@@ -217,10 +235,10 @@ export default function Home() {
 
           {hasMembership ? (
             <Text style={styles.progressSummary}>
-              {remainingVisits} visits left · {memberHome?.streakDays ?? 0} day streak · Last visit {lastCheckIn}
+              {remainingVisits} visits left · {memberHome?.streakDays ?? 0} day streak · Last visit{" "}
+              {lastCheckIn}
             </Text>
           ) : null}
-
         </ScrollView>
         {profileOpen ? (
           <View style={styles.drawerScene}>
@@ -241,8 +259,12 @@ export default function Home() {
                     <Text style={styles.drawerAvatarText}>{initials}</Text>
                   </View>
                   <View style={styles.drawerHeaderCopy}>
-                    <Text numberOfLines={1} style={styles.drawerName}>{memberName}</Text>
-                    <Text numberOfLines={1} style={styles.drawerMuted}>{session?.user.email ?? "member@zook.local"}</Text>
+                    <Text numberOfLines={1} style={styles.drawerName}>
+                      {memberName}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.drawerMuted}>
+                      {session?.user.email || session?.user.phone || "member@zook.local"}
+                    </Text>
                   </View>
                   <Pressable
                     onPress={() => setProfileOpen(false)}
@@ -269,16 +291,15 @@ export default function Home() {
                           onPress={() => void setActiveOrgId(gym.orgId)}
                           accessibilityRole="button"
                           accessibilityLabel={`Switch to ${gym.name}`}
-                          style={[
-                            styles.drawerGymRow,
-                            selected ? styles.drawerGymRowActive : null,
-                          ]}
+                          style={[styles.drawerGymRow, selected ? styles.drawerGymRowActive : null]}
                         >
                           <View style={styles.drawerGymLogo}>
                             <Text style={styles.drawerGymLogoText}>{initialsFor(gym.name)}</Text>
                           </View>
                           <View style={styles.drawerGymCopy}>
-                            <Text numberOfLines={1} style={styles.drawerGymName}>{gym.name}</Text>
+                            <Text numberOfLines={1} style={styles.drawerGymName}>
+                              {gym.name}
+                            </Text>
                             <Text numberOfLines={1} style={styles.drawerMuted}>
                               {gym.city}, {gym.state}
                             </Text>
@@ -394,7 +415,11 @@ function DrawerToggle({
     <Pressable onPress={onPress} accessibilityRole="button" style={styles.drawerToggle}>
       <View style={styles.drawerToggleCopy}>
         <Text style={styles.drawerToggleTitle}>{title}</Text>
-        {subtitle ? <Text numberOfLines={1} style={styles.drawerMuted}>{subtitle}</Text> : null}
+        {subtitle ? (
+          <Text numberOfLines={1} style={styles.drawerMuted}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
       <Ionicons name={open ? "chevron-up" : "chevron-down"} size={18} color={colors.muted} />
     </Pressable>

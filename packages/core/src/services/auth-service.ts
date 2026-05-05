@@ -1,10 +1,16 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 import type { EmailProvider } from "../providers/email";
+import type { SmsProvider } from "../providers/sms";
 import { getAllowedFixedOtp } from "../runtime-env";
+import { normalizeLoginIdentifier, type LoginIdentifier } from "../validators";
 
 export interface OtpChallengeRecord {
   id: string;
   email: string;
+  identifier: string;
+  channel: LoginIdentifier["kind"];
+  phone?: string;
+  purpose: string;
   codeHash: string;
   attempts: number;
   maxAttempts: number;
@@ -16,12 +22,25 @@ export interface OtpChallengeRecord {
 }
 
 export interface AuthRepository {
-  createOtp(input: Omit<OtpChallengeRecord, "id" | "attempts" | "resendCount">): Promise<OtpChallengeRecord>;
-  findLatestOtp(email: string): Promise<OtpChallengeRecord | undefined>;
+  createOtp(
+    input: Omit<OtpChallengeRecord, "id" | "attempts" | "resendCount">,
+  ): Promise<OtpChallengeRecord>;
+  findLatestOtp(identifier: string, purpose?: string): Promise<OtpChallengeRecord | undefined>;
   incrementOtpAttempt(id: string): Promise<void>;
-  refreshOtp(input: { id: string; codeHash: string; expiresAt: Date; ipAddress?: string }): Promise<OtpChallengeRecord>;
+  refreshOtp(input: {
+    id: string;
+    codeHash: string;
+    expiresAt: Date;
+    ipAddress?: string;
+  }): Promise<OtpChallengeRecord>;
   consumeOtp(id: string): Promise<void>;
-  createSession(input: { userId: string; tokenHash: string; expiresAt: Date; userAgent?: string; ipAddress?: string }): Promise<void>;
+  createSession(input: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+    userAgent?: string;
+    ipAddress?: string;
+  }): Promise<void>;
   revokeSession(tokenHash: string): Promise<void>;
 }
 
@@ -30,6 +49,7 @@ export class AuthService {
     private readonly repo: AuthRepository,
     private readonly emailProvider: EmailProvider,
     private readonly now: () => Date = () => new Date(),
+    private readonly smsProvider?: SmsProvider,
   ) {}
 
   static hash(value: string): string {
@@ -48,10 +68,32 @@ export class AuthService {
     return String(randomInt(0, 1_000_000)).padStart(6, "0");
   }
 
-  async requestOtp(email: string, input: { ipAddress?: string } = {}): Promise<OtpChallengeRecord> {
+  private async deliverOtp(identifier: LoginIdentifier, code: string, expiresAt: Date) {
+    if (identifier.kind === "email") {
+      await this.emailProvider.sendOtpEmail({
+        to: identifier.value,
+        code,
+        expiresAt,
+        purpose: "login",
+      });
+      return;
+    }
+    if (!this.smsProvider) {
+      throw new Error("SMS provider is not configured.");
+    }
+    await this.smsProvider.sendOtp({ phone: identifier.value, code, expiresAt });
+  }
+
+  async requestOtp(
+    rawIdentifier: LoginIdentifier | string,
+    input: { ipAddress?: string; purpose?: string } = {},
+  ): Promise<OtpChallengeRecord> {
+    const identifier =
+      typeof rawIdentifier === "string" ? normalizeLoginIdentifier(rawIdentifier) : rawIdentifier;
+    const purpose = input.purpose ?? "login";
     const code = this.createOtpCode();
     const expiresAt = new Date(this.now().getTime() + 10 * 60 * 1000);
-    const latest = await this.repo.findLatestOtp(email);
+    const latest = await this.repo.findLatestOtp(identifier.value, purpose);
     if (latest && !latest.consumedAt && latest.expiresAt > this.now()) {
       if (latest.resendCount >= 3) {
         throw new Error("OTP resend limit reached");
@@ -63,25 +105,37 @@ export class AuthService {
         id: latest.id,
         codeHash: AuthService.hash(code),
         expiresAt,
-        ...(input.ipAddress ? { ipAddress: input.ipAddress } : {})
+        ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
       });
-      await this.emailProvider.sendOtpEmail({ to: email, code, expiresAt, purpose: "login" });
+      await this.deliverOtp(identifier, code, expiresAt);
       return refreshed;
     }
     const challenge = await this.repo.createOtp({
-      email,
+      email: identifier.value,
+      identifier: identifier.value,
+      channel: identifier.kind,
+      ...(identifier.kind === "phone" ? { phone: identifier.value } : {}),
+      purpose,
       codeHash: AuthService.hash(code),
       maxAttempts: 5,
       expiresAt,
       createdAt: this.now(),
-      ...(input.ipAddress ? { ipAddress: input.ipAddress } : {})
+      ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
     });
-    await this.emailProvider.sendOtpEmail({ to: email, code, expiresAt, purpose: "login" });
+    await this.deliverOtp(identifier, code, expiresAt);
     return challenge;
   }
 
-  async verifyOtp(input: { email: string; code: string; userId: string; userAgent?: string; ipAddress?: string }): Promise<{ token: string; expiresAt: Date }> {
-    const challenge = await this.repo.findLatestOtp(input.email);
+  private async consumeChallenge(input: {
+    identifier: LoginIdentifier | string;
+    code: string;
+    purpose?: string;
+  }) {
+    const identifier =
+      typeof input.identifier === "string"
+        ? normalizeLoginIdentifier(input.identifier)
+        : input.identifier;
+    const challenge = await this.repo.findLatestOtp(identifier.value, input.purpose ?? "login");
     if (!challenge) {
       throw new Error("OTP not found");
     }
@@ -101,6 +155,25 @@ export class AuthService {
       throw new Error("Invalid OTP");
     }
     await this.repo.consumeOtp(challenge.id);
+    return challenge;
+  }
+
+  async verifyOtpChallenge(input: {
+    identifier: LoginIdentifier | string;
+    code: string;
+    purpose?: string;
+  }): Promise<OtpChallengeRecord> {
+    return this.consumeChallenge(input);
+  }
+
+  async verifyOtp(input: {
+    identifier: LoginIdentifier | string;
+    code: string;
+    userId: string;
+    userAgent?: string;
+    ipAddress?: string;
+  }): Promise<{ token: string; expiresAt: Date }> {
+    await this.consumeChallenge(input);
     const token = AuthService.createToken();
     const expiresAt = new Date(this.now().getTime() + 30 * 24 * 60 * 60 * 1000);
     await this.repo.createSession({
@@ -108,7 +181,7 @@ export class AuthService {
       tokenHash: AuthService.hash(token),
       expiresAt,
       ...(input.userAgent ? { userAgent: input.userAgent } : {}),
-      ...(input.ipAddress ? { ipAddress: input.ipAddress } : {})
+      ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
     });
     return { token, expiresAt };
   }

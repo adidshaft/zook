@@ -158,6 +158,7 @@ Optional live adapters currently available:
 - `MAP_PROVIDER=google`
 - `AI_PROVIDER=openai` or `AI_PROVIDER=disabled`
 - `PAYMENT_PROVIDER=razorpay` or `PAYMENT_PROVIDER=disabled`
+- `SMS_PROVIDER=webhook|disabled`
 - `PUSH_PROVIDER=expo` or `PUSH_PROVIDER=disabled`
 
 ## Switching To Real Providers Later
@@ -167,8 +168,9 @@ Keep client apps unchanged. Add provider implementations behind the interfaces i
 - `AI_PROVIDER=openai` with `OPENAI_API_KEY`
 - `MAP_PROVIDER=google` with `GOOGLE_MAPS_API_KEY`
 - `PAYMENT_PROVIDER=razorpay|disabled`
+- `SMS_PROVIDER=webhook|disabled` with `SMS_WEBHOOK_URL` and optional `SMS_WEBHOOK_SECRET`
 - `STORAGE_PROVIDER=s3` with S3/R2-compatible credentials
-- `SMS_PROVIDER=...`, `PUSH_PROVIDER=expo|disabled`
+- `PUSH_PROVIDER=expo|disabled`
 
 AI, payments, maps, push, and storage are never called directly from the mobile app.
 

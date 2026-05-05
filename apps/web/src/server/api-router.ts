@@ -13,13 +13,16 @@ import {
   membershipPlanSchema,
   notificationSchema,
   offerSchema,
+  publicUserEmail,
   requestOtpSchema,
   referralCodeManageSchema,
   referralPolicySchema,
   workoutSessionSchema,
   verifyOtpSchema,
+  isInternalPhoneEmail,
   getAllowedFixedOtp,
   isMockPaymentCompletionAllowed,
+  normalizePhoneNumber,
   permissions,
   roles,
   validateRuntimeConfig,
@@ -45,6 +48,8 @@ import {
   getProviderRegistryDiagnostics,
   getStorageProvider,
   getStorageProviderDiagnostics,
+  getSmsProvider,
+  getSmsProviderDiagnostics,
   storageFileCategories,
   verifyLocalStorageSignature,
   type StorageFileCategory,
@@ -232,11 +237,18 @@ const branchManageSchema = z.object({
 });
 
 const permissionOverrideSchema = z.object({
-  role: z.enum(roles).refine((role) => role !== "PLATFORM_ADMIN", "Platform admin permissions are not tenant scoped."),
-  permission: z.enum(permissions).refine(
-    (permission) => !permission.startsWith("PLATFORM_"),
-    "Platform permissions are not tenant scoped.",
-  ),
+  role: z
+    .enum(roles)
+    .refine(
+      (role) => role !== "PLATFORM_ADMIN",
+      "Platform admin permissions are not tenant scoped.",
+    ),
+  permission: z
+    .enum(permissions)
+    .refine(
+      (permission) => !permission.startsWith("PLATFORM_"),
+      "Platform permissions are not tenant scoped.",
+    ),
   enabled: z.boolean(),
 });
 
@@ -346,7 +358,12 @@ const profilePhotoAssetSchema = z.object({
 const memberWellnessProfileSchema = z.object({
   orgId: z.string().optional(),
   name: z.string().trim().min(2).max(120).optional(),
-  phone: z.string().trim().min(6).max(24).optional(),
+  email: z
+    .union([z.string().trim().toLowerCase().email(), z.literal("").transform(() => null), z.null()])
+    .optional(),
+  phone: z
+    .union([z.string().trim().min(6).max(24), z.literal("").transform(() => null), z.null()])
+    .optional(),
   dateOfBirth: z.string().trim().optional(),
   fitnessGoal: z.string().trim().max(240).optional(),
   weightKg: z.number().positive().max(500).optional(),
@@ -535,7 +552,7 @@ function queryBranchId(request: NextRequest) {
 }
 
 async function enrichAttendanceRecords<
-  T extends { id: string; branchId: string; subscriptionId?: string | null }
+  T extends { id: string; branchId: string; subscriptionId?: string | null },
 >(records: T[]) {
   if (!records.length) {
     return [];
@@ -786,9 +803,107 @@ async function getUserByEmailOrCreate(email: string) {
     create: {
       email,
       name: email.split("@")[0] ?? "Zook User",
-      emailVerifiedAt: new Date(),
     },
   });
+}
+
+function buildPhonePlaceholderEmail(phone: string) {
+  return `phone-${createHash("sha256").update(phone).digest("hex").slice(0, 20)}@phone.zook.local`;
+}
+
+function nameFromPhone(phone: string) {
+  return `Member ${phone.slice(-4)}`;
+}
+
+function serializeUserForClient<T extends { email: string; phone?: string | null }>(user: T) {
+  return {
+    ...user,
+    email: publicUserEmail(user.email) ?? "",
+  };
+}
+
+async function findSingleUserByPhone(phone: string) {
+  const matches = await prisma.user.findMany({
+    where: { phone },
+    orderBy: { createdAt: "asc" },
+    take: 2,
+  });
+  if (matches.length > 1) {
+    throw conflictError(
+      "This phone number is linked to multiple accounts. Please sign in with email or contact support.",
+    );
+  }
+  return matches[0] ?? null;
+}
+
+async function getUserByPhoneOrCreate(phone: string) {
+  const existing = await findSingleUserByPhone(phone);
+  if (existing) {
+    if (!existing.phoneVerifiedAt && !isInternalPhoneEmail(existing.email)) {
+      throw validationError(
+        "This phone number is not verified yet. Sign in with email and verify it in Settings.",
+      );
+    }
+    return existing;
+  }
+  return prisma.user.create({
+    data: {
+      email: buildPhonePlaceholderEmail(phone),
+      name: nameFromPhone(phone),
+      phone,
+    },
+  });
+}
+
+async function getUserByIdentifierOrCreate(identifier: { kind: "email" | "phone"; value: string }) {
+  return identifier.kind === "email"
+    ? getUserByEmailOrCreate(identifier.value)
+    : getUserByPhoneOrCreate(identifier.value);
+}
+
+async function markUserIdentifierVerified(
+  userId: string,
+  identifier: { kind: "email" | "phone"; value: string },
+) {
+  if (identifier.kind === "email") {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerifiedAt: new Date(),
+      },
+    });
+    return;
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      phone: identifier.value,
+      phoneVerifiedAt: new Date(),
+    },
+  });
+}
+
+function contactOtpPurpose(userId: string, kind: "email" | "phone") {
+  return `contact_update:${userId}:${kind}`;
+}
+
+async function assertContactIdentifierAvailable(
+  userId: string,
+  identifier: { kind: "email" | "phone"; value: string },
+) {
+  if (identifier.kind === "email") {
+    const duplicate = await prisma.user.findUnique({ where: { email: identifier.value } });
+    if (duplicate && duplicate.id !== userId) {
+      throw conflictError("This email is already linked to another Zook account.");
+    }
+    return;
+  }
+  const duplicate = await prisma.user.findFirst({
+    where: { phone: identifier.value, NOT: { id: userId } },
+  });
+  if (duplicate) {
+    throw conflictError("This phone number is already linked to another Zook account.");
+  }
 }
 
 async function ensureOrganizationMembership(input: {
@@ -900,7 +1015,11 @@ function publicTrainerPhotoUrl(value: string | null | undefined) {
   return value;
 }
 
-async function assertOrgUser(input: { orgId: string; userId: string; role?: Exclude<Role, "PLATFORM_ADMIN"> }) {
+async function assertOrgUser(input: {
+  orgId: string;
+  userId: string;
+  role?: Exclude<Role, "PLATFORM_ADMIN">;
+}) {
   const membership = await prisma.organizationUser.findUnique({
     where: { orgId_userId: { orgId: input.orgId, userId: input.userId } },
   });
@@ -931,13 +1050,17 @@ function assertActiveContextOrg(ctx: { orgId?: string; orgStatus?: string }, org
 
 function getPaymentProviderOrThrow() {
   const diagnostics = getPaymentProviderDiagnostics();
-  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
+  if (
+    diagnostics.status === "misconfigured" ||
+    diagnostics.status === "unsupported" ||
+    diagnostics.status === "disabled"
+  ) {
     throw validationError(
       diagnostics.status === "disabled"
         ? "Payment provider is disabled for this environment."
         : diagnostics.missingEnv.length
-        ? `Payment provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
-        : "Payment provider is unavailable for this environment.",
+          ? `Payment provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
+          : "Payment provider is unavailable for this environment.",
     );
   }
   return getPaymentProvider();
@@ -945,7 +1068,11 @@ function getPaymentProviderOrThrow() {
 
 function getEmailProviderOrThrow() {
   const diagnostics = getEmailProviderDiagnostics();
-  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
+  if (
+    diagnostics.status === "misconfigured" ||
+    diagnostics.status === "unsupported" ||
+    diagnostics.status === "disabled"
+  ) {
     throw validationError(
       diagnostics.status === "disabled"
         ? "Email provider is disabled for this environment."
@@ -957,9 +1084,31 @@ function getEmailProviderOrThrow() {
   return getEmailProvider();
 }
 
+function getSmsProviderOrThrow() {
+  const diagnostics = getSmsProviderDiagnostics();
+  if (
+    diagnostics.status === "misconfigured" ||
+    diagnostics.status === "unsupported" ||
+    diagnostics.status === "disabled"
+  ) {
+    throw validationError(
+      diagnostics.status === "disabled"
+        ? "SMS provider is disabled for this environment."
+        : diagnostics.missingEnv.length
+          ? `SMS provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
+          : "SMS provider is unavailable for this environment.",
+    );
+  }
+  return getSmsProvider();
+}
+
 function getMapProviderOrThrow() {
   const diagnostics = getMapProviderDiagnostics();
-  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
+  if (
+    diagnostics.status === "misconfigured" ||
+    diagnostics.status === "unsupported" ||
+    diagnostics.status === "disabled"
+  ) {
     throw validationError(
       diagnostics.status === "disabled"
         ? "Map provider is disabled for this environment."
@@ -973,7 +1122,11 @@ function getMapProviderOrThrow() {
 
 function getAIProviderOrThrow() {
   const diagnostics = getAIProviderDiagnostics();
-  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
+  if (
+    diagnostics.status === "misconfigured" ||
+    diagnostics.status === "unsupported" ||
+    diagnostics.status === "disabled"
+  ) {
     throw validationError(
       diagnostics.status === "disabled"
         ? "AI provider is disabled for this environment."
@@ -987,7 +1140,11 @@ function getAIProviderOrThrow() {
 
 function getStorageProviderOrThrow() {
   const diagnostics = getStorageProviderDiagnostics();
-  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
+  if (
+    diagnostics.status === "misconfigured" ||
+    diagnostics.status === "unsupported" ||
+    diagnostics.status === "disabled"
+  ) {
     throw validationError(
       diagnostics.status === "disabled"
         ? "Storage provider is disabled for this environment."
@@ -1001,13 +1158,17 @@ function getStorageProviderOrThrow() {
 
 function getPushProviderOrThrow() {
   const diagnostics = getPushProviderDiagnostics();
-  if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported" || diagnostics.status === "disabled") {
+  if (
+    diagnostics.status === "misconfigured" ||
+    diagnostics.status === "unsupported" ||
+    diagnostics.status === "disabled"
+  ) {
     throw validationError(
       diagnostics.status === "disabled"
         ? "Push provider is disabled for this environment."
         : diagnostics.missingEnv.length
-        ? `Push provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
-        : "Push provider is unavailable for this environment.",
+          ? `Push provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
+          : "Push provider is unavailable for this environment.",
     );
   }
   return getPushProvider();
@@ -1115,8 +1276,8 @@ function assertCanCompleteMockPayment(
   const ownsSession = Boolean(session.userId && ctx.userId === session.userId);
   const canManageOrgPayment = Boolean(
     session.orgId &&
-      ctx.orgId === session.orgId &&
-      hasAnyPermission(ctx, mockPaymentCompletionAdminPermissions),
+    ctx.orgId === session.orgId &&
+    hasAnyPermission(ctx, mockPaymentCompletionAdminPermissions),
   );
   if (!ownsSession && !canManageOrgPayment && !ctx.isPlatformAdmin) {
     throw forbiddenError("Payment session does not belong to this user.");
@@ -1631,7 +1792,13 @@ function aiConsentAllowed(user: { aiConsent: boolean }) {
 }
 
 function planRequiresExercises(type: PlanType) {
-  return ["WORKOUT", "EXERCISE_ROUTINE", "TRANSFORMATION_PROGRAM", "MACHINE_GUIDE", "RECOVERY"].includes(type);
+  return [
+    "WORKOUT",
+    "EXERCISE_ROUTINE",
+    "TRANSFORMATION_PROGRAM",
+    "MACHINE_GUIDE",
+    "RECOVERY",
+  ].includes(type);
 }
 
 function normalizedStructuredPlanContent(response: string | Record<string, unknown>) {
@@ -1647,10 +1814,10 @@ function normalizedStructuredPlanContent(response: string | Record<string, unkno
             .map((line) => line.trim())
             .filter(Boolean)
             .slice(0, 8)
-            .map((line) => ({ name: line }))
-        }
+            .map((line) => ({ name: line })),
+        },
       ],
-      notes: "Generated text was normalized into a trainer-reviewed draft."
+      notes: "Generated text was normalized into a trainer-reviewed draft.",
     };
   }
   if (Array.isArray(response.days) || Array.isArray(response.exercises)) {
@@ -2020,7 +2187,9 @@ async function resolveValidatedReferral(input: {
   }
   const resetAt = referral.lastResetAt ?? referral.createdAt;
   const now = new Date();
-  const resetNeeded = resetAt.getUTCMonth() !== now.getUTCMonth() || resetAt.getUTCFullYear() !== now.getUTCFullYear();
+  const resetNeeded =
+    resetAt.getUTCMonth() !== now.getUTCMonth() ||
+    resetAt.getUTCFullYear() !== now.getUTCFullYear();
   const monthlyUseCount = resetNeeded ? 0 : referral.monthlyUseCount;
   if (resetNeeded) {
     await prisma.referralCode.update({
@@ -2045,8 +2214,8 @@ async function resolveValidatedReferral(input: {
     }),
     clean({
       referredUserId: input.userId,
-      referredEmail: user.email,
-      referrerEmail: referrer?.email,
+      referredEmail: publicUserEmail(user.email),
+      referrerEmail: publicUserEmail(referrer?.email),
       existingRedemption: Boolean(existingRedemption),
     }),
   );
@@ -2054,7 +2223,10 @@ async function resolveValidatedReferral(input: {
 }
 
 async function generateUniqueReferralCode(seed: string) {
-  const prefix = `ZK${seed.replace(/[^a-z0-9]/gi, "").slice(0, 2).toUpperCase()}`;
+  const prefix = `ZK${seed
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 2)
+    .toUpperCase()}`;
   for (let index = 0; index < 8; index += 1) {
     const code = `${prefix}${randomBytes(2).toString("hex").toUpperCase()}`;
     const existing = await prisma.referralCode.findUnique({ where: { code } });
@@ -2257,6 +2429,10 @@ class PrismaAuthRepo {
   private toOtpRecord(row: {
     id: string;
     email: string;
+    identifier: string;
+    channel: string;
+    phone: string | null;
+    purpose: string;
     codeHash: string;
     attempts: number;
     maxAttempts: number;
@@ -2269,6 +2445,10 @@ class PrismaAuthRepo {
     return clean({
       id: row.id,
       email: row.email,
+      identifier: row.identifier,
+      channel: row.channel === "phone" ? "phone" : "email",
+      phone: row.phone ?? undefined,
+      purpose: row.purpose,
       codeHash: row.codeHash,
       attempts: row.attempts,
       maxAttempts: row.maxAttempts,
@@ -2282,6 +2462,10 @@ class PrismaAuthRepo {
 
   async createOtp(input: {
     email: string;
+    identifier: string;
+    channel: "email" | "phone";
+    phone?: string;
+    purpose: string;
     codeHash: string;
     maxAttempts: number;
     expiresAt: Date;
@@ -2292,6 +2476,10 @@ class PrismaAuthRepo {
     const row = await prisma.otpChallenge.create({
       data: {
         email: input.email,
+        identifier: input.identifier,
+        channel: input.channel,
+        ...(input.phone ? { phone: input.phone } : {}),
+        purpose: input.purpose,
         codeHash: input.codeHash,
         maxAttempts: input.maxAttempts,
         expiresAt: input.expiresAt,
@@ -2303,9 +2491,12 @@ class PrismaAuthRepo {
     return this.toOtpRecord(row);
   }
 
-  async findLatestOtp(email: string): Promise<OtpChallengeRecord | undefined> {
+  async findLatestOtp(
+    identifier: string,
+    purpose = "login",
+  ): Promise<OtpChallengeRecord | undefined> {
     const row = await prisma.otpChallenge.findFirst({
-      where: { email },
+      where: { identifier, purpose },
       orderBy: { createdAt: "desc" },
     });
     return row ? this.toOtpRecord(row) : undefined;
@@ -2350,15 +2541,24 @@ class PrismaAuthRepo {
 }
 
 async function handleAuth(request: NextRequest, path: string[]) {
-  const auth = new AuthService(new PrismaAuthRepo(), getEmailProviderOrThrow());
   if (request.method === "POST" && pathMatches(path, ["auth", "request-otp"])) {
     const body = requestOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
-    await assertRateLimit("otpRequestByEmail", body.email, "Too many OTP requests for this email.");
+    const auth = new AuthService(
+      new PrismaAuthRepo(),
+      getEmailProviderOrThrow(),
+      () => new Date(),
+      body.identifier.kind === "phone" ? getSmsProviderOrThrow() : undefined,
+    );
+    await assertRateLimit(
+      "otpRequestByIdentifier",
+      body.identifier.value,
+      "Too many OTP requests for this account.",
+    );
     await assertRateLimit("otpRequestByIp", ipAddress, "Too many OTP requests from this IP.");
-    await getUserByEmailOrCreate(body.email);
+    await getUserByIdentifierOrCreate(body.identifier);
     const challenge = await auth.requestOtp(
-      body.email,
+      body.identifier,
       ipAddress !== "unknown" ? { ipAddress } : {},
     );
     return ok({
@@ -2370,25 +2570,31 @@ async function handleAuth(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["auth", "verify-otp"])) {
     const body = verifyOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
+    const auth = new AuthService(new PrismaAuthRepo(), getEmailProviderOrThrow());
     await assertRateLimit(
-      "otpVerifyByEmail",
-      body.email,
-      "Too many OTP verification attempts for this email.",
+      "otpVerifyByIdentifier",
+      body.identifier.value,
+      "Too many OTP verification attempts for this account.",
     );
-    await assertRateLimit("otpVerifyByIp", ipAddress, "Too many OTP verification attempts from this IP.");
-    const user = await getUserByEmailOrCreate(body.email);
+    await assertRateLimit(
+      "otpVerifyByIp",
+      ipAddress,
+      "Too many OTP verification attempts from this IP.",
+    );
+    const user = await getUserByIdentifierOrCreate(body.identifier);
     const session = await auth.verifyOtp(
       clean({
-        email: body.email,
+        identifier: body.identifier,
         code: body.code,
         userId: user.id,
         userAgent: request.headers.get("user-agent") ?? undefined,
         ipAddress: request.headers.get("x-forwarded-for") ?? undefined,
       }),
     );
+    await markUserIdentifierVerified(user.id, body.identifier);
     const sessionSummary = await resolveSessionSummaryFromToken(session.token);
     const response = ok({
-      user,
+      user: serializeUserForClient(user),
       token: session.token,
       expiresAt: session.expiresAt,
       ...(sessionSummary ? { session: sessionSummary } : {}),
@@ -2405,6 +2611,7 @@ async function handleAuth(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["auth", "logout"])) {
     const token = extractSessionToken(request);
     if (token) {
+      const auth = new AuthService(new PrismaAuthRepo(), getEmailProviderOrThrow());
       await auth.logout(token);
     }
     const response = ok({ loggedOut: true });
@@ -2472,7 +2679,10 @@ async function handleMeData(request: NextRequest, path: string[]) {
         : ctx.roles.includes("ADMIN")
           ? "ADMIN"
           : "MEMBER";
-    if ((role === "TRAINER" && !policy.trainerReferralEnabled) || (role !== "TRAINER" && role !== "MEMBER" && !policy.staffReferralEnabled)) {
+    if (
+      (role === "TRAINER" && !policy.trainerReferralEnabled) ||
+      (role !== "TRAINER" && role !== "MEMBER" && !policy.staffReferralEnabled)
+    ) {
       return ok({ referralCodes: [], rewards: [] });
     }
     let referral = await prisma.referralCode.findFirst({
@@ -2529,6 +2739,70 @@ async function handleMeData(request: NextRequest, path: string[]) {
       }),
     });
   }
+  if (request.method === "POST" && pathMatches(path, ["me", "contact", "request-otp"])) {
+    const body = requestOtpSchema.parse(await readJson(request));
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const ipAddress = getClientIp(request);
+    await assertContactIdentifierAvailable(userId, body.identifier);
+    await assertRateLimit(
+      "otpRequestByIdentifier",
+      body.identifier.value,
+      "Too many OTP requests for this contact.",
+    );
+    await assertRateLimit("otpRequestByIp", ipAddress, "Too many OTP requests from this IP.");
+    const auth = new AuthService(
+      new PrismaAuthRepo(),
+      getEmailProviderOrThrow(),
+      () => new Date(),
+      body.identifier.kind === "phone" ? getSmsProviderOrThrow() : undefined,
+    );
+    const challenge = await auth.requestOtp(body.identifier, {
+      purpose: contactOtpPurpose(userId, body.identifier.kind),
+      ...(ipAddress !== "unknown" ? { ipAddress } : {}),
+    });
+    return ok({
+      challengeId: challenge.id,
+      expiresAt: challenge.expiresAt,
+      devOtp: getDevOtpResponseValue(),
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "contact", "verify-otp"])) {
+    const body = verifyOtpSchema.parse(await readJson(request));
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const ipAddress = getClientIp(request);
+    await assertContactIdentifierAvailable(userId, body.identifier);
+    await assertRateLimit(
+      "otpVerifyByIdentifier",
+      body.identifier.value,
+      "Too many OTP verification attempts for this contact.",
+    );
+    await assertRateLimit(
+      "otpVerifyByIp",
+      ipAddress,
+      "Too many OTP verification attempts from this IP.",
+    );
+    const auth = new AuthService(new PrismaAuthRepo(), getEmailProviderOrThrow());
+    await auth.verifyOtpChallenge({
+      identifier: body.identifier,
+      code: body.code,
+      purpose: contactOtpPurpose(userId, body.identifier.kind),
+    });
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data:
+        body.identifier.kind === "email"
+          ? { email: body.identifier.value, emailVerifiedAt: new Date() }
+          : { phone: body.identifier.value, phoneVerifiedAt: new Date() },
+    });
+    const token = extractSessionToken(request);
+    const session = token ? await resolveSessionSummaryFromToken(token, ctx.orgId) : null;
+    return ok({
+      user: serializeUserForClient(user),
+      ...(session ? { session } : {}),
+    });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "profile"])) {
     const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
     const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
@@ -2546,7 +2820,7 @@ async function handleMeData(request: NextRequest, path: string[]) {
       }),
     ]);
     return ok({
-      user,
+      user: serializeUserForClient(user),
       profile,
       wellness: {
         ...parseMemberProfileNotes(profile?.notes),
@@ -2566,11 +2840,25 @@ async function handleMeData(request: NextRequest, path: string[]) {
       throw validationError("Date of birth must be a valid date.");
     }
     const [user, profile, latestBodyProgress] = await prisma.$transaction(async (tx) => {
+      const currentUser = await tx.user.findUniqueOrThrow({ where: { id: userId } });
+      if (body.email && body.email !== publicUserEmail(currentUser.email)) {
+        throw validationError("Verify the new email before adding it to your account.");
+      }
+      if (body.phone !== undefined) {
+        let requestedPhone: string | null;
+        try {
+          requestedPhone = body.phone === null ? null : normalizePhoneNumber(body.phone);
+        } catch {
+          throw validationError("Enter a valid phone number.");
+        }
+        if (requestedPhone !== currentUser.phone) {
+          throw validationError("Verify the new phone number before adding it to your account.");
+        }
+      }
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: clean({
           name: body.name,
-          phone: body.phone,
           dateOfBirth,
           fitnessGoal: body.fitnessGoal,
         }),
@@ -2616,7 +2904,7 @@ async function handleMeData(request: NextRequest, path: string[]) {
       return [updatedUser, updatedProfile, progress] as const;
     });
     return ok({
-      user,
+      user: serializeUserForClient(user),
       profile,
       wellness: {
         ...parseMemberProfileNotes(profile?.notes),
@@ -2674,7 +2962,7 @@ async function handleMeData(request: NextRequest, path: string[]) {
       }
       return [updatedUser, updatedProfile] as const;
     });
-    return ok({ user, profile, file: asset });
+    return ok({ user: serializeUserForClient(user), profile, file: asset });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "attendance"])) {
     const userId = requireAuth(await getRequestContext(request));
@@ -3426,7 +3714,10 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
             ? candidate.applicablePlans.filter((item): item is string => typeof item === "string")
             : [];
           const applies = applicablePlans.length === 0 || applicablePlans.includes(plan.id);
-          return applies && (!candidate.maxRedemptions || candidate.redemptionCount < candidate.maxRedemptions);
+          return (
+            applies &&
+            (!candidate.maxRedemptions || candidate.redemptionCount < candidate.maxRedemptions)
+          );
         });
         const offerDiscountPaise = offer
           ? computeDiscountPaise({
@@ -3745,7 +4036,10 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     const body = branchManageSchema.parse(await readJson(request));
     const branch = await prisma.$transaction(async (tx) => {
       if (body.isDefault) {
-        await tx.branch.updateMany({ where: { orgId, isDefault: true }, data: { isDefault: false } });
+        await tx.branch.updateMany({
+          where: { orgId, isDefault: true },
+          data: { isDefault: false },
+        });
       }
       const created = await tx.branch.create({
         data: clean({
@@ -3761,9 +4055,14 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           active: body.active ?? true,
         }),
       });
-      const activeDefault = await tx.branch.findFirst({ where: { orgId, isDefault: true, active: true } });
+      const activeDefault = await tx.branch.findFirst({
+        where: { orgId, isDefault: true, active: true },
+      });
       if (!activeDefault) {
-        await tx.branch.update({ where: { id: created.id }, data: { isDefault: true, active: true } });
+        await tx.branch.update({
+          where: { id: created.id },
+          data: { isDefault: true, active: true },
+        });
         return tx.branch.findUniqueOrThrow({ where: { id: created.id } });
       }
       return created;
@@ -3791,7 +4090,10 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     }
     const branch = await prisma.$transaction(async (tx) => {
       if (body.isDefault) {
-        await tx.branch.updateMany({ where: { orgId, isDefault: true, id: { not: branchId } }, data: { isDefault: false } });
+        await tx.branch.updateMany({
+          where: { orgId, isDefault: true, id: { not: branchId } },
+          data: { isDefault: false },
+        });
       }
       const updated = await tx.branch.update({
         where: { id: branchId },
@@ -3843,7 +4145,9 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       throw notFoundError("Branch not found");
     }
     if (existing.isDefault) {
-      throw conflictError("Default branch cannot be deactivated. Make another branch default first.");
+      throw conflictError(
+        "Default branch cannot be deactivated. Make another branch default first.",
+      );
     }
     const branch = await prisma.branch.update({
       where: { id: branchId },
@@ -3890,7 +4194,9 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     const [user, profile, subscriptions, payments, attendance, bodyProgress, workouts] =
       await Promise.all([
         prisma.user.findUnique({ where: { id: memberUserId } }),
-        prisma.memberProfile.findUnique({ where: { orgId_userId: { orgId, userId: memberUserId } } }),
+        prisma.memberProfile.findUnique({
+          where: { orgId_userId: { orgId, userId: memberUserId } },
+        }),
         prisma.memberSubscription.findMany({
           where: { orgId, memberUserId },
           orderBy: { createdAt: "desc" },
@@ -4263,7 +4569,10 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const planId = path[3]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_PLAN_MANAGE");
-    const body = membershipPlanSchema.extend({ active: z.boolean().optional() }).partial().parse(await readJson(request));
+    const body = membershipPlanSchema
+      .extend({ active: z.boolean().optional() })
+      .partial()
+      .parse(await readJson(request));
     const existingPlan = await prisma.membershipPlan.findFirst({ where: { id: planId, orgId } });
     if (!existingPlan) {
       throw notFoundError("Membership plan not found");
@@ -4302,7 +4611,9 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     if (!existingPlan) {
       throw notFoundError("Membership plan not found");
     }
-    const usageCount = await prisma.memberSubscription.count({ where: { orgId, planId: existingPlan.id } });
+    const usageCount = await prisma.memberSubscription.count({
+      where: { orgId, planId: existingPlan.id },
+    });
     if (usageCount > 0) {
       throw conflictError("This plan has subscriptions attached. Archive it instead of deleting.");
     }
@@ -4481,7 +4792,9 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       throw validationError("Use the membership or shop checkout route for this payment purpose.");
     }
     if (body.metadata?.subscriptionId || body.metadata?.shopOrderId) {
-      throw validationError("Checkout metadata cannot directly reference membership or shop records.");
+      throw validationError(
+        "Checkout metadata cannot directly reference membership or shop records.",
+      );
     }
     if (body.userId && body.userId !== userId && !ctx.isPlatformAdmin) {
       throw forbiddenError("You cannot create a checkout session for another user.");
@@ -4536,10 +4849,10 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const canReadOwnSession = Boolean(session.userId && session.userId === userId);
     const canReadOrgSession = Boolean(
       session.orgId &&
-        ctx.orgId === session.orgId &&
-        ctx.permissions.includes("PAYMENTS_VIEW") &&
-        ctx.orgStatus !== "SUSPENDED" &&
-        ctx.orgStatus !== "CANCELLED",
+      ctx.orgId === session.orgId &&
+      ctx.permissions.includes("PAYMENTS_VIEW") &&
+      ctx.orgStatus !== "SUSPENDED" &&
+      ctx.orgStatus !== "CANCELLED",
     );
     if (!canReadOwnSession && !canReadOrgSession) {
       throw forbiddenError("No payment session access.");
@@ -4959,8 +5272,8 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     );
     const orgId = path[1]!;
     const body = subscriptionCheckoutSchema.parse(await readJson(request));
-    const [organization, plan, existingSubscription, approvedJoinRequest, user] =
-      await Promise.all([
+    const [organization, plan, existingSubscription, approvedJoinRequest, user] = await Promise.all(
+      [
         prisma.organization.findUnique({ where: { id: orgId } }),
         prisma.membershipPlan.findFirst({ where: { id: body.planId, orgId, active: true } }),
         prisma.memberSubscription.findFirst({
@@ -4972,7 +5285,8 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
           orderBy: { reviewedAt: "desc" },
         }),
         prisma.user.findUniqueOrThrow({ where: { id: userId } }),
-      ]);
+      ],
+    );
     if (!organization || !plan) {
       return fail("NOT_FOUND", "Plan not found", 404);
     }
@@ -5058,7 +5372,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         session,
         customer: clean({
           name: user.name,
-          email: user.email,
+          email: publicUserEmail(user.email),
           phone: user.phone ?? undefined,
         }),
       });
@@ -5195,7 +5509,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         session,
         customer: clean({
           name: user.name,
-          email: user.email,
+          email: publicUserEmail(user.email),
           phone: user.phone ?? undefined,
         }),
       });
@@ -5376,7 +5690,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         returnUrl: `/checkout/${session.id}`,
         customer: clean({
           name: user.name,
-          email: user.email,
+          email: publicUserEmail(user.email),
           phone: user.phone ?? undefined,
         }),
         metadata: {
@@ -5702,8 +6016,10 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
         referredDiscountValue: body.referredDiscountValue ?? policyDefaults.referredDiscountValue,
         maxDiscountCapBps: body.maxDiscountCapBps ?? policyDefaults.maxDiscountCapBps,
         maxReferralsPerMonth: body.maxReferralsPerMonth ?? policyDefaults.maxReferralsPerMonth,
-        referralCodeExpiryDays: body.referralCodeExpiryDays ?? policyDefaults.referralCodeExpiryDays,
-        trainerReferralEnabled: body.trainerReferralEnabled ?? policyDefaults.trainerReferralEnabled,
+        referralCodeExpiryDays:
+          body.referralCodeExpiryDays ?? policyDefaults.referralCodeExpiryDays,
+        trainerReferralEnabled:
+          body.trainerReferralEnabled ?? policyDefaults.trainerReferralEnabled,
         staffReferralEnabled: body.staffReferralEnabled ?? policyDefaults.staffReferralEnabled,
         updatedById: userId,
       },
@@ -5831,9 +6147,13 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
       take: 100,
     });
     const [users, coupons] = await Promise.all([
-      prisma.user.findMany({ where: { id: { in: referrals.map((referral) => referral.referrerUserId) } } }),
+      prisma.user.findMany({
+        where: { id: { in: referrals.map((referral) => referral.referrerUserId) } },
+      }),
       prisma.coupon.findMany({
-        where: { id: { in: referrals.map((referral) => referral.couponId).filter(Boolean) as string[] } },
+        where: {
+          id: { in: referrals.map((referral) => referral.couponId).filter(Boolean) as string[] },
+        },
       }),
     ]);
     return ok({ referrals, users, coupons });
@@ -5846,7 +6166,11 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
     startOfMonth.setUTCDate(1);
     startOfMonth.setUTCHours(0, 0, 0, 0);
     const [codes, redemptions, rewards] = await Promise.all([
-      prisma.referralCode.findMany({ where: { orgId }, orderBy: { redemptionCount: "desc" }, take: 25 }),
+      prisma.referralCode.findMany({
+        where: { orgId },
+        orderBy: { redemptionCount: "desc" },
+        take: 25,
+      }),
       prisma.referralRedemption.findMany({ where: { orgId, createdAt: { gte: startOfMonth } } }),
       prisma.referralReward.findMany({ where: { orgId, createdAt: { gte: startOfMonth } } }),
     ]);
@@ -5944,7 +6268,10 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
       entityId: referral.id,
       metadata: { code: referral.code, createdByRole: referral.createdByRole },
     });
-    return ok({ referral, links: { web: `/join/${org.username}?ref=${code}`, short: `/r/${code}` } });
+    return ok({
+      referral,
+      links: { web: `/join/${org.username}?ref=${code}`, short: `/r/${code}` },
+    });
   }
   if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "referrals", /.+/])) {
     const orgId = path[1]!;
@@ -5952,7 +6279,9 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "REFERRALS_MANAGE");
     const body = referralCodeManageSchema.partial().parse(await readJson(request));
-    const existingReferral = await prisma.referralCode.findFirst({ where: { id: referralId, orgId } });
+    const existingReferral = await prisma.referralCode.findFirst({
+      where: { id: referralId, orgId },
+    });
     if (!existingReferral) {
       throw notFoundError("Referral code not found");
     }
@@ -6279,7 +6608,12 @@ async function handleAttendance(request: NextRequest, path: string[]) {
           valid: attendance.status === "APPROVED" || attendance.status === "PENDING_APPROVAL",
           record: { ...attendanceWithEntryCode(attendance), branchName: branch?.name ?? null },
           user: user
-            ? { id: user.id, name: user.name, email: user.email, phone: user.phone }
+            ? {
+                id: user.id,
+                name: user.name,
+                email: publicUserEmail(user.email) ?? "",
+                phone: user.phone,
+              }
             : null,
         },
       });
@@ -6294,7 +6628,12 @@ async function handleAttendance(request: NextRequest, path: string[]) {
           pickupCode,
           order,
           user: user
-            ? { id: user.id, name: user.name, email: user.email, phone: user.phone }
+            ? {
+                id: user.id,
+                name: user.name,
+                email: publicUserEmail(user.email) ?? "",
+                phone: user.phone,
+              }
             : null,
         },
       });
@@ -6695,14 +7034,16 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       process.env.NEXT_PUBLIC_APP_URL ??
       ""
     ).replace(/\/$/, "");
-    await getEmailProviderOrThrow().sendStaffInviteEmail(clean({
-      to: invite.email,
-      organizationName: organization?.name ?? "Zook",
-      role: invite.role,
-      inviterName: inviter?.name ?? inviter?.email,
-      expiresAt: invite.expiresAt,
-      ...(inviteBaseUrl ? { inviteUrl: `${inviteBaseUrl}/staff/invite/${invite.token}` } : {}),
-    }));
+    await getEmailProviderOrThrow().sendStaffInviteEmail(
+      clean({
+        to: invite.email,
+        organizationName: organization?.name ?? "Zook",
+        role: invite.role,
+        inviterName: inviter?.name ?? inviter?.email,
+        expiresAt: invite.expiresAt,
+        ...(inviteBaseUrl ? { inviteUrl: `${inviteBaseUrl}/staff/invite/${invite.token}` } : {}),
+      }),
+    );
     await writeAuditLog({
       request,
       orgId,
@@ -6754,7 +7095,11 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       action: "staff.role_updated",
       entityType: "organization_role_assignment",
       entityId: assignment.id,
-      metadata: { userId: assignment.userId, previousRole: existingAssignment.role, role: assignment.role },
+      metadata: {
+        userId: assignment.userId,
+        previousRole: existingAssignment.role,
+        role: assignment.role,
+      },
     });
     return ok({ assignment });
   }
@@ -6899,7 +7244,9 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       if (!planId) {
         throw validationError("A plan is required for manual membership activation.");
       }
-      const plan = await prisma.membershipPlan.findFirst({ where: { id: planId, orgId, active: true } });
+      const plan = await prisma.membershipPlan.findFirst({
+        where: { id: planId, orgId, active: true },
+      });
       if (!plan) {
         throw notFoundError("Membership plan not found");
       }
@@ -7013,7 +7360,14 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       orderBy: { createdAt: "desc" },
     });
     const memberUserIds = assignments.map((assignment) => assignment.memberUserId);
-    const [users, profiles, bodyProgressEntries, planAssignments, planProgressEntries, trainerVisibleWorkouts] = await Promise.all([
+    const [
+      users,
+      profiles,
+      bodyProgressEntries,
+      planAssignments,
+      planProgressEntries,
+      trainerVisibleWorkouts,
+    ] = await Promise.all([
       prisma.user.findMany({
         where: { id: { in: memberUserIds } },
       }),
@@ -7335,7 +7689,10 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     }
     const assignmentCount = await prisma.planAssignment.count({ where: { orgId, planId } });
     const plan = assignmentCount
-      ? await prisma.planContent.update({ where: { id: existingPlan.id }, data: { status: "ARCHIVED" } })
+      ? await prisma.planContent.update({
+          where: { id: existingPlan.id },
+          data: { status: "ARCHIVED" },
+        })
       : await prisma.planContent.delete({ where: { id: existingPlan.id } });
     await writeAuditLog({
       request,
@@ -7385,7 +7742,9 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       ctx.roles.includes("OWNER") ||
       ctx.roles.includes("ADMIN");
     if (!canReview) {
-      throw forbiddenError("You can only review your own draft or use owner/admin plan publishing permissions.");
+      throw forbiddenError(
+        "You can only review your own draft or use owner/admin plan publishing permissions.",
+      );
     }
     const exercises = extractPlanExercises(existingPlan.content);
     if (planRequiresExercises(existingPlan.type as PlanType) && !exercises.length) {
@@ -7417,7 +7776,10 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     if (existingPlan.aiGenerated && !existingPlan.reviewed) {
       throw conflictError("AI-generated drafts must be reviewed before assignment.");
     }
-    if (planRequiresExercises(existingPlan.type as PlanType) && !extractPlanExercises(existingPlan.content).length) {
+    if (
+      planRequiresExercises(existingPlan.type as PlanType) &&
+      !extractPlanExercises(existingPlan.content).length
+    ) {
       throw validationError("Workout plans need at least one exercise before assignment.");
     }
     const body = planAssignSchema.parse(await readJson(request));
@@ -8112,7 +8474,11 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       throw notFoundError("Push device not found");
     }
     const diagnostics = getPushProviderDiagnostics();
-    if (diagnostics.status !== "misconfigured" && diagnostics.status !== "unsupported" && diagnostics.status !== "disabled") {
+    if (
+      diagnostics.status !== "misconfigured" &&
+      diagnostics.status !== "unsupported" &&
+      diagnostics.status !== "disabled"
+    ) {
       await getPushProvider().unregisterDevice({ token: device.token });
     }
     await prisma.pushDevice.update({
@@ -8143,7 +8509,11 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       throw notFoundError("Push device not found");
     }
     const diagnostics = getPushProviderDiagnostics();
-    if (diagnostics.status !== "misconfigured" && diagnostics.status !== "unsupported" && diagnostics.status !== "disabled") {
+    if (
+      diagnostics.status !== "misconfigured" &&
+      diagnostics.status !== "unsupported" &&
+      diagnostics.status !== "disabled"
+    ) {
       await getPushProvider().unregisterDevice({ token: device.token });
     }
     const updated = await prisma.pushDevice.update({
@@ -8263,7 +8633,9 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       prisma.inventoryMovement.count({ where: { orgId, productId: existingProduct.id } }),
     ]);
     if (orderItemCount > 0 || movementCount > 0) {
-      throw conflictError("This product has order or inventory history. Archive it instead of deleting.");
+      throw conflictError(
+        "This product has order or inventory history. Archive it instead of deleting.",
+      );
     }
     await prisma.product.delete({ where: { id: existingProduct.id } });
     await writeAuditLog({
@@ -8366,7 +8738,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         session,
         customer: clean({
           name: user?.name ?? undefined,
-          email: user?.email ?? undefined,
+          email: publicUserEmail(user?.email),
           phone: user?.phone ?? undefined,
         }),
       });
@@ -8889,7 +9261,9 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   if (request.method === "GET" && pathMatches(path, ["platform", "provider-status"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
-    return ok({ providers: { ...getProviderRegistryDiagnostics(), rateLimit: getRateLimitDiagnostics() } });
+    return ok({
+      providers: { ...getProviderRegistryDiagnostics(), rateLimit: getRateLimitDiagnostics() },
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "abuse-flags"])) {
     const ctx = await getRequestContext(request);

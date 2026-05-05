@@ -4,13 +4,19 @@ import type {
   ProviderDiagnosticMetadata,
   ProviderDiagnosticStatus,
   ProviderDiagnostics,
-  ProviderMode
+  ProviderMode,
 } from "../types";
 import { MockAIProvider, OpenAIProvider, type AIProvider } from "./ai";
-import { MockEmailProvider, ResendEmailProvider, SMTPEmailProvider, type EmailProvider } from "./email";
+import {
+  MockEmailProvider,
+  ResendEmailProvider,
+  SMTPEmailProvider,
+  type EmailProvider,
+} from "./email";
 import { GoogleMapProvider, MockMapProvider, type MapProvider } from "./map";
 import { MockPaymentProvider, RazorpayPaymentProvider, type PaymentProvider } from "./payment";
 import { ExpoPushProvider, MockPushProvider, type PushProvider } from "./push";
+import { MockSmsProvider, WebhookSmsProvider, type SmsProvider } from "./sms";
 import { LocalStorageProvider, S3CompatibleStorageProvider, type StorageProvider } from "./storage";
 
 type ProviderSetupErrorKind = "misconfigured" | "unsupported" | "disabled";
@@ -27,6 +33,7 @@ export interface ProviderRegistryDiagnostics {
   map: ProviderDiagnostics;
   payment: ProviderDiagnostics;
   push: ProviderDiagnostics;
+  sms: ProviderDiagnostics;
   storage: ProviderDiagnostics;
 }
 
@@ -49,7 +56,10 @@ export class ProviderSetupError extends Error {
     supportedProviders: readonly string[];
   }) {
     const missingEnv = input.missingEnv ?? [];
-    const label = input.category === "ai" ? "AI" : `${input.category.slice(0, 1).toUpperCase()}${input.category.slice(1)}`;
+    const label =
+      input.category === "ai"
+        ? "AI"
+        : `${input.category.slice(0, 1).toUpperCase()}${input.category.slice(1)}`;
     const message =
       input.kind === "misconfigured"
         ? `${label} provider "${input.selectedProvider}" is selected via ${input.selectionEnv} but is missing required env: ${missingEnv.join(", ")}. Set the missing env or switch ${input.selectionEnv}=${input.defaultProvider}.`
@@ -73,7 +83,9 @@ function env(value: string | undefined) {
 }
 
 function envFlags(names: readonly string[]): Record<string, boolean> {
-  return Object.fromEntries(names.map((name) => [name, env(process.env[name]) !== undefined])) as Record<string, boolean>;
+  return Object.fromEntries(
+    names.map((name) => [name, env(process.env[name]) !== undefined]),
+  ) as Record<string, boolean>;
 }
 
 function selectionStatus(selectionValue: string | undefined): ProviderDiagnosticStatus {
@@ -104,7 +116,7 @@ function createDiagnostics(input: {
     provider: input.instance.provider,
     mode: input.instance.mode,
     configured: input.instance.configured,
-    ...(input.instance.metadata ? { metadata: input.instance.metadata } : {})
+    ...(input.instance.metadata ? { metadata: input.instance.metadata } : {}),
   };
 }
 
@@ -126,8 +138,8 @@ function createReadyResolution<T extends DiagnosticProvider>(input: {
       status: selectionStatus(input.selectionValue),
       missingEnv: [],
       env: input.env,
-      instance: diagnostics
-    })
+      instance: diagnostics,
+    }),
   };
 }
 
@@ -149,7 +161,7 @@ function createMisconfiguredResolution<T>(input: {
     selectedProvider: input.selectedProvider,
     defaultProvider: input.defaultProvider,
     missingEnv: input.missingEnv,
-    supportedProviders: input.supportedProviders
+    supportedProviders: input.supportedProviders,
   });
 
   return {
@@ -166,9 +178,9 @@ function createMisconfiguredResolution<T>(input: {
         provider: input.selectedProvider,
         mode: input.mode,
         configured: false,
-        ...(input.metadata ? { metadata: input.metadata } : {})
-      }
-    })
+        ...(input.metadata ? { metadata: input.metadata } : {}),
+      },
+    }),
   };
 }
 
@@ -188,7 +200,7 @@ function createUnsupportedResolution<T>(input: {
     selectionEnv: input.selectionEnv,
     selectedProvider: input.selectedProvider,
     defaultProvider: input.defaultProvider,
-    supportedProviders: input.supportedProviders
+    supportedProviders: input.supportedProviders,
   });
 
   return {
@@ -205,9 +217,9 @@ function createUnsupportedResolution<T>(input: {
         provider: input.selectedProvider,
         mode: input.mode,
         configured: false,
-        ...(input.metadata ? { metadata: input.metadata } : {})
-      }
-    })
+        ...(input.metadata ? { metadata: input.metadata } : {}),
+      },
+    }),
   };
 }
 
@@ -225,7 +237,7 @@ function createDisabledResolution<T>(input: {
     selectionEnv: input.selectionEnv,
     selectedProvider: "disabled",
     defaultProvider: input.defaultProvider,
-    supportedProviders: input.supportedProviders
+    supportedProviders: input.supportedProviders,
   });
 
   return {
@@ -242,9 +254,9 @@ function createDisabledResolution<T>(input: {
         provider: "disabled",
         mode: "disabled",
         configured: false,
-        ...(input.metadata ? { metadata: input.metadata } : {})
-      }
-    })
+        ...(input.metadata ? { metadata: input.metadata } : {}),
+      },
+    }),
   };
 }
 
@@ -266,7 +278,7 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
     "SMTP_PORT",
     "SMTP_USER",
     "SMTP_PASS",
-    "SMTP_FROM"
+    "SMTP_FROM",
   ]);
 
   if (selectedProvider === "mock") {
@@ -275,7 +287,7 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new MockEmailProvider()
+      provider: new MockEmailProvider(),
     });
   }
 
@@ -290,7 +302,7 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
         supportedProviders: ["mock", "resend"],
         missingEnv: ["RESEND_API_KEY"],
         env: envState,
-        mode: "live"
+        mode: "live",
       });
     }
 
@@ -299,7 +311,10 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new ResendEmailProvider(apiKey, env(process.env.EMAIL_FROM) ?? "Zook <noreply@zook.app>")
+      provider: new ResendEmailProvider(
+        apiKey,
+        env(process.env.EMAIL_FROM) ?? "Zook <noreply@zook.app>",
+      ),
     });
   }
 
@@ -314,7 +329,7 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
       !port ? "SMTP_PORT" : null,
       !user ? "SMTP_USER" : null,
       !pass ? "SMTP_PASS" : null,
-      !fromEmail ? "SMTP_FROM or EMAIL_FROM" : null
+      !fromEmail ? "SMTP_FROM or EMAIL_FROM" : null,
     ].filter(Boolean) as string[];
 
     if (missingEnv.length > 0) {
@@ -326,7 +341,7 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
         supportedProviders: ["mock", "resend", "smtp"],
         missingEnv,
         env: envState,
-        mode: "live"
+        mode: "live",
       });
     }
 
@@ -340,8 +355,8 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
         port: Number(port),
         user: user as string,
         pass: pass as string,
-        fromEmail: fromEmail as string
-      })
+        fromEmail: fromEmail as string,
+      }),
     });
   }
 
@@ -352,7 +367,7 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
     defaultProvider: "mock",
     supportedProviders: ["mock", "resend", "smtp"],
     env: envState,
-    mode: "live"
+    mode: "live",
   });
 }
 
@@ -365,7 +380,7 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
     "RAZORPAY_KEY_SECRET",
     "RAZORPAY_WEBHOOK_SECRET",
     "RAZORPAY_MODE",
-    "RAZORPAY_CHECKOUT_THEME_COLOR"
+    "RAZORPAY_CHECKOUT_THEME_COLOR",
   ]);
 
   if (selectedProvider === "mock") {
@@ -374,7 +389,7 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new MockPaymentProvider()
+      provider: new MockPaymentProvider(),
     });
   }
 
@@ -384,7 +399,7 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
       selectionEnv: "PAYMENT_PROVIDER",
       defaultProvider: "mock",
       supportedProviders: ["mock", "razorpay", "disabled"],
-      env: envState
+      env: envState,
     });
   }
 
@@ -395,7 +410,7 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
     const missingEnv = [
       ...(keyId ? [] : ["RAZORPAY_KEY_ID"]),
       ...(keySecret ? [] : ["RAZORPAY_KEY_SECRET"]),
-      ...(webhookSecret ? [] : ["RAZORPAY_WEBHOOK_SECRET"])
+      ...(webhookSecret ? [] : ["RAZORPAY_WEBHOOK_SECRET"]),
     ];
 
     if (missingEnv.length > 0) {
@@ -409,8 +424,8 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
         env: envState,
         mode: "test",
         metadata: {
-          mode: env(process.env.RAZORPAY_MODE) ?? "test"
-        }
+          mode: env(process.env.RAZORPAY_MODE) ?? "test",
+        },
       });
     }
 
@@ -427,8 +442,8 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
         mode,
         ...(env(process.env.RAZORPAY_CHECKOUT_THEME_COLOR)
           ? { themeColor: env(process.env.RAZORPAY_CHECKOUT_THEME_COLOR) as string }
-          : {})
-      })
+          : {}),
+      }),
     });
   }
 
@@ -439,7 +454,73 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
     defaultProvider: "mock",
     supportedProviders: ["mock", "razorpay", "disabled"],
     env: envState,
-    mode: "live"
+    mode: "live",
+  });
+}
+
+function resolveSmsProvider(): ProviderResolution<SmsProvider> {
+  const selectionValue = env(process.env.SMS_PROVIDER);
+  const defaultProvider = process.env.APP_ENV?.trim() === "production" ? "disabled" : "mock";
+  const selectedProvider = selectionValue ?? defaultProvider;
+  const envState = envFlags(["SMS_PROVIDER", "SMS_WEBHOOK_URL", "SMS_WEBHOOK_SECRET"]);
+
+  if (selectedProvider === "mock") {
+    return createReadyResolution({
+      category: "sms",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new MockSmsProvider(),
+    });
+  }
+
+  if (selectedProvider === "disabled") {
+    return createDisabledResolution({
+      category: "sms",
+      selectionEnv: "SMS_PROVIDER",
+      defaultProvider,
+      supportedProviders: ["mock", "webhook", "disabled"],
+      env: envState,
+    });
+  }
+
+  if (selectedProvider === "webhook") {
+    const url = env(process.env.SMS_WEBHOOK_URL);
+    if (!url) {
+      return createMisconfiguredResolution({
+        category: "sms",
+        selectionEnv: "SMS_PROVIDER",
+        selectedProvider,
+        defaultProvider,
+        supportedProviders: ["mock", "webhook", "disabled"],
+        missingEnv: ["SMS_WEBHOOK_URL"],
+        env: envState,
+        mode: "live",
+      });
+    }
+
+    return createReadyResolution({
+      category: "sms",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new WebhookSmsProvider({
+        url,
+        ...(env(process.env.SMS_WEBHOOK_SECRET)
+          ? { bearerToken: env(process.env.SMS_WEBHOOK_SECRET) as string }
+          : {}),
+      }),
+    });
+  }
+
+  return createUnsupportedResolution({
+    category: "sms",
+    selectionEnv: "SMS_PROVIDER",
+    selectedProvider,
+    defaultProvider,
+    supportedProviders: ["mock", "webhook", "disabled"],
+    env: envState,
+    mode: "live",
   });
 }
 
@@ -454,7 +535,7 @@ function resolveMapProvider(): ProviderResolution<MapProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new MockMapProvider()
+      provider: new MockMapProvider(),
     });
   }
 
@@ -473,8 +554,8 @@ function resolveMapProvider(): ProviderResolution<MapProvider> {
         metadata: {
           supportsSearch: true,
           supportsReverseGeocode: true,
-          supportsGoogleMapsLinks: true
-        }
+          supportsGoogleMapsLinks: true,
+        },
       });
     }
 
@@ -483,7 +564,7 @@ function resolveMapProvider(): ProviderResolution<MapProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new GoogleMapProvider(apiKey)
+      provider: new GoogleMapProvider(apiKey),
     });
   }
 
@@ -494,14 +575,19 @@ function resolveMapProvider(): ProviderResolution<MapProvider> {
     defaultProvider: "mock",
     supportedProviders: ["mock", "google"],
     env: envState,
-    mode: "live"
+    mode: "live",
   });
 }
 
 function resolveAIProvider(): ProviderResolution<AIProvider> {
   const selectionValue = env(process.env.AI_PROVIDER);
   const selectedProvider = selectionValue ?? "mock";
-  const envState = envFlags(["AI_PROVIDER", "OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_IMAGE_MODEL"]);
+  const envState = envFlags([
+    "AI_PROVIDER",
+    "OPENAI_API_KEY",
+    "OPENAI_MODEL",
+    "OPENAI_IMAGE_MODEL",
+  ]);
 
   if (selectedProvider === "mock") {
     return createReadyResolution({
@@ -509,7 +595,7 @@ function resolveAIProvider(): ProviderResolution<AIProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new MockAIProvider()
+      provider: new MockAIProvider(),
     });
   }
 
@@ -519,7 +605,7 @@ function resolveAIProvider(): ProviderResolution<AIProvider> {
       selectionEnv: "AI_PROVIDER",
       defaultProvider: "mock",
       supportedProviders: ["mock", "openai", "disabled"],
-      env: envState
+      env: envState,
     });
   }
 
@@ -537,8 +623,8 @@ function resolveAIProvider(): ProviderResolution<AIProvider> {
         mode: "live",
         metadata: {
           model: env(process.env.OPENAI_MODEL) ?? "gpt-4.1-mini",
-          imageModel: env(process.env.OPENAI_IMAGE_MODEL) ?? "gpt-image-1"
-        }
+          imageModel: env(process.env.OPENAI_IMAGE_MODEL) ?? "gpt-image-1",
+        },
       });
     }
 
@@ -547,7 +633,7 @@ function resolveAIProvider(): ProviderResolution<AIProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new OpenAIProvider(apiKey)
+      provider: new OpenAIProvider(apiKey),
     });
   }
 
@@ -558,7 +644,7 @@ function resolveAIProvider(): ProviderResolution<AIProvider> {
     defaultProvider: "mock",
     supportedProviders: ["mock", "openai", "disabled"],
     env: envState,
-    mode: "live"
+    mode: "live",
   });
 }
 
@@ -575,7 +661,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
     "S3_SECRET_ACCESS_KEY",
     "S3_PUBLIC_BASE_URL",
     "R2_ACCOUNT_ID",
-    "STORAGE_URL_SIGNING_SECRET"
+    "STORAGE_URL_SIGNING_SECRET",
   ]);
 
   if (selectedProvider === "local") {
@@ -584,7 +670,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new LocalStorageProvider()
+      provider: new LocalStorageProvider(),
     });
   }
 
@@ -594,7 +680,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
       selectionEnv: "STORAGE_PROVIDER",
       defaultProvider: "local",
       supportedProviders: ["local", "s3", "r2", "disabled"],
-      env: envState
+      env: envState,
     });
   }
 
@@ -607,7 +693,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
       bucket ? null : "S3_BUCKET",
       region ? null : "S3_REGION",
       accessKeyId ? null : "S3_ACCESS_KEY_ID",
-      secretAccessKey ? null : "S3_SECRET_ACCESS_KEY"
+      secretAccessKey ? null : "S3_SECRET_ACCESS_KEY",
     ].filter(Boolean) as string[];
 
     if (missingEnv.length) {
@@ -622,8 +708,8 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
         mode: "live",
         metadata: {
           hasEndpoint: Boolean(env(process.env.S3_ENDPOINT)),
-          hasPublicBaseUrl: Boolean(env(process.env.S3_PUBLIC_BASE_URL))
-        }
+          hasPublicBaseUrl: Boolean(env(process.env.S3_PUBLIC_BASE_URL)),
+        },
       });
     }
 
@@ -638,9 +724,13 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
         region: region as string,
         accessKeyId: accessKeyId as string,
         secretAccessKey: secretAccessKey as string,
-        ...(env(process.env.S3_ENDPOINT) ? { endpoint: env(process.env.S3_ENDPOINT) as string } : {}),
-        ...(env(process.env.S3_PUBLIC_BASE_URL) ? { publicBaseUrl: env(process.env.S3_PUBLIC_BASE_URL) as string } : {})
-      })
+        ...(env(process.env.S3_ENDPOINT)
+          ? { endpoint: env(process.env.S3_ENDPOINT) as string }
+          : {}),
+        ...(env(process.env.S3_PUBLIC_BASE_URL)
+          ? { publicBaseUrl: env(process.env.S3_PUBLIC_BASE_URL) as string }
+          : {}),
+      }),
     });
   }
 
@@ -648,12 +738,16 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
     const bucket = env(process.env.S3_BUCKET);
     const accessKeyId = env(process.env.S3_ACCESS_KEY_ID);
     const secretAccessKey = env(process.env.S3_SECRET_ACCESS_KEY);
-    const endpoint = env(process.env.S3_ENDPOINT) ?? (env(process.env.R2_ACCOUNT_ID) ? `https://${env(process.env.R2_ACCOUNT_ID)}.r2.cloudflarestorage.com` : undefined);
+    const endpoint =
+      env(process.env.S3_ENDPOINT) ??
+      (env(process.env.R2_ACCOUNT_ID)
+        ? `https://${env(process.env.R2_ACCOUNT_ID)}.r2.cloudflarestorage.com`
+        : undefined);
     const missingEnv = [
       bucket ? null : "S3_BUCKET",
       accessKeyId ? null : "S3_ACCESS_KEY_ID",
       secretAccessKey ? null : "S3_SECRET_ACCESS_KEY",
-      endpoint ? null : "S3_ENDPOINT or R2_ACCOUNT_ID"
+      endpoint ? null : "S3_ENDPOINT or R2_ACCOUNT_ID",
     ].filter(Boolean) as string[];
 
     if (missingEnv.length) {
@@ -667,8 +761,8 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
         env: envState,
         mode: "live",
         metadata: {
-          hasPublicBaseUrl: Boolean(env(process.env.S3_PUBLIC_BASE_URL))
-        }
+          hasPublicBaseUrl: Boolean(env(process.env.S3_PUBLIC_BASE_URL)),
+        },
       });
     }
 
@@ -685,8 +779,10 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
         accessKeyId: accessKeyId as string,
         secretAccessKey: secretAccessKey as string,
         forcePathStyle: true,
-        ...(env(process.env.S3_PUBLIC_BASE_URL) ? { publicBaseUrl: env(process.env.S3_PUBLIC_BASE_URL) as string } : {})
-      })
+        ...(env(process.env.S3_PUBLIC_BASE_URL)
+          ? { publicBaseUrl: env(process.env.S3_PUBLIC_BASE_URL) as string }
+          : {}),
+      }),
     });
   }
 
@@ -697,14 +793,19 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
     defaultProvider: "local",
     supportedProviders: ["local", "s3", "r2", "disabled"],
     env: envState,
-    mode: "live"
+    mode: "live",
   });
 }
 
 function resolvePushProvider(): ProviderResolution<PushProvider> {
   const selectionValue = env(process.env.PUSH_PROVIDER);
   const selectedProvider = selectionValue ?? "mock";
-  const envState = envFlags(["PUSH_PROVIDER", "EXPO_ACCESS_TOKEN", "EXPO_PROJECT_ID", "PUSH_ENVIRONMENT"]);
+  const envState = envFlags([
+    "PUSH_PROVIDER",
+    "EXPO_ACCESS_TOKEN",
+    "EXPO_PROJECT_ID",
+    "PUSH_ENVIRONMENT",
+  ]);
 
   if (selectedProvider === "mock") {
     return createReadyResolution({
@@ -712,7 +813,7 @@ function resolvePushProvider(): ProviderResolution<PushProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new MockPushProvider()
+      provider: new MockPushProvider(),
     });
   }
 
@@ -722,7 +823,7 @@ function resolvePushProvider(): ProviderResolution<PushProvider> {
       selectionEnv: "PUSH_PROVIDER",
       defaultProvider: "mock",
       supportedProviders: ["mock", "expo", "disabled"],
-      env: envState
+      env: envState,
     });
   }
 
@@ -737,7 +838,7 @@ function resolvePushProvider(): ProviderResolution<PushProvider> {
         supportedProviders: ["mock", "expo", "disabled"],
         missingEnv: ["EXPO_PROJECT_ID"],
         env: envState,
-        mode: "live"
+        mode: "live",
       });
     }
 
@@ -756,8 +857,8 @@ function resolvePushProvider(): ProviderResolution<PushProvider> {
               : "development",
         ...(env(process.env.EXPO_ACCESS_TOKEN)
           ? { accessToken: env(process.env.EXPO_ACCESS_TOKEN) as string }
-          : {})
-      })
+          : {}),
+      }),
     });
   }
 
@@ -768,7 +869,7 @@ function resolvePushProvider(): ProviderResolution<PushProvider> {
     defaultProvider: "mock",
     supportedProviders: ["mock", "expo", "disabled"],
     env: envState,
-    mode: "live"
+    mode: "live",
   });
 }
 
@@ -786,6 +887,14 @@ export function getPaymentProvider(): PaymentProvider {
 
 export function getPaymentProviderDiagnostics(): ProviderDiagnostics {
   return resolvePaymentProvider().diagnostics;
+}
+
+export function getSmsProvider(): SmsProvider {
+  return requireProvider(resolveSmsProvider());
+}
+
+export function getSmsProviderDiagnostics(): ProviderDiagnostics {
+  return resolveSmsProvider().diagnostics;
 }
 
 export function getMapProvider(): MapProvider {
@@ -827,6 +936,7 @@ export function getProviderRegistryDiagnostics(): ProviderRegistryDiagnostics {
     map: getMapProviderDiagnostics(),
     payment: getPaymentProviderDiagnostics(),
     push: getPushProviderDiagnostics(),
-    storage: getStorageProviderDiagnostics()
+    sms: getSmsProviderDiagnostics(),
+    storage: getStorageProviderDiagnostics(),
   };
 }

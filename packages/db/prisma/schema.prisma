@@ -396,6 +396,7 @@ model User {
   emailVerifiedAt  DateTime?
   name             String
   phone            String?
+  phoneVerifiedAt  DateTime?
   dateOfBirth      DateTime?
   profilePhotoUrl  String?
   gender           String?
@@ -411,6 +412,7 @@ model User {
   updatedAt        DateTime  @updatedAt
 
   @@index([email])
+  @@index([phone])
   @@index([isPlatformAdmin])
 }
 
@@ -432,6 +434,9 @@ model UserSession {
 model OtpChallenge {
   id          String    @id @default(cuid())
   email       String
+  identifier  String
+  channel     String    @default("email")
+  phone       String?
   codeHash    String
   purpose     String    @default("login")
   attempts    Int       @default(0)
@@ -443,6 +448,8 @@ model OtpChallenge {
   createdAt   DateTime  @default(now())
 
   @@index([email, purpose])
+  @@index([identifier, purpose])
+  @@index([phone, purpose])
   @@index([expiresAt])
 }
 
@@ -1220,21 +1227,21 @@ model ReferralCode {
 }
 
 model ReferralPolicy {
-  id                       String   @id @default(cuid())
-  orgId                    String   @unique
-  enabled                  Boolean  @default(true)
-  referrerRewardType       String   @default("DAYS")
-  referrerRewardValue      Int      @default(7)
-  referredDiscountType     String   @default("PERCENTAGE")
-  referredDiscountValue    Int      @default(1000)
-  maxDiscountCapBps        Int      @default(3000)
-  maxReferralsPerMonth     Int      @default(5)
-  referralCodeExpiryDays   Int      @default(90)
-  trainerReferralEnabled   Boolean  @default(true)
-  staffReferralEnabled     Boolean  @default(false)
-  updatedById              String?
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  orgId                  String   @unique
+  enabled                Boolean  @default(true)
+  referrerRewardType     String   @default("DAYS")
+  referrerRewardValue    Int      @default(7)
+  referredDiscountType   String   @default("PERCENTAGE")
+  referredDiscountValue  Int      @default(1000)
+  maxDiscountCapBps      Int      @default(3000)
+  maxReferralsPerMonth   Int      @default(5)
+  referralCodeExpiryDays Int      @default(90)
+  trainerReferralEnabled Boolean  @default(true)
+  staffReferralEnabled   Boolean  @default(false)
+  updatedById            String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   @@index([orgId, enabled])
 }
@@ -1254,18 +1261,18 @@ model ReferralRedemption {
 }
 
 model ReferralReward {
-  id              String    @id @default(cuid())
-  orgId           String
-  referralCodeId  String
-  redemptionId    String    @unique
-  referrerUserId  String
-  rewardType      String
-  rewardValue     Int
-  appliedToSubId  String?
-  status          String    @default("pending")
-  appliedAt       DateTime?
-  expiresAt       DateTime?
-  createdAt       DateTime  @default(now())
+  id             String    @id @default(cuid())
+  orgId          String
+  referralCodeId String
+  redemptionId   String    @unique
+  referrerUserId String
+  rewardType     String
+  rewardValue    Int
+  appliedToSubId String?
+  status         String    @default("pending")
+  appliedAt      DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
 
   @@index([orgId, referrerUserId])
   @@index([referralCodeId])

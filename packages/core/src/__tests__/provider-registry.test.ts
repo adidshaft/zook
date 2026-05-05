@@ -6,6 +6,7 @@ import {
   getPaymentProvider,
   getPushProvider,
   getProviderRegistryDiagnostics,
+  getSmsProvider,
   ExpoPushProvider,
   getStorageProvider,
   GoogleMapProvider,
@@ -15,6 +16,7 @@ import {
   MockMapProvider,
   MockPaymentProvider,
   MockPushProvider,
+  MockSmsProvider,
   OpenAIProvider,
   ProviderSetupError,
   RazorpayPaymentProvider,
@@ -30,6 +32,7 @@ afterEach(() => {
 });
 
 function clearProviderEnv() {
+  delete process.env.APP_ENV;
   delete process.env.AI_PROVIDER;
   delete process.env.OPENAI_API_KEY;
   delete process.env.OPENAI_MODEL;
@@ -52,6 +55,9 @@ function clearProviderEnv() {
   delete process.env.EXPO_ACCESS_TOKEN;
   delete process.env.EXPO_PROJECT_ID;
   delete process.env.PUSH_ENVIRONMENT;
+  delete process.env.SMS_PROVIDER;
+  delete process.env.SMS_WEBHOOK_URL;
+  delete process.env.SMS_WEBHOOK_SECRET;
   delete process.env.STORAGE_PROVIDER;
   delete process.env.S3_ENDPOINT;
   delete process.env.S3_REGION;
@@ -75,6 +81,7 @@ describe("provider registry", () => {
     expect(getMapProvider()).toBeInstanceOf(MockMapProvider);
     expect(getPaymentProvider()).toBeInstanceOf(MockPaymentProvider);
     expect(getPushProvider()).toBeInstanceOf(MockPushProvider);
+    expect(getSmsProvider()).toBeInstanceOf(MockSmsProvider);
     expect(getStorageProvider()).toBeInstanceOf(LocalStorageProvider);
 
     expect(getProviderRegistryDiagnostics()).toMatchObject({
@@ -111,6 +118,11 @@ describe("provider registry", () => {
         activeProvider: "mock",
       },
       push: {
+        status: "default",
+        provider: "mock",
+        activeProvider: "mock",
+      },
+      sms: {
         status: "default",
         provider: "mock",
         activeProvider: "mock",

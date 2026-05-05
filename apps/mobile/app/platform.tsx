@@ -16,7 +16,7 @@ import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function PlatformMobile() {
   const { logout, session } = useAuth();
-  const platformEmail = encodeURIComponent(session?.user.email ?? "platform@zook.local");
+  const platformEmail = encodeURIComponent(session?.user.email || "platform@zook.local");
   const platformWebUrl = toWebUrl(
     `/login?redirect=${encodeURIComponent("/platform")}&email=${platformEmail}`,
   );

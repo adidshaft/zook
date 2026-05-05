@@ -40,8 +40,8 @@ interface AuthContextValue {
   activeOrgId?: string;
   activeRole?: Role;
   defaultRoute: string;
-  requestOtp: (email: string) => Promise<RequestOtpResult>;
-  verifyOtp: (email: string, code: string) => Promise<void>;
+  requestOtp: (identifier: string) => Promise<RequestOtpResult>;
+  verifyOtp: (identifier: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   setActiveOrgId: (orgId: string) => Promise<void>;
@@ -194,16 +194,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
-  const requestOtp = useCallback(async (email: string) => {
-    const result = await authClient.requestOtp(email);
+  const requestOtp = useCallback(async (identifier: string) => {
+    const result = await authClient.requestOtp(identifier);
     setError(undefined);
     return result;
   }, []);
 
   const verifyOtp = useCallback(
-    async (email: string, code: string) => {
+    async (identifier: string, code: string) => {
       const normalizedCode = sanitizeOtpCode(code);
-      const result = await authClient.verifyOtp(email, normalizedCode);
+      const result = await authClient.verifyOtp(identifier, normalizedCode);
       await deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY);
       await setStoredValue(SESSION_STORAGE_KEY, result.token);
       await hydrate(result.token, activeOrgId, activeRole);

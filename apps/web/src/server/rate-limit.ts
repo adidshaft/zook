@@ -7,7 +7,10 @@ export interface RateLimitRule {
 
 export interface RateLimitStore {
   readonly providerName: RateLimitProvider;
-  consume(key: string, rule: RateLimitRule): Promise<{ allowed: boolean; count: number; resetAt: number }>;
+  consume(
+    key: string,
+    rule: RateLimitRule,
+  ): Promise<{ allowed: boolean; count: number; resetAt: number }>;
 }
 
 export type RateLimitProvider = "memory" | "upstash" | "disabled";
@@ -33,8 +36,10 @@ const globalForRateLimit = globalThis as unknown as {
 
 export const defaultRateLimitRules = {
   otpRequestByEmail: { limit: 4, windowMs: 10 * 60 * 1000 },
+  otpRequestByIdentifier: { limit: 4, windowMs: 10 * 60 * 1000 },
   otpRequestByIp: { limit: 8, windowMs: 10 * 60 * 1000 },
   otpVerifyByEmail: { limit: 8, windowMs: 10 * 60 * 1000 },
+  otpVerifyByIdentifier: { limit: 8, windowMs: 10 * 60 * 1000 },
   otpVerifyByIp: { limit: 12, windowMs: 10 * 60 * 1000 },
   aiRequestByUser: { limit: 20, windowMs: 10 * 60 * 1000 },
   notificationSendByActor: { limit: 12, windowMs: 10 * 60 * 1000 },
@@ -43,7 +48,7 @@ export const defaultRateLimitRules = {
   guardianConsentByActor: { limit: 6, windowMs: 30 * 60 * 1000 },
   privacyRequestByActor: { limit: 6, windowMs: 60 * 60 * 1000 },
   fileUploadByActor: { limit: 24, windowMs: 10 * 60 * 1000 },
-  qrScanByActor: { limit: 20, windowMs: 5 * 60 * 1000 }
+  qrScanByActor: { limit: 20, windowMs: 5 * 60 * 1000 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export class InMemoryRateLimitStore implements RateLimitStore {
@@ -58,7 +63,7 @@ export class InMemoryRateLimitStore implements RateLimitStore {
     if (!current || current.resetAt <= now) {
       const next: BucketRecord = {
         count: 1,
-        resetAt: now + rule.windowMs
+        resetAt: now + rule.windowMs,
       };
       this.buckets.set(key, next);
       return { allowed: true, count: next.count, resetAt: next.resetAt };
@@ -69,7 +74,7 @@ export class InMemoryRateLimitStore implements RateLimitStore {
     return {
       allowed: current.count <= rule.limit,
       count: current.count,
-      resetAt: current.resetAt
+      resetAt: current.resetAt,
     };
   }
 }
@@ -87,13 +92,13 @@ export class UpstashRateLimitStore implements RateLimitStore {
       method: "POST",
       headers: {
         authorization: `Bearer ${this.input.token}`,
-        "content-type": "application/json"
+        "content-type": "application/json",
       },
       body: JSON.stringify([
         ["SET", redisKey, 0, "PX", rule.windowMs, "NX"],
         ["INCR", redisKey],
-        ["PTTL", redisKey]
-      ])
+        ["PTTL", redisKey],
+      ]),
     });
 
     if (!response.ok) {
@@ -117,7 +122,7 @@ export class UpstashRateLimitStore implements RateLimitStore {
     return {
       allowed: count <= rule.limit,
       count,
-      resetAt
+      resetAt,
     };
   }
 }
@@ -138,7 +143,9 @@ function normalizeRateLimitProvider(value?: string | null): RateLimitProvider | 
   }
 }
 
-export function getRateLimitDiagnostics(env: NodeJS.ProcessEnv = process.env): RateLimitDiagnostics {
+export function getRateLimitDiagnostics(
+  env: NodeJS.ProcessEnv = process.env,
+): RateLimitDiagnostics {
   const selectedProvider = normalizeRateLimitProvider(env.RATE_LIMIT_PROVIDER);
   if (selectedProvider === "unsupported") {
     return {
@@ -147,7 +154,7 @@ export function getRateLimitDiagnostics(env: NodeJS.ProcessEnv = process.env): R
       status: "unsupported",
       configured: false,
       missingEnv: [],
-      mode: "local"
+      mode: "local",
     };
   }
   if (selectedProvider === "disabled") {
@@ -157,18 +164,20 @@ export function getRateLimitDiagnostics(env: NodeJS.ProcessEnv = process.env): R
       status: "disabled",
       configured: false,
       missingEnv: [],
-      mode: "disabled"
+      mode: "disabled",
     };
   }
   if (selectedProvider === "upstash") {
-    const missingEnv = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"].filter((key) => !env[key]?.trim());
+    const missingEnv = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"].filter(
+      (key) => !env[key]?.trim(),
+    );
     return {
       selectedProvider,
       activeProvider: missingEnv.length ? null : "upstash",
       status: missingEnv.length ? "misconfigured" : "ready",
       configured: missingEnv.length === 0,
       missingEnv,
-      mode: "distributed"
+      mode: "distributed",
     };
   }
   return {
@@ -177,14 +186,17 @@ export function getRateLimitDiagnostics(env: NodeJS.ProcessEnv = process.env): R
     status: "ready",
     configured: true,
     missingEnv: [],
-    mode: "local"
+    mode: "local",
   };
 }
 
 export function getRateLimitStore() {
   const diagnostics = getRateLimitDiagnostics();
   const cacheKey = diagnostics.selectedProvider;
-  if (globalForRateLimit.zookRateLimitStore && globalForRateLimit.zookRateLimitProvider === cacheKey) {
+  if (
+    globalForRateLimit.zookRateLimitStore &&
+    globalForRateLimit.zookRateLimitProvider === cacheKey
+  ) {
     return globalForRateLimit.zookRateLimitStore;
   }
 
@@ -193,14 +205,14 @@ export function getRateLimitStore() {
       providerName: "disabled",
       async consume() {
         return { allowed: true, count: 0, resetAt: Date.now() };
-      }
+      },
     };
   } else if (diagnostics.status === "ready" && diagnostics.selectedProvider === "upstash") {
     const namespace = process.env.RATE_LIMIT_NAMESPACE?.trim();
     globalForRateLimit.zookRateLimitStore = new UpstashRateLimitStore({
       url: process.env.UPSTASH_REDIS_REST_URL?.trim() ?? "",
       token: process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? "",
-      ...(namespace ? { namespace } : {})
+      ...(namespace ? { namespace } : {}),
     });
   } else {
     globalForRateLimit.zookRateLimitStore = new InMemoryRateLimitStore();
@@ -212,7 +224,7 @@ export function getRateLimitStore() {
 export async function assertRateLimit(
   ruleName: keyof typeof defaultRateLimitRules,
   identity: string,
-  message?: string
+  message?: string,
 ) {
   const rule = defaultRateLimitRules[ruleName];
   const diagnostics = getRateLimitDiagnostics();

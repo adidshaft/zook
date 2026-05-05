@@ -1,8 +1,18 @@
-import { permissionsForRoles, type AuthOrganizationSummary, type AuthSessionSummary, type Permission, type Role } from "@zook/core";
+import {
+  permissionsForRoles,
+  publicUserEmail,
+  type AuthOrganizationSummary,
+  type AuthSessionSummary,
+  type Permission,
+  type Role,
+} from "@zook/core";
 import { AuthService } from "@zook/core/services";
 import { prisma } from "@zook/db";
 
-function resolvePermissions(roles: Role[], overrides: Array<{ permission: Permission; enabled: boolean }>): Permission[] {
+function resolvePermissions(
+  roles: Role[],
+  overrides: Array<{ permission: Permission; enabled: boolean }>,
+): Permission[] {
   const permissions = new Set<Permission>(permissionsForRoles(roles));
   for (const override of overrides) {
     if (override.enabled) {
@@ -23,7 +33,7 @@ export async function resolveSessionSummaryFromToken(
   }
 
   const session = await prisma.userSession.findUnique({
-    where: { tokenHash: AuthService.hash(token) }
+    where: { tokenHash: AuthService.hash(token) },
   });
 
   if (!session || session.revokedAt || session.expiresAt <= new Date()) {
@@ -37,14 +47,16 @@ export async function resolveSessionSummaryFromToken(
 
   const organizationUsers = await prisma.organizationUser.findMany({
     where: { userId: user.id, status: "active" },
-    orderBy: { joinedAt: "asc" }
+    orderBy: { joinedAt: "asc" },
   });
   const orgIds = organizationUsers.map((item) => item.orgId);
 
   const [organizations, assignments, overrides] = await Promise.all([
     prisma.organization.findMany({ where: { id: { in: orgIds } } }),
-    prisma.organizationRoleAssignment.findMany({ where: { userId: user.id, orgId: { in: orgIds } } }),
-    prisma.organizationRolePermission.findMany({ where: { orgId: { in: orgIds } } })
+    prisma.organizationRoleAssignment.findMany({
+      where: { userId: user.id, orgId: { in: orgIds } },
+    }),
+    prisma.organizationRolePermission.findMany({ where: { orgId: { in: orgIds } } }),
   ]);
 
   const organizationsById = new Map(organizations.map((org) => [org.id, org]));
@@ -61,8 +73,14 @@ export async function resolveSessionSummaryFromToken(
       const permissions = resolvePermissions(
         roles,
         overrides
-          .filter((override) => override.orgId === membership.orgId && roles.includes(override.role as Role))
-          .map((override) => ({ permission: override.permission as Permission, enabled: override.enabled }))
+          .filter(
+            (override) =>
+              override.orgId === membership.orgId && roles.includes(override.role as Role),
+          )
+          .map((override) => ({
+            permission: override.permission as Permission,
+            enabled: override.enabled,
+          })),
       );
 
       return {
@@ -74,7 +92,7 @@ export async function resolveSessionSummaryFromToken(
         state: organization.state,
         roles,
         permissions,
-        joinedAt: membership.joinedAt
+        joinedAt: membership.joinedAt,
       } satisfies AuthOrganizationSummary;
     })
     .filter((item): item is AuthOrganizationSummary => Boolean(item));
@@ -85,7 +103,7 @@ export async function resolveSessionSummaryFromToken(
   return {
     user: {
       id: user.id,
-      email: user.email,
+      email: publicUserEmail(user.email) ?? "",
       name: user.name,
       isMinor: user.isMinor,
       guardianPending: user.guardianPending,
@@ -93,9 +111,9 @@ export async function resolveSessionSummaryFromToken(
       marketingOptIn: user.marketingOptIn,
       aiConsent: user.aiConsent,
       ...(user.phone ? { phone: user.phone } : {}),
-      ...(user.profilePhotoUrl ? { profilePhotoUrl: user.profilePhotoUrl } : {})
+      ...(user.profilePhotoUrl ? { profilePhotoUrl: user.profilePhotoUrl } : {}),
     },
     organizations: summaries,
-    ...(activeOrganization ? { activeOrgId: activeOrganization.orgId, activeOrganization } : {})
+    ...(activeOrganization ? { activeOrgId: activeOrganization.orgId, activeOrganization } : {}),
   };
 }

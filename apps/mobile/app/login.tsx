@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { ActivityIndicator, Dimensions, KeyboardAvoidingView, LayoutAnimation, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Dimensions,
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { BrandMark, GlassCard, GlassInput, ZookButton, ZookScreen } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { getMobileReleaseProfile } from "@/lib/api";
@@ -9,15 +19,18 @@ const screenWidth = Dimensions.get("window").width;
 const heroFontSize = Math.min(54, screenWidth * 0.13);
 
 function sanitizeOtpCode(value: string) {
-  return value.normalize("NFKC").replace(/[^0-9]/g, "").slice(0, 6);
+  return value
+    .normalize("NFKC")
+    .replace(/[^0-9]/g, "")
+    .slice(0, 6);
 }
 
 export default function Login() {
   const { requestOtp, verifyOtp } = useAuth();
   const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [code, setCode] = useState("");
-  const [stage, setStage] = useState<"email" | "otp">("email");
+  const [stage, setStage] = useState<"identifier" | "otp">("identifier");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [devOtp, setDevOtp] = useState<string | null>(null);
@@ -25,23 +38,24 @@ export default function Login() {
   async function handleContinue() {
     setBusy(true);
     setDevOtp(null);
+    const trimmedIdentifier = identifier.trim();
     try {
-      if (stage === "email") {
-        if (!email.includes("@")) {
-          setMessage("Please enter a valid email address.");
+      if (stage === "identifier") {
+        if (trimmedIdentifier.length < 3) {
+          setMessage("Enter your email or phone number.");
           setBusy(false);
           return;
         }
-        const result = await requestOtp(email);
+        const result = await requestOtp(trimmedIdentifier);
         const seededDevOtp = sanitizeOtpCode(result.devOtp ?? localDevOtp ?? "");
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setStage("otp");
         setCode(seededDevOtp);
-        setMessage(`Code sent to ${email}.`);
+        setMessage(`Code sent to ${trimmedIdentifier}.`);
         setDevOtp(seededDevOtp || null);
       } else {
-        await verifyOtp(email, sanitizeOtpCode(code || devOtp || localDevOtp || ""));
-        setMessage(`Signed in as ${email}.`);
+        await verifyOtp(trimmedIdentifier, sanitizeOtpCode(code || devOtp || localDevOtp || ""));
+        setMessage("Signed in.");
       }
     } catch (error) {
       setMessage(getApiErrorMessage(error));
@@ -77,22 +91,24 @@ export default function Login() {
           <GlassCard contentStyle={styles.formContent}>
             <View style={styles.formHeader}>
               <Text style={styles.formTitle}>
-                {stage === "email" ? "Enter Email" : "Verify Code"}
+                {stage === "identifier" ? "Sign in" : "Verify Code"}
               </Text>
               <Text style={styles.formSubtitle}>
-                {stage === "email" ? "We'll send a one-time code." : "Check your inbox."}
+                {stage === "identifier"
+                  ? "Use your email or phone number."
+                  : "Check your messages."}
               </Text>
             </View>
 
-            {stage === "email" ? (
+            {stage === "identifier" ? (
               <GlassInput
-                label="Email Address"
-                value={email}
-                onChangeText={setEmail}
+                label="Email or Phone"
+                value={identifier}
+                onChangeText={setIdentifier}
                 autoCapitalize="none"
-                autoComplete="email"
+                autoComplete="username"
                 keyboardType="email-address"
-                placeholder="you@example.com"
+                placeholder="you@example.com or 9876543210"
                 editable={!busy}
               />
             ) : (
@@ -114,21 +130,25 @@ export default function Login() {
                   <ActivityIndicator size="small" color={colors.bg} />
                   <Text style={styles.busyText}>Working...</Text>
                 </View>
-              ) : stage === "email" ? "Send Code" : "Verify & Sign In"}
+              ) : stage === "identifier" ? (
+                "Send Code"
+              ) : (
+                "Verify & Sign In"
+              )}
             </ZookButton>
 
             {stage === "otp" ? (
               <ZookButton
                 onPress={() => {
                   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setStage("email");
+                  setStage("identifier");
                   setCode("");
                   setDevOtp(null);
                 }}
                 disabled={busy}
                 tone="secondary"
               >
-                Use a different email
+                Use a different sign-in
               </ZookButton>
             ) : null}
           </GlassCard>
@@ -141,9 +161,7 @@ export default function Login() {
             </View>
           ) : null}
 
-          {message && !devOtp ? (
-            <Text style={styles.messageText}>{message}</Text>
-          ) : null}
+          {message && !devOtp ? <Text style={styles.messageText}>{message}</Text> : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </ZookScreen>

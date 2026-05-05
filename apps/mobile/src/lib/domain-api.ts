@@ -23,16 +23,16 @@ export const apiClient = {
 };
 
 export const authClient = {
-  requestOtp(email: string) {
+  requestOtp(identifier: string) {
     return mobileApiFetch<OtpResult>("/auth/request-otp", {
       method: "POST",
-      body: { email },
+      body: { identifier },
     });
   },
-  verifyOtp(email: string, code: string) {
+  verifyOtp(identifier: string, code: string) {
     return mobileApiFetch<VerifyOtpResult>("/auth/verify-otp", {
       method: "POST",
-      body: { email, code },
+      body: { identifier, code },
     });
   },
   me(options: RequestOptions = {}) {
@@ -62,6 +62,26 @@ export const memberApi = {
       token: options.token,
       ...(options.orgId ? { orgId: options.orgId } : {}),
       body: options.body,
+    });
+  },
+  requestContactOtp<T = { challengeId: string; expiresAt: string; devOtp?: string }>(
+    options: RequestOptions & { identifier: string },
+  ) {
+    return mobileApiFetch<T>("/me/contact/request-otp", {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: { identifier: options.identifier },
+    });
+  },
+  verifyContactOtp<T = { user?: unknown; session?: AuthSessionSummary }>(
+    options: RequestOptions & { identifier: string; code: string },
+  ) {
+    return mobileApiFetch<T>("/me/contact/verify-otp", {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: { identifier: options.identifier, code: options.code },
     });
   },
   renewMembership<T = { checkoutUrl?: string; subscription?: unknown }>(
@@ -262,7 +282,12 @@ export const trainerApi = {
     });
   },
   generatePlanDraft<T = unknown>(
-    options: RequestOptions & { prompt: string; targetUserId: string; title?: string; type?: string },
+    options: RequestOptions & {
+      prompt: string;
+      targetUserId: string;
+      title?: string;
+      type?: string;
+    },
   ) {
     return mobileApiFetch<T>("/ai/generate-plan", {
       method: "POST",

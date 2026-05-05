@@ -33,12 +33,18 @@ function findRequired<T>(items: T[], predicate: (item: T) => boolean, label: str
   return item;
 }
 
-function buildSession(state: ZookDemoFixtures, userEmail: string, activeOrgId: string): AuthSessionSummary {
+function buildSession(
+  state: ZookDemoFixtures,
+  userEmail: string,
+  activeOrgId: string,
+): AuthSessionSummary {
   const user = findRequired(state.users, (candidate) => candidate.email === userEmail, "User");
   const organizations = state.organizations
     .map((organization) => {
       const roles = state.roleAssignments
-        .filter((assignment) => assignment.userId === user.id && assignment.orgId === organization.id)
+        .filter(
+          (assignment) => assignment.userId === user.id && assignment.orgId === organization.id,
+        )
         .map((assignment) => assignment.role);
       if (!roles.length) {
         return null;
@@ -47,7 +53,7 @@ function buildSession(state: ZookDemoFixtures, userEmail: string, activeOrgId: s
         orgId: organization.id,
         name: organization.name,
         username: organization.username,
-        status: organization.status === "SUSPENDED" ? "SUSPENDED" as const : "ACTIVE" as const,
+        status: organization.status === "SUSPENDED" ? ("SUSPENDED" as const) : ("ACTIVE" as const),
         city: organization.city,
         state: organization.state,
         roles,
@@ -55,8 +61,11 @@ function buildSession(state: ZookDemoFixtures, userEmail: string, activeOrgId: s
         joinedAt: new Date("2026-04-01T00:00:00.000Z"),
       };
     })
-    .filter((organization): organization is NonNullable<typeof organization> => Boolean(organization));
-  const activeOrganization = organizations.find((organization) => organization.orgId === activeOrgId) ?? organizations[0];
+    .filter((organization): organization is NonNullable<typeof organization> =>
+      Boolean(organization),
+    );
+  const activeOrganization =
+    organizations.find((organization) => organization.orgId === activeOrgId) ?? organizations[0];
 
   return {
     user: {
@@ -137,20 +146,21 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
   return {
     state,
     authService: {
-      async requestOtp(email: string) {
+      async requestOtp(identifier: string) {
         return {
           challengeId: newId("otp"),
-          email,
+          identifier,
           expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
           devOtp: "000000",
         };
       },
-      async verifyOtp(email: string, code: string) {
+      async verifyOtp(identifier: string, code: string) {
         if (code !== "000000") {
           throw new Error("Invalid mock OTP. Use 000000 for local demo.");
         }
+        const email = identifier.includes("@") ? identifier : "member@zook.local";
         return {
-          token: `mock-session-${email}`,
+          token: `mock-session-${identifier}`,
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           session: buildSession(state, email, activeOrgId),
         };
@@ -166,7 +176,11 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
         return state.organizations.filter((organization) => orgIds.has(organization.id));
       },
       async setActiveOrganization(orgId: string) {
-        findRequired(state.organizations, (organization) => organization.id === orgId, "Organization");
+        findRequired(
+          state.organizations,
+          (organization) => organization.id === orgId,
+          "Organization",
+        );
         activeOrgId = orgId;
         return { activeOrgId };
       },
@@ -191,9 +205,15 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
         );
       },
       async createCheckoutSession(planId: string, referralCode?: string) {
-        const plan = findRequired(state.membershipPlans, (candidate) => candidate.id === planId, "Membership plan");
+        const plan = findRequired(
+          state.membershipPlans,
+          (candidate) => candidate.id === planId,
+          "Membership plan",
+        );
         const referral = referralCode
-          ? state.referralCodes.find((candidate) => candidate.code.toLowerCase() === referralCode.toLowerCase())
+          ? state.referralCodes.find(
+              (candidate) => candidate.code.toLowerCase() === referralCode.toLowerCase(),
+            )
           : undefined;
         const amountPaise = Math.max(0, plan.pricePaise - (referral?.discountPaise ?? 0));
         return createCheckoutSession({ purpose: "MEMBERSHIP", targetId: plan.id, amountPaise });
@@ -201,10 +221,16 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
     },
     paymentService: {
       async confirmMockPayment(sessionId: string) {
-        const session = findRequired(state.checkoutSessions, (candidate) => candidate.id === sessionId, "Checkout session");
+        const session = findRequired(
+          state.checkoutSessions,
+          (candidate) => candidate.id === sessionId,
+          "Checkout session",
+        );
         session.status = "SUCCEEDED";
         if (session.purpose === "MEMBERSHIP") {
-          const existing = state.memberships.find((membership) => membership.memberUserId === "user-aarav");
+          const existing = state.memberships.find(
+            (membership) => membership.memberUserId === "user-aarav",
+          );
           if (existing) {
             existing.status = "ACTIVE";
             existing.daysLeft = 30;
@@ -241,8 +267,16 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
             : payload.includes("rejected")
               ? "rejected"
               : "approved";
-        const branch = findRequired(state.branches, (candidate) => candidate.id === "branch-default", "Branch");
-        const plan = findRequired(state.membershipPlans, (candidate) => candidate.id === "plan-hybrid-pro", "Membership plan");
+        const branch = findRequired(
+          state.branches,
+          (candidate) => candidate.id === "branch-default",
+          "Branch",
+        );
+        const plan = findRequired(
+          state.membershipPlans,
+          (candidate) => candidate.id === "plan-hybrid-pro",
+          "Membership plan",
+        );
         const attempt: DemoAttendanceAttempt = {
           id: newId("attendance"),
           orgId: activeOrgId,
@@ -262,13 +296,22 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
                 : outcome === "rejected"
                   ? "Membership gate rejected this scan."
                   : "Membership active and branch verified.",
-          auditTrail: ["QR token valid", "Replay protection checked", "Branch verified", "Membership gate evaluated"],
+          auditTrail: [
+            "QR token valid",
+            "Replay protection checked",
+            "Branch verified",
+            "Membership gate evaluated",
+          ],
         };
         state.attendanceAttempts.unshift(attempt);
         return attempt;
       },
       async getAttendanceResult(attemptId: string) {
-        return findRequired(state.attendanceAttempts, (candidate) => candidate.id === attemptId, "Attendance attempt");
+        return findRequired(
+          state.attendanceAttempts,
+          (candidate) => candidate.id === attemptId,
+          "Attendance attempt",
+        );
       },
       async verifyEntryCode(code: string) {
         const normalized = code.trim().toUpperCase();
@@ -281,7 +324,11 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
     },
     receptionistService: {
       async approveAttendance(attemptId: string, reason: string) {
-        const attempt = findRequired(state.attendanceAttempts, (candidate) => candidate.id === attemptId, "Attendance attempt");
+        const attempt = findRequired(
+          state.attendanceAttempts,
+          (candidate) => candidate.id === attemptId,
+          "Attendance attempt",
+        );
         attempt.status = "APPROVED";
         attempt.reason = reason;
         attempt.auditTrail.push(`Approved by reception: ${reason}`);
@@ -296,7 +343,11 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
         return attempt;
       },
       async rejectAttendance(attemptId: string, reason: string) {
-        const attempt = findRequired(state.attendanceAttempts, (candidate) => candidate.id === attemptId, "Attendance attempt");
+        const attempt = findRequired(
+          state.attendanceAttempts,
+          (candidate) => candidate.id === attemptId,
+          "Attendance attempt",
+        );
         attempt.status = "REJECTED";
         attempt.reason = reason;
         attempt.auditTrail.push(`Rejected by reception: ${reason}`);
@@ -351,7 +402,11 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
       },
       async createOrder(cart: Array<{ productId: string; quantity: number }>) {
         const items = cart.map((item) => {
-          const product = findRequired(state.shopProducts, (candidate) => candidate.id === item.productId, "Product");
+          const product = findRequired(
+            state.shopProducts,
+            (candidate) => candidate.id === item.productId,
+            "Product",
+          );
           return { productId: product.id, quantity: item.quantity, unitPaise: product.pricePaise };
         });
         const totalPaise = items.reduce((sum, item) => sum + item.quantity * item.unitPaise, 0);
@@ -369,12 +424,28 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
         return order;
       },
       async createCheckoutSession(orderId: string) {
-        const order = findRequired(state.shopOrders, (candidate) => candidate.id === orderId, "Shop order");
-        return createCheckoutSession({ purpose: "SHOP_ORDER", targetId: order.id, amountPaise: order.totalPaise });
+        const order = findRequired(
+          state.shopOrders,
+          (candidate) => candidate.id === orderId,
+          "Shop order",
+        );
+        return createCheckoutSession({
+          purpose: "SHOP_ORDER",
+          targetId: order.id,
+          amountPaise: order.totalPaise,
+        });
       },
       async confirmMockOrderPayment(sessionId: string) {
-        const session = findRequired(state.checkoutSessions, (candidate) => candidate.id === sessionId, "Checkout session");
-        const order = findRequired(state.shopOrders, (candidate) => candidate.id === session.targetId, "Shop order");
+        const session = findRequired(
+          state.checkoutSessions,
+          (candidate) => candidate.id === sessionId,
+          "Checkout session",
+        );
+        const order = findRequired(
+          state.shopOrders,
+          (candidate) => candidate.id === session.targetId,
+          "Shop order",
+        );
         session.status = "SUCCEEDED";
         order.status = "READY_FOR_PICKUP";
         return order;
@@ -384,7 +455,11 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
         return state.shopOrders.find((order) => order.pickupCode === normalized) ?? null;
       },
       async fulfillOrder(orderId: string) {
-        const order = findRequired(state.shopOrders, (candidate) => candidate.id === orderId, "Shop order");
+        const order = findRequired(
+          state.shopOrders,
+          (candidate) => candidate.id === orderId,
+          "Shop order",
+        );
         order.status = "FULFILLED";
         writeAudit({
           orgId: order.orgId,
@@ -403,7 +478,11 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           (assignment) => assignment.trainerUserId === trainerId && assignment.active,
         );
         return assignments.map((assignment) => {
-          const user = findRequired(state.users, (candidate) => candidate.id === assignment.memberUserId, "Assigned client");
+          const user = findRequired(
+            state.users,
+            (candidate) => candidate.id === assignment.memberUserId,
+            "Assigned client",
+          );
           const profile = state.memberProfiles.find((candidate) => candidate.userId === user.id);
           return { assignment, user, profile };
         });
@@ -414,15 +493,25 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           (candidate) => candidate.memberUserId === clientId && candidate.active,
           "Trainer client assignment",
         );
-        const user = findRequired(state.users, (candidate) => candidate.id === assignment.memberUserId, "Client user");
-        const profile = findRequired(state.memberProfiles, (candidate) => candidate.userId === user.id, "Client profile");
+        const user = findRequired(
+          state.users,
+          (candidate) => candidate.id === assignment.memberUserId,
+          "Client user",
+        );
+        const profile = findRequired(
+          state.memberProfiles,
+          (candidate) => candidate.userId === user.id,
+          "Client profile",
+        );
         const ptPack = state.ptPacks.find((candidate) => candidate.memberUserId === user.id);
         const plans = state.trainingPlans.filter((plan) => plan.memberUserId === user.id);
         return { assignment, user, profile, ptPack, plans };
       },
     },
     planService: {
-      async createPlan(payload: Pick<DemoTrainingPlan, "title" | "type" | "memberUserId" | "trainerUserId">) {
+      async createPlan(
+        payload: Pick<DemoTrainingPlan, "title" | "type" | "memberUserId" | "trainerUserId">,
+      ) {
         const plan: DemoTrainingPlan = {
           id: newId("plan"),
           orgId: activeOrgId,
@@ -441,8 +530,16 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
         state.trainingPlans.unshift(plan);
         return plan;
       },
-      async generateAiPlanDraft(payload: { trainerUserId: string; clientId: string; goal: string }) {
-        const template = findRequired(state.planDrafts, (candidate) => candidate.id === "draft-push-pull", "Plan draft template");
+      async generateAiPlanDraft(payload: {
+        trainerUserId: string;
+        clientId: string;
+        goal: string;
+      }) {
+        const template = findRequired(
+          state.planDrafts,
+          (candidate) => candidate.id === "draft-push-pull",
+          "Plan draft template",
+        );
         const draft: DemoPlanDraft = {
           ...template,
           id: newId("draft"),
@@ -465,7 +562,11 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
         return draft;
       },
       async assignDraft(draftId: string, clientId: string) {
-        const draft = findRequired(state.planDrafts, (candidate) => candidate.id === draftId, "Plan draft");
+        const draft = findRequired(
+          state.planDrafts,
+          (candidate) => candidate.id === draftId,
+          "Plan draft",
+        );
         draft.visibleToMember = true;
         draft.safety.trainerApproval = "Complete";
         const plan: DemoTrainingPlan = {
@@ -534,7 +635,9 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
     },
     guardianService: {
       async requestConsent(minorId: string, guardianEmail: string) {
-        for (const challenge of state.guardianConsentChallenges.filter((candidate) => candidate.minorId === minorId)) {
+        for (const challenge of state.guardianConsentChallenges.filter(
+          (candidate) => candidate.minorId === minorId,
+        )) {
           if (challenge.status === "PENDING") {
             challenge.status = "EXPIRED";
           }
@@ -559,7 +662,11 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           "Guardian consent challenge",
         );
         challenge.status = "GRANTED";
-        const minor = findRequired(state.users, (candidate) => candidate.id === challenge.minorId, "Minor user");
+        const minor = findRequired(
+          state.users,
+          (candidate) => candidate.id === challenge.minorId,
+          "Minor user",
+        );
         minor.guardianPending = false;
         minor.aiConsent = true;
         writeAudit({

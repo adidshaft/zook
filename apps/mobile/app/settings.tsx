@@ -3,7 +3,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import type { Role } from "@zook/core";
 import { useEffect, useMemo, useState } from "react";
-import { Linking, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from "react-native";
+import {
+  Linking,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from "react-native";
 import {
   AuditWarning,
   BottomNav,
@@ -22,7 +31,12 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { memberApi, notificationsApi, privacyApi } from "@/lib/domain-api";
 import { titleCaseFromCode } from "@/lib/formatting";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
-import { useGymProfile, useMyConsents, useMyNotificationPreferences, useMyProfile } from "@/lib/query-hooks";
+import {
+  useGymProfile,
+  useMyConsents,
+  useMyNotificationPreferences,
+  useMyProfile,
+} from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type ReferralSource = {
@@ -30,17 +44,36 @@ type ReferralSource = {
   status?: string | null;
 };
 
+function sanitizeOtpCode(value: string) {
+  return value
+    .normalize("NFKC")
+    .replace(/[^0-9]/g, "")
+    .slice(0, 6);
+}
+
 const preferenceRows = [
-  { key: "transactional", title: "Payments and receipts", subtitle: "Membership payments, checkout, and renewal notices" },
-  { key: "operational", title: "Gym operations", subtitle: "Attendance, approvals, and facility updates" },
-  { key: "engagement", title: "Training reminders", subtitle: "Plans, habits, streaks, and coach nudges" },
+  {
+    key: "transactional",
+    title: "Payments and receipts",
+    subtitle: "Membership payments, checkout, and renewal notices",
+  },
+  {
+    key: "operational",
+    title: "Gym operations",
+    subtitle: "Attendance, approvals, and facility updates",
+  },
+  {
+    key: "engagement",
+    title: "Training reminders",
+    subtitle: "Plans, habits, streaks, and coach nudges",
+  },
   { key: "promotional", title: "Offers", subtitle: "Referral, coupon, and gym campaign messages" },
 ] as const;
 
 export default function Settings() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeOrgId, activeRole, logout, session, setActiveRole, token } = useAuth();
+  const { activeOrgId, activeRole, logout, refresh, session, setActiveRole, token } = useAuth();
   const privacyQuery = useMyConsents();
   const profileQuery = useMyProfile();
   const notificationPreferencesQuery = useMyNotificationPreferences();
@@ -55,10 +88,17 @@ export default function Settings() {
   );
   const [profileForm, setProfileForm] = useState({
     name: session?.user.name ?? "",
+    email: session?.user.email ?? "",
     phone: session?.user.phone ?? "",
     fitnessGoal: "",
   });
   const [profileStatus, setProfileStatus] = useState("");
+  const [contactStatus, setContactStatus] = useState("");
+  const [contactOtp, setContactOtp] = useState<{
+    kind: "email" | "phone";
+    identifier: string;
+    code: string;
+  } | null>(null);
   const [preferenceStatus, setPreferenceStatus] = useState("");
   const [privacyStatus, setPrivacyStatus] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -79,10 +119,11 @@ export default function Settings() {
     const profile = profileQuery.data;
     setProfileForm({
       name: profile?.user.name ?? session?.user.name ?? "",
+      email: profile?.user.email || session?.user.email || "",
       phone: profile?.user.phone ?? session?.user.phone ?? "",
       fitnessGoal: profile?.user.fitnessGoal ?? profile?.wellness?.summaryNote ?? "",
     });
-  }, [profileQuery.data, session?.user.name, session?.user.phone]);
+  }, [profileQuery.data, session?.user.email, session?.user.name, session?.user.phone]);
 
   async function saveProfile() {
     if (!token) return;
@@ -94,7 +135,6 @@ export default function Settings() {
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
         body: {
           name: profileForm.name.trim(),
-          phone: profileForm.phone.trim() || null,
           fitnessGoal: profileForm.fitnessGoal.trim() || null,
         },
       });
@@ -110,7 +150,65 @@ export default function Settings() {
     }
   }
 
-  async function updatePreference(key: (typeof preferenceRows)[number]["key"] | "pushEnabled", value: boolean) {
+  async function requestContactOtp(kind: "email" | "phone") {
+    if (!token) return;
+    const identifier = (kind === "email" ? profileForm.email : profileForm.phone).trim();
+    if (!identifier) {
+      setContactStatus(`Enter a ${kind === "email" ? "email" : "phone number"} first.`);
+      return;
+    }
+    setBusy(`contact-${kind}`);
+    setContactStatus("");
+    try {
+      const result = await memberApi.requestContactOtp({
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        identifier,
+      });
+      const seededCode = sanitizeOtpCode(result.devOtp ?? "");
+      setContactOtp({ kind, identifier, code: seededCode });
+      setContactStatus(`Code sent to ${identifier}.`);
+    } catch (error) {
+      setContactStatus(getApiErrorMessage(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function verifyContactOtp() {
+    if (!token || !contactOtp) return;
+    const code = sanitizeOtpCode(contactOtp.code);
+    if (code.length !== 6) {
+      setContactStatus("Enter the 6-digit code.");
+      return;
+    }
+    setBusy("contact-verify");
+    setContactStatus("");
+    try {
+      await memberApi.verifyContactOtp({
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        identifier: contactOtp.identifier,
+        code,
+      });
+      setContactOtp(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "profile", activeOrgId] }),
+        queryClient.invalidateQueries({ queryKey: ["auth", "me", activeOrgId] }),
+      ]);
+      await refresh();
+      setContactStatus(`${contactOtp.kind === "email" ? "Email" : "Phone"} verified.`);
+    } catch (error) {
+      setContactStatus(getApiErrorMessage(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function updatePreference(
+    key: (typeof preferenceRows)[number]["key"] | "pushEnabled",
+    value: boolean,
+  ) {
     if (!token) return;
     setBusy(`preference-${key}`);
     setPreferenceStatus("");
@@ -170,9 +268,11 @@ export default function Settings() {
 
   async function copyReferral() {
     if (!referralCode) return;
-    const clipboard = (globalThis as {
-      navigator?: { clipboard?: { writeText?: (value: string) => Promise<void> } };
-    }).navigator?.clipboard;
+    const clipboard = (
+      globalThis as {
+        navigator?: { clipboard?: { writeText?: (value: string) => Promise<void> } };
+      }
+    ).navigator?.clipboard;
     if (clipboard?.writeText) {
       await clipboard.writeText(referralLink || referralCode);
       setCopiedReferral(true);
@@ -212,13 +312,17 @@ export default function Settings() {
             showProfileShortcut={false}
           />
 
-          <CollapsibleSection title="Profile" subtitle={session?.user.email ?? "Signed in"} defaultOpen>
+          <CollapsibleSection
+            title="Profile"
+            subtitle={session?.user.email || profileForm.phone || "Signed in"}
+            defaultOpen
+          >
             <GlassCard variant="compact" contentStyle={styles.accountContent}>
               <IconBubble icon="person-outline" tone="blue" size={36} />
               <View style={styles.accountCopy}>
                 <Text style={styles.accountName}>{profileForm.name || "Zook user"}</Text>
                 <Text style={styles.accountEmail}>
-                  {session?.user.email ?? profileForm.phone ?? ""}
+                  {session?.user.email || profileForm.email || profileForm.phone || ""}
                 </Text>
               </View>
             </GlassCard>
@@ -229,15 +333,63 @@ export default function Settings() {
               autoCapitalize="words"
             />
             <GlassInput
+              label="Email"
+              value={profileForm.email}
+              onChangeText={(email) => setProfileForm((current) => ({ ...current, email }))}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              placeholder="you@example.com"
+            />
+            <ZookButton
+              onPress={() => void requestContactOtp("email")}
+              disabled={busy === "contact-email"}
+              tone="secondary"
+            >
+              Send email code
+            </ZookButton>
+            <GlassInput
               label="Phone"
               value={profileForm.phone}
               onChangeText={(phone) => setProfileForm((current) => ({ ...current, phone }))}
               keyboardType="phone-pad"
             />
+            <ZookButton
+              onPress={() => void requestContactOtp("phone")}
+              disabled={busy === "contact-phone"}
+              tone="secondary"
+            >
+              Send phone code
+            </ZookButton>
+            {contactOtp ? (
+              <GlassCard variant="compact" contentStyle={styles.contactOtpCard}>
+                <GlassInput
+                  label={`${contactOtp.kind === "email" ? "Email" : "Phone"} code`}
+                  value={contactOtp.code}
+                  onChangeText={(code) =>
+                    setContactOtp((current) =>
+                      current ? { ...current, code: sanitizeOtpCode(code) } : current,
+                    )
+                  }
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  placeholder="000000"
+                />
+                <PrimaryButton
+                  onPress={() => void verifyContactOtp()}
+                  disabled={busy === "contact-verify"}
+                >
+                  {busy === "contact-verify" ? "Verifying..." : "Verify contact"}
+                </PrimaryButton>
+              </GlassCard>
+            ) : null}
+            {contactStatus ? <Text style={styles.statusText}>{contactStatus}</Text> : null}
             <GlassInput
               label="Fitness goal"
               value={profileForm.fitnessGoal}
-              onChangeText={(fitnessGoal) => setProfileForm((current) => ({ ...current, fitnessGoal }))}
+              onChangeText={(fitnessGoal) =>
+                setProfileForm((current) => ({ ...current, fitnessGoal }))
+              }
               placeholder="Strength, fat loss, mobility..."
               multiline
             />
@@ -248,7 +400,10 @@ export default function Settings() {
           </CollapsibleSection>
 
           {allRoles.length > 1 ? (
-            <CollapsibleSection title="Role" subtitle={`Using Zook as ${titleCaseFromCode(activeRole)}`}>
+            <CollapsibleSection
+              title="Role"
+              subtitle={`Using Zook as ${titleCaseFromCode(activeRole)}`}
+            >
               <View style={styles.roleGrid}>
                 <Text style={styles.sectionMiniLabel}>Use Zook as</Text>
                 <View style={styles.roleRow}>
@@ -306,20 +461,29 @@ export default function Settings() {
           </CollapsibleSection>
 
           {referralCode ? (
-            <CollapsibleSection title="Referral" subtitle={`Code ${referralCode}`} defaultOpen={false}>
+            <CollapsibleSection
+              title="Referral"
+              subtitle={`Code ${referralCode}`}
+              defaultOpen={false}
+            >
               <GlassCard variant="success" contentStyle={styles.referralContent}>
                 <View style={styles.referralHeader}>
                   <IconBubble icon="gift-outline" tone="lime" size={40} />
                   <View style={styles.accountCopy}>
                     <Text style={styles.referralTitle}>{referralCode}</Text>
                     <Text style={styles.accountEmail}>
-                      {referral?.status ? `${titleCaseFromCode(referral.status)} referral` : "Share with a friend"}
+                      {referral?.status
+                        ? `${titleCaseFromCode(referral.status)} referral`
+                        : "Share with a friend"}
                     </Text>
                   </View>
                 </View>
                 <View style={styles.qrBlock} accessibilityLabel={`Referral code ${referralCode}`}>
                   {buildCodeGrid(referralCode).map((filled, index) => (
-                    <View key={`${referralCode}-${index}`} style={[styles.qrCell, filled ? styles.qrCellFilled : null]} />
+                    <View
+                      key={`${referralCode}-${index}`}
+                      style={[styles.qrCell, filled ? styles.qrCellFilled : null]}
+                    />
                   ))}
                 </View>
                 <Text numberOfLines={1} style={styles.referralLink}>
@@ -346,7 +510,11 @@ export default function Settings() {
             </CollapsibleSection>
           ) : null}
 
-          <CollapsibleSection title="App and support" subtitle="Help, policies, and app info" defaultOpen={false}>
+          <CollapsibleSection
+            title="App and support"
+            subtitle="Help, policies, and app info"
+            defaultOpen={false}
+          >
             <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
               <Pressable
                 onPress={() => void Linking.openURL("mailto:help@zook.app")}
@@ -368,7 +536,11 @@ export default function Settings() {
               />
               <ListRow
                 title="Signed-in gym"
-                subtitle={activeOrganization ? `${activeOrganization.name} · ${activeOrganization.city}` : "No active gym"}
+                subtitle={
+                  activeOrganization
+                    ? `${activeOrganization.name} · ${activeOrganization.city}`
+                    : "No active gym"
+                }
                 icon="business-outline"
                 tone="neutral"
               />
@@ -560,6 +732,9 @@ const styles = StyleSheet.create({
   accountEmail: {
     color: colors.muted,
     ...typography.small,
+  },
+  contactOtpCard: {
+    gap: spacing.md,
   },
   privacyStatusCard: {
     gap: spacing.sm,
