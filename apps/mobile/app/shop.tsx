@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -17,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomNav,
   EmptyState,
+  ErrorState,
   GlassCard,
   ListRow,
   MobileHeader,
@@ -24,6 +26,7 @@ import {
   SearchBar,
   SecondaryButton,
   SectionHeader,
+  Skeleton,
   StatusChip,
   ZookButton,
   ZookScreen,
@@ -38,6 +41,7 @@ import {
 } from "@/lib/query-hooks";
 import { useAuth } from "@/lib/auth";
 import { toWebUrl } from "@/lib/api";
+import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
@@ -74,10 +78,11 @@ export default function Shop() {
     orderId?: string | string[];
     focus?: string | string[];
   }>();
-  const { session } = useAuth();
+  const { activeOrgId, session } = useAuth();
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [cartHydrated, setCartHydrated] = useState(false);
   const [checkoutState, setCheckoutState] = useState<CheckoutState>("browse");
   const [order, setOrder] = useState<ShopOrderRecord | null>(null);
   const [checkoutSession, setCheckoutSession] = useState<{
@@ -92,6 +97,7 @@ export default function Shop() {
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
+  const cartStorageKey = `zook_shop_cart_${activeOrgId ?? activeOrganization?.orgId ?? "default"}`;
   const products = productsQuery.data?.products ?? [];
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -111,6 +117,64 @@ export default function Shop() {
     0,
   );
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const storedItemCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCartHydrated(false);
+    void getStoredValue(cartStorageKey)
+      .then((storedCart) => {
+        if (cancelled) return;
+        if (!storedCart) {
+          setCart({});
+          return;
+        }
+        const parsed = JSON.parse(storedCart) as Record<string, unknown>;
+        const nextCart = Object.fromEntries(
+          Object.entries(parsed)
+            .map(([productId, quantity]) => [productId, Number(quantity)] as const)
+            .filter(([, quantity]) => Number.isInteger(quantity) && quantity > 0),
+        );
+        setCart(nextCart);
+      })
+      .catch(() => {
+        if (!cancelled) setCart({});
+      })
+      .finally(() => {
+        if (!cancelled) setCartHydrated(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cartStorageKey]);
+
+  useEffect(() => {
+    if (!cartHydrated) return;
+    if (storedItemCount > 0) {
+      void setStoredValue(cartStorageKey, JSON.stringify(cart));
+      return;
+    }
+    void deleteStoredValue(cartStorageKey);
+  }, [cart, cartHydrated, cartStorageKey, storedItemCount]);
+
+  useEffect(() => {
+    if (!cartHydrated || !products.length) return;
+    setCart((current) => {
+      let changed = false;
+      const next: Record<string, number> = {};
+      Object.entries(current).forEach(([productId, quantity]) => {
+        const product = products.find((candidate) => candidate.id === productId);
+        if (!product || product.stock <= 0) {
+          changed = true;
+          return;
+        }
+        const clamped = Math.min(quantity, product.stock);
+        if (clamped !== quantity) changed = true;
+        next[productId] = clamped;
+      });
+      return changed ? next : current;
+    });
+  }, [cartHydrated, products]);
 
   useEffect(() => {
     const requestedOrderId = firstParam(params.orderId);
@@ -135,7 +199,9 @@ export default function Shop() {
       }
       refreshAfterCheckoutRef.current = false;
       void ordersQuery.refetch().then((refreshed) => {
-        const refreshedOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
+        const refreshedOrder = refreshed.data?.orders.find(
+          (candidate) => candidate.id === order.id,
+        );
         if (refreshedOrder && refreshedOrder.status !== "PENDING_PAYMENT") {
           setOrder(refreshedOrder);
           setCart({});
@@ -153,6 +219,7 @@ export default function Shop() {
   function addToCart(productId: string) {
     const product = products.find((candidate) => candidate.id === productId);
     if (!product || product.stock <= (cart[productId] ?? 0)) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
     setCart((current) => ({ ...current, [productId]: (current[productId] ?? 0) + 1 }));
@@ -207,6 +274,7 @@ export default function Shop() {
     const paidOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
     setOrder(paidOrder ?? { ...order, status: "READY_FOR_PICKUP" });
     setCart({});
+    void deleteStoredValue(cartStorageKey);
     setCheckoutState("pickup");
   }
 
@@ -317,10 +385,34 @@ export default function Shop() {
                 title={item.product.name}
                 subtitle={`${item.quantity} item · ${item.product.stock} in stock`}
                 trailing={
-                  <StatusChip
-                    status={formatInr(item.product.pricePaise * item.quantity)}
-                    tone="neutral"
-                  />
+                  <View style={styles.cartLineTrailing}>
+                    <Text style={styles.cartLinePrice}>
+                      {formatInr(item.product.pricePaise * item.quantity)}
+                    </Text>
+                    <View style={styles.cartStepper}>
+                      <Pressable
+                        onPress={() => removeFromCart(item.product.id)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${item.product.name}`}
+                        style={styles.cartStepperButton}
+                      >
+                        <Ionicons name="remove" size={15} color={colors.lime} />
+                      </Pressable>
+                      <Text style={styles.cartQuantity}>{item.quantity}</Text>
+                      <Pressable
+                        onPress={() => addToCart(item.product.id)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add ${item.product.name}`}
+                        disabled={item.quantity >= item.product.stock}
+                        style={[
+                          styles.cartStepperButton,
+                          item.quantity >= item.product.stock ? styles.cartStepperDisabled : null,
+                        ]}
+                      >
+                        <Ionicons name="add" size={15} color={colors.lime} />
+                      </Pressable>
+                    </View>
+                  </View>
                 }
               />
             ))
@@ -423,12 +515,34 @@ export default function Shop() {
         subtitle={`${filteredProducts.length} ${filteredProducts.length === 1 ? "item" : "items"}`}
       />
 
-      {filteredProducts.length ? (
+      {productsQuery.isError ? (
+        <GlassCard variant="danger" contentStyle={styles.stateCardContent}>
+          <ErrorState
+            title="Shop could not load"
+            body="We could not refresh stock or prices. Try again before placing an order."
+            action={
+              <ZookButton
+                onPress={() => void productsQuery.refetch()}
+                tone="secondary"
+                icon="refresh-outline"
+              >
+                Try again
+              </ZookButton>
+            }
+          />
+        </GlassCard>
+      ) : productsQuery.isLoading || !cartHydrated ? (
+        <ShopSkeleton />
+      ) : filteredProducts.length ? (
         <View style={styles.productGrid}>
           {filteredProducts.map((product) => {
             const lowStock = product.stock <= product.lowStockThreshold;
             const fulfillmentLabel =
-              product.stock > 0 ? `${product.stock} in stock` : "Out of stock";
+              product.stock > 0
+                ? lowStock
+                  ? `Only ${product.stock} left`
+                  : `${product.stock} in stock`
+                : "Out of stock";
             return (
               <ProductCard
                 key={product.id}
@@ -440,6 +554,8 @@ export default function Shop() {
                 quantity={cart[product.id] ?? 0}
                 icon={iconForCategory(product.category as Category)}
                 compact
+                disabled={product.stock <= 0}
+                incrementDisabled={(cart[product.id] ?? 0) >= product.stock}
                 onIncrement={() => addToCart(product.id)}
                 onDecrement={() => removeFromCart(product.id)}
                 style={styles.productCard}
@@ -447,15 +563,6 @@ export default function Shop() {
             );
           })}
         </View>
-      ) : productsQuery.isLoading ? (
-        <GlassCard variant="compact" contentStyle={styles.stack}>
-          <ListRow
-            title="Loading products"
-            subtitle="Fetching the desk pickup catalog."
-            icon="hourglass-outline"
-            tone="amber"
-          />
-        </GlassCard>
       ) : (
         <EmptyState
           title="No products found"
@@ -463,6 +570,29 @@ export default function Shop() {
         />
       )}
     </ShopShell>
+  );
+}
+
+function ShopSkeleton() {
+  return (
+    <View style={styles.productGrid}>
+      {[0, 1, 2, 3].map((item) => (
+        <GlassCard
+          key={item}
+          variant="compact"
+          contentStyle={styles.productSkeleton}
+          style={styles.productCard}
+        >
+          <Skeleton width="100%" height={84} borderRadius={18} />
+          <Skeleton width="82%" height={16} borderRadius={8} />
+          <Skeleton width="58%" height={13} borderRadius={7} />
+          <View style={styles.skeletonFooter}>
+            <Skeleton width={58} height={18} borderRadius={9} />
+            <Skeleton width={64} height={30} borderRadius={15} />
+          </View>
+        </GlassCard>
+      ))}
+    </View>
   );
 }
 
@@ -609,6 +739,52 @@ const styles = StyleSheet.create({
   },
   stack: {
     gap: 10,
+  },
+  stateCardContent: {
+    padding: 0,
+  },
+  productSkeleton: {
+    gap: spacing.sm,
+    padding: 12,
+  },
+  skeletonFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  cartLineTrailing: {
+    alignItems: "flex-end",
+    gap: spacing.xs,
+  },
+  cartLinePrice: {
+    color: colors.text,
+    ...typography.caption,
+  },
+  cartStepper: {
+    minHeight: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    flexDirection: "row",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  cartStepperButton: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cartStepperDisabled: {
+    opacity: 0.35,
+  },
+  cartQuantity: {
+    minWidth: 22,
+    textAlign: "center",
+    color: colors.text,
+    ...typography.caption,
   },
   cardBody: {
     color: colors.muted,

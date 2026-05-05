@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -90,7 +91,9 @@ export default function Scan() {
       const failed = status === "REJECTED" || status === "FLAGGED";
       setScanState(failed ? "failed" : "accepted");
       void Haptics.notificationAsync(
-        failed ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Success,
+        failed
+          ? Haptics.NotificationFeedbackType.Warning
+          : Haptics.NotificationFeedbackType.Success,
       );
       void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
@@ -140,7 +143,9 @@ export default function Scan() {
       const failed = status === "REJECTED" || status === "FLAGGED";
       setScanState(failed ? "failed" : "accepted");
       void Haptics.notificationAsync(
-        failed ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Success,
+        failed
+          ? Haptics.NotificationFeedbackType.Warning
+          : Haptics.NotificationFeedbackType.Success,
       );
       void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
@@ -183,7 +188,16 @@ export default function Scan() {
     void completeScan(cleanCode);
   }
 
+  function resetScan() {
+    completedRef.current = false;
+    setBusy(false);
+    setScanState("idle");
+    setErrorMessage("");
+    setCode("");
+  }
+
   const hasCamera = permission?.granted;
+  const cameraBlocked = permission && !permission.granted && permission.canAskAgain === false;
 
   return (
     <>
@@ -212,13 +226,19 @@ export default function Scan() {
               <View style={styles.cameraFallback}>
                 <Ionicons name="camera-outline" size={32} color={colors.lime} />
                 <Text style={styles.cameraFallbackTitle}>Camera needed</Text>
-                <Text style={styles.cameraFallbackText}>Allow camera access to scan.</Text>
+                <Text style={styles.cameraFallbackText}>
+                  {cameraBlocked
+                    ? "Camera access is blocked. Open device settings to allow scanning."
+                    : "Allow camera access to scan the gym QR."}
+                </Text>
                 <ZookButton
-                  onPress={() => void requestPermission()}
+                  onPress={() =>
+                    cameraBlocked ? void Linking.openSettings() : void requestPermission()
+                  }
                   tone="secondary"
                   style={styles.permissionButton}
                 >
-                  Allow camera
+                  {cameraBlocked ? "Open settings" : "Allow camera"}
                 </ZookButton>
               </View>
             )}
@@ -237,38 +257,53 @@ export default function Scan() {
             <ValidationMini label="Check in" state={scanState} />
           </View>
 
-          <CollapsibleSection
-            title="Enter code instead"
-            subtitle="Use this when the camera cannot read the QR."
-            defaultOpen={false}
-          >
-            <View style={styles.codeRow}>
-              <TextInput
-                value={code}
-                onChangeText={setCode}
-                autoCapitalize="characters"
-                placeholder="Paste QR code"
-                placeholderTextColor={colors.subtle}
-                style={styles.codeInput}
-                returnKeyType="done"
-                onSubmitEditing={submitCode}
-              />
-              <Pressable
-                onPress={submitCode}
-                disabled={busy || !code.trim()}
-                accessibilityRole="button"
-                accessibilityLabel="Check code"
-                style={[styles.codeButton, busy || !code.trim() ? styles.codeButtonDisabled : null]}
-              >
-                <Ionicons name="arrow-forward" size={18} color={colors.bg} />
-              </Pressable>
-            </View>
-          </CollapsibleSection>
+          {__DEV__ ? (
+            <CollapsibleSection
+              title="Enter code instead"
+              subtitle="Development fallback for camera and QR testing."
+              defaultOpen={false}
+            >
+              <View style={styles.codeRow}>
+                <TextInput
+                  value={code}
+                  onChangeText={setCode}
+                  autoCapitalize="characters"
+                  placeholder="Paste QR code"
+                  placeholderTextColor={colors.subtle}
+                  style={styles.codeInput}
+                  returnKeyType="done"
+                  onSubmitEditing={submitCode}
+                />
+                <Pressable
+                  onPress={submitCode}
+                  disabled={busy || !code.trim()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Check code"
+                  style={[
+                    styles.codeButton,
+                    busy || !code.trim() ? styles.codeButtonDisabled : null,
+                  ]}
+                >
+                  <Ionicons name="arrow-forward" size={18} color={colors.bg} />
+                </Pressable>
+              </View>
+            </CollapsibleSection>
+          ) : null}
 
           {errorMessage ? (
             <GlassCard variant="warning" contentStyle={styles.errorContent}>
-              <Ionicons name="alert-circle-outline" size={18} color={colors.amber} />
-              <Text style={styles.errorText}>{errorMessage}</Text>
+              <View style={styles.errorRow}>
+                <Ionicons name="alert-circle-outline" size={18} color={colors.amber} />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+              <ZookButton
+                onPress={resetScan}
+                tone="secondary"
+                icon="refresh-outline"
+                style={styles.retryButton}
+              >
+                Scan again
+              </ZookButton>
             </GlassCard>
           ) : null}
 
@@ -347,6 +382,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   errorContent: {
+    gap: spacing.sm,
+  },
+  errorRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
@@ -355,6 +393,9 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     ...typography.small,
+  },
+  retryButton: {
+    minHeight: 40,
   },
   scannerOverlay: {
     position: "absolute",

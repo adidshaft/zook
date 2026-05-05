@@ -23,7 +23,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 import { useAuth } from "@/lib/auth";
-import { useMyNotifications } from "@/lib/query-hooks";
+import { useMyNotifications, useOrgAttendancePending } from "@/lib/query-hooks";
 import { colors, layout, palettes, radii, shadows, spacing, typography } from "@/lib/theme";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
@@ -1214,6 +1214,8 @@ export function ProductCard({
   imageUrl,
   compact = false,
   quantity = 0,
+  disabled = false,
+  incrementDisabled = false,
   onPress,
   onIncrement,
   onDecrement,
@@ -1227,6 +1229,8 @@ export function ProductCard({
   imageUrl?: string | null;
   compact?: boolean;
   quantity?: number;
+  disabled?: boolean;
+  incrementDisabled?: boolean;
   onPress?: PressHandler;
   onIncrement?: () => void;
   onDecrement?: () => void;
@@ -1234,6 +1238,8 @@ export function ProductCard({
 }) {
   const palette = tonePalettes[tone];
   const increment = onIncrement ?? onPress;
+  const canIncrement = !disabled && !incrementDisabled && Boolean(increment);
+  const canDecrement = !disabled && Boolean(onDecrement);
   return (
     <GlassCard
       style={[styles.productCard, style]}
@@ -1250,7 +1256,7 @@ export function ProductCard({
             <Ionicons name={icon} size={38} color={palette.color} />
           </>
         )}
-        {tone === "red" ? (
+        {tone === "red" || tone === "amber" ? (
           <View
             style={[
               styles.productBadge,
@@ -1274,31 +1280,47 @@ export function ProductCard({
         {quantity > 0 ? (
           <View style={styles.productStepper}>
             <Pressable
-              onPress={() => pressWithHaptics(onDecrement)}
+              onPress={() => {
+                if (canDecrement) pressWithHaptics(onDecrement);
+              }}
+              disabled={!canDecrement}
               accessibilityRole="button"
               accessibilityLabel={`Remove ${name}`}
-              style={styles.productStepperButton}
+              accessibilityState={{ disabled: !canDecrement }}
+              style={[styles.productStepperButton, !canDecrement ? styles.disabled : null]}
             >
               <Ionicons name="remove" size={16} color={colors.lime} />
             </Pressable>
             <Text style={styles.productQuantity}>{quantity}</Text>
             <Pressable
-              onPress={() => pressWithHaptics(increment)}
+              onPress={() => {
+                if (canIncrement) pressWithHaptics(increment);
+              }}
+              disabled={!canIncrement}
               accessibilityRole="button"
               accessibilityLabel={`Add ${name}`}
-              style={styles.productStepperButton}
+              accessibilityState={{ disabled: !canIncrement }}
+              style={[styles.productStepperButton, !canIncrement ? styles.disabled : null]}
             >
               <Ionicons name="add" size={16} color={colors.lime} />
             </Pressable>
           </View>
         ) : (
           <Pressable
-            onPress={() => pressWithHaptics(increment)}
+            onPress={() => {
+              if (canIncrement) pressWithHaptics(increment);
+            }}
+            disabled={!canIncrement}
             accessibilityRole="button"
             accessibilityLabel={`Add ${name}`}
-            style={[styles.productAdd, compact ? styles.productAddCompact : null]}
+            accessibilityState={{ disabled: !canIncrement }}
+            style={[
+              styles.productAdd,
+              compact ? styles.productAddCompact : null,
+              !canIncrement ? styles.productAddDisabled : null,
+            ]}
           >
-            <Text style={styles.productAddText}>ADD</Text>
+            <Text style={styles.productAddText}>{disabled ? "OUT" : "ADD"}</Text>
             <Ionicons name="add" size={16} color={colors.lime} />
           </Pressable>
         )}
@@ -1765,11 +1787,17 @@ export function BottomNav({
   const router = useRouter();
   const params = useLocalSearchParams<{ view?: string }>();
   const { activeRole } = useAuth();
+  const resolvedRole = role ?? activeRole;
   const notificationsQuery = useMyNotifications();
+  const pendingAttendanceQuery = useOrgAttendancePending(undefined, {
+    enabled: resolvedRole === "RECEPTIONIST",
+  });
   const unreadCount =
     notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt)
       ?.length ?? 0;
-  const resolvedRole = role ?? activeRole;
+  const receptionPendingCount =
+    pendingAttendanceQuery.data?.records.filter((attempt) => attempt.status === "PENDING_APPROVAL")
+      .length ?? 0;
   const resolvedTabs = tabs ?? getTabsForRole(resolvedRole);
   const isMemberNav = !tabs && (!resolvedRole || resolvedRole === "MEMBER");
   const activePath = selectedPath ?? pathname;
@@ -1788,7 +1816,12 @@ export function BottomNav({
       (tab.matchPath !== "/" && !roleRootPath && activePath.startsWith(tab.matchPath)) ||
       clientDetailMatches;
     const active = pathMatches && viewMatches;
-    const showBadge = unreadCount > 0 && tab.label === "Inbox";
+    const badgeCount =
+      unreadCount > 0 && tab.label === "Inbox"
+        ? unreadCount
+        : receptionPendingCount > 0 && resolvedRole === "RECEPTIONIST" && tab.label === "Desk"
+          ? receptionPendingCount
+          : 0;
     const raised = isMemberNav && tab.raised;
     const showLabel = !(raised && tab.hideLabel);
     const memberPressProps = isMemberNav
@@ -1824,7 +1857,11 @@ export function BottomNav({
             size={raised ? 31 : 21}
             color={raised ? colors.bg : active ? colors.lime : colors.subtle}
           />
-          {showBadge ? <View style={styles.navBadge} /> : null}
+          {badgeCount > 0 ? (
+            <View style={styles.navBadge}>
+              <Text style={styles.navBadgeText}>{badgeCount > 9 ? "9+" : badgeCount}</Text>
+            </View>
+          ) : null}
         </View>
         {showLabel ? (
           <Text
@@ -2407,6 +2444,10 @@ const styles = StyleSheet.create({
     minWidth: 62,
     height: 32,
   },
+  productAddDisabled: {
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.035)",
+  },
   productAddText: {
     color: colors.lime,
     ...typography.caption,
@@ -2828,12 +2869,24 @@ const styles = StyleSheet.create({
   },
   navBadge: {
     position: "absolute",
-    top: -2,
-    right: -4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: -8,
+    right: -10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: colors.red,
+    borderWidth: 1,
+    borderColor: colors.bg,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  navBadgeText: {
+    color: colors.text,
+    fontSize: 9,
+    lineHeight: 11,
+    fontFamily: "Inter_800ExtraBold",
+    fontVariant: ["tabular-nums"],
   },
   loadingState: {
     padding: spacing.xxxl,

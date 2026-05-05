@@ -7,9 +7,12 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
+  ErrorState,
   GlassCard,
   IconBubble,
   SectionHeader,
+  Skeleton,
+  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
@@ -56,8 +59,40 @@ export default function Home() {
   const gymHref = sessionOrganization?.username
     ? (`/gym/${sessionOrganization.username}` as Href)
     : ("/find-gyms" as Href);
-  const daysLeft = memberHome?.activeMembership?.daysLeft ?? 0;
-  const remainingVisits = memberHome?.activeMembership?.remainingVisits ?? 0;
+  const daysLeft = memberHome?.activeMembership?.daysLeft;
+  const remainingVisits = memberHome?.activeMembership?.remainingVisits;
+  const membershipExpired =
+    Boolean(memberHome?.activeMembership) &&
+    (String(memberHome?.activeMembership?.status ?? "")
+      .toUpperCase()
+      .includes("EXPIRED") ||
+      (typeof daysLeft === "number" && daysLeft <= 0));
+  const daysLeftLabel =
+    typeof daysLeft === "number" ? `${daysLeft} days left` : "Membership syncing";
+  const remainingVisitsLabel =
+    typeof remainingVisits === "number" ? `${remainingVisits} visits remaining` : "Visits syncing";
+  const attendanceMode = String(
+    (activeOrganization as { attendanceMode?: string } | null | undefined)?.attendanceMode ??
+      "EXCEPTION_APPROVAL",
+  );
+  const checkInCopy =
+    attendanceMode === "MANUAL_APPROVAL"
+      ? {
+          title: "Request desk approval",
+          body: "Scan first, then show your entry code at reception.",
+          cta: "Scan",
+        }
+      : attendanceMode === "AUTOMATIC"
+        ? {
+            title: "Check in",
+            body: "Scan the gym QR for instant entry.",
+            cta: "Open",
+          }
+        : {
+            title: "Check in",
+            body: "Scan the gym QR. The desk reviews only unusual scans.",
+            cta: "Open",
+          };
   const planName = memberHome?.todayPlanName ?? memberHome?.activePlan?.name ?? "No plan assigned";
   const lastCheckIn = memberHome?.recentAttendance?.[0]?.checkedInAt
     ? new Date(memberHome.recentAttendance[0].checkedInAt).toLocaleDateString("en-IN", {
@@ -69,13 +104,18 @@ export default function Home() {
   const hasGym = Boolean(activeOrganization);
   const hasMembership = Boolean(memberHome?.activeMembership);
   const neverCheckedIn = hasMembership && (memberHome?.recentAttendance?.length ?? 0) === 0;
-  const firstRunState = !hasGym
-    ? "NO_GYM"
-    : !hasMembership
-      ? "NO_MEMBERSHIP"
-      : neverCheckedIn
-        ? "NEVER_CHECKED_IN"
-        : null;
+  const loadingHome = homeQuery.isLoading && !memberHome;
+  const homeError = homeQuery.isError && !memberHome;
+  const firstRunState =
+    loadingHome || homeError
+      ? null
+      : !hasGym
+        ? "NO_GYM"
+        : !hasMembership
+          ? "NO_MEMBERSHIP"
+          : neverCheckedIn
+            ? "NEVER_CHECKED_IN"
+            : null;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -142,6 +182,26 @@ export default function Home() {
             </Link>
           </BlurView>
 
+          {homeError ? (
+            <GlassCard variant="danger" contentStyle={styles.stateCardContent}>
+              <ErrorState
+                title="Home could not load"
+                body="We could not refresh your membership, check-ins, or notifications. Your data may still be fine, but this screen needs a retry."
+                action={
+                  <ZookButton
+                    onPress={() => void homeQuery.refetch()}
+                    tone="secondary"
+                    icon="refresh-outline"
+                  >
+                    Try again
+                  </ZookButton>
+                }
+              />
+            </GlassCard>
+          ) : null}
+
+          {loadingHome ? <HomeSkeleton /> : null}
+
           {firstRunState ? (
             <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} />
           ) : null}
@@ -149,16 +209,19 @@ export default function Home() {
           {hasMembership ? (
             <Link href="/scan" asChild>
               <Pressable accessibilityRole="link" accessibilityLabel="Check in at the gym">
-                <GlassCard variant="success" contentStyle={styles.checkInContent}>
+                <GlassCard
+                  variant={attendanceMode === "MANUAL_APPROVAL" ? "warning" : "success"}
+                  contentStyle={styles.checkInContent}
+                >
                   <IconBubble icon="qr-code-outline" tone="lime" size={46} />
                   <View style={styles.checkInCopy}>
-                    <Text style={styles.checkInTitle}>Check in</Text>
+                    <Text style={styles.checkInTitle}>{checkInCopy.title}</Text>
                     <Text numberOfLines={1} style={styles.mutedSmall}>
-                      Scan the gym QR when you arrive.
+                      {checkInCopy.body}
                     </Text>
                   </View>
                   <View style={styles.checkInCta}>
-                    <Text style={styles.checkInCtaText}>Open</Text>
+                    <Text style={styles.checkInCtaText}>{checkInCopy.cta}</Text>
                     <Ionicons name="chevron-forward" size={16} color={colors.bg} />
                   </View>
                 </GlassCard>
@@ -167,24 +230,44 @@ export default function Home() {
           ) : null}
 
           {hasMembership ? (
-            <GlassCard variant="success" contentStyle={styles.membershipContent}>
+            <GlassCard
+              variant={membershipExpired ? "warning" : "success"}
+              contentStyle={styles.membershipContent}
+            >
               <View style={styles.membershipTop}>
                 <View style={styles.membershipCopy}>
                   <View style={styles.membershipLabel}>
-                    <IconBubble icon="shield-checkmark-outline" tone="lime" size={30} />
-                    <Text style={styles.mutedSmall}>Active Membership</Text>
+                    <IconBubble
+                      icon={membershipExpired ? "alert-circle-outline" : "shield-checkmark-outline"}
+                      tone={membershipExpired ? "amber" : "lime"}
+                      size={30}
+                    />
+                    <Text style={styles.mutedSmall}>
+                      {membershipExpired ? "Renewal needed" : "Active Membership"}
+                    </Text>
                   </View>
                   <View style={styles.membershipTitleRow}>
                     <Text style={styles.membershipTitle}>
                       {memberHome?.activePlan?.name ?? "Membership"}
                     </Text>
-                    <Text style={styles.daysLeft}>{daysLeft} days left</Text>
+                    <Text
+                      style={[styles.daysLeft, membershipExpired ? styles.daysLeftUrgent : null]}
+                    >
+                      {daysLeftLabel}
+                    </Text>
                   </View>
-                  <Text style={styles.mutedBody}>{remainingVisits} visits remaining</Text>
+                  <Text style={styles.mutedBody}>{remainingVisitsLabel}</Text>
+                  {membershipExpired ? (
+                    <Text style={styles.renewalAlert}>
+                      Renew now to keep check-ins and workout plans active.
+                    </Text>
+                  ) : null}
                 </View>
                 <Link href="/membership" asChild>
                   <Pressable accessibilityRole="link" style={styles.membershipCta}>
-                    <Text style={styles.membershipCtaText}>Renew</Text>
+                    <Text style={styles.membershipCtaText}>
+                      {membershipExpired ? "Renew now" : "Renew"}
+                    </Text>
                   </Pressable>
                 </Link>
               </View>
@@ -235,8 +318,10 @@ export default function Home() {
 
           {hasMembership ? (
             <Text style={styles.progressSummary}>
-              {remainingVisits} visits left · {memberHome?.streakDays ?? 0} day streak · Last visit{" "}
-              {lastCheckIn}
+              {typeof remainingVisits === "number"
+                ? `${remainingVisits} visits left`
+                : "Visits syncing"}{" "}
+              · {memberHome?.streakDays ?? 0} day streak · Last visit {lastCheckIn}
             </Text>
           ) : null}
         </ScrollView>
@@ -347,6 +432,31 @@ export default function Home() {
         {!profileOpen ? <BottomNav /> : null}
       </ZookScreen>
     </>
+  );
+}
+
+function HomeSkeleton() {
+  return (
+    <View style={styles.skeletonStack}>
+      <GlassCard variant="compact" contentStyle={styles.skeletonHero}>
+        <Skeleton width={46} height={46} borderRadius={23} />
+        <View style={styles.skeletonCopy}>
+          <Skeleton width="58%" height={18} borderRadius={9} />
+          <Skeleton width="82%" height={13} borderRadius={7} />
+        </View>
+        <Skeleton width={58} height={34} borderRadius={17} />
+      </GlassCard>
+      <GlassCard variant="compact" contentStyle={styles.skeletonMembership}>
+        <Skeleton width="45%" height={14} borderRadius={7} />
+        <Skeleton width="72%" height={24} borderRadius={12} />
+        <Skeleton width="36%" height={14} borderRadius={7} />
+      </GlassCard>
+      <GlassCard variant="compact" contentStyle={styles.skeletonMembership}>
+        <Skeleton width="34%" height={14} borderRadius={7} />
+        <Skeleton width="86%" height={18} borderRadius={9} />
+        <Skeleton width="66%" height={14} borderRadius={7} />
+      </GlassCard>
+    </View>
   );
 }
 
@@ -558,6 +668,27 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
+  stateCardContent: {
+    padding: 0,
+  },
+  skeletonStack: {
+    gap: 12,
+  },
+  skeletonHero: {
+    minHeight: 78,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: 14,
+  },
+  skeletonCopy: {
+    flex: 1,
+    gap: spacing.sm,
+  },
+  skeletonMembership: {
+    gap: spacing.sm,
+    padding: 16,
+  },
   firstRunTitle: {
     color: colors.text,
     ...typography.headerTitle,
@@ -596,6 +727,13 @@ const styles = StyleSheet.create({
   daysLeft: {
     color: colors.lime,
     ...typography.bodyStrong,
+  },
+  daysLeftUrgent: {
+    color: colors.amber,
+  },
+  renewalAlert: {
+    color: colors.amber,
+    ...typography.small,
   },
   membershipCta: {
     minHeight: 38,

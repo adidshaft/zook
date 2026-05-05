@@ -61,7 +61,7 @@ export function SectionHeader({
   description,
   badge,
   action,
-  className
+  className,
 }: {
   eyebrow?: string;
   title: string;
@@ -71,14 +71,22 @@ export function SectionHeader({
   className?: string | undefined;
 }) {
   return (
-    <div className={clsx("flex flex-col justify-between gap-4 md:flex-row md:items-start", className)}>
+    <div
+      className={clsx("flex flex-col justify-between gap-4 md:flex-row md:items-start", className)}
+    >
       <div>
-        {eyebrow ? <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/35">{eyebrow}</p> : null}
+        {eyebrow ? (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/35">
+            {eyebrow}
+          </p>
+        ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">{title}</h2>
           {badge}
         </div>
-        {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-white/52">{description}</p> : null}
+        {description ? (
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/52">{description}</p>
+        ) : null}
       </div>
       {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
     </div>
@@ -91,7 +99,7 @@ export function MetricCard({
   delta,
   icon,
   tone = "neutral",
-  className
+  className,
 }: {
   label: string;
   value: React.ReactNode;
@@ -105,7 +113,7 @@ export function MetricCard({
     lime: "from-lime-300/20 via-lime-300/6 to-transparent",
     amber: "from-amber-300/18 via-amber-300/6 to-transparent",
     red: "from-red-300/18 via-red-300/6 to-transparent",
-    blue: "from-sky-300/18 via-sky-300/6 to-transparent"
+    blue: "from-sky-300/18 via-sky-300/6 to-transparent",
   };
 
   return (
@@ -127,7 +135,7 @@ export function EmptyState({
   title,
   description,
   action,
-  className
+  className,
 }: {
   title: string;
   description?: React.ReactNode;
@@ -135,18 +143,59 @@ export function EmptyState({
   className?: string | undefined;
 }) {
   return (
-    <div className={clsx("rounded-[24px] border border-dashed border-white/12 bg-black/20 p-6", className)}>
+    <div
+      className={clsx(
+        "rounded-[24px] border border-dashed border-white/12 bg-black/20 p-6",
+        className,
+      )}
+    >
       <p className="text-base font-medium text-white">{title}</p>
-      {description ? <p className="mt-2 max-w-xl text-sm leading-6 text-white/48">{description}</p> : null}
+      {description ? (
+        <p className="mt-2 max-w-xl text-sm leading-6 text-white/48">{description}</p>
+      ) : null}
       {action ? <div className="mt-4 flex flex-wrap items-center gap-2">{action}</div> : null}
     </div>
   );
 }
 
+export function ErrorState({
+  title = "Unable to load this view",
+  description,
+  action,
+  className,
+  compact = false,
+}: {
+  title?: string;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string | undefined;
+  compact?: boolean | undefined;
+}) {
+  return (
+    <div
+      className={clsx(
+        "rounded-[24px] border border-[rgba(255,90,61,0.24)] bg-[rgba(255,90,61,0.1)]",
+        compact ? "px-4 py-3" : "p-6",
+        className,
+      )}
+    >
+      <p className="text-sm font-semibold text-[#ffc9bc]">{title}</p>
+      {description ? (
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#ffc9bc]/75">{description}</p>
+      ) : null}
+      {action ? <div className="mt-4 flex flex-wrap items-center gap-2">{action}</div> : null}
+    </div>
+  );
+}
+
+export function Skeleton({ className }: { className?: string | undefined }) {
+  return <div className={clsx("animate-pulse rounded-full bg-white/10", className)} />;
+}
+
 export function ReadoutGrid({
   items,
   columns = 2,
-  className
+  className,
 }: {
   items: Array<{ label: string; value: React.ReactNode; meta?: React.ReactNode }>;
   columns?: 1 | 2 | 3 | 4;
@@ -156,16 +205,25 @@ export function ReadoutGrid({
     1: "grid-cols-1",
     2: "grid-cols-1 md:grid-cols-2",
     3: "grid-cols-1 md:grid-cols-3",
-    4: "grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
+    4: "grid-cols-1 md:grid-cols-2 xl:grid-cols-4",
   };
 
   return (
     <dl className={clsx("grid gap-3", columnClasses[columns], className)}>
       {items.map((item) => (
-        <div key={item.label} className="min-w-0 rounded-[22px] border border-white/10 bg-black/20 px-4 py-3">
-          <dt className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/35">{item.label}</dt>
-          <dd className="mt-2 min-w-0 break-words text-lg font-semibold text-white">{item.value}</dd>
-          {item.meta ? <p className="mt-1 min-w-0 break-words text-xs leading-5 text-white/45">{item.meta}</p> : null}
+        <div
+          key={item.label}
+          className="min-w-0 rounded-[22px] border border-white/10 bg-black/20 px-4 py-3"
+        >
+          <dt className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/35">
+            {item.label}
+          </dt>
+          <dd className="mt-2 min-w-0 break-words text-lg font-semibold text-white">
+            {item.value}
+          </dd>
+          {item.meta ? (
+            <p className="mt-1 min-w-0 break-words text-xs leading-5 text-white/45">{item.meta}</p>
+          ) : null}
         </div>
       ))}
     </dl>
@@ -185,7 +243,7 @@ export function DataTable<Row>({
   rows,
   rowKey,
   empty,
-  className
+  className,
 }: {
   columns: Array<DataTableColumn<Row>>;
   rows: Row[];
@@ -194,7 +252,12 @@ export function DataTable<Row>({
   className?: string | undefined;
 }) {
   return (
-    <div className={clsx("overflow-x-auto rounded-[24px] border border-white/10 bg-black/25", className)}>
+    <div
+      className={clsx(
+        "overflow-x-auto rounded-[24px] border border-white/10 bg-black/25",
+        className,
+      )}
+    >
       <table className="min-w-[720px] w-full text-left text-sm">
         <thead className="bg-white/6 text-white/42">
           <tr>
@@ -203,8 +266,12 @@ export function DataTable<Row>({
                 key={column.id}
                 className={clsx(
                   "px-4 py-3 font-medium",
-                  column.align === "right" ? "text-right" : column.align === "center" ? "text-center" : "text-left",
-                  column.className
+                  column.align === "right"
+                    ? "text-right"
+                    : column.align === "center"
+                      ? "text-center"
+                      : "text-left",
+                  column.className,
                 )}
               >
                 {column.header}
@@ -221,8 +288,12 @@ export function DataTable<Row>({
                     key={column.id}
                     className={clsx(
                       "min-w-0 break-words px-4 py-3 text-white/72",
-                      column.align === "right" ? "text-right" : column.align === "center" ? "text-center" : "text-left",
-                      column.className
+                      column.align === "right"
+                        ? "text-right"
+                        : column.align === "center"
+                          ? "text-center"
+                          : "text-left",
+                      column.className,
                     )}
                   >
                     {column.render(row)}
@@ -246,7 +317,7 @@ export function DataTable<Row>({
 export function StatusPill({
   value,
   tone,
-  className
+  className,
 }: {
   value: string;
   tone?: PillTone;

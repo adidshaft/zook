@@ -11,6 +11,7 @@ export interface MemberHomeData {
     status: string;
     city?: string | null;
     state?: string | null;
+    attendanceMode?: "AUTOMATIC" | "EXCEPTION_APPROVAL" | "MANUAL_APPROVAL" | string | null;
   } | null;
   activeMembership: {
     id?: string;
@@ -819,7 +820,7 @@ export function useOrgAttendanceToday(orgId?: string) {
   });
 }
 
-export function useOrgAttendancePending(orgId?: string) {
+export function useOrgAttendancePending(orgId?: string, options?: { enabled?: boolean }) {
   const { activeOrgId, status, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
@@ -829,7 +830,11 @@ export function useOrgAttendancePending(orgId?: string) {
         `/orgs/${resolvedOrgId}/attendance/pending`,
         { token, orgId: resolvedOrgId },
       ),
-    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    enabled:
+      options?.enabled !== false &&
+      status === "authenticated" &&
+      Boolean(token) &&
+      Boolean(resolvedOrgId),
     refetchInterval: 20_000,
   });
 }

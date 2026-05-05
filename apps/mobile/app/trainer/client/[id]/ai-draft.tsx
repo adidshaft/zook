@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   AuditWarning,
@@ -19,6 +19,7 @@ import {
 import { plansApi, trainerApi } from "@/lib/domain-api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
+import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type Draft = {
@@ -74,7 +75,12 @@ function sectionsFromResponse(response: unknown): Array<{ title: string; body: s
         .filter((section): section is { title: string; body: string } => Boolean(section));
     }
   }
-  return [{ title: "Generated draft", body: typeof response === "string" ? response : JSON.stringify(response ?? {}) }];
+  return [
+    {
+      title: "Generated draft",
+      body: typeof response === "string" ? response : JSON.stringify(response ?? {}),
+    },
+  ];
 }
 
 function exercisesFromSections(sections: Array<{ title: string; body: string }>) {
@@ -100,15 +106,53 @@ export default function TrainerAiDraftReview() {
   const clientId = id || "user-aarav";
   const { activeOrgId, token } = useAuth();
   const clientsQuery = useTrainerClients();
-  const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
+  const client =
+    clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
+  const clientGoal = client?.summary?.fitnessGoal ?? client?.profile?.fitnessGoal ?? "Not set";
+  const clientWeight =
+    typeof client?.summary?.weightKg === "number" ? `${client.summary.weightKg} kg` : "Not set";
+  const clientDiet = client?.summary?.dietPreference ?? "Not set";
+  const recentWorkoutCount = client?.summary?.recentWorkouts?.length ?? 0;
+  const draftStorageKey = `zook_trainer_ai_draft_${activeOrgId ?? "org"}_${clientId}`;
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [draftHydrated, setDraftHydrated] = useState(false);
   const [status, setStatus] = useState("");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    setDraftHydrated(false);
+    void getStoredValue(draftStorageKey)
+      .then((storedDraft) => {
+        if (cancelled || !storedDraft) return;
+        const parsed = JSON.parse(storedDraft) as Draft;
+        if (parsed?.title && Array.isArray(parsed.sections)) {
+          setDraft(parsed);
+          setStatus("Recovered your saved draft from this device.");
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setDraftHydrated(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [draftStorageKey]);
+
+  useEffect(() => {
+    if (!draftHydrated) return;
+    if (draft) {
+      void setStoredValue(draftStorageKey, JSON.stringify(draft));
+      return;
+    }
+    void deleteStoredValue(draftStorageKey);
+  }, [draft, draftHydrated, draftStorageKey]);
+
   function updateDraft(patch: Partial<Draft>) {
-    setDraft((current) => current ? { ...current, ...patch } : current);
+    setDraft((current) => (current ? { ...current, ...patch } : current));
   }
 
   function updateSection(index: number, field: "title" | "body", value: string) {
@@ -214,6 +258,7 @@ export default function TrainerAiDraftReview() {
         assignedToUserId: client.memberUserId,
         audience: "selected_member",
       });
+      void deleteStoredValue(draftStorageKey);
       setStatus(`${draft.title} assigned. The client can now see it.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to assign draft.");
@@ -236,7 +281,11 @@ export default function TrainerAiDraftReview() {
             subtitle="Review, edit, then approve before assigning."
             leading={
               <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace(`/trainer/client/${client?.memberUserId ?? clientId}`)}
+                onPress={() =>
+                  router.canGoBack()
+                    ? router.back()
+                    : router.replace(`/trainer/client/${client?.memberUserId ?? clientId}`)
+                }
                 accessibilityRole="button"
                 accessibilityLabel="Back to client detail"
                 style={styles.iconButton}
@@ -256,17 +305,35 @@ export default function TrainerAiDraftReview() {
                   <IconBubble icon="reader-outline" tone="amber" />
                   <View style={styles.summaryCopy}>
                     {editing ? (
-                      <FormField label="Title" value={draft.title} onChangeText={(value) => updateDraft({ title: value })} />
+                      <FormField
+                        label="Title"
+                        value={draft.title}
+                        onChangeText={(value) => updateDraft({ title: value })}
+                      />
                     ) : (
                       <Text style={styles.cardTitle}>{draft.title}</Text>
                     )}
                     <Text style={styles.cardBody}>Client: {client?.user?.name ?? "Client"}</Text>
                   </View>
                 </View>
+                <View style={styles.clientContextGrid}>
+                  <DetailRow label="Current goal" value={clientGoal} />
+                  <DetailRow label="Weight" value={clientWeight} />
+                  <DetailRow label="Diet" value={clientDiet} />
+                  <DetailRow label="Recent workouts" value={String(recentWorkoutCount)} />
+                </View>
                 {editing ? (
                   <>
-                    <FormField label="Goal" value={draft.goal} onChangeText={(value) => updateDraft({ goal: value })} />
-                    <FormField label="Difficulty" value={draft.difficulty} onChangeText={(value) => updateDraft({ difficulty: value })} />
+                    <FormField
+                      label="Goal"
+                      value={draft.goal}
+                      onChangeText={(value) => updateDraft({ goal: value })}
+                    />
+                    <FormField
+                      label="Difficulty"
+                      value={draft.difficulty}
+                      onChangeText={(value) => updateDraft({ difficulty: value })}
+                    />
                   </>
                 ) : (
                   <>
@@ -277,35 +344,72 @@ export default function TrainerAiDraftReview() {
               </GlassCard>
 
               <GlassCard variant="compact" contentStyle={styles.stack}>
-                {draft.sections.map((section, index) => (
+                {draft.sections.map((section, index) =>
                   editing ? (
                     <View key={`${section.title}-${index}`} style={styles.stack}>
-                      <FormField label={`Section ${index + 1}`} value={section.title} onChangeText={(value) => updateSection(index, "title", value)} />
-                      <FormField label="Notes" value={section.body} onChangeText={(value) => updateSection(index, "body", value)} multiline />
+                      <FormField
+                        label={`Section ${index + 1}`}
+                        value={section.title}
+                        onChangeText={(value) => updateSection(index, "title", value)}
+                      />
+                      <FormField
+                        label="Notes"
+                        value={section.body}
+                        onChangeText={(value) => updateSection(index, "body", value)}
+                        multiline
+                      />
                     </View>
                   ) : (
                     <ListRow key={section.title} title={section.title} subtitle={section.body} />
-                  )
-                ))}
+                  ),
+                )}
               </GlassCard>
 
               <GlassCard variant="warning" contentStyle={styles.safetyContent}>
                 <Text style={styles.cardTitle}>Safety panel</Text>
-                <DetailRow label="Blocked" value="None detected" trailing={<StatusChip status="Clear" tone="lime" />} />
-                <DetailRow label="Medical-risk check" value="Clear" trailing={<StatusChip status="Clear" tone="lime" />} />
-                <DetailRow label="Trainer approval" value="Required" trailing={<StatusChip status="Required" tone="amber" />} />
+                <DetailRow
+                  label="Blocked"
+                  value="None detected"
+                  trailing={<StatusChip status="Clear" tone="lime" />}
+                />
+                <DetailRow
+                  label="Medical-risk check"
+                  value="Clear"
+                  trailing={<StatusChip status="Clear" tone="lime" />}
+                />
+                <DetailRow
+                  label="Trainer approval"
+                  value="Required"
+                  trailing={<StatusChip status="Required" tone="amber" />}
+                />
                 <Text style={styles.cardBody}>This draft is not visible to the client yet.</Text>
               </GlassCard>
 
               <View style={styles.actionRow}>
-                <ZookButton onPress={() => void assignDraft()} style={styles.actionHalf} icon="checkmark-circle-outline" disabled={saving || generating}>
+                <ZookButton
+                  onPress={() => void assignDraft()}
+                  style={styles.actionHalf}
+                  icon="checkmark-circle-outline"
+                  disabled={saving || generating}
+                >
                   Assign Plan
                 </ZookButton>
-                <SecondaryButton onPress={() => editing ? void saveDraftEdits() : setEditing(true)} style={styles.actionHalf} disabled={saving || generating}>
+                <SecondaryButton
+                  onPress={() => (editing ? void saveDraftEdits() : setEditing(true))}
+                  style={styles.actionHalf}
+                  disabled={saving || generating}
+                >
                   {editing ? "Save Edits" : "Edit Draft"}
                 </SecondaryButton>
               </View>
-              <Pressable onPress={() => { setDraft(null); setStatus("Draft discarded before assignment."); }} accessibilityRole="button" style={styles.discardButton}>
+              <Pressable
+                onPress={() => {
+                  setDraft(null);
+                  setStatus("Draft discarded before assignment.");
+                }}
+                accessibilityRole="button"
+                style={styles.discardButton}
+              >
                 <Text style={styles.discardText}>Discard</Text>
               </Pressable>
             </>
@@ -313,7 +417,15 @@ export default function TrainerAiDraftReview() {
             <EmptyState
               title="No draft ready"
               body="Generate a draft only after confirming the client goal and constraints."
-              action={<ZookButton onPress={() => void generateDraft()} icon="sparkles-outline" disabled={generating}>{generating ? "Generating..." : "Generate Draft"}</ZookButton>}
+              action={
+                <ZookButton
+                  onPress={() => void generateDraft()}
+                  icon="sparkles-outline"
+                  disabled={generating}
+                >
+                  {generating ? "Generating..." : "Generate Draft"}
+                </ZookButton>
+              }
             />
           )}
 
@@ -364,6 +476,10 @@ const styles = StyleSheet.create({
   summaryCopy: {
     flex: 1,
     gap: 4,
+  },
+  clientContextGrid: {
+    gap: spacing.sm,
+    paddingTop: spacing.xs,
   },
   cardTitle: {
     color: colors.text,

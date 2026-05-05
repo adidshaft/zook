@@ -7,6 +7,7 @@ import { AttendanceQrPanel } from "./attendance-qr-panel";
 import {
   DataTable,
   EmptyState,
+  ErrorState,
   ReadoutGrid,
   SectionHeader,
   StatusPill,
@@ -60,11 +61,7 @@ import {
 } from "./dashboard-operational-model";
 
 function ErrorNotice({ message }: { message: string }) {
-  return (
-    <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
-      {message}
-    </p>
-  );
+  return <ErrorState compact title="Unable to load this section" description={message} />;
 }
 
 function formatAiResponseSummary(summary?: string | null) {
@@ -2815,12 +2812,12 @@ export function DashboardOperationalPanel({
                   {
                     id: "actor",
                     header: "Actor",
-                    render: (log) => log.actorUserId ? "Team member" : "System",
+                    render: (log) => (log.actorUserId ? "Team member" : "System"),
                   },
                   {
                     id: "entity",
                     header: "Record",
-                    render: (log) => log.entityId ? "Linked record" : "Not attached",
+                    render: (log) => (log.entityId ? "Linked record" : "Not attached"),
                   },
                   {
                     id: "time",

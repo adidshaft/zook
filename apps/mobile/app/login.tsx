@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
   KeyboardAvoidingView,
   LayoutAnimation,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { BrandMark, GlassCard, GlassInput, ZookButton, ZookScreen } from "@/components/primitives";
@@ -25,38 +27,95 @@ function sanitizeOtpCode(value: string) {
     .slice(0, 6);
 }
 
+function looksLikePhoneInput(value: string) {
+  return !value.includes("@") && /^[+\d\s().-]*$/.test(value);
+}
+
+function formatIndiaPhoneInput(value: string) {
+  if (!looksLikePhoneInput(value)) {
+    return value;
+  }
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  const hasFormattedCountryCode = value.trimStart().startsWith("+91");
+  const localDigits =
+    hasFormattedCountryCode || (digits.startsWith("91") && digits.length === 12)
+      ? digits.slice(2, 12)
+      : digits.slice(0, 10);
+  const first = localDigits.slice(0, 5);
+  const second = localDigits.slice(5, 10);
+  return second ? `+91 ${first} ${second}` : `+91 ${first}`;
+}
+
 export default function Login() {
   const { requestOtp, verifyOtp } = useAuth();
   const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
+  const otpInputRef = useRef<TextInput>(null);
   const [identifier, setIdentifier] = useState("");
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"identifier" | "otp">("identifier");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  async function handleContinue() {
+  useEffect(() => {
+    if (stage === "otp") {
+      const timer = setTimeout(() => otpInputRef.current?.focus(), 220);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [stage]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return undefined;
+    const timer = setInterval(() => {
+      setResendCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  async function requestCode(resend = false) {
+    const trimmedIdentifier = identifier.trim();
+    if (trimmedIdentifier.length < 3) {
+      setMessage("Enter your email or phone number.");
+      return;
+    }
+    if (looksLikePhoneInput(trimmedIdentifier)) {
+      const digits = trimmedIdentifier.replace(/\D/g, "");
+      if (!(digits.length === 10 || (digits.length === 12 && digits.startsWith("91")))) {
+        setMessage("Enter a 10-digit India mobile number or use email.");
+        return;
+      }
+    }
     setBusy(true);
     setDevOtp(null);
-    const trimmedIdentifier = identifier.trim();
     try {
-      if (stage === "identifier") {
-        if (trimmedIdentifier.length < 3) {
-          setMessage("Enter your email or phone number.");
-          setBusy(false);
-          return;
-        }
-        const result = await requestOtp(trimmedIdentifier);
-        const seededDevOtp = sanitizeOtpCode(result.devOtp ?? localDevOtp ?? "");
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setStage("otp");
-        setCode(seededDevOtp);
-        setMessage(`Code sent to ${trimmedIdentifier}.`);
-        setDevOtp(seededDevOtp || null);
-      } else {
-        await verifyOtp(trimmedIdentifier, sanitizeOtpCode(code || devOtp || localDevOtp || ""));
-        setMessage("Signed in.");
-      }
+      const result = await requestOtp(trimmedIdentifier);
+      const seededDevOtp = sanitizeOtpCode(result.devOtp ?? localDevOtp ?? "");
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setStage("otp");
+      setCode(seededDevOtp);
+      setMessage(`${resend ? "Fresh code" : "Code"} sent to ${trimmedIdentifier}.`);
+      setDevOtp(seededDevOtp || null);
+      setResendCooldown(30);
+    } catch (error) {
+      setMessage(getApiErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleContinue() {
+    const trimmedIdentifier = identifier.trim();
+    if (stage === "identifier") {
+      await requestCode(false);
+      return;
+    }
+    setBusy(true);
+    try {
+      await verifyOtp(trimmedIdentifier, sanitizeOtpCode(code || devOtp || localDevOtp || ""));
+      setMessage("Signed in.");
     } catch (error) {
       setMessage(getApiErrorMessage(error));
     } finally {
@@ -104,23 +163,26 @@ export default function Login() {
               <GlassInput
                 label="Email or Phone"
                 value={identifier}
-                onChangeText={setIdentifier}
+                onChangeText={(value) => setIdentifier(formatIndiaPhoneInput(value))}
                 autoCapitalize="none"
                 autoComplete="username"
-                keyboardType="email-address"
-                placeholder="you@example.com or 9876543210"
+                keyboardType={
+                  looksLikePhoneInput(identifier) && identifier ? "phone-pad" : "email-address"
+                }
+                placeholder="+91 98765 43210 or you@example.com"
+                hint={
+                  looksLikePhoneInput(identifier)
+                    ? "India mobile numbers are sent with the +91 country code."
+                    : undefined
+                }
                 editable={!busy}
               />
             ) : (
-              <GlassInput
-                label="One-Time Code"
-                value={code}
-                onChangeText={(value) => setCode(sanitizeOtpCode(value))}
-                autoComplete="one-time-code"
-                keyboardType="number-pad"
-                maxLength={6}
-                placeholder="000000"
-                editable={!busy}
+              <OtpCodeInput
+                ref={otpInputRef}
+                code={code}
+                onChange={(value) => setCode(sanitizeOtpCode(value))}
+                disabled={busy}
               />
             )}
 
@@ -138,18 +200,30 @@ export default function Login() {
             </ZookButton>
 
             {stage === "otp" ? (
-              <ZookButton
-                onPress={() => {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setStage("identifier");
-                  setCode("");
-                  setDevOtp(null);
-                }}
-                disabled={busy}
-                tone="secondary"
-              >
-                Use a different sign-in
-              </ZookButton>
+              <View style={styles.otpActions}>
+                <ZookButton
+                  onPress={() => void requestCode(true)}
+                  disabled={busy || resendCooldown > 0}
+                  tone="secondary"
+                  style={styles.otpAction}
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+                </ZookButton>
+                <ZookButton
+                  onPress={() => {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setStage("identifier");
+                    setCode("");
+                    setDevOtp(null);
+                    setResendCooldown(0);
+                  }}
+                  disabled={busy}
+                  tone="secondary"
+                  style={styles.otpAction}
+                >
+                  Change sign-in
+                </ZookButton>
+              </View>
             ) : null}
           </GlassCard>
 
@@ -167,6 +241,49 @@ export default function Login() {
     </ZookScreen>
   );
 }
+
+const OtpCodeInput = forwardRef<
+  TextInput,
+  { code: string; onChange: (value: string) => void; disabled?: boolean }
+>(function OtpCodeInput({ code, onChange, disabled = false }, ref) {
+  return (
+    <View style={styles.otpGroup}>
+      <Text style={styles.inputLabel}>One-time code</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="One-time code"
+        onPress={() => {
+          if (!disabled && typeof ref !== "function") {
+            ref?.current?.focus();
+          }
+        }}
+        style={styles.otpCells}
+      >
+        {Array.from({ length: 6 }).map((_, index) => {
+          const digit = code[index] ?? "";
+          const active = index === Math.min(code.length, 5);
+          return (
+            <View key={index} style={[styles.otpCell, active ? styles.otpCellActive : null]}>
+              <Text style={styles.otpCellText}>{digit}</Text>
+            </View>
+          );
+        })}
+      </Pressable>
+      <TextInput
+        ref={ref}
+        value={code}
+        onChangeText={onChange}
+        autoComplete="one-time-code"
+        keyboardType="number-pad"
+        maxLength={6}
+        editable={!disabled}
+        caretHidden
+        textContentType="oneTimeCode"
+        style={styles.hiddenOtpInput}
+      />
+    </View>
+  );
+});
 
 const styles = StyleSheet.create({
   keyboardAvoidingView: {
@@ -225,6 +342,52 @@ const styles = StyleSheet.create({
   formSubtitle: {
     color: colors.muted,
     ...typography.body,
+  },
+  inputLabel: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  otpGroup: {
+    gap: spacing.sm,
+  },
+  otpCells: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  otpCell: {
+    flex: 1,
+    minHeight: 54,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  otpCellActive: {
+    borderColor: colors.limeBorder,
+    backgroundColor: colors.accentPanel,
+  },
+  otpCellText: {
+    minHeight: 24,
+    color: colors.text,
+    fontSize: 20,
+    lineHeight: 24,
+    fontFamily: "Inter_600SemiBold",
+    fontVariant: ["tabular-nums"],
+  },
+  hiddenOtpInput: {
+    position: "absolute",
+    width: 1,
+    height: 1,
+    opacity: 0,
+  },
+  otpActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  otpAction: {
+    flex: 1,
   },
   busyRow: {
     flexDirection: "row",

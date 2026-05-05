@@ -27,6 +27,7 @@ import {
 import { GlassCard, Pill, type PillTone } from "./glass-card";
 import { DashboardOperationalPanelShell } from "./dashboard-operational-panel-shell";
 import { ZookLogo } from "./zook-logo";
+import { ZookButtonLink } from "./zook-button";
 import { formatDate, formatDaysRemaining, formatEnumLabel, titleFromSection } from "@/lib/format";
 
 type DashboardData = Awaited<ReturnType<typeof import("@/lib/data").getDashboardData>>;
@@ -73,7 +74,12 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     label: "Settings",
     items: [
       { label: "Gym profile", href: "/dashboard/public-profile", icon: Globe2 },
-      { label: "Activity history", href: "/dashboard/audit", icon: History, shortLabel: "Activity" },
+      {
+        label: "Activity history",
+        href: "/dashboard/audit",
+        icon: History,
+        shortLabel: "Activity",
+      },
     ],
   },
 ];
@@ -102,7 +108,7 @@ function metricTone(label: string) {
 function prioritizeBranches(
   branches: DashboardData["branchScope"]["branches"],
   selectedBranchId?: string,
-  limit = 4
+  limit = 4,
 ) {
   const priorityIds = new Set<string>();
   if (selectedBranchId) {
@@ -223,13 +229,13 @@ function OwnerSetupChecklist({
             share.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <Link
+            <ZookButtonLink
               href="/dashboard/membership-plans"
-              className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-4 py-2.5 text-sm font-semibold text-black"
+              size="md"
+              trailingIcon={<ArrowRight size={16} />}
             >
               Create first plan
-              <ArrowRight size={16} />
-            </Link>
+            </ZookButtonLink>
             <span className="text-sm text-white/45">
               {completed} of {checklist.length} complete
             </span>
@@ -293,12 +299,9 @@ export function DashboardShell({
               title="No active organization is available"
               description="The dashboard session is live, but there is no gym bound to this view yet. Owners can create a gym profile from the web setup flow."
             />
-            <Link
-              href="/start-gym"
-              className="zook-focus mt-5 inline-flex rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
-            >
+            <ZookButtonLink href="/start-gym" className="mt-5">
               Start a gym
-            </Link>
+            </ZookButtonLink>
           </GlassCard>
         </div>
       </main>
@@ -463,30 +466,36 @@ export function DashboardShell({
         </aside>
 
         <section className="grid content-start gap-4">
-          <nav className="flex gap-3 overflow-x-auto rounded-[24px] border border-white/10 bg-white/5 p-2 lg:hidden">
-            {navGroups.map((group) => (
-              <div key={group.label} className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
-                  {group.label}
-                </span>
-                {group.items.map(({ label, shortLabel, href, icon: Icon }) => {
-                  const active = isActiveNav(href, sectionKey);
-                  return (
-                    <Link
-                      key={href}
-                      href={href}
-                      className={`zook-focus inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm transition ${
-                        active ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"
-                      }`}
-                    >
-                      <Icon size={16} />
-                      {shortLabel ?? label}
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
-          </nav>
+          <div className="relative lg:hidden">
+            <nav className="flex gap-3 overflow-x-auto rounded-[24px] border border-white/10 bg-white/5 p-2 pr-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {navGroups.map((group) => (
+                <div key={group.label} className="flex shrink-0 items-center gap-2">
+                  <span className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+                    {group.label}
+                  </span>
+                  {group.items.map(({ label, shortLabel, href, icon: Icon }) => {
+                    const active = isActiveNav(href, sectionKey);
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        className={`zook-focus inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm transition ${
+                          active ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"
+                        }`}
+                      >
+                        <Icon size={16} />
+                        {shortLabel ?? label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
+            </nav>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-1 right-1 w-12 rounded-r-[22px] bg-gradient-to-l from-[#0a0d0a] to-transparent"
+            />
+          </div>
 
           <GlassCard variant="strong" className="overflow-hidden">
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
@@ -519,19 +528,15 @@ export function DashboardShell({
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Link
+                <ZookButtonLink
                   href="/dashboard/attendance/qr-display"
-                  className="zook-focus inline-flex items-center justify-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+                  leadingIcon={<QrCode size={18} />}
                 >
-                  <QrCode size={18} />
                   Show QR
-                </Link>
-                <Link
-                  href="/dashboard/reports"
-                  className="zook-focus inline-flex items-center justify-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm text-white/72 transition hover:bg-white/8"
-                >
+                </ZookButtonLink>
+                <ZookButtonLink href="/dashboard/reports" tone="secondary">
                   Reports
-                </Link>
+                </ZookButtonLink>
               </div>
             </div>
           </GlassCard>

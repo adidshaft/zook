@@ -4,10 +4,10 @@ export const zookColors = {
   graphite800: "#171c18",
   graphite700: "#222820",
   graphite600: "#333b32",
-  surface: "rgba(255, 255, 255, 0.05)",
+  surface: "rgba(255, 255, 255, 0.06)",
   glass: "rgba(255, 255, 255, 0.06)",
   glassStrong: "rgba(255, 255, 255, 0.08)",
-  border: "rgba(255, 255, 255, 0.12)",
+  border: "rgba(255, 255, 255, 0.14)",
   borderStrong: "rgba(255, 255, 255, 0.18)",
   text: "#f4f7ef",
   textMuted: "#aeb8a8",
@@ -15,9 +15,9 @@ export const zookColors = {
   limeDim: "rgba(185, 244, 85, 0.16)",
   limeBorder: "rgba(185, 244, 85, 0.45)",
   limeDeep: "#6fad21",
-  amber: "#f5c84b",
-  red: "#ff6b5f",
-  blue: "#7dd3fc"
+  amber: "#f2c94c",
+  red: "#ff5a3d",
+  blue: "#7dd3fc",
 } as const;
 
 export const zookRadii = {
@@ -27,7 +27,7 @@ export const zookRadii = {
   lg: 24,
   xl: 28,
   xxl: 32,
-  pill: 999
+  pill: 999,
 } as const;
 
 export const zookSpacing = {
@@ -40,7 +40,7 @@ export const zookSpacing = {
   8: 32,
   10: 40,
   12: 48,
-  16: 64
+  16: 64,
 } as const;
 
 export const zookTypography = {
@@ -49,35 +49,35 @@ export const zookTypography = {
   display: {
     fontSize: 48,
     lineHeight: 1.04,
-    fontWeight: "760"
+    fontWeight: "760",
   },
   h1: {
     fontSize: 34,
     lineHeight: 1.08,
-    fontWeight: "740"
+    fontWeight: "740",
   },
   h2: {
     fontSize: 24,
     lineHeight: 1.18,
-    fontWeight: "700"
+    fontWeight: "700",
   },
   body: {
     fontSize: 15,
     lineHeight: 1.55,
-    fontWeight: "450"
+    fontWeight: "450",
   },
   metric: {
     fontSize: 38,
     lineHeight: 1,
     fontWeight: "780",
-    fontVariantNumeric: "tabular-nums"
-  }
+    fontVariantNumeric: "tabular-nums",
+  },
 } as const;
 
 export const zookShadows = {
-  glass: "0 20px 70px rgba(0, 0, 0, 0.36)",
-  glowLime: "0 18px 55px rgba(185, 244, 85, 0.16)",
-  inset: "inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+  glass: "0 18px 42px rgba(0, 0, 0, 0.34)",
+  glowLime: "0 16px 36px rgba(185, 244, 85, 0.14)",
+  inset: "inset 0 1px 0 rgba(255, 255, 255, 0.1)",
 } as const;
 
 export const zookTokens = {
@@ -85,5 +85,5 @@ export const zookTokens = {
   radii: zookRadii,
   spacing: zookSpacing,
   typography: zookTypography,
-  shadows: zookShadows
+  shadows: zookShadows,
 } as const;

@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
+import { ZookButtonLink } from "@/components/zook-button";
 import { ZookLogo } from "@/components/zook-logo";
 
 const iosAppUrl = process.env.NEXT_PUBLIC_IOS_APP_URL;
@@ -54,18 +55,12 @@ export default function HomePage() {
         <header className="flex items-center justify-between">
           <ZookLogo />
           <div className="flex items-center gap-2">
-            <Link
-              href="/start-gym"
-              className="hidden rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black sm:inline-flex"
-            >
+            <ZookButtonLink href="/start-gym" size="sm" className="hidden sm:inline-flex">
               Start your gym
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
-            >
+            </ZookButtonLink>
+            <ZookButtonLink href="/login" tone="ghost" size="sm">
               Login
-            </Link>
+            </ZookButtonLink>
           </div>
         </header>
 
@@ -79,20 +74,12 @@ export default function HomePage() {
               pickup, and owner reporting in one reliable workflow.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/start-gym"
-                className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
-              >
+              <ZookButtonLink href="/start-gym" trailingIcon={<ArrowRight size={18} />}>
                 Start your gym
-                <ArrowRight size={18} />
-              </Link>
-              <Link
-                href="/gyms"
-                className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-5 py-3 text-white/75 transition hover:bg-white/8 hover:text-white"
-              >
+              </ZookButtonLink>
+              <ZookButtonLink href="/gyms" tone="secondary" trailingIcon={<ArrowRight size={18} />}>
                 Find a gym
-                <ArrowRight size={18} />
-              </Link>
+              </ZookButtonLink>
             </div>
           </div>
 
