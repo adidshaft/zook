@@ -32,7 +32,7 @@ const demoAiUsage = zookDemoFixtures.aiUsageRecords.map((usage) => ({
   provider: "MOCK",
   requestType: usage.requestType,
   promptSummary: usage.promptSummary,
-  responseSummary: "Mock draft generated for trainer review",
+  responseSummary: "Draft ready for trainer review",
   tokenEstimate: 420,
   costEstimatePaise: 0,
   quotaConsumed: usage.quotaConsumed,
@@ -81,13 +81,13 @@ function getDemoDashboardData(scope: "org" | "platform") {
             { label: "Revenue", value: "₹82,450", delta: "Includes manual records" },
             { label: "Pending Join Requests", value: "7", delta: "Approval queue" },
             { label: "Low Stock", value: "2", delta: "Protein bar and shaker" },
-            { label: "AI Usage", value: "18", delta: "Trainer drafts this month" },
+            { label: "Assistant drafts", value: "18", delta: "Trainer drafts this month" },
           ]
         : [
-            { label: "Organizations", value: "1", delta: "Demo mode" },
+            { label: "Organizations", value: "1", delta: "Sample view" },
             { label: "Active orgs", value: "1", delta: "0 suspended" },
-            { label: "Provider health", value: "5", delta: "Mock/provider-ready" },
-            { label: "Abuse flags", value: "0", delta: "No open flags" },
+            { label: "Service status", value: "5", delta: "Ready" },
+            { label: "Safety reviews", value: "0", delta: "No open reviews" },
           ],
     orgs: [org],
     products: demoProducts,
@@ -196,22 +196,22 @@ export async function getDashboardData(orgId?: string, branchId?: string) {
 export async function getEmptyDashboardData(orgId?: string) {
   const zeroMetrics = orgId
     ? [
-        { label: "Today attendance", value: "0", delta: "database unavailable" },
-        { label: "Active members", value: "0", delta: "database unavailable" },
-        { label: "Expiring soon", value: "0", delta: "database unavailable" },
-        { label: "Cash collected", value: "₹0", delta: "database unavailable" },
-        { label: "Revenue", value: "₹0", delta: "database unavailable" },
-        { label: "Low stock", value: "0", delta: "database unavailable" },
-        { label: "Notification queue", value: "0", delta: "database unavailable" },
-        { label: "AI usage", value: "0", delta: "database unavailable" },
-        { label: "Trial days", value: "0", delta: "database unavailable" },
+        { label: "Today attendance", value: "0", delta: "Data unavailable" },
+        { label: "Active members", value: "0", delta: "Data unavailable" },
+        { label: "Expiring soon", value: "0", delta: "Data unavailable" },
+        { label: "Cash collected", value: "₹0", delta: "Data unavailable" },
+        { label: "Revenue", value: "₹0", delta: "Data unavailable" },
+        { label: "Low stock", value: "0", delta: "Data unavailable" },
+        { label: "Notification queue", value: "0", delta: "Data unavailable" },
+        { label: "Assistant drafts", value: "0", delta: "Data unavailable" },
+        { label: "Trial days", value: "0", delta: "Data unavailable" },
       ]
     : [
-        { label: "Organizations", value: "0", delta: "database unavailable" },
-        { label: "Trial gyms", value: "0", delta: "database unavailable" },
-        { label: "Suspended", value: "0", delta: "database unavailable" },
-        { label: "AI usage", value: "0", delta: "database unavailable" },
-        { label: "Abuse flags", value: "0", delta: "database unavailable" },
+        { label: "Organizations", value: "0", delta: "Data unavailable" },
+        { label: "Trial gyms", value: "0", delta: "Data unavailable" },
+        { label: "Suspended", value: "0", delta: "Data unavailable" },
+        { label: "Assistant drafts", value: "0", delta: "Data unavailable" },
+        { label: "Safety reviews", value: "0", delta: "Data unavailable" },
       ];
   return {
     scope: orgId ? ("org" as const) : ("platform" as const),

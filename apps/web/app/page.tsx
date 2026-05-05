@@ -37,7 +37,7 @@ export default function HomePage() {
   const memberFeatures: Array<[LucideIcon, string]> = [
     [QrCode, "QR check-in"],
     [Dumbbell, "Workout plans"],
-    [Smartphone, "AI fitness assistant"],
+    [Smartphone, "Fitness assistant"],
     [ChartNoAxesColumnIncreasing, "Progress tracking"],
     [Store, "Shop and pickup"],
     [Bell, "Notifications"],
@@ -45,7 +45,7 @@ export default function HomePage() {
   const proofPoints = [
     "Owner setup stays on web, where plans, payments, staff, and reports are easier to review.",
     "Member workflows stay on mobile, so entry, workout plans, and progress live where members already check in.",
-    "Desk and trainer workflows use the same operating record, reducing handoffs during busy hours.",
+    "Desk and trainer workflows use the same operating record, reducing delays during busy hours.",
   ];
 
   return (

@@ -45,7 +45,7 @@ function demoProfile() {
       weightKg: 78,
       dietPreference: profile?.dietPreference ?? "Vegetarian",
       allergies: profile?.allergyNote ?? "None added",
-      summaryNote: "Demo profile stored locally for show-and-tell mode.",
+      summaryNote: "Sample profile saved on this device.",
       latestMeasurementAt: nowIso(),
     },
   };
@@ -529,16 +529,16 @@ export async function demoMobileApiFetch<T>(
           { title: "Recovery", body: "Keep effort moderate and review discomfort." },
         ],
       },
-      createdPlan: { id: "offline-ai-plan", title: "Offline AI workout draft" },
+      createdPlan: { id: "offline-ai-plan", title: "Sample workout draft" },
     } as T;
   }
 
   if (pathname === "/ai/chat") {
     return {
       answer:
-        "Offline demo answer: keep the workout moderate today, hydrate, and ask your trainer to review any pain or fatigue before increasing load.",
+        "Sample answer: keep the workout moderate today, hydrate, and ask your trainer to review any pain or fatigue before increasing load.",
       response:
-        "Offline demo answer: keep the workout moderate today, hydrate, and ask your trainer to review any pain or fatigue before increasing load.",
+        "Sample answer: keep the workout moderate today, hydrate, and ask your trainer to review any pain or fatigue before increasing load.",
       usage: {
         provider: "offline-demo",
         requestType: "CHAT",
@@ -547,5 +547,5 @@ export async function demoMobileApiFetch<T>(
     } as T;
   }
 
-  throw new Error(`Offline demo has no fixture response for ${pathname}. Add an explicit demo handler or use API_MODE=backend.`);
+  throw new Error("This sample action is not available yet.");
 }

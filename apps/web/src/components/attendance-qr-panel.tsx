@@ -59,7 +59,7 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
       })
       .catch(() => {
         if (active) {
-          setQrRenderError("Unable to render the QR image. The signed token is still available.");
+          setQrRenderError("Unable to show the QR image. Support details are still available.");
         }
       });
 
@@ -72,9 +72,9 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
     <GlassCard>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Live attendance token</h2>
+          <h2 className="text-xl font-semibold">Entry QR code</h2>
           <p className="mt-1 text-sm text-white/45">
-            Default Branch QR for the mobile scanner or simulator paste flow.
+            Display this at reception or the entry gate.
           </p>
         </div>
         <button
@@ -88,7 +88,7 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
       <div className="mt-5 rounded-[24px] border border-white/10 bg-black/30 p-5">
         <div className="flex items-center gap-2 text-lime-200">
           <QrCode size={18} />
-          <span className="text-sm font-medium">Rolling signed QR</span>
+          <span className="text-sm font-medium">Fresh QR code</span>
         </div>
         {error ? <p className="mt-4 text-sm text-red-200">{error}</p> : null}
         {!error ? (
@@ -115,16 +115,16 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
                 {qrRenderError ? <p className="mt-3 text-sm text-red-200">{qrRenderError}</p> : null}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Pill tone="lime">Backend signed</Pill>
+                <Pill tone="lime">Secure code</Pill>
                 <Pill>Default Branch</Pill>
                 {expiresAt ? <Pill>Expires {new Date(expiresAt).toLocaleTimeString()}</Pill> : null}
               </div>
               <details className="rounded-2xl border border-white/10 bg-black/35 p-4">
                 <summary className="cursor-pointer text-sm font-medium text-white/72">
-                  Show signed token
+                  Support details
                 </summary>
                 <pre className="mt-4 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-white/70">
-                  {qrPayload || "Loading token..."}
+                  {qrPayload || "Loading details..."}
                 </pre>
               </details>
             </div>

@@ -182,7 +182,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
     if (error instanceof RuntimeConfigError) {
       issues.push(...error.issues);
     } else {
-      issues.push({ level: "error", code: "INVALID_API_MODE", message: "Unable to resolve API_MODE." });
+      issues.push({ level: "error", code: "INVALID_API_MODE", message: "Unable to resolve connection mode." });
     }
   }
 
@@ -190,7 +190,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
     issues.push({
       level: "error",
       code: "OFFLINE_DEMO_NON_LOCAL",
-      message: "API_MODE=offline-demo is only allowed with APP_ENV=local.",
+      message: "Sample mode is only available in local builds.",
     });
   }
 

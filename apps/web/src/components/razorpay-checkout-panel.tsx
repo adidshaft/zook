@@ -61,14 +61,14 @@ export function RazorpayCheckoutPanel({
   const statusText = useMemo(() => {
     if (scriptError) return scriptError;
     if (!providerReference || !keyId || !amountPaise)
-      return "Payment handoff is missing provider data.";
-    if (!scriptReady) return "Preparing secure checkout...";
+      return "Payment details are incomplete. Please start again from Zook.";
+    if (!scriptReady) return "Preparing secure payment...";
     if (handoffState === "opening") return "Opening Razorpay...";
     if (handoffState === "submitted")
       return isRecurring
-        ? "Autopay authorization submitted. Waiting for secure webhook confirmation."
-        : "Payment submitted. Waiting for secure webhook confirmation.";
-    if (handoffState === "failed") return "Checkout was closed before payment confirmation.";
+        ? "Autopay authorization submitted. Waiting for confirmation."
+        : "Payment submitted. Waiting for confirmation.";
+    if (handoffState === "failed") return "Payment was closed before confirmation.";
     return isRecurring ? "Ready to authorize autopay." : "Ready for secure payment.";
   }, [amountPaise, handoffState, isRecurring, keyId, providerReference, scriptError, scriptReady]);
 
@@ -82,7 +82,7 @@ export function RazorpayCheckoutPanel({
     script.async = true;
     script.onload = () => setScriptReady(true);
     script.onerror = () =>
-      setScriptError("Unable to load Razorpay Checkout. Check the network and retry.");
+      setScriptError("Unable to load the payment window. Check the network and retry.");
     document.body.appendChild(script);
     return () => {
       script.remove();
@@ -127,7 +127,7 @@ export function RazorpayCheckoutPanel({
     <div className="mt-6 rounded-[24px] border border-lime-300/25 bg-lime-300/10 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-lime-100/55">Razorpay Checkout</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-lime-100/55">Secure checkout</p>
           <p className="mt-2 text-sm text-white/70">{statusText}</p>
         </div>
         <button

@@ -115,7 +115,7 @@ export default async function JoinPage({
 
         <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
           <GlassCard variant="strong">
-            <Pill tone="lime">Hosted checkout handoff</Pill>
+            <Pill tone="lime">Secure payment</Pill>
             <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white">Review your membership</h1>
             <div className="mt-6 grid gap-3">
               <Readout label="Gym" value={`${org.name} · ${org.city}`} />
@@ -130,7 +130,7 @@ export default async function JoinPage({
             <p className="text-sm text-white/45">Final amount</p>
             <p className="metric mt-2 text-5xl font-semibold text-lime-200">{formatInr(finalAmount)}</p>
             <div className="mt-6 grid gap-3">
-              {["Secure hosted checkout", "Backend confirms payment", "Membership activates automatically"].map((step, index) => (
+              {["Secure payment page", "Payment is confirmed", "Membership starts automatically"].map((step, index) => (
                 <div key={step} className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4">
                   <CheckCircle2 className="text-lime-200" size={20} />
                   <p className="text-sm text-white/75">{index + 1}. {step}</p>
@@ -155,7 +155,7 @@ export default async function JoinPage({
                 href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}
                 className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
               >
-                Continue to Demo Checkout
+                Continue to Test Checkout
               </Link>
             )}
           </GlassCard>

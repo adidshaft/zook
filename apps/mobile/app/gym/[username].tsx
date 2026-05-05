@@ -101,7 +101,7 @@ export default function GymProfileScreen() {
         planId,
         ...(effectiveReferral ? { referralCode: effectiveReferral } : {}),
       });
-      setStatusMessage("Checkout created. Complete the hosted flow to activate your membership.");
+      setStatusMessage("Payment started. Complete it to activate your membership.");
       refreshAfterCheckoutRef.current = true;
       await Linking.openURL(checkoutUrl(payload.checkoutUrl));
       await Promise.all([
@@ -110,7 +110,7 @@ export default function GymProfileScreen() {
         queryClient.invalidateQueries({ queryKey: ["gym", username] }),
       ]);
     } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : "Unable to start checkout.");
+      setStatusMessage(error instanceof Error ? error.message : "Unable to start payment.");
     } finally {
       setBusyAction(null);
     }
@@ -152,7 +152,7 @@ export default function GymProfileScreen() {
         {gymQuery.isLoading ? (
           <LoadingState
             title="Loading gym details"
-            body="Pulling public organization data, plans, and your viewer state."
+            body="Loading gym details, plans, and your membership status."
           />
         ) : null}
 
@@ -222,7 +222,7 @@ export default function GymProfileScreen() {
                     value={
                       viewerState.approvedJoinRequest.reviewedAt
                         ? `Approved ${formatLongDate(viewerState.approvedJoinRequest.reviewedAt)}`
-                        : "Approved and ready for checkout"
+                        : "Approved and ready for payment"
                     }
                     tone="lime"
                   />
@@ -322,7 +322,7 @@ export default function GymProfileScreen() {
                     ? "Staff approval happens before payment."
                     : inviteOnlyLocked
                       ? "Referral or invite is required."
-                      : "You can move straight to hosted checkout."}
+                      : "You can move straight to payment."}
                 </Text>
               </GlassCard>
               <GlassCard contentStyle={styles.metricCard}>
@@ -392,7 +392,7 @@ export default function GymProfileScreen() {
             {!plans.length ? (
               <EmptyState
                 title="No public plans yet"
-                body="This gym is public, but it has not published any plans for mobile checkout yet."
+                body="This gym is public, but it has not published any plans for mobile sign-up yet."
               />
             ) : null}
 
@@ -422,7 +422,7 @@ export default function GymProfileScreen() {
                     disabled={!canCheckout(plan.id)}
                   >
                     {busyAction === plan.id
-                      ? "Opening checkout..."
+                      ? "Opening payment..."
                       : canCheckout(plan.id)
                         ? "Choose plan"
                         : "Complete earlier step first"}
@@ -452,15 +452,15 @@ function buildJoinSteps(
     return [
       {
         title: "Submit request",
-        body: "Send your membership intent before payment if the gym keeps approvals on.",
+        body: "Send your request before payment if this gym reviews new members.",
       },
       {
         title: "Staff review",
-        body: "Ownership can clear the commercial membership request in the web app.",
+        body: "The gym team reviews your request.",
       },
       {
         title: "Activate plan",
-        body: "Return here and complete hosted checkout once approval lands.",
+        body: "Return here and complete payment once you are approved.",
       },
     ];
   }
@@ -475,11 +475,11 @@ function buildJoinSteps(
       },
       {
         title: "Review plans",
-        body: "Once the code is valid, the published plans become checkout-ready.",
+        body: "Once the code is accepted, plans are ready to join.",
       },
       {
-        title: "Complete checkout",
-        body: "Hosted payment activates the membership once the invite rules are satisfied.",
+        title: "Complete payment",
+        body: "Payment activates the membership once the invite rules are met.",
       },
     ];
   }
@@ -490,8 +490,8 @@ function buildJoinSteps(
       body: "Compare price, access, trainer support, and plan format without waiting for staff.",
     },
     {
-      title: "Checkout instantly",
-      body: "Hosted checkout creates the membership flow directly from mobile.",
+      title: "Pay instantly",
+      body: "Complete payment directly from mobile.",
     },
     {
       title: "Start training",
@@ -542,7 +542,7 @@ function buildPlanHighlights(plan: {
       : null,
   ].filter(Boolean) as string[];
 
-  return highlights.length ? highlights : ["Flexible membership", "Hosted checkout"];
+  return highlights.length ? highlights : ["Flexible membership", "Secure payment"];
 }
 
 function toneForJoinMode(joinMode?: string) {

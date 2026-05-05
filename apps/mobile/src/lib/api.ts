@@ -100,7 +100,7 @@ export async function mobileApiFetch<T>(
   const { body: rawBody, orgId, token, ...requestInit } = init;
   const configError = getMobileRuntimeConfigError();
   if (configError) {
-    throw new Error(configError);
+    throw new Error("Zook can’t open in this build. Please update the app or contact support.");
   }
   if (isOfflineDemoMode()) {
     return demoMobileApiFetch<T>(path, { body: rawBody, method: requestInit.method });
@@ -135,11 +135,11 @@ export async function mobileApiFetch<T>(
     return parseApiResponse<T>(response);
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error(`Request timed out. Try again in a moment. Request ID: ${requestId}`);
+      throw new Error("Request timed out. Try again in a moment.");
     }
     if (error instanceof Error && isLocalAddress(apiBaseUrl)) {
       throw new Error(
-        `Unable to reach ${apiBaseUrl}. On iOS simulator, make sure the local web server is running. On Android emulators use 10.0.2.2, and on physical devices replace localhost with your LAN IP or use staging/production.`
+        "We cannot connect right now. Check your internet connection or try again."
       );
     }
     throw error;

@@ -254,7 +254,7 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
             <span>
               Also attempt push delivery
               <span className="mt-1 block text-xs text-white/35">
-                Uses the active push provider when this environment has one configured.
+                Sends a push alert when this gym has notifications turned on.
               </span>
             </span>
             <input

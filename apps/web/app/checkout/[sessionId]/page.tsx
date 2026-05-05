@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@zook/db";
 import { RazorpayCheckoutPanel } from "@/components/razorpay-checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
-import { formatInr, formatEnumLabel } from "@/lib/format";
+import { formatInr, formatEnumLabel, formatDateTime } from "@/lib/format";
 
 function readCheckoutData(metadata: unknown) {
   if (!metadata || Array.isArray(metadata) || typeof metadata !== "object") {
@@ -17,6 +17,10 @@ function readCheckoutData(metadata: unknown) {
     return null;
   }
   return providerCheckoutData as Record<string, unknown>;
+}
+
+function paymentPartnerLabel(provider: string) {
+  return provider.toLowerCase() === "mock" ? "Zook payments" : formatEnumLabel(provider);
 }
 
 export default async function HostedCheckoutPage({
@@ -35,10 +39,10 @@ export default async function HostedCheckoutPage({
           <ZookLogo />
         </div>
         <div className="glass-panel w-full max-w-xl rounded-[28px] p-8">
-          <p className="text-sm text-white/45">Checkout handoff</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">Payment session not found</h1>
+          <p className="text-sm text-white/45">Payment link</p>
+          <h1 className="mt-2 text-3xl font-semibold text-white">This payment link is no longer active</h1>
           <p className="mt-3 text-sm leading-6 text-white/60">
-            The session may have expired or the link is no longer valid.
+            Please return to Zook and start checkout again.
           </p>
         </div>
       </main>
@@ -53,52 +57,46 @@ export default async function HostedCheckoutPage({
       <div className="glass-panel w-full max-w-2xl rounded-[28px] p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm text-white/45">Hosted checkout handoff</p>
+            <p className="text-sm text-white/45">Secure payment</p>
             <h1 className="mt-2 text-3xl font-semibold text-white">
               {formatInr(session.amountPaise)}
             </h1>
           </div>
           <div className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-            {formatEnumLabel(session.provider)} · {formatEnumLabel(session.status)}
+            {formatEnumLabel(session.status)}
           </div>
         </div>
 
         <p className="mt-5 text-sm leading-6 text-white/60">
-          Memberships, shop orders, and billing only activate after the backend verifies the
-          provider outcome. Redirects alone are never trusted.
+          Complete payment here. Your membership or order updates automatically after confirmation.
         </p>
 
         <div className="mt-6 grid gap-4 rounded-[24px] border border-white/10 bg-black/20 p-5 text-sm text-white/70 md:grid-cols-2">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Session</p>
-            <p className="mt-2 break-all font-medium text-white">{session.id}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Provider reference</p>
-            <p className="mt-2 break-all font-medium text-white">
-              {session.providerRef ?? "Pending assignment"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Purpose</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/35">For</p>
             <p className="mt-2 font-medium text-white">{formatEnumLabel(session.purpose)}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Expires</p>
-            <p className="mt-2 font-medium text-white">{session.expiresAt.toISOString()}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Payment partner</p>
+            <p className="mt-2 font-medium text-white">{paymentPartnerLabel(session.provider)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Status</p>
+            <p className="mt-2 font-medium text-white">{formatEnumLabel(session.status)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Valid until</p>
+            <p className="mt-2 font-medium text-white">{formatDateTime(session.expiresAt)}</p>
           </div>
         </div>
 
         {checkoutData ? (
           <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Provider handoff</p>
-            <div className="mt-3 grid gap-3 text-sm text-white/70 md:grid-cols-2">
-              {Object.entries(checkoutData).map(([key, value]) => (
-                <div key={key}>
-                  <p className="text-xs uppercase tracking-[0.16em] text-white/35">
-                    {formatEnumLabel(key)}
-                  </p>
-                  <p className="mt-1 break-all text-white">{String(value)}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/35">What happens next</p>
+            <div className="mt-3 grid gap-3 text-sm text-white/70 md:grid-cols-3">
+              {["Pay securely", "Zook confirms it", "Access updates"].map((step) => (
+                <div key={step} className="rounded-2xl border border-white/10 bg-black/20 p-3 text-white">
+                  {step}
                 </div>
               ))}
             </div>

@@ -55,7 +55,7 @@ const preferenceRows = [
   {
     key: "transactional",
     title: "Payments and receipts",
-    subtitle: "Membership payments, checkout, and renewal notices",
+    subtitle: "Membership payments and renewal notices",
   },
   {
     key: "operational",

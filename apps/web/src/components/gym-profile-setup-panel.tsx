@@ -520,7 +520,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               columns={1}
               items={[
                 { label: "Public link", value: publicUrl, meta: "Shareable web profile" },
-                { label: "Join link", value: joinUrl, meta: "Checkout and approval entry point" },
+                { label: "Join link", value: joinUrl, meta: "Payment and approval entry point" },
                 {
                   label: "App deep link",
                   value: payload.links.appDeepLink,
@@ -599,7 +599,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
           <SectionHeader
             eyebrow="Photos"
             title="Images and gallery"
-            description="Provider-backed logo, cover, and gallery assets are supported; URL fields remain for migration and local setup."
+            description="Add the logo, cover photo, and gallery images members will see."
           />
           <div className="mt-5 grid gap-4">
             <Field
@@ -637,7 +637,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
 
       <GlassCard>
         <SectionHeader
-          eyebrow="App store handoff"
+          eyebrow="App links"
           title="Download links"
           description="When App Store and Play Store URLs are ready, add them here. Public gym pages will show install buttons without changing the mobile app."
         />

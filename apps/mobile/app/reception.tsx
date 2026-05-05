@@ -183,7 +183,7 @@ export default function Reception() {
     }
     setVerifyMessage(
       result.match.valid
-        ? `Pickup code verified for ${name}. Match identity before handoff.`
+        ? `Pickup code verified for ${name}. Match the member before giving out the order.`
         : `Pickup code found for ${name}, but status is ${(result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready").replace(/_/g, " ")}.`,
     );
   }
@@ -523,15 +523,15 @@ export default function Reception() {
                 }
               />
               <AuditWarning>
-                Manual attendance requires a reason and writes an audit log.
+                Add a reason so the gym has a clear record.
               </AuditWarning>
-              <FormField label="Manual attendance reason" value={reason} onChangeText={setReason} />
+              <FormField label="Attendance note" value={reason} onChangeText={setReason} />
               <PrimaryButton
                 icon="create-outline"
                 disabled={!member?.id || manualAttendanceMutation.isPending}
                 onPress={recordManualAttendance}
               >
-                {manualAttendanceMutation.isPending ? "Recording..." : "Record Manual Attendance"}
+                {manualAttendanceMutation.isPending ? "Recording..." : "Record Attendance"}
               </PrimaryButton>
               {attendanceStatus ? <Text style={styles.statusText}>{attendanceStatus}</Text> : null}
             </GlassCard>
@@ -560,7 +560,7 @@ export default function Reception() {
             </View>
             <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
-                title="Audited Collection"
+                title="Payment collection"
                 subtitle="Record only money received at the desk."
               />
               <ListRow
@@ -574,7 +574,7 @@ export default function Reception() {
               <ListRow
                 title="Invoice"
                 subtitle={
-                  membership?.id ? "Active subscription record" : "No active subscription selected"
+                  membership?.id ? "Active membership selected" : "No active membership selected"
                 }
                 leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />}
                 trailing={<Text style={styles.rowAmount}>{formatInr(dueAmount)} due</Text>}
@@ -594,7 +594,7 @@ export default function Reception() {
                   required
                 />
                 <FormField
-                  label="Reference ID"
+                  label="Receipt or reference"
                   value={referenceId}
                   onChangeText={setReferenceId}
                   optional
@@ -611,11 +611,10 @@ export default function Reception() {
                 />
               </View>
               <AuditWarning>
-                Reason is required. This writes an immutable audit event under the signed-in staff
-                account.
+                Add a short note so finance can review this desk payment later.
               </AuditWarning>
               <FormField
-                label="Audit reason"
+                label="Staff note"
                 value={paymentReason}
                 onChangeText={setPaymentReason}
                 required
@@ -625,7 +624,7 @@ export default function Reception() {
                 disabled={!canRecordPayment || recordPaymentMutation.isPending}
                 onPress={recordPayment}
               >
-                Record Audited Payment
+                Record Payment
               </PrimaryButton>
               {paymentStatus ? <Text style={styles.statusText}>{paymentStatus}</Text> : null}
             </GlassCard>
@@ -655,7 +654,7 @@ export default function Reception() {
             <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
                 title="Pickup Verification"
-                subtitle="Match code and member before handoff."
+                subtitle="Match the code and member before giving out the order."
               />
               <FormField
                 label="Pickup code"
@@ -675,7 +674,7 @@ export default function Reception() {
             </GlassCard>
             <SectionHeader
               title="Fulfillment Queue"
-              subtitle="Paid orders awaiting desk handoff."
+              subtitle="Paid orders ready at the desk."
             />
             <View style={styles.stack}>
               {readyOrders.length ? (

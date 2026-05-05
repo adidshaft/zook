@@ -18,7 +18,6 @@ import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import {
   getMobileRuntimeConfigError,
-  getMobileRuntimeMode,
   isOfflineDemoMode,
 } from "@/lib/runtime-mode";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
@@ -70,7 +69,6 @@ function LayoutContent() {
   const { defaultRoute, hasActiveRole, hasAnyRole, status } = useAuth();
   const insets = useSafeAreaInsets();
   const runtimeConfigError = getMobileRuntimeConfigError();
-  const runtimeMode = getMobileRuntimeMode();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
@@ -127,10 +125,9 @@ function LayoutContent() {
   if (runtimeConfigError) {
     return (
       <View style={styles.configError}>
-        <Text style={styles.configErrorTitle}>Zook is not configured for this build.</Text>
-        <Text style={styles.configErrorBody}>{runtimeConfigError}</Text>
-        <Text style={styles.configErrorMeta}>
-          APP_ENV={runtimeMode.appEnv} · API_MODE={runtimeMode.apiMode}
+        <Text style={styles.configErrorTitle}>Zook can’t open in this build.</Text>
+        <Text style={styles.configErrorBody}>
+          Please update the app or contact support if this keeps happening.
         </Text>
       </View>
     );

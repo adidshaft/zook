@@ -18,7 +18,7 @@ const pageNames = [
   "05 — Mobile / Owner",
   "06 — Prototypes",
   "07 — Export Frames",
-  "08 — Notes / Handoff"
+  "08 — Notes / Export"
 ] as const;
 
 function isGeneratedPage(page: PageNode): boolean {
@@ -295,7 +295,7 @@ function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameN
       role: "Receptionist",
       tone: "warning",
       icon: "cash",
-      nodes: [{ label: "Offline Payment", frame: "AUTO_EXPORT / Receptionist / 01 Offline Payment Entry", note: "Audited desk collection", icon: "upi" }]
+      nodes: [{ label: "Desk Payment", frame: "AUTO_EXPORT / Receptionist / 01 Desk Payment Entry", note: "Reviewed desk collection", icon: "upi" }]
     },
     {
       role: "Trainer",
@@ -303,7 +303,7 @@ function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameN
       icon: "dumbbell",
       nodes: [
         { label: "Client Detail", frame: "AUTO_EXPORT / Trainer / 01 Client Detail", note: "Assigned client only", icon: "user" },
-        { label: "AI Draft Review", frame: "AUTO_EXPORT / Trainer / 02 AI Draft Review", note: "Edit before assign", icon: "sparkle" }
+        { label: "Draft Review", frame: "AUTO_EXPORT / Trainer / 02 Draft Review", note: "Edit before assign", icon: "sparkle" }
       ]
     },
     {
@@ -369,18 +369,18 @@ function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameN
 }
 
 function createNotes(ctx: DesignContext, page: PageNode, yOffset = 0): void {
-  const notes = stack("Notes / Handoff", "VERTICAL", 18);
+  const notes = stack("Notes / Export", "VERTICAL", 18);
   notes.x = 80;
   notes.y = yOffset;
   notes.resize(780, 640);
-  notes.appendChild(text("Notes / Handoff", ctx.styles.text.h1));
+  notes.appendChild(text("Notes / Export", ctx.styles.text.h1));
   for (const line of [
     "All final mobile frames are 390×844 and named with AUTO_EXPORT prefixes.",
-    "Page 07 contains clean duplicates for export and handoff.",
+    "Page 07 contains clean duplicates for export.",
     "AUTO_EXPORT frames are named for export; use exportAutoFrames or Figma's export panel for PNG @2x and JPG @1x.",
     "Typography uses Inter as the plugin-safe fallback for Satoshi/SF Pro.",
     "The visual system stays premium, operational, glassy, and India-first without sci-fi or mascot elements.",
-    "Run exportAutoFrames from plugin dev code to validate/export bytes; use Figma export panel for filesystem output."
+    "Use exportAutoFrames or Figma's export panel when preparing final image files."
   ]) {
     notes.appendChild(text(line, ctx.styles.text.body, TOKENS.color.mutedText));
   }
@@ -455,9 +455,9 @@ async function generateFullSystem(): Promise<void> {
   duplicateExportFrames(pages["07 — Export Frames"], allScreens, 150);
   applyAutoExportSettings(pages["07 — Export Frames"]);
 
-  await figma.setCurrentPageAsync(pages["08 — Notes / Handoff"]);
-  sectionMarker(ctx, pages["08 — Notes / Handoff"], "08 — Notes / Handoff", 80, 40);
-  createNotes(ctx, pages["08 — Notes / Handoff"], 120);
+  await figma.setCurrentPageAsync(pages["08 — Notes / Export"]);
+  sectionMarker(ctx, pages["08 — Notes / Export"], "08 — Notes / Export", 80, 40);
+  createNotes(ctx, pages["08 — Notes / Export"], 120);
 
   await figma.setCurrentPageAsync(pages["00 — Cover"]);
   figma.notify("Zook Product UI System v1 generated with AUTO_EXPORT frames.");

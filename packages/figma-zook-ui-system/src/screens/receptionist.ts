@@ -39,7 +39,7 @@ function paymentModeChip(ctx: DesignContext, label: string, icon: "cash" | "upi"
 }
 
 export function receptionistPayment(ctx: DesignContext): FrameNode {
-  const screen = mobileShell(ctx, "AUTO_EXPORT / Receptionist / 01 Offline Payment Entry");
+  const screen = mobileShell(ctx, "AUTO_EXPORT / Receptionist / 01 Desk Payment Entry");
   screen.itemSpacing = 7;
   screen.appendChild(header(ctx, "Record Payment", "Member: Aarav Mehta", "back"));
 
@@ -101,7 +101,7 @@ export function receptionistPayment(ctx: DesignContext): FrameNode {
   lockWidthHugHeight(audit, 350);
   audit.counterAxisAlignItems = "CENTER";
   audit.appendChild(createIcon("warning", 16, TOKENS.color.warning));
-  audit.appendChild(paragraph("Offline payment records require a reason and are saved in audit logs.", ctx.styles.text.caption, 290, TOKENS.color.warning));
+  audit.appendChild(paragraph("Desk payment records require a reason and are saved in activity history.", ctx.styles.text.caption, 290, TOKENS.color.warning));
   screen.appendChild(audit);
 
   const reason = glassCard("Reason Dropdown", 350, 10, TOKENS.radius.lg);

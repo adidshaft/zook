@@ -66,14 +66,14 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     label: "Communication",
     items: [
       { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
-      { label: "Plans & AI", href: "/dashboard/ai", icon: Brain },
+      { label: "Plan drafts", href: "/dashboard/ai", icon: Brain },
     ],
   },
   {
     label: "Settings",
     items: [
       { label: "Gym profile", href: "/dashboard/public-profile", icon: Globe2 },
-      { label: "Audit trail", href: "/dashboard/audit", icon: History, shortLabel: "Audit" },
+      { label: "Activity history", href: "/dashboard/audit", icon: History, shortLabel: "Activity" },
     ],
   },
 ];
@@ -93,7 +93,7 @@ function metricTone(label: string) {
   if (label.includes("Low stock") || label.includes("queue") || label.includes("Trial")) {
     return "amber" as const;
   }
-  if (label.includes("AI")) {
+  if (label.includes("Assistant")) {
     return "blue" as const;
   }
   return "neutral" as const;
@@ -279,10 +279,10 @@ export function DashboardShell({
   const activeOrg = data.orgs[0];
   const selectedBranch = data.branchScope.selectedBranch;
   const runtimeLabel = data.connected
-    ? "Live environment"
+    ? "Live workspace"
     : data.fallbackMode === "demo"
-      ? "Demo Mode"
-      : "Read model unavailable";
+      ? "Sample view"
+      : "Data unavailable";
 
   if (!activeOrg) {
     return (
@@ -320,19 +320,19 @@ export function DashboardShell({
     {
       label: "Review joins",
       href: "/dashboard/members",
-      detail: `${data.summary.joinRequests} membership handoffs`,
+      detail: `${data.summary.joinRequests} membership requests`,
       tone: data.summary.joinRequests > 0 ? "amber" : "lime",
     },
     {
       label: "Check stock",
       href: "/dashboard/shop/products",
-      detail: `${data.summary.lowStockProducts} low-stock SKUs`,
+      detail: `${data.summary.lowStockProducts} low-stock items`,
       tone: data.summary.lowStockProducts > 0 ? "amber" : "blue",
     },
     {
-      label: "Review audit",
+      label: "Review activity",
       href: "/dashboard/audit",
-      detail: `${data.auditLogCount} audit entries`,
+      detail: `${data.auditLogCount} activity entries`,
       tone: data.auditLogCount > 0 ? "blue" : "neutral",
     },
   ];
@@ -341,7 +341,7 @@ export function DashboardShell({
   const pageDescription =
     sectionKey === ""
       ? "Live check-ins, members, payments, stock, and follow-ups in one owner view."
-      : "Use this section for daily gym operations. Changes here are backed by the Zook backend.";
+      : "Use this section for daily gym operations. Changes save automatically in Zook.";
   const currentDashboardPath = `/dashboard${sectionKey ? `/${sectionKey}` : ""}`;
   const branchHref = (branchId: string) =>
     `${currentDashboardPath}?branchId=${encodeURIComponent(branchId)}`;

@@ -31,7 +31,7 @@ export default async function MockCheckoutPage({
   try {
     session = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
   } catch {
-    // Database is optional in local mock checkout.
+    // Payment records may be unavailable during local samples.
   }
   const canRenderLocalDemo = sessionId === "demo" && getAppEnv() !== "production";
   if (!session && (isMockPaymentCompletionAllowed() || canRenderLocalDemo)) {
@@ -57,9 +57,9 @@ export default async function MockCheckoutPage({
         amountPaise: session.amountPaise,
         purpose: session.purpose,
         status: session.status,
-        planName: plan?.name ?? (session.id === "demo" ? "Demo membership" : null),
+        planName: plan?.name ?? (session.id === "demo" ? "Sample membership" : null),
         validityLabel: plan ? planValidityLabel(plan) : null,
-        activationLabel: "server/mock confirmation only",
+        activationLabel: "Confirmation required",
       }
     : null;
 

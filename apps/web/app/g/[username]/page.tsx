@@ -129,10 +129,10 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
             <div className="mt-5 rounded-[24px] border border-white/10 bg-black/20 p-4">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="text-lime-200" size={22} />
-                <p className="text-sm font-medium text-white">Secure hosted checkout</p>
+                <p className="text-sm font-medium text-white">Secure payment</p>
               </div>
               <p className="mt-2 text-sm leading-6 text-white/50">
-                Your membership is activated after payment confirmation from the gym checkout.
+                Your membership is activated after payment confirmation.
               </p>
             </div>
           </GlassCard>
@@ -169,7 +169,7 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
               <Pill tone="amber">Plans unavailable</Pill>
               <h2 className="mt-4 text-2xl font-semibold text-white">No public plans yet</h2>
               <p className="mt-3 text-sm leading-6 text-white/55">
-                This gym can still use Zook internally, but public checkout starts only after an owner publishes a membership plan.
+                This gym can still use Zook internally, but public sign-up starts only after an owner publishes a membership plan.
               </p>
             </GlassCard>
           )}
@@ -273,7 +273,7 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
           <GlassCard>
             <h2 className="text-2xl font-semibold text-white">Referral</h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
-              Have a referral or invite code? Apply it during checkout so the gym can track the
+              Have a referral or invite code? Apply it during payment so the gym can track the
               source and any eligible discount.
             </p>
           </GlassCard>

@@ -68,5 +68,11 @@ export function titleFromSection(section?: string[]): string {
   if (!section?.length) {
     return "Today's Command Board";
   }
-  return section.map((part) => formatEnumLabel(part)).join(" / ");
+  return section
+    .map((part) => {
+      if (part === "ai") return "Plan drafts";
+      if (part === "audit") return "Activity history";
+      return formatEnumLabel(part);
+    })
+    .join(" / ");
 }

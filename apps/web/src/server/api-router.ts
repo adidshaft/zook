@@ -1055,13 +1055,7 @@ function getPaymentProviderOrThrow() {
     diagnostics.status === "unsupported" ||
     diagnostics.status === "disabled"
   ) {
-    throw validationError(
-      diagnostics.status === "disabled"
-        ? "Payment provider is disabled for this environment."
-        : diagnostics.missingEnv.length
-          ? `Payment provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
-          : "Payment provider is unavailable for this environment.",
-    );
+    throw validationError("Payments are not available right now.");
   }
   return getPaymentProvider();
 }
@@ -1073,13 +1067,7 @@ function getEmailProviderOrThrow() {
     diagnostics.status === "unsupported" ||
     diagnostics.status === "disabled"
   ) {
-    throw validationError(
-      diagnostics.status === "disabled"
-        ? "Email provider is disabled for this environment."
-        : diagnostics.missingEnv.length
-          ? `Email provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
-          : "Email provider is unavailable for this environment.",
-    );
+    throw validationError("Email sign-in is not available right now.");
   }
   return getEmailProvider();
 }
@@ -1091,13 +1079,7 @@ function getSmsProviderOrThrow() {
     diagnostics.status === "unsupported" ||
     diagnostics.status === "disabled"
   ) {
-    throw validationError(
-      diagnostics.status === "disabled"
-        ? "SMS provider is disabled for this environment."
-        : diagnostics.missingEnv.length
-          ? `SMS provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
-          : "SMS provider is unavailable for this environment.",
-    );
+    throw validationError("Phone sign-in is not available right now.");
   }
   return getSmsProvider();
 }
@@ -1109,13 +1091,7 @@ function getMapProviderOrThrow() {
     diagnostics.status === "unsupported" ||
     diagnostics.status === "disabled"
   ) {
-    throw validationError(
-      diagnostics.status === "disabled"
-        ? "Map provider is disabled for this environment."
-        : diagnostics.missingEnv.length
-          ? `Map provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
-          : "Map provider is unavailable for this environment.",
-    );
+    throw validationError("Maps are not available right now.");
   }
   return getMapProvider();
 }
@@ -1127,13 +1103,7 @@ function getAIProviderOrThrow() {
     diagnostics.status === "unsupported" ||
     diagnostics.status === "disabled"
   ) {
-    throw validationError(
-      diagnostics.status === "disabled"
-        ? "AI provider is disabled for this environment."
-        : diagnostics.missingEnv.length
-          ? `AI provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
-          : "AI provider is unavailable for this environment.",
-    );
+    throw validationError("The assistant is not available right now.");
   }
   return getAIProvider();
 }
@@ -1145,13 +1115,7 @@ function getStorageProviderOrThrow() {
     diagnostics.status === "unsupported" ||
     diagnostics.status === "disabled"
   ) {
-    throw validationError(
-      diagnostics.status === "disabled"
-        ? "Storage provider is disabled for this environment."
-        : diagnostics.missingEnv.length
-          ? `Storage provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
-          : "Storage provider is unavailable for this environment.",
-    );
+    throw validationError("File uploads are not available right now.");
   }
   return getStorageProvider();
 }
@@ -1163,13 +1127,7 @@ function getPushProviderOrThrow() {
     diagnostics.status === "unsupported" ||
     diagnostics.status === "disabled"
   ) {
-    throw validationError(
-      diagnostics.status === "disabled"
-        ? "Push provider is disabled for this environment."
-        : diagnostics.missingEnv.length
-          ? `Push provider is missing configuration: ${diagnostics.missingEnv.join(", ")}`
-          : "Push provider is unavailable for this environment.",
-    );
+    throw validationError("Push alerts are not available right now.");
   }
   return getPushProvider();
 }
@@ -3341,7 +3299,7 @@ async function handleFiles(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["files", "local"])) {
     const storageProvider = getStorageProviderOrThrow();
     if (!(storageProvider instanceof LocalStorageProvider)) {
-      throw notFoundError("Local storage route is unavailable for the active provider.");
+      throw notFoundError("File preview is not available right now.");
     }
     const key = request.nextUrl.searchParams.get("key") ?? "";
     const expiresAt = Number(request.nextUrl.searchParams.get("expires"));
@@ -3361,7 +3319,7 @@ async function handleFiles(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["files", "local", "public"])) {
     const storageProvider = getStorageProviderOrThrow();
     if (!(storageProvider instanceof LocalStorageProvider)) {
-      throw notFoundError("Local storage route is unavailable for the active provider.");
+      throw notFoundError("File preview is not available right now.");
     }
     const key = request.nextUrl.searchParams.get("key") ?? "";
     if (!key) {
@@ -3386,7 +3344,7 @@ async function handleFiles(request: NextRequest, path: string[]) {
   }
   if (request.method === "POST" && pathMatches(path, ["files", "upload"])) {
     if (/^(0|false|no|off)$/i.test(process.env.FILE_UPLOADS_ENABLED ?? "")) {
-      throw validationError("File uploads are disabled for this environment.");
+      throw validationError("File uploads are not available right now.");
     }
     const storageProvider = getStorageProviderOrThrow();
     const upload = await parseFileUploadRequest(request);
@@ -4483,7 +4441,7 @@ async function handleReports(request: NextRequest, path: string[]) {
       await resolveOrgBranch(orgId, filters.branchId);
     }
     if (!canExportOrgReport({ report: "audit-logs", ctx, actorUserId: userId })) {
-      throw forbiddenError("You do not have permission to export audit logs.");
+      throw forbiddenError("You do not have permission to export activity history.");
     }
     const rows = await reportsService.auditLogReport(orgId, filters);
     await writeAuditLog({
@@ -4640,7 +4598,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     }
     if (organization.joinMode === "OPEN_JOIN") {
       throw conflictError(
-        "This gym supports direct join. Start checkout instead of requesting approval.",
+        "This gym supports direct join. Choose a plan and continue to payment.",
       );
     }
     if (organization.joinMode === "INVITE_ONLY" && !body.referralCode) {
@@ -4726,7 +4684,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       createdById: userId,
       type: "TRANSACTIONAL",
       title: "Membership request approved",
-      body: "You can now continue to checkout and activate your membership in Zook.",
+      body: "You can now continue to payment and activate your membership in Zook.",
       audience: "selected_member",
       userIds: [joinRequest.userId],
       metadata: { joinRequestId: joinRequest.id, orgId },
@@ -4789,15 +4747,13 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const body = checkoutSchema.parse(await readJson(request));
     getPaymentProviderOrThrow();
     if (body.purpose === "MEMBERSHIP" || body.purpose === "SHOP_ORDER") {
-      throw validationError("Use the membership or shop checkout route for this payment purpose.");
+      throw validationError("Use the membership or shop payment path for this purpose.");
     }
     if (body.metadata?.subscriptionId || body.metadata?.shopOrderId) {
-      throw validationError(
-        "Checkout metadata cannot directly reference membership or shop records.",
-      );
+      throw validationError("Payment details are invalid for this request.");
     }
     if (body.userId && body.userId !== userId && !ctx.isPlatformAdmin) {
-      throw forbiddenError("You cannot create a checkout session for another user.");
+      throw forbiddenError("You cannot start this payment for another person.");
     }
 
     const customer = await prisma.user.findUnique({ where: { id: body.userId ?? userId } });
@@ -5183,7 +5139,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
   }
   if (request.method === "POST" && pathMatches(path, ["payments", "mock", /.+/, "complete"])) {
     if (!isMockPaymentCompletionAllowed()) {
-      throw forbiddenError("Mock payment completion is disabled for this environment.");
+      throw forbiddenError("Test payment confirmation is not available here.");
     }
     const sessionId = path[2]!;
     const body = completeMockPaymentSchema.parse(await readJson(request));
@@ -5197,7 +5153,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       currentSession.status !== "SUCCEEDED" &&
       currentSession.expiresAt.getTime() < Date.now()
     ) {
-      throw conflictError("Payment session expired. Create a new checkout session.");
+      throw conflictError("Payment link expired. Start payment again.");
     }
     const ctx = await getRequestContext(
       request,
@@ -5268,7 +5224,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     await assertRateLimit(
       "paymentSessionByActor",
       `${path[1]!}:${userId}`,
-      "Too many membership checkout attempts.",
+      "Too many membership payment attempts.",
     );
     const orgId = path[1]!;
     const body = subscriptionCheckoutSchema.parse(await readJson(request));
@@ -5310,7 +5266,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       ...(body.referralCode ? { referralCode: body.referralCode } : {}),
     });
     if (organization.joinMode === "APPROVAL_REQUIRED" && !approvedJoinRequest) {
-      throw forbiddenError("This gym requires approval before checkout.");
+      throw forbiddenError("This gym requires approval before payment.");
     }
     if (organization.joinMode === "INVITE_ONLY" && !referral) {
       throw forbiddenError("Invite-only gyms require a valid referral or invite code.");
@@ -6351,13 +6307,13 @@ async function handleAttendance(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["attendance", "dev-scan"])) {
     const appEnv = (process.env.APP_ENV ?? process.env.ENV_PROFILE ?? "local").toLowerCase();
     if (appEnv !== "local" || process.env.NODE_ENV === "production") {
-      throw forbiddenError("Developer scan is available only in local mode.");
+      throw forbiddenError("Sample check-in is not available here.");
     }
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
     const orgId = ctx.orgId;
     if (!orgId) {
-      throw validationError("Select a gym before using developer scan.");
+      throw validationError("Select a gym before trying a sample check-in.");
     }
     const branch = await resolveOrgBranch(orgId);
     const existing = await prisma.attendanceRecord.findUnique({
@@ -6376,7 +6332,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
           ...attendanceWithEntryCode(existing),
           checkedInAt: existing.checkedInAt,
           branchName: branch.name,
-          planName: "Local developer scan",
+          planName: "Sample check-in",
         },
         status: existing.status,
         duplicate: true,
@@ -6410,7 +6366,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         ...attendanceWithEntryCode(record),
         checkedInAt: record.checkedInAt,
         branchName: branch.name,
-        planName: "Local developer scan",
+        planName: "Sample check-in",
       },
       status: record.status,
       duplicate: false,
@@ -7774,7 +7730,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       throw notFoundError("Plan not found");
     }
     if (existingPlan.aiGenerated && !existingPlan.reviewed) {
-      throw conflictError("AI-generated drafts must be reviewed before assignment.");
+      throw conflictError("Assisted drafts must be reviewed before assignment.");
     }
     if (
       planRequiresExercises(existingPlan.type as PlanType) &&
@@ -7992,7 +7948,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     await assertRateLimit(
       "aiRequestByUser",
       userId,
-      "Too many AI requests. Please slow down and try again shortly.",
+      "Too many assistant requests. Please slow down and try again shortly.",
     );
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (body.orgId) {
@@ -8069,7 +8025,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     await assertRateLimit(
       "aiRequestByUser",
       userId,
-      "Too many AI requests. Please slow down and try again shortly.",
+      "Too many assistant requests. Please slow down and try again shortly.",
     );
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const requestType: AIRequestType = path[1] === "generate-image" ? "IMAGE" : "STRUCTURED_PLAN";
@@ -8084,7 +8040,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       throw forbiddenError("Trainer plan generation requires a trainer role.");
     }
     if (requestType === "STRUCTURED_PLAN" && body.persistDraft && !body.targetUserId) {
-      throw validationError("A targetUserId is required for trainer AI drafts.");
+      throw validationError("Choose a member before creating a trainer draft.");
     }
     if (requestType === "STRUCTURED_PLAN" && body.targetUserId) {
       const assignment = await prisma.trainerAssignment.findFirst({
@@ -8096,7 +8052,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         },
       });
       if (!assignment) {
-        throw forbiddenError("Trainer AI drafts can only target assigned clients.");
+        throw forbiddenError("Trainer drafts can only target assigned clients.");
       }
     }
     const quota = await resolveAIQuotaState({ userId, role });
@@ -8137,7 +8093,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     let createdPlan: Prisma.PlanContentGetPayload<object> | undefined;
     if (requestType === "STRUCTURED_PLAN" && body.orgId && body.persistDraft) {
       const planType = body.type ?? "WORKOUT";
-      const title = body.title ?? `${planType === "DIET" ? "Nutrition" : "Workout"} AI draft`;
+      const title = body.title ?? `${planType === "DIET" ? "Nutrition" : "Workout"} draft`;
       const content = normalizedStructuredPlanContent(result.response);
       createdPlan = await prisma.planContent.create({
         data: {
@@ -8145,7 +8101,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
           creatorUserId: userId,
           type: planType as never,
           title,
-          description: "AI-generated draft. Review before publishing.",
+          description: "Assisted draft. Review before publishing.",
           content: content as Prisma.InputJsonValue,
           aiGenerated: true,
           visibility: "assigned",
@@ -8158,7 +8114,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
           versionNo: 1,
           content: createPlanVersionSnapshot({
             title,
-            description: "AI-generated draft. Review before publishing.",
+            description: "Assisted draft. Review before publishing.",
             aiGenerated: true,
             visibility: "assigned",
             content,
@@ -8407,7 +8363,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       environment: body.environment,
     });
     if (registration.status === "invalid_token" || !registration.normalizedToken) {
-      throw validationError("Push token is invalid for the selected provider.");
+      throw validationError("Push alerts are not available for this device.");
     }
     const normalizedPlatform =
       body.platform === "ios"

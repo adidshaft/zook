@@ -243,7 +243,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           entityType: "CheckoutSession",
           entityId: session.id,
           actorName: "Mock payment service",
-          reason: "Hosted checkout confirmed server-side in local demo.",
+          reason: "Payment confirmed in local sample.",
         });
         return session;
       },

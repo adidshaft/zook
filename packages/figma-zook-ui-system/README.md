@@ -27,7 +27,7 @@ The plugin regenerates one Figma page named `Zook UI System v1 — Current`, wit
 - `05 — Mobile / Owner`
 - `06 — Prototypes`
 - `07 — Export Frames`
-- `08 — Notes / Handoff`
+- `08 — Notes / Export`
 
 It also creates the reusable component library, final mobile screens, clean duplicate export frames, color styles, text styles, and effect styles.
 

@@ -40,13 +40,13 @@ export async function getLatestEmailOtpFromMockOrUseDevCode(page: Page, _email: 
   }
 
   const bodyText = (await page.locator("body").textContent()) ?? "";
-  const match = bodyText.match(/Dev code is (\d{6})/);
+  const match = bodyText.match(/Test code: (\d{6})/);
   if (match?.[1]) {
     return match[1];
   }
 
   throw new Error(
-    "No OTP_FIXED_CODE_DEV is configured and no dev OTP was exposed in the login UI. Set OTP_FIXED_CODE_DEV in `.env.test.local` or enable a mock OTP path for acceptance tests.",
+    "No OTP_FIXED_CODE_DEV is configured and no test OTP was exposed in the login UI.",
   );
 }
 

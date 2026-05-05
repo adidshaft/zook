@@ -276,11 +276,11 @@ export default function Scan() {
             <Pressable
               onPress={() => void completeDevScan()}
               accessibilityRole="button"
-              accessibilityLabel="Demo scan"
+              accessibilityLabel="Try sample check-in"
               style={styles.devButton}
             >
-              <Ionicons name="bug-outline" size={16} color={colors.amber} />
-              <Text style={styles.devButtonText}>Demo scan (dev only)</Text>
+              <Ionicons name="qr-code-outline" size={16} color={colors.amber} />
+              <Text style={styles.devButtonText}>Try sample check-in</Text>
             </Pressable>
           ) : null}
         </ScrollView>

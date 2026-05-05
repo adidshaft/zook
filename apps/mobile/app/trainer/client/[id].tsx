@@ -95,7 +95,7 @@ export default function TrainerClientDetail() {
         body: buildPlanPayload(),
       });
       setSavedPlan({ id: result.plan.id, title: result.plan.title });
-      setStatus(`${result.plan.title} saved as a backend draft.`);
+      setStatus(`${result.plan.title} saved as a draft.`);
       return result.plan;
     } catch (error) {
       setStatus(getApiErrorMessage(error));
@@ -212,7 +212,7 @@ export default function TrainerClientDetail() {
               style={styles.actionHalf}
               icon="sparkles-outline"
             >
-              Generate AI Draft
+              Generate Draft
             </ZookButton>
           </View>
 
@@ -338,7 +338,7 @@ export default function TrainerClientDetail() {
             <View style={styles.attentionHeader}>
               <IconBubble icon="reader-outline" tone="amber" />
               <View style={styles.clientCopy}>
-                <Text style={styles.cardTitle}>AI draft review</Text>
+                <Text style={styles.cardTitle}>Draft review</Text>
                 <Text style={styles.cardBody}>
                   Generated plans require edits and approval before assigning.
                 </Text>

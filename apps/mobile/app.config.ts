@@ -91,7 +91,7 @@ function resolveReleaseProfile(): MobileReleaseProfile {
     }
     const normalized = normalizeProfile(value);
     if (!normalized) {
-      throw new Error(`${key}=${value} is not supported. Use APP_ENV=local, staging, or production.`);
+      throw new Error("This mobile build is using an unsupported release setting.");
     }
     return normalized;
   }
@@ -130,7 +130,7 @@ function resolveApiMode(): MobileApiMode {
     }
     const normalized = normalizeApiMode(value);
     if (!normalized) {
-      throw new Error(`${key}=${value} is not supported. Use API_MODE=backend or offline-demo.`);
+      throw new Error("This mobile build is using an unsupported connection setting.");
     }
     return normalized;
   }
@@ -160,7 +160,7 @@ export default (): ExpoConfig => {
   const apiMode = resolveApiMode();
   if (apiMode === "offline-demo" && releaseProfile !== "local") {
     throw new Error(
-      `Refusing to build ${releaseProfile} mobile app with API_MODE=offline-demo. Use API_MODE=backend for staging/production.`
+      "Sample mode is only available for local mobile builds."
     );
   }
   const expoProjectId =

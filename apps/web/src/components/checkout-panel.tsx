@@ -17,7 +17,7 @@ type CheckoutSessionSummary = {
 export function CheckoutPanel({ session }: { session: CheckoutSessionSummary | null }) {
   const [status, setStatus] = useState(session?.status ?? "MISSING");
   const [message, setMessage] = useState(
-    "Mock hosted checkout verifies server-side before activation.",
+    "Confirm payment to continue.",
   );
 
   async function complete(nextStatus: "SUCCEEDED" | "FAILED" | "PENDING") {
@@ -26,7 +26,7 @@ export function CheckoutPanel({ session }: { session: CheckoutSessionSummary | n
       setStatus(nextStatus);
       setMessage(
         nextStatus === "SUCCEEDED"
-          ? "Local demo confirmation completed. No live membership changed without a backend payment session."
+          ? "Payment confirmed. Your membership will update in Zook."
           : nextStatus === "PENDING"
             ? "Payment is pending. Membership stays inactive until confirmation."
             : "Payment failed. Membership was not activated.",
@@ -42,7 +42,7 @@ export function CheckoutPanel({ session }: { session: CheckoutSessionSummary | n
     setStatus(payload.ok ? payload.data.session.status : "FAILED");
     setMessage(
       payload.ok
-        ? "Server state updated. Client redirect alone was not trusted."
+        ? "Payment confirmed. Your membership will update in Zook."
         : payload.error.message,
     );
   }
@@ -55,11 +55,11 @@ export function CheckoutPanel({ session }: { session: CheckoutSessionSummary | n
     <div className="glass-panel w-full max-w-xl rounded-[28px] p-8">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <p className="text-sm text-white/45">Zook mock checkout</p>
+          <p className="text-sm text-white/45">Payment confirmation</p>
           <h1 className="mt-1 text-3xl font-semibold">{formatInr(session.amountPaise)}</h1>
         </div>
         <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs">
-          {status}
+          {formatEnumLabel(status)}
         </span>
       </div>
       <p className="text-sm leading-6 text-white/55">{message}</p>
@@ -70,11 +70,11 @@ export function CheckoutPanel({ session }: { session: CheckoutSessionSummary | n
         </p>
         <p>
           <span className="text-white/38">Validity:</span>{" "}
-          {session.validityLabel ?? "Provider confirmation required"}
+          {session.validityLabel ?? "Payment confirmation required"}
         </p>
         <p>
           <span className="text-white/38">Activation:</span>{" "}
-          {session.activationLabel ?? "server/mock confirmation only"}
+          {session.activationLabel ?? "Confirmation required"}
         </p>
       </div>
       <div className="mt-8 grid gap-3 sm:grid-cols-3">

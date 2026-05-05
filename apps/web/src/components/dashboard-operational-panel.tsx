@@ -395,9 +395,9 @@ export function DashboardOperationalPanel({
       tone: summary.lowStockProducts > 0 ? "amber" : "blue",
     },
     {
-      label: "Review AI usage",
+      label: "Review assistant drafts",
       href: "/dashboard/ai",
-      detail: `${summary.aiUsageThisMonth} AI events this month`,
+      detail: `${summary.aiUsageThisMonth} drafts this month`,
       tone: summary.aiUsageThisMonth > 0 ? "blue" : "neutral",
     },
   ];
@@ -1089,7 +1089,7 @@ export function DashboardOperationalPanel({
                   {
                     label: "Join mode",
                     value: formatEnumLabel(organization.joinMode),
-                    meta: "Used during membership handoffs",
+                    meta: "Used during membership requests",
                   },
                   {
                     label: "Trial window",
@@ -1414,7 +1414,7 @@ export function DashboardOperationalPanel({
 
         <GlassCard>
           <SectionHeader
-            eyebrow="Commercial Setup"
+            eyebrow="Membership setup"
             title="Membership plan ladder"
             description="Use the live pricing ladder below to see which plans are public, how they are shaped, and which ones are currently active."
             badge={<Pill tone="blue">{membershipPlans.length} plans</Pill>}
@@ -2101,10 +2101,10 @@ export function DashboardOperationalPanel({
           <SectionHeader
             eyebrow="Coach Output"
             title="Plan production"
-            description="Trainer-authored and AI-assisted plans surface here so owners can sanity-check the delivery load."
+            description="Trainer-written and assisted plans appear here so owners can review the delivery load."
             badge={
               <Pill tone="amber">
-                {coachPlans.filter((plan) => plan.aiGenerated).length} AI assisted
+                {coachPlans.filter((plan) => plan.aiGenerated).length} assisted
               </Pill>
             }
           />
@@ -2131,7 +2131,7 @@ export function DashboardOperationalPanel({
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <StatusPill value={formatEnumLabel(plan.status)} />
-                      {plan.aiGenerated ? <StatusPill value="AI" tone="amber" /> : null}
+                      {plan.aiGenerated ? <StatusPill value="Assisted" tone="amber" /> : null}
                       <button
                         onClick={() => void deleteCoachPlan(plan)}
                         disabled={formBusy === `coach-plan:${plan.id}:delete`}
@@ -2163,9 +2163,9 @@ export function DashboardOperationalPanel({
       <div className="grid gap-4">
         <GlassCard>
           <SectionHeader
-            eyebrow="Commercial Plans"
+            eyebrow="Membership plans"
             title="Membership catalog"
-            description="The commercial ladder below drives public join, approvals, and manual sales paths."
+            description="Plans shown to members, staff, and desk teams."
             badge={<Pill tone="blue">{membershipPlans.length} offers</Pill>}
           />
           <div className="mt-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
@@ -2460,7 +2460,7 @@ export function DashboardOperationalPanel({
           <SectionHeader
             eyebrow="Coaching Library"
             title="Workout and advisory plans"
-            description="These are the plans trainers and AI flows are creating inside the organization."
+            description="These are the plans trainers are creating and reviewing for members."
             badge={
               <Pill tone="amber">
                 {coachPlans.filter((plan) => plan.reviewed === false).length} pending review
@@ -2497,7 +2497,7 @@ export function DashboardOperationalPanel({
                           value={plan.reviewed ? "Reviewed" : "Needs review"}
                           tone={plan.reviewed ? "lime" : "amber"}
                         />
-                        {plan.aiGenerated ? <StatusPill value="AI assisted" tone="amber" /> : null}
+                        {plan.aiGenerated ? <StatusPill value="Assisted" tone="amber" /> : null}
                       </div>
                     ),
                   },
@@ -2702,7 +2702,7 @@ export function DashboardOperationalPanel({
                 meta: `${formatInr(summary.cashCollectedPaise)} manual or offline`,
               },
               {
-                label: "AI usage",
+                label: "Assistant drafts",
                 value: formatCompactNumber(summary.aiUsageThisMonth),
                 meta: "This month",
               },
@@ -2732,9 +2732,9 @@ export function DashboardOperationalPanel({
               columns={1}
               items={[
                 {
-                  label: "Audit trail",
+                  label: "Activity history",
                   value: formatCompactNumber(auditLogCount),
-                  meta: "Privileged actions persisted in the log",
+                  meta: "Admin changes saved in Zook",
                 },
                 {
                   label: "Notification queue",
@@ -2757,13 +2757,13 @@ export function DashboardOperationalPanel({
             <SectionHeader
               eyebrow="Operator Notes"
               title="What deserves a second look"
-              description="The dashboard is strongest when operators keep using these sections as handoff tools instead of separate spreadsheets."
+              description="Quick prompts for keeping daily work tidy."
             />
             <div className="mt-5 grid gap-3">
               {[
                 "Cross-check expiring memberships with the membership ladder before the evening rush.",
                 "If flagged attendance exceptions spike, send an operational notification before it becomes member-visible.",
-                "Use the audit and AI surfaces together when policy-sensitive trainer or member actions happen.",
+                "Review activity history and assistant drafts when sensitive trainer or member actions happen.",
               ].map((note) => (
                 <div
                   key={note}
@@ -2784,9 +2784,9 @@ export function DashboardOperationalPanel({
       <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <GlassCard>
           <SectionHeader
-            eyebrow="Audit"
-            title="Privileged action trail"
-            description="These rows come from the org audit log and help explain who changed sensitive state and when."
+            eyebrow="Activity"
+            title="Admin activity"
+            description="Sensitive changes, who made them, and when they happened."
             badge={<Pill tone="blue">{auditLogs.length || auditLogCount} entries</Pill>}
           />
           <div className="mt-5">
@@ -2794,8 +2794,8 @@ export function DashboardOperationalPanel({
               <ErrorNotice message={auditLogsState.error} />
             ) : auditLogsState.loading && auditLogs.length === 0 ? (
               <EmptyState
-                title="Loading audit trail"
-                description="Pulling the latest privileged-action log."
+                title="Loading activity"
+                description="Getting the latest admin actions."
               />
             ) : (
               <DataTable
@@ -2815,12 +2815,12 @@ export function DashboardOperationalPanel({
                   {
                     id: "actor",
                     header: "Actor",
-                    render: (log) => log.actorUserId ?? "System",
+                    render: (log) => log.actorUserId ? "Team member" : "System",
                   },
                   {
                     id: "entity",
-                    header: "Entity",
-                    render: (log) => log.entityId ?? "Not attached",
+                    header: "Record",
+                    render: (log) => log.entityId ? "Linked record" : "Not attached",
                   },
                   {
                     id: "time",
@@ -2830,7 +2830,7 @@ export function DashboardOperationalPanel({
                 ]}
                 rows={auditLogs}
                 rowKey={(log) => log.id}
-                empty="No audit entries are available yet."
+                empty="No admin activity is available yet."
               />
             )}
           </div>
@@ -2838,12 +2838,12 @@ export function DashboardOperationalPanel({
 
         <GlassCard>
           <SectionHeader
-            eyebrow="AI Oversight"
-            title="Recent AI usage"
-            description="Review AI output alongside the audit trail when staff are drafting or publishing member-facing plans."
+            eyebrow="Assistant"
+            title="Recent assistant drafts"
+            description="Review assisted drafts before anything member-facing is published."
             badge={
               <Pill tone={misconfiguredAiCount > 0 ? "amber" : "lime"}>
-                {misconfiguredAiCount} flagged
+                {misconfiguredAiCount} need review
               </Pill>
             }
           />
@@ -2852,8 +2852,8 @@ export function DashboardOperationalPanel({
               <ErrorNotice message={aiUsageState.error} />
             ) : aiUsageState.loading && aiUsage.length === 0 ? (
               <EmptyState
-                title="Loading AI activity"
-                description="Pulling the latest usage logs for this org."
+                title="Loading drafts"
+                description="Getting the latest assisted drafts for this gym."
               />
             ) : aiUsage.length ? (
               aiUsage.slice(0, 8).map((usage) => (
@@ -2864,7 +2864,6 @@ export function DashboardOperationalPanel({
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-medium text-white">{usage.promptSummary}</p>
                     <div className="flex flex-wrap gap-2">
-                      <StatusPill value={formatEnumLabel(usage.provider)} tone="blue" />
                       <StatusPill value={formatEnumLabel(usage.requestType)} />
                     </div>
                   </div>
@@ -2872,15 +2871,14 @@ export function DashboardOperationalPanel({
                     {formatAiResponseSummary(usage.responseSummary)}
                   </p>
                   <p className="mt-3 text-xs text-white/40">
-                    {formatEnumLabel(usage.role)} · {usage.tokenEstimate} tokens ·{" "}
-                    {formatInr(usage.costEstimatePaise)} · {formatDateTime(usage.createdAt)}
+                    {formatEnumLabel(usage.role)} · {formatDateTime(usage.createdAt)}
                   </p>
                 </div>
               ))
             ) : (
               <EmptyState
-                title="No AI activity yet"
-                description="AI usage logs will appear here once drafting or safety flows run."
+                title="No assistant drafts yet"
+                description="Assisted drafts will appear here after the team starts using the planner."
               />
             )}
           </div>
@@ -2894,18 +2892,18 @@ export function DashboardOperationalPanel({
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <GlassCard>
           <SectionHeader
-            eyebrow="AI Usage"
-            title="Model traffic and summaries"
-            description="This is the live org-level AI feed, including request types, prompt summaries, and estimated spend."
-            badge={<Pill tone="blue">{aiUsage.length} events</Pill>}
+            eyebrow="Assistant"
+            title="Draft summaries"
+            description="Assisted drafts, categories, and review notes for this gym."
+            badge={<Pill tone="blue">{aiUsage.length} drafts</Pill>}
           />
           <div className="mt-5">
             {aiUsageState.error ? (
               <ErrorNotice message={aiUsageState.error} />
             ) : aiUsageState.loading && aiUsage.length === 0 ? (
               <EmptyState
-                title="Loading AI surface"
-                description="Pulling the latest usage signals for this organization."
+                title="Loading drafts"
+                description="Getting the latest assisted drafts for this gym."
               />
             ) : (
               <DataTable
@@ -2924,19 +2922,18 @@ export function DashboardOperationalPanel({
                   },
                   {
                     id: "shape",
-                    header: "Shape",
+                    header: "Category",
                     render: (usage) => (
                       <div className="flex flex-wrap gap-2">
-                        <StatusPill value={formatEnumLabel(usage.provider)} tone="blue" />
                         <StatusPill value={formatEnumLabel(usage.requestType)} />
                       </div>
                     ),
                   },
                   {
                     id: "tokens",
-                    header: "Tokens",
+                    header: "Detail",
                     align: "right",
-                    render: (usage) => usage.tokenEstimate.toString(),
+                    render: (usage) => (usage.tokenEstimate > 0 ? "Detailed" : "Short"),
                   },
                   {
                     id: "cost",
@@ -2947,7 +2944,7 @@ export function DashboardOperationalPanel({
                 ]}
                 rows={aiUsage}
                 rowKey={(usage) => usage.id}
-                empty="No AI events are available for this organization yet."
+                empty="No assistant drafts are available for this gym yet."
               />
             )}
           </div>
@@ -2955,9 +2952,9 @@ export function DashboardOperationalPanel({
 
         <GlassCard>
           <SectionHeader
-            eyebrow="Plan Yield"
-            title="AI-assisted content output"
-            description="A quick view of whether AI use is staying tied to real, reviewable coaching output."
+            eyebrow="Draft output"
+            title="Assisted content"
+            description="A quick view of whether assisted work is becoming real coaching output."
           />
           <ReadoutGrid
             className="mt-5"
@@ -2966,19 +2963,19 @@ export function DashboardOperationalPanel({
               {
                 label: "Usage this month",
                 value: formatCompactNumber(summary.aiUsageThisMonth),
-                meta: "Captured in the org summary",
+                meta: "Assisted drafts this month",
               },
               {
-                label: "Safety cues",
+                label: "Review cues",
                 value:
-                  misconfiguredAiCount > 0 ? `${misconfiguredAiCount} prompts flagged` : "Clear",
-                meta: "Based on usage safety metadata",
+                  misconfiguredAiCount > 0 ? `${misconfiguredAiCount} drafts need review` : "Clear",
+                meta: "Based on draft review signals",
               },
               {
-                label: "AI-assisted plans",
+                label: "Assisted plans",
                 value: coachPlans.filter((plan) => plan.aiGenerated).length
                   ? `${coachPlans.filter((plan) => plan.aiGenerated).length} plans`
-                  : "No AI plans yet",
+                  : "No assisted plans yet",
                 meta: "Reviewable training content created so far",
               },
             ]}
@@ -3924,8 +3921,8 @@ export function DashboardOperationalPanel({
         <GlassCard>
           <SectionHeader
             eyebrow="Signals"
-            title="Recent AI and message activity"
-            description="A shared snapshot of automation output and member communication coming from this org."
+            title="Recent drafts and messages"
+            description="A shared snapshot of assisted drafts and member communication."
           />
           <div className="mt-5 grid gap-3">
             {initialAiUsage.slice(0, 3).map((usage) => (
@@ -3933,7 +3930,6 @@ export function DashboardOperationalPanel({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="font-medium text-white">{usage.promptSummary}</p>
                   <div className="flex gap-2">
-                    <StatusPill value={formatEnumLabel(usage.provider)} tone="blue" />
                     <StatusPill value={formatEnumLabel(usage.requestType)} />
                   </div>
                 </div>
@@ -3942,8 +3938,8 @@ export function DashboardOperationalPanel({
             ))}
             {!initialAiUsage.length ? (
               <EmptyState
-                title="No AI activity in the current snapshot"
-                description="This org has not created AI usage logs yet, so the surface stays quiet until drafting or safety flows run."
+                title="No assistant activity in the current view"
+                description="This gym has not created assisted drafts yet."
               />
             ) : null}
             {initialNotifications.slice(0, 2).map((notification) => (
@@ -4011,9 +4007,9 @@ export function DashboardOperationalPanel({
                 columns={1}
                 items={[
                   {
-                    label: "Audit trail",
+                    label: "Activity history",
                     value: formatCompactNumber(auditLogCount),
-                    meta: "Privileged action history",
+                    meta: "Admin action history",
                   },
                   {
                     label: "Join mode",

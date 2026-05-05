@@ -36,7 +36,7 @@ test("dashboard routes redirect unauthenticated users to login", async ({ page }
 
 test("mock checkout page renders", async ({ page }) => {
   await page.goto("/checkout/mock/demo");
-  await expect(page.getByText("Zook mock checkout")).toBeVisible();
+  await expect(page.getByText("Payment confirmation")).toBeVisible();
 });
 
 test("QR display route is protected by the same auth guard", async ({ page }) => {
@@ -686,7 +686,7 @@ test("public join page honors backend join mode instead of query overrides", asy
   await page.goto(`/join/${org.username}?mode=OPEN_JOIN`);
   await expect(page.getByRole("heading", { name: "Approval required" })).toBeVisible();
   await expect(page.getByText("Join request submitted")).toHaveCount(0);
-  await expect(page.getByText("Hosted checkout handoff")).toHaveCount(0);
+  await expect(page.getByText("Secure payment")).toHaveCount(0);
 });
 
 test("referral creation returns username-based web links", async ({ page }) => {

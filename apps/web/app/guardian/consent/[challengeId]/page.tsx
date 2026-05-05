@@ -125,7 +125,7 @@ export default function GuardianConsentPage({
               {data?.minor?.firstName ?? "Minor member"}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/65">
-              Guardian consent allows Zook to activate membership and attendance for this minor member. Personalized AI remains minor-safe, and marketing stays off unless consent is explicitly granted later.
+              Guardian consent allows Zook to activate membership and attendance for this minor member. Personalized coaching stays age-safe, and marketing stays off unless consent is explicitly granted later.
             </p>
           </div>
           <div className="grid gap-3 text-sm text-white/70 md:grid-cols-2">
@@ -139,8 +139,8 @@ export default function GuardianConsentPage({
             </div>
           </div>
           <div className="rounded-3xl border border-white/10 bg-black/20 p-4 text-sm leading-7 text-white/65">
-            <p>Before consent: membership activation, attendance check-in, trainer-driven personalization, and personalized AI stay blocked.</p>
-            <p>After consent: membership and attendance can proceed, AI still uses minor-safe behavior, and promotional messaging remains off by default.</p>
+            <p>Before consent: membership activation, attendance check-in, and trainer-driven personalization stay blocked.</p>
+            <p>After consent: membership and attendance can proceed, coaching stays age-safe, and promotional messaging remains off by default.</p>
           </div>
         </div>
         <div className="rounded-[28px] border border-white/10 bg-black/30 p-5">

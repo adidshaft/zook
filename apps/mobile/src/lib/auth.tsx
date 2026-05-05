@@ -322,7 +322,7 @@ export function useAuth() {
 
 export function getApiErrorMessage(error: unknown) {
   if (error instanceof ApiError) {
-    return error.requestId ? `${error.message} (${error.requestId})` : error.message;
+    return error.message;
   }
   if (error instanceof Error) {
     if (/network request failed/i.test(error.message)) {

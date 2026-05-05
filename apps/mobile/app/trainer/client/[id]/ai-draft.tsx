@@ -182,7 +182,7 @@ export default function TrainerAiDraftReview() {
       });
       setDraft({
         planId: result.createdPlan?.id,
-        title: result.createdPlan?.title ?? "AI workout draft",
+        title: result.createdPlan?.title ?? "Workout draft",
         goal,
         difficulty: "Coach review",
         sections: sectionsFromResponse(result.response),
@@ -232,7 +232,7 @@ export default function TrainerAiDraftReview() {
           contentContainerStyle={styles.content}
         >
           <MobileHeader
-            title="AI Draft Review"
+            title="Draft Review"
             subtitle="Review, edit, then approve before assigning."
             leading={
               <Pressable
@@ -247,7 +247,7 @@ export default function TrainerAiDraftReview() {
             chip={<StatusChip status="Review required" />}
           />
 
-          <AuditWarning>AI generated this draft. Edit and approve before assigning.</AuditWarning>
+          <AuditWarning>Review and edit this draft before assigning it.</AuditWarning>
 
           {draft ? (
             <>

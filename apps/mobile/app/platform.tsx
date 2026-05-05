@@ -32,9 +32,9 @@ export default function PlatformMobile() {
         >
           <MobileHeader
             eyebrow="Platform admin"
-            title="Use the web control room"
-            subtitle={`${session?.user.name ?? "Platform team"} · mobile access is intentionally limited`}
-            chip={<StatusChip status="Web only" tone="amber" />}
+            title="Open the web dashboard"
+            subtitle={`${session?.user.name ?? "Platform team"} · this role is easier on desktop`}
+            chip={<StatusChip status="Web dashboard" tone="amber" />}
             centered
             showProfileShortcut={false}
           />
@@ -44,7 +44,7 @@ export default function PlatformMobile() {
             onPress={() => void Linking.openURL(platformWebUrl)}
             style={styles.primaryAction}
           >
-            Continue on Web
+            Open Web Dashboard
           </ZookButton>
 
           <GlassCard contentStyle={styles.heroContent}>
@@ -52,24 +52,22 @@ export default function PlatformMobile() {
             <View style={styles.heroCopy}>
               <Text style={styles.title}>Platform operations stay on web.</Text>
               <Text style={styles.body}>
-                Provider diagnostics, org moderation, readiness checks, and platform audit trails
-                need the full dashboard workspace. The mobile app is reserved for daily gym
-                execution roles. The browser may ask for OTP once before opening the platform
-                dashboard.
+                The full dashboard gives you room to review gyms, service status, safety reports,
+                and account changes. The mobile app stays focused on daily gym work.
               </Text>
             </View>
           </GlassCard>
 
           <GlassCard variant="compact" contentStyle={styles.stack}>
             <ListRow
-              title="Mobile app roles"
-              subtitle="Member, trainer, receptionist, owner, and admin execution surfaces."
+              title="Mobile app"
+              subtitle="Daily work for members, trainers, desk teams, owners, and admins."
               icon="phone-portrait-outline"
               tone="lime"
             />
             <ListRow
-              title="Platform control room"
-              subtitle="Organizations, providers, diagnostics, safety, and audit."
+              title="Web dashboard"
+              subtitle="Gym reviews, service status, safety reports, and account controls."
               icon="desktop-outline"
               tone="amber"
             />

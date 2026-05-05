@@ -156,11 +156,11 @@ function editableCard(ctx: DesignContext, title: string, body: string, icon: "du
 }
 
 export function trainerAiDraftReview(ctx: DesignContext): FrameNode {
-  const screen = mobileShell(ctx, "AUTO_EXPORT / Trainer / 02 AI Draft Review");
+  const screen = mobileShell(ctx, "AUTO_EXPORT / Trainer / 02 Draft Review");
   screen.itemSpacing = 6;
-  screen.appendChild(header(ctx, "AI Draft Review", undefined, "back", undefined, "Trainer"));
+  screen.appendChild(header(ctx, "Draft Review", undefined, "back", undefined, "Trainer"));
   screen.appendChild(chip(ctx, "Review required", "warning", "warning"));
-  const alert = glassCard("AI Alert Card", 350, 8, TOKENS.radius.lg);
+  const alert = glassCard("Draft Alert Card", 350, 8, TOKENS.radius.lg);
   alert.layoutMode = "HORIZONTAL";
   alert.resize(350, 54);
   alert.primaryAxisSizingMode = "FIXED";
@@ -168,7 +168,7 @@ export function trainerAiDraftReview(ctx: DesignContext): FrameNode {
   alert.counterAxisAlignItems = "CENTER";
   alert.appendChild(iconDisk("shield", 32, "warning"));
   const alertCopy = stack("Alert copy", "VERTICAL", 3);
-  alertCopy.appendChild(text("AI generated this draft.", ctx.styles.text.bodyStrong));
+  alertCopy.appendChild(text("This draft needs your review.", ctx.styles.text.bodyStrong));
   alertCopy.appendChild(text("Edit and approve before assigning.", ctx.styles.text.small, TOKENS.color.mutedText));
   alert.appendChild(alertCopy);
   screen.appendChild(alert);

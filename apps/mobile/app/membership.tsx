@@ -234,7 +234,7 @@ export default function MembershipScreen() {
           sessionId: result.session.id,
           ...(activeOrgId ? { orgId: activeOrgId } : {}),
         });
-        setRenewalStatus("Mock renewal completed.");
+        setRenewalStatus("Renewal confirmed.");
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
           queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
@@ -243,7 +243,7 @@ export default function MembershipScreen() {
         return;
       }
       const url = checkoutUrl(result.checkoutUrl);
-      setRenewalStatus(url ? "Renewal checkout created." : "Renewal request sent.");
+      setRenewalStatus(url ? "Renewal payment started." : "Renewal request sent.");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),

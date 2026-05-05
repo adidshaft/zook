@@ -501,7 +501,7 @@ export default function Owner() {
               ) : (
                 <EmptyState
                   title="No payments yet"
-                  body="Offline collections and checkout confirmations will appear here."
+                  body="Desk collections and payment confirmations will appear here."
                 />
               )}
               {orders.map((order) => (
@@ -554,7 +554,7 @@ export default function Owner() {
                 />
               )}
             </GlassCard>
-            <SectionHeader title="Orders awaiting handoff" />
+            <SectionHeader title="Orders ready for pickup" />
             <GlassCard contentStyle={styles.stack}>
               {orders.length ? (
                 orders.map((order) => (

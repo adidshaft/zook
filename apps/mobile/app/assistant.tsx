@@ -134,7 +134,7 @@ export default function AssistantScreen() {
           <GlassCard variant="compact" contentStyle={styles.emptyContent}>
             <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
             <View style={styles.emptyCopy}>
-              <Text style={styles.emptyTitle}>AI for trainers and members</Text>
+              <Text style={styles.emptyTitle}>Plan assistant</Text>
               <Text style={styles.emptyBody}>Owner and desk operations stay in the web dashboard.</Text>
             </View>
           </GlassCard>
@@ -153,7 +153,7 @@ export default function AssistantScreen() {
         contentContainerStyle={styles.content}
       >
         <MobileHeader
-          eyebrow={isTrainer ? "Trainer AI" : "Plan assistant"}
+          eyebrow={isTrainer ? "Trainer assistant" : "Plan assistant"}
           title={isTrainer ? "Coach with context" : "Talk through training"}
           subtitle={isTrainer
             ? "Attach client summaries, import notes, draft plans."

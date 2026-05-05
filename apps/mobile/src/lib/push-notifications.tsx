@@ -111,10 +111,10 @@ function platformForRegistration() {
 function trimErrorMessage(error: unknown) {
   const message = getApiErrorMessage(error);
   if (/physical device|real device/i.test(message)) {
-    return "Expo push tokens require a physical iPhone or Android device. Simulators and emulators can still use the in-app notification center.";
+    return "Push alerts need a signed phone build. In-app alerts still work here.";
   }
   if (/project.?id/i.test(message)) {
-    return "Expo push registration needs a project ID. Set EXPO_PROJECT_ID for local/dev builds or use an EAS build with extra.eas.projectId.";
+    return "Push alerts are not available in this build yet.";
   }
   return message;
 }
@@ -289,16 +289,14 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       if (Platform.OS === "web") {
         setPermissionState("unsupported");
         setSyncStatus("unsupported");
-        setError("Native push registration only runs on iOS and Android builds.");
+        setError("Push alerts are only available in the phone app.");
         return false;
       }
 
       const projectId = getExpoProjectId();
       if (!projectId) {
         setSyncStatus("error");
-        setError(
-          "Expo project ID is missing. Set EXPO_PROJECT_ID for local builds or configure extra.eas.projectId in the mobile app config.",
-        );
+        setError("Push alerts are not available in this build yet.");
         return false;
       }
 

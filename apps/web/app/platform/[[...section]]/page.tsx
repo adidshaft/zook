@@ -8,10 +8,10 @@ import { ZookLogo } from "@/components/zook-logo";
 import { getDashboardData } from "@/lib/data";
 
 function metricTone(label: string) {
-  if (label.includes("Suspended") || label.includes("Abuse")) {
+  if (label.includes("Suspended") || label.includes("Safety")) {
     return "amber" as const;
   }
-  if (label.includes("AI")) {
+  if (label.includes("Assistant")) {
     return "blue" as const;
   }
   if (label.includes("Organizations")) {
@@ -74,10 +74,10 @@ export default async function PlatformPage() {
   await requirePlatformSession();
   const data = await getDashboardData();
   const runtimeLabel = data.connected
-    ? "Platform database online"
+    ? "System online"
     : data.fallbackMode === "demo"
-      ? "Demo fallback"
-      : "Read model unavailable";
+      ? "Sample view"
+      : "Data unavailable";
 
   return (
     <main className="min-h-screen px-5 py-5">
@@ -89,14 +89,14 @@ export default async function PlatformPage() {
                 <Pill tone={data.connected ? "lime" : "amber"}>
                   {runtimeLabel}
                 </Pill>
-                <Pill tone="amber">Platform super-admin</Pill>
+                <Pill tone="amber">Platform team</Pill>
               </div>
               <div className="mt-4 flex items-center gap-3">
                 <ShieldAlert className="text-amber-100" />
                 <div>
-                  <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Platform operations</h1>
+                  <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Platform overview</h1>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
-                    Registry health, org interventions, AI activity, and abuse review in a single glass control room.
+                    Service status, gym accounts, assistant activity, and safety reviews in one place.
                   </p>
                 </div>
               </div>
@@ -109,10 +109,10 @@ export default async function PlatformPage() {
 
         <nav className="flex gap-2 overflow-x-auto rounded-[28px] border border-white/10 bg-white/5 p-3">
           {([
-            ["Readiness", "#readiness"],
-            ["Organizations", "#organizations"],
-            ["AI traffic", "#ai-traffic"],
-            ["Abuse flags", "#abuse-flags"],
+            ["Status", "#readiness"],
+            ["Gyms", "#organizations"],
+            ["Assistant", "#ai-traffic"],
+            ["Safety", "#abuse-flags"],
           ] as Array<[string, string]>).map(([item, href], index) => (
             <Link
               key={item}

@@ -57,7 +57,7 @@ function resolveAppEnv() {
     ["EXPO_PUBLIC_APP_ENV", process.env.EXPO_PUBLIC_APP_ENV],
     ["EXPO_PUBLIC_ENV_PROFILE", process.env.EXPO_PUBLIC_ENV_PROFILE],
   ];
-  for (const [key, value] of candidates) {
+  for (const [, value] of candidates) {
     const raw = value?.trim();
     if (!raw) {
       continue;
@@ -66,7 +66,7 @@ function resolveAppEnv() {
     if (!normalized) {
       return {
         appEnv: "local" as MobileAppEnv,
-        error: `${key}=${raw} is not supported. Use APP_ENV=local, staging, or production.`,
+        error: "This app build is using an unsupported release setting.",
       };
     }
     return { appEnv: normalized };
@@ -80,7 +80,7 @@ function resolveApiMode() {
     ["EXPO_CONFIG_API_MODE", Constants.expoConfig?.extra?.apiMode as string | undefined],
     ["EXPO_PUBLIC_API_MODE", process.env.EXPO_PUBLIC_API_MODE],
   ];
-  for (const [key, value] of candidates) {
+  for (const [, value] of candidates) {
     const raw = value?.trim();
     if (!raw) {
       continue;
@@ -89,7 +89,7 @@ function resolveApiMode() {
     if (!normalized) {
       return {
         apiMode: "backend" as MobileApiMode,
-        error: `${key}=${raw} is not supported. Use API_MODE=backend or offline-demo.`,
+        error: "This app build is using an unsupported connection setting.",
       };
     }
     return { apiMode: normalized };
@@ -131,7 +131,7 @@ export function getMobileRuntimeConfigError() {
   }
 
   if (apiMode === "offline-demo" && appEnv !== "local") {
-    return `Offline demo mode is only available for local builds. Current APP_ENV is ${appEnv}.`;
+    return "Sample mode is only available in local builds.";
   }
 
   return undefined;

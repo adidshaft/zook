@@ -89,7 +89,7 @@ describe("deliverPushForNotification", () => {
           status: "FAILED",
           attemptCount: 1,
           failureCode: "provider_disabled",
-          failureReason: "Push provider is disabled for this environment."
+          failureReason: "Push alerts are not available right now."
         })
       ]
     });
@@ -123,7 +123,7 @@ describe("deliverPushForNotification", () => {
           provider: "expo",
           status: "FAILED",
           failureCode: "provider_exception",
-          failureReason: "Push provider send failed."
+          failureReason: "Push alert could not be sent."
         })
       ]
     });

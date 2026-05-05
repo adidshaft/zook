@@ -273,10 +273,10 @@ function createRulesBoard(ctx: DesignContext, page: PageNode, x: number, y: numb
   const rules: string[] = [
     "Member screens are for action, not administration.",
     "Trainer screens show assigned clients only.",
-    "AI creates drafts; humans assign plans.",
-    "Receptionist actions must be auditable.",
+    "Drafts help trainers move faster; trainers stay in charge.",
+    "Receptionist actions stay easy to review.",
     "Entry codes appear after approved or pending scans.",
-    "Hosted checkout activates only after backend confirmation.",
+    "Membership starts after payment confirmation.",
     "Tracking is private unless the member opts in.",
     "Owner mobile is command view; web is full control room.",
     "In-app inbox is canonical; push is best-effort.",

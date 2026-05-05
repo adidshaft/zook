@@ -153,10 +153,10 @@ export default function Login() {
             ) : null}
           </GlassCard>
 
-          {/* Dev OTP banner — only visible in __DEV__ */}
+          {/* Local test OTP banner — only visible in __DEV__ */}
           {devOtp ? (
             <View style={styles.devBanner}>
-              <Text style={styles.devBannerLabel}>DEV MODE</Text>
+              <Text style={styles.devBannerLabel}>TEST CODE</Text>
               <Text style={styles.devBannerCode}>{devOtp}</Text>
             </View>
           ) : null}

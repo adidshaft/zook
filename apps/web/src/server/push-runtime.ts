@@ -89,12 +89,7 @@ export async function deliverPushForNotification(input: {
         status: "FAILED",
         attemptCount: 1,
         failureCode: diagnostics.status === "disabled" ? "provider_disabled" : "provider_unavailable",
-        failureReason:
-          diagnostics.status === "disabled"
-            ? "Push provider is disabled for this environment."
-            : diagnostics.missingEnv.length
-              ? `Push provider is missing env: ${diagnostics.missingEnv.join(", ")}`
-              : "Push provider is unavailable for this environment.",
+        failureReason: "Push alerts are not available right now.",
         payload: notificationData(input.notification.metadata, {
           notificationId: input.notification.id,
           type: input.notification.type
@@ -128,7 +123,7 @@ export async function deliverPushForNotification(input: {
       status: "failed" as const,
       providerMessageId: payload.token,
       errorCode: "provider_exception",
-      errorMessage: "Push provider send failed."
+      errorMessage: "Push alert could not be sent."
     }));
   }
 

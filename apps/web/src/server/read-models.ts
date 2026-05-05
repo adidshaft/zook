@@ -346,7 +346,7 @@ export async function getOrganizationDashboardData(
         value: String(failedNotifications),
         delta: "failed or scheduled",
       },
-      { label: "AI usage", value: String(aiUsageThisMonth), delta: "this month" },
+      { label: "Assistant drafts", value: String(aiUsageThisMonth), delta: "this month" },
       { label: "Trial days", value: String(trialDaysRemaining), delta: organization.status },
     ],
     joinRequests,
@@ -404,8 +404,8 @@ export async function getPlatformDashboardData() {
         value: String(counts.get("SUSPENDED") ?? 0),
         delta: "platform action required",
       },
-      { label: "AI usage", value: String(aiUsageThisMonth), delta: "this month" },
-      { label: "Abuse flags", value: String(abuseFlags.length), delta: "recent signals" },
+      { label: "Assistant drafts", value: String(aiUsageThisMonth), delta: "this month" },
+      { label: "Safety reviews", value: String(abuseFlags.length), delta: "recent signals" },
     ],
   };
 }

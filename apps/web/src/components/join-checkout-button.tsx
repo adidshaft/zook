@@ -49,7 +49,7 @@ export function JoinCheckoutButton({
         const message =
           typeof payload?.error === "string"
             ? payload.error
-            : payload?.error?.message ?? "Unable to start checkout.";
+            : payload?.error?.message ?? "Unable to start payment.";
         throw new Error(message);
       }
 
@@ -58,11 +58,11 @@ export function JoinCheckoutButton({
         fallbackCheckoutUrl ??
         (payload?.data?.session?.id ? `/checkout/${payload.data.session.id}` : null);
       if (!checkoutUrl) {
-        throw new Error("Checkout is not available for this plan yet.");
+        throw new Error("Payment is not available for this plan yet.");
       }
       window.location.assign(checkoutUrl);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to start checkout.");
+      setError(cause instanceof Error ? cause.message : "Unable to start payment.");
     } finally {
       setBusy(false);
     }
@@ -76,7 +76,7 @@ export function JoinCheckoutButton({
         disabled={busy}
         className="zook-focus inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black disabled:opacity-55"
       >
-        {busy ? "Starting checkout..." : "Continue to checkout"}
+        {busy ? "Starting payment..." : "Continue to payment"}
       </button>
       {error ? (
         <p className="rounded-[18px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">

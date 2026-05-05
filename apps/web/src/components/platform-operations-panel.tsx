@@ -118,16 +118,16 @@ export function PlatformOperationsPanel({
       <div id="readiness" className="scroll-mt-5">
         <GlassCard>
           <SectionHeader
-            eyebrow="Provider Registry"
-            title="Runtime readiness"
-            description="These diagnostics come from the backend provider registry. They are safe for admins and intentionally avoid exposing raw secrets or env values."
+            eyebrow="System checks"
+            title="Service status"
+            description="A quick view of the services Zook depends on. Private settings stay hidden."
             badge={<Pill tone={misconfiguredProviders.length ? "red" : "lime"}>{misconfiguredProviders.length} need setup</Pill>}
             action={
               <button
                 className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
                 onClick={() => providersState.reload()}
               >
-                Run Readiness Check
+                Check again
               </button>
             }
           />
@@ -137,22 +137,22 @@ export function PlatformOperationsPanel({
               {
                 label: "Ready",
                 value: formatCompactNumber(readyProviders.length),
-                meta: "Explicit live providers that are configured"
+                meta: "Services ready for use"
               },
               {
-                label: "Defaulted",
+                label: "Basic setup",
                 value: formatCompactNumber(defaultProviders.length),
-                meta: "Mock or local-first paths still active"
+                meta: "Services using the standard setup"
               },
               {
-                label: "Misconfigured",
+                label: "Needs attention",
                 value: formatCompactNumber(misconfiguredProviders.length),
-                meta: "Provider env gaps or unsupported selections"
+                meta: "Services that still need setup"
               },
               {
-                label: "Open abuse flags",
+                label: "Open safety reviews",
                 value: formatCompactNumber(openFlags.length),
-                meta: "Recent platform signals still unresolved"
+                meta: "Reports still needing review"
               }
             ]}
             columns={2}
@@ -161,12 +161,12 @@ export function PlatformOperationsPanel({
             columns={[
               {
                 id: "provider",
-                header: "Provider lane",
+                header: "Service",
                 render: ([category, provider]) => (
                   <div>
                     <p className="font-medium text-white">{formatEnumLabel(category)}</p>
                     <p className="mt-1 text-xs text-white/45">
-                      Selected {formatEnumLabel(provider.selectedProvider)} · Active {provider.activeProvider ? formatEnumLabel(provider.activeProvider) : "None"}
+                      Setup {provider.configured ? "complete" : "needed"} · Running {provider.activeProvider ? "ready" : "not ready"}
                     </p>
                   </div>
                 )
@@ -194,28 +194,28 @@ export function PlatformOperationsPanel({
               },
               {
                 id: "env",
-                header: "Missing env",
-                render: ([, provider]) => (provider.missingEnv.length ? provider.missingEnv.join(", ") : "None")
+                header: "Needs",
+                render: ([, provider]) => (provider.missingEnv.length ? "Setup required" : "Nothing")
               },
               {
                 id: "last",
-                header: "Last check",
-                render: ([, provider]) => provider.lastCheckedAt ? formatDateTime(provider.lastCheckedAt) : "Latest registry read"
+                header: "Checked",
+                render: ([, provider]) => provider.lastCheckedAt ? formatDateTime(provider.lastCheckedAt) : "Just now"
               },
               {
                 id: "request",
-                header: "Request ID",
-                render: ([, provider]) => provider.requestId ?? "Not recorded"
+                header: "Support note",
+                render: ([, provider]) => provider.requestId ? "Recorded" : "Not needed"
               },
               {
                 id: "notes",
                 header: "Notes",
-                render: ([, provider]) => provider.notes ?? "Secrets are never exposed."
+                render: ([, provider]) => provider.notes ? "Checked" : "Private settings stay hidden."
               }
             ]}
             rows={providerEntries}
             rowKey={([category]) => category}
-            empty="Provider diagnostics are not available yet."
+            empty="Service status is not available yet."
           />
         </div>
         </GlassCard>
@@ -226,8 +226,8 @@ export function PlatformOperationsPanel({
           <GlassCard>
           <SectionHeader
             eyebrow="Organizations"
-            title="Status control matrix"
-            description="This is the live organization roster, including quick status controls for platform admin intervention."
+            title="Gym accounts"
+            description="Review active gyms and pause accounts when the platform team needs to step in."
             badge={<Pill tone={suspendedOrganizations.length ? "amber" : "lime"}>{suspendedOrganizations.length} suspended</Pill>}
           />
           {statusError ? <div className="mt-5"><p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">{statusError}</p></div> : null}
@@ -295,29 +295,29 @@ export function PlatformOperationsPanel({
 
         <div className="grid gap-4">
           <GlassCard>
-            <SectionHeader
-              eyebrow="Risk Rail"
-              title="Platform watchlist"
-              description="A concise read on which orgs are drifting into operational trouble."
+          <SectionHeader
+              eyebrow="Watchlist"
+              title="Safety review"
+              description="A short view of gyms and reports that may need attention."
             />
             <ReadoutGrid
               className="mt-5"
               columns={1}
               items={[
                 {
-                  label: "Open abuse flags",
+                  label: "Open safety reviews",
                   value: formatCompactNumber(openFlags.length),
-                  meta: "Signals that still need platform review"
+                  meta: "Reports still waiting for review"
                 },
                 {
-                  label: "Suspended orgs",
+                  label: "Paused gyms",
                   value: formatCompactNumber(suspendedOrganizations.length),
-                  meta: "Currently blocked by platform action"
+                  meta: "Currently paused by the platform team"
                 },
                 {
-                  label: "Recent AI events",
+                  label: "Recent assistant activity",
                   value: formatCompactNumber(usage.length),
-                  meta: "Latest 100 usage logs across organizations"
+                  meta: "Recent assisted drafts across gyms"
                 }
               ]}
             />
@@ -325,9 +325,9 @@ export function PlatformOperationsPanel({
 
           <GlassCard>
             <SectionHeader
-              eyebrow="Escalation lanes"
-              title="Contact posture"
-              description="When a provider or abuse review escalates, these are the first org contacts platform ops will usually need."
+              eyebrow="Contacts"
+              title="Gym contact list"
+              description="The first people to contact when a gym needs help or review."
             />
             <div className="mt-5 grid gap-3">
               {organizations.slice(0, 4).map((org) => (
@@ -346,44 +346,43 @@ export function PlatformOperationsPanel({
         <div id="ai-traffic" className="scroll-mt-5">
           <GlassCard>
           <SectionHeader
-            eyebrow="AI Traffic"
-            title="Recent platform-wide AI activity"
-            description="This is a high-signal slice of AI usage across organizations, useful for cost and abuse pattern reviews."
+            eyebrow="Assistant"
+            title="Recent assistant activity"
+            description="A quick view of assisted drafts across gyms."
             badge={<Pill tone="blue">{usage.length} events</Pill>}
           />
           <div className="mt-5">
             {usageState.error ? (
               <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">{usageState.error}</p>
             ) : usageState.loading && usage.length === 0 ? (
-              <EmptyState title="Loading AI traffic" description="Pulling the most recent platform AI usage rows." />
+              <EmptyState title="Loading activity" description="Getting the latest assisted drafts." />
             ) : (
               <DataTable
                 columns={[
                   {
                     id: "prompt",
-                    header: "Prompt",
+                    header: "Draft",
                     render: (row) => (
                       <div>
                         <p className="font-medium text-white">{row.promptSummary}</p>
-                        <p className="mt-1 text-xs text-white/45">{row.orgId ?? "Platform scope"}</p>
+                        <p className="mt-1 text-xs text-white/45">{row.orgId ? "Gym workspace" : "Platform workspace"}</p>
                       </div>
                     )
                   },
                   {
                     id: "type",
-                    header: "Type",
+                    header: "Category",
                     render: (row) => (
                       <div className="flex flex-wrap gap-2">
-                        <StatusPill value={formatEnumLabel(row.provider)} tone="blue" />
                         <StatusPill value={formatEnumLabel(row.requestType)} />
                       </div>
                     )
                   },
                   {
                     id: "tokens",
-                    header: "Tokens",
+                    header: "Size",
                     align: "right",
-                    render: (row) => row.tokenEstimate.toString()
+                    render: (row) => (row.tokenEstimate > 0 ? "Detailed" : "Short")
                   },
                   {
                     id: "cost",
@@ -394,7 +393,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={usage}
                 rowKey={(row) => row.id}
-                empty="No AI usage rows are currently available."
+                empty="No assistant activity is currently available."
               />
             )}
           </div>
@@ -404,9 +403,9 @@ export function PlatformOperationsPanel({
         <div id="abuse-flags" className="scroll-mt-5">
           <GlassCard>
           <SectionHeader
-            eyebrow="Abuse Signals"
-            title="Recent flags"
-            description="Recent organization abuse flags from the database, including severity and whether the flag is still open."
+            eyebrow="Safety"
+            title="Recent reports"
+            description="Recent gym reports, with severity and current status."
             badge={<Pill tone={openFlags.length ? "amber" : "lime"}>{openFlags.length} open</Pill>}
           />
           <div className="mt-5 grid gap-3">
@@ -419,8 +418,7 @@ export function PlatformOperationsPanel({
                     <div>
                       <p className="font-medium text-white">{formatEnumLabel(flag.type)}</p>
                       <p className="mt-2 text-xs text-white/45">
-                        Org {flag.orgId}
-                        {flag.userId ? ` · User ${flag.userId}` : ""}
+                        {flag.userId ? "Member report" : "Gym report"}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -438,7 +436,7 @@ export function PlatformOperationsPanel({
                 </div>
               ))
             ) : (
-              <EmptyState title="No recent abuse flags" description="The current platform snapshot does not contain any flagged organizations." />
+              <EmptyState title="No recent reports" description="Nothing needs platform review right now." />
             )}
           </div>
           </GlassCard>

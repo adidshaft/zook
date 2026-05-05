@@ -229,7 +229,7 @@ export async function assertRateLimit(
   const rule = defaultRateLimitRules[ruleName];
   const diagnostics = getRateLimitDiagnostics();
   if (diagnostics.status === "misconfigured" || diagnostics.status === "unsupported") {
-    throw rateLimitedError("Rate limit provider is not configured.");
+    throw rateLimitedError("Too many requests. Please try again shortly.");
   }
 
   const result = await getRateLimitStore().consume(`${ruleName}:${identity}`, rule);

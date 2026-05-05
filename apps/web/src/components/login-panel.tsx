@@ -14,7 +14,7 @@ export function LoginPanel() {
   const [stage, setStage] = useState<"identifier" | "otp">("identifier");
   const [message, setMessage] = useState(
     searchParams.get("redirect") === "/platform"
-      ? "Sign in on web to continue to the platform control room."
+      ? "Sign in on web to continue to the platform dashboard."
       : "Enter your email or phone number to receive a one-time password.",
   );
 
@@ -27,7 +27,7 @@ export function LoginPanel() {
       });
       setMessage(
         payload.devOtp
-          ? `OTP sent to ${trimmedIdentifier}. Dev code is ${payload.devOtp}.`
+          ? `OTP sent to ${trimmedIdentifier}. Test code: ${payload.devOtp}.`
           : `OTP sent to ${trimmedIdentifier}.`,
       );
       setIdentifier(trimmedIdentifier);
