@@ -330,10 +330,13 @@ export async function demoMobileApiFetch<T>(path: string, init: { body?: unknown
   }
 
   if (pathname === "/me/membership/active") return { membership: activeMembership() } as T;
-  if (pathname === "/me/memberships") return { subscriptions: zookDemoFixtures.memberships } as T;
+  if (pathname === "/me/memberships") {
+    return { subscriptions: zookDemoFixtures.memberships, payments: zookDemoFixtures.payments } as T;
+  }
   if (pathname.match(/^\/me\/memberships\/[^/]+\/renew$/)) {
     return {
       checkoutUrl: "/checkout/mock/offline-renewal",
+      session: { id: "offline-renewal", status: "CREATED", provider: "mock" },
       subscription: {
         ...(activeMembership() ?? {}),
         renewedAt: nowIso(),
@@ -372,6 +375,33 @@ export async function demoMobileApiFetch<T>(path: string, init: { body?: unknown
     return { progress: { completionPct: 100, progressJson: init.body ?? {} }, completedExercises: [] } as T;
   }
   if (pathname === "/me/notifications") return { notifications: zookDemoFixtures.notifications } as T;
+  if (pathname === "/me/consents") {
+    return {
+      exportRequests: [],
+      deletionRequests: [],
+      exportJobs: [],
+      deletionJobs: [],
+    } as T;
+  }
+  if (pathname === "/me/data-export-request") {
+    return {
+      request: {
+        id: "offline-export-request",
+        status: "PENDING",
+        createdAt: nowIso(),
+      },
+    } as T;
+  }
+  if (pathname === "/me/account-deletion-request") {
+    return {
+      request: {
+        id: "offline-deletion-request",
+        status: "PENDING",
+        createdAt: nowIso(),
+        scheduledFor: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    } as T;
+  }
   if (pathname === "/me/goals") return { goals: [] } as T;
   if (pathname === "/me/shop-orders") return { orders: demoShopOrders() } as T;
   if (pathname === "/me/tracking/workouts") return { workouts: [] } as T;
@@ -474,6 +504,20 @@ export async function demoMobileApiFetch<T>(path: string, init: { body?: unknown
         ],
       },
       createdPlan: { id: "offline-ai-plan", title: "Offline AI workout draft" },
+    } as T;
+  }
+
+  if (pathname === "/ai/chat") {
+    return {
+      answer:
+        "Offline demo answer: keep the workout moderate today, hydrate, and ask your trainer to review any pain or fatigue before increasing load.",
+      response:
+        "Offline demo answer: keep the workout moderate today, hydrate, and ask your trainer to review any pain or fatigue before increasing load.",
+      usage: {
+        provider: "offline-demo",
+        requestType: "CHAT",
+        quotaConsumed: 1,
+      },
     } as T;
   }
 

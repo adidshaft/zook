@@ -67,6 +67,49 @@ function ErrorNotice({ message }: { message: string }) {
   );
 }
 
+function formatAiResponseSummary(summary?: string | null) {
+  const trimmed = summary?.trim();
+  if (!trimmed) {
+    return "No response summary";
+  }
+
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trimmed) as {
+        title?: unknown;
+        type?: unknown;
+        days?: unknown;
+      };
+      const parts = [
+        typeof parsed.title === "string" ? parsed.title : null,
+        typeof parsed.type === "string" ? formatEnumLabel(parsed.type) : null,
+        Array.isArray(parsed.days) ? `${parsed.days.length} day plan` : null,
+      ].filter(Boolean);
+
+      if (parts.length) {
+        return parts.join(" - ");
+      }
+    } catch {
+      // Fall through to a plain truncated summary when older rows contain partial JSON.
+    }
+  }
+
+  const normalized = trimmed.replaceAll('\\"', '"');
+  const titleMatch = normalized.match(/"title"\s*:\s*"([^"]+)"/);
+  const typeMatch = normalized.match(/"type"\s*:\s*"([^"]+)"/);
+  const dayCount = (normalized.match(/"name"\s*:\s*"Day \d+"/g) ?? []).length;
+  const structuredParts = [
+    titleMatch?.[1],
+    typeMatch?.[1] ? formatEnumLabel(typeMatch[1]) : null,
+    dayCount > 0 ? `${dayCount} day plan` : null,
+  ].filter(Boolean);
+  if (structuredParts.length) {
+    return structuredParts.join(" - ");
+  }
+
+  return trimmed.length > 140 ? `${trimmed.slice(0, 137)}...` : trimmed;
+}
+
 export function DashboardOperationalPanel({
   orgId,
   sectionKey,
@@ -1159,6 +1202,61 @@ export function DashboardOperationalPanel({
               description="Profiles here come from the persisted membership directory, so owners and admins are reading the same book."
               badge={<Pill tone="lime">{members.length} profiles</Pill>}
             />
+            {selectedMemberId ? (
+              <div className="mt-4 rounded-[22px] border border-lime-200/15 bg-lime-200/8 p-4">
+                {memberDetailState.error ? (
+                  <ErrorNotice message={memberDetailState.error} />
+                ) : memberDetailState.loading || !memberDetailState.data ? (
+                  <p className="text-sm text-white/55">Loading member detail...</p>
+                ) : (
+                  <div className="grid gap-4 lg:grid-cols-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-white/35">Member</p>
+                      <p className="mt-2 font-medium text-white">
+                        {memberDetailState.data.member.user?.name ?? "Member"}
+                      </p>
+                      <p className="mt-1 text-xs text-white/45">
+                        {memberDetailState.data.member.user?.email ?? "No email"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                        Subscription
+                      </p>
+                      <p className="mt-2 text-sm text-white/70">
+                        {memberDetailState.data.member.subscriptions[0]?.plan?.name ?? "No plan"}
+                      </p>
+                      <p className="mt-1 text-xs text-white/45">
+                        {memberDetailState.data.member.subscriptions[0]
+                          ? formatEnumLabel(memberDetailState.data.member.subscriptions[0].status)
+                          : "No subscription"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-white/35">Activity</p>
+                      <p className="mt-2 text-sm text-white/70">
+                        {memberDetailState.data.member.attendance.length} recent check-ins
+                      </p>
+                      <p className="mt-1 text-xs text-white/45">
+                        {memberDetailState.data.member.workouts.length} trainer-visible workouts
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-white/35">Payments</p>
+                      <p className="mt-2 text-sm text-white/70">
+                        {memberDetailState.data.member.payments.length} recent records
+                      </p>
+                      <button
+                        onClick={() => setSelectedMemberId(null)}
+                        className="zook-focus mt-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/60"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
             <div className="mt-5">
               {membersState.error ? (
                 <ErrorNotice message={membersState.error} />
@@ -1242,61 +1340,6 @@ export function DashboardOperationalPanel({
                 />
               )}
             </div>
-            {selectedMemberId ? (
-              <div className="mt-4 rounded-[22px] border border-lime-200/15 bg-lime-200/8 p-4">
-                {memberDetailState.error ? (
-                  <ErrorNotice message={memberDetailState.error} />
-                ) : memberDetailState.loading || !memberDetailState.data ? (
-                  <p className="text-sm text-white/55">Loading member detail...</p>
-                ) : (
-                  <div className="grid gap-4 lg:grid-cols-4">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/35">Member</p>
-                      <p className="mt-2 font-medium text-white">
-                        {memberDetailState.data.member.user?.name ?? "Member"}
-                      </p>
-                      <p className="mt-1 text-xs text-white/45">
-                        {memberDetailState.data.member.user?.email ?? "No email"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/35">
-                        Subscription
-                      </p>
-                      <p className="mt-2 text-sm text-white/70">
-                        {memberDetailState.data.member.subscriptions[0]?.plan?.name ?? "No plan"}
-                      </p>
-                      <p className="mt-1 text-xs text-white/45">
-                        {memberDetailState.data.member.subscriptions[0]
-                          ? formatEnumLabel(memberDetailState.data.member.subscriptions[0].status)
-                          : "No subscription"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/35">Activity</p>
-                      <p className="mt-2 text-sm text-white/70">
-                        {memberDetailState.data.member.attendance.length} recent check-ins
-                      </p>
-                      <p className="mt-1 text-xs text-white/45">
-                        {memberDetailState.data.member.workouts.length} trainer-visible workouts
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/35">Payments</p>
-                      <p className="mt-2 text-sm text-white/70">
-                        {memberDetailState.data.member.payments.length} recent records
-                      </p>
-                      <button
-                        onClick={() => setSelectedMemberId(null)}
-                        className="zook-focus mt-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/60"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : null}
           </GlassCard>
 
           <GlassCard>
@@ -2826,7 +2869,7 @@ export function DashboardOperationalPanel({
                     </div>
                   </div>
                   <p className="mt-2 text-sm text-white/55">
-                    {usage.responseSummary ?? "Response summary not captured."}
+                    {formatAiResponseSummary(usage.responseSummary)}
                   </p>
                   <p className="mt-3 text-xs text-white/40">
                     {formatEnumLabel(usage.role)} · {usage.tokenEstimate} tokens ·{" "}
@@ -2874,7 +2917,7 @@ export function DashboardOperationalPanel({
                       <div>
                         <p className="font-medium text-white">{usage.promptSummary}</p>
                         <p className="mt-1 text-xs text-white/45">
-                          {usage.responseSummary ?? "No response summary"}
+                          {formatAiResponseSummary(usage.responseSummary)}
                         </p>
                       </div>
                     ),

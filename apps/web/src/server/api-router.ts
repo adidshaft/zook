@@ -23,6 +23,7 @@ import {
   permissions,
   roles,
   validateRuntimeConfig,
+  type Permission,
   type AIRequestType,
   type PlanType,
   type Role,
@@ -78,6 +79,7 @@ import { extractSessionToken, sessionCookieName } from "./context";
 import {
   getRequestContext,
   requireAuth,
+  requireOrgAnyPermission,
   requireOrgPermission,
   requirePlatformAdmin,
 } from "./access";
@@ -1083,6 +1085,37 @@ async function startPaymentSessionCheckout(input: {
   });
 
   return { session, checkout, checkoutUrl };
+}
+
+const mockPaymentCompletionAdminPermissions: Permission[] = [
+  "PAYMENTS_VIEW",
+  "PAYMENTS_RECORD_OFFLINE",
+  "ORG_MANAGE_BILLING",
+];
+
+function hasAnyPermission(ctx: { permissions: Permission[] }, permissionOptions: Permission[]) {
+  return permissionOptions.some((permission) => ctx.permissions.includes(permission));
+}
+
+function assertCanCompleteMockPayment(
+  ctx: Awaited<ReturnType<typeof getRequestContext>>,
+  session: {
+    orgId: string | null;
+    userId: string | null;
+  },
+) {
+  if (!ctx.userId) {
+    throw unauthorizedError();
+  }
+  const ownsSession = Boolean(session.userId && ctx.userId === session.userId);
+  const canManageOrgPayment = Boolean(
+    session.orgId &&
+      ctx.orgId === session.orgId &&
+      hasAnyPermission(ctx, mockPaymentCompletionAdminPermissions),
+  );
+  if (!ownsSession && !canManageOrgPayment && !ctx.isPlatformAdmin) {
+    throw forbiddenError("Payment session does not belong to this user.");
+  }
 }
 
 function guardianConsentCode() {
@@ -4711,6 +4744,11 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     ) {
       throw conflictError("Payment session expired. Create a new checkout session.");
     }
+    const ctx = await getRequestContext(
+      request,
+      currentSession.orgId ? { orgId: currentSession.orgId } : {},
+    );
+    assertCanCompleteMockPayment(ctx, currentSession);
     const providerEventId = `mock:${sessionId}:${status}`;
     const existingEvent = await prisma.paymentEvent.findUnique({
       where: {
@@ -5046,12 +5084,17 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       orderBy: { createdAt: "desc" },
       take: 50,
     });
-    const [plans, organizations] = await Promise.all([
+    const [plans, organizations, payments] = await Promise.all([
       prisma.membershipPlan.findMany({
         where: { id: { in: subscriptions.map((subscription) => subscription.planId) } },
       }),
       prisma.organization.findMany({
         where: { id: { in: subscriptions.map((subscription) => subscription.orgId) } },
+      }),
+      prisma.payment.findMany({
+        where: { userId },
+        orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
+        take: 25,
       }),
     ]);
     return ok({
@@ -5061,6 +5104,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         organization:
           organizations.find((organization) => organization.id === subscription.orgId) ?? null,
       })),
+      payments,
     });
   }
   return undefined;
@@ -7375,7 +7419,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "ai", "usage"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
-    requireOrgPermission(ctx, orgId, "AI_MANAGE_SETTINGS");
+    requireOrgAnyPermission(ctx, orgId, ["AI_MANAGE_SETTINGS", "ORG_VIEW_REPORTS"]);
     return ok({
       usage: await prisma.aIUsageLog.findMany({
         where: { orgId },

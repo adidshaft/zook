@@ -540,7 +540,10 @@ export function useMyMemberships() {
   return useQuery({
     queryKey: ["me", "memberships"],
     queryFn: () =>
-      mobileApiFetch<{ subscriptions: Array<Record<string, unknown>> }>("/me/memberships", {
+      mobileApiFetch<{
+        subscriptions: Array<Record<string, unknown>>;
+        payments?: OrgPaymentRecord[];
+      }>("/me/memberships", {
         token,
       }),
     enabled: status === "authenticated" && Boolean(token),

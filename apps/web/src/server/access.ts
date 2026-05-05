@@ -30,6 +30,26 @@ export function requireOrgPermission(ctx: RequestContext, orgId: string, permiss
   return ctx.userId;
 }
 
+export function requireOrgAnyPermission(
+  ctx: RequestContext,
+  orgId: string,
+  permissionOptions: Permission[],
+) {
+  if (!ctx.userId) {
+    throw unauthorizedError();
+  }
+  if (ctx.orgId !== orgId || !ctx.roles.length) {
+    throw forbiddenError("No organization access");
+  }
+  if (ctx.orgStatus === "SUSPENDED" || ctx.orgStatus === "CANCELLED") {
+    throw forbiddenError("Organization is not active.");
+  }
+  if (!permissionOptions.some((permission) => ctx.permissions.includes(permission))) {
+    throw forbiddenError(`Permission denied: ${permissionOptions.join(" or ")}`);
+  }
+  return ctx.userId;
+}
+
 export function requirePlatformAdmin(ctx: RequestContext) {
   if (!ctx.userId) {
     throw unauthorizedError();

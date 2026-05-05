@@ -99,6 +99,75 @@ function metricTone(label: string) {
   return "neutral" as const;
 }
 
+function prioritizeBranches(
+  branches: DashboardData["branchScope"]["branches"],
+  selectedBranchId?: string,
+  limit = 4
+) {
+  const priorityIds = new Set<string>();
+  if (selectedBranchId) {
+    priorityIds.add(selectedBranchId);
+  }
+  const defaultBranch = branches.find((branch) => branch.isDefault);
+  if (defaultBranch) {
+    priorityIds.add(defaultBranch.id);
+  }
+
+  const priorityBranches = branches.filter((branch) => priorityIds.has(branch.id));
+  const remainingBranches = branches.filter((branch) => !priorityIds.has(branch.id));
+  const visible = [...priorityBranches, ...remainingBranches].slice(0, limit);
+  const visibleIds = new Set(visible.map((branch) => branch.id));
+
+  return {
+    visible,
+    overflow: branches.filter((branch) => !visibleIds.has(branch.id)),
+  };
+}
+
+function BranchSwitcher({
+  branches,
+  selectedBranchId,
+  branchHref,
+  compact = false,
+}: {
+  branches: DashboardData["branchScope"]["branches"];
+  selectedBranchId: string | undefined;
+  branchHref: (branchId: string) => string;
+  compact?: boolean;
+}) {
+  const { visible, overflow } = prioritizeBranches(branches, selectedBranchId, compact ? 3 : 4);
+  const linkClass = (branchId: string) =>
+    `rounded-full border px-3 py-1.5 text-xs transition ${
+      selectedBranchId === branchId
+        ? "border-lime-300/40 bg-lime-300/15 text-lime-100"
+        : "border-white/10 text-white/55 hover:bg-white/8 hover:text-white"
+    }`;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {visible.map((branch) => (
+        <Link key={branch.id} href={branchHref(branch.id)} className={linkClass(branch.id)}>
+          {branch.name}
+        </Link>
+      ))}
+      {overflow.length > 0 ? (
+        <details className="group relative">
+          <summary className="cursor-pointer list-none rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/55 transition hover:bg-white/8 hover:text-white [&::-webkit-details-marker]:hidden">
+            +{overflow.length} more
+          </summary>
+          <div className="absolute left-0 z-20 mt-2 grid max-h-64 min-w-60 gap-2 overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950/95 p-2 shadow-2xl shadow-black/50 backdrop-blur">
+            {overflow.map((branch) => (
+              <Link key={branch.id} href={branchHref(branch.id)} className={linkClass(branch.id)}>
+                {branch.name}
+              </Link>
+            ))}
+          </div>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
 function OwnerSetupChecklist({
   activeOrg,
   hasBranch,
@@ -199,9 +268,11 @@ function OwnerSetupChecklist({
 export function DashboardShell({
   section,
   data,
+  isPlatformAdmin,
 }: {
   section: string[] | undefined;
   data: DashboardData;
+  isPlatformAdmin: boolean;
 }) {
   const title = titleFromSection(section);
   const sectionKey = section?.join("/") ?? "";
@@ -280,9 +351,9 @@ export function DashboardShell({
 
   return (
     <main className="min-h-dvh px-4 py-4 lg:px-6">
-      <div className="mx-auto grid max-w-[1500px] gap-4 lg:grid-cols-[300px_1fr]">
+      <div className="mx-auto grid max-w-[1500px] items-start gap-4 lg:grid-cols-[300px_1fr]">
         <aside className="sticky top-4 hidden h-fit lg:block">
-          <GlassCard variant="strong" className="p-4">
+          <GlassCard variant="strong" className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-4">
             <ZookLogo />
             <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
@@ -310,21 +381,12 @@ export function DashboardShell({
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/30">
                     Branch view
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {data.branchScope.branches.map((branch) => (
-                      <Link
-                        key={branch.id}
-                        href={branchHref(branch.id)}
-                        className={`rounded-full border px-3 py-1.5 text-xs transition ${
-                          selectedBranch?.id === branch.id
-                            ? "border-lime-300/40 bg-lime-300/15 text-lime-100"
-                            : "border-white/10 text-white/55 hover:bg-white/8 hover:text-white"
-                        }`}
-                      >
-                        {branch.name}
-                      </Link>
-                    ))}
-                  </div>
+                  <BranchSwitcher
+                    branches={data.branchScope.branches}
+                    selectedBranchId={selectedBranch?.id}
+                    branchHref={branchHref}
+                    compact
+                  />
                 </div>
               ) : null}
             </div>
@@ -356,13 +418,15 @@ export function DashboardShell({
               ))}
             </nav>
 
-            <Link
-              href="/platform"
-              className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white/62 transition hover:bg-white/8 hover:text-white"
-            >
-              <Shield size={18} />
-              Platform admin
-            </Link>
+            {isPlatformAdmin ? (
+              <Link
+                href="/platform"
+                className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white/62 transition hover:bg-white/8 hover:text-white"
+              >
+                <Shield size={18} />
+                Platform admin
+              </Link>
+            ) : null}
 
             <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
@@ -398,7 +462,7 @@ export function DashboardShell({
           </GlassCard>
         </aside>
 
-        <section className="grid gap-4">
+        <section className="grid content-start gap-4">
           <nav className="flex gap-3 overflow-x-auto rounded-[24px] border border-white/10 bg-white/5 p-2 lg:hidden">
             {navGroups.map((group) => (
               <div key={group.label} className="flex shrink-0 items-center gap-2">
@@ -445,20 +509,12 @@ export function DashboardShell({
                 </h1>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">{pageDescription}</p>
                 {data.branchScope.branches.length > 1 ? (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {data.branchScope.branches.map((branch) => (
-                      <Link
-                        key={branch.id}
-                        href={branchHref(branch.id)}
-                        className={`rounded-full border px-3 py-1.5 text-xs transition ${
-                          selectedBranch?.id === branch.id
-                            ? "border-lime-300/40 bg-lime-300/15 text-lime-100"
-                            : "border-white/10 text-white/55 hover:bg-white/8 hover:text-white"
-                        }`}
-                      >
-                        {branch.name}
-                      </Link>
-                    ))}
+                  <div className="mt-4">
+                    <BranchSwitcher
+                      branches={data.branchScope.branches}
+                      selectedBranchId={selectedBranch?.id}
+                      branchHref={branchHref}
+                    />
                   </div>
                 ) : null}
               </div>

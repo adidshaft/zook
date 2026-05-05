@@ -1,15 +1,34 @@
 import Link from "next/link";
 import { ArrowRight, MapPin } from "lucide-react";
+import { getAppEnv, isTruthy, zookDemoFixtures } from "@zook/core";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
 
+async function getPublicGyms() {
+  try {
+    return await prisma.organization.findMany({
+      where: { status: { not: "CANCELLED" }, visibility: "PUBLIC" },
+      orderBy: { createdAt: "desc" },
+      take: 24,
+    });
+  } catch (error) {
+    console.error("Public gym discovery failed", error);
+    if (
+      getAppEnv() === "local" &&
+      (process.env.API_MODE === "offline-demo" || isTruthy(process.env.WEB_DEMO_FALLBACK))
+    ) {
+      return zookDemoFixtures.organizations.slice(0, 24).map((gym) => ({
+        ...gym,
+        visibility: "PUBLIC",
+      }));
+    }
+    return [];
+  }
+}
+
 export default async function GymsPage() {
-  const gyms = await prisma.organization.findMany({
-    where: { status: { not: "CANCELLED" }, visibility: "PUBLIC" },
-    orderBy: { createdAt: "desc" },
-    take: 24,
-  });
+  const gyms = await getPublicGyms();
 
   return (
     <main className="min-h-dvh px-5 py-8">

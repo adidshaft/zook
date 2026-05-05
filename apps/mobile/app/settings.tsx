@@ -66,7 +66,10 @@ export default function Settings() {
   const latestExport = privacyQuery.data?.exportRequests?.[0] ?? null;
   const latestDeletion = privacyQuery.data?.deletionRequests?.[0] ?? null;
   const allRoles = Array.from(
-    new Set(session?.organizations.flatMap((organization) => organization.roles) ?? []),
+    new Set([
+      ...(session?.organizations.flatMap((organization) => organization.roles) ?? []),
+      ...(session?.user.isPlatformAdmin ? (["PLATFORM_ADMIN"] as Role[]) : []),
+    ]),
   );
   const referral = findReferral(profileQuery.data, gymQuery.data);
   const referralCode = referral?.code?.trim();

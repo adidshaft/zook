@@ -20,6 +20,56 @@ function metricTone(label: string) {
   return "neutral" as const;
 }
 
+function serializePlatformOrganization(org: {
+  id: string;
+  name: string;
+  username: string;
+  city: string | null;
+  state?: string | null;
+  status: string;
+  joinMode: string;
+  trialEndAt: Date | string | null;
+  createdAt: Date | string;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+}) {
+  return {
+    id: org.id,
+    name: org.name,
+    username: org.username,
+    city: org.city ?? "",
+    state: org.state ?? null,
+    status: org.status,
+    joinMode: org.joinMode,
+    trialEndAt: org.trialEndAt ? new Date(org.trialEndAt).toISOString() : "",
+    createdAt: new Date(org.createdAt).toISOString(),
+    contactEmail: org.contactEmail ?? null,
+    contactPhone: org.contactPhone ?? null,
+  };
+}
+
+function serializePlatformAbuseFlag(flag: {
+  id: string;
+  orgId: string;
+  userId?: string | null;
+  type: string;
+  severity: string;
+  status: string;
+  createdAt: Date | string;
+  resolvedAt?: Date | string | null;
+}) {
+  return {
+    id: flag.id,
+    orgId: flag.orgId,
+    userId: flag.userId ?? null,
+    type: flag.type,
+    severity: flag.severity,
+    status: flag.status,
+    createdAt: new Date(flag.createdAt).toISOString(),
+    resolvedAt: flag.resolvedAt ? new Date(flag.resolvedAt).toISOString() : null,
+  };
+}
+
 export default async function PlatformPage() {
   await requirePlatformSession();
   const data = await getDashboardData();
@@ -88,8 +138,8 @@ export default async function PlatformPage() {
         </div>
 
         <PlatformOperationsPanel
-          initialOrgs={data.orgs}
-          initialFlags={data.platform.abuseFlags}
+          initialOrgs={data.orgs.map(serializePlatformOrganization)}
+          initialFlags={data.platform.abuseFlags.map(serializePlatformAbuseFlag)}
         />
       </div>
     </main>

@@ -51,6 +51,21 @@ function encodeRedirectTarget(
   return query ? `${pathname}?${query}` : pathname;
 }
 
+function firstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function safeRedirectTarget(value?: string | string[]) {
+  const target = firstParam(value);
+  if (!target || !target.startsWith("/") || target.startsWith("//")) {
+    return null;
+  }
+  if (target.startsWith("/login")) {
+    return null;
+  }
+  return target;
+}
+
 function LayoutContent() {
   const { defaultRoute, hasActiveRole, hasAnyRole, status } = useAuth();
   const insets = useSafeAreaInsets();
@@ -73,7 +88,7 @@ function LayoutContent() {
     }
 
     if (pathname === "/login") {
-      router.replace(defaultRoute as never);
+      router.replace((safeRedirectTarget(searchParams.redirect) ?? defaultRoute) as never);
       return;
     }
 

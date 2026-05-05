@@ -1,7 +1,17 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AppState,
+  type AppStateStatus,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -27,6 +37,7 @@ import {
   type ShopOrderRecord,
 } from "@/lib/query-hooks";
 import { useAuth } from "@/lib/auth";
+import { toWebUrl } from "@/lib/api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
@@ -52,8 +63,13 @@ function iconForCategory(category: Category) {
   return "nutrition-outline" as const;
 }
 
+function checkoutUrl(url: string) {
+  return /^https?:\/\//i.test(url) ? url : toWebUrl(url);
+}
+
 export default function Shop() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{
     orderId?: string | string[];
     focus?: string | string[];
@@ -73,6 +89,8 @@ export default function Shop() {
   const ordersQuery = useMyShopOrders();
   const createOrder = useCreateShopOrder();
   const completeMockPayment = useCompleteMockPayment();
+  const refreshAfterCheckoutRef = useRef(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
   const products = productsQuery.data?.products ?? [];
   const filteredProducts = useMemo(() => {
@@ -107,6 +125,30 @@ export default function Shop() {
       setCheckoutState("pickup");
     }
   }, [ordersQuery.data?.orders, params.orderId]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      const wasAway = appStateRef.current === "inactive" || appStateRef.current === "background";
+      appStateRef.current = nextState;
+      if (nextState !== "active" || !wasAway || !refreshAfterCheckoutRef.current || !order) {
+        return;
+      }
+      refreshAfterCheckoutRef.current = false;
+      void ordersQuery.refetch().then((refreshed) => {
+        const refreshedOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
+        if (refreshedOrder && refreshedOrder.status !== "PENDING_PAYMENT") {
+          setOrder(refreshedOrder);
+          setCart({});
+          setCheckoutState("pickup");
+          void Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
+            queryClient.invalidateQueries({ queryKey: ["org"] }),
+          ]);
+        }
+      });
+    });
+    return () => subscription.remove();
+  }, [order, ordersQuery, queryClient]);
 
   function addToCart(productId: string) {
     const product = products.find((candidate) => candidate.id === productId);
@@ -156,7 +198,8 @@ export default function Shop() {
       checkoutSession.provider !== "mock" &&
       checkoutSession.checkoutUrl
     ) {
-      await Linking.openURL(checkoutSession.checkoutUrl);
+      refreshAfterCheckoutRef.current = true;
+      await Linking.openURL(checkoutUrl(checkoutSession.checkoutUrl));
       return;
     }
     await completeMockPayment.mutateAsync(checkoutSession.id);

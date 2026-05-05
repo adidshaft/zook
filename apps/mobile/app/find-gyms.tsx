@@ -13,11 +13,19 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { toWebUrl } from "@/lib/api";
 import { titleCaseFromCode } from "@/lib/formatting";
 import { useGymSearch } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 const featuredCities = ["Pune", "Bengaluru", "Mumbai", "Delhi"];
+
+function normalizeMediaUrl(value?: string | null) {
+  if (!value) {
+    return undefined;
+  }
+  return /^https?:\/\//i.test(value) ? value : toWebUrl(value);
+}
 
 export default function FindGyms() {
   const routeParams = useLocalSearchParams<{ focus?: string; ref?: string }>();
@@ -154,7 +162,7 @@ export default function FindGyms() {
                     <View style={styles.gymHeader}>
                       {gym.coverImageUrl ? (
                         <Image
-                          source={{ uri: gym.coverImageUrl }}
+                          source={{ uri: normalizeMediaUrl(gym.coverImageUrl) }}
                           style={styles.gymThumbnail}
                           contentFit="cover"
                         />

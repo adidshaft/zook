@@ -337,6 +337,28 @@ export default function Reception() {
               />
             </View>
 
+            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+              <SectionHeader
+                title="Code Check"
+                subtitle="Entry or pickup lookup without leaving the desk."
+              />
+              <FormField
+                label="Code"
+                value={verifyCode}
+                onChangeText={handleVerifyCodeChange}
+                placeholder="Enter code"
+                autoCapitalize="characters"
+              />
+              <PrimaryButton
+                icon="scan-outline"
+                disabled={!canVerifyCode}
+                onPress={verifyEntryCode}
+              >
+                Verify Code
+              </PrimaryButton>
+              {verifyMessage ? <Text style={styles.statusText}>{verifyMessage}</Text> : null}
+            </GlassCard>
+
             <SectionHeader
               title="Review queue"
               action={<Pill tone="amber">{pendingCount} pending</Pill>}
@@ -423,27 +445,6 @@ export default function Reception() {
               )}
             </View>
 
-            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
-              <SectionHeader
-                title="Code Check"
-                subtitle="Entry or pickup lookup without leaving the desk."
-              />
-              <FormField
-                label="Code"
-                value={verifyCode}
-                onChangeText={handleVerifyCodeChange}
-                placeholder="Enter code"
-                autoCapitalize="characters"
-              />
-              <PrimaryButton
-                icon="scan-outline"
-                disabled={!canVerifyCode}
-                onPress={verifyEntryCode}
-              >
-                Verify Code
-              </PrimaryButton>
-              {verifyMessage ? <Text style={styles.statusText}>{verifyMessage}</Text> : null}
-            </GlassCard>
           </>
         ) : null}
 

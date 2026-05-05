@@ -13,6 +13,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomNav,
   GlassCard,
@@ -25,8 +26,8 @@ import {
 } from "@/components/primitives";
 import { toWebUrl } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
-import { memberApi } from "@/lib/domain-api";
-import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
+import { memberApi, paymentsApi } from "@/lib/domain-api";
+import { formatDateTime, formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { useGymProfile, useMyMemberships, type PublicPlanSummary } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -49,6 +50,27 @@ type MembershipRecord = {
     name?: string | null;
     username?: string | null;
   } | null;
+};
+
+type RenewalResult = {
+  checkoutUrl?: string | null;
+  subscription?: unknown;
+  session?: {
+    id: string;
+    status: string;
+    provider?: string | null;
+  } | null;
+};
+
+type PaymentRecord = {
+  id: string;
+  purpose?: string | null;
+  amountPaise?: number | null;
+  status?: string | null;
+  mode?: string | null;
+  receiptNumber?: string | null;
+  recordedAt?: string | null;
+  createdAt?: string | null;
 };
 
 function toneForStatus(status?: string | null) {
@@ -74,6 +96,19 @@ function checkoutUrl(url?: string | null) {
   return /^https?:\/\//i.test(url) ? url : toWebUrl(url);
 }
 
+function subscriptionStatusRank(status?: string | null) {
+  if (status === "ACTIVE") return 0;
+  if (status === "PENDING_PAYMENT" || status === "PENDING") return 1;
+  if (status === "PAUSED" || status === "PAST_DUE") return 2;
+  return 3;
+}
+
+function subscriptionTimestamp(subscription: MembershipRecord) {
+  return new Date(
+    subscription.endsAt ?? subscription.createdAt ?? "1970-01-01T00:00:00.000Z",
+  ).getTime();
+}
+
 export default function MembershipScreen() {
   const routeParams = useLocalSearchParams<{
     focus?: string;
@@ -88,10 +123,13 @@ export default function MembershipScreen() {
     session?.activeOrganization ??
     null;
   const memberships = (membershipsQuery.data?.subscriptions ?? []) as MembershipRecord[];
+  const payments = ((membershipsQuery.data?.payments ?? []) as PaymentRecord[]).slice(0, 5);
   const sortedSubscriptions = [...memberships].sort((left, right) => {
     if (left.id === routeParams.subscriptionId) return -1;
     if (right.id === routeParams.subscriptionId) return 1;
-    return 0;
+    const statusDelta = subscriptionStatusRank(left.status) - subscriptionStatusRank(right.status);
+    if (statusDelta !== 0) return statusDelta;
+    return subscriptionTimestamp(right) - subscriptionTimestamp(left);
   });
   const latestSubscription = sortedSubscriptions[0];
   const gymUsername =
@@ -153,12 +191,26 @@ export default function MembershipScreen() {
     setRenewing(true);
     setRenewalStatus("");
     try {
-      const result = await memberApi.renewMembership({
+      const result = await memberApi.renewMembership<RenewalResult>({
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
         subscriptionId: renewalTarget.id,
         ...(selectedPlanId ? { planId: selectedPlanId } : {}),
       });
+      if (result.session?.provider === "mock") {
+        await paymentsApi.completeMockPayment({
+          token,
+          sessionId: result.session.id,
+          ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        });
+        setRenewalStatus("Mock renewal completed.");
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+          queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+        ]);
+        setRenewalOpen(false);
+        return;
+      }
       const url = checkoutUrl(result.checkoutUrl);
       setRenewalStatus(url ? "Renewal checkout created." : "Renewal request sent.");
       await Promise.all([
@@ -330,13 +382,40 @@ export default function MembershipScreen() {
           ) : null}
 
           <SectionHeader title="Payments" />
-          <GlassCard variant="compact" contentStyle={styles.emptyPaymentContent}>
-            <IconBubble icon="receipt-outline" tone="neutral" size={36} />
-            <View style={styles.emptyCopy}>
-              <Text style={styles.emptyTitle}>No payments yet</Text>
-              <Text style={styles.emptyBody}>Transaction history will appear here.</Text>
+          {payments.length ? (
+            <View style={styles.stack}>
+              {payments.map((payment) => (
+                <GlassCard key={payment.id} variant="compact" contentStyle={styles.paymentContent}>
+                  <View style={styles.paymentIcon}>
+                    <IconBubble icon="receipt-outline" tone="lime" size={34} />
+                  </View>
+                  <View style={styles.paymentCopy}>
+                    <View style={styles.paymentHeader}>
+                      <Text numberOfLines={1} style={styles.paymentTitle}>
+                        {titleCaseFromCode(payment.purpose ?? "PAYMENT")}
+                      </Text>
+                      <Text style={styles.paymentAmount}>{formatInr(payment.amountPaise)}</Text>
+                    </View>
+                    <Text numberOfLines={1} style={styles.paymentBody}>
+                      {titleCaseFromCode(payment.mode ?? "ONLINE")} ·{" "}
+                      {formatDateTime(payment.recordedAt ?? payment.createdAt)}
+                    </Text>
+                    <Pill tone={payment.status === "SUCCEEDED" ? "lime" : toneForStatus(payment.status)}>
+                      {titleCaseFromCode(payment.status ?? "CREATED")}
+                    </Pill>
+                  </View>
+                </GlassCard>
+              ))}
             </View>
-          </GlassCard>
+          ) : (
+            <GlassCard variant="compact" contentStyle={styles.emptyPaymentContent}>
+              <IconBubble icon="receipt-outline" tone="neutral" size={36} />
+              <View style={styles.emptyCopy}>
+                <Text style={styles.emptyTitle}>No payments yet</Text>
+                <Text style={styles.emptyBody}>Transaction history will appear here.</Text>
+              </View>
+            </GlassCard>
+          )}
         </ScrollView>
         <BottomNav />
         <RenewalSheet
@@ -385,6 +464,7 @@ function RenewalSheet({
   setSelectedPlanId: (planId: string) => void;
   status: string;
 }) {
+  const insets = useSafeAreaInsets();
   const plans = availablePlans.length
     ? availablePlans
     : currentPlan?.id
@@ -399,7 +479,15 @@ function RenewalSheet({
           onPress={onClose}
           accessibilityLabel="Close renewal sheet"
         />
-        <View style={styles.sheet}>
+        <View
+          style={[
+            styles.sheet,
+            {
+              maxHeight: "88%",
+              paddingBottom: Math.max(insets.bottom + spacing.md, spacing.lg),
+            },
+          ]}
+        >
           <View style={styles.sheetGrabber} />
           <View style={styles.sheetHeader}>
             <View style={styles.sheetTitleCopy}>
@@ -421,7 +509,11 @@ function RenewalSheet({
             </Pressable>
           </View>
 
-          <View style={styles.planSelector}>
+          <ScrollView
+            style={styles.planSelectorScroll}
+            contentContainerStyle={styles.planSelector}
+            showsVerticalScrollIndicator={false}
+          >
             {loadingPlans ? <Text style={styles.loadingText}>Loading plan options...</Text> : null}
             {!loadingPlans && !plans.length ? (
               <Text style={styles.emptyBody}>
@@ -450,7 +542,7 @@ function RenewalSheet({
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
 
           {selectedPlan ? (
             <GlassCard variant="compact" contentStyle={styles.renewalSummary}>
@@ -628,6 +720,38 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
   },
+  paymentContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  paymentIcon: {
+    alignSelf: "flex-start",
+  },
+  paymentCopy: {
+    flex: 1,
+    gap: 6,
+  },
+  paymentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  paymentTitle: {
+    flex: 1,
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  paymentAmount: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  paymentBody: {
+    color: colors.muted,
+    ...typography.small,
+  },
   sheetBackdrop: {
     flex: 1,
     justifyContent: "flex-end",
@@ -684,6 +808,9 @@ const styles = StyleSheet.create({
   },
   planSelector: {
     gap: spacing.sm,
+  },
+  planSelectorScroll: {
+    maxHeight: 310,
   },
   planOption: {
     minHeight: 64,

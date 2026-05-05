@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { RequestContext } from "@zook/core";
-import { requireAuth, requireOrgPermission, requirePlatformAdmin } from "./access";
+import {
+  requireAuth,
+  requireOrgAnyPermission,
+  requireOrgPermission,
+  requirePlatformAdmin,
+} from "./access";
 
 describe("request access guards", () => {
   it("blocks member access to another organization's records", () => {
@@ -37,6 +42,19 @@ describe("request access guards", () => {
 
     expect(() => requireOrgPermission(ctx, "org_a", "ORG_MANAGE_PERMISSIONS")).toThrow(
       "Permission denied"
+    );
+  });
+
+  it("allows org report viewers through any-permission tenant guards", () => {
+    const ctx: RequestContext = {
+      userId: "owner_1",
+      orgId: "org_a",
+      roles: ["OWNER"],
+      permissions: ["ORG_VIEW_REPORTS"]
+    };
+
+    expect(requireOrgAnyPermission(ctx, "org_a", ["AI_MANAGE_SETTINGS", "ORG_VIEW_REPORTS"])).toBe(
+      "owner_1"
     );
   });
 

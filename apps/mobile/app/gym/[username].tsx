@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { AppState, type AppStateStatus, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
   BottomNav,
@@ -31,13 +31,36 @@ export default function GymProfileScreen() {
   const gymQuery = useGymProfile(username ?? "");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const refreshAfterCheckoutRef = useRef(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   const gym = gymQuery.data?.org ?? null;
   const plans = gymQuery.data?.plans ?? [];
   const trainers = gymQuery.data?.trainers ?? [];
   const gallery = gym?.gallery?.length ? gym.gallery : gym?.coverImageUrl ? [gym.coverImageUrl] : [];
+  const coverImageUrl = normalizeMediaUrl(gym?.coverImageUrl);
   const viewerState = gymQuery.data?.viewerState;
   const effectiveReferral = referralCode ?? gymQuery.data?.referral?.code ?? undefined;
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      const wasAway = appStateRef.current === "inactive" || appStateRef.current === "background";
+      appStateRef.current = nextState;
+      if (nextState !== "active" || !wasAway || !refreshAfterCheckoutRef.current) {
+        return;
+      }
+      refreshAfterCheckoutRef.current = false;
+      setStatusMessage("Refreshing membership status...");
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+        queryClient.invalidateQueries({ queryKey: ["gym", username] }),
+      ]).finally(() => {
+        setStatusMessage(null);
+      });
+    });
+    return () => subscription.remove();
+  }, [queryClient, username]);
 
   async function requestMembership() {
     if (!gym || !token) {
@@ -79,8 +102,10 @@ export default function GymProfileScreen() {
         ...(effectiveReferral ? { referralCode: effectiveReferral } : {}),
       });
       setStatusMessage("Checkout created. Complete the hosted flow to activate your membership.");
-      await Linking.openURL(toWebUrl(payload.checkoutUrl));
+      refreshAfterCheckoutRef.current = true;
+      await Linking.openURL(checkoutUrl(payload.checkoutUrl));
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["gym", username] }),
       ]);
@@ -144,7 +169,7 @@ export default function GymProfileScreen() {
               <View style={styles.coverPlaceholder}>
                 {gym.coverImageUrl ? (
                   <Image
-                    source={{ uri: gym.coverImageUrl }}
+                    source={{ uri: coverImageUrl }}
                     style={[StyleSheet.absoluteFill, { opacity: 0.6 }]}
                     contentFit="cover"
                   />
@@ -230,7 +255,7 @@ export default function GymProfileScreen() {
                 {gallery.map((imageUrl, index) => (
                   <Image
                     key={`${imageUrl}-${index}`}
-                    source={{ uri: imageUrl }}
+                    source={{ uri: normalizeMediaUrl(imageUrl) }}
                     style={styles.galleryImage}
                     contentFit="cover"
                   />
@@ -252,7 +277,7 @@ export default function GymProfileScreen() {
                     <GlassCard key={trainer.userId} contentStyle={styles.trainerCard}>
                       {trainer.profilePhotoUrl ? (
                         <Image
-                          source={{ uri: trainer.profilePhotoUrl }}
+                          source={{ uri: normalizeMediaUrl(trainer.profilePhotoUrl) }}
                           style={styles.trainerImage}
                           contentFit="cover"
                         />
@@ -483,6 +508,17 @@ function normalizeSpecialties(value: unknown) {
     return Object.values(value).filter((item): item is string => typeof item === "string");
   }
   return ["Strength", "Mobility", "Nutrition"];
+}
+
+function normalizeMediaUrl(value?: string | null) {
+  if (!value) {
+    return undefined;
+  }
+  return /^https?:\/\//i.test(value) ? value : toWebUrl(value);
+}
+
+function checkoutUrl(value: string) {
+  return /^https?:\/\//i.test(value) ? value : toWebUrl(value);
 }
 
 function initialsForName(name: string) {
