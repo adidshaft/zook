@@ -109,7 +109,8 @@ function OwnerSetupChecklist({
   summary: DashboardData["summary"];
 }) {
   const profileReady = activeOrg.status === "ACTIVE" && hasBranch && Boolean(activeOrg.city);
-  const joinReady = summary.activeMembers > 0 || summary.joinRequests > 0 || summary.revenuePaise > 0;
+  const joinReady =
+    summary.activeMembers > 0 || summary.joinRequests > 0 || summary.revenuePaise > 0;
   const checklist = [
     {
       label: "Complete gym profile",
@@ -149,7 +150,8 @@ function OwnerSetupChecklist({
             Welcome to {activeOrg.name}
           </h2>
           <p className="mt-2 text-sm leading-6 text-white/55">
-            Finish these basics so members can join, staff can operate, and the gym link is ready to share.
+            Finish these basics so members can join, staff can operate, and the gym link is ready to
+            share.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link
@@ -176,15 +178,13 @@ function OwnerSetupChecklist({
                 <div className="flex items-start gap-3">
                   <Icon
                     size={20}
-                    className={item.done ? "mt-0.5 shrink-0 text-lime-200" : "mt-0.5 shrink-0 text-white/30"}
+                    className={
+                      item.done ? "mt-0.5 shrink-0 text-lime-200" : "mt-0.5 shrink-0 text-white/30"
+                    }
                   />
                   <div className="min-w-0">
-                    <p className="font-medium text-white">
-                      {item.label}
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-white/48">
-                      {item.detail}
-                    </p>
+                    <p className="font-medium text-white">{item.label}</p>
+                    <p className="mt-1 text-xs leading-5 text-white/48">{item.detail}</p>
                   </div>
                 </div>
               </Link>
@@ -271,6 +271,9 @@ export function DashboardShell({
     sectionKey === ""
       ? "Live check-ins, members, payments, stock, and follow-ups in one owner view."
       : "Use this section for daily gym operations. Changes here are backed by the Zook backend.";
+  const currentDashboardPath = `/dashboard${sectionKey ? `/${sectionKey}` : ""}`;
+  const branchHref = (branchId: string) =>
+    `${currentDashboardPath}?branchId=${encodeURIComponent(branchId)}`;
   const showOwnerSetupChecklist =
     sectionKey === "" &&
     (data.summary.activeMembers === 0 || !selectedBranch || activeOrg.status !== "ACTIVE");
@@ -294,10 +297,36 @@ export function DashboardShell({
                 <StatusPill value={formatEnumLabel(activeOrg.status)} />
                 <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />
                 <StatusPill
-                  value={selectedBranch?.isDefault ? "Default Branch" : selectedBranch?.name ?? "Default Branch missing"}
+                  value={
+                    selectedBranch?.isDefault
+                      ? "Default Branch"
+                      : (selectedBranch?.name ?? "Default Branch missing")
+                  }
                   tone={selectedBranch ? "lime" : "amber"}
                 />
               </div>
+              {data.branchScope.branches.length > 1 ? (
+                <div className="mt-4 grid gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/30">
+                    Branch view
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {data.branchScope.branches.map((branch) => (
+                      <Link
+                        key={branch.id}
+                        href={branchHref(branch.id)}
+                        className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                          selectedBranch?.id === branch.id
+                            ? "border-lime-300/40 bg-lime-300/15 text-lime-100"
+                            : "border-white/10 text-white/55 hover:bg-white/8 hover:text-white"
+                        }`}
+                      >
+                        {branch.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <nav className="mt-6 grid gap-5">
@@ -399,22 +428,39 @@ export function DashboardShell({
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Pill tone={data.connected ? "lime" : "amber"}>
-                    {runtimeLabel}
-                  </Pill>
+                  <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
                   <StatusPill value={formatEnumLabel(activeOrg.status)} />
                   <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />
                   <StatusPill
-                    value={selectedBranch?.isDefault ? "Default Branch" : selectedBranch?.name ?? "Default Branch missing"}
+                    value={
+                      selectedBranch?.isDefault
+                        ? "Default Branch"
+                        : (selectedBranch?.name ?? "Default Branch missing")
+                    }
                     tone={selectedBranch ? "lime" : "amber"}
                   />
                 </div>
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
                   {pageTitle}
                 </h1>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
-                  {pageDescription}
-                </p>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">{pageDescription}</p>
+                {data.branchScope.branches.length > 1 ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {data.branchScope.branches.map((branch) => (
+                      <Link
+                        key={branch.id}
+                        href={branchHref(branch.id)}
+                        className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                          selectedBranch?.id === branch.id
+                            ? "border-lime-300/40 bg-lime-300/15 text-lime-100"
+                            : "border-white/10 text-white/55 hover:bg-white/8 hover:text-white"
+                        }`}
+                      >
+                        {branch.name}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Link

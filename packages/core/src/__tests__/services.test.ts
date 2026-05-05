@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { Coupon, MemberSubscription, MembershipPlan, ReferralCode, UserSafetyState } from "../types";
+import type {
+  Coupon,
+  MemberSubscription,
+  MembershipPlan,
+  ReferralCode,
+  UserSafetyState,
+} from "../types";
 import { hasPermission } from "../permissions";
 import { MockAIProvider } from "../providers/ai";
 import {
@@ -27,7 +33,7 @@ import {
   transitionPaymentSession,
   validateAttendanceScan,
   validateReferralRedemption,
-  validateSignedQrToken
+  validateSignedQrToken,
 } from "../services";
 
 const now = new Date("2026-04-24T08:00:00.000Z");
@@ -41,7 +47,7 @@ const durationPlan: MembershipPlan = {
   pricePaise: 200000,
   durationDays: 30,
   active: true,
-  publicVisible: true
+  publicVisible: true,
 };
 
 const hybridPlan: MembershipPlan = {
@@ -54,7 +60,7 @@ const hybridPlan: MembershipPlan = {
   visitLimit: 30,
   validityDays: 180,
   active: true,
-  publicVisible: true
+  publicVisible: true,
 };
 
 const activeSubscription: MemberSubscription = {
@@ -65,7 +71,7 @@ const activeSubscription: MemberSubscription = {
   planId: "plan_duration",
   status: "ACTIVE",
   startsAt: new Date("2026-04-01T00:00:00.000Z"),
-  endsAt: new Date("2026-05-01T00:00:00.000Z")
+  endsAt: new Date("2026-05-01T00:00:00.000Z"),
 };
 
 describe("membership service", () => {
@@ -73,7 +79,7 @@ describe("membership service", () => {
     const result = evaluateSubscription(activeSubscription, durationPlan, {
       now,
       orgStatus: "ACTIVE",
-      hasProfilePhoto: true
+      hasProfilePhoto: true,
     });
     expect(result).toMatchObject({ valid: true, consumesVisit: false });
   });
@@ -82,7 +88,7 @@ describe("membership service", () => {
     const sub: MemberSubscription = {
       ...activeSubscription,
       planId: hybridPlan.id,
-      remainingVisits: 3
+      remainingVisits: 3,
     };
     expect(consumeVisit(sub, hybridPlan, { alreadyCheckedInToday: false }).remainingVisits).toBe(2);
     expect(consumeVisit(sub, hybridPlan, { alreadyCheckedInToday: true }).remainingVisits).toBe(3);
@@ -95,7 +101,12 @@ describe("membership service", () => {
       { now, orgStatus: "ACTIVE", hasProfilePhoto: true },
     );
     const old = evaluateSubscription(
-      { ...activeSubscription, planId: hybridPlan.id, remainingVisits: 5, endsAt: new Date("2026-01-01") },
+      {
+        ...activeSubscription,
+        planId: hybridPlan.id,
+        remainingVisits: 5,
+        endsAt: new Date("2026-01-01"),
+      },
       hybridPlan,
       { now, orgStatus: "ACTIVE", hasProfilePhoto: true },
     );
@@ -104,7 +115,9 @@ describe("membership service", () => {
   });
 
   it("can schedule early renewal after current plan", () => {
-    expect(chooseRenewalStart(activeSubscription, now).toISOString()).toBe("2026-05-01T00:00:01.000Z");
+    expect(chooseRenewalStart(activeSubscription, now).toISOString()).toBe(
+      "2026-05-01T00:00:01.000Z",
+    );
     expect(chooseRenewalStart(activeSubscription, now, "IMMEDIATE")).toBe(now);
   });
 });
@@ -119,14 +132,16 @@ describe("coupon and referral service", () => {
     active: true,
     validFrom: new Date("2026-01-01"),
     validUntil: new Date("2026-12-31"),
-    perUserLimit: 1
+    perUserLimit: 1,
   };
 
   it("calculates bounded coupon discounts", () => {
     expect(applyCoupon(coupon, { amountPaise: 100000, now }).discountPaise).toBe(10000);
     expect(
-      applyCoupon({ ...coupon, type: "FIXED_AMOUNT", valuePaise: 200000 }, { amountPaise: 50000, now })
-        .finalAmountPaise,
+      applyCoupon(
+        { ...coupon, type: "FIXED_AMOUNT", valuePaise: 200000 },
+        { amountPaise: 50000, now },
+      ).finalAmountPaise,
     ).toBe(0);
   });
 
@@ -137,7 +152,7 @@ describe("coupon and referral service", () => {
       referrerUserId: "member",
       code: "NISHAFIT",
       status: "active",
-      redemptionCount: 0
+      redemptionCount: 0,
     };
     expect(() =>
       validateReferralRedemption(referral, { referredUserId: "member", referredEmail: "a@b.com" }),
@@ -145,18 +160,30 @@ describe("coupon and referral service", () => {
     expect(() =>
       validateReferralRedemption(referral, { referredUserId: "other", existingRedemption: true }),
     ).toThrow("already redeemed");
+    expect(() =>
+      validateReferralRedemption(referral, {
+        referredUserId: "other",
+        referredEmail: "member@example.com",
+        referrerEmail: "MEMBER@example.com",
+      }),
+    ).toThrow("Same email");
   });
 });
 
 describe("payments", () => {
   it("enforces payment session state machine and amount matching", () => {
-    const session = { id: "s", purpose: "MEMBERSHIP" as const, amountPaise: 1000, status: "CREATED" as const };
-    expect(transitionPaymentSession(session, "SUCCEEDED", { expectedAmountPaise: 1000 }).status).toBe(
-      "SUCCEEDED",
-    );
-    expect(() => transitionPaymentSession(session, "SUCCEEDED", { expectedAmountPaise: 900 })).toThrow(
-      "amount mismatch",
-    );
+    const session = {
+      id: "s",
+      purpose: "MEMBERSHIP" as const,
+      amountPaise: 1000,
+      status: "CREATED" as const,
+    };
+    expect(
+      transitionPaymentSession(session, "SUCCEEDED", { expectedAmountPaise: 1000 }).status,
+    ).toBe("SUCCEEDED");
+    expect(() =>
+      transitionPaymentSession(session, "SUCCEEDED", { expectedAmountPaise: 900 }),
+    ).toThrow("amount mismatch");
     expect(() => transitionPaymentSession({ ...session, status: "SUCCEEDED" }, "FAILED")).toThrow(
       "already completed",
     );
@@ -168,14 +195,14 @@ describe("payments", () => {
         originalAmountPaise: 1000,
         adjustmentAmountPaise: -1000,
         reason: "Cash entered twice",
-        mode: "CASH"
+        mode: "CASH",
       }).adjustmentType,
     ).toBe("REVERSAL");
     expect(() =>
       createManualPaymentAdjustment({
         originalAmountPaise: 1000,
         adjustmentAmountPaise: -1000,
-        mode: "CASH"
+        mode: "CASH",
       }),
     ).toThrow("reason required");
   });
@@ -183,11 +210,21 @@ describe("payments", () => {
 
 describe("attendance", () => {
   it("signs and validates rolling QR payloads", () => {
-    const payload = createSignedQrToken({ orgId: "org", branchId: "branch", secret: "secret", now, ttlSeconds: 120 });
+    const payload = createSignedQrToken({
+      orgId: "org",
+      branchId: "branch",
+      secret: "secret",
+      now,
+      ttlSeconds: 120,
+    });
     const encoded = encodeQrPayload(payload);
     expect(validateSignedQrToken({ encoded, secret: "secret", now }).orgId).toBe("org");
     expect(() =>
-      validateSignedQrToken({ encoded, secret: "secret", now: new Date("2026-04-24T08:03:00.000Z") }),
+      validateSignedQrToken({
+        encoded,
+        secret: "secret",
+        now: new Date("2026-04-24T08:03:00.000Z"),
+      }),
     ).toThrow("expired");
   });
 
@@ -197,12 +234,12 @@ describe("attendance", () => {
       plan: durationPlan,
       orgStatus: "ACTIVE",
       hasProfilePhoto: true,
-      alreadyCheckedInToday: true
+      alreadyCheckedInToday: true,
     });
     expect(scan.suspiciousFlags).toContain("duplicate_same_day");
-    expect(decideAttendanceStatus({ mode: "EXCEPTION_APPROVAL", suspiciousFlags: scan.suspiciousFlags })).toBe(
-      "PENDING_APPROVAL",
-    );
+    expect(
+      decideAttendanceStatus({ mode: "EXCEPTION_APPROVAL", suspiciousFlags: scan.suspiciousFlags }),
+    ).toBe("PENDING_APPROVAL");
     expect(decideAttendanceStatus({ mode: "AUTOMATIC", suspiciousFlags: [] })).toBe("APPROVED");
   });
 
@@ -222,14 +259,14 @@ describe("permissions and notifications", () => {
       canSendNotification({
         roles: ["RECEPTIONIST"],
         type: "OPERATIONAL",
-        audience: "all_active_members"
+        audience: "all_active_members",
       }),
     ).toBe(true);
     expect(
       canSendNotification({
         roles: ["RECEPTIONIST"],
         type: "PROMOTIONAL",
-        audience: "all_active_members"
+        audience: "all_active_members",
       }),
     ).toBe(false);
     expect(
@@ -238,7 +275,7 @@ describe("permissions and notifications", () => {
         guardianConsentGranted: true,
         marketingOptIn: false,
         aiConsent: true,
-        hasProfilePhoto: true
+        hasProfilePhoto: true,
       }),
     ).toBe(false);
   });
@@ -250,21 +287,24 @@ describe("minor and AI restrictions", () => {
     guardianConsentGranted: true,
     marketingOptIn: true,
     aiConsent: true,
-    hasProfilePhoto: true
+    hasProfilePhoto: true,
   };
 
   it("blocks minors before guardian consent", () => {
     expect(() =>
-      assertMinorCanUseFeature({ ...adult, isMinor: true, guardianConsentGranted: false }, "JOIN_GYM"),
+      assertMinorCanUseFeature(
+        { ...adult, isMinor: true, guardianConsentGranted: false },
+        "JOIN_GYM",
+      ),
     ).toThrow("Guardian consent required");
   });
 
   it("enforces AI quota, scope, safety, and image permissions", async () => {
     const provider = new MockAIProvider();
     const quota = defaultAIQuotaForRole("MEMBER");
-    expect(() => assertAIAllowed({ role: "MEMBER", requestType: "IMAGE", quota, user: adult })).toThrow(
-      "Members cannot generate images",
-    );
+    expect(() =>
+      assertAIAllowed({ role: "MEMBER", requestType: "IMAGE", quota, user: adult }),
+    ).toThrow("Members cannot generate images");
     await expect(
       runAIGuardedRequest({
         provider,
@@ -272,7 +312,7 @@ describe("minor and AI restrictions", () => {
         role: "MEMBER",
         requestType: "CHAT",
         quota,
-        user: adult
+        user: adult,
       }),
     ).rejects.toThrow("qualified professional");
     await expect(
@@ -282,7 +322,7 @@ describe("minor and AI restrictions", () => {
         role: "MEMBER",
         requestType: "CHAT",
         quota,
-        user: adult
+        user: adult,
       }),
     ).rejects.toThrow("limited to gym");
     const result = await runAIGuardedRequest({
@@ -291,7 +331,7 @@ describe("minor and AI restrictions", () => {
       role: "MEMBER",
       requestType: "CHAT",
       quota,
-      user: adult
+      user: adult,
     });
     expect(result.tokenEstimate).toBeGreaterThan(0);
   });
@@ -305,7 +345,7 @@ describe("minor and AI restrictions", () => {
       imageMonthLimit: 10,
       usedTextDaily: 2,
       usedTextMonth: 10,
-      usedImagesMonth: 1
+      usedImagesMonth: 1,
     });
   });
 });
@@ -318,7 +358,7 @@ describe("plans", () => {
         actorPermissions: ["PLANS_PUBLISH_ASSIGNED"],
         audience: "selected_member",
         targetUserId: "member_1",
-        assignedClientUserIds: ["member_1"]
+        assignedClientUserIds: ["member_1"],
       }),
     ).toBe(true);
     expect(
@@ -327,14 +367,14 @@ describe("plans", () => {
         actorPermissions: ["PLANS_PUBLISH_ASSIGNED"],
         audience: "selected_member",
         targetUserId: "member_2",
-        assignedClientUserIds: ["member_1"]
+        assignedClientUserIds: ["member_1"],
       }),
     ).toBe(false);
     expect(
       canAssignPlanToUser({
         actorRoles: ["OWNER"],
         actorPermissions: ["PLANS_PUBLISH_ALL"],
-        audience: "all_active_members"
+        audience: "all_active_members",
       }),
     ).toBe(true);
   });
@@ -346,14 +386,14 @@ describe("plans", () => {
         description: "Week one",
         aiGenerated: true,
         visibility: "assigned",
-        content: { days: 3 }
+        content: { days: 3 },
       }),
     ).toMatchObject({
       title: "Starter Strength",
       description: "Week one",
       aiGenerated: true,
       visibility: "assigned",
-      content: { days: 3 }
+      content: { days: 3 },
     });
   });
 });
@@ -362,16 +402,19 @@ describe("shop", () => {
   it("calculates stock and order state", () => {
     const calc = calculateShopOrder({
       products: [{ id: "water", stock: 2, pricePaise: 100, active: true }],
-      items: [{ productId: "water", quantity: 2 }]
+      items: [{ productId: "water", quantity: 2 }],
     });
     expect(calc.totalPaise).toBe(200);
-    const ready = markShopOrderPaid({ id: "order", status: "PENDING_PAYMENT", totalPaise: 200 }, "PICKUP");
+    const ready = markShopOrderPaid(
+      { id: "order", status: "PENDING_PAYMENT", totalPaise: 200 },
+      "PICKUP",
+    );
     expect(ready.status).toBe("READY_FOR_PICKUP");
     expect(fulfillShopOrder(ready).status).toBe("FULFILLED");
     expect(() =>
       calculateShopOrder({
         products: [{ id: "water", stock: 1, pricePaise: 100, active: true }],
-        items: [{ productId: "water", quantity: 2 }]
+        items: [{ productId: "water", quantity: 2 }],
       }),
     ).toThrow("out of stock");
   });

@@ -25,348 +25,39 @@ import {
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
 
-type DashboardMode =
-  | "overview"
-  | "members"
-  | "join-requests"
-  | "attendance"
-  | "notifications"
-  | "reports"
-  | "shop"
-  | "staff"
-  | "plans"
-  | "payments"
-  | "audit"
-  | "ai"
-  | "public-profile";
-
-type MembershipPlanType = "DURATION" | "VISIT_PACK" | "DATE_RANGE" | "HYBRID" | "TRIAL";
-type ProductCategory = "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
-type StaffRole = "ADMIN" | "RECEPTIONIST" | "TRAINER";
-type CouponKind = "FIXED_AMOUNT" | "PERCENTAGE";
-type RewardType = "DAYS" | "VISITS" | "NONE";
-type DiscountType = "PERCENTAGE" | "FIXED" | "NONE";
-
-type OrganizationSummary = {
-  activeMembers: number;
-  joinRequests: number;
-  expiringMemberships: number;
-  todayAttendance: number;
-  pendingAttendanceApprovals: number;
-  cashCollectedPaise: number;
-  revenuePaise: number;
-  lowStockProducts: number;
-  notificationQueueCount: number;
-  aiUsageThisMonth: number;
-  trialDaysRemaining: number;
-};
-
-type OrganizationSnapshot = {
-  id: string;
-  name: string;
-  city: string;
-  state?: string | null;
-  status: string;
-  joinMode: string;
-  attendanceMode: string;
-  trialEndAt?: string | Date | null;
-  contactPhone?: string | null;
-  contactEmail?: string | null;
-};
-
-type BranchScopeSnapshot = {
-  branches: Array<{ id: string; name: string; isDefault: boolean; active: boolean }>;
-  defaultBranch: { id: string; name: string; isDefault: boolean; active: boolean } | null;
-  selectedBranch: { id: string; name: string; isDefault: boolean; active: boolean } | null;
-  mode: string;
-  inventoryScope: string;
-};
-
-type JoinRequestRow = {
-  id: string;
-  userId: string;
-  planId?: string | null;
-  status: string;
-  referralCode?: string | null;
-  message?: string | null;
-  createdAt: string | Date;
-  reviewedAt?: string | Date | null;
-};
-
-type MemberRow = {
-  profile: {
-    id: string;
-    createdAt: string;
-    marketingOptIn?: boolean | null;
-    publicVisibility?: boolean | null;
-    profilePhotoUrl?: string | null;
-    notes?: string | null;
-  };
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string | null;
-    fitnessGoal?: string | null;
-    marketingOptIn?: boolean | null;
-    createdAt: string;
-  } | null;
-};
-
-type MembershipPlanRow = {
-  id: string;
-  name: string;
-  description?: string | null;
-  type: string;
-  pricePaise: number;
-  active: boolean;
-  publicVisible: boolean;
-  durationDays?: number | null;
-  visitLimit?: number | null;
-  validityDays?: number | null;
-  createdAt: string;
-};
-
-type StaffAssignmentRow = {
-  id: string;
-  userId: string;
-  role: string;
-  branchId?: string | null;
-  createdAt: string;
-};
-
-type StaffUserRow = {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string | null;
-  createdAt: string;
-};
-
-type CoachPlanRow = {
-  id: string;
-  title: string;
-  type: string;
-  status: string;
-  aiGenerated: boolean;
-  reviewed: boolean;
-  assignmentCount: number;
-  updatedAt: string;
-};
-
-type ProductRow = {
-  id: string;
-  name: string;
-  description?: string | null;
-  category: string;
-  pricePaise: number;
-  stock: number;
-  lowStockThreshold: number;
-  active: boolean;
-};
-
-type CouponRow = {
-  id: string;
-  code: string;
-  type: CouponKind;
-  valuePaise?: number | null;
-  valuePercentBps?: number | null;
-  active: boolean;
-  maxRedemptions?: number | null;
-  perUserLimit?: number | null;
-  applicablePlanId?: string | null;
-};
-
-type ReferralPolicyRow = {
-  id: string;
-  enabled: boolean;
-  referrerRewardType: RewardType;
-  referrerRewardValue: number;
-  referredDiscountType: DiscountType;
-  referredDiscountValue: number;
-  maxDiscountCapBps: number;
-  maxReferralsPerMonth: number;
-  referralCodeExpiryDays: number;
-  trainerReferralEnabled: boolean;
-  staffReferralEnabled: boolean;
-};
-
-type ReferralCodeRow = {
-  id: string;
-  referrerUserId: string;
-  code: string;
-  couponId?: string | null;
-  createdByRole: string;
-  expiresAt?: string | Date | null;
-  maxUses?: number | null;
-  status: string;
-  redemptionCount: number;
-};
-
-type OfferRow = {
-  id: string;
-  name: string;
-  description?: string | null;
-  discountType: CouponKind;
-  discountValue: number;
-  applicablePlans?: unknown;
-  startsAt: string | Date;
-  endsAt: string | Date;
-  maxRedemptions?: number | null;
-  redemptionCount: number;
-  active: boolean;
-  stackable: boolean;
-};
-
-type BranchRow = {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  isDefault: boolean;
-  active: boolean;
-};
-
-type ReferralAnalyticsPayload = {
-  summary: {
-    activeCodes: number;
-    redemptionsThisMonth: number;
-    rewardCreditsThisMonth: number;
-    appliedRewardsThisMonth: number;
-  };
-  topReferrers: Array<{
-    code: ReferralCodeRow;
-    user: StaffUserRow | null;
-  }>;
-};
-
-type MemberDetailPayload = {
-  member: {
-    user: StaffUserRow | null;
-    subscriptions: Array<{
-      id: string;
-      status: string;
-      startsAt?: string | Date | null;
-      endsAt?: string | Date | null;
-      remainingVisits?: number | null;
-      plan?: MembershipPlanRow | null;
-    }>;
-    payments: Array<{ id: string; amountPaise: number; status: string; recordedAt: string | Date }>;
-    attendance: Array<{ id: string; status: string; checkedInAt: string | Date }>;
-    workouts: Array<{ id: string; title: string; startedAt: string | Date }>;
-  };
-};
-
-type ShopOrderItemRow = {
-  id: string;
-  productId: string;
-  quantity: number;
-  unitPaise: number;
-};
-
-type ShopOrderRow = {
-  id: string;
-  userId: string;
-  status: string;
-  totalPaise: number;
-  pickupCode?: string | null;
-  createdAt: string;
-  fulfilledAt?: string | null;
-  items: ShopOrderItemRow[];
-};
-
-type AIUsageRow = {
-  id: string;
-  role: string;
-  provider: string;
-  requestType: string;
-  promptSummary: string;
-  responseSummary?: string | null;
-  tokenEstimate: number;
-  costEstimatePaise: number;
-  quotaConsumed: number;
-  imageCount: number;
-  safetyFlags?: unknown;
-  createdAt: string | Date;
-};
-
-type AuditLogRow = {
-  id: string;
-  action: string;
-  entityType: string;
-  entityId?: string | null;
-  actorUserId?: string | null;
-  requestId?: string | null;
-  metadata?: unknown;
-  createdAt: string;
-};
-
-type NotificationSnapshot = {
-  id: string;
-  title: string;
-  type: string;
-  status: string;
-  audience?: string | null;
-  createdAt: string | Date;
-};
-
-type ProductSnapshot = {
-  id: string;
-  name: string;
-  pricePaise?: number | null;
-  stock?: number | null;
-  lowStockThreshold?: number | null;
-};
-
-function resolveMode(sectionKey: string): DashboardMode {
-  if (sectionKey.includes("public-profile") || sectionKey === "org" || sectionKey === "settings") {
-    return "public-profile";
-  }
-  if (sectionKey.includes("join-requests")) {
-    return "join-requests";
-  }
-  if (sectionKey.includes("attendance")) {
-    return "attendance";
-  }
-  if (sectionKey.includes("notifications")) {
-    return "notifications";
-  }
-  if (sectionKey.includes("reports")) {
-    return "reports";
-  }
-  if (sectionKey.includes("shop")) {
-    return "shop";
-  }
-  if (
-    sectionKey.includes("staff") ||
-    sectionKey.includes("trainers") ||
-    sectionKey.includes("pt")
-  ) {
-    return "staff";
-  }
-  if (
-    sectionKey.includes("membership-plans") ||
-    sectionKey === "plans" ||
-    sectionKey.includes("/plans")
-  ) {
-    return "plans";
-  }
-  if (sectionKey.includes("payments") || sectionKey.includes("checkout")) {
-    return "payments";
-  }
-  if (sectionKey.includes("audit")) {
-    return "audit";
-  }
-  if (sectionKey.includes("members")) {
-    return "members";
-  }
-  if (sectionKey.includes("ai")) {
-    return "ai";
-  }
-  return "overview";
-}
+import {
+  countFlags,
+  formatPlanShape,
+  resolveMode,
+  type AIUsageRow,
+  type AuditLogRow,
+  type BranchRow,
+  type BranchScopeSnapshot,
+  type CoachPlanRow,
+  type CouponKind,
+  type CouponRow,
+  type DiscountType,
+  type JoinRequestRow,
+  type MemberDetailPayload,
+  type MemberRow,
+  type MembershipPlanRow,
+  type MembershipPlanType,
+  type NotificationSnapshot,
+  type OfferRow,
+  type OrganizationSnapshot,
+  type OrganizationSummary,
+  type ProductCategory,
+  type ProductRow,
+  type ProductSnapshot,
+  type ReferralAnalyticsPayload,
+  type ReferralCodeRow,
+  type ReferralPolicyRow,
+  type RewardType,
+  type ShopOrderRow,
+  type StaffAssignmentRow,
+  type StaffRole,
+  type StaffUserRow,
+} from "./dashboard-operational-model";
 
 function ErrorNotice({ message }: { message: string }) {
   return (
@@ -374,32 +65,6 @@ function ErrorNotice({ message }: { message: string }) {
       {message}
     </p>
   );
-}
-
-function countFlags(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.length;
-  }
-  if (value && typeof value === "object") {
-    return Object.keys(value).length;
-  }
-  return 0;
-}
-
-function formatPlanShape(plan: MembershipPlanRow) {
-  if (plan.type === "DURATION" && plan.durationDays) {
-    return `${plan.durationDays} days`;
-  }
-  if (plan.type === "VISIT_PACK" && plan.visitLimit) {
-    return `${plan.visitLimit} visits`;
-  }
-  if (plan.type === "HYBRID") {
-    return `${plan.durationDays ?? "Flexible"} days / ${plan.visitLimit ?? "Open"} visits`;
-  }
-  if (plan.validityDays) {
-    return `${plan.validityDays} days validity`;
-  }
-  return "Configured in service layer";
 }
 
 export function DashboardOperationalPanel({
@@ -606,7 +271,9 @@ export function DashboardOperationalPanel({
   const referralPolicy = referralPolicyState.data?.policy ?? null;
   const referrals = referralsState.data?.referrals ?? [];
   const referralAnalytics = referralAnalyticsState.data;
-  const referralUsersById = new Map((referralsState.data?.users ?? []).map((user) => [user.id, user]));
+  const referralUsersById = new Map(
+    (referralsState.data?.users ?? []).map((user) => [user.id, user]),
+  );
   const selectedBranchName = branchScope.selectedBranch?.name ?? "Default Branch missing";
 
   const planNamesById = new Map(membershipPlans.map((plan) => [plan.id, plan.name]));
@@ -762,7 +429,10 @@ export function DashboardOperationalPanel({
     setFormStatus("");
   }
 
-  async function updateMembershipPlan(planId: string, patch?: Partial<ReturnType<typeof payloadForPlanForm>>) {
+  async function updateMembershipPlan(
+    planId: string,
+    patch?: Partial<ReturnType<typeof payloadForPlanForm>>,
+  ) {
     try {
       setFormBusy(`plan:${planId}`);
       setFormError("");
@@ -782,7 +452,11 @@ export function DashboardOperationalPanel({
   }
 
   async function deleteMembershipPlan(planId: string) {
-    if (!window.confirm("Delete this unused membership plan? Plans with subscriptions should be archived instead.")) {
+    if (
+      !window.confirm(
+        "Delete this unused membership plan? Plans with subscriptions should be archived instead.",
+      )
+    ) {
       return;
     }
     try {
@@ -815,7 +489,10 @@ export function DashboardOperationalPanel({
     setFormStatus("");
   }
 
-  async function updateProduct(productId: string, patch?: Partial<ReturnType<typeof payloadForProductForm>>) {
+  async function updateProduct(
+    productId: string,
+    patch?: Partial<ReturnType<typeof payloadForProductForm>>,
+  ) {
     try {
       setFormBusy(`product:${productId}`);
       setFormError("");
@@ -858,7 +535,11 @@ export function DashboardOperationalPanel({
   }
 
   async function deleteProduct(productId: string) {
-    if (!window.confirm("Delete this unused product? Products with order history should be archived instead.")) {
+    if (
+      !window.confirm(
+        "Delete this unused product? Products with order history should be archived instead.",
+      )
+    ) {
       return;
     }
     try {
@@ -932,16 +613,23 @@ export function DashboardOperationalPanel({
   }
 
   async function deleteCoachPlan(plan: CoachPlanRow) {
-    if (!window.confirm("Archive or delete this coaching plan? Assigned plans are archived to keep member history intact.")) {
+    if (
+      !window.confirm(
+        "Archive or delete this coaching plan? Assigned plans are archived to keep member history intact.",
+      )
+    ) {
       return;
     }
     try {
       setFormBusy(`coach-plan:${plan.id}:delete`);
       setFormError("");
       setFormStatus("");
-      const payload = await webApiFetch<{ archived?: boolean }>(`/api/orgs/${orgId}/plans/${plan.id}`, {
-        method: "DELETE",
-      });
+      const payload = await webApiFetch<{ archived?: boolean }>(
+        `/api/orgs/${orgId}/plans/${plan.id}`,
+        {
+          method: "DELETE",
+        },
+      );
       coachPlansState.reload();
       setFormStatus(payload.archived ? "Coaching plan archived." : "Coaching plan deleted.");
     } catch (cause) {
@@ -1167,7 +855,9 @@ export function DashboardOperationalPanel({
       setFormError("");
       setFormStatus("");
       const now = new Date();
-      const endsAt = new Date(now.getTime() + Number(offerForm.endsInDays || 30) * 24 * 60 * 60 * 1000);
+      const endsAt = new Date(
+        now.getTime() + Number(offerForm.endsInDays || 30) * 24 * 60 * 60 * 1000,
+      );
       await webApiFetch(`/api/orgs/${orgId}/offers`, {
         method: "POST",
         body: {
@@ -1247,7 +937,9 @@ export function DashboardOperationalPanel({
       setFormError("");
       setFormStatus("");
       const now = new Date();
-      const endsAt = new Date(now.getTime() + Number(offerEditForm.endsInDays || 30) * 24 * 60 * 60 * 1000);
+      const endsAt = new Date(
+        now.getTime() + Number(offerEditForm.endsInDays || 30) * 24 * 60 * 60 * 1000,
+      );
       await webApiFetch(`/api/orgs/${orgId}/offers/${offerId}`, {
         method: "PATCH",
         body: {
@@ -1297,7 +989,10 @@ export function DashboardOperationalPanel({
     }
   }
 
-  async function updateReferral(referral: ReferralCodeRow, status: "active" | "paused" | "expired") {
+  async function updateReferral(
+    referral: ReferralCodeRow,
+    status: "active" | "paused" | "expired",
+  ) {
     try {
       setFormBusy(`referral:${referral.id}`);
       setFormError("");
@@ -1336,17 +1031,17 @@ export function DashboardOperationalPanel({
               <ReadoutGrid
                 className="mt-5"
                 items={[
-                {
-                  label: "Branch scope",
-                  value: selectedBranchName,
-                  meta: branchScope.selectedBranch
-                    ? "QR and member attendance use this branch"
-                    : "Add a default branch before production launch",
-                },
-                {
-                  label: "Today scans",
-                  value: formatCompactNumber(summary.todayAttendance),
-                  meta: "Members receive visible entry codes",
+                  {
+                    label: "Branch scope",
+                    value: selectedBranchName,
+                    meta: branchScope.selectedBranch
+                      ? "QR and member attendance use this branch"
+                      : "Add a default branch before production launch",
+                  },
+                  {
+                    label: "Today scans",
+                    value: formatCompactNumber(summary.todayAttendance),
+                    meta: "Members receive visible entry codes",
                   },
                   {
                     label: "Join mode",
@@ -1565,7 +1260,9 @@ export function DashboardOperationalPanel({
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/35">Subscription</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                        Subscription
+                      </p>
                       <p className="mt-2 text-sm text-white/70">
                         {memberDetailState.data.member.subscriptions[0]?.plan?.name ?? "No plan"}
                       </p>
@@ -1826,7 +1523,9 @@ export function DashboardOperationalPanel({
               <div className="grid gap-3 md:grid-cols-2">
                 <input
                   value={productForm.name}
-                  onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))}
+                  onChange={(event) =>
+                    setProductForm((current) => ({ ...current, name: event.target.value }))
+                  }
                   placeholder="Product name"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 />
@@ -1840,22 +1539,28 @@ export function DashboardOperationalPanel({
                   }
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 >
-                  {["WATER", "PROTEIN_SHAKE", "SHAKER", "TOWEL", "SUPPLEMENT", "OTHER"].map((category) => (
-                    <option key={category} value={category} className="bg-black">
-                      {formatEnumLabel(category)}
-                    </option>
-                  ))}
+                  {["WATER", "PROTEIN_SHAKE", "SHAKER", "TOWEL", "SUPPLEMENT", "OTHER"].map(
+                    (category) => (
+                      <option key={category} value={category} className="bg-black">
+                        {formatEnumLabel(category)}
+                      </option>
+                    ),
+                  )}
                 </select>
                 <input
                   value={productForm.priceRupees}
-                  onChange={(event) => setProductForm((current) => ({ ...current, priceRupees: event.target.value }))}
+                  onChange={(event) =>
+                    setProductForm((current) => ({ ...current, priceRupees: event.target.value }))
+                  }
                   placeholder="Price in rupees"
                   inputMode="decimal"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 />
                 <input
                   value={productForm.stock}
-                  onChange={(event) => setProductForm((current) => ({ ...current, stock: event.target.value }))}
+                  onChange={(event) =>
+                    setProductForm((current) => ({ ...current, stock: event.target.value }))
+                  }
                   placeholder="Opening stock"
                   inputMode="numeric"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -1864,14 +1569,19 @@ export function DashboardOperationalPanel({
               <div className="grid gap-3 md:grid-cols-[1fr_140px]">
                 <input
                   value={productForm.description}
-                  onChange={(event) => setProductForm((current) => ({ ...current, description: event.target.value }))}
+                  onChange={(event) =>
+                    setProductForm((current) => ({ ...current, description: event.target.value }))
+                  }
                   placeholder="Short description"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 />
                 <input
                   value={productForm.lowStockThreshold}
                   onChange={(event) =>
-                    setProductForm((current) => ({ ...current, lowStockThreshold: event.target.value }))
+                    setProductForm((current) => ({
+                      ...current,
+                      lowStockThreshold: event.target.value,
+                    }))
                   }
                   placeholder="Low stock"
                   inputMode="numeric"
@@ -1955,7 +1665,9 @@ export function DashboardOperationalPanel({
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="font-medium text-white">Edit shop product</p>
-                      <p className="mt-1 text-xs text-white/45">Update catalog details or apply a stock correction.</p>
+                      <p className="mt-1 text-xs text-white/45">
+                        Update catalog details or apply a stock correction.
+                      </p>
                     </div>
                     <button
                       onClick={() => setEditingProductId(null)}
@@ -1967,27 +1679,37 @@ export function DashboardOperationalPanel({
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <input
                       value={productEditForm.name}
-                      onChange={(event) => setProductEditForm((current) => ({ ...current, name: event.target.value }))}
+                      onChange={(event) =>
+                        setProductEditForm((current) => ({ ...current, name: event.target.value }))
+                      }
                       placeholder="Product name"
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                     />
                     <select
                       value={productEditForm.category}
                       onChange={(event) =>
-                        setProductEditForm((current) => ({ ...current, category: event.target.value as ProductCategory }))
+                        setProductEditForm((current) => ({
+                          ...current,
+                          category: event.target.value as ProductCategory,
+                        }))
                       }
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                     >
-                      {["WATER", "PROTEIN_SHAKE", "SHAKER", "TOWEL", "SUPPLEMENT", "OTHER"].map((category) => (
-                        <option key={category} value={category} className="bg-black">
-                          {formatEnumLabel(category)}
-                        </option>
-                      ))}
+                      {["WATER", "PROTEIN_SHAKE", "SHAKER", "TOWEL", "SUPPLEMENT", "OTHER"].map(
+                        (category) => (
+                          <option key={category} value={category} className="bg-black">
+                            {formatEnumLabel(category)}
+                          </option>
+                        ),
+                      )}
                     </select>
                     <input
                       value={productEditForm.priceRupees}
                       onChange={(event) =>
-                        setProductEditForm((current) => ({ ...current, priceRupees: event.target.value }))
+                        setProductEditForm((current) => ({
+                          ...current,
+                          priceRupees: event.target.value,
+                        }))
                       }
                       placeholder="Price in rupees"
                       inputMode="decimal"
@@ -1995,7 +1717,9 @@ export function DashboardOperationalPanel({
                     />
                     <input
                       value={productEditForm.stock}
-                      onChange={(event) => setProductEditForm((current) => ({ ...current, stock: event.target.value }))}
+                      onChange={(event) =>
+                        setProductEditForm((current) => ({ ...current, stock: event.target.value }))
+                      }
                       placeholder="Current stock"
                       inputMode="numeric"
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -2003,7 +1727,10 @@ export function DashboardOperationalPanel({
                     <input
                       value={productEditForm.lowStockThreshold}
                       onChange={(event) =>
-                        setProductEditForm((current) => ({ ...current, lowStockThreshold: event.target.value }))
+                        setProductEditForm((current) => ({
+                          ...current,
+                          lowStockThreshold: event.target.value,
+                        }))
                       }
                       placeholder="Low stock threshold"
                       inputMode="numeric"
@@ -2015,7 +1742,10 @@ export function DashboardOperationalPanel({
                         type="checkbox"
                         checked={productEditForm.active}
                         onChange={(event) =>
-                          setProductEditForm((current) => ({ ...current, active: event.target.checked }))
+                          setProductEditForm((current) => ({
+                            ...current,
+                            active: event.target.checked,
+                          }))
                         }
                         className="h-4 w-4 accent-lime-300"
                       />
@@ -2024,14 +1754,19 @@ export function DashboardOperationalPanel({
                   <input
                     value={productEditForm.description}
                     onChange={(event) =>
-                      setProductEditForm((current) => ({ ...current, description: event.target.value }))
+                      setProductEditForm((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
                     }
                     placeholder="Short description"
                     className="zook-focus mt-3 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                   />
                   <div className="mt-3 grid gap-3 md:grid-cols-[120px_1fr_auto]">
                     <input
-                      value={stockAdjustment.productId === editingProductId ? stockAdjustment.delta : ""}
+                      value={
+                        stockAdjustment.productId === editingProductId ? stockAdjustment.delta : ""
+                      }
                       onChange={(event) =>
                         setStockAdjustment((current) => ({
                           ...current,
@@ -2044,7 +1779,9 @@ export function DashboardOperationalPanel({
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                     />
                     <input
-                      value={stockAdjustment.productId === editingProductId ? stockAdjustment.reason : ""}
+                      value={
+                        stockAdjustment.productId === editingProductId ? stockAdjustment.reason : ""
+                      }
                       onChange={(event) =>
                         setStockAdjustment((current) => ({
                           ...current,
@@ -2087,7 +1824,8 @@ export function DashboardOperationalPanel({
               items={[
                 {
                   label: "Stock scope",
-                  value: branchScope.inventoryScope === "ORG_WIDE" ? "Org-wide" : selectedBranchName,
+                  value:
+                    branchScope.inventoryScope === "ORG_WIDE" ? "Org-wide" : selectedBranchName,
                   meta: "Branch-level stock is a later multi-branch enhancement",
                 },
                 {
@@ -2121,14 +1859,18 @@ export function DashboardOperationalPanel({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="font-medium text-white">Invite staff</p>
-                <p className="mt-1 text-xs text-white/45">Adds a real role assignment for this gym.</p>
+                <p className="mt-1 text-xs text-white/45">
+                  Adds a real role assignment for this gym.
+                </p>
               </div>
               <Pill tone="lime">Invite</Pill>
             </div>
             <div className="grid gap-3 md:grid-cols-[1fr_180px]">
               <input
                 value={staffInvite.email}
-                onChange={(event) => setStaffInvite((current) => ({ ...current, email: event.target.value }))}
+                onChange={(event) =>
+                  setStaffInvite((current) => ({ ...current, email: event.target.value }))
+                }
                 placeholder="staff@example.com"
                 type="email"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -2143,9 +1885,15 @@ export function DashboardOperationalPanel({
                 }
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               >
-                <option value="TRAINER" className="bg-black">Trainer</option>
-                <option value="RECEPTIONIST" className="bg-black">Receptionist</option>
-                <option value="ADMIN" className="bg-black">Admin</option>
+                <option value="TRAINER" className="bg-black">
+                  Trainer
+                </option>
+                <option value="RECEPTIONIST" className="bg-black">
+                  Receptionist
+                </option>
+                <option value="ADMIN" className="bg-black">
+                  Admin
+                </option>
               </select>
             </div>
             <button
@@ -2200,16 +1948,24 @@ export function DashboardOperationalPanel({
                             onChange={(event) => setStaffRoleDraft(event.target.value as StaffRole)}
                             className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none"
                           >
-                            <option value="TRAINER" className="bg-black">Trainer</option>
-                            <option value="RECEPTIONIST" className="bg-black">Receptionist</option>
-                            <option value="ADMIN" className="bg-black">Admin</option>
+                            <option value="TRAINER" className="bg-black">
+                              Trainer
+                            </option>
+                            <option value="RECEPTIONIST" className="bg-black">
+                              Receptionist
+                            </option>
+                            <option value="ADMIN" className="bg-black">
+                              Admin
+                            </option>
                           </select>
                           <select
                             value={staffBranchDraft}
                             onChange={(event) => setStaffBranchDraft(event.target.value)}
                             className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none"
                           >
-                            <option value="" className="bg-black">All branches</option>
+                            <option value="" className="bg-black">
+                              All branches
+                            </option>
                             {branches.map((branch) => (
                               <option key={branch.id} value={branch.id} className="bg-black">
                                 {branch.name}
@@ -2218,7 +1974,9 @@ export function DashboardOperationalPanel({
                           </select>
                         </div>
                       ) : (
-                        <span className="text-sm font-medium text-white/72">{formatEnumLabel(assignment.role)}</span>
+                        <span className="text-sm font-medium text-white/72">
+                          {formatEnumLabel(assignment.role)}
+                        </span>
                       ),
                   },
                   {
@@ -2371,14 +2129,18 @@ export function DashboardOperationalPanel({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="font-medium text-white">Create membership plan</p>
-                <p className="mt-1 text-xs text-white/45">Publishes into join, sales, and approval flows.</p>
+                <p className="mt-1 text-xs text-white/45">
+                  Publishes into join, sales, and approval flows.
+                </p>
               </div>
               <Pill tone="lime">Live</Pill>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <input
                 value={planForm.name}
-                onChange={(event) => setPlanForm((current) => ({ ...current, name: event.target.value }))}
+                onChange={(event) =>
+                  setPlanForm((current) => ({ ...current, name: event.target.value }))
+                }
                 placeholder="Plan name"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               />
@@ -2400,21 +2162,27 @@ export function DashboardOperationalPanel({
               </select>
               <input
                 value={planForm.priceRupees}
-                onChange={(event) => setPlanForm((current) => ({ ...current, priceRupees: event.target.value }))}
+                onChange={(event) =>
+                  setPlanForm((current) => ({ ...current, priceRupees: event.target.value }))
+                }
                 placeholder="Price in rupees"
                 inputMode="decimal"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               />
               <input
                 value={planForm.durationDays}
-                onChange={(event) => setPlanForm((current) => ({ ...current, durationDays: event.target.value }))}
+                onChange={(event) =>
+                  setPlanForm((current) => ({ ...current, durationDays: event.target.value }))
+                }
                 placeholder="Duration days"
                 inputMode="numeric"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               />
               <input
                 value={planForm.visitLimit}
-                onChange={(event) => setPlanForm((current) => ({ ...current, visitLimit: event.target.value }))}
+                onChange={(event) =>
+                  setPlanForm((current) => ({ ...current, visitLimit: event.target.value }))
+                }
                 placeholder="Visit limit"
                 inputMode="numeric"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -2433,7 +2201,9 @@ export function DashboardOperationalPanel({
             </div>
             <input
               value={planForm.description}
-              onChange={(event) => setPlanForm((current) => ({ ...current, description: event.target.value }))}
+              onChange={(event) =>
+                setPlanForm((current) => ({ ...current, description: event.target.value }))
+              }
               placeholder="Short public description"
               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
             />
@@ -2510,7 +2280,9 @@ export function DashboardOperationalPanel({
                           Edit
                         </button>
                         <button
-                          onClick={() => void updateMembershipPlan(plan.id, { active: !plan.active })}
+                          onClick={() =>
+                            void updateMembershipPlan(plan.id, { active: !plan.active })
+                          }
                           disabled={formBusy === `plan:${plan.id}`}
                           className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:border-amber-300/40 hover:text-amber-100 disabled:opacity-50"
                         >
@@ -2537,7 +2309,9 @@ export function DashboardOperationalPanel({
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-medium text-white">Edit membership plan</p>
-                    <p className="mt-1 text-xs text-white/45">Updates pricing, visibility, and plan structure immediately.</p>
+                    <p className="mt-1 text-xs text-white/45">
+                      Updates pricing, visibility, and plan structure immediately.
+                    </p>
                   </div>
                   <button
                     onClick={() => setEditingPlanId(null)}
@@ -2549,14 +2323,19 @@ export function DashboardOperationalPanel({
                 <div className="grid gap-3 md:grid-cols-2">
                   <input
                     value={planEditForm.name}
-                    onChange={(event) => setPlanEditForm((current) => ({ ...current, name: event.target.value }))}
+                    onChange={(event) =>
+                      setPlanEditForm((current) => ({ ...current, name: event.target.value }))
+                    }
                     placeholder="Plan name"
                     className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                   />
                   <select
                     value={planEditForm.type}
                     onChange={(event) =>
-                      setPlanEditForm((current) => ({ ...current, type: event.target.value as MembershipPlanType }))
+                      setPlanEditForm((current) => ({
+                        ...current,
+                        type: event.target.value as MembershipPlanType,
+                      }))
                     }
                     className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                   >
@@ -2568,21 +2347,33 @@ export function DashboardOperationalPanel({
                   </select>
                   <input
                     value={planEditForm.priceRupees}
-                    onChange={(event) => setPlanEditForm((current) => ({ ...current, priceRupees: event.target.value }))}
+                    onChange={(event) =>
+                      setPlanEditForm((current) => ({
+                        ...current,
+                        priceRupees: event.target.value,
+                      }))
+                    }
                     placeholder="Price in rupees"
                     inputMode="decimal"
                     className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                   />
                   <input
                     value={planEditForm.durationDays}
-                    onChange={(event) => setPlanEditForm((current) => ({ ...current, durationDays: event.target.value }))}
+                    onChange={(event) =>
+                      setPlanEditForm((current) => ({
+                        ...current,
+                        durationDays: event.target.value,
+                      }))
+                    }
                     placeholder="Duration days"
                     inputMode="numeric"
                     className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                   />
                   <input
                     value={planEditForm.visitLimit}
-                    onChange={(event) => setPlanEditForm((current) => ({ ...current, visitLimit: event.target.value }))}
+                    onChange={(event) =>
+                      setPlanEditForm((current) => ({ ...current, visitLimit: event.target.value }))
+                    }
                     placeholder="Visit limit"
                     inputMode="numeric"
                     className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -2593,7 +2384,10 @@ export function DashboardOperationalPanel({
                       type="checkbox"
                       checked={planEditForm.publicVisible}
                       onChange={(event) =>
-                        setPlanEditForm((current) => ({ ...current, publicVisible: event.target.checked }))
+                        setPlanEditForm((current) => ({
+                          ...current,
+                          publicVisible: event.target.checked,
+                        }))
                       }
                       className="h-4 w-4 accent-lime-300"
                     />
@@ -2601,7 +2395,9 @@ export function DashboardOperationalPanel({
                 </div>
                 <input
                   value={planEditForm.description}
-                  onChange={(event) => setPlanEditForm((current) => ({ ...current, description: event.target.value }))}
+                  onChange={(event) =>
+                    setPlanEditForm((current) => ({ ...current, description: event.target.value }))
+                  }
                   placeholder="Short public description"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 />
@@ -3235,39 +3031,53 @@ export function DashboardOperationalPanel({
             eyebrow="Branches"
             title="Location control"
             description="Keep branch setup light: one default branch for most gyms, branch actions when the org actually expands."
-            badge={<Pill tone={branches.length > 1 ? "blue" : "neutral"}>{branches.length || 1} branches</Pill>}
+            badge={
+              <Pill tone={branches.length > 1 ? "blue" : "neutral"}>
+                {branches.length || 1} branches
+              </Pill>
+            }
           />
           <div className="mt-5 grid gap-3">
             {branchesState.error ? <ErrorNotice message={branchesState.error} /> : null}
             <div className="grid gap-3 md:grid-cols-2">
               <input
                 value={branchForm.name}
-                onChange={(event) => setBranchForm((current) => ({ ...current, name: event.target.value }))}
+                onChange={(event) =>
+                  setBranchForm((current) => ({ ...current, name: event.target.value }))
+                }
                 placeholder="Branch name"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               />
               <input
                 value={branchForm.address}
-                onChange={(event) => setBranchForm((current) => ({ ...current, address: event.target.value }))}
+                onChange={(event) =>
+                  setBranchForm((current) => ({ ...current, address: event.target.value }))
+                }
                 placeholder="Address"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               />
               <input
                 value={branchForm.city}
-                onChange={(event) => setBranchForm((current) => ({ ...current, city: event.target.value }))}
+                onChange={(event) =>
+                  setBranchForm((current) => ({ ...current, city: event.target.value }))
+                }
                 placeholder="City"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               />
               <input
                 value={branchForm.state}
-                onChange={(event) => setBranchForm((current) => ({ ...current, state: event.target.value }))}
+                onChange={(event) =>
+                  setBranchForm((current) => ({ ...current, state: event.target.value }))
+                }
                 placeholder="State"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               />
               <div className="grid grid-cols-[1fr_92px] gap-3">
                 <input
                   value={branchForm.pincode}
-                  onChange={(event) => setBranchForm((current) => ({ ...current, pincode: event.target.value }))}
+                  onChange={(event) =>
+                    setBranchForm((current) => ({ ...current, pincode: event.target.value }))
+                  }
                   placeholder="Pincode"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 />
@@ -3286,38 +3096,60 @@ export function DashboardOperationalPanel({
               </p>
             ) : null}
             {branches.slice(0, 6).map((branch) => (
-              <div key={branch.id} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <div
+                key={branch.id}
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+              >
                 {editingBranchId === branch.id ? (
                   <div className="grid gap-3">
                     <div className="grid gap-3 md:grid-cols-2">
                       <input
                         value={branchEditForm.name}
-                        onChange={(event) => setBranchEditForm((current) => ({ ...current, name: event.target.value }))}
+                        onChange={(event) =>
+                          setBranchEditForm((current) => ({ ...current, name: event.target.value }))
+                        }
                         placeholder="Branch name"
                         className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                       />
                       <input
                         value={branchEditForm.address}
-                        onChange={(event) => setBranchEditForm((current) => ({ ...current, address: event.target.value }))}
+                        onChange={(event) =>
+                          setBranchEditForm((current) => ({
+                            ...current,
+                            address: event.target.value,
+                          }))
+                        }
                         placeholder="Address"
                         className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                       />
                       <input
                         value={branchEditForm.city}
-                        onChange={(event) => setBranchEditForm((current) => ({ ...current, city: event.target.value }))}
+                        onChange={(event) =>
+                          setBranchEditForm((current) => ({ ...current, city: event.target.value }))
+                        }
                         placeholder="City"
                         className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                       />
                       <input
                         value={branchEditForm.state}
-                        onChange={(event) => setBranchEditForm((current) => ({ ...current, state: event.target.value }))}
+                        onChange={(event) =>
+                          setBranchEditForm((current) => ({
+                            ...current,
+                            state: event.target.value,
+                          }))
+                        }
                         placeholder="State"
                         className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                       />
                       <div className="grid grid-cols-[1fr_100px] gap-3">
                         <input
                           value={branchEditForm.pincode}
-                          onChange={(event) => setBranchEditForm((current) => ({ ...current, pincode: event.target.value }))}
+                          onChange={(event) =>
+                            setBranchEditForm((current) => ({
+                              ...current,
+                              pincode: event.target.value,
+                            }))
+                          }
                           placeholder="Pincode"
                           className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                         />
@@ -3346,7 +3178,10 @@ export function DashboardOperationalPanel({
                       </p>
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
-                      <StatusPill value={branch.isDefault ? "Default" : branch.active ? "Active" : "Paused"} tone={branch.isDefault ? "lime" : branch.active ? "blue" : "amber"} />
+                      <StatusPill
+                        value={branch.isDefault ? "Default" : branch.active ? "Active" : "Paused"}
+                        tone={branch.isDefault ? "lime" : branch.active ? "blue" : "amber"}
+                      />
                       <button
                         onClick={() => startBranchEdit(branch)}
                         className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
@@ -3356,7 +3191,9 @@ export function DashboardOperationalPanel({
                       {!branch.isDefault ? (
                         <>
                           <button
-                            onClick={() => void updateBranch(branch, { isDefault: true, active: true })}
+                            onClick={() =>
+                              void updateBranch(branch, { isDefault: true, active: true })
+                            }
                             disabled={formBusy === `branch:${branch.id}`}
                             className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65 disabled:opacity-50"
                           >
@@ -3386,37 +3223,53 @@ export function DashboardOperationalPanel({
             eyebrow="Growth"
             title="Referral and discount controls"
             description="Configure the referral economy, attach discounts, and pause codes without leaving the command center."
-            badge={<Pill tone={referralPolicy?.enabled === false ? "amber" : "lime"}>
-              {referralPolicy?.enabled === false ? "Paused" : "Enabled"}
-            </Pill>}
+            badge={
+              <Pill tone={referralPolicy?.enabled === false ? "amber" : "lime"}>
+                {referralPolicy?.enabled === false ? "Paused" : "Enabled"}
+              </Pill>
+            }
           />
           <div className="mt-5 grid gap-4">
             {referralPolicyState.error || couponsState.error || referralsState.error ? (
-              <ErrorNotice message={referralPolicyState.error ?? couponsState.error ?? referralsState.error ?? ""} />
+              <ErrorNotice
+                message={
+                  referralPolicyState.error ?? couponsState.error ?? referralsState.error ?? ""
+                }
+              />
             ) : null}
-            {referralAnalyticsState.error ? <ErrorNotice message={referralAnalyticsState.error} /> : null}
+            {referralAnalyticsState.error ? (
+              <ErrorNotice message={referralAnalyticsState.error} />
+            ) : null}
             <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
               <ReadoutGrid
                 columns={2}
                 items={[
                   {
                     label: "Active codes",
-                    value: formatCompactNumber(referralAnalytics?.summary.activeCodes ?? referrals.length),
+                    value: formatCompactNumber(
+                      referralAnalytics?.summary.activeCodes ?? referrals.length,
+                    ),
                     meta: "Available to members and staff",
                   },
                   {
                     label: "Redemptions",
-                    value: formatCompactNumber(referralAnalytics?.summary.redemptionsThisMonth ?? 0),
+                    value: formatCompactNumber(
+                      referralAnalytics?.summary.redemptionsThisMonth ?? 0,
+                    ),
                     meta: "This month",
                   },
                   {
                     label: "Reward credits",
-                    value: formatCompactNumber(referralAnalytics?.summary.rewardCreditsThisMonth ?? 0),
+                    value: formatCompactNumber(
+                      referralAnalytics?.summary.rewardCreditsThisMonth ?? 0,
+                    ),
                     meta: "Days or visits credited",
                   },
                   {
                     label: "Applied rewards",
-                    value: formatCompactNumber(referralAnalytics?.summary.appliedRewardsThisMonth ?? 0),
+                    value: formatCompactNumber(
+                      referralAnalytics?.summary.appliedRewardsThisMonth ?? 0,
+                    ),
                     meta: "Completed this month",
                   },
                 ]}
@@ -3426,14 +3279,21 @@ export function DashboardOperationalPanel({
                 <div className="mt-3 grid gap-2">
                   {(referralAnalytics?.topReferrers ?? []).length ? (
                     referralAnalytics!.topReferrers.map((item) => (
-                      <div key={item.code.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
+                      <div
+                        key={item.code.id}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/25 px-3 py-2"
+                      >
                         <div>
                           <p className="text-sm font-medium text-white">{item.code.code}</p>
                           <p className="text-xs text-white/45">
-                            {item.user?.email ?? item.code.createdByRole} · {item.code.redemptionCount} redemptions
+                            {item.user?.email ?? item.code.createdByRole} ·{" "}
+                            {item.code.redemptionCount} redemptions
                           </p>
                         </div>
-                        <StatusPill value={item.code.status} tone={item.code.status === "active" ? "lime" : "amber"} />
+                        <StatusPill
+                          value={item.code.status}
+                          tone={item.code.status === "active" ? "lime" : "amber"}
+                        />
                       </div>
                     ))
                   ) : (
@@ -3448,14 +3308,18 @@ export function DashboardOperationalPanel({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="font-medium text-white">Referral policy</p>
-                  <p className="mt-1 text-xs text-white/45">Cap discounts at 30% and choose what referrers earn.</p>
+                  <p className="mt-1 text-xs text-white/45">
+                    Cap discounts at 30% and choose what referrers earn.
+                  </p>
                 </div>
                 <label className="flex items-center gap-2 text-xs font-medium text-white/60">
                   Enabled
                   <input
                     type="checkbox"
                     checked={policyForm.enabled}
-                    onChange={(event) => setPolicyForm((current) => ({ ...current, enabled: event.target.checked }))}
+                    onChange={(event) =>
+                      setPolicyForm((current) => ({ ...current, enabled: event.target.checked }))
+                    }
                     className="h-4 w-4 accent-lime-300"
                   />
                 </label>
@@ -3464,24 +3328,43 @@ export function DashboardOperationalPanel({
                 <select
                   value={policyForm.referrerRewardType}
                   onChange={(event) =>
-                    setPolicyForm((current) => ({ ...current, referrerRewardType: event.target.value as RewardType }))
+                    setPolicyForm((current) => ({
+                      ...current,
+                      referrerRewardType: event.target.value as RewardType,
+                    }))
                   }
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 >
-                  <option value="DAYS" className="bg-black">Reward days</option>
-                  <option value="VISITS" className="bg-black">Reward visits</option>
-                  <option value="NONE" className="bg-black">No reward</option>
+                  <option value="DAYS" className="bg-black">
+                    Reward days
+                  </option>
+                  <option value="VISITS" className="bg-black">
+                    Reward visits
+                  </option>
+                  <option value="NONE" className="bg-black">
+                    No reward
+                  </option>
                 </select>
                 <input
                   value={policyForm.referrerRewardValue}
-                  onChange={(event) => setPolicyForm((current) => ({ ...current, referrerRewardValue: event.target.value }))}
+                  onChange={(event) =>
+                    setPolicyForm((current) => ({
+                      ...current,
+                      referrerRewardValue: event.target.value,
+                    }))
+                  }
                   placeholder="Reward value"
                   inputMode="numeric"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 />
                 <input
                   value={policyForm.maxDiscountCapBps}
-                  onChange={(event) => setPolicyForm((current) => ({ ...current, maxDiscountCapBps: event.target.value }))}
+                  onChange={(event) =>
+                    setPolicyForm((current) => ({
+                      ...current,
+                      maxDiscountCapBps: event.target.value,
+                    }))
+                  }
                   placeholder="Max cap bps"
                   inputMode="numeric"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -3489,24 +3372,43 @@ export function DashboardOperationalPanel({
                 <select
                   value={policyForm.referredDiscountType}
                   onChange={(event) =>
-                    setPolicyForm((current) => ({ ...current, referredDiscountType: event.target.value as DiscountType }))
+                    setPolicyForm((current) => ({
+                      ...current,
+                      referredDiscountType: event.target.value as DiscountType,
+                    }))
                   }
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 >
-                  <option value="PERCENTAGE" className="bg-black">Friend percentage</option>
-                  <option value="FIXED" className="bg-black">Friend fixed</option>
-                  <option value="NONE" className="bg-black">No friend discount</option>
+                  <option value="PERCENTAGE" className="bg-black">
+                    Friend percentage
+                  </option>
+                  <option value="FIXED" className="bg-black">
+                    Friend fixed
+                  </option>
+                  <option value="NONE" className="bg-black">
+                    No friend discount
+                  </option>
                 </select>
                 <input
                   value={policyForm.referredDiscountValue}
-                  onChange={(event) => setPolicyForm((current) => ({ ...current, referredDiscountValue: event.target.value }))}
+                  onChange={(event) =>
+                    setPolicyForm((current) => ({
+                      ...current,
+                      referredDiscountValue: event.target.value,
+                    }))
+                  }
                   placeholder="Discount value"
                   inputMode="numeric"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 />
                 <input
                   value={policyForm.maxReferralsPerMonth}
-                  onChange={(event) => setPolicyForm((current) => ({ ...current, maxReferralsPerMonth: event.target.value }))}
+                  onChange={(event) =>
+                    setPolicyForm((current) => ({
+                      ...current,
+                      maxReferralsPerMonth: event.target.value,
+                    }))
+                  }
                   placeholder="Monthly referral limit"
                   inputMode="numeric"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -3519,7 +3421,10 @@ export function DashboardOperationalPanel({
                     type="checkbox"
                     checked={policyForm.trainerReferralEnabled}
                     onChange={(event) =>
-                      setPolicyForm((current) => ({ ...current, trainerReferralEnabled: event.target.checked }))
+                      setPolicyForm((current) => ({
+                        ...current,
+                        trainerReferralEnabled: event.target.checked,
+                      }))
                     }
                     className="h-4 w-4 accent-lime-300"
                   />
@@ -3530,7 +3435,10 @@ export function DashboardOperationalPanel({
                     type="checkbox"
                     checked={policyForm.staffReferralEnabled}
                     onChange={(event) =>
-                      setPolicyForm((current) => ({ ...current, staffReferralEnabled: event.target.checked }))
+                      setPolicyForm((current) => ({
+                        ...current,
+                        staffReferralEnabled: event.target.checked,
+                      }))
                     }
                     className="h-4 w-4 accent-lime-300"
                   />
@@ -3552,30 +3460,51 @@ export function DashboardOperationalPanel({
                   <div className="grid gap-3 md:grid-cols-[1fr_150px]">
                     <input
                       value={couponForm.code}
-                      onChange={(event) => setCouponForm((current) => ({ ...current, code: event.target.value.toUpperCase() }))}
+                      onChange={(event) =>
+                        setCouponForm((current) => ({
+                          ...current,
+                          code: event.target.value.toUpperCase(),
+                        }))
+                      }
                       placeholder="WELCOME10"
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                     />
                     <select
                       value={couponForm.type}
-                      onChange={(event) => setCouponForm((current) => ({ ...current, type: event.target.value as CouponKind }))}
+                      onChange={(event) =>
+                        setCouponForm((current) => ({
+                          ...current,
+                          type: event.target.value as CouponKind,
+                        }))
+                      }
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                     >
-                      <option value="PERCENTAGE" className="bg-black">Percentage</option>
-                      <option value="FIXED_AMOUNT" className="bg-black">Fixed amount</option>
+                      <option value="PERCENTAGE" className="bg-black">
+                        Percentage
+                      </option>
+                      <option value="FIXED_AMOUNT" className="bg-black">
+                        Fixed amount
+                      </option>
                     </select>
                   </div>
                   <div className="grid gap-3 md:grid-cols-3">
                     <input
                       value={couponForm.value}
-                      onChange={(event) => setCouponForm((current) => ({ ...current, value: event.target.value }))}
+                      onChange={(event) =>
+                        setCouponForm((current) => ({ ...current, value: event.target.value }))
+                      }
                       placeholder={couponForm.type === "PERCENTAGE" ? "Bps, e.g. 1000" : "Rupees"}
                       inputMode="numeric"
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                     />
                     <input
                       value={couponForm.maxRedemptions}
-                      onChange={(event) => setCouponForm((current) => ({ ...current, maxRedemptions: event.target.value }))}
+                      onChange={(event) =>
+                        setCouponForm((current) => ({
+                          ...current,
+                          maxRedemptions: event.target.value,
+                        }))
+                      }
                       placeholder="Max uses"
                       inputMode="numeric"
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -3589,26 +3518,48 @@ export function DashboardOperationalPanel({
                     </button>
                   </div>
                   {coupons.slice(0, 4).map((coupon) => (
-                    <div key={coupon.id} className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
+                    <div
+                      key={coupon.id}
+                      className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2"
+                    >
                       {editingCouponId === coupon.id ? (
                         <div className="grid gap-2">
                           <input
                             value={couponEditForm.code}
-                            onChange={(event) => setCouponEditForm((current) => ({ ...current, code: event.target.value.toUpperCase() }))}
+                            onChange={(event) =>
+                              setCouponEditForm((current) => ({
+                                ...current,
+                                code: event.target.value.toUpperCase(),
+                              }))
+                            }
                             className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none"
                           />
                           <div className="grid grid-cols-[1fr_1fr] gap-2">
                             <select
                               value={couponEditForm.type}
-                              onChange={(event) => setCouponEditForm((current) => ({ ...current, type: event.target.value as CouponKind }))}
+                              onChange={(event) =>
+                                setCouponEditForm((current) => ({
+                                  ...current,
+                                  type: event.target.value as CouponKind,
+                                }))
+                              }
                               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none"
                             >
-                              <option value="PERCENTAGE" className="bg-black">Percentage</option>
-                              <option value="FIXED_AMOUNT" className="bg-black">Fixed</option>
+                              <option value="PERCENTAGE" className="bg-black">
+                                Percentage
+                              </option>
+                              <option value="FIXED_AMOUNT" className="bg-black">
+                                Fixed
+                              </option>
                             </select>
                             <input
                               value={couponEditForm.value}
-                              onChange={(event) => setCouponEditForm((current) => ({ ...current, value: event.target.value }))}
+                              onChange={(event) =>
+                                setCouponEditForm((current) => ({
+                                  ...current,
+                                  value: event.target.value,
+                                }))
+                              }
                               inputMode="numeric"
                               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none"
                             />
@@ -3667,22 +3618,38 @@ export function DashboardOperationalPanel({
                 <div className="mt-3 grid gap-3">
                   <input
                     value={offerForm.name}
-                    onChange={(event) => setOfferForm((current) => ({ ...current, name: event.target.value }))}
+                    onChange={(event) =>
+                      setOfferForm((current) => ({ ...current, name: event.target.value }))
+                    }
                     placeholder="Summer special"
                     className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                   />
                   <div className="grid gap-3 md:grid-cols-2">
                     <select
                       value={offerForm.discountType}
-                      onChange={(event) => setOfferForm((current) => ({ ...current, discountType: event.target.value as CouponKind }))}
+                      onChange={(event) =>
+                        setOfferForm((current) => ({
+                          ...current,
+                          discountType: event.target.value as CouponKind,
+                        }))
+                      }
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                     >
-                      <option value="PERCENTAGE" className="bg-black">Percentage</option>
-                      <option value="FIXED_AMOUNT" className="bg-black">Fixed amount</option>
+                      <option value="PERCENTAGE" className="bg-black">
+                        Percentage
+                      </option>
+                      <option value="FIXED_AMOUNT" className="bg-black">
+                        Fixed amount
+                      </option>
                     </select>
                     <input
                       value={offerForm.discountValue}
-                      onChange={(event) => setOfferForm((current) => ({ ...current, discountValue: event.target.value }))}
+                      onChange={(event) =>
+                        setOfferForm((current) => ({
+                          ...current,
+                          discountValue: event.target.value,
+                        }))
+                      }
                       placeholder={offerForm.discountType === "PERCENTAGE" ? "Bps" : "Rupees"}
                       inputMode="numeric"
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -3691,17 +3658,28 @@ export function DashboardOperationalPanel({
                   <div className="grid gap-3 md:grid-cols-[1fr_92px]">
                     <select
                       value={offerForm.applicablePlanId}
-                      onChange={(event) => setOfferForm((current) => ({ ...current, applicablePlanId: event.target.value }))}
+                      onChange={(event) =>
+                        setOfferForm((current) => ({
+                          ...current,
+                          applicablePlanId: event.target.value,
+                        }))
+                      }
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                     >
-                      <option value="" className="bg-black">All public plans</option>
+                      <option value="" className="bg-black">
+                        All public plans
+                      </option>
                       {membershipPlans.map((plan) => (
-                        <option key={plan.id} value={plan.id} className="bg-black">{plan.name}</option>
+                        <option key={plan.id} value={plan.id} className="bg-black">
+                          {plan.name}
+                        </option>
                       ))}
                     </select>
                     <input
                       value={offerForm.endsInDays}
-                      onChange={(event) => setOfferForm((current) => ({ ...current, endsInDays: event.target.value }))}
+                      onChange={(event) =>
+                        setOfferForm((current) => ({ ...current, endsInDays: event.target.value }))
+                      }
                       placeholder="Days"
                       inputMode="numeric"
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -3715,26 +3693,48 @@ export function DashboardOperationalPanel({
                     {formBusy === "offer" ? "Creating..." : "Create offer"}
                   </button>
                   {offers.slice(0, 4).map((offer) => (
-                    <div key={offer.id} className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
+                    <div
+                      key={offer.id}
+                      className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2"
+                    >
                       {editingOfferId === offer.id ? (
                         <div className="grid gap-2">
                           <input
                             value={offerEditForm.name}
-                            onChange={(event) => setOfferEditForm((current) => ({ ...current, name: event.target.value }))}
+                            onChange={(event) =>
+                              setOfferEditForm((current) => ({
+                                ...current,
+                                name: event.target.value,
+                              }))
+                            }
                             className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none"
                           />
                           <div className="grid grid-cols-[1fr_1fr] gap-2">
                             <select
                               value={offerEditForm.discountType}
-                              onChange={(event) => setOfferEditForm((current) => ({ ...current, discountType: event.target.value as CouponKind }))}
+                              onChange={(event) =>
+                                setOfferEditForm((current) => ({
+                                  ...current,
+                                  discountType: event.target.value as CouponKind,
+                                }))
+                              }
                               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none"
                             >
-                              <option value="PERCENTAGE" className="bg-black">Percentage</option>
-                              <option value="FIXED_AMOUNT" className="bg-black">Fixed</option>
+                              <option value="PERCENTAGE" className="bg-black">
+                                Percentage
+                              </option>
+                              <option value="FIXED_AMOUNT" className="bg-black">
+                                Fixed
+                              </option>
                             </select>
                             <input
                               value={offerEditForm.discountValue}
-                              onChange={(event) => setOfferEditForm((current) => ({ ...current, discountValue: event.target.value }))}
+                              onChange={(event) =>
+                                setOfferEditForm((current) => ({
+                                  ...current,
+                                  discountValue: event.target.value,
+                                }))
+                              }
                               inputMode="numeric"
                               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none"
                             />
@@ -3762,7 +3762,8 @@ export function DashboardOperationalPanel({
                             <p className="text-xs text-white/45">
                               {offer.discountType === "PERCENTAGE"
                                 ? `${offer.discountValue / 100}% off`
-                                : formatInr(offer.discountValue)} · {offer.redemptionCount} used
+                                : formatInr(offer.discountValue)}{" "}
+                              · {offer.redemptionCount} used
                             </p>
                           </div>
                           <div className="flex flex-wrap justify-end gap-2">
@@ -3793,27 +3794,40 @@ export function DashboardOperationalPanel({
                   <div className="grid gap-3 md:grid-cols-[1fr_1fr]">
                     <input
                       value={referralForm.code}
-                      onChange={(event) => setReferralForm((current) => ({ ...current, code: event.target.value.toUpperCase() }))}
+                      onChange={(event) =>
+                        setReferralForm((current) => ({
+                          ...current,
+                          code: event.target.value.toUpperCase(),
+                        }))
+                      }
                       placeholder="Optional custom code"
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                     />
                     <select
                       value={referralForm.couponId}
-                      onChange={(event) => setReferralForm((current) => ({ ...current, couponId: event.target.value }))}
+                      onChange={(event) =>
+                        setReferralForm((current) => ({ ...current, couponId: event.target.value }))
+                      }
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                     >
-                      <option value="" className="bg-black">No coupon</option>
-                      {coupons.filter((coupon) => coupon.active).map((coupon) => (
-                        <option key={coupon.id} value={coupon.id} className="bg-black">
-                          {coupon.code}
-                        </option>
-                      ))}
+                      <option value="" className="bg-black">
+                        No coupon
+                      </option>
+                      {coupons
+                        .filter((coupon) => coupon.active)
+                        .map((coupon) => (
+                          <option key={coupon.id} value={coupon.id} className="bg-black">
+                            {coupon.code}
+                          </option>
+                        ))}
                     </select>
                   </div>
                   <div className="grid gap-3 md:grid-cols-[1fr_auto]">
                     <input
                       value={referralForm.maxUses}
-                      onChange={(event) => setReferralForm((current) => ({ ...current, maxUses: event.target.value }))}
+                      onChange={(event) =>
+                        setReferralForm((current) => ({ ...current, maxUses: event.target.value }))
+                      }
                       placeholder="Max uses"
                       inputMode="numeric"
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -3827,16 +3841,26 @@ export function DashboardOperationalPanel({
                     </button>
                   </div>
                   {referrals.slice(0, 4).map((referral) => (
-                    <div key={referral.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
+                    <div
+                      key={referral.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/25 px-3 py-2"
+                    >
                       <div>
                         <p className="text-sm font-medium text-white">{referral.code}</p>
                         <p className="text-xs text-white/45">
-                          {referralUsersById.get(referral.referrerUserId)?.email ?? referral.createdByRole} ·{" "}
-                          {referral.redemptionCount}/{referral.maxUses ?? "∞"} used · {referral.status}
+                          {referralUsersById.get(referral.referrerUserId)?.email ??
+                            referral.createdByRole}{" "}
+                          · {referral.redemptionCount}/{referral.maxUses ?? "∞"} used ·{" "}
+                          {referral.status}
                         </p>
                       </div>
                       <button
-                        onClick={() => void updateReferral(referral, referral.status === "active" ? "paused" : "active")}
+                        onClick={() =>
+                          void updateReferral(
+                            referral,
+                            referral.status === "active" ? "paused" : "active",
+                          )
+                        }
                         disabled={formBusy === `referral:${referral.id}`}
                         className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/65 disabled:opacity-50"
                       >

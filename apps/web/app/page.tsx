@@ -17,6 +17,9 @@ import {
 import { GlassCard } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
 
+const iosAppUrl = process.env.NEXT_PUBLIC_IOS_APP_URL;
+const androidAppUrl = process.env.NEXT_PUBLIC_ANDROID_APP_URL;
+
 export default function HomePage() {
   const productCards: Array<[LucideIcon, string, string]> = [
     [Users, "Owners", "Plans, staff, shop, reports"],
@@ -72,8 +75,8 @@ export default function HomePage() {
               The operating system for modern gyms.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/58">
-              Everything your gym needs: memberships, QR entry, trainer plans, desk
-              operations, shop pickup, and owner reporting in one reliable workflow.
+              Everything your gym needs: memberships, QR entry, trainer plans, desk operations, shop
+              pickup, and owner reporting in one reliable workflow.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -133,7 +136,10 @@ export default function HomePage() {
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {ownerFeatures.map(([Icon, label]) => (
-                <div key={label} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70">
+                <div
+                  key={label}
+                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70"
+                >
                   <Icon size={18} className="shrink-0 text-lime-200" />
                   <span>{label}</span>
                 </div>
@@ -149,7 +155,10 @@ export default function HomePage() {
               </div>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {memberFeatures.map(([Icon, label]) => (
-                  <div key={label} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70">
+                  <div
+                    key={label}
+                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70"
+                  >
                     <Icon size={18} className="shrink-0 text-amber-100" />
                     <span>{label}</span>
                   </div>
@@ -164,7 +173,8 @@ export default function HomePage() {
             Built for India-first gym operations
           </p>
           <p className="mx-auto mt-3 max-w-2xl text-lg leading-8 text-white/70">
-            Zook keeps owner setup on web and member daily workflows on mobile, so each role gets the surface that fits the job.
+            Zook keeps owner setup on web and member daily workflows on mobile, so each role gets
+            the surface that fits the job.
           </p>
         </section>
 
@@ -177,12 +187,16 @@ export default function HomePage() {
               Built around the roles that keep a gym moving.
             </h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
-              The product evidence in this release comes from the live Zook workflows in the app: owners, members, trainers, and front desk staff all have dedicated paths.
+              The product evidence in this release comes from the live Zook workflows in the app:
+              owners, members, trainers, and front desk staff all have dedicated paths.
             </p>
           </div>
           <div className="grid gap-3">
             {proofPoints.map((point) => (
-              <div key={point} className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/68">
+              <div
+                key={point}
+                className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/68"
+              >
                 {point}
               </div>
             ))}
@@ -197,23 +211,57 @@ export default function HomePage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <span className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/65">
-              iOS app coming soon
-            </span>
-            <span className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/65">
-              Android app coming soon
-            </span>
+            {iosAppUrl ? (
+              <a
+                href={iosAppUrl}
+                className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+              >
+                Download on iOS
+              </a>
+            ) : (
+              <span className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/65">
+                iOS app coming soon
+              </span>
+            )}
+            {androidAppUrl ? (
+              <a
+                href={androidAppUrl}
+                className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+              >
+                Get it on Android
+              </a>
+            ) : (
+              <span className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/65">
+                Android app coming soon
+              </span>
+            )}
           </div>
         </section>
 
         <footer className="flex flex-col gap-3 border-t border-white/10 py-6 text-sm text-white/42 md:flex-row md:items-center md:justify-between">
           <p>© 2026 Zook. All rights reserved.</p>
           <div className="flex flex-wrap gap-4">
-            <Link href="/login" className="transition hover:text-white">Login</Link>
-            <Link href="/start-gym" className="transition hover:text-white">Start your gym</Link>
-            <a href="mailto:legal@zook.app?subject=Privacy%20policy" className="transition hover:text-white">Privacy</a>
-            <a href="mailto:legal@zook.app?subject=Terms%20of%20service" className="transition hover:text-white">Terms</a>
-            <a href="mailto:hello@zook.app" className="transition hover:text-white">Contact</a>
+            <Link href="/login" className="transition hover:text-white">
+              Login
+            </Link>
+            <Link href="/start-gym" className="transition hover:text-white">
+              Start your gym
+            </Link>
+            <a
+              href="mailto:legal@zook.app?subject=Privacy%20policy"
+              className="transition hover:text-white"
+            >
+              Privacy
+            </a>
+            <a
+              href="mailto:legal@zook.app?subject=Terms%20of%20service"
+              className="transition hover:text-white"
+            >
+              Terms
+            </a>
+            <a href="mailto:hello@zook.app" className="transition hover:text-white">
+              Contact
+            </a>
           </div>
         </footer>
       </div>

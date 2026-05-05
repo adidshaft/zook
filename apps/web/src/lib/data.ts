@@ -12,17 +12,19 @@ const zeroSummary = {
   lowStockProducts: 0,
   notificationQueueCount: 0,
   aiUsageThisMonth: 0,
-  trialDaysRemaining: 0
+  trialDaysRemaining: 0,
 };
 
 const demoOrg = zookDemoFixtures.organizations[0];
-const demoProducts = zookDemoFixtures.shopProducts.filter((product) => product.stock <= product.lowStockThreshold);
+const demoProducts = zookDemoFixtures.shopProducts.filter(
+  (product) => product.stock <= product.lowStockThreshold,
+);
 const demoNotifications = zookDemoFixtures.notifications.map((notification) => ({
   id: notification.id,
   title: notification.title,
   type: notification.type,
   status: "SENT",
-  createdAt: notification.createdAt
+  createdAt: notification.createdAt,
 }));
 const demoAiUsage = zookDemoFixtures.aiUsageRecords.map((usage) => ({
   id: usage.id,
@@ -36,7 +38,7 @@ const demoAiUsage = zookDemoFixtures.aiUsageRecords.map((usage) => ({
   quotaConsumed: usage.quotaConsumed,
   imageCount: 0,
   safetyFlags: {},
-  createdAt: usage.createdAt
+  createdAt: usage.createdAt,
 }));
 
 function getDemoDashboardData(scope: "org" | "platform") {
@@ -51,7 +53,7 @@ function getDemoDashboardData(scope: "org" | "platform") {
     lowStockProducts: 2,
     notificationQueueCount: 4,
     aiUsageThisMonth: 18,
-    trialDaysRemaining: 21
+    trialDaysRemaining: 21,
   };
   const org = {
     id: demoOrg?.id ?? "org-iron-temple",
@@ -65,7 +67,7 @@ function getDemoDashboardData(scope: "org" | "platform") {
     trialEndAt: new Date("2026-05-17T00:00:00.000Z"),
     createdAt: new Date("2026-04-01T00:00:00.000Z"),
     contactEmail: "owner@zook.local",
-    contactPhone: "+91 99887 77665"
+    contactPhone: "+91 99887 77665",
   };
   return {
     scope,
@@ -79,13 +81,13 @@ function getDemoDashboardData(scope: "org" | "platform") {
             { label: "Revenue", value: "₹82,450", delta: "Includes manual records" },
             { label: "Pending Join Requests", value: "7", delta: "Approval queue" },
             { label: "Low Stock", value: "2", delta: "Protein bar and shaker" },
-            { label: "AI Usage", value: "18", delta: "Trainer drafts this month" }
+            { label: "AI Usage", value: "18", delta: "Trainer drafts this month" },
           ]
         : [
             { label: "Organizations", value: "1", delta: "Demo mode" },
             { label: "Active orgs", value: "1", delta: "0 suspended" },
             { label: "Provider health", value: "5", delta: "Mock/provider-ready" },
-            { label: "Abuse flags", value: "0", delta: "No open flags" }
+            { label: "Abuse flags", value: "0", delta: "No open flags" },
           ],
     orgs: [org],
     products: demoProducts,
@@ -96,27 +98,40 @@ function getDemoDashboardData(scope: "org" | "platform") {
     auditLogCount: zookDemoFixtures.auditLogs.length,
     branchScope: {
       branches: [{ id: "branch-default", name: "Default Branch", isDefault: true, active: true }],
-      defaultBranch: { id: "branch-default", name: "Default Branch", isDefault: true, active: true },
-      selectedBranch: { id: "branch-default", name: "Default Branch", isDefault: true, active: true },
+      defaultBranch: {
+        id: "branch-default",
+        name: "Default Branch",
+        isDefault: true,
+        active: true,
+      },
+      selectedBranch: {
+        id: "branch-default",
+        name: "Default Branch",
+        isDefault: true,
+        active: true,
+      },
       mode: "default_branch",
-      inventoryScope: "ORG_WIDE"
+      inventoryScope: "ORG_WIDE",
     },
     summary,
     platform: {
       aiUsageThisMonth: 18,
-      abuseFlags: []
-    }
+      abuseFlags: [],
+    },
   };
 }
 
 function canUseDemoDashboardFallback() {
-  return getAppEnv() === "local" && (process.env.API_MODE === "offline-demo" || isTruthy(process.env.WEB_DEMO_FALLBACK));
+  return (
+    getAppEnv() === "local" &&
+    (process.env.API_MODE === "offline-demo" || isTruthy(process.env.WEB_DEMO_FALLBACK))
+  );
 }
 
-export async function getDashboardData(orgId?: string) {
+export async function getDashboardData(orgId?: string, branchId?: string) {
   try {
     if (orgId) {
-      const data = await getOrganizationDashboardData(orgId);
+      const data = await getOrganizationDashboardData(orgId, branchId ? { branchId } : {});
       return {
         scope: "org" as const,
         connected: true,
@@ -133,8 +148,8 @@ export async function getDashboardData(orgId?: string) {
         summary: data.summary,
         platform: {
           aiUsageThisMonth: 0,
-          abuseFlags: []
-        }
+          abuseFlags: [],
+        },
       };
     }
     const data = await getPlatformDashboardData();
@@ -155,13 +170,13 @@ export async function getDashboardData(orgId?: string) {
         defaultBranch: null,
         selectedBranch: null,
         mode: "org_wide_missing_default",
-        inventoryScope: "ORG_WIDE"
+        inventoryScope: "ORG_WIDE",
       },
       summary: zeroSummary,
       platform: {
         aiUsageThisMonth: data.aiUsageThisMonth,
-        abuseFlags: data.abuseFlags
-      }
+        abuseFlags: data.abuseFlags,
+      },
     };
   } catch (error) {
     if (canUseDemoDashboardFallback()) {
@@ -179,48 +194,48 @@ export async function getDashboardData(orgId?: string) {
 }
 
 export async function getEmptyDashboardData(orgId?: string) {
-    const zeroMetrics = orgId
-      ? [
-          { label: "Today attendance", value: "0", delta: "database unavailable" },
-          { label: "Active members", value: "0", delta: "database unavailable" },
-          { label: "Expiring soon", value: "0", delta: "database unavailable" },
-          { label: "Cash collected", value: "₹0", delta: "database unavailable" },
-          { label: "Revenue", value: "₹0", delta: "database unavailable" },
-          { label: "Low stock", value: "0", delta: "database unavailable" },
-          { label: "Notification queue", value: "0", delta: "database unavailable" },
-          { label: "AI usage", value: "0", delta: "database unavailable" },
-          { label: "Trial days", value: "0", delta: "database unavailable" }
-        ]
-      : [
-          { label: "Organizations", value: "0", delta: "database unavailable" },
-          { label: "Trial gyms", value: "0", delta: "database unavailable" },
-          { label: "Suspended", value: "0", delta: "database unavailable" },
-          { label: "AI usage", value: "0", delta: "database unavailable" },
-          { label: "Abuse flags", value: "0", delta: "database unavailable" }
-        ];
-    return {
-      scope: orgId ? ("org" as const) : ("platform" as const),
-      connected: false,
-      fallbackMode: "unavailable" as const,
-      metrics: zeroMetrics,
-      orgs: [],
-      products: [],
-      notifications: [],
-      attendance: [],
-      aiUsage: [],
-      joinRequests: [],
-      auditLogCount: 0,
-      branchScope: {
-        branches: [],
-        defaultBranch: null,
-        selectedBranch: null,
-        mode: "org_wide_missing_default",
-        inventoryScope: "ORG_WIDE"
-      },
-      summary: zeroSummary,
-      platform: {
-        aiUsageThisMonth: 0,
-        abuseFlags: []
-      }
-    };
+  const zeroMetrics = orgId
+    ? [
+        { label: "Today attendance", value: "0", delta: "database unavailable" },
+        { label: "Active members", value: "0", delta: "database unavailable" },
+        { label: "Expiring soon", value: "0", delta: "database unavailable" },
+        { label: "Cash collected", value: "₹0", delta: "database unavailable" },
+        { label: "Revenue", value: "₹0", delta: "database unavailable" },
+        { label: "Low stock", value: "0", delta: "database unavailable" },
+        { label: "Notification queue", value: "0", delta: "database unavailable" },
+        { label: "AI usage", value: "0", delta: "database unavailable" },
+        { label: "Trial days", value: "0", delta: "database unavailable" },
+      ]
+    : [
+        { label: "Organizations", value: "0", delta: "database unavailable" },
+        { label: "Trial gyms", value: "0", delta: "database unavailable" },
+        { label: "Suspended", value: "0", delta: "database unavailable" },
+        { label: "AI usage", value: "0", delta: "database unavailable" },
+        { label: "Abuse flags", value: "0", delta: "database unavailable" },
+      ];
+  return {
+    scope: orgId ? ("org" as const) : ("platform" as const),
+    connected: false,
+    fallbackMode: "unavailable" as const,
+    metrics: zeroMetrics,
+    orgs: [],
+    products: [],
+    notifications: [],
+    attendance: [],
+    aiUsage: [],
+    joinRequests: [],
+    auditLogCount: 0,
+    branchScope: {
+      branches: [],
+      defaultBranch: null,
+      selectedBranch: null,
+      mode: "org_wide_missing_default",
+      inventoryScope: "ORG_WIDE",
+    },
+    summary: zeroSummary,
+    platform: {
+      aiUsageThisMonth: 0,
+      abuseFlags: [],
+    },
+  };
 }

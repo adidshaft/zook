@@ -114,7 +114,9 @@ export default function Reception() {
     });
   }, [memberSearch, membersQuery.data?.members]);
   const selectedMemberRecord =
-    filteredMembers.find((record) => record.profile.userId === selectedMemberId) ?? null;
+    (membersQuery.data?.members ?? []).find(
+      (record) => record.profile.userId === selectedMemberId,
+    ) ?? null;
   const memberRecord = selectedMemberRecord;
   const member = memberRecord?.user ?? null;
   const membership = memberRecord?.activeSubscription ?? null;
@@ -254,9 +256,7 @@ export default function Reception() {
                     ? "Payments"
                     : "Orders"}
             </Text>
-            <Text style={styles.subtitle}>
-              Signed in as {session?.user.name ?? "staff"}
-            </Text>
+            <Text style={styles.subtitle}>Signed in as {session?.user.name ?? "staff"}</Text>
           </View>
         </View>
 
@@ -282,30 +282,30 @@ export default function Reception() {
         </View>
 
         <GlassCard variant="compact" padding={12} contentStyle={styles.memberContext}>
-            <IconBubble
-              icon={member ? "person-outline" : "person-add-outline"}
-              tone={member ? "lime" : "amber"}
-              size={34}
-            />
-            <View style={styles.memberContextCopy}>
-              <Text numberOfLines={1} style={styles.memberContextTitle}>
-                {member?.name ?? "No member selected"}
-              </Text>
-              <Text numberOfLines={1} style={styles.memberContextBody}>
-                {member?.email ?? "Search members before recording payments or attendance"}
-                {membership?.status ? ` · ${membership.status.replace(/_/g, " ")}` : ""}
-              </Text>
-            </View>
-            {member ? (
-              <Pressable
-                onPress={() => setSelectedMemberId(null)}
-                accessibilityRole="button"
-                accessibilityLabel="Clear selected member"
-                style={styles.clearMemberButton}
-              >
-                <Text style={styles.clearMemberText}>Clear</Text>
-              </Pressable>
-            ) : null}
+          <IconBubble
+            icon={member ? "person-outline" : "person-add-outline"}
+            tone={member ? "lime" : "amber"}
+            size={34}
+          />
+          <View style={styles.memberContextCopy}>
+            <Text numberOfLines={1} style={styles.memberContextTitle}>
+              {member?.name ?? "No member selected"}
+            </Text>
+            <Text numberOfLines={1} style={styles.memberContextBody}>
+              {member?.email ?? "Search members before recording payments or attendance"}
+              {membership?.status ? ` · ${membership.status.replace(/_/g, " ")}` : ""}
+            </Text>
+          </View>
+          {member ? (
+            <Pressable
+              onPress={() => setSelectedMemberId(null)}
+              accessibilityRole="button"
+              accessibilityLabel="Clear selected member"
+              style={styles.clearMemberButton}
+            >
+              <Text style={styles.clearMemberText}>Clear</Text>
+            </Pressable>
+          ) : null}
         </GlassCard>
 
         {view === "desk" ? (
@@ -516,7 +516,9 @@ export default function Reception() {
                 title="Last check-in"
                 subtitle={formatDateTime(memberRecord?.lastCheckIn?.checkedInAt)}
                 trailing={
-                  <Text style={styles.rowStateText}>{memberRecord?.lastCheckIn?.status ?? "None"}</Text>
+                  <Text style={styles.rowStateText}>
+                    {memberRecord?.lastCheckIn?.status ?? "None"}
+                  </Text>
                 }
               />
               <AuditWarning>

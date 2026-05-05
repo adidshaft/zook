@@ -7,7 +7,7 @@ import {
   findLatestAuditLog,
   loginWithOtp,
   loginWithSessionCookie,
-  seedAndGetOrg
+  seedAndGetOrg,
 } from "./helpers";
 
 function requireDb() {
@@ -52,7 +52,9 @@ test("public gym and referral fallbacks render", async ({ page }) => {
   await expect(page.getByText("Open Zook to join this gym")).toBeVisible();
 });
 
-test("owner login and membership plan creation use the live auth and api path", async ({ page }) => {
+test("owner login and membership plan creation use the live auth and api path", async ({
+  page,
+}) => {
   requireDb();
   await loginWithOtp(page, "owner@zook.local");
   await expect(page).toHaveURL(/dashboard/);
@@ -66,7 +68,7 @@ test("owner login and membership plan creation use the live auth and api path", 
   expect(activeOrgId).toBeTruthy();
 
   await createMembershipPlan(page, String(activeOrgId), {
-    name: "Playwright Plan"
+    name: "Playwright Plan",
   });
 });
 
@@ -78,33 +80,33 @@ test("owner can edit core self-serve catalog and staff records", async ({ page }
   const plan = await createMembershipPlan(page, org.id, {
     name: `Self Serve Plan ${Date.now()}`,
     pricePaise: 120000,
-    publicVisible: true
+    publicVisible: true,
   });
   const updatedPlanPayload = await expectApiOk<{
     plan: { id: string; pricePaise: number; active: boolean; publicVisible: boolean };
   }>(
     await page.request.patch(`/api/orgs/${org.id}/membership-plans/${plan.id}`, {
-      data: { pricePaise: 135000, active: false, publicVisible: false }
+      data: { pricePaise: 135000, active: false, publicVisible: false },
     }),
   );
   expect(updatedPlanPayload.data.plan).toMatchObject({
     id: plan.id,
     pricePaise: 135000,
     active: false,
-    publicVisible: false
+    publicVisible: false,
   });
 
   const policyPayload = await expectApiOk<{
     policy: { enabled: boolean; referrerRewardType: string; referrerRewardValue: number };
   }>(
     await page.request.patch(`/api/orgs/${org.id}/referral-policy`, {
-      data: { enabled: true, referrerRewardType: "VISITS", referrerRewardValue: 3 }
+      data: { enabled: true, referrerRewardType: "VISITS", referrerRewardValue: 3 },
     }),
   );
   expect(policyPayload.data.policy).toMatchObject({
     enabled: true,
     referrerRewardType: "VISITS",
-    referrerRewardValue: 3
+    referrerRewardValue: 3,
   });
 
   const couponPayload = await expectApiOk<{ coupon: { id: string; active: boolean } }>(
@@ -113,24 +115,24 @@ test("owner can edit core self-serve catalog and staff records", async ({ page }
         code: `SS${Date.now().toString().slice(-6)}`,
         type: "PERCENTAGE",
         valuePercentBps: 1000,
-        applicablePlanId: plan.id
-      }
+        applicablePlanId: plan.id,
+      },
     }),
   );
   await expectApiOk(
     await page.request.patch(`/api/orgs/${org.id}/coupons/${couponPayload.data.coupon.id}`, {
-      data: { active: false }
+      data: { active: false },
     }),
   );
   const referralPayload = await expectApiOk<{ referral: { id: string; status: string } }>(
     await page.request.post(`/api/orgs/${org.id}/referrals`, {
-      data: { couponId: couponPayload.data.coupon.id, maxUses: 4, createdByRole: "OWNER" }
+      data: { couponId: couponPayload.data.coupon.id, maxUses: 4, createdByRole: "OWNER" },
     }),
   );
   expect(referralPayload.data.referral.status).toBe("active");
   const pausedReferralPayload = await expectApiOk<{ referral: { id: string; status: string } }>(
     await page.request.patch(`/api/orgs/${org.id}/referrals/${referralPayload.data.referral.id}`, {
-      data: { status: "paused" }
+      data: { status: "paused" },
     }),
   );
   expect(pausedReferralPayload.data.referral.status).toBe("paused");
@@ -144,19 +146,19 @@ test("owner can edit core self-serve catalog and staff records", async ({ page }
         category: "OTHER",
         pricePaise: 49900,
         stock: 4,
-        lowStockThreshold: 2
-      }
+        lowStockThreshold: 2,
+      },
     }),
   );
   const productId = productPayload.data.product.id;
   await expectApiOk(
     await page.request.patch(`/api/orgs/${org.id}/products/${productId}`, {
-      data: { pricePaise: 59900, active: false }
+      data: { pricePaise: 59900, active: false },
     }),
   );
   const stockPayload = await expectApiOk<{ product: { id: string; stock: number } }>(
     await page.request.post(`/api/orgs/${org.id}/inventory/adjust`, {
-      data: { productId, delta: 3, reason: "Playwright stock correction" }
+      data: { productId, delta: 3, reason: "Playwright stock correction" },
     }),
   );
   expect(stockPayload.data.product.stock).toBe(7);
@@ -164,20 +166,20 @@ test("owner can edit core self-serve catalog and staff records", async ({ page }
   const staffUser = await prisma.user.create({
     data: {
       email: `self-serve-staff-${Date.now()}@zook.local`,
-      name: "Self Serve Staff"
-    }
+      name: "Self Serve Staff",
+    },
   });
   const assignment = await prisma.organizationRoleAssignment.create({
     data: {
       orgId: org.id,
       userId: staffUser.id,
       role: "TRAINER",
-      assignedById: owner.id
-    }
+      assignedById: owner.id,
+    },
   });
   const staffPayload = await expectApiOk<{ assignment: { id: string; role: string } }>(
     await page.request.patch(`/api/orgs/${org.id}/staff/${assignment.id}`, {
-      data: { role: "RECEPTIONIST" }
+      data: { role: "RECEPTIONIST" },
     }),
   );
   expect(staffPayload.data.assignment.role).toBe("RECEPTIONIST");
@@ -194,7 +196,7 @@ test("owner can manage branches and public offers", async ({ page }) => {
   const org = await seedAndGetOrg({ username: "iron-house" });
   const plan = await createMembershipPlan(page, org.id, {
     name: `Offer Plan ${Date.now()}`,
-    pricePaise: 200000
+    pricePaise: 200000,
   });
 
   const branchPayload = await expectApiOk<{ branch: { id: string; isDefault: boolean } }>(
@@ -205,8 +207,8 @@ test("owner can manage branches and public offers", async ({ page }) => {
         city: "Pune",
         state: "MH",
         pincode: "411001",
-        isDefault: true
-      }
+        isDefault: true,
+      },
     }),
   );
   expect(branchPayload.data.branch.isDefault).toBe(true);
@@ -221,13 +223,13 @@ test("owner can manage branches and public offers", async ({ page }) => {
         startsAt: new Date(Date.now() - 60_000).toISOString(),
         endsAt: new Date(Date.now() + 3_600_000).toISOString(),
         active: true,
-        stackable: true
-      }
+        stackable: true,
+      },
     }),
   );
   await expectApiOk(
     await page.request.patch(`/api/orgs/${org.id}/offers/${offerPayload.data.offer.id}`, {
-      data: { discountValue: 2000 }
+      data: { discountValue: 2000 },
     }),
   );
 
@@ -239,19 +241,23 @@ test("owner can manage branches and public offers", async ({ page }) => {
   expect(publicPlan?.activeOffer?.id).toBe(offerPayload.data.offer.id);
 });
 
-test("referral checkout fulfills rewards and renewal starts after current membership", async ({ page }) => {
+test("referral checkout fulfills rewards and renewal starts after current membership", async ({
+  page,
+}) => {
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
   const org = await seedAndGetOrg({ username: "iron-house" });
   await prisma.organization.update({
     where: { id: org.id },
-    data: { joinMode: "OPEN_JOIN", status: "ACTIVE" }
+    data: { joinMode: "OPEN_JOIN", status: "ACTIVE" },
   });
-  const branch = await prisma.branch.findFirstOrThrow({ where: { orgId: org.id, isDefault: true } });
+  const branch = await prisma.branch.findFirstOrThrow({
+    where: { orgId: org.id, isDefault: true },
+  });
   const plan = await createMembershipPlan(page, org.id, {
     name: `Referral Reward Plan ${Date.now()}`,
     pricePaise: 100000,
-    durationDays: 30
+    durationDays: 30,
   });
   await expectApiOk(
     await page.request.patch(`/api/orgs/${org.id}/referral-policy`, {
@@ -261,17 +267,17 @@ test("referral checkout fulfills rewards and renewal starts after current member
         referrerRewardValue: 5,
         referredDiscountType: "PERCENTAGE",
         referredDiscountValue: 1000,
-        maxDiscountCapBps: 3000
-      }
+        maxDiscountCapBps: 3000,
+      },
     }),
   );
 
   const referrer = await prisma.user.create({
-    data: { email: `referrer-${Date.now()}@zook.local`, name: "Referral Referrer" }
+    data: { email: `referrer-${Date.now()}@zook.local`, name: "Referral Referrer" },
   });
   await prisma.organizationUser.create({ data: { orgId: org.id, userId: referrer.id } });
   await prisma.organizationRoleAssignment.create({
-    data: { orgId: org.id, userId: referrer.id, role: "MEMBER" }
+    data: { orgId: org.id, userId: referrer.id, role: "MEMBER" },
   });
   const referrerEndsAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
   const referrerSubscription = await prisma.memberSubscription.create({
@@ -283,8 +289,8 @@ test("referral checkout fulfills rewards and renewal starts after current member
       status: "ACTIVE",
       startsAt: new Date(),
       endsAt: referrerEndsAt,
-      remainingVisits: 10
-    }
+      remainingVisits: 10,
+    },
   });
 
   await loginWithSessionCookie(page, referrer.email);
@@ -294,48 +300,223 @@ test("referral checkout fulfills rewards and renewal starts after current member
   expect(referralPayload.data.referralCodes[0]?.code).toBeTruthy();
 
   const referredUser = await prisma.user.create({
-    data: { email: `referred-${Date.now()}@zook.local`, name: "Referral Referred" }
+    data: { email: `referred-${Date.now()}@zook.local`, name: "Referral Referred" },
   });
   await loginWithSessionCookie(page, referredUser.email);
   const checkoutPayload = await expectApiOk<{ session: { id: string; amountPaise: number } }>(
     await page.request.post(`/api/orgs/${org.id}/subscriptions`, {
-      data: { planId: plan.id, referralCode: referralPayload.data.referralCodes[0]!.code }
+      data: { planId: plan.id, referralCode: referralPayload.data.referralCodes[0]!.code },
     }),
   );
   expect(checkoutPayload.data.session.amountPaise).toBe(90000);
   await completeMockCheckout(page, checkoutPayload.data.session.id);
   const reward = await prisma.referralReward.findFirstOrThrow({
-    where: { orgId: org.id, referrerUserId: referrer.id }
+    where: { orgId: org.id, referrerUserId: referrer.id },
   });
   expect(reward.status).toBe("applied");
   const rewardedSubscription = await prisma.memberSubscription.findUniqueOrThrow({
-    where: { id: referrerSubscription.id }
+    where: { id: referrerSubscription.id },
   });
   expect(rewardedSubscription.endsAt?.getTime()).toBe(
     referrerEndsAt.getTime() + 5 * 24 * 60 * 60 * 1000,
   );
 
   await loginWithSessionCookie(page, referrer.email);
-  const renewalPayload = await expectApiOk<{ session: { id: string }; subscription: { id: string } }>(
+  const renewalPayload = await expectApiOk<{
+    session: { id: string };
+    subscription: { id: string };
+  }>(
     await page.request.post(`/api/me/memberships/${referrerSubscription.id}/renew`, {
-      data: { planId: plan.id }
+      data: { planId: plan.id },
     }),
   );
   await completeMockCheckout(page, renewalPayload.data.session.id);
   const renewalSubscription = await prisma.memberSubscription.findUniqueOrThrow({
-    where: { id: renewalPayload.data.subscription.id }
+    where: { id: renewalPayload.data.subscription.id },
   });
   expect(renewalSubscription.status).toBe("ACTIVE");
   expect(renewalSubscription.startsAt?.getTime()).toBe(rewardedSubscription.endsAt?.getTime());
 });
 
-test("default branch scope is explicit for plans, dashboard filters, and QR tokens", async ({ page }) => {
+test("pending referral rewards apply when the referrer next activates a membership", async ({
+  page,
+}) => {
+  requireDb();
+  await loginWithSessionCookie(page, "owner@zook.local");
+  const org = await seedAndGetOrg({ username: "iron-house" });
+  await prisma.organization.update({
+    where: { id: org.id },
+    data: { joinMode: "OPEN_JOIN", status: "ACTIVE" },
+  });
+  const plan = await createMembershipPlan(page, org.id, {
+    name: `Pending Reward Plan ${Date.now()}`,
+    pricePaise: 100000,
+    durationDays: 30,
+  });
+  await expectApiOk(
+    await page.request.patch(`/api/orgs/${org.id}/referral-policy`, {
+      data: {
+        enabled: true,
+        referrerRewardType: "VISITS",
+        referrerRewardValue: 3,
+        referredDiscountType: "NONE",
+        referredDiscountValue: 0,
+        maxDiscountCapBps: 3000,
+      },
+    }),
+  );
+
+  const referrer = await prisma.user.create({
+    data: { email: `pending-referrer-${Date.now()}@zook.local`, name: "Pending Reward Referrer" },
+  });
+  await prisma.organizationUser.create({ data: { orgId: org.id, userId: referrer.id } });
+  await prisma.organizationRoleAssignment.create({
+    data: { orgId: org.id, userId: referrer.id, role: "MEMBER" },
+  });
+  await loginWithSessionCookie(page, referrer.email);
+  const referralPayload = await expectApiOk<{ referralCodes: Array<{ code: string }> }>(
+    await page.request.get(`/api/me/referral-codes?orgId=${org.id}`),
+  );
+  const referralCode = String(referralPayload.data.referralCodes[0]?.code);
+
+  const referredUser = await prisma.user.create({
+    data: { email: `pending-referred-${Date.now()}@zook.local`, name: "Pending Reward Referred" },
+  });
+  await loginWithSessionCookie(page, referredUser.email);
+  const referredCheckout = await expectApiOk<{ session: { id: string } }>(
+    await page.request.post(`/api/orgs/${org.id}/subscriptions`, {
+      data: { planId: plan.id, referralCode },
+    }),
+  );
+  await completeMockCheckout(page, referredCheckout.data.session.id);
+  const pendingReward = await prisma.referralReward.findFirstOrThrow({
+    where: { orgId: org.id, referrerUserId: referrer.id },
+  });
+  expect(pendingReward.status).toBe("pending");
+  expect(pendingReward.appliedToSubId).toBeNull();
+
+  await loginWithSessionCookie(page, referrer.email);
+  const referrerCheckout = await expectApiOk<{
+    session: { id: string };
+    subscription: { id: string };
+  }>(
+    await page.request.post(`/api/orgs/${org.id}/subscriptions`, {
+      data: { planId: plan.id },
+    }),
+  );
+  await completeMockCheckout(page, referrerCheckout.data.session.id);
+  await expect(
+    prisma.referralReward.findUniqueOrThrow({
+      where: { id: pendingReward.id },
+      select: { status: true, appliedToSubId: true },
+    }),
+  ).resolves.toMatchObject({
+    status: "applied",
+    appliedToSubId: referrerCheckout.data.subscription.id,
+  });
+  await expect(
+    prisma.memberSubscription.findUniqueOrThrow({
+      where: { id: referrerCheckout.data.subscription.id },
+      select: { remainingVisits: true },
+    }),
+  ).resolves.toEqual({ remainingVisits: 3 });
+});
+
+test("referral checkout enforces combined discount caps and monthly referral limits", async ({
+  page,
+}) => {
+  requireDb();
+  await loginWithSessionCookie(page, "owner@zook.local");
+  const org = await seedAndGetOrg({ username: "iron-house" });
+  await prisma.organization.update({
+    where: { id: org.id },
+    data: { joinMode: "OPEN_JOIN", status: "ACTIVE" },
+  });
+  const plan = await createMembershipPlan(page, org.id, {
+    name: `Referral Cap Plan ${Date.now()}`,
+    pricePaise: 100000,
+    durationDays: 30,
+  });
+  await expectApiOk(
+    await page.request.patch(`/api/orgs/${org.id}/referral-policy`, {
+      data: {
+        enabled: true,
+        referrerRewardType: "VISITS",
+        referrerRewardValue: 2,
+        referredDiscountType: "PERCENTAGE",
+        referredDiscountValue: 1000,
+        maxDiscountCapBps: 3000,
+        maxReferralsPerMonth: 1,
+      },
+    }),
+  );
+  const couponPayload = await expectApiOk<{ coupon: { id: string; code: string } }>(
+    await page.request.post(`/api/orgs/${org.id}/coupons`, {
+      data: {
+        code: `CAP${Date.now().toString().slice(-6)}`,
+        type: "PERCENTAGE",
+        valuePercentBps: 2500,
+        applicablePlanId: plan.id,
+      },
+    }),
+  );
+
+  const referrer = await prisma.user.create({
+    data: { email: `cap-referrer-${Date.now()}@zook.local`, name: "Referral Cap Referrer" },
+  });
+  await prisma.organizationUser.create({ data: { orgId: org.id, userId: referrer.id } });
+  await prisma.organizationRoleAssignment.create({
+    data: { orgId: org.id, userId: referrer.id, role: "MEMBER" },
+  });
+  await loginWithSessionCookie(page, referrer.email);
+  const referralPayload = await expectApiOk<{ referralCodes: Array<{ code: string }> }>(
+    await page.request.get(`/api/me/referral-codes?orgId=${org.id}`),
+  );
+  const referralCode = String(referralPayload.data.referralCodes[0]?.code);
+
+  const firstReferredUser = await prisma.user.create({
+    data: { email: `cap-referred-${Date.now()}@zook.local`, name: "Referral Cap Referred" },
+  });
+  await loginWithSessionCookie(page, firstReferredUser.email);
+  const cappedCheckoutPayload = await expectApiOk<{ session: { id: string; amountPaise: number } }>(
+    await page.request.post(`/api/orgs/${org.id}/subscriptions`, {
+      data: {
+        planId: plan.id,
+        couponCode: couponPayload.data.coupon.code,
+        referralCode,
+      },
+    }),
+  );
+  expect(cappedCheckoutPayload.data.session.amountPaise).toBe(70000);
+  const cappedSession = await prisma.paymentSession.findUniqueOrThrow({
+    where: { id: cappedCheckoutPayload.data.session.id },
+  });
+  expect(cappedSession.metadata).toMatchObject({
+    couponDiscountPaise: 25000,
+    referralDiscountPaise: 5000,
+  });
+  await completeMockCheckout(page, cappedCheckoutPayload.data.session.id);
+
+  const secondReferredUser = await prisma.user.create({
+    data: { email: `cap-second-${Date.now()}@zook.local`, name: "Referral Cap Second" },
+  });
+  await loginWithSessionCookie(page, secondReferredUser.email);
+  const cappedOutResponse = await page.request.post(`/api/orgs/${org.id}/subscriptions`, {
+    data: { planId: plan.id, referralCode },
+  });
+  expect(cappedOutResponse.status()).toBe(400);
+  expect(await cappedOutResponse.text()).toContain("monthly limit");
+});
+
+test("default branch scope is explicit for plans, dashboard filters, and QR tokens", async ({
+  page,
+}) => {
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
 
   const org = await seedAndGetOrg({ username: "iron-house" });
   const defaultBranch = await prisma.branch.findFirstOrThrow({
-    where: { orgId: org.id, isDefault: true }
+    where: { orgId: org.id, isDefault: true },
   });
   const secondaryBranch = await prisma.branch.create({
     data: {
@@ -345,16 +526,16 @@ test("default branch scope is explicit for plans, dashboard filters, and QR toke
       city: org.city,
       state: org.state,
       pincode: org.pincode,
-      active: true
-    }
+      active: true,
+    },
   });
   const otherOrg = await seedAndGetOrg({ username: "peaklab" });
   const otherOrgBranch = await prisma.branch.findFirstOrThrow({
-    where: { orgId: otherOrg.id, isDefault: true }
+    where: { orgId: otherOrg.id, isDefault: true },
   });
 
   const plan = await createMembershipPlan(page, org.id, {
-    name: `Playwright Default Branch Plan ${Date.now()}`
+    name: `Playwright Default Branch Plan ${Date.now()}`,
   });
   expect(plan?.branchId).toBe(defaultBranch.id);
 
@@ -362,15 +543,15 @@ test("default branch scope is explicit for plans, dashboard filters, and QR toke
     prisma.user.create({
       data: {
         email: `branch-default-${Date.now()}@zook.local`,
-        name: "Branch Default Member"
-      }
+        name: "Branch Default Member",
+      },
     }),
     prisma.user.create({
       data: {
         email: `branch-secondary-${Date.now()}@zook.local`,
-        name: "Branch Secondary Member"
-      }
-    })
+        name: "Branch Secondary Member",
+      },
+    }),
   ]);
   const dateKey = new Date().toISOString().slice(0, 10);
   await prisma.attendanceRecord.createMany({
@@ -380,19 +561,19 @@ test("default branch scope is explicit for plans, dashboard filters, and QR toke
         branchId: defaultBranch.id,
         userId: defaultUser.id,
         dateKey,
-        status: "APPROVED"
+        status: "APPROVED",
       },
       {
         orgId: org.id,
         branchId: secondaryBranch.id,
         userId: secondaryUser.id,
         dateKey,
-        status: "APPROVED"
-      }
-    ]
+        status: "APPROVED",
+      },
+    ],
   });
   const expectedDefaultBranchAttendance = await prisma.attendanceRecord.count({
-    where: { orgId: org.id, branchId: defaultBranch.id, checkedInAt: { gte: todayWindow() } }
+    where: { orgId: org.id, branchId: defaultBranch.id, checkedInAt: { gte: todayWindow() } },
   });
 
   const dashboardPayload = await expectApiOk<{
@@ -415,12 +596,14 @@ test("default branch scope is explicit for plans, dashboard filters, and QR toke
   await expectApiOk(await page.request.post(`/api/orgs/${org.id}/attendance/qr-token`));
   const qrToken = await prisma.attendanceQrToken.findFirstOrThrow({
     where: { orgId: org.id },
-    orderBy: { issuedAt: "desc" }
+    orderBy: { issuedAt: "desc" },
   });
   expect(qrToken.branchId).toBe(defaultBranch.id);
 });
 
-test("member join request and tracking workout creation persist through api routes", async ({ page }) => {
+test("member join request and tracking workout creation persist through api routes", async ({
+  page,
+}) => {
   requireDb();
   const email = `playwright-join-${Date.now()}@zook.local`;
   await loginWithOtp(page, email);
@@ -435,8 +618,8 @@ test("member join request and tracking workout creation persist through api rout
 
   const joinResponse = await page.request.post(`/api/orgs/${peaklabOrgId}/join-requests`, {
     data: {
-      ...(peaklabPlanId ? { planId: peaklabPlanId } : {})
-    }
+      ...(peaklabPlanId ? { planId: peaklabPlanId } : {}),
+    },
   });
   await expectApiOk(joinResponse);
 
@@ -454,10 +637,10 @@ test("member join request and tracking workout creation persist through api rout
           setsCompleted: 3,
           reps: 10,
           weightKg: 24,
-          completed: true
-        }
-      ]
-    }
+          completed: true,
+        },
+      ],
+    },
   });
   await expectApiOk(trackingResponse);
 });
@@ -466,7 +649,7 @@ test("public gym profile hides trainers not visible to members", async ({ page }
   requireDb();
   const org = await seedAndGetOrg({ username: "iron-house" });
   const trainerRole = await prisma.organizationRoleAssignment.findFirstOrThrow({
-    where: { orgId: org.id, role: "TRAINER" }
+    where: { orgId: org.id, role: "TRAINER" },
   });
   await prisma.trainerProfile.upsert({
     where: { orgId_userId: { orgId: org.id, userId: trainerRole.userId } },
@@ -474,17 +657,21 @@ test("public gym profile hides trainers not visible to members", async ({ page }
       orgId: org.id,
       userId: trainerRole.userId,
       bio: "Hidden public profile",
-      visibleToMembers: false
+      visibleToMembers: false,
     },
     update: {
       bio: "Hidden public profile",
-      visibleToMembers: false
-    }
+      visibleToMembers: false,
+    },
   });
 
   const response = await page.request.get(`/api/orgs/public/${org.username}`);
-  const payload = await expectApiOk<{ trainers: Array<{ userId: string; visibleToMembers: boolean }> }>(response);
-  expect(payload.data.trainers.some((trainer) => trainer.userId === trainerRole.userId)).toBe(false);
+  const payload = await expectApiOk<{
+    trainers: Array<{ userId: string; visibleToMembers: boolean }>;
+  }>(response);
+  expect(payload.data.trainers.some((trainer) => trainer.userId === trainerRole.userId)).toBe(
+    false,
+  );
 });
 
 test("public join page honors backend join mode instead of query overrides", async ({ page }) => {
@@ -492,7 +679,7 @@ test("public join page honors backend join mode instead of query overrides", asy
   const org = await seedAndGetOrg({ username: "iron-house" });
   await prisma.organization.update({
     where: { id: org.id },
-    data: { joinMode: "APPROVAL_REQUIRED" }
+    data: { joinMode: "APPROVAL_REQUIRED" },
   });
 
   await page.goto(`/join/${org.username}?mode=OPEN_JOIN`);
@@ -516,7 +703,9 @@ test("referral creation returns username-based web links", async ({ page }) => {
   expect(payload.data.links.short).toBe(`/r/${payload.data.referral.code}`);
 });
 
-test("open join checkout activates membership and shop order success stays server-backed", async ({ page }) => {
+test("open join checkout activates membership and shop order success stays server-backed", async ({
+  page,
+}) => {
   requireDb();
   const email = `playwright-shop-${Date.now()}@zook.local`;
   await loginWithOtp(page, email);
@@ -531,11 +720,11 @@ test("open join checkout activates membership and shop order success stays serve
   expect(planId).toBeTruthy();
   await prisma.organization.update({
     where: { id: orgId },
-    data: { joinMode: "OPEN_JOIN" }
+    data: { joinMode: "OPEN_JOIN" },
   });
 
   const checkoutResponse = await page.request.post(`/api/orgs/${orgId}/subscriptions`, {
-    data: { planId }
+    data: { planId },
   });
   const checkoutPayload = await expectApiOk<{ session: { id: string } }>(checkoutResponse);
   const sessionId = String(checkoutPayload.data.session.id);
@@ -544,7 +733,7 @@ test("open join checkout activates membership and shop order success stays serve
   await completeMockCheckout(page, sessionId);
   await expect(
     prisma.payment.count({
-      where: { sessionId }
+      where: { sessionId },
     }),
   ).resolves.toBe(1);
 
@@ -553,7 +742,10 @@ test("open join checkout activates membership and shop order success stays serve
     subscriptions: Array<{ status: string; orgId: string }>;
   }>(membershipsResponse);
   expect(
-    membershipsPayload.data.subscriptions.some((subscription: { status: string; orgId: string }) => subscription.status === "ACTIVE" && subscription.orgId === orgId),
+    membershipsPayload.data.subscriptions.some(
+      (subscription: { status: string; orgId: string }) =>
+        subscription.status === "ACTIVE" && subscription.orgId === orgId,
+    ),
   ).toBe(true);
 
   const productsResponse = await page.request.get(`/api/orgs/${orgId}/products`);
@@ -564,17 +756,22 @@ test("open join checkout activates membership and shop order success stays serve
   const orderResponse = await page.request.post("/api/shop/orders", {
     data: {
       orgId,
-      items: [{ productId, quantity: 1 }]
-    }
+      items: [{ productId, quantity: 1 }],
+    },
   });
-  const orderPayload = await expectApiOk<{ order: { paymentSessionId?: string | null }; checkoutUrl: string }>(orderResponse);
-  const orderSessionId = String(orderPayload.data.order.paymentSessionId ?? orderPayload.data.checkoutUrl.split("/").pop());
+  const orderPayload = await expectApiOk<{
+    order: { paymentSessionId?: string | null };
+    checkoutUrl: string;
+  }>(orderResponse);
+  const orderSessionId = String(
+    orderPayload.data.order.paymentSessionId ?? orderPayload.data.checkoutUrl.split("/").pop(),
+  );
 
   await completeMockCheckout(page, orderSessionId);
   await completeMockCheckout(page, orderSessionId);
   await expect(
     prisma.payment.count({
-      where: { sessionId: orderSessionId }
+      where: { sessionId: orderSessionId },
     }),
   ).resolves.toBe(1);
 
@@ -592,7 +789,7 @@ test("open join checkout activates membership and shop order success stays serve
     match: { type: string; valid: boolean; order?: { id: string } | null };
   }>(
     await page.request.post(`/api/orgs/${orgId}/reception/verify-code`, {
-      data: { code: readyOrder?.pickupCode }
+      data: { code: readyOrder?.pickupCode },
     }),
   );
   expect(verifyPayload.data.match?.type).toBe("pickup");
@@ -606,7 +803,7 @@ test("open join checkout activates membership and shop order success stays serve
   await expect(
     prisma.pickupCode.findUniqueOrThrow({
       where: { orderId: String(readyOrder?.id) },
-      select: { status: true, fulfilledAt: true }
+      select: { status: true, fulfilledAt: true },
     }),
   ).resolves.toMatchObject({ status: "FULFILLED" });
   await expect(
@@ -626,19 +823,23 @@ test("payment sessions require owner or org payment access", async ({ page, requ
   const planId = String(gymPayload.data.plans[0]?.id);
   await prisma.organization.update({
     where: { id: orgId },
-    data: { joinMode: "OPEN_JOIN" }
+    data: { joinMode: "OPEN_JOIN" },
   });
 
   const checkoutPayload = await expectApiOk<{ session: { id: string } }>(
     await page.request.post(`/api/orgs/${orgId}/subscriptions`, {
-      data: { planId }
+      data: { planId },
     }),
   );
 
-  const unauthenticatedResponse = await request.get(`/api/payments/session/${checkoutPayload.data.session.id}`);
+  const unauthenticatedResponse = await request.get(
+    `/api/payments/session/${checkoutPayload.data.session.id}`,
+  );
   expect(unauthenticatedResponse.status()).toBe(401);
 
-  const ownedResponse = await page.request.get(`/api/payments/session/${checkoutPayload.data.session.id}`);
+  const ownedResponse = await page.request.get(
+    `/api/payments/session/${checkoutPayload.data.session.id}`,
+  );
   await expectApiOk(ownedResponse);
 });
 
@@ -648,14 +849,14 @@ test("platform admins cannot perform tenant operations through org routes", asyn
 
   const org = await seedAndGetOrg({ username: "iron-house" });
   const memberRole = await prisma.organizationRoleAssignment.findFirstOrThrow({
-    where: { orgId: org.id, role: "MEMBER" }
+    where: { orgId: org.id, role: "MEMBER" },
   });
 
   const response = await page.request.post(`/api/orgs/${org.id}/attendance/manual`, {
     data: {
       memberUserId: memberRole.userId,
-      reason: "Security regression check"
-    }
+      reason: "Security regression check",
+    },
   });
 
   expect(response.status()).toBe(403);
@@ -667,28 +868,28 @@ test("receptionist approval queue updates attendance notifications and audit", a
 
   const org = await seedAndGetOrg({ username: "iron-house" });
   const branch = await prisma.branch.findFirstOrThrow({
-    where: { orgId: org.id, isDefault: true }
+    where: { orgId: org.id, isDefault: true },
   });
   const [approvedUser, rejectedUser] = await Promise.all([
     prisma.user.create({
       data: {
         email: `attendance-approve-${Date.now()}@zook.local`,
-        name: "Attendance Approve Member"
-      }
+        name: "Attendance Approve Member",
+      },
     }),
     prisma.user.create({
       data: {
         email: `attendance-reject-${Date.now()}@zook.local`,
-        name: "Attendance Reject Member"
-      }
-    })
+        name: "Attendance Reject Member",
+      },
+    }),
   ]);
   await prisma.organizationRoleAssignment.createMany({
     data: [
       { orgId: org.id, userId: approvedUser.id, role: "MEMBER" },
-      { orgId: org.id, userId: rejectedUser.id, role: "MEMBER" }
+      { orgId: org.id, userId: rejectedUser.id, role: "MEMBER" },
     ],
-    skipDuplicates: true
+    skipDuplicates: true,
   });
   const dateKey = new Date().toISOString().slice(0, 10);
   const [approveRecord, rejectRecord] = await Promise.all([
@@ -700,8 +901,8 @@ test("receptionist approval queue updates attendance notifications and audit", a
         dateKey,
         status: "PENDING_APPROVAL",
         source: "QR_SCAN",
-        suspiciousFlags: ["acceptance_pending"]
-      }
+        suspiciousFlags: ["acceptance_pending"],
+      },
     }),
     prisma.attendanceRecord.create({
       data: {
@@ -711,9 +912,9 @@ test("receptionist approval queue updates attendance notifications and audit", a
         dateKey,
         status: "PENDING_APPROVAL",
         source: "QR_SCAN",
-        suspiciousFlags: ["acceptance_pending"]
-      }
-    })
+        suspiciousFlags: ["acceptance_pending"],
+      },
+    }),
   ]);
 
   const pendingPayload = await expectApiOk<{ records: Array<{ id: string }> }>(
@@ -722,31 +923,33 @@ test("receptionist approval queue updates attendance notifications and audit", a
   expect(pendingPayload.data.records.some((record) => record.id === approveRecord.id)).toBe(true);
   expect(pendingPayload.data.records.some((record) => record.id === rejectRecord.id)).toBe(true);
 
-  await expectApiOk(await page.request.post(`/api/orgs/${org.id}/attendance/${approveRecord.id}/approve`));
+  await expectApiOk(
+    await page.request.post(`/api/orgs/${org.id}/attendance/${approveRecord.id}/approve`),
+  );
   await expectApiOk(
     await page.request.post(`/api/orgs/${org.id}/attendance/${rejectRecord.id}/reject`, {
-      data: { reason: "Photo did not match member profile" }
+      data: { reason: "Photo did not match member profile" },
     }),
   );
 
   await expect(
     prisma.attendanceRecord.findUniqueOrThrow({
       where: { id: approveRecord.id },
-      select: { status: true, approvedById: true }
+      select: { status: true, approvedById: true },
     }),
   ).resolves.toMatchObject({ status: "APPROVED" });
   await expect(
     prisma.attendanceRecord.findUniqueOrThrow({
       where: { id: rejectRecord.id },
-      select: { status: true, rejectionReason: true }
+      select: { status: true, rejectionReason: true },
     }),
   ).resolves.toMatchObject({
     status: "REJECTED",
-    rejectionReason: "Photo did not match member profile"
+    rejectionReason: "Photo did not match member profile",
   });
   await expect(
     prisma.notificationRecipient.count({
-      where: { userId: { in: [approvedUser.id, rejectedUser.id] } }
+      where: { userId: { in: [approvedUser.id, rejectedUser.id] } },
     }),
   ).resolves.toBeGreaterThanOrEqual(2);
   await expect(
@@ -771,8 +974,8 @@ test("generic checkout cannot claim membership or shop payment targets", async (
       orgId,
       purpose: "MEMBERSHIP",
       amountPaise: 1000,
-      metadata: { subscriptionId: "sub_forged" }
-    }
+      metadata: { subscriptionId: "sub_forged" },
+    },
   });
   expect(membershipResponse.status()).toBe(400);
   expect(await membershipResponse.text()).toContain("membership or shop checkout route");
@@ -782,11 +985,13 @@ test("generic checkout cannot claim membership or shop payment targets", async (
       orgId,
       purpose: "PERSONAL_TRAINING",
       amountPaise: 1000,
-      metadata: { shopOrderId: "order_forged" }
-    }
+      metadata: { shopOrderId: "order_forged" },
+    },
   });
   expect(shopResponse.status()).toBe(400);
-  expect(await shopResponse.text()).toContain("cannot directly reference membership or shop records");
+  expect(await shopResponse.text()).toContain(
+    "cannot directly reference membership or shop records",
+  );
 });
 
 test("expired mock checkout cannot be completed", async ({ page }) => {
@@ -802,12 +1007,12 @@ test("expired mock checkout cannot be completed", async ({ page }) => {
       status: "CREATED",
       checkoutUrl: `/checkout/mock/${sessionId}`,
       expiresAt: new Date(Date.now() - 60_000),
-      metadata: {}
-    }
+      metadata: {},
+    },
   });
 
   const response = await page.request.post(`/api/payments/mock/${sessionId}/complete`, {
-    data: { status: "SUCCEEDED" }
+    data: { status: "SUCCEEDED" },
   });
   expect(response.status()).toBe(409);
   expect(await response.text()).toContain("Payment session expired");
@@ -815,7 +1020,7 @@ test("expired mock checkout cannot be completed", async ({ page }) => {
   await expect(
     prisma.paymentSession.findUniqueOrThrow({
       where: { id: sessionId },
-      select: { status: true }
+      select: { status: true },
     }),
   ).resolves.toEqual({ status: "CREATED" });
 });
@@ -847,13 +1052,15 @@ test("owner can create a persisted notification through the web session", async 
       audience: "selected_members",
       selectedUserIds: [targetUserIdValue],
       pushEnabled: false,
-      excludeMinors: false
-    }
+      excludeMinors: false,
+    },
   });
   await expectApiOk(notificationResponse);
 });
 
-test("owner can configure pilot settings, export a report, and leave an audit trail", async ({ page }) => {
+test("owner can configure pilot settings, export a report, and leave an audit trail", async ({
+  page,
+}) => {
   requireDb();
   await loginWithOtp(page, "owner@zook.local");
 
@@ -861,7 +1068,9 @@ test("owner can configure pilot settings, export a report, and leave an audit tr
     activeOrgId?: string;
     organizations?: Array<{ orgId: string }>;
   }>(await page.request.get("/api/me/orgs"));
-  const activeOrgId = String(orgsPayload.data.activeOrgId ?? orgsPayload.data.organizations?.[0]?.orgId);
+  const activeOrgId = String(
+    orgsPayload.data.activeOrgId ?? orgsPayload.data.organizations?.[0]?.orgId,
+  );
 
   await expectApiOk(
     await page.request.patch(`/api/orgs/${activeOrgId}/location`, {
@@ -871,13 +1080,13 @@ test("owner can configure pilot settings, export a report, and leave an audit tr
         state: "Maharashtra",
         pincode: "411001",
         latitude: 18.5314,
-        longitude: 73.8782
-      }
+        longitude: 73.8782,
+      },
     }),
   );
 
   const plan = await createMembershipPlan(page, activeOrgId, {
-    name: `Pilot Owner Plan ${Date.now()}`
+    name: `Pilot Owner Plan ${Date.now()}`,
   });
   expect(plan?.id).toBeTruthy();
 
@@ -887,8 +1096,8 @@ test("owner can configure pilot settings, export a report, and leave an audit tr
         code: `PW${Date.now().toString().slice(-6)}`,
         type: "FIXED_AMOUNT",
         valuePaise: 5000,
-        applicablePlanId: plan?.id
-      }
+        applicablePlanId: plan?.id,
+      },
     }),
   );
   expect(couponPayload.data.coupon.code).toMatch(/^PW/);
@@ -900,11 +1109,13 @@ test("owner can configure pilot settings, export a report, and leave an audit tr
 
   await expectApiOk(
     await page.request.patch(`/api/orgs/${activeOrgId}/join-mode`, {
-      data: { joinMode: "APPROVAL_REQUIRED" }
+      data: { joinMode: "APPROVAL_REQUIRED" },
     }),
   );
 
-  const summaryPayload = await expectApiOk(await page.request.get(`/api/orgs/${activeOrgId}/reports/summary`));
+  const summaryPayload = await expectApiOk(
+    await page.request.get(`/api/orgs/${activeOrgId}/reports/summary`),
+  );
   expect(summaryPayload.data).toBeTruthy();
 
   const exportResponse = await page.request.get(`/api/orgs/${activeOrgId}/reports/attendance.csv`);
@@ -914,12 +1125,14 @@ test("owner can configure pilot settings, export a report, and leave an audit tr
 
   const auditLog = await findLatestAuditLog({
     orgId: activeOrgId,
-    action: "organization.join_mode_updated"
+    action: "organization.join_mode_updated",
   });
   expect(auditLog?.entityId).toBe(activeOrgId);
 });
 
-test("member privacy export and deletion requests create jobs and audit trail", async ({ page }) => {
+test("member privacy export and deletion requests create jobs and audit trail", async ({
+  page,
+}) => {
   requireDb();
   const email = `playwright-privacy-${Date.now()}@zook.local`;
   await loginWithOtp(page, email);
@@ -989,7 +1202,7 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
   expect(planId).toBeTruthy();
 
   const blockedResponse = await page.request.post(`/api/orgs/${ironHouse.id}/subscriptions`, {
-    data: { planId }
+    data: { planId },
   });
   test.skip(
     blockedResponse.status() === 409,
@@ -1010,14 +1223,17 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
 
   await expectApiOk(
     await page.request.post(`/api/guardian-consent/${challengeIdValue}/verify`, {
-      data: { code: "000000" }
+      data: { code: "000000" },
     }),
   );
 
-  await prisma.organization.update({ where: { id: ironHouse.id }, data: { joinMode: "OPEN_JOIN" } });
+  await prisma.organization.update({
+    where: { id: ironHouse.id },
+    data: { joinMode: "OPEN_JOIN" },
+  });
   const checkoutPayload = await expectApiOk<{ session: { id: string } }>(
     await page.request.post(`/api/orgs/${ironHouse.id}/subscriptions`, {
-      data: { planId }
+      data: { planId },
     }),
   );
   await completeMockCheckout(page, checkoutPayload.data.session.id);
@@ -1032,7 +1248,9 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
   ).toBe(true);
 });
 
-test("trainer AI draft requires assigned client, consent, review, and then assignment", async ({ page }) => {
+test("trainer AI draft requires assigned client, consent, review, and then assignment", async ({
+  page,
+}) => {
   requireDb();
   await loginWithSessionCookie(page, "trainer@zook.local");
 
@@ -1040,7 +1258,7 @@ test("trainer AI draft requires assigned client, consent, review, and then assig
   const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
   const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
   const assignment = await prisma.trainerAssignment.findFirstOrThrow({
-    where: { orgId: org.id, trainerUserId: trainer.id, active: true }
+    where: { orgId: org.id, trainerUserId: trainer.id, active: true },
   });
 
   await prisma.user.update({ where: { id: trainer.id }, data: { aiConsent: false } });
@@ -1051,14 +1269,14 @@ test("trainer AI draft requires assigned client, consent, review, and then assig
         targetUserId: assignment.memberUserId,
         prompt: "Create a safe gym workout plan for strength.",
         title: "Consent blocked draft",
-        type: "WORKOUT"
-      }
+        type: "WORKOUT",
+      },
     });
     expect(blockedConsent.status()).toBe(400);
     expect(await blockedConsent.text()).toContain("AI personalization consent");
     const blockedLog = await prisma.aIUsageLog.findFirst({
       where: { userId: trainer.id, responseSummary: { contains: "AI personalization consent" } },
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
     });
     expect(blockedLog?.quotaConsumed).toBe(0);
   } finally {
@@ -1071,8 +1289,8 @@ test("trainer AI draft requires assigned client, consent, review, and then assig
       targetUserId: owner.id,
       prompt: "Create a safe gym workout plan for strength.",
       title: "Wrong client draft",
-      type: "WORKOUT"
-    }
+      type: "WORKOUT",
+    },
   });
   expect(blockedClient.status()).toBe(403);
   expect(await blockedClient.text()).toContain("assigned clients");
@@ -1087,8 +1305,8 @@ test("trainer AI draft requires assigned client, consent, review, and then assig
         targetUserId: assignment.memberUserId,
         prompt: "Create a safe gym workout plan for strength.",
         title: "Playwright AI draft",
-        type: "WORKOUT"
-      }
+        type: "WORKOUT",
+      },
     }),
   );
   expect(draftPayload.data.createdPlan.reviewed).toBe(false);
@@ -1097,26 +1315,33 @@ test("trainer AI draft requires assigned client, consent, review, and then assig
   const assignBeforeReview = await page.request.post(
     `/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/assign`,
     {
-      data: { assignedToUserId: assignment.memberUserId, audience: "selected_member" }
+      data: { assignedToUserId: assignment.memberUserId, audience: "selected_member" },
     },
   );
   expect(assignBeforeReview.status()).toBe(409);
   expect(await assignBeforeReview.text()).toContain("reviewed before assignment");
 
-  await expectApiOk(await page.request.post(`/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/review`));
   await expectApiOk(
-    await page.request.post(`/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/assign`, {
-      data: { assignedToUserId: assignment.memberUserId, audience: "selected_member" }
-    }),
+    await page.request.post(`/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/review`),
+  );
+  await expectApiOk(
+    await page.request.post(
+      `/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/assign`,
+      {
+        data: { assignedToUserId: assignment.memberUserId, audience: "selected_member" },
+      },
+    ),
   );
   const planNotification = await prisma.notificationRecipient.findFirst({
     where: { userId: assignment.memberUserId },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "desc" },
   });
   expect(planNotification?.readAt).toBeNull();
 });
 
-test("member workout reports are assignment-scoped and visible to the trainer", async ({ page }) => {
+test("member workout reports are assignment-scoped and visible to the trainer", async ({
+  page,
+}) => {
   requireDb();
   const org = await seedAndGetOrg({ username: "iron-house" });
   const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
@@ -1133,14 +1358,14 @@ test("member workout reports are assignment-scoped and visible to the trainer", 
         days: [
           {
             name: "Day 1",
-            exercises: [{ name: "Goblet squat", sets: "3", reps: "10" }]
-          }
-        ]
+            exercises: [{ name: "Goblet squat", sets: "3", reps: "10" }],
+          },
+        ],
       },
       reviewed: true,
       reviewedById: trainer.id,
-      visibility: "assigned"
-    }
+      visibility: "assigned",
+    },
   });
   const memberAssignment = await prisma.planAssignment.create({
     data: {
@@ -1148,8 +1373,8 @@ test("member workout reports are assignment-scoped and visible to the trainer", 
       planId: plan.id,
       assignedById: trainer.id,
       assignedToUserId: member.id,
-      audience: "selected_member"
-    }
+      audience: "selected_member",
+    },
   });
   const wrongAssignment = await prisma.planAssignment.create({
     data: {
@@ -1157,8 +1382,8 @@ test("member workout reports are assignment-scoped and visible to the trainer", 
       planId: plan.id,
       assignedById: trainer.id,
       assignedToUserId: minor.id,
-      audience: "selected_member"
-    }
+      audience: "selected_member",
+    },
   });
 
   await loginWithSessionCookie(page, "member@zook.local");
@@ -1170,8 +1395,8 @@ test("member workout reports are assignment-scoped and visible to the trainer", 
       workoutType: "strength",
       startedAt: new Date().toISOString(),
       visibility: "TRAINER_VISIBLE",
-      exercises: []
-    }
+      exercises: [],
+    },
   });
   expect(blockedWorkout.status()).toBe(403);
   expect(await blockedWorkout.text()).toContain("does not belong");
@@ -1190,18 +1415,18 @@ test("member workout reports are assignment-scoped and visible to the trainer", 
             orderIndex: 0,
             setsCompleted: 3,
             reps: 10,
-            completed: true
-          }
-        ]
-      }
+            completed: true,
+          },
+        ],
+      },
     }),
   );
   await expectApiOk(
     await page.request.post(`/api/me/plans/${memberAssignment.id}/complete`, {
       data: {
         feedback: "Felt strong, increase load next week.",
-        exercises: [{ name: "Goblet squat", completed: true, setsCompleted: 3, reps: 10 }]
-      }
+        exercises: [{ name: "Goblet squat", completed: true, setsCompleted: 3, reps: 10 }],
+      },
     }),
   );
 
@@ -1215,12 +1440,20 @@ test("member workout reports are assignment-scoped and visible to the trainer", 
       };
     }>;
   }>(await page.request.get(`/api/orgs/${org.id}/trainers/${trainer.id}/clients`));
-  const memberClient = clientsPayload.data.clients.find((client) => client.memberUserId === member.id);
+  const memberClient = clientsPayload.data.clients.find(
+    (client) => client.memberUserId === member.id,
+  );
   expect(memberClient?.summary?.recentFeedback?.[0]?.feedback).toContain("increase load");
-  expect(memberClient?.summary?.recentWorkouts?.some((workout) => workout.title === "Assigned workout report")).toBe(true);
+  expect(
+    memberClient?.summary?.recentWorkouts?.some(
+      (workout) => workout.title === "Assigned workout report",
+    ),
+  ).toBe(true);
 });
 
-test("platform admin can inspect providers and suspend then reactivate an organization", async ({ page }) => {
+test("platform admin can inspect providers and suspend then reactivate an organization", async ({
+  page,
+}) => {
   requireDb();
   await loginWithSessionCookie(page, "platform@zook.local");
 
@@ -1239,12 +1472,12 @@ test("platform admin can inspect providers and suspend then reactivate an organi
 
   await expectApiOk(
     await page.request.patch(`/api/platform/orgs/${targetOrgIdValue}/status`, {
-      data: { status: "SUSPENDED" }
+      data: { status: "SUSPENDED" },
     }),
   );
   await expectApiOk(
     await page.request.patch(`/api/platform/orgs/${targetOrgIdValue}/status`, {
-      data: { status: "ACTIVE" }
+      data: { status: "ACTIVE" },
     }),
   );
 });

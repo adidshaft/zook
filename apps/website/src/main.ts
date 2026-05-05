@@ -1,6 +1,9 @@
-import './style.css'
+import "./style.css";
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+const appUrl = import.meta.env.VITE_ZOOK_APP_URL ?? "https://app.zook.kyokasuigetsu.xyz";
+const appHref = (path: string) => `${appUrl}${path}`;
+
+document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div class="container">
     <header>
       <a href="/" class="logo">
@@ -11,8 +14,8 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         </span>
       </a>
       <div class="nav-links">
-        <a href="#" class="btn-secondary">Login</a>
-        <a href="#" class="btn-primary">Start your gym</a>
+        <a href="${appHref("/login")}" class="btn-secondary">Login</a>
+        <a href="${appHref("/start-gym")}" class="btn-primary">Start your gym</a>
       </div>
     </header>
 
@@ -21,8 +24,8 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <h1>The operating system for modern gyms.</h1>
         <p>Everything your gym needs: memberships, QR entry, trainer plans, desk operations, shop pickup, and owner reporting in one reliable workflow.</p>
         <div class="hero-actions">
-          <a href="#" class="btn-primary">Start your gym →</a>
-          <a href="#features" class="btn-secondary">Find a gym →</a>
+          <a href="${appHref("/start-gym")}" class="btn-primary">Start your gym →</a>
+          <a href="${appHref("/gyms")}" class="btn-secondary">Find a gym →</a>
         </div>
       </div>
       
@@ -65,9 +68,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <footer style="margin-top: 6rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; color: rgba(255,255,255,0.4);">
       <p>© 2026 Zook. All rights reserved.</p>
       <div style="display: flex; gap: 1.5rem;">
-        <a href="#" style="color: inherit; text-decoration: none;">Privacy</a>
-        <a href="#" style="color: inherit; text-decoration: none;">Terms</a>
+        <a href="mailto:legal@zook.app?subject=Privacy%20policy" style="color: inherit; text-decoration: none;">Privacy</a>
+        <a href="mailto:legal@zook.app?subject=Terms%20of%20service" style="color: inherit; text-decoration: none;">Terms</a>
       </div>
     </footer>
   </div>
-`
+`;
