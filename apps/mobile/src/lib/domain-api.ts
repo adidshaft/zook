@@ -76,6 +76,25 @@ export const memberApi = {
       },
     });
   },
+  enableAutopay<T = { checkoutUrl?: string | null; mandate?: unknown; session?: unknown }>(
+    options: RequestOptions & { subscriptionId: string; planId?: string },
+  ) {
+    return mobileApiFetch<T>(`/me/memberships/${options.subscriptionId}/autopay`, {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: {
+        ...(options.planId ? { planId: options.planId } : {}),
+      },
+    });
+  },
+  cancelAutopay<T = { mandate?: unknown }>(options: RequestOptions & { subscriptionId: string }) {
+    return mobileApiFetch<T>(`/me/memberships/${options.subscriptionId}/autopay`, {
+      method: "DELETE",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+    });
+  },
   createTrackingWorkout(options: RequestOptions & { body: Record<string, unknown> }) {
     return mobileApiFetch("/me/tracking/workouts", {
       method: "POST",

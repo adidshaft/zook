@@ -50,11 +50,31 @@ type MembershipRecord = {
     name?: string | null;
     username?: string | null;
   } | null;
+  autopay?: AutopayRecord | null;
 };
 
 type RenewalResult = {
   checkoutUrl?: string | null;
   subscription?: unknown;
+  session?: {
+    id: string;
+    status: string;
+    provider?: string | null;
+  } | null;
+};
+
+type AutopayRecord = {
+  id: string;
+  status?: string | null;
+  checkoutUrl?: string | null;
+  provider?: string | null;
+  nextChargeAt?: string | null;
+  currentEndAt?: string | null;
+};
+
+type AutopayResult = {
+  checkoutUrl?: string | null;
+  mandate?: AutopayRecord | null;
   session?: {
     id: string;
     status: string;
@@ -109,6 +129,15 @@ function subscriptionTimestamp(subscription: MembershipRecord) {
   ).getTime();
 }
 
+function isAutopayLive(autopay?: AutopayRecord | null) {
+  return Boolean(
+    autopay &&
+      ["CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "PAUSED"].includes(
+        autopay.status ?? "",
+      ),
+  );
+}
+
 export default function MembershipScreen() {
   const routeParams = useLocalSearchParams<{
     focus?: string;
@@ -148,6 +177,8 @@ export default function MembershipScreen() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | undefined>();
   const [renewalStatus, setRenewalStatus] = useState("");
   const [renewing, setRenewing] = useState(false);
+  const [autopayStatus, setAutopayStatus] = useState("");
+  const [autopayBusy, setAutopayBusy] = useState(false);
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const selectedPlan = useMemo(
@@ -225,6 +256,53 @@ export default function MembershipScreen() {
       setRenewalStatus(getApiErrorMessage(error));
     } finally {
       setRenewing(false);
+    }
+  }
+
+  async function enableAutopay(subscription: MembershipRecord) {
+    if (!token) return;
+    setAutopayBusy(true);
+    setAutopayStatus("");
+    try {
+      const result = await memberApi.enableAutopay<AutopayResult>({
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        subscriptionId: subscription.id,
+        ...(planIdFor(subscription) ? { planId: planIdFor(subscription) } : {}),
+      });
+      const url = checkoutUrl(result.checkoutUrl ?? result.mandate?.checkoutUrl);
+      if (!url) {
+        setAutopayStatus("Autopay is active.");
+        await queryClient.invalidateQueries({ queryKey: ["me", "memberships"] });
+        return;
+      }
+      setAutopayStatus("Autopay authorization created.");
+      await queryClient.invalidateQueries({ queryKey: ["me", "memberships"] });
+      refreshAfterCheckoutRef.current = true;
+      await Linking.openURL(url);
+    } catch (error) {
+      setAutopayStatus(getApiErrorMessage(error));
+    } finally {
+      setAutopayBusy(false);
+    }
+  }
+
+  async function cancelAutopay(subscription: MembershipRecord) {
+    if (!token) return;
+    setAutopayBusy(true);
+    setAutopayStatus("");
+    try {
+      await memberApi.cancelAutopay({
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        subscriptionId: subscription.id,
+      });
+      setAutopayStatus("Autopay cancelled.");
+      await queryClient.invalidateQueries({ queryKey: ["me", "memberships"] });
+    } catch (error) {
+      setAutopayStatus(getApiErrorMessage(error));
+    } finally {
+      setAutopayBusy(false);
     }
   }
 
@@ -347,6 +425,52 @@ export default function MembershipScreen() {
                 <ZookButton onPress={() => openRenewal(latestSubscription)} icon="refresh-outline">
                   Renew or change plan
                 </ZookButton>
+              </GlassCard>
+
+              <GlassCard variant="compact" contentStyle={styles.autopayContent}>
+                <View style={styles.autopayHeader}>
+                  <IconBubble
+                    icon="repeat-outline"
+                    tone={isAutopayLive(latestSubscription.autopay) ? "lime" : "blue"}
+                    size={36}
+                  />
+                  <View style={styles.autopayCopy}>
+                    <Text style={styles.autopayTitle}>Autopay</Text>
+                    <Text style={styles.autopayBody}>
+                      {isAutopayLive(latestSubscription.autopay)
+                        ? latestSubscription.autopay?.nextChargeAt
+                          ? `Next renewal ${formatLongDate(latestSubscription.autopay.nextChargeAt)}`
+                          : "Recurring renewal is enabled."
+                        : "Authorize Razorpay test mode to renew this plan automatically."}
+                    </Text>
+                    {autopayStatus ? (
+                      <Text style={styles.autopayStatus}>{autopayStatus}</Text>
+                    ) : null}
+                  </View>
+                  <Pill tone={isAutopayLive(latestSubscription.autopay) ? "lime" : "blue"}>
+                    {isAutopayLive(latestSubscription.autopay)
+                      ? titleCaseFromCode(latestSubscription.autopay?.status ?? "ACTIVE")
+                      : "Off"}
+                  </Pill>
+                </View>
+                {isAutopayLive(latestSubscription.autopay) ? (
+                  <ZookButton
+                    tone="secondary"
+                    disabled={autopayBusy}
+                    onPress={() => void cancelAutopay(latestSubscription)}
+                    icon="close-circle-outline"
+                  >
+                    {autopayBusy ? "Updating..." : "Cancel autopay"}
+                  </ZookButton>
+                ) : (
+                  <ZookButton
+                    disabled={autopayBusy || latestSubscription.status !== "ACTIVE"}
+                    onPress={() => void enableAutopay(latestSubscription)}
+                    icon="repeat-outline"
+                  >
+                    {autopayBusy ? "Starting..." : "Enable autopay"}
+                  </ZookButton>
+                )}
               </GlassCard>
             </>
           ) : null}
@@ -690,6 +814,30 @@ const styles = StyleSheet.create({
   membershipMetaText: {
     color: colors.text,
     ...typography.caption,
+  },
+  autopayContent: {
+    gap: spacing.md,
+  },
+  autopayHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.md,
+  },
+  autopayCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  autopayTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  autopayBody: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  autopayStatus: {
+    color: colors.lime,
+    ...typography.small,
   },
   stack: {
     gap: 8,

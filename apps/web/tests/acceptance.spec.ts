@@ -740,14 +740,29 @@ test("open join checkout activates membership and shop order success stays serve
 
   const membershipsResponse = await page.request.get("/api/me/memberships");
   const membershipsPayload = await expectApiOk<{
-    subscriptions: Array<{ status: string; orgId: string }>;
+    subscriptions: Array<{ id: string; status: string; orgId: string; autopay?: { status: string } | null }>;
   }>(membershipsResponse);
+  const activeMembership = membershipsPayload.data.subscriptions.find(
+    (subscription) => subscription.status === "ACTIVE" && subscription.orgId === orgId,
+  );
+  expect(activeMembership).toBeTruthy();
+
+  const autopayPayload = await expectApiOk<{ mandate: { status: string } }>(
+    await page.request.post(`/api/me/memberships/${activeMembership!.id}/autopay`, { data: {} }),
+  );
+  expect(autopayPayload.data.mandate.status).toBe("ACTIVE");
+  const autopayMembershipsPayload = await expectApiOk<{
+    subscriptions: Array<{ id: string; autopay?: { status: string } | null }>;
+  }>(await page.request.get("/api/me/memberships"));
   expect(
-    membershipsPayload.data.subscriptions.some(
-      (subscription: { status: string; orgId: string }) =>
-        subscription.status === "ACTIVE" && subscription.orgId === orgId,
-    ),
-  ).toBe(true);
+    autopayMembershipsPayload.data.subscriptions.find(
+      (subscription) => subscription.id === activeMembership!.id,
+    )?.autopay?.status,
+  ).toBe("ACTIVE");
+  const cancelledAutopayPayload = await expectApiOk<{ mandate: { status: string } }>(
+    await page.request.delete(`/api/me/memberships/${activeMembership!.id}/autopay`),
+  );
+  expect(cancelledAutopayPayload.data.mandate.status).toBe("CANCELLED");
 
   const productsResponse = await page.request.get(`/api/orgs/${orgId}/products`);
   const productsPayload = await expectApiOk<{ products: Array<{ id: string }> }>(productsResponse);

@@ -103,7 +103,7 @@ export async function mobileApiFetch<T>(
     throw new Error(configError);
   }
   if (isOfflineDemoMode()) {
-    return demoMobileApiFetch<T>(path, { body: rawBody });
+    return demoMobileApiFetch<T>(path, { body: rawBody, method: requestInit.method });
   }
 
   const headers = new Headers(requestInit.headers);

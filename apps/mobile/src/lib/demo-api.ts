@@ -253,9 +253,13 @@ function demoShopOrders() {
   }));
 }
 
-export async function demoMobileApiFetch<T>(path: string, init: { body?: unknown } = {}): Promise<T> {
+export async function demoMobileApiFetch<T>(
+  path: string,
+  init: { body?: unknown; method?: string } = {},
+): Promise<T> {
   const parsed = new URL(normalizePath(path), "https://offline.zook.local");
   const pathname = parsed.pathname;
+  const method = (init.method ?? "GET").toUpperCase();
   const session = getOfflineDemoSession();
   const membership = activeMembership();
   const plan = activeTrainingPlan();
@@ -341,6 +345,28 @@ export async function demoMobileApiFetch<T>(path: string, init: { body?: unknown
         ...(activeMembership() ?? {}),
         renewedAt: nowIso(),
         planId: (init.body as { planId?: string } | undefined)?.planId,
+      },
+    } as T;
+  }
+  if (pathname.match(/^\/me\/memberships\/[^/]+\/autopay$/) && method === "POST") {
+    return {
+      checkoutUrl: null,
+      session: null,
+      mandate: {
+        id: "offline-autopay",
+        provider: "mock",
+        status: "ACTIVE",
+        nextChargeAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    } as T;
+  }
+  if (pathname.match(/^\/me\/memberships\/[^/]+\/autopay$/) && method === "DELETE") {
+    return {
+      mandate: {
+        id: "offline-autopay",
+        provider: "mock",
+        status: "CANCELLED",
+        cancelledAt: nowIso(),
       },
     } as T;
   }

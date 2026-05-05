@@ -1,4 +1,5 @@
-import type { MembershipPlan, PaymentMode, PaymentStatus } from "@zook/core";
+import type { MembershipPlan, PaymentMandateStatus, PaymentMode, PaymentStatus } from "@zook/core";
+import type { ParsedPaymentWebhookEvent } from "@zook/core/providers";
 import {
   calculateShopOrder,
   computeSubscriptionWindow,
@@ -47,6 +48,7 @@ function toMembershipPlanInput(plan: {
 type PaymentSessionMetadata = {
   subscriptionId?: string;
   renewalOfSubscriptionId?: string;
+  autopayMandateId?: string;
   shopOrderId?: string;
   offerId?: string;
   offerDiscountPaise?: number;
@@ -337,32 +339,56 @@ export async function applyPaymentSessionStatus(input: {
     }),
   });
 
+  const resolvedProviderRef = input.providerRef ?? session.providerRef ?? session.id;
   let payment = await prisma.payment.findUnique({ where: { sessionId: session.id } });
+  if (!payment && resolvedProviderRef) {
+    payment = await prisma.payment.findFirst({
+      where: { provider: input.provider, providerRef: resolvedProviderRef },
+      orderBy: { createdAt: "asc" },
+    });
+  }
 
   if (session.status === "SUCCEEDED") {
-    payment = await prisma.payment.upsert({
-      where: { sessionId: session.id },
-      create: {
-        ...(session.orgId ? { orgId: session.orgId } : {}),
-        ...(session.userId ? { userId: session.userId } : {}),
-        sessionId: session.id,
-        purpose: session.purpose,
-        amountPaise: session.amountPaise,
-        currency: session.currency,
-        status: "SUCCEEDED",
-        mode: input.paymentMode,
-        provider: input.provider,
-        providerRef: input.providerRef ?? session.providerRef ?? session.id,
-        recordedAt: new Date(),
-      },
-      update: {
-        status: "SUCCEEDED",
-        mode: input.paymentMode,
-        provider: input.provider,
-        providerRef: input.providerRef ?? session.providerRef ?? payment?.providerRef ?? null,
-        recordedAt: payment?.recordedAt ?? new Date(),
-      },
-    });
+    payment = payment
+      ? await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            ...(payment.sessionId ? {} : { sessionId: session.id }),
+            status: "SUCCEEDED",
+            mode: input.paymentMode,
+            provider: input.provider,
+            providerRef: resolvedProviderRef,
+            recordedAt: payment.recordedAt ?? new Date(),
+          },
+        })
+      : await prisma.payment.create({
+          data: {
+            ...(session.orgId ? { orgId: session.orgId } : {}),
+            ...(session.userId ? { userId: session.userId } : {}),
+            sessionId: session.id,
+            purpose: session.purpose,
+            amountPaise: session.amountPaise,
+            currency: session.currency,
+            status: "SUCCEEDED",
+            mode: input.paymentMode,
+            provider: input.provider,
+            providerRef: resolvedProviderRef,
+            recordedAt: new Date(),
+          },
+        });
+
+    if (!payment.orgId && session.orgId) {
+      payment = await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          orgId: session.orgId,
+          userId: session.userId,
+          purpose: session.purpose,
+          amountPaise: session.amountPaise,
+          currency: session.currency,
+        },
+      });
+    }
 
     if (metadata.subscriptionId) {
       const [planSub, user] = await Promise.all([
@@ -707,4 +733,279 @@ export async function applyPaymentSessionStatus(input: {
   }
 
   return { session, payment };
+}
+
+function rawWebhookEntity(rawPayload: unknown, entityName: "subscription" | "payment" | "invoice") {
+  if (!rawPayload || Array.isArray(rawPayload) || typeof rawPayload !== "object") {
+    return {};
+  }
+  const payload = (rawPayload as { payload?: unknown }).payload;
+  if (!payload || Array.isArray(payload) || typeof payload !== "object") {
+    return {};
+  }
+  const wrapper = (payload as Record<string, unknown>)[entityName];
+  if (!wrapper || Array.isArray(wrapper) || typeof wrapper !== "object") {
+    return {};
+  }
+  const entity = (wrapper as { entity?: unknown }).entity;
+  return entity && !Array.isArray(entity) && typeof entity === "object"
+    ? (entity as Record<string, unknown>)
+    : {};
+}
+
+function dateFromUnixSeconds(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? new Date(value * 1000)
+    : undefined;
+}
+
+function mandateStatusFromRazorpay(eventType: string, providerStatus?: string): PaymentMandateStatus {
+  if (eventType === "subscription.authenticated") return "AUTHENTICATED";
+  if (eventType === "subscription.activated" || eventType === "subscription.charged" || eventType === "invoice.paid") {
+    return "ACTIVE";
+  }
+  if (eventType === "subscription.paused") return "PAUSED";
+  if (eventType === "subscription.halted") return "HALTED";
+  if (eventType === "subscription.cancelled") return "CANCELLED";
+  if (eventType === "subscription.completed") return "COMPLETED";
+  if (eventType === "subscription.expired") return "EXPIRED";
+  if (eventType === "payment.failed" || eventType === "invoice.payment_failed") return "FAILED";
+
+  switch (providerStatus) {
+    case "authenticated":
+      return "AUTHENTICATED";
+    case "active":
+      return "ACTIVE";
+    case "pending":
+      return "PENDING";
+    case "halted":
+      return "HALTED";
+    case "paused":
+      return "PAUSED";
+    case "cancelled":
+      return "CANCELLED";
+    case "completed":
+      return "COMPLETED";
+    case "expired":
+      return "EXPIRED";
+    default:
+      return "PENDING";
+  }
+}
+
+function isAutopayProviderEvent(event: ParsedPaymentWebhookEvent) {
+  return (
+    Boolean(event.providerSubscriptionId) &&
+    (event.eventType.startsWith("subscription.") || event.eventType.startsWith("invoice."))
+  );
+}
+
+export async function applyAutopayProviderEvent(input: {
+  event: ParsedPaymentWebhookEvent;
+  createNotification: (input: {
+    orgId?: string;
+    createdById?: string;
+    type: "TRANSACTIONAL" | "OPERATIONAL" | "PROMOTIONAL" | "ENGAGEMENT" | "PLAN" | "SECURITY";
+    title: string;
+    body: string;
+    audience: string;
+    metadata?: Prisma.InputJsonValue;
+    userIds: string[];
+    pushEnabled?: boolean;
+  }) => Promise<unknown>;
+  ensureMembership: (input: {
+    orgId: string;
+    userId: string;
+    joinedAt?: Date;
+    profilePhotoUrl?: string | null;
+    marketingOptIn?: boolean;
+  }) => Promise<void>;
+}) {
+  if (!isAutopayProviderEvent(input.event)) {
+    return null;
+  }
+
+  const metadata = input.event.metadata ?? {};
+  const metadataMandateId =
+    typeof metadata.autopayMandateId === "string" ? metadata.autopayMandateId : undefined;
+  const providerSubscriptionId = input.event.providerSubscriptionId;
+  const mandate =
+    (metadataMandateId
+      ? await prisma.paymentMandate.findUnique({ where: { id: metadataMandateId } })
+      : null) ??
+    (providerSubscriptionId
+      ? await prisma.paymentMandate.findFirst({
+          where: { provider: input.event.provider, providerMandateId: providerSubscriptionId },
+        })
+      : null);
+
+  if (!mandate) {
+    throw new Error("Autopay mandate not found for provider subscription event.");
+  }
+
+  const subscriptionEntity = rawWebhookEntity(input.event.rawPayload, "subscription");
+  const providerStatus =
+    typeof subscriptionEntity.status === "string" ? subscriptionEntity.status : undefined;
+  const nextStatus = mandateStatusFromRazorpay(input.event.eventType, providerStatus);
+  const currentStartAt = dateFromUnixSeconds(subscriptionEntity.current_start);
+  const currentEndAt = dateFromUnixSeconds(subscriptionEntity.current_end);
+  const nextChargeAt = dateFromUnixSeconds(subscriptionEntity.charge_at);
+  const paidCount =
+    typeof subscriptionEntity.paid_count === "number" ? subscriptionEntity.paid_count : undefined;
+  const totalCount =
+    typeof subscriptionEntity.total_count === "number" ? subscriptionEntity.total_count : undefined;
+
+  const updatedMandate = await prisma.paymentMandate.update({
+    where: { id: mandate.id },
+    data: clean({
+      status: nextStatus,
+      providerMandateId: providerSubscriptionId ?? mandate.providerMandateId ?? undefined,
+      providerPlanId:
+        typeof subscriptionEntity.plan_id === "string"
+          ? subscriptionEntity.plan_id
+          : mandate.providerPlanId ?? undefined,
+      currentStartAt,
+      currentEndAt,
+      nextChargeAt,
+      paidCount,
+      totalCount,
+      authenticatedAt:
+        nextStatus === "AUTHENTICATED" && !mandate.authenticatedAt ? new Date() : undefined,
+      activatedAt: nextStatus === "ACTIVE" && !mandate.activatedAt ? new Date() : undefined,
+      cancelledAt: nextStatus === "CANCELLED" && !mandate.cancelledAt ? new Date() : undefined,
+      metadata: {
+        ...(((mandate.metadata ?? {}) as Record<string, unknown>) ?? {}),
+        lastProviderEventId: input.event.providerEventId,
+        lastProviderEventType: input.event.eventType,
+      } as Prisma.InputJsonValue,
+    }),
+  });
+
+  if (input.event.eventType !== "subscription.charged" && input.event.eventType !== "invoice.paid") {
+    return { mandate: updatedMandate, payment: null, subscription: null };
+  }
+
+  if (!input.event.providerPaymentId) {
+    throw new Error("Autopay charge event did not include a provider payment id.");
+  }
+
+  const [plan, user, sourceSubscription] = await Promise.all([
+    prisma.membershipPlan.findFirst({ where: { id: mandate.planId, orgId: mandate.orgId } }),
+    prisma.user.findUnique({ where: { id: mandate.userId } }),
+    prisma.memberSubscription.findFirst({
+      where: {
+        id: mandate.latestSubscriptionId ?? mandate.sourceSubscriptionId,
+        orgId: mandate.orgId,
+        memberUserId: mandate.userId,
+      },
+    }),
+  ]);
+
+  if (!plan || !user || !sourceSubscription) {
+    throw new Error("Autopay membership target could not be resolved.");
+  }
+
+  assertMinorConsentGranted({
+    isMinor: user.isMinor,
+    guardianPending: user.guardianPending,
+    action: "membership autopay renewal",
+  });
+
+  let payment = await prisma.payment.findFirst({
+    where: { provider: input.event.provider, providerRef: input.event.providerPaymentId },
+    orderBy: { createdAt: "asc" },
+  });
+  if (!payment) {
+    payment = await prisma.payment.create({
+      data: {
+        orgId: mandate.orgId,
+        userId: mandate.userId,
+        purpose: "MEMBERSHIP",
+        amountPaise: input.event.amountPaise ?? mandate.amountPaise,
+        currency: input.event.currency ?? mandate.currency,
+        status: "SUCCEEDED",
+        mode: "CARD",
+        provider: input.event.provider,
+        providerRef: input.event.providerPaymentId,
+        recordedAt: new Date(),
+        metadata: clean({
+          autopayMandateId: mandate.id,
+          providerSubscriptionId,
+          providerEventId: input.event.providerEventId,
+        }) as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  const renewalMarker = `autopay:${mandate.id}:${input.event.providerPaymentId}`;
+  let subscription = await prisma.memberSubscription.findFirst({
+    where: {
+      orgId: mandate.orgId,
+      memberUserId: mandate.userId,
+      notes: { contains: renewalMarker },
+    },
+  });
+  let createdRenewal = false;
+  if (!subscription) {
+    const window = computeSubscriptionWindow(toMembershipPlanInput(plan));
+    const renewalStartsAt =
+      sourceSubscription.endsAt && sourceSubscription.endsAt.getTime() > Date.now()
+        ? sourceSubscription.endsAt
+        : window.startsAt;
+    const renewalEndsAt = window.endsAt
+      ? new Date(renewalStartsAt.getTime() + (window.endsAt.getTime() - window.startsAt.getTime()))
+      : window.endsAt;
+    subscription = await prisma.memberSubscription.create({
+      data: {
+        orgId: mandate.orgId,
+        branchId: sourceSubscription.branchId,
+        memberUserId: mandate.userId,
+        planId: mandate.planId,
+        status: "ACTIVE",
+        startsAt: renewalStartsAt,
+        ...(renewalEndsAt ? { endsAt: renewalEndsAt } : {}),
+        ...(window.remainingVisits !== undefined ? { remainingVisits: window.remainingVisits } : {}),
+        paymentId: payment.id,
+        activatedById: mandate.userId,
+        notes: renewalMarker,
+      },
+    });
+    createdRenewal = true;
+  }
+
+  const finalMandate = await prisma.paymentMandate.update({
+    where: { id: mandate.id },
+    data: clean({
+      status: "ACTIVE",
+      latestSubscriptionId: subscription.id,
+      paidCount:
+        paidCount !== undefined ? paidCount : createdRenewal ? mandate.paidCount + 1 : mandate.paidCount,
+      currentStartAt,
+      currentEndAt,
+      nextChargeAt,
+      activatedAt: updatedMandate.activatedAt ?? new Date(),
+    }),
+  });
+
+  if (createdRenewal) {
+    await input.ensureMembership({
+      orgId: mandate.orgId,
+      userId: mandate.userId,
+      profilePhotoUrl: user.profilePhotoUrl,
+      marketingOptIn: user.isMinor ? false : user.marketingOptIn,
+    });
+    await input.createNotification({
+      orgId: mandate.orgId,
+      createdById: mandate.userId,
+      type: "TRANSACTIONAL",
+      title: "Membership renewed by autopay",
+      body: `Your ${plan.name} membership has been renewed automatically.`,
+      audience: "selected_member",
+      userIds: [mandate.userId],
+      pushEnabled: true,
+      metadata: { autopayMandateId: mandate.id, subscriptionId: subscription.id, paymentId: payment.id },
+    });
+  }
+
+  return { mandate: finalMandate, payment, subscription };
 }

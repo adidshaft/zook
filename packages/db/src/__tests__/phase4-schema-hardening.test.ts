@@ -11,6 +11,7 @@ import {
   IncidentSeverity,
   IncidentStatus,
   PaymentEventStatus,
+  PaymentMandateStatus,
   PaymentWebhookAttemptStatus,
   ProviderHealthCheckStatus,
   ProviderHealthDomain,
@@ -28,6 +29,7 @@ describe("Phase 4 schema hardening", () => {
   it("exports the new Phase 4 enums from the generated Prisma client", () => {
     expect(AuditRiskLevel.HIGH).toBe("HIGH");
     expect(PaymentEventStatus.QUARANTINED).toBe("QUARANTINED");
+    expect(PaymentMandateStatus.ACTIVE).toBe("ACTIVE");
     expect(PaymentWebhookAttemptStatus.SUCCEEDED).toBe("SUCCEEDED");
     expect(PushPlatform.IOS).toBe("IOS");
     expect(PushDeviceStatus.INVALIDATED).toBe("INVALIDATED");
@@ -49,6 +51,9 @@ describe("Phase 4 schema hardening", () => {
       /model AuditLog\s*{[\s\S]*\bafter\s+Json\?/,
       /model AuditLog\s*{[\s\S]*\briskLevel\s+AuditRiskLevel\b/,
       /model Payment\s*{[\s\S]*\bnotes\s+String\?/,
+      /model PaymentMandate\s*{[\s\S]*\bproviderMandateId\s+String\?/,
+      /model PaymentMandate\s*{[\s\S]*\bstatus\s+PaymentMandateStatus\b/,
+      /@@unique\(\[provider, providerMandateId\]\)/,
       /model PaymentEvent\s*{[\s\S]*\bstatus\s+PaymentEventStatus\b/,
       /model PaymentEvent\s*{[\s\S]*\bheaders\s+Json\?/,
       /model PaymentEvent\s*{[\s\S]*\battemptCount\s+Int\b/,

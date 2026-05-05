@@ -57,6 +57,7 @@ export interface ParsedPaymentWebhookEvent {
   paymentStatus: PaymentStatus;
   providerPaymentId?: string;
   providerOrderId?: string;
+  providerSubscriptionId?: string;
   amountPaise?: number;
   currency?: string;
   idempotencyKey?: string;
@@ -69,6 +70,43 @@ export interface RefundPaymentResult {
   providerRefundId?: string;
 }
 
+export type MandateBillingPeriod = "daily" | "weekly" | "monthly" | "yearly";
+
+export interface MandateInput {
+  orgId?: string;
+  userId: string;
+  amountPaise: number;
+  currency?: "INR";
+  referenceId?: string;
+  planName?: string;
+  description?: string;
+  billingPeriod?: MandateBillingPeriod;
+  billingInterval?: number;
+  totalCount?: number;
+  startAt?: Date;
+  expireBy?: Date;
+  returnUrl?: string;
+  customer?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  metadata?: Record<string, unknown>;
+}
+
+export interface MandateResult {
+  mandateId: string;
+  status: string;
+  providerPlanId?: string;
+  checkoutUrl?: string;
+  checkoutData?: Record<string, unknown>;
+  currentStartAt?: Date;
+  currentEndAt?: Date;
+  nextChargeAt?: Date;
+  paidCount?: number;
+  totalCount?: number;
+}
+
 export interface PaymentProvider extends DiagnosticProvider {
   readonly providerName: string;
   readonly mode: "mock" | "test" | "live";
@@ -78,8 +116,8 @@ export interface PaymentProvider extends DiagnosticProvider {
   parseWebhookEvent(input: PaymentWebhookVerificationInput): Promise<ParsedPaymentWebhookEvent | null>;
   getPaymentStatus(input: { providerPaymentId?: string; providerOrderId?: string; paymentSessionId?: string }): Promise<PaymentStatus>;
   refundPayment(input: { paymentId: string; amountPaise?: number; reason?: string }): Promise<RefundPaymentResult>;
-  createMandate(input: { userId: string; amountPaise: number; metadata?: Record<string, unknown> }): Promise<{ mandateId: string; status: string }>;
-  cancelMandate(input: { mandateId: string; reason?: string }): Promise<{ mandateId: string; status: string }>;
+  createMandate(input: MandateInput): Promise<MandateResult>;
+  cancelMandate(input: { mandateId: string; reason?: string; cancelAtCycleEnd?: boolean }): Promise<{ mandateId: string; status: string }>;
 }
 
 export class MockPaymentProvider implements PaymentProvider {
@@ -162,8 +200,14 @@ export class MockPaymentProvider implements PaymentProvider {
     return { status: "REFUNDED", providerRefundId: `refund_${randomUUID()}` };
   }
 
-  async createMandate(input: { userId: string }): Promise<{ mandateId: string; status: string }> {
-    return { mandateId: `mandate_${input.userId}`, status: "mock_ready" };
+  async createMandate(input: MandateInput): Promise<MandateResult> {
+    return {
+      mandateId: input.referenceId ? `mandate_${input.referenceId}` : `mandate_${input.userId}`,
+      status: "active",
+      ...(input.referenceId ? { providerPlanId: `plan_${input.referenceId}` } : {}),
+      paidCount: 0,
+      totalCount: input.totalCount ?? 120
+    };
   }
 
   async cancelMandate(input: { mandateId: string }): Promise<{ mandateId: string; status: string }> {
@@ -196,6 +240,42 @@ type RazorpayPaymentResponse = {
   order_id: string;
 };
 
+type RazorpayPlanResponse = {
+  id: string;
+  period: MandateBillingPeriod;
+  interval: number;
+};
+
+type RazorpaySubscriptionResponse = {
+  id: string;
+  plan_id: string;
+  status: string;
+  short_url?: string;
+  current_start?: number | null;
+  current_end?: number | null;
+  charge_at?: number | null;
+  total_count?: number;
+  paid_count?: number;
+};
+
+function toUnixSeconds(date?: Date) {
+  return date ? Math.floor(date.getTime() / 1000) : undefined;
+}
+
+function fromUnixSeconds(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? new Date(value * 1000)
+    : undefined;
+}
+
+function stringifyNotes(metadata: Record<string, unknown> | undefined) {
+  return Object.fromEntries(
+    Object.entries(metadata ?? {})
+      .slice(0, 15)
+      .map(([key, value]) => [key.slice(0, 40), String(value).slice(0, 250)])
+  );
+}
+
 export class RazorpayPaymentProvider implements PaymentProvider {
   readonly providerName = "razorpay";
   readonly mode: "test" | "live";
@@ -218,7 +298,7 @@ export class RazorpayPaymentProvider implements PaymentProvider {
       mode: this.mode,
       configured: true,
       metadata: {
-        paymentFlow: "server-created-order",
+        paymentFlow: "server-created-order-and-subscription",
         checkoutThemeColor: this.config.themeColor ?? null
       }
     };
@@ -236,7 +316,8 @@ export class RazorpayPaymentProvider implements PaymentProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`Razorpay request failed with ${response.status}.`);
+      const errorText = await response.text().catch(() => "");
+      throw new Error(`Razorpay request failed with ${response.status}${errorText ? `: ${errorText.slice(0, 240)}` : ""}.`);
     }
 
     return (await response.json()) as T;
@@ -249,9 +330,7 @@ export class RazorpayPaymentProvider implements PaymentProvider {
         amount: input.amountPaise,
         currency: input.currency ?? "INR",
         receipt: input.referenceId ?? `zook_${randomUUID().slice(0, 18)}`,
-        notes: Object.fromEntries(
-          Object.entries(input.metadata ?? {}).map(([key, value]) => [key, String(value)])
-        )
+        notes: stringifyNotes(input.metadata)
       })
     });
 
@@ -321,6 +400,8 @@ export class RazorpayPaymentProvider implements PaymentProvider {
         payment?: { entity?: Record<string, unknown> };
         order?: { entity?: Record<string, unknown> };
         refund?: { entity?: Record<string, unknown> };
+        subscription?: { entity?: Record<string, unknown> };
+        invoice?: { entity?: Record<string, unknown> };
       };
     };
 
@@ -328,16 +409,31 @@ export class RazorpayPaymentProvider implements PaymentProvider {
     const paymentEntity = payload.payload?.payment?.entity ?? {};
     const orderEntity = payload.payload?.order?.entity ?? {};
     const refundEntity = payload.payload?.refund?.entity ?? {};
+    const subscriptionEntity = payload.payload?.subscription?.entity ?? {};
+    const invoiceEntity = payload.payload?.invoice?.entity ?? {};
     const providerPaymentId = String(paymentEntity.id ?? refundEntity.payment_id ?? "");
     const providerOrderId = String(paymentEntity.order_id ?? orderEntity.id ?? "");
+    const providerSubscriptionId = String(
+      paymentEntity.subscription_id ??
+        invoiceEntity.subscription_id ??
+        subscriptionEntity.id ??
+        ""
+    );
     const metadata =
       (paymentEntity.notes as Record<string, unknown> | undefined) ??
       (orderEntity.notes as Record<string, unknown> | undefined) ??
+      (subscriptionEntity.notes as Record<string, unknown> | undefined) ??
+      (invoiceEntity.notes as Record<string, unknown> | undefined) ??
       undefined;
-    const providerEventId = `${eventType}:${providerPaymentId || String(refundEntity.id ?? "") || providerOrderId || "unknown"}:${payload.created_at ?? "unknown"}`;
+    const providerEventId = `${eventType}:${providerPaymentId || String(refundEntity.id ?? "") || providerOrderId || providerSubscriptionId || "unknown"}:${payload.created_at ?? "unknown"}`;
 
     let paymentStatus: PaymentStatus = "PENDING";
-    if (eventType === "payment.captured" || eventType === "order.paid") {
+    if (
+      eventType === "payment.captured" ||
+      eventType === "order.paid" ||
+      eventType === "subscription.charged" ||
+      eventType === "invoice.paid"
+    ) {
       paymentStatus = "SUCCEEDED";
     } else if (eventType === "payment.failed") {
       paymentStatus = "FAILED";
@@ -359,11 +455,12 @@ export class RazorpayPaymentProvider implements PaymentProvider {
       ...(payload.contains?.length ? { eventVersion: payload.contains.join(",") } : {}),
       ...(providerPaymentId ? { providerPaymentId } : {}),
       ...(providerOrderId ? { providerOrderId } : {}),
-      ...((Number(paymentEntity.amount ?? orderEntity.amount ?? refundEntity.amount ?? 0) || undefined)
-        ? { amountPaise: Number(paymentEntity.amount ?? orderEntity.amount ?? refundEntity.amount ?? 0) }
+      ...(providerSubscriptionId ? { providerSubscriptionId } : {}),
+      ...((Number(paymentEntity.amount ?? orderEntity.amount ?? refundEntity.amount ?? invoiceEntity.amount ?? 0) || undefined)
+        ? { amountPaise: Number(paymentEntity.amount ?? orderEntity.amount ?? refundEntity.amount ?? invoiceEntity.amount ?? 0) }
         : {}),
-      ...(String(paymentEntity.currency ?? orderEntity.currency ?? refundEntity.currency ?? "")
-        ? { currency: String(paymentEntity.currency ?? orderEntity.currency ?? refundEntity.currency ?? "") }
+      ...(String(paymentEntity.currency ?? orderEntity.currency ?? refundEntity.currency ?? invoiceEntity.currency ?? "")
+        ? { currency: String(paymentEntity.currency ?? orderEntity.currency ?? refundEntity.currency ?? invoiceEntity.currency ?? "") }
         : {}),
       idempotencyKey: `${eventType}:${providerEventId}`,
       ...(metadata ? { metadata } : {}),
@@ -409,11 +506,84 @@ export class RazorpayPaymentProvider implements PaymentProvider {
     };
   }
 
-  async createMandate(input: { userId: string }): Promise<{ mandateId: string; status: string }> {
-    return { mandateId: `razorpay_mandate_${input.userId}`, status: "not_implemented" };
+  async createMandate(input: MandateInput): Promise<MandateResult> {
+    const period = input.billingPeriod ?? "monthly";
+    const interval = input.billingInterval ?? 1;
+    const currency = input.currency ?? "INR";
+    const notes = stringifyNotes({
+      ...(input.metadata ?? {}),
+      ...(input.referenceId ? { paymentSessionId: input.referenceId } : {}),
+      userId: input.userId,
+      ...(input.orgId ? { orgId: input.orgId } : {})
+    });
+    const plan = await this.request<RazorpayPlanResponse>("/plans", {
+      method: "POST",
+      body: JSON.stringify({
+        period,
+        interval,
+        item: {
+          name: input.planName ?? "Zook membership autopay",
+          description: input.description ?? "Recurring Zook membership billing",
+          amount: input.amountPaise,
+          currency
+        },
+        notes
+      })
+    });
+    const subscription = await this.request<RazorpaySubscriptionResponse>("/subscriptions", {
+      method: "POST",
+      body: JSON.stringify({
+        plan_id: plan.id,
+        total_count: input.totalCount ?? 120,
+        quantity: 1,
+        customer_notify: true,
+        ...(toUnixSeconds(input.startAt) ? { start_at: toUnixSeconds(input.startAt) } : {}),
+        ...(toUnixSeconds(input.expireBy) ? { expire_by: toUnixSeconds(input.expireBy) } : {}),
+        notes,
+        ...(input.customer?.email || input.customer?.phone
+          ? {
+              notify_info: {
+                ...(input.customer.email ? { notify_email: input.customer.email } : {}),
+                ...(input.customer.phone ? { notify_phone: input.customer.phone } : {})
+              }
+            }
+          : {})
+      })
+    });
+    const currentStartAt = fromUnixSeconds(subscription.current_start);
+    const currentEndAt = fromUnixSeconds(subscription.current_end);
+    const nextChargeAt = fromUnixSeconds(subscription.charge_at);
+    return {
+      mandateId: subscription.id,
+      status: subscription.status,
+      providerPlanId: plan.id,
+      ...(subscription.short_url ? { checkoutUrl: subscription.short_url } : {}),
+      checkoutData: {
+        provider: "razorpay",
+        subscriptionId: subscription.id,
+        keyId: this.config.keyId,
+        amountPaise: input.amountPaise,
+        currency,
+        themeColor: this.config.themeColor ?? null,
+        mode: this.mode,
+        recurring: true,
+        returnUrl: input.returnUrl ?? null
+      },
+      ...(currentStartAt ? { currentStartAt } : {}),
+      ...(currentEndAt ? { currentEndAt } : {}),
+      ...(nextChargeAt ? { nextChargeAt } : {}),
+      paidCount: subscription.paid_count ?? 0,
+      totalCount: subscription.total_count ?? input.totalCount ?? 120
+    };
   }
 
-  async cancelMandate(input: { mandateId: string }): Promise<{ mandateId: string; status: string }> {
-    return { mandateId: input.mandateId, status: "not_implemented" };
+  async cancelMandate(input: { mandateId: string; cancelAtCycleEnd?: boolean }): Promise<{ mandateId: string; status: string }> {
+    const subscription = await this.request<RazorpaySubscriptionResponse>(`/subscriptions/${input.mandateId}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({
+        cancel_at_cycle_end: input.cancelAtCycleEnd ? 1 : 0
+      })
+    });
+    return { mandateId: subscription.id, status: subscription.status };
   }
 }

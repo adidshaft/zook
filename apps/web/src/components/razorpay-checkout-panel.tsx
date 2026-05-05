@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 type RazorpayCheckoutData = {
   provider?: unknown;
   orderId?: unknown;
+  subscriptionId?: unknown;
   keyId?: unknown;
   amountPaise?: unknown;
   currency?: unknown;
@@ -47,23 +48,29 @@ export function RazorpayCheckoutPanel({
   );
 
   const orderId = asString(checkoutData.orderId);
+  const subscriptionId = asString(checkoutData.subscriptionId);
   const keyId = asString(checkoutData.keyId);
   const amountPaise = asNumber(checkoutData.amountPaise);
   const currency = asString(checkoutData.currency) ?? "INR";
   const themeColor = asString(checkoutData.themeColor) ?? "#b9f455";
   const returnUrl = asString(checkoutData.returnUrl);
+  const providerReference = subscriptionId ?? orderId;
+  const isRecurring = Boolean(subscriptionId);
 
-  const canOpen = Boolean(orderId && keyId && amountPaise && scriptReady && !scriptError);
+  const canOpen = Boolean(providerReference && keyId && amountPaise && scriptReady && !scriptError);
   const statusText = useMemo(() => {
     if (scriptError) return scriptError;
-    if (!orderId || !keyId || !amountPaise) return "Payment handoff is missing provider data.";
+    if (!providerReference || !keyId || !amountPaise)
+      return "Payment handoff is missing provider data.";
     if (!scriptReady) return "Preparing secure checkout...";
     if (handoffState === "opening") return "Opening Razorpay...";
     if (handoffState === "submitted")
-      return "Payment submitted. Waiting for secure webhook confirmation.";
+      return isRecurring
+        ? "Autopay authorization submitted. Waiting for secure webhook confirmation."
+        : "Payment submitted. Waiting for secure webhook confirmation.";
     if (handoffState === "failed") return "Checkout was closed before payment confirmation.";
-    return "Ready for secure payment.";
-  }, [amountPaise, handoffState, keyId, orderId, scriptError, scriptReady]);
+    return isRecurring ? "Ready to authorize autopay." : "Ready for secure payment.";
+  }, [amountPaise, handoffState, isRecurring, keyId, providerReference, scriptError, scriptReady]);
 
   useEffect(() => {
     if (window.Razorpay) {
@@ -93,7 +100,7 @@ export function RazorpayCheckoutPanel({
       currency,
       name: "Zook",
       description,
-      order_id: orderId,
+      ...(subscriptionId ? { subscription_id: subscriptionId } : { order_id: orderId }),
       notes: {
         paymentSessionId: sessionId,
       },
@@ -129,7 +136,7 @@ export function RazorpayCheckoutPanel({
           onClick={openCheckout}
           className="zook-focus inline-flex items-center justify-center rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black transition hover:bg-lime-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Pay securely
+          {isRecurring ? "Authorize autopay" : "Pay securely"}
         </button>
       </div>
     </div>

@@ -93,6 +93,17 @@ export type PaymentPurpose =
   | "SHOP_ORDER"
   | "PERSONAL_TRAINING"
   | "MANUAL_ADJUSTMENT";
+export type PaymentMandateStatus =
+  | "CREATED"
+  | "AUTHENTICATED"
+  | "ACTIVE"
+  | "PENDING"
+  | "HALTED"
+  | "PAUSED"
+  | "CANCELLED"
+  | "COMPLETED"
+  | "EXPIRED"
+  | "FAILED";
 export type CouponType = "FIXED_AMOUNT" | "PERCENTAGE";
 export type AttendanceMode = "AUTOMATIC" | "EXCEPTION_APPROVAL" | "MANUAL_APPROVAL";
 export type AttendanceStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "FLAGGED";

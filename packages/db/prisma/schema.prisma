@@ -155,6 +155,19 @@ enum PaymentWebhookAttemptStatus {
   ABANDONED
 }
 
+enum PaymentMandateStatus {
+  CREATED
+  AUTHENTICATED
+  ACTIVE
+  PENDING
+  HALTED
+  PAUSED
+  CANCELLED
+  COMPLETED
+  EXPIRED
+  FAILED
+}
+
 enum CouponType {
   FIXED_AMOUNT
   PERCENTAGE
@@ -1029,6 +1042,40 @@ model Payment {
 
   @@index([orgId, status])
   @@index([userId])
+}
+
+model PaymentMandate {
+  id                   String               @id @default(cuid())
+  provider             String               @default("mock")
+  providerMandateId    String?
+  providerPlanId       String?
+  orgId                String
+  userId               String
+  planId               String
+  sourceSubscriptionId String
+  latestSubscriptionId String?
+  status               PaymentMandateStatus @default(CREATED)
+  amountPaise          Int
+  currency             String               @default("INR")
+  billingPeriod        String               @default("monthly")
+  billingInterval      Int                  @default(1)
+  totalCount           Int                  @default(120)
+  paidCount            Int                  @default(0)
+  checkoutUrl          String?
+  currentStartAt       DateTime?
+  currentEndAt         DateTime?
+  nextChargeAt         DateTime?
+  authenticatedAt      DateTime?
+  activatedAt          DateTime?
+  cancelledAt          DateTime?
+  metadata             Json?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@unique([provider, providerMandateId])
+  @@index([orgId, userId, status])
+  @@index([sourceSubscriptionId])
+  @@index([latestSubscriptionId])
 }
 
 model PaymentEvent {

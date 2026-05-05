@@ -24,6 +24,7 @@ import {
   roles,
   validateRuntimeConfig,
   type Permission,
+  type PaymentMandateStatus,
   type AIRequestType,
   type PlanType,
   type Role,
@@ -118,7 +119,7 @@ import {
   renderCsv,
   type OrgReportType,
 } from "./reports-service";
-import { applyPaymentSessionStatus } from "./payment-runtime";
+import { applyAutopayProviderEvent, applyPaymentSessionStatus } from "./payment-runtime";
 import { deliverPushForNotification } from "./push-runtime";
 import { assertMinorConsentGranted } from "./minor-gates";
 import {
@@ -154,6 +155,10 @@ const subscriptionRenewSchema = z.object({
   planId: z.string().optional(),
   couponCode: z.string().trim().toUpperCase().optional(),
   referralCode: z.string().trim().toUpperCase().optional(),
+});
+
+const membershipAutopaySchema = z.object({
+  planId: z.string().optional(),
 });
 
 const completeMockPaymentSchema = z.object({
@@ -1116,6 +1121,66 @@ function assertCanCompleteMockPayment(
   if (!ownsSession && !canManageOrgPayment && !ctx.isPlatformAdmin) {
     throw forbiddenError("Payment session does not belong to this user.");
   }
+}
+
+const liveMandateStatuses: PaymentMandateStatus[] = [
+  "CREATED",
+  "AUTHENTICATED",
+  "ACTIVE",
+  "PENDING",
+  "HALTED",
+  "PAUSED",
+];
+
+function providerMandateStatusToLocal(status: string): PaymentMandateStatus {
+  switch (status.toLowerCase()) {
+    case "authenticated":
+      return "AUTHENTICATED";
+    case "active":
+      return "ACTIVE";
+    case "pending":
+      return "PENDING";
+    case "halted":
+      return "HALTED";
+    case "paused":
+      return "PAUSED";
+    case "cancelled":
+      return "CANCELLED";
+    case "completed":
+      return "COMPLETED";
+    case "expired":
+      return "EXPIRED";
+    case "failed":
+      return "FAILED";
+    default:
+      return "CREATED";
+  }
+}
+
+function deriveAutopayBillingCadence(plan: {
+  durationDays: number | null;
+  validityDays: number | null;
+  startDate: Date | null;
+  endDate: Date | null;
+}) {
+  const rangedDays =
+    plan.startDate && plan.endDate
+      ? Math.ceil((plan.endDate.getTime() - plan.startDate.getTime()) / (24 * 60 * 60 * 1000))
+      : null;
+  const days = plan.durationDays ?? plan.validityDays ?? rangedDays;
+  if (!days || days < 7) {
+    throw validationError("Autopay requires a plan validity of at least 7 days.");
+  }
+  if (days >= 365 && days % 365 === 0) {
+    return { billingPeriod: "yearly" as const, billingInterval: Math.max(1, days / 365) };
+  }
+  if (days >= 30 && days % 30 === 0) {
+    return { billingPeriod: "monthly" as const, billingInterval: Math.max(1, days / 30) };
+  }
+  if (days % 7 === 0) {
+    return { billingPeriod: "weekly" as const, billingInterval: Math.max(1, days / 7) };
+  }
+  return { billingPeriod: "daily" as const, billingInterval: Math.max(7, days) };
 }
 
 function guardianConsentCode() {
@@ -4601,6 +4666,83 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       return ok({ received: true, duplicate: true, providerEventId });
     }
 
+    let autopayProcessed;
+    try {
+      autopayProcessed = parsed
+        ? await applyAutopayProviderEvent({
+            event: parsed,
+            createNotification: createDirectNotification,
+            ensureMembership: ensureOrganizationMembership,
+          })
+        : null;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Autopay event application failed.";
+      await prisma.paymentEvent.update({
+        where: { id: event.id },
+        data: {
+          status: "QUARANTINED",
+          processedAt: new Date(),
+          processingError: errorMessage,
+        },
+      });
+      await prisma.paymentWebhookAttempt.update({
+        where: {
+          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+        },
+        data: {
+          status: "FAILED",
+          httpStatusCode: 200,
+          durationMs: Date.now() - startedAt,
+          completedAt: new Date(),
+          errorCode: "autopay_application_failed",
+          errorMessage,
+          result: {
+            quarantined: true,
+            reason: "autopay_application_failed",
+          } as Prisma.InputJsonValue,
+        },
+      });
+      return ok({ received: true, quarantined: true, providerEventId });
+    }
+
+    if (autopayProcessed) {
+      await prisma.paymentEvent.update({
+        where: { id: event.id },
+        data: clean({
+          orgId: autopayProcessed.mandate.orgId,
+          userId: autopayProcessed.mandate.userId,
+          paymentId: autopayProcessed.payment?.id,
+          status: "PROCESSED",
+          processedAt: new Date(),
+          processingError: null,
+        }),
+      });
+      await prisma.paymentWebhookAttempt.update({
+        where: {
+          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+        },
+        data: {
+          status: "SUCCEEDED",
+          httpStatusCode: 200,
+          durationMs: Date.now() - startedAt,
+          completedAt: new Date(),
+          result: clean({
+            autopayMandateId: autopayProcessed.mandate.id,
+            paymentId: autopayProcessed.payment?.id,
+            subscriptionId: autopayProcessed.subscription?.id,
+            mandateStatus: autopayProcessed.mandate.status,
+          }) as Prisma.InputJsonValue,
+        },
+      });
+      return ok({
+        received: true,
+        providerEventId,
+        autopayMandateId: autopayProcessed.mandate.id,
+        status: autopayProcessed.mandate.status,
+      });
+    }
+
     const metadata = (parsed?.metadata ?? {}) as Record<string, unknown>;
     const sessionIdFromMetadata =
       typeof metadata.paymentSessionId === "string" ? metadata.paymentSessionId : undefined;
@@ -5077,6 +5219,268 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       session: started.session,
     });
   }
+  if (request.method === "POST" && pathMatches(path, ["me", "memberships", /.+/, "autopay"])) {
+    const subscriptionId = path[2]!;
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const body = membershipAutopaySchema.parse(await readJson(request).catch(() => ({})));
+    await assertRateLimit(
+      "paymentSessionByActor",
+      `autopay:${subscriptionId}:${userId}`,
+      "Too many autopay setup attempts.",
+    );
+    const currentSubscription = await prisma.memberSubscription.findFirst({
+      where: { id: subscriptionId, memberUserId: userId },
+    });
+    if (!currentSubscription) {
+      throw notFoundError("Membership not found");
+    }
+    if (currentSubscription.status !== "ACTIVE") {
+      throw validationError("Autopay can only be enabled for an active membership.");
+    }
+    const orgId = currentSubscription.orgId;
+    assertActiveContextOrg(ctx, orgId);
+    const [organization, currentPlan, selectedPlan, user, existingMandate] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: orgId } }),
+      prisma.membershipPlan.findFirst({ where: { id: currentSubscription.planId, orgId } }),
+      body.planId
+        ? prisma.membershipPlan.findFirst({ where: { id: body.planId, orgId, active: true } })
+        : Promise.resolve(null),
+      prisma.user.findUniqueOrThrow({ where: { id: userId } }),
+      prisma.paymentMandate.findFirst({
+        where: {
+          orgId,
+          userId,
+          status: { in: liveMandateStatuses },
+          OR: [
+            { sourceSubscriptionId: subscriptionId },
+            { latestSubscriptionId: subscriptionId },
+            { latestSubscriptionId: currentSubscription.id },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+    const plan = selectedPlan ?? currentPlan;
+    if (!organization || !plan) {
+      throw notFoundError("Autopay plan not found");
+    }
+    if (
+      organization.status === "SUSPENDED" ||
+      organization.status === "CANCELLED" ||
+      organization.status === "TRIAL_EXPIRED"
+    ) {
+      throw forbiddenError("This gym is not accepting autopay setup right now.");
+    }
+    if (user.isMinor && user.guardianPending) {
+      throw forbiddenError("Guardian consent is required before enabling autopay.");
+    }
+    if (existingMandate) {
+      return ok({
+        mandate: existingMandate,
+        checkoutUrl: existingMandate.checkoutUrl,
+        session: null,
+      });
+    }
+
+    const provider = getPaymentProviderOrThrow();
+    const cadence = deriveAutopayBillingCadence(plan);
+    const mandate = await prisma.paymentMandate.create({
+      data: {
+        orgId,
+        userId,
+        planId: plan.id,
+        sourceSubscriptionId: currentSubscription.id,
+        latestSubscriptionId: currentSubscription.id,
+        provider: provider.providerName,
+        status: "CREATED",
+        amountPaise: plan.pricePaise,
+        currency: plan.currency,
+        billingPeriod: cadence.billingPeriod,
+        billingInterval: cadence.billingInterval,
+        totalCount: 120,
+        metadata: clean({
+          sourceSubscriptionId: currentSubscription.id,
+          planId: plan.id,
+        }) as Prisma.InputJsonValue,
+      },
+    });
+
+    if (provider.providerName === "mock") {
+      const created = await provider.createMandate({
+        orgId,
+        userId,
+        amountPaise: plan.pricePaise,
+        currency: "INR",
+        referenceId: mandate.id,
+        planName: plan.name,
+        billingPeriod: cadence.billingPeriod,
+        billingInterval: cadence.billingInterval,
+        totalCount: 120,
+        metadata: {
+          autopayMandateId: mandate.id,
+          sourceSubscriptionId: currentSubscription.id,
+          planId: plan.id,
+        },
+      });
+      const updated = await prisma.paymentMandate.update({
+        where: { id: mandate.id },
+        data: clean({
+          status: providerMandateStatusToLocal(created.status),
+          providerMandateId: created.mandateId,
+          providerPlanId: created.providerPlanId,
+          paidCount: created.paidCount,
+          totalCount: created.totalCount,
+          activatedAt: new Date(),
+        }),
+      });
+      return ok({ mandate: updated, checkoutUrl: null, session: null });
+    }
+
+    const session = await prisma.paymentSession.create({
+      data: {
+        orgId,
+        userId,
+        purpose: "MEMBERSHIP",
+        amountPaise: plan.pricePaise,
+        currency: plan.currency,
+        status: "CREATED",
+        checkoutUrl: "",
+        provider: provider.providerName,
+        metadata: clean({
+          autopayMandateId: mandate.id,
+          sourceSubscriptionId: currentSubscription.id,
+          planId: plan.id,
+        }) as Prisma.InputJsonValue,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+    let createdMandate;
+    try {
+      const startAt =
+        currentSubscription.endsAt && currentSubscription.endsAt.getTime() > Date.now()
+          ? currentSubscription.endsAt
+          : undefined;
+      createdMandate = await provider.createMandate({
+        orgId,
+        userId,
+        amountPaise: plan.pricePaise,
+        currency: "INR",
+        referenceId: session.id,
+        planName: plan.name,
+        description: `${organization.name} ${plan.name} autopay`,
+        billingPeriod: cadence.billingPeriod,
+        billingInterval: cadence.billingInterval,
+        totalCount: 120,
+        ...(startAt ? { startAt } : {}),
+        returnUrl: `/checkout/${session.id}`,
+        customer: clean({
+          name: user.name,
+          email: user.email,
+          phone: user.phone ?? undefined,
+        }),
+        metadata: {
+          autopayMandateId: mandate.id,
+          sourceSubscriptionId: currentSubscription.id,
+          planId: plan.id,
+          paymentSessionId: session.id,
+        },
+      });
+    } catch (error) {
+      await prisma.$transaction([
+        prisma.paymentSession.update({
+          where: { id: session.id },
+          data: { status: "FAILED", completedAt: new Date() },
+        }),
+        prisma.paymentMandate.update({
+          where: { id: mandate.id },
+          data: { status: "FAILED" },
+        }),
+      ]);
+      throw error;
+    }
+
+    const hostedCheckoutUrl = `/checkout/${session.id}`;
+    const [updatedMandate, updatedSession] = await prisma.$transaction([
+      prisma.paymentMandate.update({
+        where: { id: mandate.id },
+        data: clean({
+          status: providerMandateStatusToLocal(createdMandate.status),
+          providerMandateId: createdMandate.mandateId,
+          providerPlanId: createdMandate.providerPlanId,
+          checkoutUrl: hostedCheckoutUrl,
+          currentStartAt: createdMandate.currentStartAt,
+          currentEndAt: createdMandate.currentEndAt,
+          nextChargeAt: createdMandate.nextChargeAt,
+          paidCount: createdMandate.paidCount,
+          totalCount: createdMandate.totalCount,
+        }),
+      }),
+      prisma.paymentSession.update({
+        where: { id: session.id },
+        data: {
+          provider: provider.providerName,
+          providerRef: createdMandate.mandateId,
+          checkoutUrl: hostedCheckoutUrl,
+          status: "CREATED",
+          metadata: {
+            ...getObjectMetadata(session.metadata),
+            providerCheckoutData: createdMandate.checkoutData ?? null,
+          } as Prisma.InputJsonValue,
+        },
+      }),
+    ]);
+
+    return ok({
+      mandate: updatedMandate,
+      checkoutUrl: hostedCheckoutUrl,
+      checkoutData: createdMandate.checkoutData ?? null,
+      session: updatedSession,
+    });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["me", "memberships", /.+/, "autopay"])) {
+    const subscriptionId = path[2]!;
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const currentSubscription = await prisma.memberSubscription.findFirst({
+      where: { id: subscriptionId, memberUserId: userId },
+    });
+    if (!currentSubscription) {
+      throw notFoundError("Membership not found");
+    }
+    const orgId = currentSubscription.orgId;
+    assertActiveContextOrg(ctx, orgId);
+    const mandate = await prisma.paymentMandate.findFirst({
+      where: {
+        orgId,
+        userId,
+        status: { in: liveMandateStatuses },
+        OR: [{ sourceSubscriptionId: subscriptionId }, { latestSubscriptionId: subscriptionId }],
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!mandate) {
+      throw notFoundError("Autopay mandate not found");
+    }
+    const provider = getPaymentProviderOrThrow();
+    let nextStatus: PaymentMandateStatus = "CANCELLED";
+    if (mandate.providerMandateId && mandate.provider === provider.providerName) {
+      const cancellation = await provider.cancelMandate({
+        mandateId: mandate.providerMandateId,
+        reason: "member_requested",
+        cancelAtCycleEnd: false,
+      });
+      nextStatus = providerMandateStatusToLocal(cancellation.status);
+    }
+    const updated = await prisma.paymentMandate.update({
+      where: { id: mandate.id },
+      data: {
+        status: nextStatus,
+        cancelledAt: new Date(),
+      },
+    });
+    return ok({ mandate: updated });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "memberships"])) {
     const userId = requireAuth(await getRequestContext(request));
     const subscriptions = await prisma.memberSubscription.findMany({
@@ -5084,7 +5488,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       orderBy: { createdAt: "desc" },
       take: 50,
     });
-    const [plans, organizations, payments] = await Promise.all([
+    const [plans, organizations, payments, mandates] = await Promise.all([
       prisma.membershipPlan.findMany({
         where: { id: { in: subscriptions.map((subscription) => subscription.planId) } },
       }),
@@ -5096,6 +5500,11 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
         take: 25,
       }),
+      prisma.paymentMandate.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
     ]);
     return ok({
       subscriptions: subscriptions.map((subscription) => ({
@@ -5103,8 +5512,15 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         plan: plans.find((plan) => plan.id === subscription.planId) ?? null,
         organization:
           organizations.find((organization) => organization.id === subscription.orgId) ?? null,
+        autopay:
+          mandates.find(
+            (mandate) =>
+              mandate.sourceSubscriptionId === subscription.id ||
+              mandate.latestSubscriptionId === subscription.id,
+          ) ?? null,
       })),
       payments,
+      autopayMandates: mandates,
     });
   }
   return undefined;
