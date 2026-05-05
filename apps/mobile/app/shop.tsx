@@ -391,7 +391,7 @@ export default function Shop() {
                 key={product.id}
                 name={product.name}
                 price={formatInr(product.pricePaise)}
-                stock={lowStock ? "Low stock" : fulfillmentLabel}
+                stock={fulfillmentLabel}
                 tone={product.stock <= 0 ? "red" : lowStock ? "amber" : "lime"}
                 imageUrl={(product as { imageUrl?: string | null }).imageUrl}
                 quantity={cart[product.id] ?? 0}

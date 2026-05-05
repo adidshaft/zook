@@ -12,7 +12,10 @@ import {
   memberHabitSchema,
   membershipPlanSchema,
   notificationSchema,
+  offerSchema,
   requestOtpSchema,
+  referralCodeManageSchema,
+  referralPolicySchema,
   workoutSessionSchema,
   verifyOtpSchema,
   getAllowedFixedOtp,
@@ -145,6 +148,12 @@ const subscriptionCheckoutSchema = z.object({
   referralCode: z.string().trim().toUpperCase().optional(),
 });
 
+const subscriptionRenewSchema = z.object({
+  planId: z.string().optional(),
+  couponCode: z.string().trim().toUpperCase().optional(),
+  referralCode: z.string().trim().toUpperCase().optional(),
+});
+
 const completeMockPaymentSchema = z.object({
   status: z.enum(["SUCCEEDED", "FAILED", "PENDING"]).optional(),
 });
@@ -196,6 +205,23 @@ const notificationComposerSchema = notificationSchema.extend({
 const staffInviteSchema = z.object({
   email: z.string().trim().email(),
   role: z.enum(["ADMIN", "RECEPTIONIST", "TRAINER"]),
+});
+
+const staffRoleUpdateSchema = z.object({
+  role: z.enum(["ADMIN", "RECEPTIONIST", "TRAINER"]),
+  branchId: z.string().optional().nullable(),
+});
+
+const branchManageSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  address: z.string().trim().min(3).max(240),
+  city: z.string().trim().min(2).max(80),
+  state: z.string().trim().min(2).max(80),
+  pincode: z.string().regex(/^\d{6}$/),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
+  isDefault: z.boolean().optional(),
+  active: z.boolean().optional(),
 });
 
 const permissionOverrideSchema = z.object({
@@ -1877,6 +1903,36 @@ async function resolveValidatedReferral(input: {
   const existingRedemption = await prisma.referralRedemption.findFirst({
     where: { orgId: input.orgId, referralCodeId: referral.id, referredUserId: input.userId },
   });
+  const policy = await prisma.referralPolicy.upsert({
+    where: { orgId: input.orgId },
+    update: {},
+    create: { orgId: input.orgId },
+  });
+  if (!policy.enabled) {
+    throw validationError("Referral program is not active for this gym");
+  }
+  if (referral.createdByRole === "TRAINER" && !policy.trainerReferralEnabled) {
+    throw validationError("Trainer referrals are not active for this gym");
+  }
+  if (
+    (referral.createdByRole === "ADMIN" || referral.createdByRole === "RECEPTIONIST") &&
+    !policy.staffReferralEnabled
+  ) {
+    throw validationError("Staff referrals are not active for this gym");
+  }
+  const resetAt = referral.lastResetAt ?? referral.createdAt;
+  const now = new Date();
+  const resetNeeded = resetAt.getUTCMonth() !== now.getUTCMonth() || resetAt.getUTCFullYear() !== now.getUTCFullYear();
+  const monthlyUseCount = resetNeeded ? 0 : referral.monthlyUseCount;
+  if (resetNeeded) {
+    await prisma.referralCode.update({
+      where: { id: referral.id },
+      data: { monthlyUseCount: 0, lastResetAt: now },
+    });
+  }
+  if (monthlyUseCount >= policy.maxReferralsPerMonth) {
+    throw validationError("Referral code has reached its monthly limit");
+  }
   validateReferralRedemption(
     clean({
       id: referral.id,
@@ -1897,6 +1953,92 @@ async function resolveValidatedReferral(input: {
     }),
   );
   return referral;
+}
+
+async function generateUniqueReferralCode(seed: string) {
+  const prefix = `ZK${seed.replace(/[^a-z0-9]/gi, "").slice(0, 2).toUpperCase()}`;
+  for (let index = 0; index < 8; index += 1) {
+    const code = `${prefix}${randomBytes(2).toString("hex").toUpperCase()}`;
+    const existing = await prisma.referralCode.findUnique({ where: { code } });
+    if (!existing) return code;
+  }
+  return `ZK${randomBytes(5).toString("hex").toUpperCase()}`;
+}
+
+function computeDiscountPaise(input: {
+  type: "PERCENTAGE" | "FIXED_AMOUNT" | "FIXED" | "NONE";
+  value: number;
+  amountPaise: number;
+}) {
+  if (input.type === "NONE") return 0;
+  if (input.type === "PERCENTAGE") {
+    return Math.floor((input.amountPaise * input.value) / 10_000);
+  }
+  return Math.min(input.value, input.amountPaise);
+}
+
+async function resolveActiveOffer(input: { orgId: string; planId: string; amountPaise: number }) {
+  const now = new Date();
+  const offers = await prisma.offer.findMany({
+    where: {
+      orgId: input.orgId,
+      active: true,
+      startsAt: { lte: now },
+      endsAt: { gte: now },
+    },
+    orderBy: { discountValue: "desc" },
+    take: 25,
+  });
+  const offer = offers.find((candidate) => {
+    if (candidate.maxRedemptions && candidate.redemptionCount >= candidate.maxRedemptions) {
+      return false;
+    }
+    const applicablePlans = Array.isArray(candidate.applicablePlans)
+      ? candidate.applicablePlans.filter((item): item is string => typeof item === "string")
+      : [];
+    return applicablePlans.length === 0 || applicablePlans.includes(input.planId);
+  });
+  if (!offer) {
+    return { offer: null, discountPaise: 0 };
+  }
+  return {
+    offer,
+    discountPaise: computeDiscountPaise({
+      type: offer.discountType,
+      value: offer.discountValue,
+      amountPaise: input.amountPaise,
+    }),
+  };
+}
+
+async function resolveReferralPricing(input: {
+  orgId: string;
+  referralCodeId?: string;
+  amountPaise: number;
+  couponDiscountPaise: number;
+}) {
+  const policy = await prisma.referralPolicy.upsert({
+    where: { orgId: input.orgId },
+    update: {},
+    create: { orgId: input.orgId },
+  });
+  if (!input.referralCodeId) {
+    const capPaise = Math.floor((input.amountPaise * policy.maxDiscountCapBps) / 10_000);
+    const cappedDiscountPaise = Math.min(input.couponDiscountPaise, capPaise);
+    return { referralDiscountPaise: 0, finalAmountPaise: input.amountPaise - cappedDiscountPaise };
+  }
+  const rawReferralDiscount = computeDiscountPaise({
+    type: policy.referredDiscountType as "PERCENTAGE" | "FIXED" | "NONE",
+    value: policy.referredDiscountValue,
+    amountPaise: input.amountPaise,
+  });
+  const capPaise = Math.floor((input.amountPaise * policy.maxDiscountCapBps) / 10_000);
+  const combinedDiscountPaise = Math.min(input.couponDiscountPaise + rawReferralDiscount, capPaise);
+  const referralDiscountPaise = Math.max(combinedDiscountPaise - input.couponDiscountPaise, 0);
+  return {
+    referralDiscountPaise,
+    finalAmountPaise: Math.max(input.amountPaise - combinedDiscountPaise, 0),
+  };
 }
 
 async function resolveValidatedCoupon(input: {
@@ -2208,6 +2350,86 @@ async function handleMeData(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
     return ok(await getMemberHomeData(userId, ctx.orgId));
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "referral-codes"])) {
+    const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
+    const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, requestedOrgId);
+    const orgId = requestedOrgId ?? ctx.orgId;
+    if (!orgId) {
+      return ok({ referralCodes: [], rewards: [] });
+    }
+    const [org, policy] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: orgId }, select: { username: true } }),
+      prisma.referralPolicy.upsert({ where: { orgId }, update: {}, create: { orgId } }),
+    ]);
+    if (!org || !policy.enabled) {
+      return ok({ referralCodes: [], rewards: [] });
+    }
+    const role = ctx.roles.includes("TRAINER")
+      ? "TRAINER"
+      : ctx.roles.includes("RECEPTIONIST")
+        ? "RECEPTIONIST"
+        : ctx.roles.includes("ADMIN")
+          ? "ADMIN"
+          : "MEMBER";
+    if ((role === "TRAINER" && !policy.trainerReferralEnabled) || (role !== "TRAINER" && role !== "MEMBER" && !policy.staffReferralEnabled)) {
+      return ok({ referralCodes: [], rewards: [] });
+    }
+    let referral = await prisma.referralCode.findFirst({
+      where: { orgId, referrerUserId: userId, createdByRole: role, autoGenerated: true },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!referral) {
+      const expiresAt =
+        policy.referralCodeExpiryDays > 0
+          ? new Date(Date.now() + policy.referralCodeExpiryDays * 24 * 60 * 60 * 1000)
+          : undefined;
+      referral = await prisma.referralCode.create({
+        data: clean({
+          orgId,
+          referrerUserId: userId,
+          code: await generateUniqueReferralCode(userId),
+          createdByRole: role,
+          displayName: role === "TRAINER" ? "Trainer referral" : "Member referral",
+          maxUses: policy.maxReferralsPerMonth,
+          expiresAt,
+          status: "active",
+          autoGenerated: true,
+          lastResetAt: new Date(),
+        }),
+      });
+    }
+    const rewards = await prisma.referralReward.findMany({
+      where: { orgId, referrerUserId: userId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+    return ok({
+      referralCodes: [referral],
+      rewards,
+      links: {
+        web: `/join/${org.username}?ref=${referral.code}`,
+        short: `/r/${referral.code}`,
+        app: `zook://r/${referral.code}`,
+      },
+      policy,
+    });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "referral-rewards"])) {
+    const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
+    const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, requestedOrgId);
+    const orgId = requestedOrgId ?? ctx.orgId;
+    return ok({
+      rewards: await prisma.referralReward.findMany({
+        where: { referrerUserId: userId, ...(orgId ? { orgId } : {}) },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "profile"])) {
     const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
@@ -2998,6 +3220,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       trainerAssignments,
       branches,
       settings,
+      offers,
     ] = await Promise.all([
       prisma.membershipPlan.findMany({
         where: { orgId: org.id, active: true, publicVisible: true },
@@ -3030,6 +3253,16 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       }),
       prisma.branch.findMany({ where: { orgId: org.id, active: true }, take: 5 }),
       prisma.organizationSetting.findUnique({ where: { orgId: org.id } }),
+      prisma.offer.findMany({
+        where: {
+          orgId: org.id,
+          active: true,
+          startsAt: { lte: new Date() },
+          endsAt: { gte: new Date() },
+        },
+        orderBy: { endsAt: "asc" },
+        take: 10,
+      }),
     ]);
     const [trainerUsers, trainerProfiles] = await Promise.all([
       prisma.user.findMany({
@@ -3088,7 +3321,37 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           };
         })
         .filter((trainer) => trainer.visibleToMembers !== false),
-      plans,
+      plans: plans.map((plan) => {
+        const offer = offers.find((candidate) => {
+          const applicablePlans = Array.isArray(candidate.applicablePlans)
+            ? candidate.applicablePlans.filter((item): item is string => typeof item === "string")
+            : [];
+          const applies = applicablePlans.length === 0 || applicablePlans.includes(plan.id);
+          return applies && (!candidate.maxRedemptions || candidate.redemptionCount < candidate.maxRedemptions);
+        });
+        const offerDiscountPaise = offer
+          ? computeDiscountPaise({
+              type: offer.discountType,
+              value: offer.discountValue,
+              amountPaise: plan.pricePaise,
+            })
+          : 0;
+        return {
+          ...plan,
+          activeOffer: offer
+            ? {
+                id: offer.id,
+                name: offer.name,
+                description: offer.description,
+                discountType: offer.discountType,
+                discountValue: offer.discountValue,
+                endsAt: offer.endsAt,
+              }
+            : null,
+          effectivePricePaise: Math.max(plan.pricePaise - offerDiscountPaise, 0),
+        };
+      }),
+      offers,
       viewerState: viewerUserId
         ? {
             activeMembership,
@@ -3365,6 +3628,139 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       },
     });
   }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "branches"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ORG_MANAGE_LOCATION");
+    return ok({
+      branches: await prisma.branch.findMany({
+        where: { orgId },
+        orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+      }),
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "branches"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_LOCATION");
+    const body = branchManageSchema.parse(await readJson(request));
+    const branch = await prisma.$transaction(async (tx) => {
+      if (body.isDefault) {
+        await tx.branch.updateMany({ where: { orgId, isDefault: true }, data: { isDefault: false } });
+      }
+      const created = await tx.branch.create({
+        data: clean({
+          orgId,
+          name: body.name,
+          address: body.address,
+          city: body.city,
+          state: body.state,
+          pincode: body.pincode,
+          latitude: body.latitude != null ? new Prisma.Decimal(body.latitude) : undefined,
+          longitude: body.longitude != null ? new Prisma.Decimal(body.longitude) : undefined,
+          isDefault: body.isDefault ?? false,
+          active: body.active ?? true,
+        }),
+      });
+      const activeDefault = await tx.branch.findFirst({ where: { orgId, isDefault: true, active: true } });
+      if (!activeDefault) {
+        await tx.branch.update({ where: { id: created.id }, data: { isDefault: true, active: true } });
+        return tx.branch.findUniqueOrThrow({ where: { id: created.id } });
+      }
+      return created;
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "branch.created",
+      entityType: "branch",
+      entityId: branch.id,
+      metadata: { name: branch.name, isDefault: branch.isDefault },
+    });
+    return ok({ branch });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "branches", /.+/])) {
+    const orgId = path[1]!;
+    const branchId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_LOCATION");
+    const body = branchManageSchema.partial().parse(await readJson(request));
+    const existing = await prisma.branch.findFirst({ where: { id: branchId, orgId } });
+    if (!existing) {
+      throw notFoundError("Branch not found");
+    }
+    const branch = await prisma.$transaction(async (tx) => {
+      if (body.isDefault) {
+        await tx.branch.updateMany({ where: { orgId, isDefault: true, id: { not: branchId } }, data: { isDefault: false } });
+      }
+      const updated = await tx.branch.update({
+        where: { id: branchId },
+        data: clean({
+          name: body.name,
+          address: body.address,
+          city: body.city,
+          state: body.state,
+          pincode: body.pincode,
+          latitude: body.latitude != null ? new Prisma.Decimal(body.latitude) : body.latitude,
+          longitude: body.longitude != null ? new Prisma.Decimal(body.longitude) : body.longitude,
+          isDefault: body.isDefault,
+          active: body.active,
+        }),
+      });
+      if (updated.isDefault && !updated.active) {
+        throw conflictError("Default branch must stay active.");
+      }
+      if (existing.isDefault && body.isDefault === false) {
+        const replacement = await tx.branch.findFirst({
+          where: { orgId, active: true, id: { not: branchId } },
+          orderBy: { createdAt: "asc" },
+        });
+        if (!replacement) {
+          throw conflictError("At least one active default branch is required.");
+        }
+        await tx.branch.update({ where: { id: replacement.id }, data: { isDefault: true } });
+      }
+      return updated;
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "branch.updated",
+      entityType: "branch",
+      entityId: branch.id,
+      metadata: { name: branch.name, isDefault: branch.isDefault, active: branch.active },
+    });
+    return ok({ branch });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "branches", /.+/])) {
+    const orgId = path[1]!;
+    const branchId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_LOCATION");
+    const existing = await prisma.branch.findFirst({ where: { id: branchId, orgId } });
+    if (!existing) {
+      throw notFoundError("Branch not found");
+    }
+    if (existing.isDefault) {
+      throw conflictError("Default branch cannot be deactivated. Make another branch default first.");
+    }
+    const branch = await prisma.branch.update({
+      where: { id: branchId },
+      data: { active: false },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "branch.deactivated",
+      entityType: "branch",
+      entityId: branch.id,
+      metadata: { name: branch.name },
+    });
+    return ok({ branch });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "dashboard"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -3380,6 +3776,65 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
     return ok({ members: await getOrganizationMembers(orgId) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members", /.+/])) {
+    const orgId = path[1]!;
+    const memberUserId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    const membership = await prisma.organizationUser.findFirst({
+      where: { orgId, userId: memberUserId, status: "active" },
+    });
+    if (!membership) {
+      throw notFoundError("Member not found");
+    }
+    const [user, profile, subscriptions, payments, attendance, bodyProgress, workouts] =
+      await Promise.all([
+        prisma.user.findUnique({ where: { id: memberUserId } }),
+        prisma.memberProfile.findUnique({ where: { orgId_userId: { orgId, userId: memberUserId } } }),
+        prisma.memberSubscription.findMany({
+          where: { orgId, memberUserId },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        }),
+        prisma.payment.findMany({
+          where: { orgId, userId: memberUserId },
+          orderBy: { recordedAt: "desc" },
+          take: 10,
+        }),
+        prisma.attendanceRecord.findMany({
+          where: { orgId, userId: memberUserId },
+          orderBy: { checkedInAt: "desc" },
+          take: 20,
+        }),
+        prisma.bodyProgressEntry.findMany({
+          where: { organizationId: orgId, userId: memberUserId },
+          orderBy: { measuredAt: "desc" },
+          take: 12,
+        }),
+        prisma.workoutSession.findMany({
+          where: { organizationId: orgId, userId: memberUserId, visibility: "TRAINER_VISIBLE" },
+          orderBy: { startedAt: "desc" },
+          take: 10,
+        }),
+      ]);
+    const plans = await prisma.membershipPlan.findMany({
+      where: { id: { in: subscriptions.map((subscription) => subscription.planId) } },
+    });
+    return ok({
+      member: {
+        user,
+        profile,
+        subscriptions: subscriptions.map((subscription) => ({
+          ...subscription,
+          plan: plans.find((plan) => plan.id === subscription.planId) ?? null,
+        })),
+        payments,
+        attendance,
+        bodyProgress,
+        workouts,
+      },
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "reports", "summary"])) {
     const orgId = path[1]!;
@@ -3703,6 +4158,66 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       metadata: { name: plan.name, type: plan.type },
     });
     return ok({ plan });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "membership-plans", /.+/])) {
+    const orgId = path[1]!;
+    const planId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_PLAN_MANAGE");
+    const body = membershipPlanSchema.extend({ active: z.boolean().optional() }).partial().parse(await readJson(request));
+    const existingPlan = await prisma.membershipPlan.findFirst({ where: { id: planId, orgId } });
+    if (!existingPlan) {
+      throw notFoundError("Membership plan not found");
+    }
+    const plan = await prisma.membershipPlan.update({
+      where: { id: existingPlan.id },
+      data: clean({
+        name: body.name,
+        description: body.description,
+        type: body.type,
+        pricePaise: body.pricePaise,
+        durationDays: body.durationDays,
+        visitLimit: body.visitLimit,
+        validityDays: body.validityDays,
+        publicVisible: body.publicVisible,
+        active: body.active,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "membership_plan.updated",
+      entityType: "membership_plan",
+      entityId: plan.id,
+      metadata: { name: plan.name, active: plan.active, publicVisible: plan.publicVisible },
+    });
+    return ok({ plan });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "membership-plans", /.+/])) {
+    const orgId = path[1]!;
+    const planId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_PLAN_MANAGE");
+    const existingPlan = await prisma.membershipPlan.findFirst({ where: { id: planId, orgId } });
+    if (!existingPlan) {
+      throw notFoundError("Membership plan not found");
+    }
+    const usageCount = await prisma.memberSubscription.count({ where: { orgId, planId: existingPlan.id } });
+    if (usageCount > 0) {
+      throw conflictError("This plan has subscriptions attached. Archive it instead of deleting.");
+    }
+    await prisma.membershipPlan.delete({ where: { id: existingPlan.id } });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "membership_plan.deleted",
+      entityType: "membership_plan",
+      entityId: existingPlan.id,
+      metadata: { name: existingPlan.name },
+    });
+    return ok({ deleted: true });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "join-requests"])) {
     const ctx = await getRequestContext(request);
@@ -4313,6 +4828,17 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       ...(body.couponCode ? { couponCode: body.couponCode } : {}),
       ...(referral?.couponId ? { fallbackCouponId: referral.couponId } : {}),
     });
+    const offerPricing = await resolveActiveOffer({
+      orgId,
+      planId: plan.id,
+      amountPaise: plan.pricePaise,
+    });
+    const referralPricing = await resolveReferralPricing({
+      orgId,
+      amountPaise: plan.pricePaise,
+      couponDiscountPaise: pricing.discountPaise + offerPricing.discountPaise,
+      ...(referral ? { referralCodeId: referral.id } : {}),
+    });
     getPaymentProviderOrThrow();
     const subscription = await prisma.memberSubscription.create({
       data: {
@@ -4328,14 +4854,18 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         orgId,
         userId,
         purpose: "MEMBERSHIP",
-        amountPaise: pricing.finalAmountPaise,
+        amountPaise: referralPricing.finalAmountPaise,
         status: "CREATED",
         checkoutUrl: "",
         provider: getPaymentProviderDiagnostics().selectedProvider,
         metadata: clean({
           subscriptionId: subscription.id,
+          offerId: offerPricing.offer?.id,
+          offerDiscountPaise: offerPricing.discountPaise,
           couponId: pricing.coupon?.id,
+          couponDiscountPaise: pricing.discountPaise,
           referralCodeId: referral?.id,
+          referralDiscountPaise: referralPricing.referralDiscountPaise,
           joinRequestId: approvedJoinRequest?.id,
         }) as Prisma.InputJsonValue,
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
@@ -4376,6 +4906,138 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const userId = requireAuth(ctx);
     return ok({ membership: await getActiveMembershipData(userId, ctx.orgId) });
   }
+  if (request.method === "POST" && pathMatches(path, ["me", "memberships", /.+/, "renew"])) {
+    const subscriptionId = path[2]!;
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const body = subscriptionRenewSchema.parse(await readJson(request).catch(() => ({})));
+    await assertRateLimit(
+      "paymentSessionByActor",
+      `renew:${subscriptionId}:${userId}`,
+      "Too many membership renewal attempts.",
+    );
+    const currentSubscription = await prisma.memberSubscription.findFirst({
+      where: { id: subscriptionId, memberUserId: userId },
+    });
+    if (!currentSubscription) {
+      throw notFoundError("Membership not found");
+    }
+    const orgId = currentSubscription.orgId;
+    assertActiveContextOrg(ctx, orgId);
+    const [organization, currentPlan, selectedPlan, pendingRenewal, user] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: orgId } }),
+      prisma.membershipPlan.findFirst({ where: { id: currentSubscription.planId, orgId } }),
+      body.planId
+        ? prisma.membershipPlan.findFirst({ where: { id: body.planId, orgId, active: true } })
+        : Promise.resolve(null),
+      prisma.memberSubscription.findFirst({
+        where: {
+          orgId,
+          memberUserId: userId,
+          status: "PENDING_PAYMENT",
+          notes: { contains: `renewal:${subscriptionId}` },
+        },
+      }),
+      prisma.user.findUniqueOrThrow({ where: { id: userId } }),
+    ]);
+    const plan = selectedPlan ?? currentPlan;
+    if (!organization || !plan) {
+      throw notFoundError("Renewal plan not found");
+    }
+    if (pendingRenewal) {
+      throw conflictError("You already have a renewal payment in progress.");
+    }
+    if (user.isMinor && user.guardianPending) {
+      throw forbiddenError("Guardian consent is required before renewing a membership.");
+    }
+    const referral = await resolveValidatedReferral({
+      orgId,
+      userId,
+      ...(body.referralCode ? { referralCode: body.referralCode } : {}),
+    });
+    const pricing = await resolveValidatedCoupon({
+      orgId,
+      userId,
+      planId: plan.id,
+      amountPaise: plan.pricePaise,
+      ...(body.couponCode ? { couponCode: body.couponCode } : {}),
+      ...(referral?.couponId ? { fallbackCouponId: referral.couponId } : {}),
+    });
+    const offerPricing = await resolveActiveOffer({
+      orgId,
+      planId: plan.id,
+      amountPaise: plan.pricePaise,
+    });
+    const referralPricing = await resolveReferralPricing({
+      orgId,
+      amountPaise: plan.pricePaise,
+      couponDiscountPaise: pricing.discountPaise + offerPricing.discountPaise,
+      ...(referral ? { referralCodeId: referral.id } : {}),
+    });
+    getPaymentProviderOrThrow();
+    const branch = await resolveOrgBranch(orgId, plan.branchId ?? currentSubscription.branchId);
+    const subscription = await prisma.memberSubscription.create({
+      data: {
+        orgId,
+        branchId: branch.id,
+        memberUserId: userId,
+        planId: plan.id,
+        status: "PENDING_PAYMENT",
+        notes: `renewal:${subscriptionId}`,
+      },
+    });
+    const session = await prisma.paymentSession.create({
+      data: {
+        orgId,
+        userId,
+        purpose: "MEMBERSHIP",
+        amountPaise: referralPricing.finalAmountPaise,
+        status: "CREATED",
+        checkoutUrl: "",
+        provider: getPaymentProviderDiagnostics().selectedProvider,
+        metadata: clean({
+          subscriptionId: subscription.id,
+          renewalOfSubscriptionId: subscriptionId,
+          offerId: offerPricing.offer?.id,
+          offerDiscountPaise: offerPricing.discountPaise,
+          couponId: pricing.coupon?.id,
+          couponDiscountPaise: pricing.discountPaise,
+          referralCodeId: referral?.id,
+          referralDiscountPaise: referralPricing.referralDiscountPaise,
+        }) as Prisma.InputJsonValue,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      },
+    });
+    let started;
+    try {
+      started = await startPaymentSessionCheckout({
+        session,
+        customer: clean({
+          name: user.name,
+          email: user.email,
+          phone: user.phone ?? undefined,
+        }),
+      });
+    } catch (error) {
+      await prisma.$transaction([
+        prisma.paymentSession.update({
+          where: { id: session.id },
+          data: { status: "FAILED", completedAt: new Date() },
+        }),
+        prisma.memberSubscription.update({
+          where: { id: subscription.id },
+          data: { status: "CANCELLED" },
+        }),
+      ]);
+      throw error;
+    }
+    return ok({
+      subscription,
+      checkoutUrl: started.checkoutUrl,
+      checkoutData: started.checkout.checkoutData ?? null,
+      session: started.session,
+    });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "memberships"])) {
     const userId = requireAuth(await getRequestContext(request));
     const subscriptions = await prisma.memberSubscription.findMany({
@@ -4404,6 +5066,202 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
 }
 
 async function handleCouponsReferrals(request: NextRequest, path: string[]) {
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "offers"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "COUPONS_MANAGE");
+    return ok({
+      offers: await prisma.offer.findMany({
+        where: { orgId },
+        orderBy: [{ active: "desc" }, { startsAt: "desc" }],
+      }),
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "offers"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "COUPONS_MANAGE");
+    const body = offerSchema.parse(await readJson(request));
+    const startsAt = new Date(body.startsAt);
+    const endsAt = new Date(body.endsAt);
+    if (endsAt <= startsAt) {
+      throw validationError("Offer end date must be after the start date.");
+    }
+    if (body.discountType === "PERCENTAGE" && body.discountValue > 10_000) {
+      throw validationError("Percentage offers cannot exceed 100%.");
+    }
+    if (body.applicablePlanIds?.length) {
+      const planCount = await prisma.membershipPlan.count({
+        where: { orgId, id: { in: body.applicablePlanIds } },
+      });
+      if (planCount !== body.applicablePlanIds.length) {
+        throw notFoundError("One or more offer plans were not found.");
+      }
+    }
+    const offer = await prisma.offer.create({
+      data: clean({
+        orgId,
+        name: body.name,
+        description: body.description,
+        discountType: body.discountType,
+        discountValue: body.discountValue,
+        applicablePlans: body.applicablePlanIds?.length ? body.applicablePlanIds : undefined,
+        startsAt,
+        endsAt,
+        maxRedemptions: body.maxRedemptions,
+        active: body.active,
+        stackable: body.stackable,
+        createdById: userId,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "offer.created",
+      entityType: "offer",
+      entityId: offer.id,
+      metadata: { name: offer.name, active: offer.active },
+    });
+    return ok({ offer });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "offers", /.+/])) {
+    const orgId = path[1]!;
+    const offerId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "COUPONS_MANAGE");
+    const body = offerSchema.partial().parse(await readJson(request));
+    const existingOffer = await prisma.offer.findFirst({ where: { id: offerId, orgId } });
+    if (!existingOffer) {
+      throw notFoundError("Offer not found");
+    }
+    const startsAt = body.startsAt ? new Date(body.startsAt) : existingOffer.startsAt;
+    const endsAt = body.endsAt ? new Date(body.endsAt) : existingOffer.endsAt;
+    if (endsAt <= startsAt) {
+      throw validationError("Offer end date must be after the start date.");
+    }
+    if (body.discountType === "PERCENTAGE" && body.discountValue && body.discountValue > 10_000) {
+      throw validationError("Percentage offers cannot exceed 100%.");
+    }
+    if (body.applicablePlanIds?.length) {
+      const planCount = await prisma.membershipPlan.count({
+        where: { orgId, id: { in: body.applicablePlanIds } },
+      });
+      if (planCount !== body.applicablePlanIds.length) {
+        throw notFoundError("One or more offer plans were not found.");
+      }
+    }
+    const offer = await prisma.offer.update({
+      where: { id: existingOffer.id },
+      data: clean({
+        name: body.name,
+        description: body.description,
+        discountType: body.discountType,
+        discountValue: body.discountValue,
+        applicablePlans: body.applicablePlanIds ? body.applicablePlanIds : undefined,
+        startsAt: body.startsAt ? startsAt : undefined,
+        endsAt: body.endsAt ? endsAt : undefined,
+        maxRedemptions: body.maxRedemptions,
+        active: body.active,
+        stackable: body.stackable,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "offer.updated",
+      entityType: "offer",
+      entityId: offer.id,
+      metadata: { name: offer.name, active: offer.active },
+    });
+    return ok({ offer });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "offers", /.+/])) {
+    const orgId = path[1]!;
+    const offerId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "COUPONS_MANAGE");
+    const existingOffer = await prisma.offer.findFirst({ where: { id: offerId, orgId } });
+    if (!existingOffer) {
+      throw notFoundError("Offer not found");
+    }
+    const offer = await prisma.offer.update({
+      where: { id: existingOffer.id },
+      data: { active: false },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "offer.deactivated",
+      entityType: "offer",
+      entityId: offer.id,
+      metadata: { name: offer.name },
+    });
+    return ok({ offer });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "referral-policy"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "REFERRALS_MANAGE");
+    const policy = await prisma.referralPolicy.upsert({
+      where: { orgId },
+      update: {},
+      create: { orgId },
+    });
+    return ok({ policy });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "referral-policy"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "REFERRALS_MANAGE");
+    const body = referralPolicySchema.partial().parse(await readJson(request));
+    const policyDefaults = {
+      enabled: true,
+      referrerRewardType: "DAYS" as const,
+      referrerRewardValue: 7,
+      referredDiscountType: "PERCENTAGE" as const,
+      referredDiscountValue: 1000,
+      maxDiscountCapBps: 3000,
+      maxReferralsPerMonth: 5,
+      referralCodeExpiryDays: 90,
+      trainerReferralEnabled: true,
+      staffReferralEnabled: false,
+    };
+    const policy = await prisma.referralPolicy.upsert({
+      where: { orgId },
+      update: clean({ ...body, updatedById: userId }),
+      create: {
+        orgId,
+        enabled: body.enabled ?? policyDefaults.enabled,
+        referrerRewardType: body.referrerRewardType ?? policyDefaults.referrerRewardType,
+        referrerRewardValue: body.referrerRewardValue ?? policyDefaults.referrerRewardValue,
+        referredDiscountType: body.referredDiscountType ?? policyDefaults.referredDiscountType,
+        referredDiscountValue: body.referredDiscountValue ?? policyDefaults.referredDiscountValue,
+        maxDiscountCapBps: body.maxDiscountCapBps ?? policyDefaults.maxDiscountCapBps,
+        maxReferralsPerMonth: body.maxReferralsPerMonth ?? policyDefaults.maxReferralsPerMonth,
+        referralCodeExpiryDays: body.referralCodeExpiryDays ?? policyDefaults.referralCodeExpiryDays,
+        trainerReferralEnabled: body.trainerReferralEnabled ?? policyDefaults.trainerReferralEnabled,
+        staffReferralEnabled: body.staffReferralEnabled ?? policyDefaults.staffReferralEnabled,
+        updatedById: userId,
+      },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "referral_policy.updated",
+      entityType: "referral_policy",
+      entityId: policy.id,
+      metadata: {
+        enabled: policy.enabled,
+        referrerRewardType: policy.referrerRewardType,
+        referredDiscountType: policy.referredDiscountType,
+      },
+    });
+    return ok({ policy });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "coupons"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -4425,6 +5283,9 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
         maxRedemptions: body.maxRedemptions,
         perUserLimit: body.perUserLimit,
         applicablePlanId: body.applicablePlanId,
+        active: body.active,
+        validFrom: body.validFrom ? new Date(body.validFrom) : undefined,
+        validUntil: body.validUntil ? new Date(body.validUntil) : undefined,
         createdById: userId,
       }),
     });
@@ -4439,9 +5300,126 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
     });
     return ok({ coupon });
   }
-  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "referrals"])) {
-    const userId = requireAuth(await getRequestContext(request));
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "coupons", /.+/])) {
     const orgId = path[1]!;
+    const couponId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "COUPONS_MANAGE");
+    const body = couponSchema.partial().parse(await readJson(request));
+    const existingCoupon = await prisma.coupon.findFirst({ where: { id: couponId, orgId } });
+    if (!existingCoupon) {
+      throw notFoundError("Coupon not found");
+    }
+    const coupon = await prisma.coupon.update({
+      where: { id: existingCoupon.id },
+      data: clean({
+        code: body.code,
+        type: body.type,
+        valuePaise: body.valuePaise,
+        valuePercentBps: body.valuePercentBps,
+        maxRedemptions: body.maxRedemptions,
+        perUserLimit: body.perUserLimit,
+        applicablePlanId: body.applicablePlanId,
+        active: body.active,
+        validFrom: body.validFrom ? new Date(body.validFrom) : undefined,
+        validUntil: body.validUntil ? new Date(body.validUntil) : undefined,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "coupon.updated",
+      entityType: "coupon",
+      entityId: coupon.id,
+      metadata: { code: coupon.code, active: coupon.active },
+    });
+    return ok({ coupon });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "coupons", /.+/])) {
+    const orgId = path[1]!;
+    const couponId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "COUPONS_MANAGE");
+    const existingCoupon = await prisma.coupon.findFirst({ where: { id: couponId, orgId } });
+    if (!existingCoupon) {
+      throw notFoundError("Coupon not found");
+    }
+    const coupon = await prisma.coupon.update({
+      where: { id: existingCoupon.id },
+      data: { active: false },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "coupon.deactivated",
+      entityType: "coupon",
+      entityId: coupon.id,
+      metadata: { code: coupon.code },
+    });
+    return ok({ coupon });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "referrals"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "REFERRALS_MANAGE");
+    const referrals = await prisma.referralCode.findMany({
+      where: { orgId },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    const [users, coupons] = await Promise.all([
+      prisma.user.findMany({ where: { id: { in: referrals.map((referral) => referral.referrerUserId) } } }),
+      prisma.coupon.findMany({
+        where: { id: { in: referrals.map((referral) => referral.couponId).filter(Boolean) as string[] } },
+      }),
+    ]);
+    return ok({ referrals, users, coupons });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "referral-analytics"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "REFERRALS_MANAGE");
+    const startOfMonth = new Date();
+    startOfMonth.setUTCDate(1);
+    startOfMonth.setUTCHours(0, 0, 0, 0);
+    const [codes, redemptions, rewards] = await Promise.all([
+      prisma.referralCode.findMany({ where: { orgId }, orderBy: { redemptionCount: "desc" }, take: 25 }),
+      prisma.referralRedemption.findMany({ where: { orgId, createdAt: { gte: startOfMonth } } }),
+      prisma.referralReward.findMany({ where: { orgId, createdAt: { gte: startOfMonth } } }),
+    ]);
+    const topReferrerIds = [...new Set(codes.slice(0, 5).map((code) => code.referrerUserId))];
+    const users = await prisma.user.findMany({ where: { id: { in: topReferrerIds } } });
+    return ok({
+      summary: {
+        activeCodes: codes.filter((code) => code.status === "active").length,
+        redemptionsThisMonth: redemptions.length,
+        rewardCreditsThisMonth: rewards.reduce((total, reward) => total + reward.rewardValue, 0),
+        appliedRewardsThisMonth: rewards.filter((reward) => reward.status === "applied").length,
+      },
+      topReferrers: codes.slice(0, 5).map((code) => ({
+        code,
+        user: users.find((user) => user.id === code.referrerUserId) ?? null,
+      })),
+    });
+  }
+  if (
+    request.method === "POST" &&
+    (pathMatches(path, ["orgs", /.+/, "referrals"]) ||
+      pathMatches(path, ["orgs", /.+/, "referral-codes"]))
+  ) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    if (ctx.orgId !== orgId || !ctx.roles.length) {
+      throw forbiddenError("No organization access");
+    }
+    const canManage = ctx.permissions.includes("REFERRALS_MANAGE");
+    const body = referralCodeManageSchema.parse(await readJson(request).catch(() => ({})));
+    if ((body.referrerUserId || body.createdByRole || body.couponId) && !canManage) {
+      throw forbiddenError("Referral management permission required.");
+    }
     const org = await prisma.organization.findUnique({
       where: { id: orgId },
       select: { username: true },
@@ -4449,11 +5427,103 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
     if (!org) {
       return fail("NOT_FOUND", "Gym not found", 404);
     }
-    const code = `ZK${randomBytes(4).toString("hex").toUpperCase()}`;
+    const policy = await prisma.referralPolicy.upsert({
+      where: { orgId },
+      update: {},
+      create: { orgId },
+    });
+    if (!policy.enabled) {
+      throw validationError("Referral program is not active for this gym.");
+    }
+    const referrerUserId = canManage && body.referrerUserId ? body.referrerUserId : userId;
+    const createdByRole = (body.createdByRole ??
+      ctx.roles.find((role) => role !== "PLATFORM_ADMIN") ??
+      "MEMBER") as Exclude<Role, "PLATFORM_ADMIN">;
+    if (createdByRole === "TRAINER" && !policy.trainerReferralEnabled) {
+      throw validationError("Trainer referrals are not enabled.");
+    }
+    if (
+      (createdByRole === "ADMIN" || createdByRole === "RECEPTIONIST") &&
+      !policy.staffReferralEnabled
+    ) {
+      throw validationError("Staff referrals are not enabled.");
+    }
+    if (body.couponId) {
+      const coupon = await prisma.coupon.findFirst({ where: { id: body.couponId, orgId } });
+      if (!coupon) {
+        throw notFoundError("Coupon not found");
+      }
+    }
+    const code = body.code ?? (await generateUniqueReferralCode(referrerUserId));
     const referral = await prisma.referralCode.create({
-      data: { orgId, referrerUserId: userId, code, createdByRole: "MEMBER", maxUses: 20 },
+      data: clean({
+        orgId,
+        referrerUserId,
+        code,
+        couponId: body.couponId,
+        createdByRole,
+        autoGenerated: !body.code,
+        displayName: body.displayName,
+        maxUses: body.maxUses ?? 20,
+        expiresAt: body.expiresAt
+          ? new Date(body.expiresAt)
+          : policy.referralCodeExpiryDays > 0
+            ? new Date(Date.now() + policy.referralCodeExpiryDays * 24 * 60 * 60 * 1000)
+            : undefined,
+        status: body.status ?? "active",
+        lastResetAt: new Date(),
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "referral.created",
+      entityType: "referral_code",
+      entityId: referral.id,
+      metadata: { code: referral.code, createdByRole: referral.createdByRole },
     });
     return ok({ referral, links: { web: `/join/${org.username}?ref=${code}`, short: `/r/${code}` } });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "referrals", /.+/])) {
+    const orgId = path[1]!;
+    const referralId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "REFERRALS_MANAGE");
+    const body = referralCodeManageSchema.partial().parse(await readJson(request));
+    const existingReferral = await prisma.referralCode.findFirst({ where: { id: referralId, orgId } });
+    if (!existingReferral) {
+      throw notFoundError("Referral code not found");
+    }
+    if (body.couponId) {
+      const coupon = await prisma.coupon.findFirst({ where: { id: body.couponId, orgId } });
+      if (!coupon) {
+        throw notFoundError("Coupon not found");
+      }
+    }
+    const referral = await prisma.referralCode.update({
+      where: { id: existingReferral.id },
+      data: clean({
+        code: body.code,
+        referrerUserId: body.referrerUserId,
+        couponId: body.couponId,
+        createdByRole: body.createdByRole,
+        displayName: body.displayName,
+        maxUses: body.maxUses,
+        expiresAt: body.expiresAt ? new Date(body.expiresAt) : body.expiresAt,
+        status: body.status,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "referral.updated",
+      entityType: "referral_code",
+      entityId: referral.id,
+      metadata: { code: referral.code, status: referral.status },
+    });
+    return ok({ referral });
   }
   if (request.method === "GET" && pathMatches(path, ["r", /.+/])) {
     const referral = await prisma.referralCode.findUnique({ where: { code: path[1]! } });
@@ -5059,6 +6129,75 @@ async function handleAttendance(request: NextRequest, path: string[]) {
 }
 
 async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
+  if (request.method === "GET" && pathMatches(path, ["staff-invitations", /.+/])) {
+    const token = path[1]!;
+    const invite = await prisma.staffInvitation.findUnique({ where: { token } });
+    if (!invite) {
+      throw notFoundError("Staff invitation not found");
+    }
+    const organization = await prisma.organization.findUnique({ where: { id: invite.orgId } });
+    return ok({
+      invite: {
+        id: invite.id,
+        email: invite.email,
+        role: invite.role,
+        acceptedAt: invite.acceptedAt,
+        expiresAt: invite.expiresAt,
+      },
+      organization,
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["staff-invitations", /.+/, "accept"])) {
+    const token = path[1]!;
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const invite = await prisma.staffInvitation.findUnique({ where: { token } });
+    if (!invite) {
+      throw notFoundError("Staff invitation not found");
+    }
+    if (invite.acceptedAt) {
+      throw conflictError("Staff invitation has already been accepted.");
+    }
+    if (invite.expiresAt.getTime() < Date.now()) {
+      throw validationError("Staff invitation has expired.");
+    }
+    const acceptingUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!acceptingUser || acceptingUser.email.toLowerCase() !== invite.email.toLowerCase()) {
+      throw forbiddenError("Sign in with the invited email address to accept this staff invite.");
+    }
+    const assignment = await prisma.$transaction(async (tx) => {
+      await tx.organizationUser.upsert({
+        where: { orgId_userId: { orgId: invite.orgId, userId } },
+        update: { leftAt: null },
+        create: { orgId: invite.orgId, userId },
+      });
+      const roleAssignment = await tx.organizationRoleAssignment.upsert({
+        where: { orgId_userId_role: { orgId: invite.orgId, userId, role: invite.role } },
+        update: { assignedById: invite.invitedById },
+        create: {
+          orgId: invite.orgId,
+          userId,
+          role: invite.role,
+          assignedById: invite.invitedById,
+        },
+      });
+      await tx.staffInvitation.update({
+        where: { id: invite.id },
+        data: { acceptedAt: new Date(), acceptedById: userId },
+      });
+      return roleAssignment;
+    });
+    await writeAuditLog({
+      request,
+      orgId: invite.orgId,
+      actorUserId: userId,
+      action: "staff.invite_accepted",
+      entityType: "staff_invitation",
+      entityId: invite.id,
+      metadata: { role: invite.role },
+    });
+    return ok({ assignment });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "staff"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -5076,6 +6215,10 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_STAFF");
     const body = staffInviteSchema.parse(await readJson(request));
+    const [organization, inviter] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: orgId } }),
+      prisma.user.findUnique({ where: { id: userId } }),
+    ]);
     const invite = await prisma.staffInvitation.create({
       data: {
         orgId,
@@ -5086,6 +6229,19 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
+    const inviteBaseUrl = (
+      process.env.NEXT_PUBLIC_WEB_URL ??
+      process.env.NEXT_PUBLIC_APP_URL ??
+      ""
+    ).replace(/\/$/, "");
+    await getEmailProviderOrThrow().sendStaffInviteEmail(clean({
+      to: invite.email,
+      organizationName: organization?.name ?? "Zook",
+      role: invite.role,
+      inviterName: inviter?.name ?? inviter?.email,
+      expiresAt: invite.expiresAt,
+      ...(inviteBaseUrl ? { inviteUrl: `${inviteBaseUrl}/staff/invite/${invite.token}` } : {}),
+    }));
     await writeAuditLog({
       request,
       orgId,
@@ -5096,6 +6252,76 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       metadata: { email: body.email, role: body.role },
     });
     return ok({ invite });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "staff", /.+/])) {
+    const orgId = path[1]!;
+    const assignmentId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_STAFF");
+    const body = staffRoleUpdateSchema.parse(await readJson(request));
+    const existingAssignment = await prisma.organizationRoleAssignment.findFirst({
+      where: { id: assignmentId, orgId },
+    });
+    if (!existingAssignment) {
+      throw notFoundError("Staff assignment not found");
+    }
+    if (existingAssignment.role === "OWNER") {
+      throw conflictError("Owner access cannot be edited from the staff roster.");
+    }
+    if (body.branchId) {
+      await resolveOrgBranch(orgId, body.branchId);
+    }
+    const duplicateAssignment = await prisma.organizationRoleAssignment.findFirst({
+      where: {
+        orgId,
+        userId: existingAssignment.userId,
+        role: body.role,
+        id: { not: existingAssignment.id },
+      },
+    });
+    if (duplicateAssignment) {
+      throw conflictError("This staff member already has that role.");
+    }
+    const assignment = await prisma.organizationRoleAssignment.update({
+      where: { id: existingAssignment.id },
+      data: { role: body.role, branchId: body.branchId ?? null },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "staff.role_updated",
+      entityType: "organization_role_assignment",
+      entityId: assignment.id,
+      metadata: { userId: assignment.userId, previousRole: existingAssignment.role, role: assignment.role },
+    });
+    return ok({ assignment });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "staff", /.+/])) {
+    const orgId = path[1]!;
+    const assignmentId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_STAFF");
+    const existingAssignment = await prisma.organizationRoleAssignment.findFirst({
+      where: { id: assignmentId, orgId },
+    });
+    if (!existingAssignment) {
+      throw notFoundError("Staff assignment not found");
+    }
+    if (existingAssignment.role === "OWNER") {
+      throw conflictError("Owner access cannot be revoked from the staff roster.");
+    }
+    await prisma.organizationRoleAssignment.delete({ where: { id: existingAssignment.id } });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "staff.revoked",
+      entityType: "organization_role_assignment",
+      entityId: existingAssignment.id,
+      metadata: { userId: existingAssignment.userId, role: existingAssignment.role },
+    });
+    return ok({ revoked: true });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "permissions"])) {
     const orgId = path[1]!;
@@ -5636,6 +6862,30 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       metadata: { title: plan.title, type: plan.type },
     });
     return ok({ plan });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "plans", /.+/])) {
+    const orgId = path[1]!;
+    const planId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    const existingPlan = await prisma.planContent.findFirst({ where: { id: planId, orgId } });
+    if (!existingPlan) {
+      throw notFoundError("Plan not found");
+    }
+    const assignmentCount = await prisma.planAssignment.count({ where: { orgId, planId } });
+    const plan = assignmentCount
+      ? await prisma.planContent.update({ where: { id: existingPlan.id }, data: { status: "ARCHIVED" } })
+      : await prisma.planContent.delete({ where: { id: existingPlan.id } });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: assignmentCount ? "plan.archived" : "plan.deleted",
+      entityType: "plan_content",
+      entityId: existingPlan.id,
+      metadata: { title: existingPlan.title, assignmentCount },
+    });
+    return ok({ plan, archived: assignmentCount > 0 });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plans", /.+/, "publish"])) {
     const orgId = path[1]!;
@@ -6459,6 +7709,11 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "products"])) {
     const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireAuth(ctx);
+    if (ctx.orgId !== orgId || !ctx.roles.length) {
+      throw forbiddenError("No organization access");
+    }
     return ok({
       products: await prisma.product.findMany({
         where: { orgId },
@@ -6532,6 +7787,34 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       entityId: product.id,
     });
     return ok({ product });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "products", /.+/])) {
+    const orgId = path[1]!;
+    const productId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
+    const existingProduct = await prisma.product.findFirst({ where: { id: productId, orgId } });
+    if (!existingProduct) {
+      throw notFoundError("Product not found");
+    }
+    const [orderItemCount, movementCount] = await Promise.all([
+      prisma.shopOrderItem.count({ where: { orgId, productId: existingProduct.id } }),
+      prisma.inventoryMovement.count({ where: { orgId, productId: existingProduct.id } }),
+    ]);
+    if (orderItemCount > 0 || movementCount > 0) {
+      throw conflictError("This product has order or inventory history. Archive it instead of deleting.");
+    }
+    await prisma.product.delete({ where: { id: existingProduct.id } });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "product.deleted",
+      entityType: "product",
+      entityId: existingProduct.id,
+      metadata: { name: existingProduct.name },
+    });
+    return ok({ deleted: true });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "inventory", "adjust"])) {
     const orgId = path[1]!;

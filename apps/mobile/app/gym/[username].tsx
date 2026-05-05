@@ -158,14 +158,16 @@ export default function GymProfileScreen() {
                 ) : null}
               </View>
 
-              <View style={styles.tagRow}>
-                {gym.gymType ? <Pill tone="amber">{gym.gymType}</Pill> : null}
-                {(gym.amenities ?? []).slice(0, 6).map((amenity) => (
-                  <Pill key={amenity} tone="blue">
-                    {amenity}
-                  </Pill>
-                ))}
-              </View>
+              {gym.gymType || (gym.amenities ?? []).length ? (
+                <View style={styles.tagMetaBlock}>
+                  {gym.gymType ? <Text style={styles.tagMeta}>{gym.gymType}</Text> : null}
+                  {(gym.amenities ?? []).slice(0, 6).map((amenity) => (
+                    <Text key={amenity} style={styles.tagMeta}>
+                      {amenity}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
 
               <View style={styles.viewerStateStack}>
                 {effectiveReferral ? (
@@ -264,13 +266,13 @@ export default function GymProfileScreen() {
                         <Text style={styles.sectionBody} numberOfLines={2}>
                           {trainer.bio ?? "Strength, conditioning, and member onboarding."}
                         </Text>
-                        <View style={styles.planBenefits}>
+                        <View style={styles.trainerSpecialties}>
                           {normalizeSpecialties(trainer.specialties)
                             .slice(0, 3)
                             .map((specialty) => (
-                              <Pill key={`${trainer.userId}-${specialty}`} tone="blue">
+                              <Text key={`${trainer.userId}-${specialty}`} style={styles.trainerSpecialty}>
                                 {specialty}
-                              </Pill>
+                              </Text>
                             ))}
                         </View>
                       </View>
@@ -375,18 +377,19 @@ export default function GymProfileScreen() {
                   <View style={styles.planHeader}>
                     <View style={styles.planCopy}>
                       <Text style={styles.planName}>{plan.name}</Text>
+                      <Text style={styles.planType}>{titleCaseFromCode(plan.type ?? "MEMBERSHIP")}</Text>
                       <Text style={styles.planPrice}>{formatInr(plan.pricePaise)}</Text>
                     </View>
-                    <Pill tone="lime">{titleCaseFromCode(plan.type ?? "MEMBERSHIP")}</Pill>
                   </View>
                   <Text style={styles.sectionBody}>
                     {plan.description ?? "Standard membership plan."}
                   </Text>
                   <View style={styles.planBenefits}>
                     {buildPlanHighlights(plan).map((item) => (
-                      <Pill key={`${plan.id}-${item}`} tone="amber">
-                        {item}
-                      </Pill>
+                      <View key={`${plan.id}-${item}`} style={styles.planBenefitRow}>
+                        <View style={styles.planBenefitDot} />
+                        <Text style={styles.planBenefitText}>{item}</Text>
+                      </View>
                     ))}
                   </View>
                   <PrimaryButton
@@ -566,10 +569,14 @@ const styles = StyleSheet.create({
     color: colors.muted,
     ...typography.body,
   },
-  tagRow: {
+  tagMetaBlock: {
     flexDirection: "row",
-    gap: 8,
     flexWrap: "wrap",
+    gap: 10,
+  },
+  tagMeta: {
+    color: colors.muted,
+    ...typography.small,
   },
   viewerStateStack: {
     gap: 10,
@@ -625,6 +632,15 @@ const styles = StyleSheet.create({
   trainerName: {
     color: colors.text,
     ...typography.headerTitle,
+  },
+  trainerSpecialties: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  trainerSpecialty: {
+    color: colors.blue,
+    ...typography.small,
   },
   metricRow: {
     flexDirection: "row",
@@ -710,14 +726,31 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.headerTitle,
   },
+  planType: {
+    color: colors.muted,
+    ...typography.small,
+  },
   planPrice: {
     color: colors.lime,
     ...typography.metric,
   },
   planBenefits: {
-    flexDirection: "row",
     gap: 8,
-    flexWrap: "wrap",
+  },
+  planBenefitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  planBenefitDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.amber,
+  },
+  planBenefitText: {
+    color: colors.muted,
+    ...typography.body,
   },
   statusMessage: {
     color: colors.text,

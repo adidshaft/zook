@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { PaymentMode } from "@zook/core";
 import {
-  ActiveGymPill,
   AuditWarning,
   BottomNav,
   FormField,
@@ -116,12 +115,14 @@ export default function Reception() {
   }, [memberSearch, membersQuery.data?.members]);
   const selectedMemberRecord =
     filteredMembers.find((record) => record.profile.userId === selectedMemberId) ?? null;
-  const memberRecord =
-    selectedMemberRecord ?? filteredMembers[0] ?? membersQuery.data?.members[0] ?? null;
+  const memberRecord = selectedMemberRecord;
   const member = memberRecord?.user ?? null;
   const membership = memberRecord?.activeSubscription ?? null;
   const profile = memberRecord?.profile ?? null;
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
+  const activeOrgLabel = activeOrganization
+    ? `${activeOrganization.name} · ${activeOrganization.city}`
+    : "Active gym";
   const dueAmount = amountPaise;
   const canRecordPayment =
     amountPaise > 0 &&
@@ -241,13 +242,9 @@ export default function Reception() {
       >
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
-            <ActiveGymPill
-              label={
-                activeOrganization
-                  ? `${activeOrganization.name} · ${activeOrganization.city}`
-                  : "Active gym"
-              }
-            />
+            <Text numberOfLines={1} style={styles.headerMeta}>
+              {activeOrgLabel} · Reception
+            </Text>
             <Text style={styles.title}>
               {view === "desk"
                 ? "Desk"
@@ -258,10 +255,9 @@ export default function Reception() {
                     : "Orders"}
             </Text>
             <Text style={styles.subtitle}>
-              Desk operations · {session?.user.name ?? "Signed-in staff"}
+              Signed in as {session?.user.name ?? "staff"}
             </Text>
           </View>
-          <Pill tone="blue">Receptionist</Pill>
         </View>
 
         <View style={styles.utilityRow}>
@@ -284,6 +280,33 @@ export default function Reception() {
             <Text style={[styles.utilityText, styles.signOutText]}>Sign out</Text>
           </Pressable>
         </View>
+
+        <GlassCard variant="compact" padding={12} contentStyle={styles.memberContext}>
+            <IconBubble
+              icon={member ? "person-outline" : "person-add-outline"}
+              tone={member ? "lime" : "amber"}
+              size={34}
+            />
+            <View style={styles.memberContextCopy}>
+              <Text numberOfLines={1} style={styles.memberContextTitle}>
+                {member?.name ?? "No member selected"}
+              </Text>
+              <Text numberOfLines={1} style={styles.memberContextBody}>
+                {member?.email ?? "Search members before recording payments or attendance"}
+                {membership?.status ? ` · ${membership.status.replace(/_/g, " ")}` : ""}
+              </Text>
+            </View>
+            {member ? (
+              <Pressable
+                onPress={() => setSelectedMemberId(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Clear selected member"
+                style={styles.clearMemberButton}
+              >
+                <Text style={styles.clearMemberText}>Clear</Text>
+              </Pressable>
+            ) : null}
+        </GlassCard>
 
         {view === "desk" ? (
           <>
@@ -360,9 +383,9 @@ export default function Reception() {
                       )
                         .slice(-3)
                         .map((item) => (
-                          <Pill key={item} tone="neutral" style={styles.auditPill}>
+                          <Text key={item} style={styles.auditText}>
                             {item}
-                          </Pill>
+                          </Text>
                         ))}
                     </View>
                     {index === 0 ? (
@@ -395,7 +418,6 @@ export default function Reception() {
                     subtitle="No pending or flagged scans need the desk."
                     icon="checkmark-done-outline"
                     tone="lime"
-                    trailing={<Pill tone="lime">Done</Pill>}
                   />
                 </GlassCard>
               )}
@@ -434,7 +456,7 @@ export default function Reception() {
             />
             <View style={styles.stack}>
               {filteredMembers.slice(0, 4).map((user) => {
-                const selected = user.profile.userId === memberRecord?.profile.userId;
+                const selected = user.profile.userId === selectedMemberRecord?.profile.userId;
                 return (
                   <GlassCard
                     key={user.profile.userId}
@@ -453,13 +475,18 @@ export default function Reception() {
                         />
                       }
                       trailing={
-                        <Pill
-                          tone={user.activeSubscription?.status === "ACTIVE" ? "lime" : "amber"}
+                        <Text
+                          style={[
+                            styles.rowStateText,
+                            user.activeSubscription?.status === "ACTIVE" || selected
+                              ? styles.rowStateGood
+                              : null,
+                          ]}
                         >
                           {selected
                             ? "Selected"
                             : (user.activeSubscription?.status ?? "No membership")}
-                        </Pill>
+                        </Text>
                       }
                     />
                   </GlassCard>
@@ -483,12 +510,14 @@ export default function Reception() {
               <ListRow
                 title="Manual amount"
                 subtitle="Entered by desk"
-                trailing={<Pill tone="amber">{formatInr(dueAmount)}</Pill>}
+                trailing={<Text style={styles.rowAmount}>{formatInr(dueAmount)}</Text>}
               />
               <ListRow
                 title="Last check-in"
                 subtitle={formatDateTime(memberRecord?.lastCheckIn?.checkedInAt)}
-                trailing={<Pill tone="blue">{memberRecord?.lastCheckIn?.status ?? "None"}</Pill>}
+                trailing={
+                  <Text style={styles.rowStateText}>{memberRecord?.lastCheckIn?.status ?? "None"}</Text>
+                }
               />
               <AuditWarning>
                 Manual attendance requires a reason and writes an audit log.
@@ -545,7 +574,7 @@ export default function Reception() {
                   membership?.id ? "Active subscription record" : "No active subscription selected"
                 }
                 leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />}
-                trailing={<Pill tone="amber">{formatInr(dueAmount)} due</Pill>}
+                trailing={<Text style={styles.rowAmount}>{formatInr(dueAmount)} due</Text>}
               />
               <View style={styles.formStack}>
                 <Text style={styles.fieldGroupLabel}>Collection mode</Text>
@@ -694,7 +723,6 @@ export default function Reception() {
                     subtitle="Ready orders will appear here after payment."
                     icon="bag-check-outline"
                     tone="lime"
-                    trailing={<Pill tone="lime">Clear</Pill>}
                   />
                 </GlassCard>
               )}
@@ -726,6 +754,10 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 8,
   },
+  headerMeta: {
+    color: colors.muted,
+    ...typography.caption,
+  },
   utilityRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -755,6 +787,37 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     color: colors.red,
+  },
+  memberContext: {
+    minHeight: 62,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  memberContextCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  memberContextTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  memberContextBody: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  clearMemberButton: {
+    minHeight: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clearMemberText: {
+    color: colors.muted,
+    ...typography.caption,
   },
   title: {
     color: colors.text,
@@ -805,8 +868,9 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
-  auditPill: {
-    maxWidth: "100%",
+  auditText: {
+    color: colors.muted,
+    ...typography.small,
   },
   formStack: {
     gap: spacing.md,
@@ -845,5 +909,16 @@ const styles = StyleSheet.create({
   statusText: {
     color: colors.lime,
     ...typography.bodyStrong,
+  },
+  rowAmount: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  rowStateText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  rowStateGood: {
+    color: colors.lime,
   },
 });

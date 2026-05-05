@@ -4,7 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
-  ActiveGymPill,
   BottomNav,
   EmptyState,
   GlassCard,
@@ -102,7 +101,6 @@ export default function Owner() {
     dashboard?.joinRequests ??
     []
   ).filter((request) => String(request.status ?? "").toLowerCase() === "pending");
-  const firstJoinRequest = joinRequests[0];
   const attentionAttempts = attentionQuery.data?.records ?? [];
   const lowStock = dashboard?.products ?? [];
   const payments = paymentsQuery.data?.payments ?? [];
@@ -178,40 +176,6 @@ export default function Owner() {
     icon: "checkmark-done-outline" | "card-outline" | "cube-outline" | "time-outline";
     target: Drilldown;
   }>;
-  const recentActivity = [
-    {
-      id: "payment",
-      title: payments[0]?.user?.name
-        ? `${payments[0].user.name} payment recorded`
-        : "Recent payment activity",
-      subtitle: payments[0]
-        ? `${titleCase(payments[0].purpose)} · ${titleCase(payments[0].mode)}`
-        : "Manual payments will appear here",
-      tone: "lime",
-      label: "Audit",
-    },
-    {
-      id: "plan",
-      title: firstJoinRequest?.userName
-        ? `${firstJoinRequest.userName} requested access`
-        : "No new join-request activity",
-      subtitle: firstJoinRequest
-        ? String(firstJoinRequest.status ?? "Pending").replace(/_/g, " ")
-        : "Member plan activity appears in trainer views",
-      tone: "blue",
-      label: "Join",
-    },
-    {
-      id: "stock",
-      title: lowStock[0] ? `${lowStock[0].name} stock needs review` : "Stock levels healthy",
-      subtitle: lowStock[0]
-        ? `${lowStock[0].stock} left · threshold ${lowStock[0].lowStockThreshold}`
-        : "All products are above threshold",
-      tone: lowStock[0] ? "amber" : "neutral",
-      label: "Shop",
-    },
-  ] as const;
-
   async function approveAttendance(attemptId: string) {
     await approveAttendanceMutation.mutateAsync(attemptId);
     setActionStatus("Check-in approved.");
@@ -236,10 +200,11 @@ export default function Owner() {
       >
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
-            <ActiveGymPill label={dashboard?.organization?.name ?? "Active gym"} />
+            <Text numberOfLines={1} style={styles.headerMeta}>
+              {dashboard?.organization?.name ?? "Active gym"} · {shellRole === "ADMIN" ? "Admin" : "Owner"}
+            </Text>
             <Text style={styles.title}>{titleForView(view)}</Text>
           </View>
-          <Pill tone="lime">{shellRole === "ADMIN" ? "Admin" : "Owner"}</Pill>
         </View>
 
         <View style={styles.utilityRow}>
@@ -315,24 +280,14 @@ export default function Owner() {
                     leading={<IconBubble icon={item.icon} tone={item.tone} />}
                     trailing={
                       <View style={styles.attentionTrailing}>
-                        <Pill tone={item.tone}>{String(item.count)}</Pill>
+                        <Text style={item.count ? styles.attentionAction : styles.attentionQuiet}>
+                          {item.count ? "Review" : "Open"}
+                        </Text>
                         <Ionicons name="chevron-forward" size={17} color={colors.muted} />
                       </View>
                     }
                   />
                 </Pressable>
-              ))}
-            </GlassCard>
-
-            <SectionHeader title="Recent activity" />
-            <GlassCard contentStyle={styles.stack}>
-              {recentActivity.map((activity) => (
-                <ListRow
-                  key={activity.id}
-                  title={activity.title}
-                  subtitle={activity.subtitle}
-                  trailing={<Pill tone={activity.tone}>{activity.label}</Pill>}
-                />
               ))}
             </GlassCard>
           </>
@@ -395,10 +350,9 @@ export default function Owner() {
                             <Text numberOfLines={1} style={styles.memberName}>
                               {name}
                             </Text>
-                            {goal ? <Pill tone="blue">{goal}</Pill> : null}
                           </View>
                           <Text numberOfLines={1} style={styles.memberEmail}>
-                            {email}
+                            {goal ? `${email} · ${goal}` : email}
                           </Text>
                         </View>
                         <Ionicons name="chevron-forward" size={17} color={colors.muted} />
@@ -541,11 +495,7 @@ export default function Owner() {
                         tone={payment.status === "SUCCEEDED" ? "lime" : "amber"}
                       />
                     }
-                    trailing={
-                      <Pill tone={payment.status === "SUCCEEDED" ? "lime" : "amber"}>
-                        {formatInr(payment.amountPaise)}
-                      </Pill>
-                    }
+                    trailing={<Text style={styles.rowAmount}>{formatInr(payment.amountPaise)}</Text>}
                   />
                 ))
               ) : (
@@ -560,7 +510,7 @@ export default function Owner() {
                   title={order.user?.name ?? "Shop pickup order"}
                   subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
                   leading={<IconBubble icon="bag-outline" tone="lime" />}
-                  trailing={<Pill tone="lime">{formatInr(order.totalPaise)}</Pill>}
+                  trailing={<Text style={styles.rowAmount}>{formatInr(order.totalPaise)}</Text>}
                 />
               ))}
             </GlassCard>
@@ -594,7 +544,7 @@ export default function Owner() {
                     title={product.name}
                     subtitle={`${formatInr(product.pricePaise)} · threshold ${product.lowStockThreshold}`}
                     leading={<IconBubble icon="cube-outline" tone="amber" />}
-                    trailing={<Pill tone="amber">{product.stock} left</Pill>}
+                    trailing={<Text style={styles.rowAmount}>{product.stock} left</Text>}
                   />
                 ))
               ) : (
@@ -613,7 +563,7 @@ export default function Owner() {
                     title={order.user?.name ?? "Member pickup"}
                     subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
                     leading={<IconBubble icon="bag-check-outline" tone="lime" />}
-                    trailing={<Pill tone="lime">{formatInr(order.totalPaise)}</Pill>}
+                    trailing={<Text style={styles.rowAmount}>{formatInr(order.totalPaise)}</Text>}
                   />
                 ))
               ) : (
@@ -650,6 +600,10 @@ const styles = StyleSheet.create({
   headerCopy: {
     flex: 1,
     gap: 8,
+  },
+  headerMeta: {
+    color: colors.muted,
+    ...typography.caption,
   },
   utilityRow: {
     flexDirection: "row",
@@ -700,6 +654,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+  },
+  attentionAction: {
+    color: colors.lime,
+    ...typography.caption,
+  },
+  attentionQuiet: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  rowAmount: {
+    color: colors.text,
+    ...typography.bodyStrong,
   },
   stack: {
     gap: 12,

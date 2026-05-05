@@ -1,13 +1,16 @@
 import Link from "next/link";
 import {
+  ArrowRight,
   Bell,
   Brain,
-  CalendarCheck,
+  CheckCircle2,
+  Circle,
   ClipboardList,
   Dumbbell,
   FileText,
   Globe2,
   History,
+  type LucideIcon,
   QrCode,
   ReceiptText,
   Shield,
@@ -26,21 +29,54 @@ import { DashboardOperationalPanelShell } from "./dashboard-operational-panel-sh
 import { ZookLogo } from "./zook-logo";
 import { formatDate, formatDaysRemaining, formatEnumLabel, titleFromSection } from "@/lib/format";
 
-const nav = [
-  ["Today", "/dashboard", Dumbbell],
-  ["Members", "/dashboard/members", Users],
-  ["Memberships", "/dashboard/membership-plans", ClipboardList],
-  ["Payments", "/dashboard/payments", ReceiptText],
-  ["Attendance", "/dashboard/attendance", QrCode],
-  ["Trainers", "/dashboard/trainers", CalendarCheck],
-  ["Plans & AI", "/dashboard/ai", Brain],
-  ["Notifications", "/dashboard/notifications", Bell],
-  ["Shop", "/dashboard/shop/products", Store],
-  ["Reports", "/dashboard/reports", FileText],
-  ["Staff", "/dashboard/staff", Shield],
-  ["Gym Profile", "/dashboard/public-profile", Globe2],
-  ["Audit", "/dashboard/audit", History],
-] as const;
+type DashboardData = Awaited<ReturnType<typeof import("@/lib/data").getDashboardData>>;
+
+type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  shortLabel?: string;
+};
+
+const navGroups: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: "Operations",
+    items: [
+      { label: "Today", href: "/dashboard", icon: Dumbbell },
+      { label: "Attendance", href: "/dashboard/attendance", icon: QrCode },
+      { label: "Payments", href: "/dashboard/payments", icon: ReceiptText },
+      { label: "Shop", href: "/dashboard/shop/products", icon: Store },
+      { label: "Reports", href: "/dashboard/reports", icon: FileText },
+    ],
+  },
+  {
+    label: "Members",
+    items: [
+      { label: "Directory", href: "/dashboard/members", icon: Users, shortLabel: "Members" },
+      { label: "Memberships", href: "/dashboard/membership-plans", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "Team",
+    items: [
+      { label: "Staff & trainers", href: "/dashboard/staff", icon: Shield, shortLabel: "Team" },
+    ],
+  },
+  {
+    label: "Communication",
+    items: [
+      { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
+      { label: "Plans & AI", href: "/dashboard/ai", icon: Brain },
+    ],
+  },
+  {
+    label: "Settings",
+    items: [
+      { label: "Gym profile", href: "/dashboard/public-profile", icon: Globe2 },
+      { label: "Audit trail", href: "/dashboard/audit", icon: History, shortLabel: "Audit" },
+    ],
+  },
+];
 
 function isActiveNav(href: string, sectionKey: string) {
   if (href === "/dashboard") {
@@ -63,12 +99,109 @@ function metricTone(label: string) {
   return "neutral" as const;
 }
 
+function OwnerSetupChecklist({
+  activeOrg,
+  hasBranch,
+  summary,
+}: {
+  activeOrg: DashboardData["orgs"][number];
+  hasBranch: boolean;
+  summary: DashboardData["summary"];
+}) {
+  const profileReady = activeOrg.status === "ACTIVE" && hasBranch && Boolean(activeOrg.city);
+  const joinReady = summary.activeMembers > 0 || summary.joinRequests > 0 || summary.revenuePaise > 0;
+  const checklist = [
+    {
+      label: "Complete gym profile",
+      detail: "Publish your address, join mode, and public profile.",
+      href: "/dashboard/public-profile",
+      done: profileReady,
+    },
+    {
+      label: "Create your first plan",
+      detail: "Members need at least one offer before they can join.",
+      href: "/dashboard/membership-plans",
+      done: joinReady,
+    },
+    {
+      label: "Invite your team",
+      detail: "Add trainers, reception, and admins before peak-hour ops.",
+      href: "/dashboard/staff",
+      done: false,
+    },
+    {
+      label: "Share your gym link",
+      detail: "Open the public profile and copy the join link or QR.",
+      href: "/dashboard/public-profile",
+      done: summary.joinRequests > 0 || summary.activeMembers > 0,
+    },
+  ];
+  const completed = checklist.filter((item) => item.done).length;
+
+  return (
+    <GlassCard variant="strong" className="overflow-hidden">
+      <div className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr] xl:items-center">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-lime-200/70">
+            Owner setup
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+            Welcome to {activeOrg.name}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-white/55">
+            Finish these basics so members can join, staff can operate, and the gym link is ready to share.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Link
+              href="/dashboard/membership-plans"
+              className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-4 py-2.5 text-sm font-semibold text-black"
+            >
+              Create first plan
+              <ArrowRight size={16} />
+            </Link>
+            <span className="text-sm text-white/45">
+              {completed} of {checklist.length} complete
+            </span>
+          </div>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {checklist.map((item) => {
+            const Icon = item.done ? CheckCircle2 : Circle;
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="group rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/6"
+              >
+                <div className="flex items-start gap-3">
+                  <Icon
+                    size={20}
+                    className={item.done ? "mt-0.5 shrink-0 text-lime-200" : "mt-0.5 shrink-0 text-white/30"}
+                  />
+                  <div className="min-w-0">
+                    <p className="font-medium text-white">
+                      {item.label}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-white/48">
+                      {item.detail}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
 export function DashboardShell({
   section,
   data,
 }: {
   section: string[] | undefined;
-  data: Awaited<ReturnType<typeof import("@/lib/data").getDashboardData>>;
+  data: DashboardData;
 }) {
   const title = titleFromSection(section);
   const sectionKey = section?.join("/") ?? "";
@@ -138,6 +271,9 @@ export function DashboardShell({
     sectionKey === ""
       ? "Live check-ins, members, payments, stock, and follow-ups in one owner view."
       : "Use this section for daily gym operations. Changes here are backed by the Zook backend.";
+  const showOwnerSetupChecklist =
+    sectionKey === "" &&
+    (data.summary.activeMembers === 0 || !selectedBranch || activeOrg.status !== "ACTIVE");
 
   return (
     <main className="min-h-dvh px-4 py-4 lg:px-6">
@@ -164,24 +300,31 @@ export function DashboardShell({
               </div>
             </div>
 
-            <nav className="mt-6 grid gap-1">
-              {nav.map(([label, href, Icon]) => {
-                const active = isActiveNav(href, sectionKey);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition ${
-                      active
-                        ? "bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]"
-                        : "text-white/62 hover:bg-white/8 hover:text-white"
-                    }`}
-                  >
-                    <Icon size={18} />
-                    {label}
-                  </Link>
-                );
-              })}
+            <nav className="mt-6 grid gap-5">
+              {navGroups.map((group) => (
+                <div key={group.label} className="grid gap-1">
+                  <p className="px-3 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-white/30">
+                    {group.label}
+                  </p>
+                  {group.items.map(({ label, href, icon: Icon }) => {
+                    const active = isActiveNav(href, sectionKey);
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition ${
+                          active
+                            ? "bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]"
+                            : "text-white/62 hover:bg-white/8 hover:text-white"
+                        }`}
+                      >
+                        <Icon size={18} />
+                        {label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
             </nav>
 
             <Link
@@ -227,22 +370,29 @@ export function DashboardShell({
         </aside>
 
         <section className="grid gap-4">
-          <nav className="flex gap-2 overflow-x-auto rounded-[24px] border border-white/10 bg-white/5 p-2 lg:hidden">
-            {nav.map(([label, href, Icon]) => {
-              const active = isActiveNav(href, sectionKey);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`zook-focus inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm transition ${
-                    active ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"
-                  }`}
-                >
-                  <Icon size={16} />
-                  {label}
-                </Link>
-              );
-            })}
+          <nav className="flex gap-3 overflow-x-auto rounded-[24px] border border-white/10 bg-white/5 p-2 lg:hidden">
+            {navGroups.map((group) => (
+              <div key={group.label} className="flex shrink-0 items-center gap-2">
+                <span className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+                  {group.label}
+                </span>
+                {group.items.map(({ label, shortLabel, href, icon: Icon }) => {
+                  const active = isActiveNav(href, sectionKey);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`zook-focus inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm transition ${
+                        active ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"
+                      }`}
+                    >
+                      <Icon size={16} />
+                      {shortLabel ?? label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
           <GlassCard variant="strong" className="overflow-hidden">
@@ -283,6 +433,14 @@ export function DashboardShell({
               </div>
             </div>
           </GlassCard>
+
+          {showOwnerSetupChecklist ? (
+            <OwnerSetupChecklist
+              activeOrg={activeOrg}
+              hasBranch={Boolean(selectedBranch)}
+              summary={data.summary}
+            />
+          ) : null}
 
           {sectionKey === "" && (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

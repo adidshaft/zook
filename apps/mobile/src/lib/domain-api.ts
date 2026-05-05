@@ -64,6 +64,18 @@ export const memberApi = {
       body: options.body,
     });
   },
+  renewMembership<T = { checkoutUrl?: string; subscription?: unknown }>(
+    options: RequestOptions & { subscriptionId: string; planId?: string },
+  ) {
+    return mobileApiFetch<T>(`/me/memberships/${options.subscriptionId}/renew`, {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: {
+        ...(options.planId ? { planId: options.planId } : {}),
+      },
+    });
+  },
   createTrackingWorkout(options: RequestOptions & { body: Record<string, unknown> }) {
     return mobileApiFetch("/me/tracking/workouts", {
       method: "POST",

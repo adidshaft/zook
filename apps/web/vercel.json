@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd ../.. && pnpm db:generate && pnpm --filter @zook/web build",
+  "installCommand": "cd ../.. && pnpm install"
+}

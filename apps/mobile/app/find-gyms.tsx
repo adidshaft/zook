@@ -177,7 +177,9 @@ export default function FindGyms() {
                     {(gym.amenities ?? []).length > 0 ? (
                       <View style={styles.tags}>
                         {(gym.amenities ?? []).slice(0, 4).map((amenity) => (
-                          <Pill key={amenity} tone="blue">{amenity}</Pill>
+                          <Text key={amenity} style={styles.tagText}>
+                            {amenity}
+                          </Text>
                         ))}
                       </View>
                     ) : null}
@@ -384,8 +386,12 @@ const styles = StyleSheet.create({
   },
   tags: {
     flexDirection: "row",
-    gap: 6,
     flexWrap: "wrap",
+    gap: 10,
+  },
+  tagText: {
+    color: colors.muted,
+    ...typography.small,
   },
   gymFooter: {
     flexDirection: "row",

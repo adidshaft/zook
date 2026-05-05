@@ -40,7 +40,21 @@ export default function TrackingDashboard() {
     }>;
   }>;
   const latestWeight = (trackingQuery.data?.latestBodyProgress as { weightKg?: string | number | null } | null)?.weightKg;
-  const habits = trackingQuery.data?.habits ?? [];
+  const latestBodyProgress = trackingQuery.data?.latestBodyProgress as {
+    weightKg?: string | number | null;
+    bodyFatPct?: string | number | null;
+    measuredAt?: string | null;
+    notes?: string | null;
+  } | null;
+  const habits = (trackingQuery.data?.habits ?? []) as Array<{
+    id?: string;
+    name?: string | null;
+    title?: string | null;
+    cadence?: string | null;
+    streakCount?: number | null;
+    targetCount?: number | null;
+    completedCount?: number | null;
+  }>;
   const metrics = buildTrackingSummaryMetrics({
     totalDuration: summary?.totalDuration ?? 0,
     weeklyCount: summary?.weeklyCount ?? 0,
@@ -98,9 +112,16 @@ export default function TrackingDashboard() {
             ))}
           </View>
 
+          {(latestBodyProgress || habits.length) && !trackingQuery.isLoading ? (
+            <View style={styles.progressGrid}>
+              {latestBodyProgress ? <BodyProgressCard progress={latestBodyProgress} /> : null}
+              {habits.length ? <HabitProgressCard habits={habits} /> : null}
+            </View>
+          ) : null}
+
           {/* Today's session */}
           <SectionHeader
-            title="Today's Session"
+            title="Last workout"
             action={
               <Link href="/tracking-entry" asChild>
                 <Pressable accessibilityRole="link" style={styles.logButton}>
@@ -136,6 +157,7 @@ export default function TrackingDashboard() {
 
 function TodaySessionPreview({ entry }: { entry: WorkoutLogEntry }) {
   const firstExercise = entry.exercises[0];
+  const completedExercises = entry.exercises.filter((exercise) => exercise.status === "DONE").length;
 
   return (
     <GlassCard variant="compact" contentStyle={styles.todayPreview}>
@@ -149,10 +171,91 @@ function TodaySessionPreview({ entry }: { entry: WorkoutLogEntry }) {
             ? `${firstExercise.name} · ${firstExercise.setsLabel} · ${entry.durationLabel}`
             : `Focus: ${entry.focusLabel} · ${entry.durationLabel}`}
         </Text>
+        <Text style={styles.todayDetail}>
+          {entry.exercises.length
+            ? `${completedExercises}/${entry.exercises.length} exercises completed`
+            : "Workout details are ready when exercises are logged."}
+        </Text>
       </View>
       <View style={styles.todayStatusPill}>
         <Text style={styles.todayStatusText}>{entry.effortLabel}</Text>
       </View>
+    </GlassCard>
+  );
+}
+
+function BodyProgressCard({
+  progress,
+}: {
+  progress: {
+    weightKg?: string | number | null;
+    bodyFatPct?: string | number | null;
+    measuredAt?: string | null;
+    notes?: string | null;
+  };
+}) {
+  return (
+    <GlassCard variant="compact" contentStyle={styles.progressCard}>
+      <View style={styles.progressCardHeader}>
+        <IconBubble icon="body-outline" tone="blue" size={34} />
+        <View style={styles.progressCardCopy}>
+          <Text style={styles.progressCardTitle}>Body progress</Text>
+          <Text style={styles.progressCardSubtitle}>
+            {progress.measuredAt ? new Date(progress.measuredAt).toLocaleDateString() : "Latest entry"}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.readoutRow}>
+        <View style={styles.readoutBlock}>
+          <Text style={styles.readoutValue}>{progress.weightKg ? `${progress.weightKg} kg` : "--"}</Text>
+          <Text style={styles.readoutLabel}>Weight</Text>
+        </View>
+        <View style={styles.readoutBlock}>
+          <Text style={styles.readoutValue}>{progress.bodyFatPct ? `${progress.bodyFatPct}%` : "--"}</Text>
+          <Text style={styles.readoutLabel}>Body fat</Text>
+        </View>
+      </View>
+      {progress.notes ? <Text numberOfLines={2} style={styles.progressNote}>{progress.notes}</Text> : null}
+    </GlassCard>
+  );
+}
+
+function HabitProgressCard({
+  habits,
+}: {
+  habits: Array<{
+    id?: string;
+    name?: string | null;
+    title?: string | null;
+    cadence?: string | null;
+    streakCount?: number | null;
+    targetCount?: number | null;
+    completedCount?: number | null;
+  }>;
+}) {
+  const topHabit = habits[0];
+  const completed = topHabit?.completedCount ?? 0;
+  const target = topHabit?.targetCount ?? 0;
+  const completion = target > 0 ? Math.min(100, Math.round((completed / target) * 100)) : 0;
+
+  return (
+    <GlassCard variant="compact" contentStyle={styles.progressCard}>
+      <View style={styles.progressCardHeader}>
+        <IconBubble icon="repeat-outline" tone="violet" size={34} />
+        <View style={styles.progressCardCopy}>
+          <Text style={styles.progressCardTitle}>Habits</Text>
+          <Text style={styles.progressCardSubtitle}>{habits.length} active</Text>
+        </View>
+      </View>
+      <Text numberOfLines={1} style={styles.habitName}>
+        {topHabit?.title ?? topHabit?.name ?? "Daily habit"}
+      </Text>
+      <View style={styles.habitBar}>
+        <View style={[styles.habitFill, { width: `${Math.max(8, completion)}%` }]} />
+      </View>
+      <Text style={styles.progressNote}>
+        {target > 0 ? `${completed}/${target} this ${topHabit?.cadence?.toLowerCase() ?? "cycle"}` : `${topHabit?.streakCount ?? 0} day streak`}
+      </Text>
     </GlassCard>
   );
 }
@@ -224,6 +327,69 @@ const styles = StyleSheet.create({
     gap: 10,
     flexWrap: "wrap",
   },
+  progressGrid: {
+    flexDirection: "row",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  progressCard: {
+    flexGrow: 1,
+    flexBasis: "48%",
+    minHeight: 150,
+    gap: spacing.sm,
+  },
+  progressCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  progressCardCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  progressCardTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  progressCardSubtitle: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  readoutRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  readoutBlock: {
+    flex: 1,
+    gap: 2,
+  },
+  readoutValue: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  readoutLabel: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  progressNote: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  habitName: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  habitBar: {
+    height: 7,
+    borderRadius: 999,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  habitFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: colors.violet,
+  },
   logButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -284,6 +450,10 @@ const styles = StyleSheet.create({
   todayMeta: {
     color: colors.amber,
     ...typography.caption,
+  },
+  todayDetail: {
+    color: colors.muted,
+    ...typography.small,
   },
   todayStatusPill: {
     borderRadius: 999,

@@ -71,7 +71,47 @@ export const couponSchema = z.object({
   valuePercentBps: z.number().int().min(1).max(10_000).optional(),
   maxRedemptions: z.number().int().positive().optional(),
   perUserLimit: z.number().int().positive().optional(),
-  applicablePlanId: z.string().optional()
+  applicablePlanId: z.string().optional(),
+  active: z.boolean().default(true),
+  validFrom: z.string().datetime().optional(),
+  validUntil: z.string().datetime().optional()
+});
+
+export const referralPolicySchema = z.object({
+  enabled: z.boolean().default(true),
+  referrerRewardType: z.enum(["DAYS", "VISITS", "NONE"]).default("DAYS"),
+  referrerRewardValue: z.number().int().min(0).max(30).default(7),
+  referredDiscountType: z.enum(["PERCENTAGE", "FIXED", "NONE"]).default("PERCENTAGE"),
+  referredDiscountValue: z.number().int().min(0).default(1000),
+  maxDiscountCapBps: z.number().int().min(0).max(3000).default(3000),
+  maxReferralsPerMonth: z.number().int().min(1).max(50).default(5),
+  referralCodeExpiryDays: z.number().int().min(0).max(365).default(90),
+  trainerReferralEnabled: z.boolean().default(true),
+  staffReferralEnabled: z.boolean().default(false)
+});
+
+export const referralCodeManageSchema = z.object({
+  referrerUserId: z.string().optional(),
+  code: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{3,32}$/).optional(),
+  couponId: z.string().optional(),
+  createdByRole: z.enum(["OWNER", "ADMIN", "RECEPTIONIST", "TRAINER", "MEMBER"]).optional(),
+  displayName: z.string().trim().max(80).optional(),
+  expiresAt: z.string().datetime().optional().nullable(),
+  maxUses: z.number().int().positive().optional().nullable(),
+  status: z.enum(["active", "paused", "expired"]).optional()
+});
+
+export const offerSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  description: z.string().trim().max(500).optional(),
+  discountType: z.enum(["FIXED_AMOUNT", "PERCENTAGE"]),
+  discountValue: z.number().int().min(1),
+  applicablePlanIds: z.array(z.string()).optional(),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime(),
+  maxRedemptions: z.number().int().positive().optional().nullable(),
+  active: z.boolean().default(true),
+  stackable: z.boolean().default(false)
 });
 
 export const checkoutSchema = z.object({

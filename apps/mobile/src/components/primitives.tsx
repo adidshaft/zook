@@ -1250,7 +1250,7 @@ export function ProductCard({
             <Ionicons name={icon} size={38} color={palette.color} />
           </>
         )}
-        {tone === "amber" || tone === "red" ? (
+        {tone === "red" ? (
           <View
             style={[
               styles.productBadge,

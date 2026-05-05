@@ -331,6 +331,16 @@ export async function demoMobileApiFetch<T>(path: string, init: { body?: unknown
 
   if (pathname === "/me/membership/active") return { membership: activeMembership() } as T;
   if (pathname === "/me/memberships") return { subscriptions: zookDemoFixtures.memberships } as T;
+  if (pathname.match(/^\/me\/memberships\/[^/]+\/renew$/)) {
+    return {
+      checkoutUrl: "/checkout/mock/offline-renewal",
+      subscription: {
+        ...(activeMembership() ?? {}),
+        renewedAt: nowIso(),
+        planId: (init.body as { planId?: string } | undefined)?.planId,
+      },
+    } as T;
+  }
   if (pathname === "/me/attendance") return { attendance: zookDemoFixtures.attendanceAttempts } as T;
   if (pathname === "/attendance/scan") {
     const attempt = zookDemoFixtures.attendanceAttempts.find((record) => record.status === "APPROVED") ?? zookDemoFixtures.attendanceAttempts[0];

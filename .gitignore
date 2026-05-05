@@ -29,3 +29,5 @@ packages/figma-icon-builder/AppIcon-*.png
 packages/figma-icon-builder/exported_icons/
 packages/figma-icon-builder/Android /
 packages/figma-icon-builder/dist/
+.vercel
+.env*.local

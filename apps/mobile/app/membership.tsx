@@ -1,6 +1,8 @@
 import { Stack, useLocalSearchParams } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   BottomNav,
   GlassCard,
@@ -11,8 +13,11 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
-import { useMyMemberships } from "@/lib/query-hooks";
+import { toWebUrl } from "@/lib/api";
+import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { memberApi } from "@/lib/domain-api";
+import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
+import { useGymProfile, useMyMemberships, type PublicPlanSummary } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type MembershipRecord = {
@@ -21,18 +26,22 @@ type MembershipRecord = {
   endsAt?: string | null;
   remainingVisits?: number | null;
   createdAt?: string | null;
-  plan?: {
+  planId?: string | null;
+  plan?: (PublicPlanSummary & {
+    id?: string | null;
     name?: string | null;
     type?: string | null;
-  } | null;
+  }) | null;
   organization?: {
+    id?: string | null;
     name?: string | null;
+    username?: string | null;
   } | null;
 };
 
 function toneForStatus(status?: string | null) {
   if (status === "ACTIVE") return "lime" as const;
-  if (status === "PENDING" || status === "PAST_DUE") return "amber" as const;
+  if (status === "PENDING" || status === "PENDING_PAYMENT" || status === "PAST_DUE") return "amber" as const;
   if (status === "EXPIRED" || status === "CANCELLED") return "red" as const;
   return "blue" as const;
 }
@@ -43,27 +52,93 @@ function daysUntil(dateStr?: string | null) {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+function planIdFor(subscription?: MembershipRecord | null) {
+  return subscription?.plan?.id ?? subscription?.planId ?? undefined;
+}
+
+function checkoutUrl(url?: string | null) {
+  if (!url) return null;
+  return /^https?:\/\//i.test(url) ? url : toWebUrl(url);
+}
+
 export default function MembershipScreen() {
   const routeParams = useLocalSearchParams<{
     focus?: string;
     notificationId?: string;
     subscriptionId?: string;
   }>();
+  const queryClient = useQueryClient();
+  const { activeOrgId, session, token } = useAuth();
   const membershipsQuery = useMyMemberships();
-  const subscriptions = (membershipsQuery.data?.subscriptions ?? []) as MembershipRecord[];
-  const sortedSubscriptions = [...subscriptions].sort((left, right) => {
+  const activeOrganization =
+    session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
+    session?.activeOrganization ??
+    null;
+  const memberships = (membershipsQuery.data?.subscriptions ?? []) as MembershipRecord[];
+  const sortedSubscriptions = [...memberships].sort((left, right) => {
     if (left.id === routeParams.subscriptionId) return -1;
     if (right.id === routeParams.subscriptionId) return 1;
     return 0;
   });
-  const activeCount = subscriptions.filter((s) => s.status === "ACTIVE").length;
-  const expiringSoonCount = subscriptions.filter((s) => {
+  const latestSubscription = sortedSubscriptions[0];
+  const gymUsername =
+    latestSubscription?.organization?.username ?? activeOrganization?.username ?? undefined;
+  const gymQuery = useGymProfile(gymUsername ?? "");
+  const availablePlans = gymQuery.data?.plans ?? [];
+  const activeCount = memberships.filter((s) => s.status === "ACTIVE").length;
+  const expiringSoonCount = memberships.filter((s) => {
     if (s.status !== "ACTIVE" || !s.endsAt) return false;
     const days = daysUntil(s.endsAt);
     return days !== null && days <= 30;
   }).length;
-  const latestSubscription = sortedSubscriptions[0];
   const latestDaysLeft = latestSubscription ? daysUntil(latestSubscription.endsAt) : null;
+  const [renewalOpen, setRenewalOpen] = useState(false);
+  const [renewalTarget, setRenewalTarget] = useState<MembershipRecord | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | undefined>();
+  const [renewalStatus, setRenewalStatus] = useState("");
+  const [renewing, setRenewing] = useState(false);
+  const selectedPlan = useMemo(
+    () => availablePlans.find((plan) => plan.id === selectedPlanId) ?? renewalTarget?.plan ?? null,
+    [availablePlans, renewalTarget?.plan, selectedPlanId],
+  );
+
+  useEffect(() => {
+    if (!renewalTarget) return;
+    setSelectedPlanId(planIdFor(renewalTarget) ?? availablePlans[0]?.id);
+  }, [availablePlans, renewalTarget]);
+
+  function openRenewal(subscription: MembershipRecord) {
+    setRenewalTarget(subscription);
+    setRenewalStatus("");
+    setRenewalOpen(true);
+  }
+
+  async function renewMembership() {
+    if (!token || !renewalTarget) return;
+    setRenewing(true);
+    setRenewalStatus("");
+    try {
+      const result = await memberApi.renewMembership({
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        subscriptionId: renewalTarget.id,
+        ...(selectedPlanId ? { planId: selectedPlanId } : {}),
+      });
+      const url = checkoutUrl(result.checkoutUrl);
+      setRenewalStatus(url ? "Renewal checkout created." : "Renewal request sent.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
+      if (url) {
+        await Linking.openURL(url);
+      }
+    } catch (error) {
+      setRenewalStatus(getApiErrorMessage(error));
+    } finally {
+      setRenewing(false);
+    }
+  }
 
   return (
     <>
@@ -77,7 +152,11 @@ export default function MembershipScreen() {
           <MobileHeader
             eyebrow="Membership"
             title="Your plans"
-            subtitle={activeCount > 0 ? `${activeCount} active membership${activeCount !== 1 ? "s" : ""}` : "No active plans"}
+            subtitle={
+              memberships.length
+                ? `${activeCount} active · ${expiringSoonCount} expiring soon · ${memberships.length} total`
+                : "No active plans"
+            }
           />
 
           {routeParams.focus === "membership" ? (
@@ -92,22 +171,6 @@ export default function MembershipScreen() {
             </GlassCard>
           ) : null}
 
-          {/* Summary row */}
-          <View style={styles.summaryRow}>
-            <View style={[styles.summaryChip, activeCount > 0 ? styles.summaryChipActive : null]}>
-              <Text style={styles.summaryValue}>{activeCount}</Text>
-              <Text style={styles.summaryLabel}>active</Text>
-            </View>
-            <View style={[styles.summaryChip, expiringSoonCount > 0 ? styles.summaryChipWarning : null]}>
-              <Text style={styles.summaryValue}>{expiringSoonCount}</Text>
-              <Text style={styles.summaryLabel}>expiring</Text>
-            </View>
-            <View style={styles.summaryChip}>
-              <Text style={styles.summaryValue}>{subscriptions.length}</Text>
-              <Text style={styles.summaryLabel}>total</Text>
-            </View>
-          </View>
-
           {membershipsQuery.isLoading ? (
             <GlassCard variant="compact" contentStyle={styles.loadingContent}>
               <IconBubble icon="hourglass-outline" tone="amber" size={36} />
@@ -115,7 +178,7 @@ export default function MembershipScreen() {
             </GlassCard>
           ) : null}
 
-          {!membershipsQuery.isLoading && !subscriptions.length ? (
+          {!membershipsQuery.isLoading && !memberships.length ? (
             <GlassCard variant="compact" contentStyle={styles.emptyContent}>
               <IconBubble icon="card-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
@@ -126,7 +189,6 @@ export default function MembershipScreen() {
             </GlassCard>
           ) : null}
 
-          {/* Featured membership */}
           {latestSubscription ? (
             <>
               <SectionHeader title="Current plan" />
@@ -141,7 +203,7 @@ export default function MembershipScreen() {
                       {latestSubscription.plan?.name ?? "Membership"}
                     </Text>
                     <Text style={styles.featuredOrg}>
-                      {latestSubscription.organization?.name ?? "Gym"}
+                      {latestSubscription.organization?.name ?? activeOrganization?.name ?? "Gym"}
                     </Text>
                   </View>
                   <Pill tone={toneForStatus(latestSubscription.status)}>
@@ -149,7 +211,6 @@ export default function MembershipScreen() {
                   </Pill>
                 </View>
 
-                {/* Progress indicator */}
                 {latestDaysLeft !== null ? (
                   <View style={styles.progressSection}>
                     <View style={styles.progressBar}>
@@ -173,20 +234,19 @@ export default function MembershipScreen() {
                 ) : null}
 
                 {latestSubscription.remainingVisits !== null && latestSubscription.remainingVisits !== undefined ? (
-                  <View style={styles.visitsBadge}>
+                  <View style={styles.membershipMetaLine}>
                     <Ionicons name="walk-outline" size={14} color={colors.lime} />
-                    <Text style={styles.visitsText}>{latestSubscription.remainingVisits} visits remaining</Text>
+                    <Text style={styles.membershipMetaText}>{latestSubscription.remainingVisits} visits remaining</Text>
                   </View>
                 ) : null}
 
-                {latestDaysLeft !== null && latestDaysLeft <= 7 ? (
-                  <ZookButton href="/find-gyms" icon="refresh-outline">Renew membership</ZookButton>
-                ) : null}
+                <ZookButton onPress={() => openRenewal(latestSubscription)} icon="refresh-outline">
+                  Renew or change plan
+                </ZookButton>
               </GlassCard>
             </>
           ) : null}
 
-          {/* Other memberships */}
           {sortedSubscriptions.length > 1 ? (
             <>
               <SectionHeader title="History" />
@@ -212,7 +272,6 @@ export default function MembershipScreen() {
             </>
           ) : null}
 
-          {/* Payment history */}
           <SectionHeader title="Payments" />
           <GlassCard variant="compact" contentStyle={styles.emptyPaymentContent}>
             <IconBubble icon="receipt-outline" tone="neutral" size={36} />
@@ -223,8 +282,118 @@ export default function MembershipScreen() {
           </GlassCard>
         </ScrollView>
         <BottomNav />
+        <RenewalSheet
+          availablePlans={availablePlans}
+          currentPlan={renewalTarget?.plan ?? null}
+          gymName={renewalTarget?.organization?.name ?? activeOrganization?.name ?? "your gym"}
+          loadingPlans={gymQuery.isLoading}
+          onClose={() => setRenewalOpen(false)}
+          onRenew={() => void renewMembership()}
+          open={renewalOpen}
+          renewing={renewing}
+          selectedPlan={selectedPlan}
+          selectedPlanId={selectedPlanId}
+          setSelectedPlanId={setSelectedPlanId}
+          status={renewalStatus}
+        />
       </ZookScreen>
     </>
+  );
+}
+
+function RenewalSheet({
+  availablePlans,
+  currentPlan,
+  gymName,
+  loadingPlans,
+  onClose,
+  onRenew,
+  open,
+  renewing,
+  selectedPlan,
+  selectedPlanId,
+  setSelectedPlanId,
+  status,
+}: {
+  availablePlans: PublicPlanSummary[];
+  currentPlan: MembershipRecord["plan"];
+  gymName: string;
+  loadingPlans: boolean;
+  onClose: () => void;
+  onRenew: () => void;
+  open: boolean;
+  renewing: boolean;
+  selectedPlan: PublicPlanSummary | MembershipRecord["plan"] | null;
+  selectedPlanId?: string;
+  setSelectedPlanId: (planId: string) => void;
+  status: string;
+}) {
+  const plans = availablePlans.length ? availablePlans : currentPlan?.id ? [currentPlan as PublicPlanSummary] : [];
+
+  return (
+    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.sheetBackdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close renewal sheet" />
+        <View style={styles.sheet}>
+          <View style={styles.sheetGrabber} />
+          <View style={styles.sheetHeader}>
+            <View style={styles.sheetTitleCopy}>
+              <Text style={styles.sheetEyebrow}>Renew membership</Text>
+              <Text style={styles.sheetTitle}>{selectedPlan?.name ?? currentPlan?.name ?? "Current plan"}</Text>
+              <Text style={styles.sheetBody}>Continue at {gymName} with the same plan or choose another available option.</Text>
+            </View>
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={styles.closeButton}>
+              <Ionicons name="close" size={18} color={colors.text} />
+            </Pressable>
+          </View>
+
+          <View style={styles.planSelector}>
+            {loadingPlans ? <Text style={styles.loadingText}>Loading plan options...</Text> : null}
+            {!loadingPlans && !plans.length ? (
+              <Text style={styles.emptyBody}>No alternate plans are published yet. Same-plan renewal will be requested.</Text>
+            ) : null}
+            {plans.map((plan) => {
+              const selected = selectedPlanId === plan.id;
+              return (
+                <Pressable
+                  key={plan.id}
+                  onPress={() => setSelectedPlanId(plan.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${plan.name}`}
+                  style={[styles.planOption, selected ? styles.planOptionSelected : null]}
+                >
+                  <View style={styles.planOptionCopy}>
+                    <Text style={styles.planOptionTitle}>{plan.name}</Text>
+                    <Text style={styles.planOptionMeta}>
+                      {titleCaseFromCode(plan.type ?? "MEMBERSHIP")} · {formatInr(plan.pricePaise)}
+                    </Text>
+                  </View>
+                  {selected ? <Ionicons name="checkmark-circle" size={20} color={colors.lime} /> : null}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {selectedPlan ? (
+            <GlassCard variant="compact" contentStyle={styles.renewalSummary}>
+              <Text style={styles.summaryTitle}>Renewal summary</Text>
+              <Text style={styles.summaryBody}>
+                {selectedPlan.durationDays ? `${selectedPlan.durationDays} days` : "Gym-defined validity"}
+                {selectedPlan.visitLimit ? ` · ${selectedPlan.visitLimit} visits` : ""}
+              </Text>
+            </GlassCard>
+          ) : null}
+
+          {status ? <Text style={styles.statusMessage}>{status}</Text> : null}
+          <View style={styles.sheetActions}>
+            <ZookButton tone="secondary" onPress={onClose} style={styles.actionHalf}>Cancel</ZookButton>
+            <ZookButton onPress={onRenew} disabled={renewing} icon="refresh-outline" style={styles.actionHalf}>
+              {renewing ? "Starting..." : "Continue"}
+            </ZookButton>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -253,38 +422,6 @@ const styles = StyleSheet.create({
   calloutBody: {
     color: colors.muted,
     ...typography.body,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  summaryChip: {
-    flex: 1,
-    minHeight: 56,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    justifyContent: "center",
-    gap: 2,
-  },
-  summaryChipActive: {
-    borderColor: "rgba(185,244,85,0.3)",
-    backgroundColor: "rgba(185,244,85,0.06)",
-  },
-  summaryChipWarning: {
-    borderColor: "rgba(242,201,76,0.3)",
-    backgroundColor: "rgba(242,201,76,0.06)",
-  },
-  summaryValue: {
-    color: colors.text,
-    ...typography.cardTitle,
-  },
-  summaryLabel: {
-    color: colors.muted,
-    ...typography.small,
   },
   loadingContent: {
     flexDirection: "row",
@@ -365,19 +502,13 @@ const styles = StyleSheet.create({
     color: colors.muted,
     ...typography.small,
   },
-  visitsBadge: {
+  membershipMetaLine: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.2)",
-    backgroundColor: "rgba(185,244,85,0.06)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
     alignSelf: "flex-start",
   },
-  visitsText: {
+  membershipMetaText: {
     color: colors.text,
     ...typography.caption,
   },
@@ -409,5 +540,111 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+  },
+  sheetBackdrop: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(2,6,23,0.72)",
+  },
+  sheet: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  sheetGrabber: {
+    width: 42,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignSelf: "center",
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.md,
+  },
+  sheetTitleCopy: {
+    flex: 1,
+    gap: 5,
+  },
+  sheetEyebrow: {
+    color: colors.lime,
+    ...typography.eyebrow,
+  },
+  sheetTitle: {
+    color: colors.text,
+    ...typography.headerTitle,
+  },
+  sheetBody: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  planSelector: {
+    gap: spacing.sm,
+  },
+  planOption: {
+    minHeight: 64,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    padding: spacing.md,
+  },
+  planOptionSelected: {
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.11)",
+  },
+  planOptionCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  planOptionTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  planOptionMeta: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  renewalSummary: {
+    gap: 4,
+  },
+  summaryTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  summaryBody: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  statusMessage: {
+    color: colors.lime,
+    ...typography.small,
+  },
+  sheetActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  actionHalf: {
+    flex: 1,
   },
 });

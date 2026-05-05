@@ -66,6 +66,16 @@ export default function Home() {
       })
     : "None";
   const enrolledGyms = session?.organizations ?? [];
+  const hasGym = Boolean(activeOrganization);
+  const hasMembership = Boolean(memberHome?.activeMembership);
+  const neverCheckedIn = hasMembership && (memberHome?.recentAttendance?.length ?? 0) === 0;
+  const firstRunState = !hasGym
+    ? "NO_GYM"
+    : !hasMembership
+      ? "NO_MEMBERSHIP"
+      : neverCheckedIn
+        ? "NEVER_CHECKED_IN"
+        : null;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -114,11 +124,6 @@ export default function Home() {
                 </View>
               </Pressable>
             </Link>
-            <Link href="/shop" asChild>
-              <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open shop">
-                <Ionicons name="storefront-outline" size={21} color={colors.text} />
-              </Pressable>
-            </Link>
             <Link href="/notifications" asChild>
               <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Open notifications">
                 <Ionicons name="notifications-outline" size={21} color={colors.text} />
@@ -127,47 +132,71 @@ export default function Home() {
             </Link>
           </BlurView>
 
-          <GlassCard variant="success" contentStyle={styles.membershipContent}>
-            <View style={styles.membershipTop}>
-              <View style={styles.membershipCopy}>
-                <View style={styles.membershipLabel}>
-                  <IconBubble icon="shield-checkmark-outline" tone="lime" size={30} />
-                  <Text style={styles.mutedSmall}>Active Membership</Text>
-                </View>
-                <View style={styles.membershipTitleRow}>
-                  <Text style={styles.membershipTitle}>{memberHome?.activePlan?.name ?? "Membership"}</Text>
-                  <Text style={styles.daysLeft}>{daysLeft} days left</Text>
-                </View>
-                <Text style={styles.mutedBody}>{remainingVisits} visits remaining</Text>
-              </View>
-              <Link href="/membership" asChild>
-                <Pressable accessibilityRole="link" style={styles.membershipCta}>
-                  <Text style={styles.membershipCtaText}>Renew</Text>
-                </Pressable>
-              </Link>
-            </View>
-          </GlassCard>
+          {firstRunState ? <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} /> : null}
 
-          <SectionHeader
-            title="Today's Plan"
-          />
-
-          <Link href="/plans" asChild>
-            <Pressable accessibilityRole="link" accessibilityLabel="Open today's plan">
-              <GlassCard contentStyle={styles.planContent}>
-                <View style={styles.planRow}>
-                  <IconBubble icon="barbell-outline" tone="lime" size={44} />
-                  <View style={styles.planCopy}>
-                    <Text numberOfLines={1} style={styles.planTitle}>{planName}</Text>
+          {hasMembership ? (
+            <Link href="/scan" asChild>
+              <Pressable accessibilityRole="link" accessibilityLabel="Check in at the gym">
+                <GlassCard variant="success" contentStyle={styles.checkInContent}>
+                  <IconBubble icon="qr-code-outline" tone="lime" size={46} />
+                  <View style={styles.checkInCopy}>
+                    <Text style={styles.checkInTitle}>Check in</Text>
                     <Text numberOfLines={1} style={styles.mutedSmall}>
-                      {memberHome?.activePlan?.type ? titleCaseFromCode(memberHome.activePlan.type) : "Tap to view"}
+                      Scan the gym QR when you arrive.
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                  <View style={styles.checkInCta}>
+                    <Text style={styles.checkInCtaText}>Open</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.bg} />
+                  </View>
+                </GlassCard>
+              </Pressable>
+            </Link>
+          ) : null}
+
+          {hasMembership ? (
+            <GlassCard variant="success" contentStyle={styles.membershipContent}>
+              <View style={styles.membershipTop}>
+                <View style={styles.membershipCopy}>
+                  <View style={styles.membershipLabel}>
+                    <IconBubble icon="shield-checkmark-outline" tone="lime" size={30} />
+                    <Text style={styles.mutedSmall}>Active Membership</Text>
+                  </View>
+                  <View style={styles.membershipTitleRow}>
+                    <Text style={styles.membershipTitle}>{memberHome?.activePlan?.name ?? "Membership"}</Text>
+                    <Text style={styles.daysLeft}>{daysLeft} days left</Text>
+                  </View>
+                  <Text style={styles.mutedBody}>{remainingVisits} visits remaining</Text>
                 </View>
-              </GlassCard>
-            </Pressable>
-          </Link>
+                <Link href="/membership" asChild>
+                  <Pressable accessibilityRole="link" style={styles.membershipCta}>
+                    <Text style={styles.membershipCtaText}>Renew</Text>
+                  </Pressable>
+                </Link>
+              </View>
+            </GlassCard>
+          ) : null}
+
+          {hasMembership ? <SectionHeader title="Today's Plan" /> : null}
+
+          {hasMembership ? (
+            <Link href="/plans" asChild>
+              <Pressable accessibilityRole="link" accessibilityLabel="Open today's plan">
+                <GlassCard contentStyle={styles.planContent}>
+                  <View style={styles.planRow}>
+                    <IconBubble icon="barbell-outline" tone="lime" size={44} />
+                    <View style={styles.planCopy}>
+                      <Text numberOfLines={1} style={styles.planTitle}>{planName}</Text>
+                      <Text numberOfLines={1} style={styles.mutedSmall}>
+                        {memberHome?.activePlan?.type ? titleCaseFromCode(memberHome.activePlan.type) : "Tap to view"}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                  </View>
+                </GlassCard>
+              </Pressable>
+            </Link>
+          ) : null}
 
           <Link href="/tracking" asChild>
             <Pressable accessibilityRole="link" accessibilityLabel="Open workout tracking">
@@ -186,11 +215,11 @@ export default function Home() {
             </Pressable>
           </Link>
 
-          <View style={styles.metricsRow}>
-            <MiniMetric label="Visits left" value={`${remainingVisits}`} />
-            <MiniMetric label="Streak" value={`${memberHome?.streakDays ?? 0}`} />
-            <MiniMetric label="Last visit" value={lastCheckIn} />
-          </View>
+          {hasMembership ? (
+            <Text style={styles.progressSummary}>
+              {remainingVisits} visits left · {memberHome?.streakDays ?? 0} day streak · Last visit {lastCheckIn}
+            </Text>
+          ) : null}
 
         </ScrollView>
         {profileOpen ? (
@@ -278,6 +307,18 @@ export default function Home() {
                   <Ionicons name="settings-outline" size={18} color={colors.lime} />
                   <Text style={styles.drawerSettingsText}>Settings</Text>
                 </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setProfileOpen(false);
+                    router.push("/shop");
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open shop"
+                  style={styles.drawerSettings}
+                >
+                  <Ionicons name="storefront-outline" size={18} color={colors.lime} />
+                  <Text style={styles.drawerSettingsText}>Shop</Text>
+                </Pressable>
               </ScrollView>
             </View>
           </View>
@@ -288,21 +329,53 @@ export default function Home() {
   );
 }
 
-function MiniMetric({ label, value, bars }: { label: string; value: string; bars?: number[] }) {
+function FirstRunCard({
+  state,
+  gymUsername,
+}: {
+  state: "NO_GYM" | "NO_MEMBERSHIP" | "NEVER_CHECKED_IN";
+  gymUsername?: string | null;
+}) {
+  const copy = {
+    NO_GYM: {
+      icon: "search-outline" as const,
+      title: "Find your gym",
+      body: "Join a nearby Zook gym to unlock check-ins, plans, payments, and progress.",
+      cta: "Browse gyms",
+      href: "/find-gyms" as Href,
+    },
+    NO_MEMBERSHIP: {
+      icon: "card-outline" as const,
+      title: "Choose a membership",
+      body: "Pick an active plan before check-ins and daily programming start.",
+      cta: "View plans",
+      href: (gymUsername ? `/gym/${gymUsername}` : "/membership") as Href,
+    },
+    NEVER_CHECKED_IN: {
+      icon: "qr-code-outline" as const,
+      title: "First check-in pending",
+      body: "Your membership is active. Scan the gym QR when you arrive for the first visit.",
+      cta: "Open scanner",
+      href: "/scan" as Href,
+    },
+  }[state];
+
   return (
-    <View style={styles.metricCard}>
-      {bars?.length ? (
-        <View style={styles.metricChart}>
-          {bars.map((bar, index) => (
-            <View key={`${label}-${index}`} style={[styles.metricBar, { height: `${Math.round(bar * 100)}%` }]} />
-          ))}
-        </View>
-      ) : null}
-      <View>
-        <Text style={styles.metricValue}>{value}</Text>
-        <Text style={styles.metricLabel}>{label}</Text>
-      </View>
-    </View>
+    <Link href={copy.href} asChild>
+      <Pressable accessibilityRole="link" accessibilityLabel={copy.cta}>
+        <GlassCard variant="success" contentStyle={styles.firstRunContent}>
+          <IconBubble icon={copy.icon} tone="lime" size={46} />
+          <View style={styles.firstRunCopy}>
+            <Text style={styles.firstRunTitle}>{copy.title}</Text>
+            <Text style={styles.mutedBody}>{copy.body}</Text>
+          </View>
+          <View style={styles.checkInCta}>
+            <Text style={styles.checkInCtaText}>{copy.cta}</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.bg} />
+          </View>
+        </GlassCard>
+      </Pressable>
+    </Link>
   );
 }
 
@@ -420,45 +493,53 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: spacing.md,
   },
-  metricsRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  metricCard: {
-    flex: 1,
-    minHeight: 70,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
-    padding: 10,
+  checkInContent: {
+    minHeight: 78,
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
+    gap: spacing.md,
+    padding: 14,
   },
-  metricChart: {
-    width: 28,
-    height: 38,
-    flexDirection: "row",
-    alignItems: "flex-end",
+  checkInCopy: {
+    flex: 1,
     gap: 3,
   },
-  metricBar: {
-    flex: 1,
-    minHeight: 6,
-    borderRadius: 999,
-    backgroundColor: colors.lime,
-    opacity: 0.8,
-  },
-  metricValue: {
+  checkInTitle: {
     color: colors.text,
-    fontSize: 16,
+    ...typography.headerTitle,
+  },
+  checkInCta: {
+    minHeight: 34,
+    borderRadius: 17,
+    backgroundColor: colors.lime,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  checkInCtaText: {
+    color: colors.bg,
+    fontSize: 12,
     fontWeight: "800",
   },
-  metricLabel: {
+  firstRunContent: {
+    minHeight: 112,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: 14,
+  },
+  firstRunCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  firstRunTitle: {
+    color: colors.text,
+    ...typography.headerTitle,
+  },
+  progressSummary: {
     color: colors.muted,
-    fontSize: 11,
-    fontWeight: "700",
+    ...typography.small,
   },
   membershipCopy: {
     flex: 1,

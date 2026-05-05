@@ -88,6 +88,9 @@ export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const notifications = (notificationsQuery.data?.notifications ?? []) as InboxNotification[];
   const unreadCount = notifications.filter((item) => !item.readAt).length;
+  const latestLabel = notifications[0]?.notification?.createdAt
+    ? formatRelativeDate(notifications[0].notification.createdAt)
+    : null;
 
   async function markRead(id: string) {
     if (!token || busyId) {
@@ -124,7 +127,7 @@ export default function NotificationsScreen() {
   async function openNotification(item: InboxNotification) {
     await markRead(item.id);
     const href = mapNotificationPayloadToHref({
-      notificationId: item.notification?.id,
+      notificationId: item.notification?.id ?? item.id,
       type: item.notification?.type,
       ...(item.notification?.metadata ?? {}),
     });
@@ -135,7 +138,9 @@ export default function NotificationsScreen() {
 
   useEffect(() => {
     const matchingUnread = notifications.find(
-      (item) => item.notification?.id === routeParams.notificationId && !item.readAt,
+      (item) =>
+        (item.id === routeParams.notificationId || item.notification?.id === routeParams.notificationId) &&
+        !item.readAt,
     );
     if (matchingUnread) {
       void markRead(matchingUnread.id);
@@ -168,7 +173,13 @@ export default function NotificationsScreen() {
         >
           <MobileHeader
             title="Inbox"
-            subtitle={unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
+            subtitle={
+              unreadCount > 0
+                ? `${unreadCount} unread${latestLabel ? ` · latest ${latestLabel}` : ""}`
+                : latestLabel
+                  ? `All caught up · latest ${latestLabel}`
+                  : "All caught up"
+            }
             trailing={
               unreadCount > 0 ? (
                 <Pressable
@@ -193,26 +204,6 @@ export default function NotificationsScreen() {
               </Text>
             </GlassCard>
           ) : null}
-
-          {/* Summary bar */}
-          <View style={styles.summaryRow}>
-            <View style={[styles.summaryChip, unreadCount > 0 ? styles.summaryChipActive : null]}>
-              <Text style={styles.summaryValue}>{unreadCount}</Text>
-              <Text style={styles.summaryLabel}>unread</Text>
-            </View>
-            <View style={styles.summaryChip}>
-              <Text style={styles.summaryValue}>{notifications.length}</Text>
-              <Text style={styles.summaryLabel}>total</Text>
-            </View>
-            <View style={styles.summaryChip}>
-              <Text style={styles.summaryValue}>
-                {notifications[0]?.notification?.createdAt
-                  ? formatRelativeDate(notifications[0].notification.createdAt)
-                  : "—"}
-              </Text>
-              <Text style={styles.summaryLabel}>latest</Text>
-            </View>
-          </View>
 
           {notificationsQuery.isLoading ? (
             <GlassCard variant="compact" contentStyle={styles.loadingContent}>
@@ -272,7 +263,7 @@ function NotificationRow({
   const unread = !item.readAt;
   const type = notification?.type;
   const href = mapNotificationPayloadToHref({
-    notificationId: notification?.id,
+    notificationId: notification?.id ?? item.id,
     type,
     ...(notification?.metadata ?? {}),
   });
@@ -303,7 +294,7 @@ function NotificationRow({
             </Text>
             <Text style={styles.notificationTime}>
               {notification?.createdAt ? formatRelativeDate(notification.createdAt) : ""}
-              {busy ? " · Opening..." : ` · ${opensRoute ? "Open" : "Mark read"}`}
+              {busy ? " · Opening..." : ` · ${opensRoute ? "Open linked screen" : "Mark read"}`}
             </Text>
           </View>
           <Ionicons
@@ -345,34 +336,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     ...typography.bodyStrong,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  summaryChip: {
-    flex: 1,
-    minHeight: 56,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    justifyContent: "center",
-    gap: 2,
-  },
-  summaryChipActive: {
-    borderColor: "rgba(185,244,85,0.3)",
-    backgroundColor: "rgba(185,244,85,0.06)",
-  },
-  summaryValue: {
-    color: colors.text,
-    ...typography.cardTitle,
-  },
-  summaryLabel: {
-    color: colors.muted,
-    ...typography.small,
   },
   loadingContent: {
     flexDirection: "row",
