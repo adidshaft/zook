@@ -46,7 +46,7 @@ const appVersion = baseConfig.version ?? "0.1.0";
 const runtimeVersion = appVersion;
 
 const apiBaseUrlByProfile: Record<MobileReleaseProfile, string> = {
-  local: "http://127.0.0.1:3000/api",
+  local: "http://localhost:3000/api",
   staging: "https://staging.zook.app/api",
   production: "https://zook.app/api"
 };

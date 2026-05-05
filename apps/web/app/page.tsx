@@ -55,12 +55,6 @@ export default function HomePage() {
               >
                 Start a gym
               </Link>
-              <Link
-                href="/find-gyms"
-                className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-5 py-3 text-white/75"
-              >
-                Find gyms
-              </Link>
             </div>
           </div>
 

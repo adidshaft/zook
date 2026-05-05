@@ -1,6 +1,6 @@
-import { Stack } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -41,6 +41,10 @@ const categories: Array<{ label: string; value: Category }> = [
   { label: "Other", value: "SUPPLEMENT" },
 ];
 
+function firstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 function iconForCategory(category: Category) {
   if (category === "WATER") return "water-outline" as const;
   if (category === "TOWEL") return "shirt-outline" as const;
@@ -49,6 +53,11 @@ function iconForCategory(category: Category) {
 }
 
 export default function Shop() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{
+    orderId?: string | string[];
+    focus?: string | string[];
+  }>();
   const { session } = useAuth();
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState("");
@@ -84,6 +93,20 @@ export default function Shop() {
     0,
   );
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  useEffect(() => {
+    const requestedOrderId = firstParam(params.orderId);
+    if (!requestedOrderId) {
+      return;
+    }
+    const matchedOrder = ordersQuery.data?.orders.find(
+      (candidate) => candidate.id === requestedOrderId,
+    );
+    if (matchedOrder) {
+      setOrder(matchedOrder);
+      setCheckoutState("pickup");
+    }
+  }, [ordersQuery.data?.orders, params.orderId]);
 
   function addToCart(productId: string) {
     const product = products.find((candidate) => candidate.id === productId);
@@ -179,7 +202,14 @@ export default function Shop() {
             );
           })}
         </GlassCard>
-        <ZookButton onPress={() => setCheckoutState("browse")} icon="bag-outline">
+        <ZookButton
+          onPress={() => {
+            setOrder(null);
+            setCheckoutState("browse");
+            router.replace("/shop" as never);
+          }}
+          icon="bag-outline"
+        >
           Back to Shop
         </ZookButton>
       </ShopShell>

@@ -1,4 +1,5 @@
 import { ShieldAlert } from "lucide-react";
+import Link from "next/link";
 import { MetricCard } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { PlatformOperationsPanel } from "@/components/platform-operations-panel";
@@ -56,14 +57,20 @@ export default async function PlatformPage() {
           </div>
         </GlassCard>
 
-        <nav className="flex flex-wrap gap-2 rounded-[28px] border border-white/10 bg-white/5 p-3">
-          {["Overview", "Organizations", "Provider Diagnostics", "AI & Abuse", "Readiness", "Audit Logs", "Jobs"].map((item, index) => (
-            <span
+        <nav className="flex gap-2 overflow-x-auto rounded-[28px] border border-white/10 bg-white/5 p-3">
+          {([
+            ["Readiness", "#readiness"],
+            ["Organizations", "#organizations"],
+            ["AI traffic", "#ai-traffic"],
+            ["Abuse flags", "#abuse-flags"],
+          ] as Array<[string, string]>).map(([item, href], index) => (
+            <Link
               key={item}
-              className={`rounded-full px-4 py-2 text-sm ${index === 0 ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"}`}
+              href={href}
+              className={`zook-focus shrink-0 rounded-full px-4 py-2 text-sm ${index === 0 ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"}`}
             >
               {item}
-            </span>
+            </Link>
           ))}
         </nav>
 

@@ -266,19 +266,19 @@ export default function Home() {
                     })}
                   </View>
                 ) : null}
+                <Pressable
+                  onPress={() => {
+                    setProfileOpen(false);
+                    router.push("/settings");
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open settings"
+                  style={styles.drawerSettings}
+                >
+                  <Ionicons name="settings-outline" size={18} color={colors.lime} />
+                  <Text style={styles.drawerSettingsText}>Settings</Text>
+                </Pressable>
               </ScrollView>
-              <Pressable
-                onPress={() => {
-                  setProfileOpen(false);
-                  router.push("/settings");
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Open settings"
-                style={styles.drawerSettings}
-              >
-                <Ionicons name="settings-outline" size={18} color={colors.lime} />
-                <Text style={styles.drawerSettingsText}>Settings</Text>
-              </Pressable>
             </View>
           </View>
         ) : null}
@@ -539,8 +539,8 @@ const styles = StyleSheet.create({
   },
   drawerScene: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 80,
-    elevation: 80,
+    zIndex: 140,
+    elevation: 140,
     flexDirection: "row",
     backgroundColor: "rgba(0,0,0,0.26)",
   },
@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
   drawerContent: {
     paddingTop: 54,
     paddingHorizontal: 16,
-    paddingBottom: 92,
+    paddingBottom: 26,
     gap: 12,
   },
   drawerHeader: {
@@ -679,11 +679,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   drawerSettings: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 24,
-    zIndex: 2,
     minHeight: 48,
     borderRadius: 18,
     borderWidth: 1,

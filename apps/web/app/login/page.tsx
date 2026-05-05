@@ -29,7 +29,7 @@ export default async function LoginPage({
   }
 
   return (
-    <main className="grid min-h-screen place-items-center px-5 py-8">
+    <main className="grid min-h-dvh place-items-center px-5 py-8">
       <div className="absolute left-5 top-5">
         <ZookLogo />
       </div>

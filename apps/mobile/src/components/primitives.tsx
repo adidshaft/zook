@@ -796,7 +796,14 @@ export function ZookButton({
           style={staticButtonStyle}
         >
           {icon ? <Ionicons name={icon} size={17} color={palette.color} /> : null}
-          <Text style={[styles.buttonText, { color: palette.color }, textStyle]}>{children}</Text>
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.82}
+            style={[styles.buttonText, { color: palette.color }, textStyle]}
+          >
+            {children}
+          </Text>
         </Pressable>
       </Link>
     );
@@ -826,7 +833,14 @@ export function ZookButton({
       ]}
     >
       {icon ? <Ionicons name={icon} size={17} color={palette.color} /> : null}
-      <Text style={[styles.buttonText, { color: palette.color }, textStyle]}>{children}</Text>
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.82}
+        style={[styles.buttonText, { color: palette.color }, textStyle]}
+      >
+        {children}
+      </Text>
     </Pressable>
   );
 
@@ -1577,7 +1591,6 @@ const memberTabs: DockTab[] = [
     icon: "scan-outline",
     activeIcon: "scan",
     matchPath: "/scan",
-    raised: true,
   },
   {
     href: "/plans",
@@ -2707,22 +2720,23 @@ const styles = StyleSheet.create({
   },
   memberBottomNavShell: {
     position: "absolute",
-    zIndex: 30,
-    left: 28,
-    right: 28,
-    height: 86,
-    overflow: "visible",
+    zIndex: 50,
+    left: 22,
+    right: 22,
+    height: 72,
+    overflow: "hidden",
+    borderRadius: 24,
   },
   memberBottomNavBlur: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    height: 66,
-    borderRadius: 20,
+    height: 72,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.22)",
-    backgroundColor: "rgba(7,9,8,0.88)",
+    borderColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(7,9,8,0.84)",
     overflow: "hidden",
     shadowColor: "#000",
     shadowOpacity: 0.24,
@@ -2734,23 +2748,23 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 86,
+    height: 72,
     borderRadius: 24,
-    backgroundColor: "rgba(7,9,8,0.94)",
+    backgroundColor: "rgba(7,9,8,0.82)",
   },
   memberBottomNavItems: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    height: 66,
+    height: 72,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 18,
-    paddingVertical: 0,
-    gap: 18,
-    overflow: "visible",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    gap: 8,
+    overflow: "hidden",
   },
   bottomNavItem: {
     width: 58,
@@ -2762,8 +2776,10 @@ const styles = StyleSheet.create({
   },
   memberBottomNavItem: {
     flex: 1,
-    height: 58,
-    borderRadius: 19,
+    width: undefined,
+    minWidth: 0,
+    height: 56,
+    borderRadius: 18,
   },
   memberBottomNavItemRaised: {
     flexGrow: 0,

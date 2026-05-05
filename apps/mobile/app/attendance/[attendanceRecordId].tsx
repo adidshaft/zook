@@ -168,17 +168,16 @@ export default function AttendanceResultScreen() {
                 </View>
               </GlassCard>
 
-              <ZookButton href="/attendance/attendance-approved" icon="refresh-outline">
-                View Status
+              <ZookButton
+                onPress={() => void attendanceQuery.refetch()}
+                disabled={attendanceQuery.isFetching}
+                icon="refresh-outline"
+              >
+                {attendanceQuery.isFetching ? "Refreshing..." : "Refresh status"}
               </ZookButton>
               <ZookButton href="/" tone="secondary" icon="home-outline">
                 Back to Home
               </ZookButton>
-              <Link href="/attendance/attendance-approved" asChild>
-                <Pressable accessibilityRole="link" style={styles.historyLink}>
-                  <Text style={styles.historyText}>View Attendance History</Text>
-                </Pressable>
-              </Link>
             </>
           ) : blocked ? (
             <>

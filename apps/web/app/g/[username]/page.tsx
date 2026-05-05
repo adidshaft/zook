@@ -22,7 +22,7 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
   const facilities = org.facilities.length ? org.facilities : org.amenities;
 
   return (
-    <main className="min-h-screen px-5 py-5">
+    <main className="min-h-dvh px-5 py-5">
       <div className="mx-auto grid max-w-7xl gap-5">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <ZookLogo />
@@ -41,7 +41,7 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
             {org.coverImageUrl ? (
               <img
                 src={org.coverImageUrl}
-                alt=""
+                alt={`${org.name} gym interior`}
                 className="absolute inset-0 h-full w-full object-cover opacity-30"
               />
             ) : null}
@@ -162,12 +162,6 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                     : "Visit pack"} ·{" "}
                 {plan.visitLimit || "Unlimited"} {plan.visitLimit === 1 ? "visit" : "visits"}
                 </p>
-                <Link
-                  href={`/join/${org.username}?plan=${plan.id}`}
-                  className="zook-focus mt-5 inline-flex rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/8"
-                >
-                  Select plan
-                </Link>
               </GlassCard>
             ))
           ) : (
@@ -199,7 +193,7 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
             </div>
           </GlassCard>
           <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">Get the app</h2>
+            <h2 className="text-2xl font-semibold text-white">Share or install</h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
               Scan the QR, open this gym in Zook, or install the app and search for {org.name}.
             </p>
@@ -222,7 +216,7 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
               ) : null}
               <a
                 href={`/qr/${org.username}?target=join&download=1`}
-                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm text-white/80"
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
               >
                 <QrCode size={16} />
                 Download QR
@@ -237,7 +231,7 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
               <img
                 key={imageUrl}
                 src={imageUrl}
-                alt=""
+                alt={`${org.name} facility photo`}
                 className="aspect-[4/3] rounded-[28px] border border-white/10 object-cover"
               />
             ))}
@@ -257,7 +251,7 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                     {trainer.profilePhotoUrl ? (
                       <img
                         src={trainer.profilePhotoUrl}
-                        alt=""
+                        alt={`${trainer.name} profile photo`}
                         className="h-11 w-11 rounded-2xl border border-white/10 object-cover"
                       />
                     ) : null}
@@ -282,12 +276,6 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
               Have a referral or invite code? Apply it during checkout so the gym can track the
               source and any eligible discount.
             </p>
-            <Link
-              href={`/join/${org.username}${defaultPlanId ? `?plan=${defaultPlanId}` : ""}`}
-              className="zook-focus mt-5 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm text-white/80"
-            >
-              Review membership
-            </Link>
           </GlassCard>
         </section>
       </div>

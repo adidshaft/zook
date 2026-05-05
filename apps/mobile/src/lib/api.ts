@@ -66,7 +66,7 @@ export function getMobileApiBaseUrl() {
     configuredReleaseProfile() === "local"
       ? Platform.OS === "android"
         ? "http://10.0.2.2:3000/api"
-        : "http://127.0.0.1:3000/api"
+        : "http://localhost:3000/api"
       : undefined;
   const configured =
     (Constants.expoConfig?.extra?.mobileApiBaseUrl as string | undefined) ??

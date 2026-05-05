@@ -15,8 +15,8 @@ export const DashboardOperationalPanelShell = dynamic(
       <GlassCard>
         <SectionHeader
           eyebrow="Loading"
-          title="Opening operational surface"
-          description="The dashboard controls are loading in the browser."
+          title="Loading section"
+          description="Preparing this view."
         />
       </GlassCard>
     ),

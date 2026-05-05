@@ -162,10 +162,10 @@ export function ReadoutGrid({
   return (
     <dl className={clsx("grid gap-3", columnClasses[columns], className)}>
       {items.map((item) => (
-        <div key={item.label} className="rounded-[22px] border border-white/10 bg-black/20 px-4 py-3">
+        <div key={item.label} className="min-w-0 rounded-[22px] border border-white/10 bg-black/20 px-4 py-3">
           <dt className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/35">{item.label}</dt>
-          <dd className="mt-2 text-lg font-semibold text-white">{item.value}</dd>
-          {item.meta ? <p className="mt-1 text-xs leading-5 text-white/45">{item.meta}</p> : null}
+          <dd className="mt-2 min-w-0 break-words text-lg font-semibold text-white">{item.value}</dd>
+          {item.meta ? <p className="mt-1 min-w-0 break-words text-xs leading-5 text-white/45">{item.meta}</p> : null}
         </div>
       ))}
     </dl>
@@ -194,8 +194,8 @@ export function DataTable<Row>({
   className?: string | undefined;
 }) {
   return (
-    <div className={clsx("overflow-hidden rounded-[24px] border border-white/10 bg-black/25", className)}>
-      <table className="w-full text-left text-sm">
+    <div className={clsx("overflow-x-auto rounded-[24px] border border-white/10 bg-black/25", className)}>
+      <table className="min-w-[720px] w-full text-left text-sm">
         <thead className="bg-white/6 text-white/42">
           <tr>
             {columns.map((column) => (
@@ -220,7 +220,7 @@ export function DataTable<Row>({
                   <td
                     key={column.id}
                     className={clsx(
-                      "px-4 py-3 text-white/72",
+                      "min-w-0 break-words px-4 py-3 text-white/72",
                       column.align === "right" ? "text-right" : column.align === "center" ? "text-center" : "text-left",
                       column.className
                     )}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CheckCircle2, LockKeyhole } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
+import { JoinCheckoutButton } from "@/components/join-checkout-button";
 import { ZookLogo } from "@/components/zook-logo";
 import { formatInr } from "@/lib/format";
 import { getPublicGymProfileData, type PublicGymReferral } from "@/server/public-gym-read-models";
@@ -143,12 +144,12 @@ export default async function JoinPage({
               </div>
             </div>
             {data.connected ? (
-              <Link
-                href={loginRedirect(joinPath(org.username, selectedPlan.id, referral))}
-                className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
-              >
-                Sign in to continue
-              </Link>
+              <JoinCheckoutButton
+                orgId={org.id}
+                planId={selectedPlan.id}
+                referralCode={referral?.code ?? null}
+                loginPath={loginRedirect(joinPath(org.username, selectedPlan.id, referral))}
+              />
             ) : (
               <Link
                 href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}

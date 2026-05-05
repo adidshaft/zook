@@ -60,6 +60,8 @@ export default function Plans() {
   const params = useLocalSearchParams<{
     view?: string | string[];
     assignmentId?: string | string[];
+    planId?: string | string[];
+    focus?: string | string[];
   }>();
   const [view, setView] = useState<PlanView>("assigned");
   const [filter, setFilter] = useState<PlanFilter>("all");
@@ -97,8 +99,21 @@ export default function Plans() {
     if (requestedAssignmentId) {
       setSelectedAssignmentId(requestedAssignmentId);
       setView("detail");
+      return;
     }
-  }, [params.assignmentId]);
+
+    const requestedPlanId = firstParam(params.planId);
+    if (requestedPlanId && plans.length) {
+      const matchedPlan = plans.find(
+        (assignment) =>
+          assignment.id === requestedPlanId || assignment.plan?.id === requestedPlanId,
+      );
+      if (matchedPlan) {
+        setSelectedAssignmentId(matchedPlan.id);
+        setView("detail");
+      }
+    }
+  }, [params.assignmentId, params.planId, plans]);
 
   useEffect(() => {
     if (!selectedAssignmentId && plans[0]) {

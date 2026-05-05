@@ -115,7 +115,8 @@ export function PlatformOperationsPanel({
 
   return (
     <div className="grid gap-4">
-      <GlassCard>
+      <div id="readiness" className="scroll-mt-5">
+        <GlassCard>
           <SectionHeader
             eyebrow="Provider Registry"
             title="Runtime readiness"
@@ -217,10 +218,12 @@ export function PlatformOperationsPanel({
             empty="Provider diagnostics are not available yet."
           />
         </div>
-      </GlassCard>
+        </GlassCard>
+      </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.18fr_0.82fr]">
-        <GlassCard>
+        <div id="organizations" className="scroll-mt-5">
+          <GlassCard>
           <SectionHeader
             eyebrow="Organizations"
             title="Status control matrix"
@@ -287,7 +290,8 @@ export function PlatformOperationsPanel({
               empty="No organizations are currently available."
             />
           </div>
-        </GlassCard>
+          </GlassCard>
+        </div>
 
         <div className="grid gap-4">
           <GlassCard>
@@ -339,7 +343,8 @@ export function PlatformOperationsPanel({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <GlassCard>
+        <div id="ai-traffic" className="scroll-mt-5">
+          <GlassCard>
           <SectionHeader
             eyebrow="AI Traffic"
             title="Recent platform-wide AI activity"
@@ -393,9 +398,11 @@ export function PlatformOperationsPanel({
               />
             )}
           </div>
-        </GlassCard>
+          </GlassCard>
+        </div>
 
-        <GlassCard>
+        <div id="abuse-flags" className="scroll-mt-5">
+          <GlassCard>
           <SectionHeader
             eyebrow="Abuse Signals"
             title="Recent flags"
@@ -434,7 +441,8 @@ export function PlatformOperationsPanel({
               <EmptyState title="No recent abuse flags" description="The current platform snapshot does not contain any flagged organizations." />
             )}
           </div>
-        </GlassCard>
+          </GlassCard>
+        </div>
       </div>
     </div>
   );

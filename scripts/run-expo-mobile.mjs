@@ -32,6 +32,12 @@ for (const fileName of orderedRootEnvFiles(process.env.NODE_ENV)) {
 }
 
 const expoBinPath = requireFromMobile.resolve("expo/bin/cli");
+const mobileApiBaseUrl =
+  process.env.MOBILE_API_BASE_URL ?? process.env.EXPO_PUBLIC_API_BASE_URL ?? "(profile default)";
+const mobileApiMode =
+  process.env.MOBILE_API_MODE ?? process.env.EXPO_PUBLIC_API_MODE ?? process.env.API_MODE ?? "(backend default)";
+console.log(`[Zook mobile] API mode: ${mobileApiMode}`);
+console.log(`[Zook mobile] API base URL: ${mobileApiBaseUrl}`);
 const child = spawn(process.execPath, [expoBinPath, ...forwardedArgs], {
   cwd: mobileDir,
   env: process.env,

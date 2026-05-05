@@ -8,14 +8,10 @@ import {
   FileText,
   Globe2,
   History,
-  MapPin,
-  Package,
   QrCode,
   ReceiptText,
-  Settings,
   Shield,
   Store,
-  UserPlus,
   Users,
 } from "lucide-react";
 import {
@@ -31,23 +27,19 @@ import { ZookLogo } from "./zook-logo";
 import { formatDate, formatDaysRemaining, formatEnumLabel, titleFromSection } from "@/lib/format";
 
 const nav = [
-  ["Dashboard", "/dashboard", Dumbbell],
+  ["Today", "/dashboard", Dumbbell],
   ["Members", "/dashboard/members", Users],
-  ["Join Requests", "/dashboard/join-requests", UserPlus],
-  ["Plans", "/dashboard/membership-plans", ClipboardList],
+  ["Memberships", "/dashboard/membership-plans", ClipboardList],
   ["Payments", "/dashboard/payments", ReceiptText],
   ["Attendance", "/dashboard/attendance", QrCode],
-  ["Trainers & PT", "/dashboard/trainers", CalendarCheck],
+  ["Trainers", "/dashboard/trainers", CalendarCheck],
   ["Plans & AI", "/dashboard/ai", Brain],
   ["Notifications", "/dashboard/notifications", Bell],
   ["Shop", "/dashboard/shop/products", Store],
   ["Reports", "/dashboard/reports", FileText],
   ["Staff", "/dashboard/staff", Shield],
-  ["Public Profile", "/dashboard/public-profile", Globe2],
-  ["Settings", "/dashboard/settings", Settings],
+  ["Gym Profile", "/dashboard/public-profile", Globe2],
   ["Audit", "/dashboard/audit", History],
-  ["Organization", "/dashboard/org", MapPin],
-  ["Inventory Ops", "/dashboard/shop/orders", Package],
 ] as const;
 
 function isActiveNav(href: string, sectionKey: string) {
@@ -116,35 +108,41 @@ export function DashboardShell({
     tone: PillTone;
   }> = [
     {
-      label: "Display QR entry",
+      label: "Show entry QR",
       href: "/dashboard/attendance/approvals",
       detail: `${data.summary.todayAttendance} scans today`,
       tone: "lime",
     },
     {
-      label: "Process join requests",
+      label: "Review joins",
       href: "/dashboard/members",
       detail: `${data.summary.joinRequests} membership handoffs`,
       tone: data.summary.joinRequests > 0 ? "amber" : "lime",
     },
     {
-      label: "Check inventory risk",
+      label: "Check stock",
       href: "/dashboard/shop/products",
       detail: `${data.summary.lowStockProducts} low-stock SKUs`,
       tone: data.summary.lowStockProducts > 0 ? "amber" : "blue",
     },
     {
-      label: "Inspect audit and AI",
+      label: "Review audit",
       href: "/dashboard/audit",
       detail: `${data.auditLogCount} audit entries`,
       tone: data.auditLogCount > 0 ? "blue" : "neutral",
     },
   ];
 
+  const pageTitle = sectionKey === "" ? `Today at ${activeOrg.name}` : title;
+  const pageDescription =
+    sectionKey === ""
+      ? "Live check-ins, members, payments, stock, and follow-ups in one owner view."
+      : "Use this section for daily gym operations. Changes here are backed by the Zook backend.";
+
   return (
-    <main className="min-h-screen px-4 py-4 lg:px-6">
+    <main className="min-h-dvh px-4 py-4 lg:px-6">
       <div className="mx-auto grid max-w-[1500px] gap-4 lg:grid-cols-[300px_1fr]">
-        <aside className="sticky top-4 h-fit">
+        <aside className="sticky top-4 hidden h-fit lg:block">
           <GlassCard variant="strong" className="p-4">
             <ZookLogo />
             <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 p-4">
@@ -196,7 +194,7 @@ export function DashboardShell({
 
             <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
-                Ops posture
+                Gym status
               </p>
               <ReadoutGrid
                 className="mt-4"
@@ -229,6 +227,24 @@ export function DashboardShell({
         </aside>
 
         <section className="grid gap-4">
+          <nav className="flex gap-2 overflow-x-auto rounded-[24px] border border-white/10 bg-white/5 p-2 lg:hidden">
+            {nav.map(([label, href, Icon]) => {
+              const active = isActiveNav(href, sectionKey);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`zook-focus inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm transition ${
+                    active ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"
+                  }`}
+                >
+                  <Icon size={16} />
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+
           <GlassCard variant="strong" className="overflow-hidden">
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
               <div>
@@ -244,11 +260,10 @@ export function DashboardShell({
                   />
                 </div>
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-                  {title}
+                  {pageTitle}
                 </h1>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
-                  Today's command board for owners and admins. Review members, payments, QR
-                  attendance, trainer work, shop pickup, reports, staff actions, and audit posture.
+                  {pageDescription}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -257,13 +272,13 @@ export function DashboardShell({
                   className="zook-focus inline-flex items-center justify-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
                 >
                   <QrCode size={18} />
-                  Display QR
+                  Show QR
                 </Link>
                 <Link
                   href="/dashboard/reports"
                   className="zook-focus inline-flex items-center justify-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm text-white/72 transition hover:bg-white/8"
                 >
-                  Open reports
+                  Reports
                 </Link>
               </div>
             </div>
@@ -288,8 +303,8 @@ export function DashboardShell({
               <GlassCard>
                 <SectionHeader
                   eyebrow="Operator lane"
-                  title="Immediate workflow queue"
-                  description="Fast paths into the surfaces that usually need attention before the next rush, shift change, or member callback."
+                  title="Needs attention"
+                  description="The few places an owner usually checks before the next rush, shift change, or callback."
                 />
                 <div className="mt-5 grid gap-3 md:grid-cols-2">
                   {workflowCards.map((card) => (
@@ -310,8 +325,8 @@ export function DashboardShell({
               <GlassCard>
                 <SectionHeader
                   eyebrow="Org posture"
-                  title="Current run-state"
-                  description="This keeps the org’s posture readable without needing to leave the current section."
+                  title="Gym status"
+                  description="The current operating context for this dashboard."
                 />
                 <ReadoutGrid
                   className="mt-5"
@@ -348,29 +363,31 @@ export function DashboardShell({
             </div>
           )}
 
-          <DashboardOperationalPanelShell
-            orgId={activeOrg.id}
-            sectionKey={sectionKey}
-            organization={{
-              id: activeOrg.id,
-              name: activeOrg.name,
-              city: activeOrg.city,
-              state: activeOrg.state,
-              status: activeOrg.status,
-              joinMode: activeOrg.joinMode,
-              attendanceMode: activeOrg.attendanceMode,
-              trialEndAt: activeOrg.trialEndAt,
-              contactEmail: activeOrg.contactEmail,
-              contactPhone: activeOrg.contactPhone,
-            }}
-            summary={data.summary}
-            branchScope={data.branchScope}
-            auditLogCount={data.auditLogCount}
-            initialJoinRequests={data.joinRequests}
-            initialNotifications={data.notifications}
-            initialProducts={data.products}
-            initialAiUsage={data.aiUsage}
-          />
+          {sectionKey ? (
+            <DashboardOperationalPanelShell
+              orgId={activeOrg.id}
+              sectionKey={sectionKey}
+              organization={{
+                id: activeOrg.id,
+                name: activeOrg.name,
+                city: activeOrg.city,
+                state: activeOrg.state,
+                status: activeOrg.status,
+                joinMode: activeOrg.joinMode,
+                attendanceMode: activeOrg.attendanceMode,
+                trialEndAt: activeOrg.trialEndAt,
+                contactEmail: activeOrg.contactEmail,
+                contactPhone: activeOrg.contactPhone,
+              }}
+              summary={data.summary}
+              branchScope={data.branchScope}
+              auditLogCount={data.auditLogCount}
+              initialJoinRequests={data.joinRequests}
+              initialNotifications={data.notifications}
+              initialProducts={data.products}
+              initialAiUsage={data.aiUsage}
+            />
+          ) : null}
         </section>
       </div>
     </main>
