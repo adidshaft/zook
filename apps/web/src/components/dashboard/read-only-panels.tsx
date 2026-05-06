@@ -1,0 +1,876 @@
+"use client";
+
+import { AttendanceApprovalsPanel } from "../attendance-approvals-panel";
+import { AttendanceQrPanel } from "../attendance-qr-panel";
+import { NotificationComposerPanel } from "../notification-composer-panel";
+import {
+  DataTable,
+  EmptyState,
+  ReadoutGrid,
+  SectionHeader,
+  StatusPill,
+} from "../dashboard-primitives";
+import { GlassCard, Pill } from "../glass-card";
+import {
+  formatCompactNumber,
+  formatDate,
+  formatDateTime,
+  formatDaysRemaining,
+  formatEnumLabel,
+  formatInr,
+} from "@/lib/format";
+import type {
+  AIUsageRow,
+  AttendanceRecordRow,
+  AuditLogRow,
+  BranchScopeSnapshot,
+  CoachPlanRow,
+  MembershipPlanRow,
+  NotificationSnapshot,
+  OrganizationSnapshot,
+  OrganizationSummary,
+  PaymentRow,
+  ShopOrderRow,
+} from "../dashboard-operational-model";
+import {
+  CsvExportButton,
+  ErrorNotice,
+  LoadMoreButton,
+  formatAiResponseSummary,
+} from "./operational-shared";
+
+type LoadingState = {
+  error: string;
+  loading: boolean;
+};
+
+type PagedState = LoadingState & {
+  hasMore: boolean;
+  loadingMore: boolean;
+  loadMore: () => void;
+};
+
+export function AttendancePanel({
+  orgId,
+  organization,
+  summary,
+  branchScope,
+  selectedBranchName,
+  attendanceRecords,
+  attendanceState,
+}: {
+  orgId: string;
+  organization: OrganizationSnapshot;
+  summary: OrganizationSummary;
+  branchScope: BranchScopeSnapshot;
+  selectedBranchName: string;
+  attendanceRecords: AttendanceRecordRow[];
+  attendanceState: PagedState;
+}) {
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <AttendanceApprovalsPanel orgId={orgId} />
+        <div className="grid gap-4">
+          <AttendanceQrPanel orgId={orgId} />
+          <GlassCard>
+            <SectionHeader
+              eyebrow="Entry Protocol"
+              title="QR code and entry codes"
+              description="Members scan the displayed gym QR, receive a unique entry code, and show it at the floor or desk."
+              badge={<StatusPill value="Self-approved QR" tone="lime" />}
+            />
+            <ReadoutGrid
+              className="mt-5"
+              items={[
+                {
+                  label: "Branch scope",
+                  value: selectedBranchName,
+                  meta: branchScope.selectedBranch
+                    ? "QR and member attendance use this branch"
+                    : "Add a default branch before production launch",
+                },
+                {
+                  label: "Today scans",
+                  value: formatCompactNumber(summary.todayAttendance),
+                  meta: "Members receive visible entry codes",
+                },
+                {
+                  label: "Join mode",
+                  value: formatEnumLabel(organization.joinMode),
+                  meta: "Used during membership requests",
+                },
+                {
+                  label: "Trial window",
+                  value: formatDaysRemaining(summary.trialDaysRemaining),
+                  meta: formatDate(organization.trialEndAt),
+                },
+              ]}
+              columns={1}
+            />
+          </GlassCard>
+        </div>
+      </div>
+      <GlassCard>
+        <SectionHeader
+          eyebrow="Attendance"
+          title="Recent attendance scans"
+          description="A cursor-paged ledger of member check-ins for the selected organization."
+          badge={<Pill tone="blue">{attendanceRecords.length} loaded</Pill>}
+          action={<CsvExportButton href={`/api/orgs/${orgId}/reports/attendance.csv`} />}
+        />
+        <div className="mt-5">
+          {attendanceState.error ? (
+            <ErrorNotice message={attendanceState.error} />
+          ) : attendanceState.loading && attendanceRecords.length === 0 ? (
+            <EmptyState title="Loading attendance" description="Pulling the latest check-in ledger." />
+          ) : (
+            <>
+              <DataTable
+                columns={[
+                  {
+                    id: "member",
+                    header: "Member",
+                    render: (record) => (
+                      <div>
+                        <p className="font-medium text-white">
+                          {record.user?.name ?? record.user?.email ?? "Member"}
+                        </p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {record.plan?.name ?? "Membership"}
+                        </p>
+                      </div>
+                    ),
+                  },
+                  {
+                    id: "status",
+                    header: "Status",
+                    render: (record) => <StatusPill value={formatEnumLabel(record.status)} />,
+                  },
+                  {
+                    id: "remaining",
+                    header: "Visits",
+                    align: "right",
+                    render: (record) =>
+                      record.subscription?.remainingVisits === null ||
+                      record.subscription?.remainingVisits === undefined
+                        ? "Open"
+                        : record.subscription.remainingVisits.toString(),
+                  },
+                  {
+                    id: "time",
+                    header: "Checked in",
+                    render: (record) => formatDateTime(record.checkedInAt),
+                  },
+                ]}
+                rows={attendanceRecords}
+                rowKey={(record) => record.id}
+                empty="No attendance scans are available yet."
+              />
+              <LoadMoreButton
+                count={attendanceRecords.length}
+                hasMore={attendanceState.hasMore}
+                loading={attendanceState.loadingMore}
+                onLoadMore={attendanceState.loadMore}
+              />
+            </>
+          )}
+        </div>
+      </GlassCard>
+    </div>
+  );
+}
+
+export function NotificationsPanel({
+  orgId,
+  organization,
+  summary,
+  initialNotifications,
+}: {
+  orgId: string;
+  organization: OrganizationSnapshot;
+  summary: OrganizationSummary;
+  initialNotifications: NotificationSnapshot[];
+}) {
+  return (
+    <div className="grid gap-4">
+      <NotificationComposerPanel orgId={orgId} />
+      <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Guardrails"
+            title="Delivery posture"
+            description="Operational messages should stay crisp, permission-safe, and relevant to the floor or membership journey."
+            badge={
+              <Pill tone={summary.notificationQueueCount > 0 ? "amber" : "lime"}>
+                {summary.notificationQueueCount} queued
+              </Pill>
+            }
+          />
+          <ReadoutGrid
+            className="mt-5"
+            items={[
+              {
+                label: "Org status",
+                value: formatEnumLabel(organization.status),
+                meta: "Broadcasts respect active org availability",
+              },
+              {
+                label: "Recent sends",
+                value: formatCompactNumber(initialNotifications.length),
+                meta: "Current history in this org snapshot",
+              },
+              {
+                label: "Audience mode",
+                value:
+                  summary.activeMembers > 0 ? "Live member targeting" : "No active audience yet",
+                meta: "Uses persisted org memberships",
+              },
+              {
+                label: "Escalation load",
+                value:
+                  summary.pendingAttendanceApprovals > 0
+                    ? `${summary.pendingAttendanceApprovals} pending`
+                    : "Clear",
+                meta: "Useful for operational notices",
+              },
+            ]}
+            columns={2}
+          />
+        </GlassCard>
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Recent Messages"
+            title="Current message mix"
+            description="A quick read on the most recent notifications coming out of this organization."
+          />
+          <div className="mt-5 grid gap-3">
+            {initialNotifications.length ? (
+              initialNotifications.slice(0, 4).map((notification) => (
+                <div
+                  key={notification.id}
+                  className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-white">{notification.title}</p>
+                    <StatusPill value={formatEnumLabel(notification.status)} />
+                  </div>
+                  <p className="mt-2 text-xs text-white/45">
+                    {formatEnumLabel(notification.type)}
+                    {notification.audience ? ` · ${formatEnumLabel(notification.audience)}` : ""}
+                    {" · "}
+                    {formatDateTime(notification.createdAt)}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <EmptyState
+                title="No notifications in history yet"
+                description="Compose a first operational message to seed this surface and validate the org’s delivery lane."
+              />
+            )}
+          </div>
+        </GlassCard>
+      </div>
+    </div>
+  );
+}
+
+export function PaymentsPanel({
+  orgId,
+  summary,
+  queuedOrders,
+  membershipPlans,
+  payments,
+  paymentsState,
+  shopOrders,
+  shopOrdersState,
+}: {
+  orgId: string;
+  summary: OrganizationSummary;
+  queuedOrders: ShopOrderRow[];
+  membershipPlans: MembershipPlanRow[];
+  payments: PaymentRow[];
+  paymentsState: PagedState;
+  shopOrders: ShopOrderRow[];
+  shopOrdersState: LoadingState;
+}) {
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <GlassCard variant="strong">
+          <p className="text-sm text-white/48">Manual / offline</p>
+          <div className="metric mt-3 text-4xl font-semibold text-white">
+            {formatInr(summary.cashCollectedPaise)}
+          </div>
+          <p className="mt-2 text-xs text-white/55">Collected today via desk-recorded flows.</p>
+        </GlassCard>
+        <GlassCard variant="strong">
+          <p className="text-sm text-white/48">Successful revenue</p>
+          <div className="metric mt-3 text-4xl font-semibold text-white">
+            {formatInr(summary.revenuePaise)}
+          </div>
+          <p className="mt-2 text-xs text-white/55">Current settled revenue signal for today.</p>
+        </GlassCard>
+        <GlassCard variant="strong">
+          <p className="text-sm text-white/48">Pending shop payments</p>
+          <div className="metric mt-3 text-4xl font-semibold text-white">
+            {formatCompactNumber(queuedOrders.length)}
+          </div>
+          <p className="mt-2 text-xs text-white/55">
+            Orders waiting for payment completion or desk follow-up.
+          </p>
+        </GlassCard>
+        <GlassCard variant="strong">
+          <p className="text-sm text-white/48">Expiring memberships</p>
+          <div className="metric mt-3 text-4xl font-semibold text-white">
+            {formatCompactNumber(summary.expiringMemberships)}
+          </div>
+          <p className="mt-2 text-xs text-white/55">A useful renewal queue for the front desk.</p>
+        </GlassCard>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Payments"
+            title="Payments ledger"
+            description="Membership, shop, online, and offline payments are shown from the org-scoped payment ledger."
+            badge={<Pill tone="blue">{payments.length} loaded</Pill>}
+            action={<CsvExportButton href={`/api/orgs/${orgId}/reports/payments.csv`} />}
+          />
+          <div className="mt-5">
+            {paymentsState.error ? (
+              <ErrorNotice message={paymentsState.error} />
+            ) : paymentsState.loading && payments.length === 0 ? (
+              <EmptyState title="Loading payments" description="Pulling recent payment records." />
+            ) : (
+              <>
+                <DataTable
+                  columns={[
+                    {
+                      id: "member",
+                      header: "Member",
+                      render: (payment) => (
+                        <div>
+                          <p className="font-medium text-white">
+                            {payment.user?.name ?? payment.user?.email ?? "Walk-in or system"}
+                          </p>
+                          <p className="mt-1 text-xs text-white/45">
+                            {formatEnumLabel(payment.purpose)}
+                          </p>
+                        </div>
+                      ),
+                    },
+                    {
+                      id: "status",
+                      header: "Status",
+                      render: (payment) => <StatusPill value={formatEnumLabel(payment.status)} />,
+                    },
+                    {
+                      id: "mode",
+                      header: "Mode",
+                      render: (payment) => formatEnumLabel(payment.mode),
+                    },
+                    {
+                      id: "recorded",
+                      header: "Recorded",
+                      render: (payment) => formatDateTime(payment.recordedAt ?? payment.createdAt),
+                    },
+                    {
+                      id: "amount",
+                      header: "Amount",
+                      align: "right",
+                      render: (payment) => (
+                        <span className="font-medium text-white">
+                          {formatInr(payment.amountPaise)}
+                        </span>
+                      ),
+                    },
+                  ]}
+                  rows={payments}
+                  rowKey={(payment) => payment.id}
+                  empty={
+                    <EmptyState
+                      title="No payments yet"
+                      description="Payments appear here when members buy memberships or shop pickups."
+                    />
+                  }
+                />
+                <LoadMoreButton
+                  count={payments.length}
+                  hasMore={paymentsState.hasMore}
+                  loading={paymentsState.loadingMore}
+                  onLoadMore={paymentsState.loadMore}
+                />
+              </>
+            )}
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Settlement Queue"
+            title="Orders affecting cashflow"
+            description="Shop orders are the clearest current payment queue exposed to the dashboard. This keeps desk staff anchored on what still needs attention."
+            badge={
+              <Pill tone={queuedOrders.length ? "amber" : "lime"}>
+                {queuedOrders.length} unsettled
+              </Pill>
+            }
+            action={<CsvExportButton href={`/api/orgs/${orgId}/reports/shop.csv`} />}
+          />
+          <div className="mt-5">
+            {shopOrdersState.error ? (
+              <ErrorNotice message={shopOrdersState.error} />
+            ) : shopOrdersState.loading && shopOrders.length === 0 ? (
+              <EmptyState
+                title="Loading settlement queue"
+                description="Pulling live shop order payment states."
+              />
+            ) : (
+              <DataTable
+                columns={[
+                  {
+                    id: "order",
+                    header: "Order",
+                    render: (order) => (
+                      <div>
+                        <p className="font-medium text-white">
+                          {order.id.slice(-8).toUpperCase()}
+                        </p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {formatDateTime(order.createdAt)}
+                        </p>
+                      </div>
+                    ),
+                  },
+                  {
+                    id: "status",
+                    header: "Status",
+                    render: (order) => <StatusPill value={formatEnumLabel(order.status)} />,
+                  },
+                  {
+                    id: "items",
+                    header: "Items",
+                    align: "right",
+                    render: (order) =>
+                      order.items.reduce((sum, item) => sum + item.quantity, 0).toString(),
+                  },
+                  {
+                    id: "amount",
+                    header: "Amount",
+                    align: "right",
+                    render: (order) => (
+                      <span className="font-medium text-white">{formatInr(order.totalPaise)}</span>
+                    ),
+                  },
+                ]}
+                rows={shopOrders}
+                rowKey={(order) => order.id}
+                empty={
+                  <EmptyState
+                    title="No payments yet"
+                    description="Payments appear here when members buy memberships or shop pickups."
+                  />
+                }
+              />
+            )}
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Levers"
+            title="Revenue levers"
+            description="The org already exposes the main pressure points: renewals, low stock, and queue-heavy notifications."
+          />
+          <ReadoutGrid
+            className="mt-5"
+            columns={1}
+            items={[
+              {
+                label: "Renewal window",
+                value: formatCompactNumber(summary.expiringMemberships),
+                meta: "Members expiring in the next 7 days",
+              },
+              {
+                label: "Inventory pressure",
+                value: formatCompactNumber(summary.lowStockProducts),
+                meta: "Products close to threshold",
+              },
+              {
+                label: "Notification queue",
+                value: formatCompactNumber(summary.notificationQueueCount),
+                meta: "Messages still scheduled or failed",
+              },
+              {
+                label: "Plan ladder",
+                value: membershipPlans.length ? `${membershipPlans.length} live plans` : "Load plans",
+                meta: "Useful while talking renewals at the desk",
+              },
+            ]}
+          />
+        </GlassCard>
+      </div>
+    </div>
+  );
+}
+
+export function ReportsPanel({
+  organization,
+  summary,
+  selectedBranchName,
+  auditLogCount,
+}: {
+  organization: OrganizationSnapshot;
+  summary: OrganizationSummary;
+  selectedBranchName: string;
+  auditLogCount: number;
+}) {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <GlassCard>
+        <SectionHeader
+          eyebrow="Daily Rollup"
+          title="Operational report pack"
+          description="This is a readout-friendly version of the org summary so owners can scan memberships, floor activity, and revenue in one pass."
+        />
+        <ReadoutGrid
+          className="mt-5"
+          columns={2}
+          items={[
+            {
+              label: "Branch scope",
+              value: selectedBranchName,
+              meta: "Attendance and memberships are branch-filterable",
+            },
+            {
+              label: "Active members",
+              value: formatCompactNumber(summary.activeMembers),
+              meta: `${summary.joinRequests} join requests pending`,
+            },
+            {
+              label: "Attendance today",
+              value: formatCompactNumber(summary.todayAttendance),
+              meta: "QR scans with entry codes",
+            },
+            {
+              label: "Revenue today",
+              value: formatInr(summary.revenuePaise),
+              meta: `${formatInr(summary.cashCollectedPaise)} manual or offline`,
+            },
+            {
+              label: "Assistant drafts",
+              value: formatCompactNumber(summary.aiUsageThisMonth),
+              meta: "This month",
+            },
+            {
+              label: "Low stock",
+              value: formatCompactNumber(summary.lowStockProducts),
+              meta: "Products below threshold",
+            },
+            {
+              label: "Trial runway",
+              value: formatDaysRemaining(summary.trialDaysRemaining),
+              meta: formatDate(organization.trialEndAt),
+            },
+          ]}
+        />
+      </GlassCard>
+
+      <div className="grid gap-4">
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Governance"
+            title="Control posture"
+            description="These signals tell you whether the org is operating cleanly or building up hidden risk."
+          />
+          <ReadoutGrid
+            className="mt-5"
+            columns={1}
+            items={[
+              {
+                label: "Audit log",
+                value: formatCompactNumber(auditLogCount),
+                meta: "Admin changes saved in Zook",
+              },
+              {
+                label: "Notification queue",
+                value:
+                  summary.notificationQueueCount > 0
+                    ? `${summary.notificationQueueCount} needs attention`
+                    : "Clear",
+                meta: "Scheduled or failed messages",
+              },
+              {
+                label: "Join mode",
+                value: formatEnumLabel(organization.joinMode),
+                meta: "Shapes how inbound demand converts",
+              },
+            ]}
+          />
+        </GlassCard>
+
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Operator Notes"
+            title="What deserves a second look"
+            description="Quick prompts for keeping daily work tidy."
+          />
+          <div className="mt-5 grid gap-3">
+            {[
+              "Cross-check expiring memberships with the membership ladder before the evening rush.",
+              "If flagged attendance exceptions spike, send an operational notification before it becomes member-visible.",
+              "Review activity history and assistant drafts when sensitive trainer or member actions happen.",
+            ].map((note) => (
+              <div
+                key={note}
+                className="rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-sm leading-6 text-white/58"
+              >
+                {note}
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      </div>
+    </div>
+  );
+}
+
+export function AuditPanel({
+  orgId,
+  auditLogs,
+  auditLogsState,
+  auditLogCount,
+  aiUsage,
+  aiUsageState,
+  misconfiguredAiCount,
+}: {
+  orgId: string;
+  auditLogs: AuditLogRow[];
+  auditLogsState: PagedState;
+  auditLogCount: number;
+  aiUsage: AIUsageRow[];
+  aiUsageState: LoadingState;
+  misconfiguredAiCount: number;
+}) {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+      <GlassCard>
+        <SectionHeader
+          eyebrow="Activity"
+          title="Admin activity"
+          description="Sensitive changes, who made them, and when they happened."
+          badge={<Pill tone="blue">{auditLogs.length || auditLogCount} entries</Pill>}
+          action={<CsvExportButton href={`/api/orgs/${orgId}/audit-logs.csv`} />}
+        />
+        <div className="mt-5">
+          {auditLogsState.error ? (
+            <ErrorNotice message={auditLogsState.error} />
+          ) : auditLogsState.loading && auditLogs.length === 0 ? (
+            <EmptyState title="Loading activity" description="Getting the latest admin actions." />
+          ) : (
+            <>
+              <DataTable
+                columns={[
+                  {
+                    id: "action",
+                    header: "Action",
+                    render: (log) => (
+                      <div>
+                        <p className="font-medium text-white">{formatEnumLabel(log.action)}</p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {formatEnumLabel(log.entityType)}
+                        </p>
+                      </div>
+                    ),
+                  },
+                  {
+                    id: "actor",
+                    header: "Actor",
+                    render: (log) => (log.actorUserId ? "Team member" : "System"),
+                  },
+                  {
+                    id: "entity",
+                    header: "Record",
+                    render: (log) => (log.entityId ? "Linked record" : "Not attached"),
+                  },
+                  {
+                    id: "time",
+                    header: "Created",
+                    render: (log) => formatDateTime(log.createdAt),
+                  },
+                ]}
+                rows={auditLogs}
+                rowKey={(log) => log.id}
+                empty="No admin activity is available yet."
+              />
+              <LoadMoreButton
+                count={auditLogs.length}
+                hasMore={auditLogsState.hasMore}
+                loading={auditLogsState.loadingMore}
+                onLoadMore={auditLogsState.loadMore}
+              />
+            </>
+          )}
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <SectionHeader
+          eyebrow="Assistant"
+          title="Recent assistant drafts"
+          description="Review assisted drafts before anything member-facing is published."
+          badge={
+            <Pill tone={misconfiguredAiCount > 0 ? "amber" : "lime"}>
+              {misconfiguredAiCount} need review
+            </Pill>
+          }
+        />
+        <div className="mt-5 grid gap-3">
+          {aiUsageState.error ? (
+            <ErrorNotice message={aiUsageState.error} />
+          ) : aiUsageState.loading && aiUsage.length === 0 ? (
+            <EmptyState
+              title="Loading drafts"
+              description="Getting the latest assisted drafts for this gym."
+            />
+          ) : aiUsage.length ? (
+            aiUsage.slice(0, 8).map((usage) => (
+              <div key={usage.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-medium text-white">{usage.promptSummary}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <StatusPill value={formatEnumLabel(usage.requestType)} />
+                  </div>
+                </div>
+                <p className="mt-2 text-sm text-white/55">
+                  {formatAiResponseSummary(usage.responseSummary)}
+                </p>
+                <p className="mt-3 text-xs text-white/40">
+                  {formatEnumLabel(usage.role)} · {formatDateTime(usage.createdAt)}
+                </p>
+              </div>
+            ))
+          ) : (
+            <EmptyState
+              title="No assistant drafts yet"
+              description="Assisted drafts will appear here after the team starts using the planner."
+            />
+          )}
+        </div>
+      </GlassCard>
+    </div>
+  );
+}
+
+export function AiPanel({
+  summary,
+  aiUsage,
+  aiUsageState,
+  coachPlans,
+  misconfiguredAiCount,
+}: {
+  summary: OrganizationSummary;
+  aiUsage: AIUsageRow[];
+  aiUsageState: LoadingState;
+  coachPlans: CoachPlanRow[];
+  misconfiguredAiCount: number;
+}) {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <GlassCard>
+        <SectionHeader
+          eyebrow="Assistant"
+          title="Draft summaries"
+          description="Assisted drafts, categories, and review notes for this gym."
+          badge={<Pill tone="blue">{aiUsage.length} drafts</Pill>}
+        />
+        <div className="mt-5">
+          {aiUsageState.error ? (
+            <ErrorNotice message={aiUsageState.error} />
+          ) : aiUsageState.loading && aiUsage.length === 0 ? (
+            <EmptyState
+              title="Loading drafts"
+              description="Getting the latest assisted drafts for this gym."
+            />
+          ) : (
+            <DataTable
+              columns={[
+                {
+                  id: "summary",
+                  header: "Prompt",
+                  render: (usage) => (
+                    <div>
+                      <p className="font-medium text-white">{usage.promptSummary}</p>
+                      <p className="mt-1 text-xs text-white/45">
+                        {formatAiResponseSummary(usage.responseSummary)}
+                      </p>
+                    </div>
+                  ),
+                },
+                {
+                  id: "shape",
+                  header: "Category",
+                  render: (usage) => (
+                    <div className="flex flex-wrap gap-2">
+                      <StatusPill value={formatEnumLabel(usage.requestType)} />
+                    </div>
+                  ),
+                },
+                {
+                  id: "tokens",
+                  header: "Detail",
+                  align: "right",
+                  render: (usage) => (usage.tokenEstimate > 0 ? "Detailed" : "Short"),
+                },
+                {
+                  id: "cost",
+                  header: "Cost",
+                  align: "right",
+                  render: (usage) => formatInr(usage.costEstimatePaise),
+                },
+              ]}
+              rows={aiUsage}
+              rowKey={(usage) => usage.id}
+              empty="No assistant drafts are available for this gym yet."
+            />
+          )}
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <SectionHeader
+          eyebrow="Draft output"
+          title="Assisted content"
+          description="A quick view of whether assisted work is becoming real coaching output."
+        />
+        <ReadoutGrid
+          className="mt-5"
+          columns={1}
+          items={[
+            {
+              label: "Usage this month",
+              value: formatCompactNumber(summary.aiUsageThisMonth),
+              meta: "Assisted drafts this month",
+            },
+            {
+              label: "Review cues",
+              value:
+                misconfiguredAiCount > 0 ? `${misconfiguredAiCount} drafts need review` : "Clear",
+              meta: "Based on draft review signals",
+            },
+            {
+              label: "Assisted plans",
+              value: coachPlans.filter((plan) => plan.aiGenerated).length
+                ? `${coachPlans.filter((plan) => plan.aiGenerated).length} plans`
+                : "No assisted plans yet",
+              meta: "Reviewable training content created so far",
+            },
+          ]}
+        />
+      </GlassCard>
+    </div>
+  );
+}

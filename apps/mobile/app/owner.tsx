@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   BottomNav,
+  BranchSelectorChip,
   EmptyState,
   GlassCard,
   GlassInput,
@@ -240,6 +241,7 @@ export default function Owner() {
         </View>
 
         <View style={styles.utilityRow}>
+          <BranchSelectorChip />
           <Pressable
             onPress={() => router.replace(view === "members" ? "/owner" : "/owner?view=members")}
             accessibilityRole="button"
@@ -711,6 +713,7 @@ const styles = StyleSheet.create({
   utilityRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     gap: 10,
   },
   utilityPill: {

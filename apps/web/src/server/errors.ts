@@ -79,6 +79,16 @@ export function toErrorResponse(error: unknown) {
   if (error instanceof SyntaxError) {
     return fail("validation_error", "Invalid JSON body", 400);
   }
+  if (
+    error instanceof Error &&
+    "status" in error &&
+    "code" in error &&
+    typeof (error as { status?: unknown }).status === "number" &&
+    typeof (error as { code?: unknown }).code === "string"
+  ) {
+    const serviceError = error as Error & { status: number; code: string; details?: unknown };
+    return fail(serviceError.code, serviceError.message, serviceError.status, serviceError.details);
+  }
   if (error instanceof Error) {
     return fail(
       "internal_error",

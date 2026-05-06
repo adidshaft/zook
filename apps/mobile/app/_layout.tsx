@@ -16,10 +16,9 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 
 import { AuthProvider, useAuth } from "@/lib/auth";
-import {
-  getMobileRuntimeConfigError,
-  isOfflineDemoMode,
-} from "@/lib/runtime-mode";
+import { BranchSelectionProvider } from "@/lib/branch-selection";
+import { I18nProvider, useI18n } from "@/lib/i18n";
+import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { colors } from "@/lib/theme";
 
@@ -67,6 +66,7 @@ function safeRedirectTarget(value?: string | string[]) {
 
 function LayoutContent() {
   const { defaultRoute, hasActiveRole, hasAnyRole, status } = useAuth();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const runtimeConfigError = getMobileRuntimeConfigError();
   const pathname = usePathname();
@@ -125,10 +125,8 @@ function LayoutContent() {
   if (runtimeConfigError) {
     return (
       <View style={styles.configError}>
-        <Text style={styles.configErrorTitle}>Zook can’t open in this build.</Text>
-        <Text style={styles.configErrorBody}>
-          Please update the app or contact support if this keeps happening.
-        </Text>
+        <Text style={styles.configErrorTitle}>{t("app.configErrorTitle")}</Text>
+        <Text style={styles.configErrorBody}>{t("app.configErrorBody")}</Text>
       </View>
     );
   }
@@ -137,7 +135,7 @@ function LayoutContent() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.lime} />
-        <Text style={styles.loadingText}>Restoring your Zook session...</Text>
+        <Text style={styles.loadingText}>{t("app.loadingSession")}</Text>
       </View>
     );
   }
@@ -178,8 +176,11 @@ function LayoutContent() {
         <Stack.Screen name="owner/member/[id]" options={{ animation: "slide_from_right" }} />
       </Stack>
       {isOfflineDemoMode() ? (
-        <View pointerEvents="none" style={[styles.demoBadge, { top: Math.max(insets.top + 8, 12) }]}>
-          <Text style={styles.demoBadgeText}>DEMO MODE</Text>
+        <View
+          pointerEvents="none"
+          style={[styles.demoBadge, { top: Math.max(insets.top + 8, 12) }]}
+        >
+          <Text style={styles.demoBadgeText}>{t("app.demoMode")}</Text>
         </View>
       ) : null}
     </>
@@ -208,11 +209,15 @@ export default function Layout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <PushNotificationsProvider>
-          <LayoutContent />
-        </PushNotificationsProvider>
-      </AuthProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <BranchSelectionProvider>
+            <PushNotificationsProvider>
+              <LayoutContent />
+            </PushNotificationsProvider>
+          </BranchSelectionProvider>
+        </AuthProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }

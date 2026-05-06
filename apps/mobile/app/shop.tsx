@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomNav,
+  BranchSelectorChip,
   EmptyState,
   ErrorState,
   GlassCard,
@@ -42,6 +43,8 @@ import {
 } from "@/lib/query-hooks";
 import { useAuth } from "@/lib/auth";
 import { toWebUrl } from "@/lib/api";
+import { useBranchSelection } from "@/lib/branch-selection";
+import { useI18n } from "@/lib/i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -75,11 +78,13 @@ function checkoutUrl(url: string) {
 export default function Shop() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const params = useLocalSearchParams<{
     orderId?: string | string[];
     focus?: string | string[];
   }>();
   const { activeOrgId, session } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -241,6 +246,7 @@ export default function Shop() {
   async function createCheckout() {
     const result = await createOrder.mutateAsync({
       items: cartItems.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
+      ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
     });
     setOrder({
       ...result.order,
@@ -270,7 +276,10 @@ export default function Shop() {
       await Linking.openURL(checkoutUrl(checkoutSession.checkoutUrl));
       return;
     }
-    await completeMockPayment.mutateAsync(checkoutSession.id);
+    await completeMockPayment.mutateAsync({
+      sessionId: checkoutSession.id,
+      ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+    });
     const refreshed = await ordersQuery.refetch();
     const paidOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
     setOrder(paidOrder ?? { ...order, status: "READY_FOR_PICKUP" });
@@ -289,18 +298,19 @@ export default function Shop() {
             disabled={completeMockPayment.isPending}
             icon="card-outline"
           >
-            {completeMockPayment.isPending ? "Confirming..." : "Continue to payment"}
+            {completeMockPayment.isPending ? t("shop.confirming") : t("shop.continuePayment")}
           </ZookButton>
         }
       >
         <MobileHeader
-          title="Ready for pickup"
-          subtitle="Show this code at the front desk."
+          title={t("shop.readyForPickup")}
+          subtitle={t("shop.readyForPickupSubtitle")}
+          chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
         <GlassCard variant="success" contentStyle={styles.pickupContent}>
-          <Text style={styles.pickupLabel}>Pickup code</Text>
-          <Text style={styles.pickupCode}>{order.pickupCode ?? "Pending"}</Text>
+          <Text style={styles.pickupLabel}>{t("shop.pickupCode")}</Text>
+          <Text style={styles.pickupCode}>{order.pickupCode ?? t("shop.pending")}</Text>
           <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
         </GlassCard>
         <GlassCard variant="compact" contentStyle={styles.stack}>
@@ -319,8 +329,8 @@ export default function Shop() {
               <ListRow
                 key={item.productId}
                 title={product?.name ?? item.productId}
-                subtitle={`${item.quantity} item · ${formatInr(item.unitPaise)}`}
-                trailing={<StatusChip status="Paid" tone="neutral" />}
+                subtitle={`${item.quantity} ${t(item.quantity === 1 ? "shop.item" : "shop.items")} · ${formatInr(item.unitPaise)}`}
+                trailing={<StatusChip status={t("shop.paid")} tone="neutral" />}
               />
             );
           })}
@@ -333,7 +343,7 @@ export default function Shop() {
           }}
           icon="bag-outline"
         >
-          Back to Shop
+          {t("shop.backToShop")}
         </ZookButton>
       </ShopShell>
     );
@@ -343,28 +353,29 @@ export default function Shop() {
     return (
       <ShopShell selectedPath="/shop">
         <MobileHeader
-          title="Payment"
-          subtitle="Your item will be ready at the desk."
+          title={t("shop.payment")}
+          subtitle={t("shop.paymentSubtitle")}
+          chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
         <GlassCard contentStyle={styles.checkoutContent}>
           <ListRow
-            title="Pay securely"
-            subtitle="Confirm the order"
+            title={t("shop.paySecurely")}
+            subtitle={t("shop.confirmOrder")}
             trailing={<StatusChip status="1" tone="neutral" />}
           />
           <ListRow
-            title="Get pickup code"
-            subtitle="We will make a code for the desk"
+            title={t("shop.getPickupCode")}
+            subtitle={t("shop.makeDeskCode")}
             trailing={<StatusChip status="2" tone="amber" />}
           />
           <ListRow
-            title="Collect at desk"
-            subtitle="Show the code to pick it up"
+            title={t("shop.collectAtDesk")}
+            subtitle={t("shop.showPickupCode")}
             trailing={<StatusChip status="3" tone="lime" />}
           />
           <View style={styles.checkoutTotal}>
-            <Text style={styles.cardBody}>Order total</Text>
+            <Text style={styles.cardBody}>{t("shop.orderTotal")}</Text>
             <Text style={styles.totalText}>{formatInr(order.totalPaise)}</Text>
           </View>
         </GlassCard>
@@ -379,23 +390,31 @@ export default function Shop() {
         stickyAction={
           <View style={styles.actionRow}>
             <SecondaryButton onPress={() => setCheckoutState("browse")} style={styles.actionHalf}>
-              Back
+              {t("shop.back")}
             </SecondaryButton>
             <ZookButton
               onPress={() => void createCheckout()}
               disabled={!cartItems.length || createOrder.isPending}
               style={styles.actionHalf}
             >
-              {createOrder.isPending ? "Creating..." : "Continue to payment"}
+              {createOrder.isPending ? t("shop.creating") : t("shop.continuePayment")}
             </ZookButton>
           </View>
         }
       >
         <MobileHeader
-          eyebrow="Cart"
-          title="Review order"
-          subtitle="Pick it up at the front desk after payment."
-          chip={<StatusChip status={`${itemCount} items`} tone="lime" />}
+          eyebrow={t("shop.cart")}
+          title={t("shop.reviewOrder")}
+          subtitle={t("shop.reviewOrderSubtitle")}
+          chip={
+            <View style={styles.headerChipStack}>
+              <BranchSelectorChip />
+              <StatusChip
+                status={`${itemCount} ${t(itemCount === 1 ? "shop.item" : "shop.items")}`}
+                tone="lime"
+              />
+            </View>
+          }
           showProfileShortcut={false}
         />
         <GlassCard variant="compact" contentStyle={styles.stack}>
@@ -404,7 +423,7 @@ export default function Shop() {
               <ListRow
                 key={item.product.id}
                 title={item.product.name}
-                subtitle={`${item.quantity} item · ${item.product.stock} in stock`}
+                subtitle={`${item.quantity} ${t(item.quantity === 1 ? "shop.item" : "shop.items")} · ${item.product.stock} in stock`}
                 trailing={
                   <View style={styles.cartLineTrailing}>
                     <Text style={styles.cartLinePrice}>
@@ -438,11 +457,11 @@ export default function Shop() {
               />
             ))
           ) : (
-            <EmptyState title="Your cart is empty" body="Add desk pickup items from the shop." />
+            <EmptyState title={t("shop.yourCartEmpty")} body={t("shop.cartEmptyBody")} />
           )}
         </GlassCard>
         <GlassCard variant="compact" contentStyle={styles.totalRow}>
-          <Text style={styles.cardBody}>Subtotal</Text>
+          <Text style={styles.cardBody}>{t("shop.subtotal")}</Text>
           <Text style={styles.totalText}>{formatInr(totalPaise)}</Text>
         </GlassCard>
       </ShopShell>
@@ -455,7 +474,7 @@ export default function Shop() {
         onPress={() => setCheckoutState("cart")}
         style={styles.miniCart}
         accessibilityRole="button"
-        accessibilityLabel="Open mini cart"
+        accessibilityLabel={t("shop.openMiniCart")}
       >
         <Text style={styles.miniCartText}>
           {itemCount} items · {formatInr(totalPaise)}
@@ -467,14 +486,15 @@ export default function Shop() {
   return (
     <ShopShell selectedPath="/shop" floatingAction={miniCart}>
       <MobileHeader
-        title="Desk pickup"
-        subtitle={activeOrganization?.name ?? "Active gym"}
+        title={t("shop.deskPickup")}
+        subtitle={activeOrganization?.name ?? t("shop.activeGym")}
+        chip={<BranchSelectorChip />}
         showProfileShortcut={false}
         trailing={
           <Pressable
             onPress={() => setCheckoutState("cart")}
             accessibilityRole="button"
-            accessibilityLabel="Open cart"
+            accessibilityLabel={t("shop.openCart")}
             style={styles.cartIcon}
           >
             <Ionicons name="bag-outline" size={22} color={colors.text} />
@@ -487,7 +507,7 @@ export default function Shop() {
         }
       />
 
-      <SearchBar value={query} onChangeText={setQuery} placeholder="Search essentials" />
+      <SearchBar value={query} onChangeText={setQuery} placeholder={t("shop.searchEssentials")} />
 
       <ScrollView
         horizontal
@@ -520,22 +540,22 @@ export default function Shop() {
       </ScrollView>
 
       <SectionHeader
-        title="Available now"
-        subtitle={`${filteredProducts.length} ${filteredProducts.length === 1 ? "item" : "items"}`}
+        title={t("shop.availableNow")}
+        subtitle={`${filteredProducts.length} ${t(filteredProducts.length === 1 ? "shop.item" : "shop.items")}`}
       />
 
       {productsQuery.isError ? (
         <GlassCard variant="danger" contentStyle={styles.stateCardContent}>
           <ErrorState
-            title="Shop could not load"
-            body="We could not refresh stock or prices. Try again before placing an order."
+            title={t("shop.shopCouldNotLoad")}
+            body={t("shop.shopCouldNotLoadBody")}
             action={
               <ZookButton
                 onPress={() => void productsQuery.refetch()}
                 tone="secondary"
                 icon="refresh-outline"
               >
-                Try again
+                {t("shop.tryAgain")}
               </ZookButton>
             }
           />
@@ -573,10 +593,7 @@ export default function Shop() {
           })}
         </View>
       ) : (
-        <EmptyState
-          title="No products found"
-          body="Try a different item or ask the desk for availability."
-        />
+        <EmptyState title={t("shop.noProductsFound")} body={t("shop.noProductsFoundBody")} />
       )}
     </ShopShell>
   );
@@ -671,6 +688,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
     alignItems: "center",
     justifyContent: "center",
+  },
+  headerChipStack: {
+    alignSelf: "flex-start",
+    gap: 6,
   },
   cartBadge: {
     position: "absolute",

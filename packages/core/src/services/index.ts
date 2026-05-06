@@ -16,3 +16,5 @@ export * from "./plan-service";
 export * from "./invoice-service";
 export * from "./trainer-commission-service";
 export * from "./class-service";
+export * from "./rbac-service";
+export * from "./subscription-reminder-service";

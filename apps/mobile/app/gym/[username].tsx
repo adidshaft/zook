@@ -1,7 +1,15 @@
 import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { AppState, type AppStateStatus, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  AppState,
+  type AppStateStatus,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Image } from "expo-image";
 import {
   BottomNav,
@@ -17,6 +25,7 @@ import {
 } from "@/components/primitives";
 import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useBranchSelection } from "@/lib/branch-selection";
 import { gymApi } from "@/lib/domain-api";
 import { formatInr, formatLongDate, joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
 import { useGymProfile } from "@/lib/query-hooks";
@@ -27,6 +36,7 @@ export default function GymProfileScreen() {
   const username = Array.isArray(params.username) ? params.username[0] : params.username;
   const referralCode = Array.isArray(params.ref) ? params.ref[0] : params.ref;
   const { token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const queryClient = useQueryClient();
   const gymQuery = useGymProfile(username ?? "");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -37,10 +47,19 @@ export default function GymProfileScreen() {
   const gym = gymQuery.data?.org ?? null;
   const plans = gymQuery.data?.plans ?? [];
   const trainers = gymQuery.data?.trainers ?? [];
-  const gallery = gym?.gallery?.length ? gym.gallery : gym?.coverImageUrl ? [gym.coverImageUrl] : [];
+  const gallery = gym?.gallery?.length
+    ? gym.gallery
+    : gym?.coverImageUrl
+      ? [gym.coverImageUrl]
+      : [];
   const coverImageUrl = normalizeMediaUrl(gym?.coverImageUrl);
   const viewerState = gymQuery.data?.viewerState;
   const effectiveReferral = referralCode ?? gymQuery.data?.referral?.code ?? undefined;
+  const profileBranches = gymQuery.data?.branches ?? [];
+  const selectedGymBranchId =
+    profileBranches.find((branch) => branch.id === selectedBranchId)?.id ??
+    profileBranches.find((branch) => branch.isDefault)?.id ??
+    profileBranches[0]?.id;
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
@@ -72,6 +91,7 @@ export default function GymProfileScreen() {
       await gymApi.requestMembership({
         orgId: gym.id,
         token,
+        ...(selectedGymBranchId ? { branchId: selectedGymBranchId } : {}),
         ...(plans[0]?.id ? { planId: plans[0].id } : {}),
         ...(effectiveReferral ? { referralCode: effectiveReferral } : {}),
       });
@@ -99,6 +119,7 @@ export default function GymProfileScreen() {
         orgId: gym.id,
         token,
         planId,
+        ...(selectedGymBranchId ? { branchId: selectedGymBranchId } : {}),
         ...(effectiveReferral ? { referralCode: effectiveReferral } : {}),
       });
       setStatusMessage("Payment started. Complete it to activate your membership.");
@@ -284,7 +305,9 @@ export default function GymProfileScreen() {
                         />
                       ) : (
                         <View style={styles.trainerImageFallback}>
-                          <Text style={styles.trainerImageText}>{initialsForName(trainer.name)}</Text>
+                          <Text style={styles.trainerImageText}>
+                            {initialsForName(trainer.name)}
+                          </Text>
                         </View>
                       )}
                       <View style={styles.trainerCopy}>
@@ -296,7 +319,10 @@ export default function GymProfileScreen() {
                           {normalizeSpecialties(trainer.specialties)
                             .slice(0, 3)
                             .map((specialty) => (
-                              <Text key={`${trainer.userId}-${specialty}`} style={styles.trainerSpecialty}>
+                              <Text
+                                key={`${trainer.userId}-${specialty}`}
+                                style={styles.trainerSpecialty}
+                              >
                                 {specialty}
                               </Text>
                             ))}
@@ -403,7 +429,9 @@ export default function GymProfileScreen() {
                   <View style={styles.planHeader}>
                     <View style={styles.planCopy}>
                       <Text style={styles.planName}>{plan.name}</Text>
-                      <Text style={styles.planType}>{titleCaseFromCode(plan.type ?? "MEMBERSHIP")}</Text>
+                      <Text style={styles.planType}>
+                        {titleCaseFromCode(plan.type ?? "MEMBERSHIP")}
+                      </Text>
                       <Text style={styles.planPrice}>{formatInr(plan.pricePaise)}</Text>
                     </View>
                   </View>

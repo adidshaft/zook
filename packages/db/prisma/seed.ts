@@ -146,6 +146,7 @@ async function clear() {
   await prisma.coupon.deleteMany();
   await prisma.manualPaymentAdjustment.deleteMany();
   await prisma.invoice.deleteMany();
+  await prisma.subscriptionReminder.deleteMany();
   await prisma.paymentWebhookAttempt.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.paymentEvent.deleteMany();

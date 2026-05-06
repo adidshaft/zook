@@ -5,17 +5,29 @@ import { MapPin, QrCode, ShieldCheck, Smartphone, Star } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ShareButton } from "@/components/share-button";
 import { ZookLogo } from "@/components/zook-logo";
-import { formatInr, joinModeLabel } from "@/lib/format";
+import { formatInr } from "@/lib/format";
+import {
+  alternatePublicLocale,
+  joinModeLabelForLocale,
+  localizedPath,
+  publicT,
+  resolvePublicLocale,
+} from "@/lib/public-i18n";
 import { getPublicGymProfileData } from "@/server/public-gym-read-models";
 
-type GymPublicPageProps = { params: Promise<{ username: string }> };
+type GymPublicPageProps = {
+  params: Promise<{ username: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
 
-function priceSummary(plans: Array<{ pricePaise: number }>) {
+function priceSummary(plans: Array<{ pricePaise: number }>, locale: "en" | "hi" = "en") {
   if (!plans.length) {
-    return "Memberships not published yet";
+    return locale === "hi" ? "सदस्यताएं अभी प्रकाशित नहीं" : "Memberships not published yet";
   }
   const minPlanPrice = Math.min(...plans.map((plan) => plan.pricePaise));
-  return `Starting at ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/month`;
+  return locale === "hi"
+    ? `शुरुआत ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/माह`
+    : `Starting at ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/month`;
 }
 
 function trainerProfileDetails(value: unknown) {
@@ -60,24 +72,28 @@ export async function generateMetadata({ params }: GymPublicPageProps): Promise<
   };
 }
 
-export default async function GymPublicPage({ params }: GymPublicPageProps) {
-  const { username } = await params;
+export default async function GymPublicPage({ params, searchParams }: GymPublicPageProps) {
+  const [{ username }, query] = await Promise.all([params, searchParams ?? Promise.resolve({})]);
+  const locale = resolvePublicLocale(query);
+  const nextLocale = alternatePublicLocale(locale);
+  const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const data = await getPublicGymProfileData(username);
 
   if (!data) {
     return (
-      <main className="grid min-h-dvh place-items-center px-5 py-8">
+      <main
+        lang={locale === "hi" ? "hi-IN" : "en-IN"}
+        className="grid min-h-dvh place-items-center px-5 py-8"
+      >
         <GlassCard className="max-w-xl text-center">
-          <Pill tone="amber">Gym not found</Pill>
-          <h1 className="mt-5 text-3xl font-semibold text-white">Gym not found</h1>
-          <p className="mt-3 text-sm leading-6 text-white/55">
-            This link may be expired or the gym may have moved.
-          </p>
+          <Pill tone="amber">{t("gymNotFound")}</Pill>
+          <h1 className="mt-5 text-3xl font-semibold text-white">{t("gymNotFound")}</h1>
+          <p className="mt-3 text-sm leading-6 text-white/55">{t("gymNotFoundCopy")}</p>
           <Link
-            href="/gyms"
+            href={localizedPath("/gyms", locale)}
             className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
           >
-            Find gyms
+            {t("findGym")}
           </Link>
         </GlassCard>
       </main>
@@ -117,7 +133,7 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
   };
 
   return (
-    <main className="min-h-dvh px-5 py-5">
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh px-5 py-5">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -127,10 +143,16 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
           <ZookLogo />
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              href="/login"
+              href={localizedPath("/login", locale)}
               className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
             >
-              Login
+              {t("login")}
+            </Link>
+            <Link
+              href={localizedPath(`/g/${org.username}`, nextLocale)}
+              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
+            >
+              {t("languageSwitch")}
             </Link>
           </div>
         </header>
@@ -163,7 +185,7 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
                   />
                 ) : null}
                 <div className="flex flex-wrap gap-2">
-                  <Pill tone="lime">{joinModeLabel(org.joinMode)}</Pill>
+                  <Pill tone="lime">{joinModeLabelForLocale(org.joinMode, locale)}</Pill>
                   {org.gymType ? <Pill tone="blue">{org.gymType}</Pill> : null}
                 </div>
               </div>
@@ -187,7 +209,7 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
               ))}
             </div>
             <div className="mt-10 grid gap-3 md:grid-cols-3">
-              {["Choose plan", "Verify email", "Pay securely"].map((step, index) => (
+              {[t("choosePlan"), t("verifyEmail"), t("paySecurely")].map((step, index) => (
                 <div key={step} className="rounded-[24px] border border-white/10 bg-black/20 p-4">
                   <p className="text-xs font-semibold uppercase text-white/35">Step {index + 1}</p>
                   <p className="mt-2 font-medium text-white">{step}</p>
@@ -197,13 +219,12 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
           </div>
 
           <GlassCard variant="strong" className="h-fit">
-            <p className="text-sm text-white/45">Membership preview</p>
+            <p className="text-sm text-white/45">{t("membershipPreview")}</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">
-              {hasPublicPlans ? priceSummary(plans) : "Memberships not published yet"}
+              {hasPublicPlans ? priceSummary(plans, locale) : priceSummary([], locale)}
             </h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
-              Choose a plan here, then continue in Zook for check-ins, workouts, notifications, and
-              desk pickup.
+              {t("choosePlanProfile")}
             </p>
             <div className="mt-5 rounded-[28px] border border-white/10 bg-white p-4">
               <Image
@@ -221,11 +242,11 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
                 href="#plans"
                 className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
               >
-                View plans
+                {t("viewPlans")}
               </Link>
             ) : (
               <div className="mt-6 rounded-[24px] border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/55">
-                This gym has not published a public membership plan yet.
+                {priceSummary([], locale)}
               </div>
             )}
             <a
@@ -233,16 +254,14 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
               className="zook-focus mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm text-white/72"
             >
               <Smartphone size={17} />
-              Open in app
+              {t("openInApp")}
             </a>
             <div className="mt-5 rounded-[24px] border border-white/10 bg-black/20 p-4">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="text-lime-200" size={22} />
-                <p className="text-sm font-medium text-white">Secure payment</p>
+                <p className="text-sm font-medium text-white">{t("securePayment")}</p>
               </div>
-              <p className="mt-2 text-sm leading-6 text-white/50">
-                Your membership is activated after payment confirmation.
-              </p>
+              <p className="mt-2 text-sm leading-6 text-white/50">{t("paymentActivation")}</p>
             </div>
           </GlassCard>
         </section>
@@ -252,7 +271,7 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
             plans.map((plan) => (
               <Link
                 key={plan.id}
-                href={`/join/${org.username}?plan=${plan.id}`}
+                href={localizedPath(`/join/${org.username}`, locale, { plan: plan.id })}
                 className="zook-focus block rounded-[28px] transition hover:-translate-y-0.5"
               >
                 <GlassCard className="h-full transition hover:border-lime-300/25 hover:bg-white/[0.075]">
@@ -281,8 +300,10 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
             ))
           ) : (
             <GlassCard className="lg:col-span-3">
-              <Pill tone="amber">Plans unavailable</Pill>
-              <h2 className="mt-4 text-2xl font-semibold text-white">No public plans yet</h2>
+              <Pill tone="amber">{t("plansComingSoon")}</Pill>
+              <h2 className="mt-4 text-2xl font-semibold text-white">
+                {priceSummary([], locale)}
+              </h2>
               <p className="mt-3 text-sm leading-6 text-white/55">
                 This gym can still use Zook internally, but public sign-up starts only after an
                 owner publishes a membership plan.
@@ -293,7 +314,7 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
 
         <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
           <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">Facilities</h2>
+            <h2 className="text-2xl font-semibold text-white">{t("facilities")}</h2>
             <div className="mt-5 flex flex-wrap gap-2">
               {facilities.length ? (
                 facilities.map((facility) => (
@@ -303,13 +324,13 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
                 ))
               ) : (
                 <p className="text-sm text-white/50">
-                  Facilities will appear once the gym publishes them.
+                  {t("facilitiesPending")}
                 </p>
               )}
             </div>
           </GlassCard>
           <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">Share or install</h2>
+            <h2 className="text-2xl font-semibold text-white">{t("shareOrInstall")}</h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
               Scan the QR, open this gym in Zook, or install the app and search for {org.name}.
             </p>
@@ -335,7 +356,7 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
               >
                 <QrCode size={16} />
-                Download QR
+                {t("downloadQr")}
               </a>
               <ShareButton
                 title={`${org.name} on Zook`}
@@ -365,7 +386,7 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
 
         <section className="grid gap-4 md:grid-cols-2">
           <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">Visible trainers</h2>
+            <h2 className="text-2xl font-semibold text-white">{t("visibleTrainers")}</h2>
             <div className="mt-5 grid gap-3">
               {trainers.length ? (
                 trainers.map((trainer) => {
@@ -413,29 +434,23 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
                 })
               ) : (
                 <p className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/50">
-                  Trainer profiles will appear after the gym publishes them.
+                  {t("trainersPending")}
                 </p>
               )}
             </div>
           </GlassCard>
           <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">Referral</h2>
-            <p className="mt-3 text-sm leading-6 text-white/55">
-              Have a referral or invite code? Apply it during payment so the gym can track the
-              source and any eligible discount.
-            </p>
+            <h2 className="text-2xl font-semibold text-white">{t("referral")}</h2>
+            <p className="mt-3 text-sm leading-6 text-white/55">{t("referralCopy")}</p>
           </GlassCard>
         </section>
         <section>
           <GlassCard>
             <div className="flex items-center gap-3">
               <Star className="text-amber-100" size={22} />
-              <h2 className="text-2xl font-semibold text-white">Reviews</h2>
+              <h2 className="text-2xl font-semibold text-white">{t("reviews")}</h2>
             </div>
-            <p className="mt-3 text-sm leading-6 text-white/55">
-              Member reviews will appear here after this gym starts collecting feedback through
-              Zook.
-            </p>
+            <p className="mt-3 text-sm leading-6 text-white/55">{t("reviewsPending")}</p>
           </GlassCard>
         </section>
       </div>

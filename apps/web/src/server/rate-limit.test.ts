@@ -33,6 +33,16 @@ describe("rate limits", () => {
     await expect(assertRateLimit("otpRequestByEmail", "member@zook.local")).rejects.toThrow(/Too many requests/i);
   });
 
+  it("applies the referral redeem rule", async () => {
+    for (let attempt = 0; attempt < defaultRateLimitRules.referralRedeemByActor.limit; attempt += 1) {
+      await expect(assertRateLimit("referralRedeemByActor", "org_1:user_1")).resolves.toBeTruthy();
+    }
+
+    await expect(assertRateLimit("referralRedeemByActor", "org_1:user_1")).rejects.toThrow(
+      /Too many requests/i,
+    );
+  });
+
   it("resets the bucket after the window passes", async () => {
     for (let attempt = 0; attempt < defaultRateLimitRules.aiRequestByUser.limit; attempt += 1) {
       await assertRateLimit("aiRequestByUser", "user_1");

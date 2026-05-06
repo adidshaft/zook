@@ -168,6 +168,21 @@ enum PaymentMandateStatus {
   FAILED
 }
 
+enum SubscriptionReminderKind {
+  PAYMENT_FAILED
+  PAYMENT_RETRY
+  TRIAL_EXPIRING
+  SUBSCRIPTION_EXPIRING
+  MANUAL_FOLLOW_UP
+}
+
+enum SubscriptionReminderStatus {
+  PENDING
+  SENT
+  RESOLVED
+  CANCELLED
+}
+
 enum CouponType {
   FIXED_AMOUNT
   PERCENTAGE
@@ -1026,6 +1041,7 @@ model PaymentSession {
   id          String         @id @default(cuid())
   provider    String         @default("mock")
   orgId       String?
+  branchId    String?
   userId      String?
   purpose     PaymentPurpose
   amountPaise Int
@@ -1040,6 +1056,7 @@ model PaymentSession {
   updatedAt   DateTime       @updatedAt
 
   @@index([orgId, status])
+  @@index([orgId, branchId, status])
   @@index([userId, status])
   @@index([status])
 }
@@ -1047,6 +1064,7 @@ model PaymentSession {
 model Payment {
   id            String         @id @default(cuid())
   orgId         String?
+  branchId      String?
   userId        String?
   sessionId     String?        @unique
   purpose       PaymentPurpose
@@ -1066,6 +1084,7 @@ model Payment {
   updatedAt     DateTime       @updatedAt
 
   @@index([orgId, status])
+  @@index([orgId, branchId, status])
   @@index([userId])
 }
 
@@ -1101,6 +1120,31 @@ model PaymentMandate {
   @@index([orgId, userId, status])
   @@index([sourceSubscriptionId])
   @@index([latestSubscriptionId])
+}
+
+model SubscriptionReminder {
+  id             String                     @id @default(cuid())
+  orgId          String
+  userId         String
+  subscriptionId String?
+  mandateId      String?
+  paymentId      String?
+  paymentEventId String?
+  kind           SubscriptionReminderKind
+  status         SubscriptionReminderStatus @default(PENDING)
+  dueAt          DateTime
+  sentAt         DateTime?
+  resolvedAt     DateTime?
+  attemptCount   Int                        @default(0)
+  lastError      String?
+  metadata       Json?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  @@index([orgId, status, dueAt])
+  @@index([orgId, userId, status])
+  @@index([subscriptionId, status])
+  @@index([mandateId, status])
 }
 
 model PaymentEvent {
@@ -1940,6 +1984,7 @@ model ChallengeProgress {
 model Product {
   id                String          @id @default(cuid())
   orgId             String
+  branchId          String?
   name              String
   description       String?
   category          ProductCategory
@@ -1953,11 +1998,13 @@ model Product {
   updatedAt         DateTime        @updatedAt
 
   @@index([orgId, active])
+  @@index([orgId, branchId, active])
 }
 
 model InventoryMovement {
   id          String   @id @default(cuid())
   orgId       String
+  branchId    String?
   productId   String
   delta       Int
   reason      String
@@ -1966,11 +2013,13 @@ model InventoryMovement {
   createdAt   DateTime @default(now())
 
   @@index([orgId, productId])
+  @@index([orgId, branchId])
 }
 
 model ShopOrder {
   id               String      @id @default(cuid())
   orgId            String
+  branchId         String?
   userId           String
   status           OrderStatus @default(PENDING_PAYMENT)
   paymentSessionId String?
@@ -1983,6 +2032,7 @@ model ShopOrder {
   updatedAt        DateTime    @updatedAt
 
   @@index([orgId, status])
+  @@index([orgId, branchId, status])
   @@index([userId, status])
 }
 

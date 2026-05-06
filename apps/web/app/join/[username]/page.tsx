@@ -4,7 +4,14 @@ import { GlassCard, Pill } from "@/components/glass-card";
 import { CouponApplyForm } from "@/components/coupon-apply-form";
 import { JoinCheckoutButton } from "@/components/join-checkout-button";
 import { ZookLogo } from "@/components/zook-logo";
-import { formatInr, joinModeLabel } from "@/lib/format";
+import { formatInr } from "@/lib/format";
+import {
+  joinModeLabelForLocale,
+  localizedPath,
+  publicT,
+  resolvePublicLocale,
+  type PublicLocale,
+} from "@/lib/public-i18n";
 import {
   getPublicCouponPreview,
   getPublicGymProfileData,
@@ -29,6 +36,7 @@ function joinPath(
   planId: string,
   referral?: PublicGymReferral | null,
   couponCode?: string,
+  locale: PublicLocale = "en",
 ) {
   const query = new URLSearchParams({ plan: planId });
   if (referral) {
@@ -37,25 +45,37 @@ function joinPath(
   if (couponCode) {
     query.set("coupon", couponCode);
   }
+  if (locale === "hi") {
+    query.set("lang", "hi");
+  }
   return `/join/${username}?${query.toString()}`;
 }
 
-function loginRedirect(path: string) {
-  return `/login?redirect=${encodeURIComponent(path)}`;
+function loginRedirect(path: string, locale: PublicLocale = "en") {
+  const query = new URLSearchParams({ redirect: path });
+  if (locale === "hi") {
+    query.set("lang", "hi");
+  }
+  return `/login?${query.toString()}`;
 }
 
-function validityLabel(plan: { durationDays: number | null; type: string }) {
+function validityLabel(plan: { durationDays: number | null; type: string }, locale: PublicLocale) {
   if (plan.durationDays) {
-    return `${plan.durationDays} days`;
+    return locale === "hi" ? `${plan.durationDays} दिन` : `${plan.durationDays} days`;
   }
-  return plan.type === "TRIAL" ? "Trial access" : "Visit pack";
+  if (plan.type === "TRIAL") {
+    return locale === "hi" ? "ट्रायल एक्सेस" : "Trial access";
+  }
+  return locale === "hi" ? "विज़िट पैक" : "Visit pack";
 }
 
-function visitLabel(visitLimit: number | null) {
+function visitLabel(visitLimit: number | null, locale: PublicLocale) {
   if (!visitLimit) {
-    return "Unlimited visits";
+    return locale === "hi" ? "असीमित विज़िट" : "Unlimited visits";
   }
-  return `${visitLimit} ${visitLimit === 1 ? "visit" : "visits"}`;
+  return locale === "hi"
+    ? `${visitLimit} विज़िट`
+    : `${visitLimit} ${visitLimit === 1 ? "visit" : "visits"}`;
 }
 
 export default async function JoinPage({
@@ -63,9 +83,11 @@ export default async function JoinPage({
   searchParams,
 }: {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ coupon?: string; plan?: string; ref?: string }>;
+  searchParams: Promise<{ coupon?: string; plan?: string; ref?: string; lang?: string }>;
 }) {
   const [{ username }, query] = await Promise.all([params, searchParams]);
+  const locale = resolvePublicLocale(query);
+  const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const data = await getPublicGymProfileData(username, query.ref);
   const org = data?.org;
   const selectedPlan = data?.plans.find((plan) => plan.id === query.plan) ?? data?.plans[0];
@@ -89,37 +111,38 @@ export default async function JoinPage({
   const joinMode = org?.joinMode ?? "OPEN_JOIN";
 
   if (!org || !selectedPlan) {
-    return <main className="p-8">Join flow unavailable.</main>;
+    return <main className="p-8">{t("joinUnavailable")}</main>;
   }
 
   if (joinMode === "APPROVAL_REQUIRED") {
     return (
-      <main className="grid min-h-screen place-items-center px-5 py-8">
+      <main
+        lang={locale === "hi" ? "hi-IN" : "en-IN"}
+        className="grid min-h-screen place-items-center px-5 py-8"
+      >
         <div className="absolute left-5 top-5">
           <ZookLogo />
         </div>
         <GlassCard className="max-w-xl">
-          <Pill tone="amber">Approval required</Pill>
-          <h1 className="mt-5 text-3xl font-semibold text-white">Approval required</h1>
-          <p className="mt-3 text-sm leading-6 text-white/55">
-            This gym reviews access before checkout. Sign in to request access; Zook will show the
-            request status in your inbox.
-          </p>
+          <Pill tone="amber">{t("approvalRequired")}</Pill>
+          <h1 className="mt-5 text-3xl font-semibold text-white">{t("approvalRequired")}</h1>
+          <p className="mt-3 text-sm leading-6 text-white/55">{t("approvalCopy")}</p>
           <Link
             href={loginRedirect(
               selectedPlan
-                ? joinPath(org.username, selectedPlan.id, referral, couponPreview?.code)
-                : `/g/${org.username}`,
+                ? joinPath(org.username, selectedPlan.id, referral, couponPreview?.code, locale)
+                : localizedPath(`/g/${org.username}`, locale),
+              locale,
             )}
             className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
           >
-            Sign in to request access
+            {t("signInRequestAccess")}
           </Link>
           <Link
-            href={`/g/${org.username}`}
+            href={localizedPath(`/g/${org.username}`, locale)}
             className="zook-focus ml-3 mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70"
           >
-            Back to gym
+            {t("backToGym")}
           </Link>
         </GlassCard>
       </main>
@@ -128,21 +151,22 @@ export default async function JoinPage({
 
   if (joinMode === "INVITE_ONLY" && !referral) {
     return (
-      <main className="grid min-h-screen place-items-center px-5 py-8">
+      <main
+        lang={locale === "hi" ? "hi-IN" : "en-IN"}
+        className="grid min-h-screen place-items-center px-5 py-8"
+      >
         <div className="absolute left-5 top-5">
           <ZookLogo />
         </div>
         <GlassCard className="max-w-xl">
-          <Pill tone="red">{joinModeLabel(joinMode)}</Pill>
-          <h1 className="mt-5 text-3xl font-semibold text-white">Invite code required</h1>
-          <p className="mt-3 text-sm leading-6 text-white/55">
-            This gym requires an active referral or invite code before checkout can start.
-          </p>
+          <Pill tone="red">{joinModeLabelForLocale(joinMode, locale)}</Pill>
+          <h1 className="mt-5 text-3xl font-semibold text-white">{t("inviteRequired")}</h1>
+          <p className="mt-3 text-sm leading-6 text-white/55">{t("inviteCopy")}</p>
           <Link
-            href={`/g/${org.username}`}
+            href={localizedPath(`/g/${org.username}`, locale)}
             className="zook-focus mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70"
           >
-            Back to gym
+            {t("backToGym")}
           </Link>
         </GlassCard>
       </main>
@@ -150,28 +174,28 @@ export default async function JoinPage({
   }
 
   return (
-    <main className="min-h-screen px-5 py-5">
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen px-5 py-5">
       <div className="mx-auto grid max-w-6xl gap-5">
         <header className="flex items-center justify-between">
           <ZookLogo />
           <Link
-            href={`/g/${org.username}`}
+            href={localizedPath(`/g/${org.username}`, locale)}
             className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
           >
-            Gym profile
+            {t("gymProfile")}
           </Link>
         </header>
 
         <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
           <GlassCard variant="strong">
-            <Pill tone="lime">{joinModeLabel(joinMode)}</Pill>
+            <Pill tone="lime">{joinModeLabelForLocale(joinMode, locale)}</Pill>
             <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white">
-              Review your membership
+              {t("reviewMembership")}
             </h1>
             {data.plans.length > 1 ? (
               <div className="mt-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
-                  Choose plan
+                  {t("choosePlan")}
                 </p>
                 <div
                   className="mt-3 grid gap-3 md:grid-cols-2"
@@ -183,7 +207,13 @@ export default async function JoinPage({
                     return (
                       <Link
                         key={plan.id}
-                        href={joinPath(org.username, plan.id, referral, couponPreview?.code)}
+                        href={joinPath(
+                          org.username,
+                          plan.id,
+                          referral,
+                          couponPreview?.code,
+                          locale,
+                        )}
                         className={`zook-focus rounded-[22px] border p-4 transition ${
                           isSelected
                             ? "border-lime-300/45 bg-lime-300/12"
@@ -196,7 +226,7 @@ export default async function JoinPage({
                           <div>
                             <p className="font-medium text-white">{plan.name}</p>
                             <p className="mt-1 text-xs text-white/45">
-                              {validityLabel(plan)} · {visitLabel(plan.visitLimit)}
+                              {validityLabel(plan, locale)} · {visitLabel(plan.visitLimit, locale)}
                             </p>
                           </div>
                           <span className="font-semibold text-lime-200">
@@ -211,25 +241,25 @@ export default async function JoinPage({
             ) : null}
             <div className="mt-6 grid gap-3">
               <Readout label="Gym" value={`${org.name} · ${org.city}`} />
-              <Readout label="Plan" value={selectedPlan.name} />
-              <Readout label="Duration" value={validityLabel(selectedPlan)} />
-              <Readout label="Visits" value={visitLabel(selectedPlan.visitLimit)} />
+              <Readout label={t("plan")} value={selectedPlan.name} />
+              <Readout label={t("duration")} value={validityLabel(selectedPlan, locale)} />
+              <Readout label={t("visits")} value={visitLabel(selectedPlan.visitLimit, locale)} />
               <Readout
-                label="Referral discount"
+                label={t("referralDiscount")}
                 value={
                   referral
                     ? `Referral ${referral.code} applied · -${formatInr(referralDiscountPaise)}`
-                    : "None"
+                    : t("none")
                 }
               />
               <Readout
-                label="Coupon discount"
+                label={t("couponDiscount")}
                 value={
                   couponPreview
                     ? `Coupon ${couponPreview.code} applied · -${formatInr(couponDiscountPaise)}`
                     : couponCode
                       ? `${couponCode} could not be validated for this plan`
-                      : "None"
+                      : t("none")
                 }
               />
             </div>
@@ -243,12 +273,12 @@ export default async function JoinPage({
           </GlassCard>
 
           <GlassCard>
-            <p className="text-sm text-white/45">Final amount</p>
+            <p className="text-sm text-white/45">{t("finalAmount")}</p>
             <p className="metric mt-2 text-5xl font-semibold text-lime-200">
               {formatInr(finalAmount)}
             </p>
             <div className="mt-6 grid gap-3">
-              {["Enter payment details", "Payment confirmed", "Membership activates"].map(
+              {[t("paymentDetails"), t("paymentConfirmed"), t("membershipActivates")].map(
                 (step, index) => (
                   <div
                     key={step}
@@ -266,7 +296,7 @@ export default async function JoinPage({
               <div className="flex items-center gap-3">
                 <LockKeyhole className="text-sky-100" size={20} />
                 <p className="text-sm font-medium text-sky-50">
-                  Your membership activates after payment confirmation.
+                  {t("paymentActivation")}
                 </p>
               </div>
             </div>
@@ -277,20 +307,20 @@ export default async function JoinPage({
                 couponCode={couponPreview?.code ?? null}
                 referralCode={referral?.code ?? null}
                 loginPath={loginRedirect(
-                  joinPath(org.username, selectedPlan.id, referral, couponPreview?.code),
+                  joinPath(org.username, selectedPlan.id, referral, couponPreview?.code, locale),
+                  locale,
                 )}
               />
             ) : (
               <>
                 <div className="mt-6 rounded-[22px] border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
-                  Test mode is on for this environment. The next page simulates payment outcomes and
-                  will not collect real money.
+                  {t("testMode")}
                 </div>
                 <Link
                   href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}
                   className="zook-focus mt-4 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
                 >
-                  Continue to simulated payment
+                  {t("simulatedPayment")}
                 </Link>
               </>
             )}

@@ -1,4 +1,5 @@
 import { Link, Stack } from "expo-router";
+import { Image } from "expo-image";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { WorkoutLogEntry } from "@zook/core";
@@ -12,15 +13,19 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import {
-  TrackingSummaryTile
-} from "@/components/tracking";
-import { useMyTracking } from "@/lib/query-hooks";
+import { TrackingSummaryTile } from "@/components/tracking";
+import { toWebUrl } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { formatShortDate } from "@/lib/formatting";
+import { useI18n } from "@/lib/i18n";
+import { useMyBodyProgress, useMyTracking, type BodyProgressEntryRecord } from "@/lib/query-hooks";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function TrackingDashboard() {
   const trackingQuery = useMyTracking();
+  const bodyProgressQuery = useMyBodyProgress();
+  const { token } = useAuth();
   const summary = trackingQuery.data?.summary;
   const recentWorkouts = (trackingQuery.data?.recentWorkouts ?? []) as Array<{
     id: string;
@@ -40,10 +45,13 @@ export default function TrackingDashboard() {
       completed: boolean;
     }>;
   }>;
-  const latestWeight = (trackingQuery.data?.latestBodyProgress as { weightKg?: string | number | null } | null)?.weightKg;
+  const latestWeight = (
+    trackingQuery.data?.latestBodyProgress as { weightKg?: string | number | null } | null
+  )?.weightKg;
   const latestBodyProgress = trackingQuery.data?.latestBodyProgress as {
     weightKg?: string | number | null;
     bodyFatPct?: string | number | null;
+    bodyFatPercent?: string | number | null;
     measuredAt?: string | null;
     notes?: string | null;
   } | null;
@@ -61,9 +69,10 @@ export default function TrackingDashboard() {
     weeklyCount: summary?.weeklyCount ?? 0,
     recentCount: summary?.recentCount ?? 0,
     latestWeightKg: latestWeight,
-    habitsCount: habits.length
+    habitsCount: habits.length,
   });
   const latestWorkout = recentWorkouts[0] ? workoutToEntry(recentWorkouts[0]) : null;
+  const bodyProgressEntries = bodyProgressQuery.data?.entries ?? [];
   const weeklyCount = summary?.weeklyCount ?? 0;
   const totalDuration = summary?.totalDuration ?? 0;
 
@@ -76,17 +85,16 @@ export default function TrackingDashboard() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <MobileHeader
-            title="Tracking"
-            subtitle="Workouts, progress, and goals"
-          />
+          <MobileHeader title="Tracking" subtitle="Workouts, progress, and goals" />
 
           {/* Weekly summary hero */}
           <GlassCard variant="success" contentStyle={styles.heroContent}>
             <View style={styles.heroTop}>
               <View style={styles.heroCopy}>
                 <Text style={styles.heroEyebrow}>THIS WEEK</Text>
-                <Text style={styles.heroValue}>{weeklyCount} Workout{weeklyCount !== 1 ? "s" : ""}</Text>
+                <Text style={styles.heroValue}>
+                  {weeklyCount} Workout{weeklyCount !== 1 ? "s" : ""}
+                </Text>
                 <Text style={styles.heroBody}>
                   {totalDuration > 0
                     ? `${totalDuration} active minutes`
@@ -120,6 +128,10 @@ export default function TrackingDashboard() {
             </View>
           ) : null}
 
+          {bodyProgressEntries.length ? (
+            <BodyProgressTimeline entries={bodyProgressEntries} token={token} />
+          ) : null}
+
           {/* Today's session */}
           <SectionHeader
             title="Last workout"
@@ -144,9 +156,13 @@ export default function TrackingDashboard() {
               <IconBubble icon="barbell-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={styles.emptyTitle}>No workouts yet</Text>
-                <Text style={styles.emptyBody}>Log your first session to start tracking progress.</Text>
+                <Text style={styles.emptyBody}>
+                  Log your first session to start tracking progress.
+                </Text>
               </View>
-              <ZookButton href="/tracking-entry" icon="add-outline">Log workout</ZookButton>
+              <ZookButton href="/tracking-entry" icon="add-outline">
+                Log workout
+              </ZookButton>
             </GlassCard>
           )}
         </ScrollView>
@@ -163,7 +179,9 @@ export default function TrackingDashboard() {
 
 function TodaySessionPreview({ entry }: { entry: WorkoutLogEntry }) {
   const firstExercise = entry.exercises[0];
-  const completedExercises = entry.exercises.filter((exercise) => exercise.status === "DONE").length;
+  const completedExercises = entry.exercises.filter(
+    (exercise) => exercise.status === "DONE",
+  ).length;
 
   return (
     <GlassCard variant="compact" contentStyle={styles.todayPreview}>
@@ -196,34 +214,117 @@ function BodyProgressCard({
   progress: {
     weightKg?: string | number | null;
     bodyFatPct?: string | number | null;
+    bodyFatPercent?: string | number | null;
     measuredAt?: string | null;
     notes?: string | null;
   };
 }) {
+  const { t } = useI18n();
+  const bodyFat = progress.bodyFatPct ?? progress.bodyFatPercent;
   return (
     <GlassCard variant="compact" contentStyle={styles.progressCard}>
       <View style={styles.progressCardHeader}>
         <IconBubble icon="body-outline" tone="blue" size={34} />
         <View style={styles.progressCardCopy}>
-          <Text style={styles.progressCardTitle}>Body progress</Text>
+          <Text style={styles.progressCardTitle}>{t("tracking.bodyComposition")}</Text>
           <Text style={styles.progressCardSubtitle}>
-            {progress.measuredAt ? new Date(progress.measuredAt).toLocaleDateString() : "Latest entry"}
+            {progress.measuredAt
+              ? new Date(progress.measuredAt).toLocaleDateString()
+              : t("tracking.latestEntry")}
           </Text>
         </View>
       </View>
       <View style={styles.readoutRow}>
         <View style={styles.readoutBlock}>
-          <Text style={styles.readoutValue}>{progress.weightKg ? `${progress.weightKg} kg` : "--"}</Text>
-          <Text style={styles.readoutLabel}>Weight</Text>
+          <Text style={styles.readoutValue}>
+            {progress.weightKg ? `${progress.weightKg} kg` : "--"}
+          </Text>
+          <Text style={styles.readoutLabel}>{t("tracking.weight")}</Text>
         </View>
         <View style={styles.readoutBlock}>
-          <Text style={styles.readoutValue}>{progress.bodyFatPct ? `${progress.bodyFatPct}%` : "--"}</Text>
-          <Text style={styles.readoutLabel}>Body fat</Text>
+          <Text style={styles.readoutValue}>{bodyFat ? `${bodyFat}%` : "--"}</Text>
+          <Text style={styles.readoutLabel}>{t("tracking.bodyFat")}</Text>
         </View>
       </View>
-      {progress.notes ? <Text numberOfLines={2} style={styles.progressNote}>{progress.notes}</Text> : null}
+      {progress.notes ? (
+        <Text numberOfLines={2} style={styles.progressNote}>
+          {progress.notes}
+        </Text>
+      ) : null}
     </GlassCard>
   );
+}
+
+function BodyProgressTimeline({
+  entries,
+  token,
+}: {
+  entries: BodyProgressEntryRecord[];
+  token?: string | null;
+}) {
+  const { t } = useI18n();
+  const visibleEntries = entries.slice(0, 8);
+
+  return (
+    <View style={styles.timelineSection}>
+      <SectionHeader
+        title={t("tracking.bodyTimeline")}
+        subtitle={t("tracking.bodyTimelineSubtitle", { count: entries.length })}
+      />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.photoTimeline}
+      >
+        {visibleEntries.map((entry) => {
+          const photoUrl = normalizeProgressPhotoUrl(entry);
+          const bodyFat = entry.bodyFatPercent ?? entry.bodyFatPct;
+          return (
+            <GlassCard key={entry.id} variant="compact" contentStyle={styles.photoTimelineCard}>
+              <View style={styles.photoFrame}>
+                {photoUrl ? (
+                  <Image
+                    source={{
+                      uri: photoUrl,
+                      ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+                    }}
+                    style={styles.photoImage}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={styles.photoPlaceholder}>
+                    <Ionicons name="image-outline" size={24} color={colors.subtle} />
+                    <Text style={styles.photoPlaceholderText}>{t("tracking.noPhoto")}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.photoTimelineCopy}>
+                <Text style={styles.photoTimelineDate}>{formatShortDate(entry.measuredAt)}</Text>
+                <Text numberOfLines={1} style={styles.photoTimelineTitle}>
+                  {photoUrl ? t("tracking.photoLogged") : t("tracking.bodyComposition")}
+                </Text>
+                <Text numberOfLines={1} style={styles.photoTimelineMeta}>
+                  {entry.weightKg ? `${t("tracking.weight")} ${entry.weightKg} kg` : "--"}
+                  {bodyFat ? ` · ${t("tracking.bodyFat")} ${bodyFat}%` : ""}
+                </Text>
+              </View>
+            </GlassCard>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
+function normalizeProgressPhotoUrl(entry: BodyProgressEntryRecord) {
+  const value =
+    entry.photoUrl ??
+    entry.photoAsset?.url ??
+    (entry.photoAssetId ? `/api/files/${entry.photoAssetId}/content` : undefined);
+  if (!value) {
+    return undefined;
+  }
+  return /^https?:\/\//i.test(value) ? value : toWebUrl(value);
 }
 
 function HabitProgressCard({
@@ -260,7 +361,9 @@ function HabitProgressCard({
         <View style={[styles.habitFill, { width: `${Math.max(8, completion)}%` }]} />
       </View>
       <Text style={styles.progressNote}>
-        {target > 0 ? `${completed}/${target} this ${topHabit?.cadence?.toLowerCase() ?? "cycle"}` : `${topHabit?.streakCount ?? 0} day streak`}
+        {target > 0
+          ? `${completed}/${target} this ${topHabit?.cadence?.toLowerCase() ?? "cycle"}`
+          : `${topHabit?.streakCount ?? 0} day streak`}
       </Text>
     </GlassCard>
   );
@@ -378,6 +481,54 @@ const styles = StyleSheet.create({
     ...typography.small,
   },
   progressNote: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  timelineSection: {
+    gap: spacing.sm,
+  },
+  photoTimeline: {
+    gap: 10,
+    paddingRight: layout.screenPadding,
+  },
+  photoTimelineCard: {
+    width: 168,
+    gap: spacing.sm,
+  },
+  photoFrame: {
+    height: 142,
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.055)",
+  },
+  photoImage: {
+    width: "100%",
+    height: "100%",
+  },
+  photoPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  photoPlaceholderText: {
+    color: colors.subtle,
+    ...typography.small,
+  },
+  photoTimelineCopy: {
+    gap: 2,
+  },
+  photoTimelineDate: {
+    color: colors.lime,
+    ...typography.caption,
+  },
+  photoTimelineTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  photoTimelineMeta: {
     color: colors.muted,
     ...typography.small,
   },

@@ -4,6 +4,7 @@ import { mobileApiFetch } from "./api";
 type RequestOptions = {
   token?: string;
   orgId?: string;
+  branchId?: string;
 };
 
 type OtpResult = {
@@ -91,8 +92,10 @@ export const memberApi = {
       method: "POST",
       token: options.token,
       ...(options.orgId ? { orgId: options.orgId } : {}),
+      ...(options.branchId ? { branchId: options.branchId } : {}),
       body: {
         ...(options.planId ? { planId: options.planId } : {}),
+        ...(options.branchId ? { branchId: options.branchId } : {}),
       },
     });
   },
@@ -103,8 +106,10 @@ export const memberApi = {
       method: "POST",
       token: options.token,
       ...(options.orgId ? { orgId: options.orgId } : {}),
+      ...(options.branchId ? { branchId: options.branchId } : {}),
       body: {
         ...(options.planId ? { planId: options.planId } : {}),
+        ...(options.branchId ? { branchId: options.branchId } : {}),
       },
     });
   },
@@ -113,6 +118,7 @@ export const memberApi = {
       method: "DELETE",
       token: options.token,
       ...(options.orgId ? { orgId: options.orgId } : {}),
+      ...(options.branchId ? { branchId: options.branchId } : {}),
     });
   },
   createTrackingWorkout(options: RequestOptions & { body: Record<string, unknown> }) {
@@ -217,7 +223,12 @@ export const shopApi = {
       method: "POST",
       token: options.token,
       orgId: options.orgId,
-      body: { orgId: options.orgId, items: options.items },
+      ...(options.branchId ? { branchId: options.branchId } : {}),
+      body: {
+        orgId: options.orgId,
+        items: options.items,
+        ...(options.branchId ? { branchId: options.branchId } : {}),
+      },
     });
   },
   fulfillOrder(options: RequestOptions & { orderId: string }) {
@@ -231,26 +242,40 @@ export const shopApi = {
 
 export const gymApi = {
   requestMembership(
-    options: RequestOptions & { orgId: string; planId?: string; referralCode?: string },
+    options: RequestOptions & {
+      orgId: string;
+      planId?: string;
+      referralCode?: string;
+      branchId?: string;
+    },
   ) {
     return mobileApiFetch(`/orgs/${options.orgId}/join-requests`, {
       method: "POST",
       token: options.token,
+      ...(options.branchId ? { branchId: options.branchId } : {}),
       body: {
         ...(options.planId ? { planId: options.planId } : {}),
         ...(options.referralCode ? { referralCode: options.referralCode } : {}),
+        ...(options.branchId ? { branchId: options.branchId } : {}),
       },
     });
   },
   createSubscriptionCheckout(
-    options: RequestOptions & { orgId: string; planId: string; referralCode?: string },
+    options: RequestOptions & {
+      orgId: string;
+      planId: string;
+      referralCode?: string;
+      branchId?: string;
+    },
   ) {
     return mobileApiFetch<{ checkoutUrl: string }>(`/orgs/${options.orgId}/subscriptions`, {
       method: "POST",
       token: options.token,
+      ...(options.branchId ? { branchId: options.branchId } : {}),
       body: {
         planId: options.planId,
         ...(options.referralCode ? { referralCode: options.referralCode } : {}),
+        ...(options.branchId ? { branchId: options.branchId } : {}),
       },
     });
   },
@@ -261,7 +286,8 @@ export const paymentsApi = {
     return mobileApiFetch(`/payments/mock/${options.sessionId}/complete`, {
       method: "POST",
       token: options.token,
-      body: { status: "SUCCEEDED" },
+      ...(options.branchId ? { branchId: options.branchId } : {}),
+      body: { status: "SUCCEEDED", ...(options.branchId ? { branchId: options.branchId } : {}) },
     });
   },
   recordManualPayment(options: RequestOptions & { body: Record<string, unknown> }) {
@@ -269,7 +295,8 @@ export const paymentsApi = {
       method: "POST",
       token: options.token,
       orgId: options.orgId,
-      body: options.body,
+      ...(options.branchId ? { branchId: options.branchId } : {}),
+      body: { ...options.body, ...(options.branchId ? { branchId: options.branchId } : {}) },
     });
   },
 };

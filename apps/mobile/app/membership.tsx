@@ -26,6 +26,7 @@ import {
 } from "@/components/primitives";
 import { toWebUrl } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { useBranchSelection } from "@/lib/branch-selection";
 import { memberApi, paymentsApi } from "@/lib/domain-api";
 import { formatDateTime, formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { useGymProfile, useMyMemberships, type PublicPlanSummary } from "@/lib/query-hooks";
@@ -132,9 +133,9 @@ function subscriptionTimestamp(subscription: MembershipRecord) {
 function isAutopayLive(autopay?: AutopayRecord | null) {
   return Boolean(
     autopay &&
-      ["CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "PAUSED"].includes(
-        autopay.status ?? "",
-      ),
+    ["CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "PAUSED"].includes(
+      autopay.status ?? "",
+    ),
   );
 }
 
@@ -146,6 +147,7 @@ export default function MembershipScreen() {
   }>();
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const membershipsQuery = useMyMemberships();
   const activeOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
@@ -225,6 +227,7 @@ export default function MembershipScreen() {
       const result = await memberApi.renewMembership<RenewalResult>({
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         subscriptionId: renewalTarget.id,
         ...(selectedPlanId ? { planId: selectedPlanId } : {}),
       });
@@ -233,6 +236,7 @@ export default function MembershipScreen() {
           token,
           sessionId: result.session.id,
           ...(activeOrgId ? { orgId: activeOrgId } : {}),
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         });
         setRenewalStatus("Renewal confirmed.");
         await Promise.all([
@@ -267,6 +271,7 @@ export default function MembershipScreen() {
       const result = await memberApi.enableAutopay<AutopayResult>({
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         subscriptionId: subscription.id,
         ...(planIdFor(subscription) ? { planId: planIdFor(subscription) } : {}),
       });
@@ -295,6 +300,7 @@ export default function MembershipScreen() {
       await memberApi.cancelAutopay({
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         subscriptionId: subscription.id,
       });
       setAutopayStatus("Autopay cancelled.");
@@ -526,7 +532,9 @@ export default function MembershipScreen() {
                       {titleCaseFromCode(payment.mode ?? "ONLINE")} ·{" "}
                       {formatDateTime(payment.recordedAt ?? payment.createdAt)}
                     </Text>
-                    <Pill tone={payment.status === "SUCCEEDED" ? "lime" : toneForStatus(payment.status)}>
+                    <Pill
+                      tone={payment.status === "SUCCEEDED" ? "lime" : toneForStatus(payment.status)}
+                    >
                       {titleCaseFromCode(payment.status ?? "CREATED")}
                     </Pill>
                   </View>

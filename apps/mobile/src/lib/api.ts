@@ -30,7 +30,7 @@ function ensureConfiguredUrl(configured: string | undefined, label: "API" | "web
     throw new Error(
       `Mobile ${label} base URL is missing. Set ${
         label === "API" ? "MOBILE_API_BASE_URL or EXPO_PUBLIC_API_BASE_URL" : "EXPO_PUBLIC_WEB_URL"
-      } before running the app.`
+      } before running the app.`,
     );
   }
   return value.replace(/\/$/, "");
@@ -48,7 +48,10 @@ export function getMobileRuntimeMode() {
 }
 
 export function getMobilePushEnvironment() {
-  return (Constants.expoConfig?.extra?.pushEnvironment as MobilePushEnvironment | undefined) ?? "development";
+  return (
+    (Constants.expoConfig?.extra?.pushEnvironment as MobilePushEnvironment | undefined) ??
+    "development"
+  );
 }
 
 export { isOfflineDemoMode };
@@ -57,7 +60,8 @@ export function getExpoProjectId() {
   return (
     Constants.easConfig?.projectId ??
     (Constants.expoConfig?.extra?.expoProjectId as string | undefined) ??
-    ((Constants.expoConfig?.extra?.eas as { projectId?: string } | undefined)?.projectId ?? undefined)
+    (Constants.expoConfig?.extra?.eas as { projectId?: string } | undefined)?.projectId ??
+    undefined
   );
 }
 
@@ -94,10 +98,11 @@ export async function mobileApiFetch<T>(
   init: Omit<RequestInit, "body"> & {
     token?: string;
     orgId?: string;
+    branchId?: string;
     body?: unknown;
   } = {},
 ): Promise<T> {
-  const { body: rawBody, orgId, token, ...requestInit } = init;
+  const { body: rawBody, branchId, orgId, token, ...requestInit } = init;
   const configError = getMobileRuntimeConfigError();
   if (configError) {
     throw new Error("Zook can’t open in this build. Please update the app or contact support.");
@@ -118,6 +123,9 @@ export async function mobileApiFetch<T>(
   if (orgId) {
     headers.set("x-zook-org-id", orgId);
   }
+  if (branchId) {
+    headers.set("x-zook-branch-id", branchId);
+  }
   if (body && typeof body !== "string" && !(body instanceof FormData)) {
     headers.set("content-type", "application/json");
     body = JSON.stringify(body);
@@ -130,7 +138,7 @@ export async function mobileApiFetch<T>(
       ...requestInit,
       headers,
       signal: requestInit.signal ?? controller.signal,
-      ...(body !== undefined ? { body: body as BodyInit | null } : {})
+      ...(body !== undefined ? { body: body as BodyInit | null } : {}),
     });
     return parseApiResponse<T>(response);
   } catch (error) {
@@ -138,9 +146,7 @@ export async function mobileApiFetch<T>(
       throw new Error("Request timed out. Try again in a moment.");
     }
     if (error instanceof Error && isLocalAddress(apiBaseUrl)) {
-      throw new Error(
-        "We cannot connect right now. Check your internet connection or try again."
-      );
+      throw new Error("We cannot connect right now. Check your internet connection or try again.");
     }
     throw error;
   } finally {

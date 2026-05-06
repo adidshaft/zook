@@ -1,4 +1,5 @@
-import type { PaymentMode, PaymentPurpose, PaymentStatus } from "../types";
+import type { PaymentMode, PaymentPurpose, PaymentStatus, RequestContext } from "../types";
+import { assertOrgServicePermission } from "./rbac-service";
 
 export interface PaymentSessionState {
   id: string;
@@ -57,4 +58,8 @@ export function createManualPaymentAdjustment(input: {
     amountPaise: input.adjustmentAmountPaise,
     reason: input.reason
   };
+}
+
+export function assertManualPaymentRecordContext(ctx: RequestContext, orgId: string): string {
+  return assertOrgServicePermission(ctx, orgId, "PAYMENTS_RECORD_OFFLINE");
 }

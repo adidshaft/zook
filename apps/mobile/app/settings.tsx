@@ -30,6 +30,7 @@ import { toWebUrl } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { memberApi, notificationsApi, privacyApi } from "@/lib/domain-api";
 import { titleCaseFromCode } from "@/lib/formatting";
+import { useI18n, type LocalePreference, type TranslationKey } from "@/lib/i18n";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
 import {
   useGymProfile,
@@ -54,26 +55,37 @@ function sanitizeOtpCode(value: string) {
 const preferenceRows = [
   {
     key: "transactional",
-    title: "Payments and receipts",
-    subtitle: "Membership payments and renewal notices",
+    titleKey: "settings.paymentsReceipts",
+    subtitleKey: "settings.paymentsReceiptsSubtitle",
   },
   {
     key: "operational",
-    title: "Gym operations",
-    subtitle: "Attendance, approvals, and facility updates",
+    titleKey: "settings.gymOperations",
+    subtitleKey: "settings.gymOperationsSubtitle",
   },
   {
     key: "engagement",
-    title: "Training reminders",
-    subtitle: "Plans, habits, streaks, and coach nudges",
+    titleKey: "settings.trainingReminders",
+    subtitleKey: "settings.trainingRemindersSubtitle",
   },
-  { key: "promotional", title: "Offers", subtitle: "Referral, coupon, and gym campaign messages" },
+  {
+    key: "promotional",
+    titleKey: "settings.offers",
+    subtitleKey: "settings.offersSubtitle",
+  },
 ] as const;
+
+const localeOptions: Array<{ labelKey: TranslationKey; value: LocalePreference }> = [
+  { labelKey: "settings.languageSystem", value: "system" },
+  { labelKey: "settings.languageEnglish", value: "en" },
+  { labelKey: "settings.languageHindi", value: "hi" },
+];
 
 export default function Settings() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, activeRole, logout, refresh, session, setActiveRole, token } = useAuth();
+  const { preference: localePreference, setLocalePreference, t } = useI18n();
   const privacyQuery = useMyConsents();
   const profileQuery = useMyProfile();
   const notificationPreferencesQuery = useMyNotificationPreferences();
@@ -148,7 +160,7 @@ export default function Settings() {
         queryClient.invalidateQueries({ queryKey: ["me", "profile", activeOrgId] }),
         queryClient.invalidateQueries({ queryKey: ["auth", "me", activeOrgId] }),
       ]);
-      setProfileStatus("Profile saved.");
+      setProfileStatus(t("settings.profileSaved"));
     } catch (error) {
       setProfileStatus(getApiErrorMessage(error));
     } finally {
@@ -160,7 +172,11 @@ export default function Settings() {
     if (!token) return;
     const identifier = (kind === "email" ? profileForm.email : profileForm.phone).trim();
     if (!identifier) {
-      setContactStatus(`Enter a ${kind === "email" ? "email" : "phone number"} first.`);
+      setContactStatus(
+        t("settings.enterContact", {
+          kind: kind === "email" ? t("settings.email") : t("settings.phone"),
+        }),
+      );
       return;
     }
     setBusy(`contact-${kind}`);
@@ -173,7 +189,7 @@ export default function Settings() {
       });
       const seededCode = sanitizeOtpCode(result.devOtp ?? "");
       setContactOtp({ kind, identifier, code: seededCode });
-      setContactStatus(`Code sent to ${identifier}.`);
+      setContactStatus(t("settings.contactCodeSent", { identifier }));
     } catch (error) {
       setContactStatus(getApiErrorMessage(error));
     } finally {
@@ -185,7 +201,7 @@ export default function Settings() {
     if (!token || !contactOtp) return;
     const code = sanitizeOtpCode(contactOtp.code);
     if (code.length !== 6) {
-      setContactStatus("Enter the 6-digit code.");
+      setContactStatus(t("settings.enterSixDigitCode"));
       return;
     }
     setBusy("contact-verify");
@@ -203,7 +219,9 @@ export default function Settings() {
         queryClient.invalidateQueries({ queryKey: ["auth", "me", activeOrgId] }),
       ]);
       await refresh();
-      setContactStatus(`${contactOtp.kind === "email" ? "Email" : "Phone"} verified.`);
+      setContactStatus(
+        contactOtp.kind === "email" ? t("settings.emailVerified") : t("settings.phoneVerified"),
+      );
     } catch (error) {
       setContactStatus(getApiErrorMessage(error));
     } finally {
@@ -228,7 +246,7 @@ export default function Settings() {
         },
       });
       await queryClient.invalidateQueries({ queryKey: ["me", "notification-preferences"] });
-      setPreferenceStatus("Notification preferences updated.");
+      setPreferenceStatus(t("settings.preferencesUpdated"));
     } catch (error) {
       setPreferenceStatus(getApiErrorMessage(error));
     } finally {
@@ -242,7 +260,7 @@ export default function Settings() {
     try {
       await privacyApi.requestDataExport({ token });
       await privacyQuery.refetch();
-      setPrivacyStatus("Export requested. You'll receive an email when it's ready.");
+      setPrivacyStatus(t("settings.exportRequested"));
     } catch (error) {
       setPrivacyStatus(getApiErrorMessage(error));
     } finally {
@@ -256,7 +274,7 @@ export default function Settings() {
     try {
       await privacyApi.requestAccountDeletion({ token });
       await privacyQuery.refetch();
-      setPrivacyStatus("Deletion requested. This is being reviewed before execution.");
+      setPrivacyStatus(t("settings.deletionRequested"));
     } catch (error) {
       setPrivacyStatus(getApiErrorMessage(error));
     } finally {
@@ -303,13 +321,13 @@ export default function Settings() {
           contentContainerStyle={styles.content}
         >
           <MobileHeader
-            title="Profile"
-            subtitle="Account, notifications, and support"
+            title={t("settings.profileTitle")}
+            subtitle={t("settings.profileSubtitle")}
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 accessibilityRole="button"
-                accessibilityLabel="Go back"
+                accessibilityLabel={t("settings.goBack")}
                 style={styles.iconButton}
               >
                 <Ionicons name="chevron-back" size={20} color={colors.text} />
@@ -319,8 +337,8 @@ export default function Settings() {
           />
 
           <CollapsibleSection
-            title="Account"
-            subtitle={session?.user.email || profileForm.phone || "Signed in"}
+            title={t("settings.account")}
+            subtitle={session?.user.email || profileForm.phone || t("settings.signedIn")}
             defaultOpen
           >
             <GlassCard variant="compact" contentStyle={styles.accountContent}>
@@ -334,7 +352,7 @@ export default function Settings() {
             </GlassCard>
             {allRoles.length > 1 ? (
               <View style={styles.roleGrid}>
-                <Text style={styles.sectionMiniLabel}>Use Zook as</Text>
+                <Text style={styles.sectionMiniLabel}>{t("settings.useZookAs")}</Text>
                 <View style={styles.roleRow}>
                   {allRoles.map((role) => (
                     <Pressable
@@ -361,29 +379,29 @@ export default function Settings() {
               </View>
             ) : null}
             <GlassInput
-              label="Name"
+              label={t("settings.name")}
               value={profileForm.name}
               onChangeText={(name) => setProfileForm((current) => ({ ...current, name }))}
               autoCapitalize="words"
             />
             <GlassInput
-              label="Email"
+              label={t("settings.email")}
               value={profileForm.email}
               onChangeText={(email) => setProfileForm((current) => ({ ...current, email }))}
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
-              placeholder="you@example.com"
+              placeholder={t("settings.emailPlaceholder")}
             />
             <ZookButton
               onPress={() => void requestContactOtp("email")}
               disabled={busy === "contact-email"}
               tone="secondary"
             >
-              Send email code
+              {t("settings.sendEmailCode")}
             </ZookButton>
             <GlassInput
-              label="Phone"
+              label={t("settings.phone")}
               value={profileForm.phone}
               onChangeText={(phone) => setProfileForm((current) => ({ ...current, phone }))}
               keyboardType="phone-pad"
@@ -393,12 +411,14 @@ export default function Settings() {
               disabled={busy === "contact-phone"}
               tone="secondary"
             >
-              Send phone code
+              {t("settings.sendPhoneCode")}
             </ZookButton>
             {contactOtp ? (
               <GlassCard variant="compact" contentStyle={styles.contactOtpCard}>
                 <GlassInput
-                  label={`${contactOtp.kind === "email" ? "Email" : "Phone"} code`}
+                  label={
+                    contactOtp.kind === "email" ? t("settings.emailCode") : t("settings.phoneCode")
+                  }
                   value={contactOtp.code}
                   onChangeText={(code) =>
                     setContactOtp((current) =>
@@ -413,22 +433,24 @@ export default function Settings() {
                   onPress={() => void verifyContactOtp()}
                   disabled={busy === "contact-verify"}
                 >
-                  {busy === "contact-verify" ? "Verifying..." : "Verify contact"}
+                  {busy === "contact-verify"
+                    ? t("settings.verifying")
+                    : t("settings.verifyContact")}
                 </PrimaryButton>
               </GlassCard>
             ) : null}
             {contactStatus ? <Text style={styles.statusText}>{contactStatus}</Text> : null}
             <GlassInput
-              label="Fitness goal"
+              label={t("settings.fitnessGoal")}
               value={profileForm.fitnessGoal}
               onChangeText={(fitnessGoal) =>
                 setProfileForm((current) => ({ ...current, fitnessGoal }))
               }
-              placeholder="Strength, fat loss, mobility..."
+              placeholder={t("settings.fitnessGoalPlaceholder")}
               multiline
             />
             <PrimaryButton onPress={() => void saveProfile()} disabled={busy === "profile"}>
-              {busy === "profile" ? "Saving..." : "Save profile"}
+              {busy === "profile" ? t("settings.saving") : t("settings.saveProfile")}
             </PrimaryButton>
             {profileStatus ? <Text style={styles.statusText}>{profileStatus}</Text> : null}
             {referralCode ? (
@@ -440,7 +462,7 @@ export default function Settings() {
                     <Text style={styles.accountEmail}>
                       {referral?.status
                         ? `${titleCaseFromCode(referral.status)} referral`
-                        : "Share with a friend"}
+                        : t("settings.shareFriend")}
                     </Text>
                   </View>
                 </View>
@@ -462,14 +484,14 @@ export default function Settings() {
                     icon={copiedReferral ? "checkmark-outline" : "copy-outline"}
                     style={styles.actionHalf}
                   >
-                    {copiedReferral ? "Copied!" : "Copy"}
+                    {copiedReferral ? t("settings.copied") : t("settings.copy")}
                   </ZookButton>
                   <ZookButton
                     onPress={() => void shareReferral()}
                     icon="share-social-outline"
                     style={styles.actionHalf}
                   >
-                    Share
+                    {t("settings.share")}
                   </ZookButton>
                 </View>
               </GlassCard>
@@ -477,14 +499,19 @@ export default function Settings() {
           </CollapsibleSection>
 
           <CollapsibleSection
-            title="Notifications"
-            subtitle={`${notificationPreferences.scope === "organization" ? "Gym-specific" : "Global"} preferences`}
+            title={t("settings.notifications")}
+            subtitle={t("settings.notificationScope", {
+              scope:
+                notificationPreferences.scope === "organization"
+                  ? t("settings.notificationScopeGym")
+                  : t("settings.notificationScopeGlobal"),
+            })}
             defaultOpen
           >
             <GlassCard variant="compact" contentStyle={styles.preferenceStack}>
               <PreferenceToggle
-                title="Push notifications"
-                subtitle="Allow this device to receive enabled notification categories"
+                title={t("settings.pushNotifications")}
+                subtitle={t("settings.pushNotificationsSubtitle")}
                 value={notificationPreferences.pushEnabled}
                 disabled={busy === "preference-pushEnabled"}
                 onValueChange={(value) => void updatePreference("pushEnabled", value)}
@@ -492,8 +519,8 @@ export default function Settings() {
               {preferenceRows.map((row) => (
                 <PreferenceToggle
                   key={row.key}
-                  title={row.title}
-                  subtitle={row.subtitle}
+                  title={t(row.titleKey)}
+                  subtitle={t(row.subtitleKey)}
                   value={notificationPreferences[row.key]}
                   disabled={busy === `preference-${row.key}`}
                   onValueChange={(value) => void updatePreference(row.key, value)}
@@ -504,13 +531,43 @@ export default function Settings() {
           </CollapsibleSection>
 
           <CollapsibleSection
-            title="Privacy & data"
-            subtitle="Export or delete data"
+            title={t("settings.language")}
+            subtitle={t("settings.languageSubtitle")}
             defaultOpen={false}
           >
-            <AuditWarning>
-              These requests are saved and reviewed before anything changes.
-            </AuditWarning>
+            <GlassCard variant="compact" contentStyle={styles.languageContent}>
+              <View style={styles.languageRow}>
+                {localeOptions.map((option) => {
+                  const selected = localePreference === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => void setLocalePreference(option.value)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      style={[styles.languageButton, selected ? styles.languageButtonActive : null]}
+                    >
+                      <Text
+                        style={[
+                          styles.languageButtonText,
+                          selected ? styles.languageButtonTextActive : null,
+                        ]}
+                      >
+                        {t(option.labelKey)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </GlassCard>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title={t("settings.privacyData")}
+            subtitle={t("settings.privacySubtitle")}
+            defaultOpen={false}
+          >
+            <AuditWarning>{t("settings.privacyWarning")}</AuditWarning>
             <View style={styles.actionRow}>
               <PrimaryButton
                 onPress={() => void requestPrivacyExport()}
@@ -518,7 +575,7 @@ export default function Settings() {
                 style={styles.actionHalf}
                 disabled={busy === "privacy"}
               >
-                Export
+                {t("settings.export")}
               </PrimaryButton>
               <PrimaryButton
                 onPress={() => void requestPrivacyDeletion()}
@@ -526,33 +583,33 @@ export default function Settings() {
                 style={styles.actionHalf}
                 disabled={busy === "privacy"}
               >
-                Delete
+                {t("settings.delete")}
               </PrimaryButton>
             </View>
             {privacyStatus ? <Text style={styles.statusText}>{privacyStatus}</Text> : null}
             <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
               <ListRow
-                title="Latest export"
+                title={t("settings.latestExport")}
                 subtitle={
                   latestExport
                     ? privacyStatusLine(
                         latestExport.status,
                         latestExport.completedAt ?? latestExport.createdAt,
                       )
-                    : "No export request yet"
+                    : t("settings.noExport")
                 }
                 icon="download-outline"
                 tone={latestExport?.status === "ready" ? "lime" : "blue"}
               />
               <ListRow
-                title="Latest deletion"
+                title={t("settings.latestDeletion")}
                 subtitle={
                   latestDeletion
                     ? privacyStatusLine(
                         latestDeletion.status,
                         latestDeletion.scheduledFor ?? latestDeletion.createdAt,
                       )
-                    : "No deletion request yet"
+                    : t("settings.noDeletion")
                 }
                 icon="trash-outline"
                 tone={latestDeletion ? "amber" : "neutral"}
@@ -561,35 +618,35 @@ export default function Settings() {
           </CollapsibleSection>
 
           <CollapsibleSection
-            title="System"
-            subtitle="Help, policies, and app info"
+            title={t("settings.system")}
+            subtitle={t("settings.systemSubtitle")}
             defaultOpen={false}
           >
             <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
               <Pressable
                 onPress={() => void Linking.openURL("mailto:help@zook.app")}
                 accessibilityRole="button"
-                accessibilityLabel="Contact support"
+                accessibilityLabel={t("settings.contactSupport")}
               >
                 <ListRow
-                  title="Contact support"
-                  subtitle="Email help@zook.app with account or gym issues"
+                  title={t("settings.contactSupport")}
+                  subtitle={t("settings.contactSupportSubtitle")}
                   icon="mail-outline"
                   tone="blue"
                 />
               </Pressable>
               <ListRow
-                title="About Zook"
-                subtitle="Gym operations, memberships, PT, and member experience"
+                title={t("settings.aboutZook")}
+                subtitle={t("settings.aboutZookSubtitle")}
                 icon="information-circle-outline"
                 tone="lime"
               />
               <ListRow
-                title="Signed-in gym"
+                title={t("settings.signedInGym")}
                 subtitle={
                   activeOrganization
                     ? `${activeOrganization.name} · ${activeOrganization.city}`
-                    : "No active gym"
+                    : t("settings.noActiveGym")
                 }
                 icon="business-outline"
                 tone="neutral"
@@ -598,7 +655,7 @@ export default function Settings() {
           </CollapsibleSection>
 
           <PrimaryButton onPress={() => void logout()} tone="danger">
-            Logout
+            {t("settings.logout")}
           </PrimaryButton>
         </ScrollView>
         <BottomNav />
@@ -771,6 +828,34 @@ const styles = StyleSheet.create({
   },
   preferenceStack: {
     gap: spacing.sm,
+  },
+  languageContent: {
+    gap: spacing.sm,
+  },
+  languageRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  languageButton: {
+    minHeight: 38,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    paddingHorizontal: 12,
+    justifyContent: "center",
+  },
+  languageButtonActive: {
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.14)",
+  },
+  languageButtonText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  languageButtonTextActive: {
+    color: colors.lime,
   },
   preferenceRow: {
     minHeight: 58,

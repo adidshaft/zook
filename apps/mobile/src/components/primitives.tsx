@@ -23,6 +23,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 import { useAuth } from "@/lib/auth";
+import { useBranchSelection } from "@/lib/branch-selection";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/query-hooks";
 import { colors, layout, palettes, radii, shadows, spacing, typography } from "@/lib/theme";
 
@@ -1618,6 +1620,35 @@ type DockTab = {
   hideLabel?: boolean;
 };
 
+const navTranslationKeys: Record<string, TranslationKey> = {
+  Home: "nav.home",
+  Plan: "nav.plans",
+  Plans: "nav.plans",
+  "Check in": "nav.checkIn",
+  Scan: "nav.scan",
+  Tracking: "nav.tracking",
+  Shop: "nav.shop",
+  Inbox: "nav.inbox",
+  AI: "nav.assistant",
+  Trainer: "nav.trainer",
+  Clients: "nav.clients",
+  Drafts: "nav.drafts",
+  Desk: "nav.desk",
+  Members: "nav.members",
+  Payments: "nav.payments",
+  Orders: "nav.orders",
+  Owner: "nav.owner",
+  Needs: "nav.needs",
+  Approvals: "nav.approvals",
+  Revenue: "nav.revenue",
+  Stock: "nav.stock",
+};
+
+function translatedNavLabel(label: string, t: ReturnType<typeof useI18n>["t"]) {
+  const key = navTranslationKeys[label];
+  return key ? t(key) : label;
+}
+
 const memberTabs: DockTab[] = [
   { href: "/", label: "Home", icon: "home-outline", activeIcon: "home", matchPath: "/" },
   {
@@ -1799,6 +1830,7 @@ export function BottomNav({
   activeView?: string;
   activeTab?: string;
 }) {
+  const { t } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
   const params = useLocalSearchParams<{ view?: string }>();
@@ -1821,6 +1853,7 @@ export function BottomNav({
   const bottom = Math.max(insets.bottom, 12);
 
   const navItems = resolvedTabs.map((tab) => {
+    const translatedLabel = translatedNavLabel(tab.label, t);
     const currentView =
       activeTab ?? activeView ?? (Array.isArray(params.view) ? params.view[0] : params.view);
     const clientDetailMatches = tab.label === "Clients" && activePath.startsWith("/trainer/client");
@@ -1858,7 +1891,9 @@ export function BottomNav({
           }
         }}
         accessibilityRole="tab"
-        accessibilityLabel={tab.accessibilityLabel ?? tab.label}
+        accessibilityLabel={
+          tab.accessibilityLabel ? translatedNavLabel(tab.accessibilityLabel, t) : translatedLabel
+        }
         accessibilityState={{ selected: active }}
         style={StyleSheet.flatten([
           styles.bottomNavItem,
@@ -1890,7 +1925,7 @@ export function BottomNav({
               active && raised ? styles.memberBottomNavTextRaisedActive : null,
             ]}
           >
-            {tab.label}
+            {translatedLabel}
           </Text>
         ) : null}
       </Pressable>
@@ -1910,7 +1945,7 @@ export function BottomNav({
   if (isMemberNav) {
     return (
       <View style={[styles.memberBottomNavShell, { bottom }]}>
-        <BlurView intensity={86} tint="dark" style={styles.memberBottomNavBlur} />
+        <BlurView intensity={18} tint="dark" style={styles.memberBottomNavBlur} />
         <View pointerEvents="none" style={styles.memberBottomNavPlate} />
         <View style={styles.memberBottomNavItems}>{navItems}</View>
       </View>
@@ -1933,19 +1968,60 @@ export function BottomNav({
   );
 }
 
-export function LoadingState({
-  title = "Loading",
-  body = "Pulling the latest details from your gym.",
-}: {
-  title?: string;
-  body?: string;
-}) {
+export function LoadingState({ title, body }: { title?: string; body?: string }) {
+  const { t } = useI18n();
   return (
     <View style={styles.loadingState}>
       <ActivityIndicator size="large" color={colors.lime} />
-      <Text style={styles.stateTitle}>{title}</Text>
-      <Text style={styles.stateBody}>{body}</Text>
+      <Text style={styles.stateTitle}>{title ?? t("empty.loading")}</Text>
+      <Text style={styles.stateBody}>{body ?? t("empty.loadingBody")}</Text>
     </View>
+  );
+}
+
+export function BranchSelectorChip() {
+  const { branches, selectedBranch, selectBranch } = useBranchSelection();
+  const { t } = useI18n();
+
+  if (!selectedBranch) {
+    return null;
+  }
+
+  const branchIndex = Math.max(
+    0,
+    branches.findIndex((branch) => branch.id === selectedBranch.id),
+  );
+  const canSwitch = branches.length > 1;
+
+  return (
+    <Pressable
+      onPress={() => {
+        if (!canSwitch) {
+          return;
+        }
+        const nextBranch = branches[(branchIndex + 1) % branches.length];
+        if (nextBranch) {
+          void Haptics.selectionAsync();
+          void selectBranch(nextBranch.id);
+        }
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={canSwitch ? t("branch.switch") : t("branch.current")}
+      disabled={!canSwitch}
+      style={[styles.branchSelectorChip, canSwitch ? styles.branchSelectorChipInteractive : null]}
+    >
+      <Ionicons name="business-outline" size={14} color={colors.lime} />
+      <Text numberOfLines={1} style={styles.branchSelectorText}>
+        {selectedBranch.name}
+      </Text>
+      {canSwitch ? (
+        <View style={styles.branchSelectorCount}>
+          <Text style={styles.branchSelectorCountText}>
+            {branchIndex + 1}/{branches.length}
+          </Text>
+        </View>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -2902,6 +2978,46 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 9,
     lineHeight: 11,
+    fontFamily: "Inter_800ExtraBold",
+    fontVariant: ["tabular-nums"],
+  },
+  branchSelectorChip: {
+    minHeight: 32,
+    maxWidth: "100%",
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.055)",
+    paddingLeft: 10,
+    paddingRight: 6,
+    paddingVertical: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  branchSelectorChipInteractive: {
+    borderColor: "rgba(185,244,85,0.3)",
+    backgroundColor: "rgba(185,244,85,0.1)",
+  },
+  branchSelectorText: {
+    color: colors.text,
+    maxWidth: 170,
+    ...typography.caption,
+  },
+  branchSelectorCount: {
+    minWidth: 30,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(7,9,8,0.72)",
+    paddingHorizontal: 5,
+  },
+  branchSelectorCountText: {
+    color: colors.lime,
+    fontSize: 10,
+    lineHeight: 12,
     fontFamily: "Inter_800ExtraBold",
     fontVariant: ["tabular-nums"],
   },

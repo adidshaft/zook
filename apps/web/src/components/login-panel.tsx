@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowRight, Mail } from "lucide-react";
 import { ApiError, parseApiResponse } from "@zook/core";
 import { ZookButton } from "./zook-button";
+import { publicT, type PublicLocale } from "@/lib/public-i18n";
 
 const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const isDev = process.env.NODE_ENV === "development";
@@ -31,14 +32,16 @@ function formatIndiaPhoneInput(value: string) {
   return second ? `+91 ${first} ${second}` : `+91 ${first}`;
 }
 
-function rateLimitMessage(response: Response) {
+function rateLimitMessage(response: Response, locale: PublicLocale) {
   const retryAfter = Number(response.headers.get("retry-after"));
   const seconds = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : 60;
-  return { seconds, message: `Too many attempts. Try again in ${seconds} seconds.` };
+  return { seconds, message: publicT(locale, "tooManyAttempts", { seconds }) };
 }
 
-export function LoginPanel() {
+export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
   const searchParams = useSearchParams();
+  const t = (key: Parameters<typeof publicT>[1], replacements: Record<string, string | number> = {}) =>
+    publicT(locale, key, replacements);
   const initialIdentifier = searchParams.get("email") ?? "";
   const [identifier, setIdentifier] = useState(initialIdentifier);
   const [code, setCode] = useState("");
@@ -48,8 +51,8 @@ export function LoginPanel() {
   const otpRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState(
     searchParams.get("redirect") === "/platform"
-      ? "Sign in on web to continue to the platform dashboard."
-      : "Enter your email or phone number to receive a one-time password.",
+      ? t("signInPlatform")
+      : t("signInDefault"),
   );
 
   useEffect(() => {
@@ -78,7 +81,7 @@ export function LoginPanel() {
       if (looksLikePhoneInput(trimmedIdentifier)) {
         const digits = trimmedIdentifier.replace(/\D/g, "");
         if (!(digits.length === 10 || (digits.length === 12 && digits.startsWith("91")))) {
-          setMessage("Enter a 10-digit India mobile number or use email.");
+          setMessage(t("invalidIndiaPhone"));
           setSubmitting(null);
           return;
         }
@@ -90,7 +93,7 @@ export function LoginPanel() {
       });
       const payload = await parseApiResponse<{ devOtp?: string }>(response).catch((error) => {
         if (error instanceof ApiError && error.status === 429) {
-          const limited = rateLimitMessage(response);
+          const limited = rateLimitMessage(response, locale);
           setResendCooldown(limited.seconds);
           throw new Error(limited.message);
         }
@@ -98,15 +101,18 @@ export function LoginPanel() {
       });
       setMessage(
         isDev && payload.devOtp
-          ? `${resend ? "Fresh OTP" : "OTP"} sent to ${trimmedIdentifier}. Test code: ${payload.devOtp}.`
-          : `${resend ? "Fresh OTP" : "OTP"} sent to ${trimmedIdentifier}.`,
+          ? `${t(resend ? "freshOtpSent" : "otpSent", { identifier: trimmedIdentifier })} ${t(
+              "testCode",
+              { code: payload.devOtp },
+            )}`
+          : t(resend ? "freshOtpSent" : "otpSent", { identifier: trimmedIdentifier }),
       );
       setIdentifier(trimmedIdentifier);
       setCode("");
       setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS);
       setStage("otp");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to send OTP.");
+      setMessage(error instanceof Error ? error.message : t("unableSendOtp"));
     } finally {
       setSubmitting(null);
     }
@@ -123,7 +129,7 @@ export function LoginPanel() {
       });
       await parseApiResponse(response).catch((error) => {
         if (error instanceof ApiError && error.status === 429) {
-          throw new Error(rateLimitMessage(response).message);
+          throw new Error(rateLimitMessage(response, locale).message);
         }
         throw error;
       });
@@ -133,7 +139,7 @@ export function LoginPanel() {
       window.location.href =
         safeRedirect ?? (trimmedIdentifier.startsWith("platform") ? "/platform" : "/dashboard");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to verify OTP.");
+      setMessage(error instanceof Error ? error.message : t("unableVerifyOtp"));
       setSubmitting(null);
     }
   }
@@ -143,7 +149,7 @@ export function LoginPanel() {
       <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-lime-300 text-black">
         <Mail size={22} />
       </div>
-      <h1 className="text-3xl font-semibold tracking-tight">Sign in to Zook</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">{t("signInTitle")}</h1>
       <p className="mt-2 text-sm leading-6 text-white/55" role="alert" aria-live="polite">
         {message}
       </p>
@@ -159,7 +165,7 @@ export function LoginPanel() {
         }}
       >
         <label htmlFor="login-identifier" className="text-xs font-medium uppercase text-white/45">
-          Email or phone
+          {t("emailOrPhone")}
         </label>
         <input
           id="login-identifier"
@@ -173,13 +179,13 @@ export function LoginPanel() {
         />
         {stage === "identifier" && looksLikePhoneInput(identifier) ? (
           <p className="text-xs leading-5 text-white/42">
-            India mobile numbers are sent with the +91 country code.
+            {t("indiaPhoneHint")}
           </p>
         ) : null}
         {stage === "otp" ? (
           <>
             <label htmlFor="login-otp" className="text-xs font-medium uppercase text-white/45">
-              OTP
+              {t("otp")}
             </label>
             <input
               id="login-otp"
@@ -196,7 +202,7 @@ export function LoginPanel() {
         ) : null}
         {stage === "otp" && resendCooldown > 0 ? (
           <p className="text-xs leading-5 text-white/45" aria-live="polite">
-            Resend OTP available in {resendCooldown}s
+            {t("resendAvailable", { seconds: resendCooldown })}
           </p>
         ) : null}
         <ZookButton
@@ -207,12 +213,12 @@ export function LoginPanel() {
           trailingIcon={<ArrowRight size={18} />}
         >
           {submitting === "request"
-            ? "Sending OTP"
+            ? t("sendingOtp")
             : submitting === "verify"
-              ? "Verifying"
+              ? t("verifying")
               : stage === "identifier"
-                ? "Send OTP"
-                : "Verify and continue"}
+                ? t("sendOtp")
+                : t("verifyContinue")}
         </ZookButton>
       </form>
       {stage === "otp" ? (
@@ -226,7 +232,7 @@ export function LoginPanel() {
               size="md"
               tone="secondary"
             >
-              {resendCooldown > 0 ? "Resend unavailable" : "Resend OTP"}
+              {resendCooldown > 0 ? t("resendUnavailable") : t("resendOtp")}
             </ZookButton>
             <ZookButton
               type="button"
@@ -239,7 +245,7 @@ export function LoginPanel() {
               }}
               disabled={submitting !== null}
             >
-              Change sign-in
+              {t("changeSignIn")}
             </ZookButton>
           </div>
         </div>

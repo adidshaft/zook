@@ -2,8 +2,10 @@ import type { MembershipPlan, PaymentMandateStatus, PaymentMode, PaymentStatus }
 import type { ParsedPaymentWebhookEvent } from "@zook/core/providers";
 import {
   calculateShopOrder,
+  createSubscriptionReminder,
   computeSubscriptionWindow,
   markShopOrderPaid,
+  shouldCreatePaymentFailureReminder,
   transitionPaymentSession,
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
@@ -142,6 +144,7 @@ async function assertPaymentSessionTargetIntegrity(input: {
   session: {
     id: string;
     orgId: string | null;
+    branchId?: string | null;
     userId: string | null;
     purpose: string;
     amountPaise: number;
@@ -158,7 +161,8 @@ async function assertPaymentSessionTargetIntegrity(input: {
     if (
       !subscription ||
       subscription.orgId !== input.session.orgId ||
-      subscription.memberUserId !== input.session.userId
+      subscription.memberUserId !== input.session.userId ||
+      Boolean(input.session.branchId && subscription.branchId !== input.session.branchId)
     ) {
       throw new Error("Payment session target mismatch");
     }
@@ -179,6 +183,7 @@ async function assertPaymentSessionTargetIntegrity(input: {
       !order ||
       order.orgId !== input.session.orgId ||
       order.userId !== input.session.userId ||
+      Boolean(input.session.branchId && order.branchId !== input.session.branchId) ||
       order.totalPaise !== input.session.amountPaise ||
       (order.paymentSessionId && order.paymentSessionId !== input.session.id)
     ) {
@@ -354,6 +359,9 @@ export async function applyPaymentSessionStatus(input: {
           where: { id: payment.id },
           data: {
             ...(payment.sessionId ? {} : { sessionId: session.id }),
+            ...(payment.branchId || session.branchId
+              ? { branchId: payment.branchId ?? session.branchId }
+              : {}),
             status: "SUCCEEDED",
             mode: input.paymentMode,
             provider: input.provider,
@@ -364,6 +372,7 @@ export async function applyPaymentSessionStatus(input: {
       : await prisma.payment.create({
           data: {
             ...(session.orgId ? { orgId: session.orgId } : {}),
+            ...(session.branchId ? { branchId: session.branchId } : {}),
             ...(session.userId ? { userId: session.userId } : {}),
             sessionId: session.id,
             purpose: session.purpose,
@@ -382,6 +391,7 @@ export async function applyPaymentSessionStatus(input: {
         where: { id: payment.id },
         data: {
           orgId: session.orgId,
+          ...(session.branchId ? { branchId: session.branchId } : {}),
           userId: session.userId,
           purpose: session.purpose,
           amountPaise: session.amountPaise,
@@ -560,6 +570,18 @@ export async function applyPaymentSessionStatus(input: {
                 data: { redemptionCount: { increment: 1 }, monthlyUseCount: { increment: 1 } },
               });
             }
+          } else if (!existingReferralRedemption.subscriptionId) {
+            redemption = await prisma.referralRedemption.update({
+              where: { id: existingReferralRedemption.id },
+              data: {
+                subscriptionId: planSub.id,
+                metadata: clean({
+                  ...(((existingReferralRedemption.metadata ?? {}) as Record<string, unknown>) ?? {}),
+                  referralDiscountPaise: metadata.referralDiscountPaise,
+                  completedByPaymentSessionId: session.id,
+                }) as Prisma.InputJsonValue,
+              },
+            });
           }
           if (redemption) {
             await fulfillReferralReward({
@@ -642,6 +664,7 @@ export async function applyPaymentSessionStatus(input: {
               await tx.inventoryMovement.create({
                 data: {
                   orgId: existingOrder.orgId,
+                  branchId: existingOrder.branchId,
                   productId: delta.productId,
                   delta: delta.delta,
                   reason: "shop_order_paid",
@@ -881,6 +904,71 @@ export async function applyAutopayProviderEvent(input: {
     }),
   });
 
+  if (shouldCreatePaymentFailureReminder({ eventType: input.event.eventType, mandateStatus: nextStatus })) {
+    const reminderState = createSubscriptionReminder({
+      orgId: mandate.orgId,
+      userId: mandate.userId,
+      subscriptionId: mandate.latestSubscriptionId ?? mandate.sourceSubscriptionId,
+      mandateId: mandate.id,
+      kind: "PAYMENT_FAILED",
+      dueInMs: 0,
+    });
+    const existingReminder = await prisma.subscriptionReminder.findFirst({
+      where: {
+        orgId: mandate.orgId,
+        userId: mandate.userId,
+        mandateId: mandate.id,
+        kind: "PAYMENT_FAILED",
+        status: "PENDING",
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    const reminder = existingReminder
+      ? await prisma.subscriptionReminder.update({
+          where: { id: existingReminder.id },
+          data: {
+            dueAt: reminderState.dueAt,
+            attemptCount: { increment: 1 },
+            metadata: {
+              ...(((existingReminder.metadata ?? {}) as Record<string, unknown>) ?? {}),
+              lastProviderEventId: input.event.providerEventId,
+              lastProviderEventType: input.event.eventType,
+            } as Prisma.InputJsonValue,
+          },
+        })
+      : await prisma.subscriptionReminder.create({
+          data: {
+            orgId: reminderState.orgId,
+            userId: reminderState.userId,
+            ...(reminderState.subscriptionId ? { subscriptionId: reminderState.subscriptionId } : {}),
+            ...(reminderState.mandateId ? { mandateId: reminderState.mandateId } : {}),
+            kind: reminderState.kind,
+            status: reminderState.status,
+            dueAt: reminderState.dueAt,
+            attemptCount: reminderState.attemptCount ?? 0,
+            metadata: {
+              provider: input.event.provider,
+              providerEventId: input.event.providerEventId,
+              providerEventType: input.event.eventType,
+            } as Prisma.InputJsonValue,
+          },
+        });
+    if (!existingReminder) {
+      await input.createNotification({
+        orgId: mandate.orgId,
+        createdById: mandate.userId,
+        type: "TRANSACTIONAL",
+        title: "Autopay needs attention",
+        body: "We could not complete your membership autopay. Please update your payment method or contact the gym.",
+        audience: "selected_member",
+        userIds: [mandate.userId],
+        pushEnabled: true,
+        metadata: { autopayMandateId: mandate.id, reminderId: reminder.id },
+      });
+    }
+    return { mandate: updatedMandate, payment: null, subscription: null, reminder };
+  }
+
   if (input.event.eventType !== "subscription.charged" && input.event.eventType !== "invoice.paid") {
     return { mandate: updatedMandate, payment: null, subscription: null };
   }
@@ -919,6 +1007,7 @@ export async function applyAutopayProviderEvent(input: {
     payment = await prisma.payment.create({
       data: {
         orgId: mandate.orgId,
+        branchId: sourceSubscription.branchId,
         userId: mandate.userId,
         purpose: "MEMBERSHIP",
         amountPaise: input.event.amountPaise ?? mandate.amountPaise,
@@ -985,6 +1074,15 @@ export async function applyAutopayProviderEvent(input: {
       nextChargeAt,
       activatedAt: updatedMandate.activatedAt ?? new Date(),
     }),
+  });
+
+  await prisma.subscriptionReminder.updateMany({
+    where: {
+      mandateId: mandate.id,
+      status: "PENDING",
+      kind: { in: ["PAYMENT_FAILED", "PAYMENT_RETRY"] },
+    },
+    data: { status: "RESOLVED", resolvedAt: new Date() },
   });
 
   if (createdRenewal) {

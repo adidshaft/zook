@@ -17,49 +17,68 @@ import {
 import { GlassCard } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
 import { ZookLogo } from "@/components/zook-logo";
+import {
+  alternatePublicLocale,
+  localizedPath,
+  publicT,
+  resolvePublicLocale,
+} from "@/lib/public-i18n";
 
 const iosAppUrl = process.env.NEXT_PUBLIC_IOS_APP_URL;
 const androidAppUrl = process.env.NEXT_PUBLIC_ANDROID_APP_URL;
 
-export default function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const locale = resolvePublicLocale((await searchParams) ?? {});
+  const nextLocale = alternatePublicLocale(locale);
+  const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const productCards: Array<[LucideIcon, string, string]> = [
-    [Users, "Owners", "Plans, staff, shop, reports"],
-    [Smartphone, "Members", "QR entry, plans, progress"],
-    [Bell, "Staff", "Desk approvals and coaching"],
+    [Users, t("owners"), t("ownersValue")],
+    [Smartphone, t("members"), t("membersValue")],
+    [Bell, t("staff"), t("staffValue")],
   ];
   const ownerFeatures: Array<[LucideIcon, string]> = [
-    [ClipboardList, "Membership management"],
-    [ShieldCheck, "Staff and trainer tools"],
-    [ReceiptText, "Payment and invoicing"],
-    [Users, "Referral programs"],
-    [ShoppingBag, "Shop and inventory"],
-    [ChartNoAxesColumnIncreasing, "Analytics and reports"],
+    [ClipboardList, t("membershipManagement")],
+    [ShieldCheck, t("staffTrainerTools")],
+    [ReceiptText, t("paymentInvoicing")],
+    [Users, t("referralPrograms")],
+    [ShoppingBag, t("shopInventory")],
+    [ChartNoAxesColumnIncreasing, t("analyticsReports")],
   ];
   const memberFeatures: Array<[LucideIcon, string]> = [
-    [QrCode, "QR check-in"],
-    [Dumbbell, "Workout plans"],
-    [Smartphone, "Fitness assistant"],
-    [ChartNoAxesColumnIncreasing, "Progress tracking"],
-    [Store, "Shop and pickup"],
-    [Bell, "Notifications"],
+    [QrCode, t("qrCheckIn")],
+    [Dumbbell, t("workoutPlans")],
+    [Smartphone, t("fitnessAssistant")],
+    [ChartNoAxesColumnIncreasing, t("progressTracking")],
+    [Store, t("shopPickup")],
+    [Bell, t("notifications")],
   ];
-  const proofPoints = [
-    "Owner setup stays on web, where plans, payments, staff, and reports are easier to review.",
-    "Member workflows stay on mobile, so entry, workout plans, and progress live where members already check in.",
-    "Desk and trainer workflows use the same operating record, reducing delays during busy hours.",
-  ];
+  const proofPoints = [t("proofOwnerWeb"), t("proofMemberMobile"), t("proofSharedRecord")];
 
   return (
-    <main className="min-h-screen px-5 py-5">
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen px-5 py-5">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <header className="flex items-center justify-between">
           <ZookLogo />
           <div className="flex items-center gap-2">
-            <ZookButtonLink href="/start-gym" size="sm" className="hidden sm:inline-flex">
-              Start your gym
+            <Link
+              href={localizedPath("/", nextLocale)}
+              className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
+            >
+              {t("languageSwitch")}
+            </Link>
+            <ZookButtonLink
+              href={localizedPath("/start-gym", locale)}
+              size="sm"
+              className="hidden sm:inline-flex"
+            >
+              {t("startGym")}
             </ZookButtonLink>
-            <ZookButtonLink href="/login" tone="ghost" size="sm">
-              Login
+            <ZookButtonLink href={localizedPath("/login", locale)} tone="ghost" size="sm">
+              {t("login")}
             </ZookButtonLink>
           </div>
         </header>
@@ -67,18 +86,24 @@ export default function HomePage() {
         <section className="grid min-h-[74vh] items-center gap-6 lg:grid-cols-[0.95fr_1.05fr]">
           <div>
             <h1 className="mt-5 max-w-3xl text-5xl font-semibold leading-[1.02] tracking-tight md:text-7xl">
-              The operating system for modern gyms.
+              {t("homeHeroTitle")}
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/58">
-              Everything your gym needs: memberships, QR entry, trainer plans, desk operations, shop
-              pickup, and owner reporting in one reliable workflow.
+              {t("homeHeroCopy")}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <ZookButtonLink href="/start-gym" trailingIcon={<ArrowRight size={18} />}>
-                Start your gym
+              <ZookButtonLink
+                href={localizedPath("/start-gym", locale)}
+                trailingIcon={<ArrowRight size={18} />}
+              >
+                {t("startGym")}
               </ZookButtonLink>
-              <ZookButtonLink href="/gyms" tone="secondary" trailingIcon={<ArrowRight size={18} />}>
-                Find a gym
+              <ZookButtonLink
+                href={localizedPath("/gyms", locale)}
+                tone="secondary"
+                trailingIcon={<ArrowRight size={18} />}
+              >
+                {t("findGym")}
               </ZookButtonLink>
             </div>
           </div>
@@ -87,19 +112,19 @@ export default function HomePage() {
             <GlassCard className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-white/45">Owner dashboard</p>
-                  <h2 className="mt-1 text-3xl font-semibold">Run gym operations from web.</h2>
+                  <p className="text-sm text-white/45">{t("ownerDashboard")}</p>
+                  <h2 className="mt-1 text-3xl font-semibold">{t("runOpsWeb")}</h2>
                 </div>
                 <QrCode className="text-lime-200" />
               </div>
               <div className="mt-8 grid gap-3 md:grid-cols-2">
                 <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
                   <Store className="text-amber-100" />
-                  <p className="mt-4 text-sm text-white/45">Sell memberships and shop items</p>
+                  <p className="mt-4 text-sm text-white/45">{t("sellMemberships")}</p>
                 </div>
                 <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
                   <QrCode className="text-lime-200" />
-                  <p className="mt-4 text-sm text-white/45">Publish join links and QR codes</p>
+                  <p className="mt-4 text-sm text-white/45">{t("publishJoin")}</p>
                 </div>
               </div>
             </GlassCard>
@@ -119,7 +144,9 @@ export default function HomePage() {
           <GlassCard variant="strong" className="p-6">
             <div className="flex items-center gap-3">
               <Users className="text-lime-200" />
-              <h2 className="text-2xl font-semibold tracking-tight text-white">For gym owners</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-white">
+                {t("forOwners")}
+              </h2>
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {ownerFeatures.map(([Icon, label]) => (
@@ -138,7 +165,9 @@ export default function HomePage() {
             <GlassCard variant="strong" className="h-full p-6">
               <div className="flex items-center gap-3">
                 <Smartphone className="text-amber-100" />
-                <h2 className="text-2xl font-semibold tracking-tight text-white">For members</h2>
+                <h2 className="text-2xl font-semibold tracking-tight text-white">
+                  {t("forMembers")}
+                </h2>
               </div>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {memberFeatures.map(([Icon, label]) => (
@@ -157,26 +186,22 @@ export default function HomePage() {
 
         <section className="rounded-[28px] border border-white/10 bg-black/20 px-6 py-8 text-center">
           <p className="text-sm font-medium uppercase tracking-[0.22em] text-white/35">
-            Built for India-first gym operations
+            {t("indiaOps")}
           </p>
           <p className="mx-auto mt-3 max-w-2xl text-lg leading-8 text-white/70">
-            Zook keeps owner setup on web and member daily workflows on mobile, so each role gets
-            the surface that fits the job.
+            {t("indiaOpsCopy")}
           </p>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-6">
             <p className="text-sm font-medium uppercase tracking-[0.22em] text-lime-200/65">
-              Social proof
+              {t("socialProof")}
             </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-              Built around the roles that keep a gym moving.
+              {t("socialTitle")}
             </h2>
-            <p className="mt-3 text-sm leading-6 text-white/55">
-              The product evidence in this release comes from the live Zook workflows in the app:
-              owners, members, trainers, and front desk staff all have dedicated paths.
-            </p>
+            <p className="mt-3 text-sm leading-6 text-white/55">{t("socialCopy")}</p>
           </div>
           <div className="grid gap-3">
             {proofPoints.map((point) => (
@@ -192,9 +217,9 @@ export default function HomePage() {
 
         <section className="flex flex-col gap-5 rounded-[28px] border border-white/10 bg-black/20 px-6 py-7 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-white">Member apps</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-white">{t("memberApps")}</h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-white/52">
-              Mobile distribution badges will link to the live stores when the apps are published.
+              {t("memberAppsCopy")}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -203,11 +228,11 @@ export default function HomePage() {
                 href={iosAppUrl}
                 className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
               >
-                Download on iOS
+                {t("downloadIos")}
               </a>
             ) : (
               <span className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/65">
-                iOS app coming soon
+                {t("iosSoon")}
               </span>
             )}
             {androidAppUrl ? (
@@ -215,11 +240,11 @@ export default function HomePage() {
                 href={androidAppUrl}
                 className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
               >
-                Get it on Android
+                {t("downloadAndroid")}
               </a>
             ) : (
               <span className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-medium text-white/65">
-                Android app coming soon
+                {t("androidSoon")}
               </span>
             )}
           </div>
@@ -228,26 +253,29 @@ export default function HomePage() {
         <footer className="flex flex-col gap-3 border-t border-white/10 py-6 text-sm text-white/42 md:flex-row md:items-center md:justify-between">
           <p>© 2026 Zook. All rights reserved.</p>
           <div className="flex flex-wrap gap-4">
-            <Link href="/login" className="transition hover:text-white">
-              Login
+            <Link href={localizedPath("/login", locale)} className="transition hover:text-white">
+              {t("login")}
             </Link>
-            <Link href="/start-gym" className="transition hover:text-white">
-              Start your gym
+            <Link
+              href={localizedPath("/start-gym", locale)}
+              className="transition hover:text-white"
+            >
+              {t("startGym")}
             </Link>
             <a
               href="mailto:legal@zook.app?subject=Privacy%20policy"
               className="transition hover:text-white"
             >
-              Privacy
+              {t("privacy")}
             </a>
             <a
               href="mailto:legal@zook.app?subject=Terms%20of%20service"
               className="transition hover:text-white"
             >
-              Terms
+              {t("terms")}
             </a>
             <a href="mailto:hello@zook.app" className="transition hover:text-white">
-              Contact
+              {t("contact")}
             </a>
           </div>
         </footer>

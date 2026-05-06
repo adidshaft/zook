@@ -15,6 +15,7 @@ import {
 import { BrandMark, GlassCard, GlassInput, ZookButton, ZookScreen } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { getMobileReleaseProfile } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { colors, spacing, typography } from "@/lib/theme";
 
 const screenWidth = Dimensions.get("window").width;
@@ -49,6 +50,7 @@ function formatIndiaPhoneInput(value: string) {
 
 export default function Login() {
   const { requestOtp, verifyOtp } = useAuth();
+  const { t } = useI18n();
   const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
   const otpInputRef = useRef<TextInput>(null);
   const [identifier, setIdentifier] = useState("");
@@ -78,13 +80,13 @@ export default function Login() {
   async function requestCode(resend = false) {
     const trimmedIdentifier = identifier.trim();
     if (trimmedIdentifier.length < 3) {
-      setMessage("Enter your email or phone number.");
+      setMessage(t("auth.enterIdentifier"));
       return;
     }
     if (looksLikePhoneInput(trimmedIdentifier)) {
       const digits = trimmedIdentifier.replace(/\D/g, "");
       if (!(digits.length === 10 || (digits.length === 12 && digits.startsWith("91")))) {
-        setMessage("Enter a 10-digit India mobile number or use email.");
+        setMessage(t("auth.enterIndiaMobile"));
         return;
       }
     }
@@ -96,7 +98,9 @@ export default function Login() {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setStage("otp");
       setCode(seededDevOtp);
-      setMessage(`${resend ? "Fresh code" : "Code"} sent to ${trimmedIdentifier}.`);
+      setMessage(
+        t(resend ? "auth.freshCodeSent" : "auth.codeSent", { identifier: trimmedIdentifier }),
+      );
       setDevOtp(seededDevOtp || null);
       setResendCooldown(30);
     } catch (error) {
@@ -115,7 +119,7 @@ export default function Login() {
     setBusy(true);
     try {
       await verifyOtp(trimmedIdentifier, sanitizeOtpCode(code || devOtp || localDevOtp || ""));
-      setMessage("Signed in.");
+      setMessage(t("auth.signedIn"));
     } catch (error) {
       setMessage(getApiErrorMessage(error));
     } finally {
@@ -137,31 +141,27 @@ export default function Login() {
         >
           <View style={styles.heroSection}>
             <View style={styles.heroGlow} />
-            <Text style={styles.heroEyebrow}>Fitness Operating System</Text>
+            <Text style={styles.heroEyebrow}>{t("auth.heroEyebrow")}</Text>
             <View style={styles.logoRow}>
               <BrandMark size="lg" />
               <Text style={[styles.heroTitle, { fontSize: heroFontSize }]}>Zook</Text>
             </View>
-            <Text style={styles.heroBody}>
-              Your gym, your membership, your rhythm. Sign in to get started.
-            </Text>
+            <Text style={styles.heroBody}>{t("auth.heroBody")}</Text>
           </View>
 
           <GlassCard contentStyle={styles.formContent}>
             <View style={styles.formHeader}>
               <Text style={styles.formTitle}>
-                {stage === "identifier" ? "Sign in" : "Verify Code"}
+                {stage === "identifier" ? t("auth.signIn") : t("auth.verifyCode")}
               </Text>
               <Text style={styles.formSubtitle}>
-                {stage === "identifier"
-                  ? "Use your email or phone number."
-                  : "Check your messages."}
+                {stage === "identifier" ? t("auth.identifierSubtitle") : t("auth.otpSubtitle")}
               </Text>
             </View>
 
             {stage === "identifier" ? (
               <GlassInput
-                label="Email or Phone"
+                label={t("auth.identifierLabel")}
                 value={identifier}
                 onChangeText={(value) => setIdentifier(formatIndiaPhoneInput(value))}
                 autoCapitalize="none"
@@ -169,12 +169,8 @@ export default function Login() {
                 keyboardType={
                   looksLikePhoneInput(identifier) && identifier ? "phone-pad" : "email-address"
                 }
-                placeholder="+91 98765 43210 or you@example.com"
-                hint={
-                  looksLikePhoneInput(identifier)
-                    ? "India mobile numbers are sent with the +91 country code."
-                    : undefined
-                }
+                placeholder={t("auth.identifierPlaceholder")}
+                hint={looksLikePhoneInput(identifier) ? t("auth.phoneHint") : undefined}
                 editable={!busy}
               />
             ) : (
@@ -183,6 +179,8 @@ export default function Login() {
                 code={code}
                 onChange={(value) => setCode(sanitizeOtpCode(value))}
                 disabled={busy}
+                label={t("auth.otpLabel")}
+                accessibilityLabel={t("auth.otpAccessibility")}
               />
             )}
 
@@ -190,12 +188,12 @@ export default function Login() {
               {busy ? (
                 <View style={styles.busyRow}>
                   <ActivityIndicator size="small" color={colors.bg} />
-                  <Text style={styles.busyText}>Working...</Text>
+                  <Text style={styles.busyText}>{t("auth.working")}</Text>
                 </View>
               ) : stage === "identifier" ? (
-                "Send Code"
+                t("auth.sendCode")
               ) : (
-                "Verify & Sign In"
+                t("auth.verifyAndSignIn")
               )}
             </ZookButton>
 
@@ -207,7 +205,9 @@ export default function Login() {
                   tone="secondary"
                   style={styles.otpAction}
                 >
-                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+                  {resendCooldown > 0
+                    ? t("auth.resendIn", { seconds: resendCooldown })
+                    : t("auth.resendCode")}
                 </ZookButton>
                 <ZookButton
                   onPress={() => {
@@ -221,7 +221,7 @@ export default function Login() {
                   tone="secondary"
                   style={styles.otpAction}
                 >
-                  Change sign-in
+                  {t("auth.changeSignIn")}
                 </ZookButton>
               </View>
             ) : null}
@@ -230,7 +230,7 @@ export default function Login() {
           {/* Local test OTP banner — only visible in __DEV__ */}
           {devOtp ? (
             <View style={styles.devBanner}>
-              <Text style={styles.devBannerLabel}>TEST CODE</Text>
+              <Text style={styles.devBannerLabel}>{t("auth.testCode")}</Text>
               <Text style={styles.devBannerCode}>{devOtp}</Text>
             </View>
           ) : null}
@@ -244,14 +244,20 @@ export default function Login() {
 
 const OtpCodeInput = forwardRef<
   TextInput,
-  { code: string; onChange: (value: string) => void; disabled?: boolean }
->(function OtpCodeInput({ code, onChange, disabled = false }, ref) {
+  {
+    accessibilityLabel: string;
+    code: string;
+    disabled?: boolean;
+    label: string;
+    onChange: (value: string) => void;
+  }
+>(function OtpCodeInput({ accessibilityLabel, code, onChange, disabled = false, label }, ref) {
   return (
     <View style={styles.otpGroup}>
-      <Text style={styles.inputLabel}>One-time code</Text>
+      <Text style={styles.inputLabel}>{label}</Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="One-time code"
+        accessibilityLabel={accessibilityLabel}
         onPress={() => {
           if (!disabled && typeof ref !== "function") {
             ref?.current?.focus();

@@ -6,7 +6,14 @@ import { MockMapProvider } from "@zook/core/providers";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
-import { formatInr, joinModeLabel } from "@/lib/format";
+import { formatInr } from "@/lib/format";
+import {
+  alternatePublicLocale,
+  joinModeLabelForLocale,
+  localizedPath,
+  publicT,
+  resolvePublicLocale,
+} from "@/lib/public-i18n";
 import { buildGymDiscoveryResults, type DiscoveryGym } from "@/server/gym-discovery";
 import { canUsePublicDemoFallback } from "@/server/public-gym-read-models";
 
@@ -16,7 +23,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/gyms" },
 };
 
-type GymSearchParams = Promise<{ q?: string; city?: string; page?: string }>;
+type GymSearchParams = Promise<{ q?: string; city?: string; page?: string; lang?: string }>;
 
 type GymResult = DiscoveryGym & {
   priceFromPaise: number | null;
@@ -142,6 +149,9 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
   const query = await searchParams;
   const q = query.q?.trim() || undefined;
   const city = query.city?.trim() || undefined;
+  const locale = resolvePublicLocale(query);
+  const nextLocale = alternatePublicLocale(locale);
+  const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const page = toPositivePage(query.page);
   const gyms = await searchGyms(q, city);
   const pageSize = 50;
@@ -150,39 +160,47 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
   const totalPages = Math.max(1, Math.ceil(gyms.length / pageSize));
 
   return (
-    <main className="min-h-dvh px-5 py-5">
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh px-5 py-5">
       <div className="mx-auto grid max-w-7xl gap-5">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <ZookLogo />
-          <Link
-            href="/login"
-            className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
-          >
-            Login
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={localizedPath("/gyms", nextLocale, { q, city, page })}
+              className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
+            >
+              {t("languageSwitch")}
+            </Link>
+            <Link
+              href={localizedPath("/login", locale)}
+              className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
+            >
+              {t("login")}
+            </Link>
+          </div>
         </header>
 
         <GlassCard variant="strong">
           <div className="grid gap-6 lg:grid-cols-[1fr_440px] lg:items-end">
             <div>
-              <Pill tone="lime">Gym discovery</Pill>
+              <Pill tone="lime">{t("gymDiscovery")}</Pill>
               <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-white md:text-6xl">
-                Find a gym near you.
+                {t("findGymNear")}
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-white/58">
-                Search public Zook gyms by city, name, or username and jump straight into the gym
-                profile or membership flow.
+                {t("gymSearchCopy")}
               </p>
             </div>
             <form
               action="/gyms"
               className="grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4"
             >
+              {locale === "hi" ? <input type="hidden" name="lang" value="hi" /> : null}
               <label
                 htmlFor="gym-search"
                 className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35"
               >
-                Search
+                {t("search")}
               </label>
               <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
                 <Search size={18} className="text-white/35" />
@@ -190,25 +208,25 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
                   id="gym-search"
                   name="q"
                   defaultValue={q}
-                  placeholder="Gym name or username"
+                  placeholder={t("gymNamePlaceholder")}
                   className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35"
                 />
               </div>
               <label htmlFor="gym-city" className="sr-only">
-                City
+                {t("city")}
               </label>
               <input
                 id="gym-city"
                 name="city"
                 defaultValue={city}
-                placeholder="City"
+                placeholder={t("city")}
                 className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
               />
               <button
                 type="submit"
                 className="zook-focus rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
               >
-                Search gyms
+                {t("searchGyms")}
               </button>
             </form>
           </div>
@@ -219,7 +237,7 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
             {visibleGyms.map((gym) => (
               <Link
                 key={gym.id}
-                href={`/g/${gym.username}`}
+                href={localizedPath(`/g/${gym.username}`, locale)}
                 className="zook-focus block rounded-[28px]"
               >
                 <GlassCard className="h-full transition hover:border-lime-300/25 hover:bg-white/[0.075]">
@@ -246,7 +264,7 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
                         </p>
                       </div>
                     </div>
-                    <Pill tone="blue">{joinModeLabel(gym.joinMode)}</Pill>
+                    <Pill tone="blue">{joinModeLabelForLocale(gym.joinMode, locale)}</Pill>
                   </div>
                   <div className="mt-5 flex flex-wrap gap-2">
                     {(gym.amenities ?? []).slice(0, 4).map((amenity) => (
@@ -254,14 +272,18 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
                     ))}
                   </div>
                   <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-white/35">Memberships</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                      {t("memberships")}
+                    </p>
                     <p className="mt-2 text-lg font-semibold text-white">
                       {gym.priceFromPaise !== null
-                        ? `Starting at ${formatInr(gym.priceFromPaise)}/month`
-                        : "Plans coming soon"}
+                        ? `${t("startingAt")} ${formatInr(gym.priceFromPaise)}/${t("perMonth")}`
+                        : t("plansComingSoon")}
                     </p>
                     <p className="mt-1 text-xs text-white/45">
-                      {gym.planCount ? `${gym.planCount} public plans` : "Public sign-up pending"}
+                      {gym.planCount
+                        ? `${gym.planCount} ${t("publicPlans")}`
+                        : t("publicSignupPending")}
                     </p>
                   </div>
                 </GlassCard>
@@ -270,16 +292,16 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
           </section>
         ) : (
           <GlassCard className="text-center">
-            <Pill tone="amber">No results</Pill>
-            <h2 className="mt-4 text-2xl font-semibold text-white">No gyms in this city yet</h2>
+            <Pill tone="amber">{t("noResults")}</Pill>
+            <h2 className="mt-4 text-2xl font-semibold text-white">{t("noGyms")}</h2>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/55">
-              Try a different city or share Zook with your favorite gym owner.
+              {t("noGymsCopy")}
             </p>
             <Link
-              href="/start-gym"
+              href={localizedPath("/start-gym", locale)}
               className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
             >
-              Share with a gym owner
+              {t("shareGymOwner")}
             </Link>
           </GlassCard>
         )}
@@ -290,25 +312,35 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
               <Link
                 href={{
                   pathname: "/gyms",
-                  query: { ...(q ? { q } : {}), ...(city ? { city } : {}), page: page - 1 },
+                  query: {
+                    ...(q ? { q } : {}),
+                    ...(city ? { city } : {}),
+                    ...(locale === "hi" ? { lang: "hi" } : {}),
+                    page: page - 1,
+                  },
                 }}
                 className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
               >
-                Previous
+                {t("previous")}
               </Link>
             ) : null}
             <span className="text-sm text-white/45">
-              Page {page} of {totalPages}
+              {t("page")} {page} {t("of")} {totalPages}
             </span>
             {page < totalPages ? (
               <Link
                 href={{
                   pathname: "/gyms",
-                  query: { ...(q ? { q } : {}), ...(city ? { city } : {}), page: page + 1 },
+                  query: {
+                    ...(q ? { q } : {}),
+                    ...(city ? { city } : {}),
+                    ...(locale === "hi" ? { lang: "hi" } : {}),
+                    page: page + 1,
+                  },
                 }}
                 className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
               >
-                Next
+                {t("next")}
               </Link>
             ) : null}
           </nav>

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AuthSessionSummary, PaymentMode } from "@zook/core";
 import { mobileApiFetch } from "./api";
 import { useAuth } from "./auth";
+import { useBranchSelection } from "./branch-selection";
 import type { NotificationPreferenceRecord } from "./notification-preferences";
 
 export interface MemberHomeData {
@@ -124,6 +125,7 @@ export interface GymProfileData {
     address: string;
     city: string;
     state: string;
+    isDefault?: boolean | null;
   }>;
   trainers?: Array<{
     userId: string;
@@ -259,6 +261,8 @@ export interface ShopOrderItemRecord {
 export interface ShopOrderRecord {
   id: string;
   orgId: string;
+  branchId?: string | null;
+  branchName?: string | null;
   userId: string;
   status: string;
   paymentSessionId?: string | null;
@@ -275,6 +279,8 @@ export interface ShopOrderRecord {
 export interface OrgPaymentRecord {
   id: string;
   orgId?: string | null;
+  branchId?: string | null;
+  branchName?: string | null;
   userId?: string | null;
   purpose: string;
   amountPaise: number;
@@ -368,6 +374,11 @@ export interface OwnerDashboardData {
       name: string;
       isDefault?: boolean;
     } | null;
+    branches?: Array<{
+      id: string;
+      name: string;
+      isDefault?: boolean;
+    }>;
     inventoryScope?: "ORG_WIDE";
   };
   joinRequests?: Array<{
@@ -683,14 +694,19 @@ export function useMyGoals() {
 
 export function useShopProducts(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: ["shop", "products", resolvedOrgId],
+    queryKey: ["shop", "products", resolvedOrgId, selectedBranchId],
     queryFn: () =>
-      mobileApiFetch<{ products: ShopProductRecord[] }>(`/orgs/${resolvedOrgId}/products`, {
-        token,
-        orgId: resolvedOrgId,
-      }),
+      mobileApiFetch<{ products: ShopProductRecord[] }>(
+        `/orgs/${resolvedOrgId}/products${queryString({ branchId: selectedBranchId })}`,
+        {
+          token,
+          orgId: resolvedOrgId,
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        },
+      ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
   });
 }
@@ -719,6 +735,35 @@ export function useMyTracking() {
         latestBodyProgress: Record<string, unknown> | null;
         habits: Array<Record<string, unknown>>;
       }>("/me/tracking/summary", { token }),
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export interface BodyProgressEntryRecord {
+  id: string;
+  userId?: string;
+  organizationId?: string | null;
+  measuredAt?: string | null;
+  weightKg?: string | number | null;
+  waistCm?: string | number | null;
+  chestCm?: string | number | null;
+  armCm?: string | number | null;
+  bodyFatPct?: string | number | null;
+  bodyFatPercent?: string | number | null;
+  photoAssetId?: string | null;
+  photoUrl?: string | null;
+  photoAsset?: { url?: string | null } | null;
+  notes?: string | null;
+}
+
+export function useMyBodyProgress() {
+  const { status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "tracking", "body-progress"],
+    queryFn: () =>
+      mobileApiFetch<{ entries: BodyProgressEntryRecord[] }>("/me/tracking/body-progress", {
+        token,
+      }),
     enabled: status === "authenticated" && Boolean(token),
   });
 }
@@ -841,27 +886,37 @@ export function useOrgAttendancePending(orgId?: string, options?: { enabled?: bo
 
 export function useOrgRecentPayments(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: ["org", resolvedOrgId, "payments", "recent"],
+    queryKey: ["org", resolvedOrgId, "payments", "recent", selectedBranchId],
     queryFn: () =>
-      mobileApiFetch<{ payments: OrgPaymentRecord[] }>(`/orgs/${resolvedOrgId}/payments/recent`, {
-        token,
-        orgId: resolvedOrgId,
-      }),
+      mobileApiFetch<{ payments: OrgPaymentRecord[] }>(
+        `/orgs/${resolvedOrgId}/payments/recent${queryString({ branchId: selectedBranchId })}`,
+        {
+          token,
+          orgId: resolvedOrgId,
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        },
+      ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
   });
 }
 
 export function useOrgActiveShopOrders(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: ["org", resolvedOrgId, "shop", "orders", "active"],
+    queryKey: ["org", resolvedOrgId, "shop", "orders", "active", selectedBranchId],
     queryFn: () =>
       mobileApiFetch<{ orders: ShopOrderRecord[]; summary?: { fulfilledToday?: number } }>(
-        `/orgs/${resolvedOrgId}/shop/orders/active`,
-        { token, orgId: resolvedOrgId },
+        `/orgs/${resolvedOrgId}/shop/orders/active${queryString({ branchId: selectedBranchId })}`,
+        {
+          token,
+          orgId: resolvedOrgId,
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        },
       ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
     refetchInterval: 30_000,
@@ -1066,6 +1121,7 @@ export function useManualAttendance(orgId?: string) {
 export function useRecordManualPayment(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useMutation({
     mutationFn: (body: {
@@ -1077,8 +1133,10 @@ export function useRecordManualPayment(orgId?: string) {
       proofAssetId?: string;
       receiptNumber?: string;
       notes?: string;
+      branchId?: string;
     }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
+      const branchId = body.branchId ?? selectedBranchId;
       return mobileApiFetch<{
         payment: OrgPaymentRecord;
         subscription?: Record<string, unknown> | null;
@@ -1086,7 +1144,8 @@ export function useRecordManualPayment(orgId?: string) {
         method: "POST",
         token: ctx.token,
         orgId: ctx.orgId,
-        body,
+        ...(branchId ? { branchId } : {}),
+        body: { ...body, ...(branchId ? { branchId } : {}) },
       });
     },
     onSuccess: async () => {
@@ -1125,10 +1184,15 @@ export function useFulfillShopOrder(orgId?: string) {
 export function useCreateShopOrder(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useMutation({
-    mutationFn: (input: { items: Array<{ productId: string; quantity: number }> }) => {
+    mutationFn: (input: {
+      items: Array<{ productId: string; quantity: number }>;
+      branchId?: string;
+    }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
+      const branchId = input.branchId ?? selectedBranchId;
       return mobileApiFetch<{
         order: ShopOrderRecord;
         checkoutUrl?: string;
@@ -1138,7 +1202,8 @@ export function useCreateShopOrder(orgId?: string) {
         method: "POST",
         token: ctx.token,
         orgId: ctx.orgId,
-        body: { orgId: ctx.orgId, items: input.items },
+        ...(branchId ? { branchId } : {}),
+        body: { orgId: ctx.orgId, items: input.items, ...(branchId ? { branchId } : {}) },
       });
     },
     onSuccess: async () => {
@@ -1154,18 +1219,23 @@ export function useCreateShopOrder(orgId?: string) {
 export function useCompleteMockPayment() {
   const queryClient = useQueryClient();
   const { token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   return useMutation({
-    mutationFn: (sessionId: string) => {
+    mutationFn: (input: string | { sessionId: string; branchId?: string }) => {
       if (!token) {
         throw new Error("Authentication is required.");
       }
+      const sessionId = typeof input === "string" ? input : input.sessionId;
+      const branchId =
+        typeof input === "string" ? selectedBranchId : (input.branchId ?? selectedBranchId);
       return mobileApiFetch<{
         session: { id: string; status: string };
         payment?: OrgPaymentRecord | null;
       }>(`/payments/mock/${sessionId}/complete`, {
         method: "POST",
         token,
-        body: { status: "SUCCEEDED" },
+        ...(branchId ? { branchId } : {}),
+        body: { status: "SUCCEEDED", ...(branchId ? { branchId } : {}) },
       });
     },
     onSuccess: async () => {

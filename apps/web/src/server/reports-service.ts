@@ -237,6 +237,7 @@ export class ReportsService {
         status: { in: ["SUCCEEDED", "REFUNDED", "PARTIALLY_REFUNDED"] },
         ...(createdAt ? { createdAt } : {}),
         ...(filters.paymentMode ? { mode: filters.paymentMode as never } : {}),
+        ...(filters.branchId ? { branchId: filters.branchId } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: 500,
@@ -250,6 +251,7 @@ export class ReportsService {
       paymentId: payment.id,
       purpose: payment.purpose,
       status: payment.status,
+      branchId: payment.branchId ?? "",
       mode: payment.mode,
       amountPaise: payment.amountPaise,
       memberName: payment.userId ? (usersById.get(payment.userId)?.name ?? "") : "",
@@ -266,6 +268,7 @@ export class ReportsService {
         orgId,
         ...(createdAt ? { createdAt } : {}),
         ...(filters.paymentMode ? { mode: filters.paymentMode as never } : {}),
+        ...(filters.branchId ? { branchId: filters.branchId } : {}),
       },
       orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
       take: 1_000,
@@ -280,6 +283,7 @@ export class ReportsService {
       sessionId: payment.sessionId ?? "",
       purpose: payment.purpose,
       status: payment.status,
+      branchId: payment.branchId ?? "",
       mode: payment.mode,
       amountPaise: payment.amountPaise,
       memberId: payment.userId ?? "",
@@ -301,6 +305,7 @@ export class ReportsService {
         status: "SUCCEEDED",
         mode: { in: ["CASH", "DIRECT_UPI", "BANK_TRANSFER", "OTHER"] },
         ...(recordedAt ? { recordedAt } : {}),
+        ...(filters.branchId ? { branchId: filters.branchId } : {}),
       },
       orderBy: { recordedAt: "desc" },
       take: 500,
@@ -308,6 +313,7 @@ export class ReportsService {
 
     return payments.map((payment) => ({
       paymentId: payment.id,
+      branchId: payment.branchId ?? "",
       mode: payment.mode,
       amountPaise: payment.amountPaise,
       recordedById: payment.recordedById ?? "",
@@ -431,6 +437,7 @@ export class ReportsService {
       where: {
         orgId,
         ...(createdAt ? { createdAt } : {}),
+        ...(filters.branchId ? { branchId: filters.branchId } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: 500,
@@ -480,6 +487,7 @@ export class ReportsService {
 
     return orders.map((order) => ({
       orderId: order.id,
+      branchId: order.branchId ?? "",
       status: order.status,
       totalPaise: order.totalPaise,
       pickupCode: order.pickupCode ?? "",

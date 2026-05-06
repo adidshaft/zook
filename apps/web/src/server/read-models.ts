@@ -1,5 +1,6 @@
 import { publicUserEmail } from "@zook/core";
 import { Prisma, prisma } from "@zook/db";
+import { cachedJson } from "./server-cache";
 
 function serializeUserForReadModel<T extends { email: string } | null | undefined>(user: T): T {
   if (!user) {
@@ -241,6 +242,17 @@ export async function getOrganizationDashboardData(
   orgId: string,
   filters: DashboardBranchFilter = {},
 ) {
+  return cachedJson(
+    `org-dashboard:${orgId}:${filters.branchId ?? "default"}`,
+    20,
+    () => getOrganizationDashboardDataUncached(orgId, filters),
+  );
+}
+
+async function getOrganizationDashboardDataUncached(
+  orgId: string,
+  filters: DashboardBranchFilter = {},
+) {
   const today = startOfToday();
   const nextWeek = endOfWindow(7);
   const monthStart = new Date();
@@ -285,15 +297,16 @@ export async function getOrganizationDashboardData(
         status: "SUCCEEDED",
         mode: { in: ["CASH", "DIRECT_UPI", "BANK_TRANSFER", "OTHER"] },
         recordedAt: { gte: today },
+        ...branchWhere,
       },
       _sum: { amountPaise: true },
     }),
     prisma.payment.aggregate({
-      where: { orgId, status: "SUCCEEDED", createdAt: { gte: today } },
+      where: { orgId, status: "SUCCEEDED", createdAt: { gte: today }, ...branchWhere },
       _sum: { amountPaise: true },
     }),
     prisma.product.findMany({
-      where: { orgId, active: true },
+      where: { orgId, active: true, ...branchWhere },
       orderBy: { stock: "asc" },
       take: 20,
     }),
@@ -611,9 +624,12 @@ export async function getOrganizationPendingAttendance(
   return enrichAttendanceRecords(records, orgId);
 }
 
-export async function getOrganizationRecentPayments(orgId: string) {
+export async function getOrganizationRecentPayments(
+  orgId: string,
+  filters: DashboardBranchFilter = {},
+) {
   const payments = await prisma.payment.findMany({
-    where: { orgId },
+    where: { orgId, ...(filters.branchId ? { branchId: filters.branchId } : {}) },
     orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
     take: 50,
   });
@@ -631,9 +647,16 @@ export async function getOrganizationRecentPayments(orgId: string) {
   }));
 }
 
-export async function getOrganizationActiveShopOrders(orgId: string) {
+export async function getOrganizationActiveShopOrders(
+  orgId: string,
+  filters: DashboardBranchFilter = {},
+) {
   const orders = await prisma.shopOrder.findMany({
-    where: { orgId, status: { in: ["PAID", "READY_FOR_PICKUP"] } },
+    where: {
+      orgId,
+      status: { in: ["PAID", "READY_FOR_PICKUP"] },
+      ...(filters.branchId ? { branchId: filters.branchId } : {}),
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
   });

@@ -1,6 +1,7 @@
 import { getAppEnv, isTruthy, zookDemoFixtures } from "@zook/core";
 import { applyCoupon } from "@zook/core/services";
 import { prisma } from "@zook/db";
+import { cachedJson } from "./server-cache";
 
 export type PublicGymPlan = {
   id: string;
@@ -297,17 +298,23 @@ async function publicGymProfileFromDb(
 }
 
 export async function getPublicGymProfileData(username: string, referralCode?: string) {
-  try {
-    const data = await publicGymProfileFromDb(username, referralCode);
-    if (data || !canUsePublicDemoFallback()) {
-      return data;
-    }
-  } catch (error) {
-    if (!canUsePublicDemoFallback()) {
-      throw error;
-    }
-  }
-  return demoPublicGymProfile(username, referralCode);
+  return cachedJson(
+    `public-gym:${username}:${referralCode ?? ""}`,
+    60,
+    async () => {
+      try {
+        const data = await publicGymProfileFromDb(username, referralCode);
+        if (data || !canUsePublicDemoFallback()) {
+          return data;
+        }
+      } catch (error) {
+        if (!canUsePublicDemoFallback()) {
+          throw error;
+        }
+      }
+      return demoPublicGymProfile(username, referralCode);
+    },
+  );
 }
 
 export async function getPublicCouponPreview(input: {

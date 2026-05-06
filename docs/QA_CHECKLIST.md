@@ -40,7 +40,7 @@ pnpm dev:mobile
 - Public QR: `/qr/{username}?target=join` must encode `/join/{username}`; default/profile QR must encode `/in/{username}?source=qr`; local demo fallback should only work for known fixture usernames.
 - Dashboard fallback: explicit offline demo may show `Demo Mode`; backend/read-model failures outside demo must show an unavailable/error state, not a demo-success label.
 - Default Branch: owner dashboard and QR display show Default Branch context; membership plan creation stores the Default Branch; checkout/manual activation use a plan branch when present; `branchId` filters on dashboard/attendance/report endpoints reject branches from another org.
-- Multi-branch limitation: shop inventory, shop orders, payment records, and revenue/manual-cash reports are org-wide in this MVP because those tables do not yet carry `branchId`.
+- Multi-branch: shop products/orders and payment records carry `branchId`; dashboard, payment, revenue, manual-cash, and shop report endpoints should honor `branchId` filters and reject branches from another org.
 - Platform admin: provider diagnostics load from `/api/platform/provider-status` and do not expose secret values.
 - Notifications: create a selected-member notification; confirm the in-app inbox receives it, mark-read persists, unread count falls, and tap routing opens the expected plan/order/membership/attendance screen.
 - Push: with `PUSH_PROVIDER=disabled`, product actions must still create in-app notifications and record provider-disabled delivery attempts without returning fake remote success.

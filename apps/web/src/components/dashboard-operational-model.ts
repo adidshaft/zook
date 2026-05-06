@@ -282,8 +282,22 @@ export type MemberDetailPayload = {
     }>;
     payments: Array<{ id: string; amountPaise: number; status: string; recordedAt: string | Date }>;
     attendance: Array<{ id: string; status: string; checkedInAt: string | Date }>;
+    bodyProgress?: BodyProgressEntryRow[];
     workouts: Array<{ id: string; title: string; startedAt: string | Date }>;
   };
+};
+
+export type BodyProgressEntryRow = {
+  id: string;
+  measuredAt: string | Date;
+  weightKg?: string | number | null;
+  waistCm?: string | number | null;
+  chestCm?: string | number | null;
+  armCm?: string | number | null;
+  bodyFatPercent?: string | number | null;
+  photoAssetId?: string | null;
+  notes?: string | null;
+  visibility?: string | null;
 };
 
 export type ShopOrderItemRow = {

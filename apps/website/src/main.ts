@@ -3,73 +3,189 @@ import "./style.css";
 const appUrl = import.meta.env.VITE_ZOOK_APP_URL ?? "https://app.zook.kyokasuigetsu.xyz";
 const appHref = (path: string) => `${appUrl}${path}`;
 
+const ownerFeatures = [
+  ["Membership desk", "Create public plans, approve join requests, and keep renewals visible."],
+  ["QR entry", "Members scan, receive entry codes, and give staff a clean attendance trail."],
+  ["Revenue ops", "Track payments, shop pickup, cash collection, and low-stock pressure."],
+  ["Trainer output", "Review workout plans, assisted drafts, and trainer-visible member progress."],
+];
+
+const workflows = [
+  ["1", "Publish", "Set gym profile, membership ladder, QR link, and join policy from web."],
+  ["2", "Operate", "Clear joins, run attendance, invite staff, and manage desk inventory."],
+  ["3", "Grow", "Use offers, referrals, notifications, and reports to keep the floor moving."],
+];
+
+const productStats = [
+  ["QR", "Entry codes"],
+  ["12", "Photo progress slots"],
+  ["INR", "Online and offline"],
+];
+
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
-  <div class="container">
-    <header>
-      <a href="/" class="logo">
-        <img src="/logo.png" alt="Zook Logo" class="logo-icon" />
-        <span class="logo-text">
-          <span class="title">Zook</span>
-          <span class="subtitle">Gym OS</span>
+  <div class="site-shell">
+    <header class="site-header">
+      <a href="/" class="brand" aria-label="Zook home">
+        <img src="/logo.png" alt="" class="brand-mark" />
+        <span>
+          <strong>Zook</strong>
+          <small>Gym OS</small>
         </span>
       </a>
-      <div class="nav-links">
-        <a href="${appHref("/login")}" class="btn-secondary">Login</a>
-        <a href="${appHref("/start-gym")}" class="btn-primary">Start your gym</a>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="#operators">Operators</a>
+        <a href="#member-app">Member app</a>
+        <a href="${appHref("/gyms")}">Find gyms</a>
+      </nav>
+      <div class="header-actions">
+        <a href="${appHref("/login")}" class="button button-ghost">Login</a>
+        <a href="${appHref("/start-gym")}" class="button button-primary">Start your gym</a>
       </div>
     </header>
 
-    <main class="hero">
-      <div class="hero-content">
-        <h1>The operating system for modern gyms.</h1>
-        <p>Everything your gym needs: memberships, QR entry, trainer plans, desk operations, shop pickup, and owner reporting in one reliable workflow.</p>
-        <div class="hero-actions">
-          <a href="${appHref("/start-gym")}" class="btn-primary">Start your gym →</a>
-          <a href="${appHref("/gyms")}" class="btn-secondary">Find a gym →</a>
-        </div>
-      </div>
-      
-      <div class="hero-graphics">
-        <div class="glass-card" style="margin-bottom: 1rem;">
-          <p style="color: rgba(255,255,255,0.45); font-size: 0.875rem;">Owner dashboard</p>
-          <h2 style="font-size: 1.875rem; margin-top: 0.25rem;">Run gym operations from web.</h2>
-          <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); padding: 1rem; border-radius: 1rem; flex: 1;">
-              <div class="feature-icon lime">❖</div>
-              <p style="color: rgba(255,255,255,0.45); font-size: 0.875rem;">Sell memberships and shop items</p>
-            </div>
-            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); padding: 1rem; border-radius: 1rem; flex: 1;">
-              <div class="feature-icon lime">▨</div>
-              <p style="color: rgba(255,255,255,0.45); font-size: 0.875rem;">Publish join links and QR codes</p>
-            </div>
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <h1>Zook Gym OS</h1>
+          <p>
+            Run memberships, QR entry, trainer work, shop pickup, payments, and owner reporting
+            from one India-first operating record.
+          </p>
+          <div class="hero-actions">
+            <a href="${appHref("/start-gym")}" class="button button-primary">Start your gym</a>
+            <a href="${appHref("/gyms")}" class="button button-secondary">Find a gym</a>
           </div>
         </div>
-      </div>
+
+        <div class="product-stage" aria-label="Zook dashboard preview">
+          <div class="dashboard-preview">
+            <div class="preview-topbar">
+              <span>Zook command board</span>
+              <strong>Live desk</strong>
+            </div>
+            <div class="preview-grid">
+              <div>
+                <small>Active members</small>
+                <strong>482</strong>
+              </div>
+              <div>
+                <small>Today scans</small>
+                <strong>138</strong>
+              </div>
+              <div>
+                <small>Revenue</small>
+                <strong>₹1.8L</strong>
+              </div>
+            </div>
+            <div class="queue-panel">
+              <div>
+                <span class="status-dot"></span>
+                Join queue cleared
+              </div>
+              <div>
+                <span class="status-dot amber"></span>
+                3 low-stock products
+              </div>
+              <div>
+                <span class="status-dot blue"></span>
+                7 assistant drafts
+              </div>
+            </div>
+          </div>
+          <div class="phone-preview">
+            <div class="phone-camera"></div>
+            <div class="qr-tile">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <strong>Entry code 4821</strong>
+            <small>Workout, shop, notifications, and progress stay with the member.</small>
+          </div>
+        </div>
+      </section>
+
+      <section id="operators" class="section-grid">
+        <div class="section-intro">
+          <h2>Built for the people running the gym.</h2>
+          <p>
+            Zook separates owner setup, front-desk work, trainer delivery, and member self-service
+            without splitting the data. Everyone sees the same operating truth.
+          </p>
+        </div>
+        <div class="feature-list">
+          ${ownerFeatures
+            .map(
+              ([title, copy]) => `
+                <article class="feature-row">
+                  <span class="row-glyph"></span>
+                  <div>
+                    <h3>${title}</h3>
+                    <p>${copy}</p>
+                  </div>
+                </article>
+              `,
+            )
+            .join("")}
+        </div>
+      </section>
+
+      <section class="workflow-band">
+        <div class="workflow-header">
+          <h2>From public join link to daily operations.</h2>
+          <a href="${appHref("/dashboard")}" class="button button-secondary">Open dashboard</a>
+        </div>
+        <div class="workflow-grid">
+          ${workflows
+            .map(
+              ([step, title, copy]) => `
+                <article class="workflow-card">
+                  <span>${step}</span>
+                  <h3>${title}</h3>
+                  <p>${copy}</p>
+                </article>
+              `,
+            )
+            .join("")}
+        </div>
+      </section>
+
+      <section id="member-app" class="member-section">
+        <div class="member-visual">
+          <div class="progress-strip">
+            ${productStats
+              .map(
+                ([value, label]) => `
+                  <div>
+                    <strong>${value}</strong>
+                    <small>${label}</small>
+                  </div>
+                `,
+              )
+              .join("")}
+          </div>
+          <div class="photo-timeline">
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+        </div>
+        <div>
+          <h2>Members get the lighter surface.</h2>
+          <p>
+            The mobile app handles QR check-in, workout plans, AI fitness assistance, shop pickup,
+            notifications, and body-composition progress while web keeps owner operations precise.
+          </p>
+          <a href="${appHref("/gyms")}" class="button button-primary">Find a Zook gym</a>
+        </div>
+      </section>
     </main>
 
-    <section id="features" class="features-grid">
-      <div class="glass-card">
-        <div class="feature-icon lime">👥</div>
-        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">For gym owners</h3>
-        <p style="color: rgba(255,255,255,0.5); font-size: 0.875rem;">Plans, staff, shop, reports, and payments in one dashboard.</p>
-      </div>
-      <div class="glass-card">
-        <div class="feature-icon">📱</div>
-        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">For members</h3>
-        <p style="color: rgba(255,255,255,0.5); font-size: 0.875rem;">QR entry, workout plans, and AI fitness assistant.</p>
-      </div>
-      <div class="glass-card">
-        <div class="feature-icon">🔔</div>
-        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">For staff</h3>
-        <p style="color: rgba(255,255,255,0.5); font-size: 0.875rem;">Desk approvals, coaching, and member management.</p>
-      </div>
-    </section>
-
-    <footer style="margin-top: 6rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.14); display: flex; justify-content: space-between; color: rgba(174,184,168,0.7);">
-      <p>© 2026 Zook. All rights reserved.</p>
-      <div style="display: flex; gap: 1.5rem;">
-        <a href="mailto:legal@zook.app?subject=Privacy%20policy" style="color: inherit; text-decoration: none;">Privacy</a>
-        <a href="mailto:legal@zook.app?subject=Terms%20of%20service" style="color: inherit; text-decoration: none;">Terms</a>
+    <footer class="site-footer">
+      <p>© 2026 Zook. India-first gym operations.</p>
+      <div>
+        <a href="${appHref("/status")}">Status</a>
+        <a href="mailto:legal@zook.app?subject=Privacy%20policy">Privacy</a>
+        <a href="mailto:legal@zook.app?subject=Terms%20of%20service">Terms</a>
+        <a href="mailto:hello@zook.app">Contact</a>
       </div>
     </footer>
   </div>

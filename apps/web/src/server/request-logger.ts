@@ -1,6 +1,7 @@
 import { getProviderRegistryDiagnostics } from "@zook/core/providers";
 import { zookLogger } from "@zook/core";
 import { getRateLimitDiagnostics } from "./rate-limit";
+import { getServerCacheDiagnostics } from "./server-cache";
 
 export function summarizeProviderDiagnostics() {
   const diagnostics = getProviderRegistryDiagnostics();
@@ -22,6 +23,7 @@ export function summarizeProviderDiagnostics() {
     storage: summarize(diagnostics.storage),
     whatsapp: summarize(diagnostics.whatsapp),
     rateLimit: getRateLimitDiagnostics(),
+    serverCache: getServerCacheDiagnostics(),
   };
 }
 

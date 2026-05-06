@@ -70,12 +70,14 @@ import {
   createPlanVersionSnapshot,
   type OtpChallengeRecord,
   applyCoupon,
+  assertManualPaymentRecordContext,
+  assertOrgServicePermission,
   createSignedQrToken,
   createTrialWindow,
   decideClassEnrollment,
   decideAttendanceStatus,
   encodeQrPayload,
-  fulfillShopOrder,
+  fulfillShopOrderForContext,
   normalizeUsername,
   PersonalTrackingService,
   requireManualOverrideReason,
@@ -108,6 +110,7 @@ import { resolveSessionSummaryFromToken } from "./session";
 import { writeAuditLog } from "./audit";
 import { getDevOtpResponseValue } from "./auth-response";
 import { assertRateLimit, getRateLimitDiagnostics } from "./rate-limit";
+import { getServerCacheDiagnostics } from "./server-cache";
 import { createRequestId, currentRequestId, runWithRequestState } from "./request-state";
 import { getErrorReporter } from "./error-reporter";
 import { assertSafeMutationRequest, getClientIp } from "./security";
@@ -168,6 +171,10 @@ const subscriptionRenewSchema = z.object({
   planId: z.string().optional(),
   couponCode: z.string().trim().toUpperCase().optional(),
   referralCode: z.string().trim().toUpperCase().optional(),
+});
+
+const referralRedeemSchema = z.object({
+  code: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()),
 });
 
 const publicCouponValidateSchema = z.object({
@@ -314,6 +321,7 @@ const guardianConsentVerifySchema = z.object({
 });
 
 const productInputSchema = z.object({
+  branchId: z.string().optional().nullable(),
   name: z.string().min(2).max(120),
   description: z.string().max(500).optional(),
   category: z
@@ -329,6 +337,7 @@ const productInputSchema = z.object({
 
 const shopOrderSchema = z.object({
   orgId: z.string(),
+  branchId: z.string().optional(),
   items: z
     .array(
       z.object({
@@ -346,6 +355,10 @@ const inventoryAdjustmentSchema = z.object({
     .int()
     .refine((value) => value !== 0, "Inventory delta must be non-zero"),
   reason: z.string().trim().min(2).max(200),
+});
+
+const subscriptionReminderResolveSchema = z.object({
+  status: z.enum(["RESOLVED", "CANCELLED"]).default("RESOLVED"),
 });
 
 const planContentInputSchema = z.object({
@@ -954,8 +967,12 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest) 
 
 async function listOrganizationPaymentsPage(orgId: string, request: NextRequest) {
   const { limit, cursor } = parseCursorPagination(request, 50, 100);
+  const branchId = queryBranchId(request);
+  if (branchId) {
+    await resolveOrgBranch(orgId, branchId);
+  }
   const payments = await prisma.payment.findMany({
-    where: { orgId },
+    where: { orgId, ...(branchId ? { branchId } : {}) },
     orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
     take: limit + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -2415,6 +2432,7 @@ async function resolveValidatedReferral(input: {
   orgId: string;
   userId: string;
   referralCode?: string;
+  ctx?: Awaited<ReturnType<typeof getRequestContext>>;
 }) {
   if (!input.referralCode) {
     return null;
@@ -2459,7 +2477,7 @@ async function resolveValidatedReferral(input: {
       data: { monthlyUseCount: 0, lastResetAt: now },
     });
   }
-  if (monthlyUseCount >= policy.maxReferralsPerMonth) {
+  if (!existingRedemption && monthlyUseCount >= policy.maxReferralsPerMonth) {
     throw validationError("Referral code has reached its monthly limit");
   }
   validateReferralRedemption(
@@ -2478,10 +2496,78 @@ async function resolveValidatedReferral(input: {
       referredUserId: input.userId,
       referredEmail: publicUserEmail(user.email),
       referrerEmail: publicUserEmail(referrer?.email),
-      existingRedemption: Boolean(existingRedemption),
+      existingRedemption: Boolean(existingRedemption?.subscriptionId),
+      ctx: input.ctx,
     }),
   );
   return referral;
+}
+
+async function redeemReferralCodeForUser(input: {
+  orgId: string;
+  userId: string;
+  code: string;
+  ctx: Awaited<ReturnType<typeof getRequestContext>>;
+}) {
+  const referral = await resolveValidatedReferral({
+    orgId: input.orgId,
+    userId: input.userId,
+    referralCode: input.code,
+    ctx: input.ctx,
+  });
+  if (!referral) {
+    throw validationError("Referral code is invalid for this gym");
+  }
+  const existing = await prisma.referralRedemption.findFirst({
+    where: { orgId: input.orgId, referralCodeId: referral.id, referredUserId: input.userId },
+  });
+  if (existing) {
+    return { referral, redemption: existing, alreadyRedeemed: true };
+  }
+  const policy = await prisma.referralPolicy.upsert({
+    where: { orgId: input.orgId },
+    update: {},
+    create: { orgId: input.orgId },
+  });
+  const reserved = await prisma.referralCode.updateMany({
+    where: {
+      id: referral.id,
+      orgId: input.orgId,
+      status: "active",
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      monthlyUseCount: { lt: policy.maxReferralsPerMonth },
+      AND: [
+        {
+          OR: [{ maxUses: null }, { redemptionCount: { lt: referral.maxUses ?? 0 } }],
+        },
+      ],
+    },
+    data: { redemptionCount: { increment: 1 }, monthlyUseCount: { increment: 1 } },
+  });
+  if (reserved.count !== 1) {
+    throw validationError("Referral code has reached its limit");
+  }
+  try {
+    const redemption = await prisma.referralRedemption.create({
+      data: {
+        orgId: input.orgId,
+        referralCodeId: referral.id,
+        referredUserId: input.userId,
+        metadata: { source: "redeem_endpoint" },
+      },
+    });
+    return { referral, redemption, alreadyRedeemed: false };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const duplicate = await prisma.referralRedemption.findFirst({
+        where: { orgId: input.orgId, referralCodeId: referral.id, referredUserId: input.userId },
+      });
+      if (duplicate) {
+        return { referral, redemption: duplicate, alreadyRedeemed: true };
+      }
+    }
+    throw error;
+  }
 }
 
 async function generateUniqueReferralCode(seed: string) {
@@ -4487,7 +4573,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "dashboard"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
-    requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    requireOrgPermission(ctx, orgId, "ORG_VIEW_REPORTS");
     const branchId = queryBranchId(request);
     if (branchId) {
       await resolveOrgBranch(orgId, branchId);
@@ -5044,13 +5130,72 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "PAYMENTS_RECORD_OFFLINE");
-    return ok({ payments: await getOrganizationRecentPayments(orgId) });
+    const branchId = queryBranchId(request);
+    if (branchId) {
+      await resolveOrgBranch(orgId, branchId);
+    }
+    return ok({ payments: await getOrganizationRecentPayments(orgId, clean({ branchId })) });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "payments"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgAnyPermission(ctx, orgId, ["PAYMENTS_VIEW", "PAYMENTS_RECORD_OFFLINE"]);
     return ok(await listOrganizationPaymentsPage(orgId, request));
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "subscription-reminders"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgAnyPermission(ctx, orgId, [
+      "ORG_MANAGE_BILLING",
+      "PAYMENTS_VIEW",
+      "PAYMENTS_RECORD_OFFLINE",
+    ]);
+    const status = request.nextUrl.searchParams.get("status")?.trim().toUpperCase();
+    const reminders = await prisma.subscriptionReminder.findMany({
+      where: clean({
+        orgId,
+        status:
+          status && ["PENDING", "SENT", "RESOLVED", "CANCELLED"].includes(status)
+            ? status
+            : undefined,
+      }),
+      orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+      take: 100,
+    });
+    return ok({ reminders });
+  }
+  if (
+    request.method === "PATCH" &&
+    pathMatches(path, ["orgs", /.+/, "subscription-reminders", /.+/])
+  ) {
+    const orgId = path[1]!;
+    const reminderId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
+    const body = subscriptionReminderResolveSchema.parse(await readJson(request).catch(() => ({})));
+    const existing = await prisma.subscriptionReminder.findFirst({
+      where: { id: reminderId, orgId },
+    });
+    if (!existing) {
+      throw notFoundError("Subscription reminder not found");
+    }
+    const reminder = await prisma.subscriptionReminder.update({
+      where: { id: existing.id },
+      data: {
+        status: body.status,
+        resolvedAt: body.status === "RESOLVED" ? new Date() : existing.resolvedAt,
+      },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "subscription_reminder.updated",
+      entityType: "subscription_reminder",
+      entityId: reminder.id,
+      metadata: { status: reminder.status },
+    });
+    return ok({ reminder });
   }
   if (
     request.method === "POST" &&
@@ -5653,6 +5798,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const referral = await resolveValidatedReferral({
       orgId,
       userId,
+      ctx,
       ...(body.referralCode ? { referralCode: body.referralCode } : {}),
     });
     if (organization.joinMode === "APPROVAL_REQUIRED" && !approvedJoinRequest) {
@@ -5693,6 +5839,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const session = await prisma.paymentSession.create({
       data: {
         orgId,
+        branchId: branch.id,
         userId,
         purpose: "MEMBERSHIP",
         amountPaise: referralPricing.finalAmountPaise,
@@ -5700,6 +5847,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         checkoutUrl: "",
         provider: getPaymentProviderDiagnostics().selectedProvider,
         metadata: clean({
+          branchId: branch.id,
           subscriptionId: subscription.id,
           offerId: offerPricing.offer?.id,
           offerDiscountPaise: offerPricing.discountPaise,
@@ -5794,6 +5942,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const referral = await resolveValidatedReferral({
       orgId,
       userId,
+      ctx,
       ...(body.referralCode ? { referralCode: body.referralCode } : {}),
     });
     const pricing = await resolveValidatedCoupon({
@@ -5830,6 +5979,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const session = await prisma.paymentSession.create({
       data: {
         orgId,
+        branchId: branch.id,
         userId,
         purpose: "MEMBERSHIP",
         amountPaise: referralPricing.finalAmountPaise,
@@ -5837,6 +5987,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         checkoutUrl: "",
         provider: getPaymentProviderDiagnostics().selectedProvider,
         metadata: clean({
+          branchId: branch.id,
           subscriptionId: subscription.id,
           renewalOfSubscriptionId: subscriptionId,
           offerId: offerPricing.offer?.id,
@@ -6000,6 +6151,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const session = await prisma.paymentSession.create({
       data: {
         orgId,
+        branchId: currentSubscription.branchId,
         userId,
         purpose: "MEMBERSHIP",
         amountPaise: plan.pricePaise,
@@ -6570,6 +6722,33 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
       })),
     });
   }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "referrals", "redeem"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    await assertRateLimit(
+      "referralRedeemByActor",
+      `${orgId}:${userId}`,
+      "Too many referral redemption attempts from this account.",
+    );
+    const body = referralRedeemSchema.parse(await readJson(request));
+    const { referral, redemption, alreadyRedeemed } = await redeemReferralCodeForUser({
+      orgId,
+      userId,
+      code: body.code,
+      ctx,
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: alreadyRedeemed ? "referral.redeem_replayed" : "referral.redeemed",
+      entityType: "referral_redemption",
+      entityId: redemption.id,
+      metadata: { code: referral.code, referralCodeId: referral.id },
+    });
+    return ok({ referral, redemption, alreadyRedeemed });
+  }
   if (
     request.method === "POST" &&
     (pathMatches(path, ["orgs", /.+/, "referrals"]) ||
@@ -6701,6 +6880,37 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
     if (!referral) return fail("NOT_FOUND", "Referral not found", 404);
     const org = await prisma.organization.findUnique({ where: { id: referral.orgId } });
     return ok({ referral, org });
+  }
+  if (request.method === "POST" && pathMatches(path, ["referrals", /.+/, "redeem"])) {
+    const code = path[1]!.trim().toUpperCase();
+    const referralRecord = await prisma.referralCode.findUnique({ where: { code } });
+    if (!referralRecord) {
+      throw notFoundError("Referral not found");
+    }
+    const orgId = referralRecord.orgId;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    await assertRateLimit(
+      "referralRedeemByActor",
+      `${orgId}:${userId}:${code}`,
+      "Too many referral redemption attempts from this account.",
+    );
+    const { referral, redemption, alreadyRedeemed } = await redeemReferralCodeForUser({
+      orgId,
+      userId,
+      code,
+      ctx,
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: alreadyRedeemed ? "referral.redeem_replayed" : "referral.redeemed",
+      entityType: "referral_redemption",
+      entityId: redemption.id,
+      metadata: { code: referral.code, referralCodeId: referral.id },
+    });
+    return ok({ referral, redemption, alreadyRedeemed });
   }
   return undefined;
 }
@@ -7677,7 +7887,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "manual-payments"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
-    const userId = requireOrgPermission(ctx, orgId, "PAYMENTS_RECORD_OFFLINE");
+    const userId = assertManualPaymentRecordContext(ctx, orgId);
     await assertRateLimit(
       "manualPaymentByActorOrg",
       `${orgId}:${userId}`,
@@ -7692,7 +7902,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       throw notFoundError("Member not found");
     }
     await assertOrgUser({ orgId, userId: body.memberUserId, role: "MEMBER" });
-    const paymentData = clean({
+    const basePaymentData = clean({
       orgId,
       userId: body.memberUserId,
       purpose: "MEMBERSHIP",
@@ -7740,7 +7950,9 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
           publicVisible: plan.publicVisible,
         }),
       );
-      payment = await prisma.payment.create({ data: paymentData });
+      payment = await prisma.payment.create({
+        data: clean({ ...basePaymentData, branchId: existingSubscription.branchId }),
+      });
       subscription = await prisma.memberSubscription.update({
         where: { id: existingSubscription.id },
         data: clean({
@@ -7781,7 +7993,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
           publicVisible: plan.publicVisible,
         }),
       );
-      payment = await prisma.payment.create({ data: paymentData });
+      payment = await prisma.payment.create({ data: clean({ ...basePaymentData, branchId: branch.id }) });
       subscription = await prisma.memberSubscription.create({
         data: clean({
           orgId,
@@ -9143,9 +9355,16 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     if (ctx.orgId !== orgId || !ctx.roles.length) {
       throw forbiddenError("No organization access");
     }
+    const branchId = queryBranchId(request);
+    if (branchId) {
+      await resolveOrgBranch(orgId, branchId);
+    }
     return ok({
       products: await prisma.product.findMany({
-        where: { orgId },
+        where: {
+          orgId,
+          ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
+        },
         orderBy: [{ active: "desc" }, { stock: "asc" }],
       }),
     });
@@ -9153,14 +9372,16 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "products"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
-    const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
+    const userId = assertOrgServicePermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
     const body = productInputSchema.parse(await readJson(request));
+    const branch = await resolveOrgBranch(orgId, body.branchId);
     const imageAsset = await getOrganizationScopedFileAsset(body.imageAssetId, orgId, [
       "product_image",
     ]);
     const product = await prisma.product.create({
       data: clean({
         orgId,
+        branchId: branch.id,
         name: body.name,
         description: body.description,
         pricePaise: body.pricePaise,
@@ -9185,9 +9406,11 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const productId = path[3]!;
     const ctx = await getRequestContext(request, { orgId });
-    const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
+    const userId = assertOrgServicePermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
     const body = productInputSchema.partial().parse(await readJson(request));
     const existingProduct = await prisma.product.findFirst({ where: { id: productId, orgId } });
+    const branch =
+      body.branchId !== undefined ? await resolveOrgBranch(orgId, body.branchId) : null;
     const imageAsset = await getOrganizationScopedFileAsset(body.imageAssetId, orgId, [
       "product_image",
     ]);
@@ -9197,6 +9420,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const product = await prisma.product.update({
       where: { id: existingProduct.id },
       data: clean({
+        branchId: branch?.id,
         name: body.name,
         description: body.description,
         category: body.category,
@@ -9221,7 +9445,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const productId = path[3]!;
     const ctx = await getRequestContext(request, { orgId });
-    const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
+    const userId = assertOrgServicePermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
     const existingProduct = await prisma.product.findFirst({ where: { id: productId, orgId } });
     if (!existingProduct) {
       throw notFoundError("Product not found");
@@ -9250,7 +9474,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "inventory", "adjust"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
-    const userId = requireOrgPermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
+    const userId = assertOrgServicePermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
     const body = inventoryAdjustmentSchema.parse(await readJson(request));
     const existingProduct = await prisma.product.findFirst({
       where: { id: body.productId, orgId },
@@ -9269,6 +9493,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       prisma.inventoryMovement.create({
         data: {
           orgId,
+          branchId: existingProduct.branchId,
           productId: existingProduct.id,
           delta: body.delta,
           reason: body.reason,
@@ -9297,6 +9522,13 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       }),
       prisma.user.findUnique({ where: { id: userId } }),
     ]);
+    const inferredBranchId = body.branchId ?? products.find((product) => product.branchId)?.branchId;
+    const branch = await resolveOrgBranch(body.orgId, inferredBranchId);
+    if (
+      products.some((product) => product.branchId && product.branchId !== branch.id)
+    ) {
+      throw validationError("Shop products must belong to the selected branch.");
+    }
     const calculation = calculateShopOrder({
       products: products.map((product) => ({
         id: product.id,
@@ -9307,7 +9539,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       items: body.items,
     });
     const order = await prisma.shopOrder.create({
-      data: { orgId: body.orgId, userId, totalPaise: calculation.totalPaise },
+      data: { orgId: body.orgId, branchId: branch.id, userId, totalPaise: calculation.totalPaise },
     });
     await prisma.shopOrderItem.createMany({
       data: body.items.map((item) => ({
@@ -9321,12 +9553,13 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const session = await prisma.paymentSession.create({
       data: {
         orgId: body.orgId,
+        branchId: branch.id,
         userId,
         purpose: "SHOP_ORDER",
         amountPaise: calculation.totalPaise,
         checkoutUrl: "",
         provider: getPaymentProviderDiagnostics().selectedProvider,
-        metadata: { shopOrderId: order.id },
+        metadata: { shopOrderId: order.id, branchId: branch.id },
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
       },
     });
@@ -9368,8 +9601,12 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "SHOP_FULFILL_ORDER");
+    const branchId = queryBranchId(request);
+    if (branchId) {
+      await resolveOrgBranch(orgId, branchId);
+    }
     const orders = await prisma.shopOrder.findMany({
-      where: { orgId },
+      where: { orgId, ...(branchId ? { branchId } : {}) },
       orderBy: { createdAt: "desc" },
       take: 100,
     });
@@ -9387,12 +9624,16 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "SHOP_FULFILL_ORDER");
+    const branchId = queryBranchId(request);
+    if (branchId) {
+      await resolveOrgBranch(orgId, branchId);
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const [orders, fulfilledToday] = await Promise.all([
-      getOrganizationActiveShopOrders(orgId),
+      getOrganizationActiveShopOrders(orgId, clean({ branchId })),
       prisma.shopOrder.count({
-        where: { orgId, status: "FULFILLED", fulfilledAt: { gte: today } },
+        where: { orgId, status: "FULFILLED", fulfilledAt: { gte: today }, ...(branchId ? { branchId } : {}) },
       }),
     ]);
     return ok({ orders, summary: { fulfilledToday } });
@@ -9408,11 +9649,15 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     if (!existingOrder) {
       throw notFoundError("Shop order not found");
     }
-    const fulfilled = fulfillShopOrder({
-      id: existingOrder.id,
-      status: existingOrder.status,
-      totalPaise: existingOrder.totalPaise,
-      ...(existingOrder.pickupCode ? { pickupCode: existingOrder.pickupCode } : {}),
+    const fulfilled = fulfillShopOrderForContext({
+      ctx,
+      orgId,
+      order: {
+        id: existingOrder.id,
+        status: existingOrder.status,
+        totalPaise: existingOrder.totalPaise,
+        ...(existingOrder.pickupCode ? { pickupCode: existingOrder.pickupCode } : {}),
+      },
     });
     const order = await prisma.shopOrder.update({
       where: { id: existingOrder.id },
@@ -9860,7 +10105,11 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
     return ok({
-      providers: { ...getProviderRegistryDiagnostics(), rateLimit: getRateLimitDiagnostics() },
+      providers: {
+        ...getProviderRegistryDiagnostics(),
+        rateLimit: getRateLimitDiagnostics(),
+        cache: getServerCacheDiagnostics(),
+      },
     });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "abuse-flags"])) {

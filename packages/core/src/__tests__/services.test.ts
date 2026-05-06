@@ -10,8 +10,11 @@ import { hasPermission } from "../permissions";
 import { MockAIProvider } from "../providers/ai";
 import {
   applyCoupon,
+  assertManualPaymentRecordContext,
   assertAIAllowed,
   assertMinorCanUseFeature,
+  assertOrgServicePermission,
+  assertReferralRedeemContext,
   buildAIQuotaState,
   calculateShopOrder,
   canReceiveNotification,
@@ -24,6 +27,7 @@ import {
   buildInvoiceNumber,
   consumeVisit,
   createManualPaymentAdjustment,
+  createSubscriptionReminder,
   createSignedQrToken,
   decideClassEnrollment,
   decideAttendanceStatus,
@@ -31,10 +35,13 @@ import {
   encodeQrPayload,
   evaluateSubscription,
   fulfillShopOrder,
+  fulfillShopOrderForContext,
   markShopOrderPaid,
   requireManualOverrideReason,
   runAIGuardedRequest,
+  shouldCreatePaymentFailureReminder,
   shouldFanOutWhatsApp,
+  transitionSubscriptionReminder,
   transitionPaymentSession,
   validateAttendanceScan,
   validateClassSchedule,
@@ -173,6 +180,12 @@ describe("coupon and referral service", () => {
         referrerEmail: "MEMBER@example.com",
       }),
     ).toThrow("Same email");
+    expect(() =>
+      validateReferralRedemption(referral, {
+        referredUserId: "other",
+        ctx: { userId: "actor", roles: [], permissions: [] },
+      }),
+    ).toThrow("referred member");
   });
 });
 
@@ -211,6 +224,85 @@ describe("payments", () => {
         mode: "CASH",
       }),
     ).toThrow("reason required");
+  });
+
+  it("guards manual payment mutations with org permissions", () => {
+    expect(
+      assertManualPaymentRecordContext(
+        {
+          userId: "reception",
+          orgId: "org",
+          roles: ["RECEPTIONIST"],
+          permissions: ["PAYMENTS_RECORD_OFFLINE"],
+        },
+        "org",
+      ),
+    ).toBe("reception");
+    expect(() =>
+      assertManualPaymentRecordContext(
+        {
+          userId: "member",
+          orgId: "org",
+          roles: ["MEMBER"],
+          permissions: [],
+        },
+        "org",
+      ),
+    ).toThrow("Permission denied");
+  });
+});
+
+describe("service RBAC", () => {
+  it("enforces tenant and permission boundaries in core service guards", () => {
+    expect(() =>
+      assertOrgServicePermission(
+        {
+          userId: "owner",
+          orgId: "other_org",
+          roles: ["OWNER"],
+          permissions: ["SHOP_FULFILL_ORDER"],
+        },
+        "org",
+        "SHOP_FULFILL_ORDER",
+      ),
+    ).toThrow("No organization access");
+    expect(
+      assertReferralRedeemContext(
+        { userId: "member", roles: [], permissions: [] },
+        { orgId: "org", referredUserId: "member" },
+      ),
+    ).toBe("member");
+    expect(() =>
+      assertReferralRedeemContext(
+        { userId: "trainer", roles: [], permissions: [] },
+        { orgId: "org", referredUserId: "member" },
+      ),
+    ).toThrow("referred member");
+  });
+});
+
+describe("subscription reminders", () => {
+  it("creates and transitions payment failure reminders", () => {
+    const reminder = createSubscriptionReminder({
+      orgId: "org",
+      userId: "member",
+      subscriptionId: "sub",
+      mandateId: "mandate",
+      kind: "PAYMENT_FAILED",
+      now,
+    });
+
+    expect(reminder).toMatchObject({
+      status: "PENDING",
+      kind: "PAYMENT_FAILED",
+      dueAt: now,
+    });
+    expect(shouldCreatePaymentFailureReminder({ eventType: "invoice.payment_failed" })).toBe(true);
+    const sent = transitionSubscriptionReminder(reminder, "SENT", now);
+    expect(sent.sentAt).toBe(now);
+    const resolved = transitionSubscriptionReminder(sent, "RESOLVED", now);
+    expect(resolved.resolvedAt).toBe(now);
+    expect(() => transitionSubscriptionReminder(resolved, "PENDING", now)).toThrow("reopened");
   });
 });
 
@@ -518,6 +610,18 @@ describe("shop", () => {
     );
     expect(ready.status).toBe("READY_FOR_PICKUP");
     expect(fulfillShopOrder(ready).status).toBe("FULFILLED");
+    expect(
+      fulfillShopOrderForContext({
+        ctx: {
+          userId: "reception",
+          orgId: "org",
+          roles: ["RECEPTIONIST"],
+          permissions: ["SHOP_FULFILL_ORDER"],
+        },
+        orgId: "org",
+        order: ready,
+      }).status,
+    ).toBe("FULFILLED");
     expect(() =>
       calculateShopOrder({
         products: [{ id: "water", stock: 1, pricePaise: 100, active: true }],

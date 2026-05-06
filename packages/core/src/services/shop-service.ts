@@ -1,4 +1,5 @@
-import type { OrderStatus } from "../types";
+import type { OrderStatus, RequestContext } from "../types";
+import { assertOrgServicePermission } from "./rbac-service";
 
 export interface ProductStock {
   id: string;
@@ -46,4 +47,13 @@ export function fulfillShopOrder(order: ShopOrderState): ShopOrderState {
     throw new Error("Order is not ready for pickup");
   }
   return { ...order, status: "FULFILLED" };
+}
+
+export function fulfillShopOrderForContext(input: {
+  ctx: RequestContext;
+  orgId: string;
+  order: ShopOrderState;
+}): ShopOrderState {
+  assertOrgServicePermission(input.ctx, input.orgId, "SHOP_FULFILL_ORDER");
+  return fulfillShopOrder(input.order);
 }
