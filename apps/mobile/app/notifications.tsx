@@ -189,6 +189,9 @@ export default function NotificationsScreen() {
                   style={styles.markAllButton}
                 >
                   <Ionicons name="checkmark-done" size={18} color={colors.lime} />
+                  <Text numberOfLines={1} style={styles.markAllText}>
+                    Mark all read
+                  </Text>
                 </Pressable>
               ) : null
             }
@@ -316,14 +319,21 @@ const styles = StyleSheet.create({
     paddingBottom: layout.bottomNavContentPadding,
   },
   markAllButton: {
-    width: 44,
+    minWidth: 44,
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(185,244,85,0.3)",
     backgroundColor: "rgba(185,244,85,0.08)",
+    paddingHorizontal: 12,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 6,
+  },
+  markAllText: {
+    color: colors.lime,
+    ...typography.caption,
   },
   calloutContent: {
     flexDirection: "row",

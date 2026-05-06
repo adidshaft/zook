@@ -30,6 +30,12 @@ type Draft = {
   sections: Array<{ title: string; body: string }>;
 };
 
+type AuditLogEntry = {
+  id: string;
+  label: string;
+  at: string;
+};
+
 function sectionsFromResponse(response: unknown): Array<{ title: string; body: string }> {
   if (response && typeof response === "object" && "days" in response) {
     const days = (response as { days?: unknown }).days;
@@ -120,6 +126,18 @@ export default function TrainerAiDraftReview() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+
+  function appendAudit(label: string) {
+    setAuditLog((current) => [
+      {
+        id: `${Date.now()}-${current.length}`,
+        label,
+        at: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+      ...current,
+    ]);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -195,6 +213,7 @@ export default function TrainerAiDraftReview() {
       });
       setEditing(false);
       setStatus("Draft edits saved.");
+      appendAudit("Trainer edits saved to the draft plan.");
       return true;
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to save draft edits.");
@@ -233,6 +252,7 @@ export default function TrainerAiDraftReview() {
       });
       setStatus("Draft generated. Review is still required.");
       setEditing(true);
+      appendAudit("AI suggestion generated from the current client profile.");
     } catch (error) {
       setStatus(getApiErrorMessage(error));
     } finally {
@@ -260,6 +280,7 @@ export default function TrainerAiDraftReview() {
       });
       void deleteStoredValue(draftStorageKey);
       setStatus(`${draft.title} assigned. The client can now see it.`);
+      appendAudit("Draft reviewed and assigned to the client.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to assign draft.");
     } finally {
@@ -344,6 +365,21 @@ export default function TrainerAiDraftReview() {
               </GlassCard>
 
               <GlassCard variant="compact" contentStyle={styles.stack}>
+                <View style={styles.reviewColumns}>
+                  <View style={styles.reviewColumn}>
+                    <Text style={styles.reviewColumnLabel}>AI suggestion</Text>
+                    <Text style={styles.reviewColumnBody}>
+                      {draft.sections.length} draft{" "}
+                      {draft.sections.length === 1 ? "section" : "sections"}
+                    </Text>
+                  </View>
+                  <View style={styles.reviewColumn}>
+                    <Text style={styles.reviewColumnLabel}>Editable plan</Text>
+                    <Text style={styles.reviewColumnBody}>
+                      {editing ? "Edits enabled" : "Preview mode"}
+                    </Text>
+                  </View>
+                </View>
                 {draft.sections.map((section, index) =>
                   editing ? (
                     <View key={`${section.title}-${index}`} style={styles.stack}>
@@ -385,6 +421,23 @@ export default function TrainerAiDraftReview() {
                 <Text style={styles.cardBody}>This draft is not visible to the client yet.</Text>
               </GlassCard>
 
+              <GlassCard variant="compact" contentStyle={styles.auditContent}>
+                <View style={styles.auditHeader}>
+                  <IconBubble icon="clipboard-outline" tone="blue" size={34} />
+                  <View style={styles.summaryCopy}>
+                    <Text style={styles.cardTitle}>Audit note</Text>
+                    <Text style={styles.cardBody}>Recent draft generation and trainer edits.</Text>
+                  </View>
+                </View>
+                {auditLog.length ? (
+                  auditLog.map((entry) => (
+                    <DetailRow key={entry.id} label={entry.at} value={entry.label} />
+                  ))
+                ) : (
+                  <DetailRow label="Pending" value="Generate or edit the draft to start the log." />
+                )}
+              </GlassCard>
+
               <View style={styles.actionRow}>
                 <ZookButton
                   onPress={() => void assignDraft()}
@@ -406,6 +459,7 @@ export default function TrainerAiDraftReview() {
                 onPress={() => {
                   setDraft(null);
                   setStatus("Draft discarded before assignment.");
+                  appendAudit("Draft discarded before assignment.");
                 }}
                 accessibilityRole="button"
                 style={styles.discardButton}
@@ -492,8 +546,38 @@ const styles = StyleSheet.create({
   stack: {
     gap: 10,
   },
+  reviewColumns: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  reviewColumn: {
+    flex: 1,
+    minHeight: 62,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    padding: 10,
+    gap: 4,
+  },
+  reviewColumnLabel: {
+    color: colors.text,
+    ...typography.caption,
+  },
+  reviewColumnBody: {
+    color: colors.muted,
+    ...typography.small,
+  },
   safetyContent: {
     gap: 8,
+  },
+  auditContent: {
+    gap: 10,
+  },
+  auditHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
   },
   actionRow: {
     flexDirection: "row",

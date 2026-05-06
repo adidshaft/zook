@@ -332,6 +332,34 @@ export default function Settings() {
                 </Text>
               </View>
             </GlassCard>
+            {allRoles.length > 1 ? (
+              <View style={styles.roleGrid}>
+                <Text style={styles.sectionMiniLabel}>Use Zook as</Text>
+                <View style={styles.roleRow}>
+                  {allRoles.map((role) => (
+                    <Pressable
+                      key={role}
+                      onPress={() => void switchRole(role)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Switch to ${titleCaseFromCode(role)}`}
+                      style={[
+                        styles.roleButton,
+                        role === activeRole ? styles.roleButtonActive : null,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.roleButtonText,
+                          role === activeRole ? styles.roleButtonTextActive : null,
+                        ]}
+                      >
+                        {titleCaseFromCode(role)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : null}
             <GlassInput
               label="Name"
               value={profileForm.name}
@@ -403,75 +431,7 @@ export default function Settings() {
               {busy === "profile" ? "Saving..." : "Save profile"}
             </PrimaryButton>
             {profileStatus ? <Text style={styles.statusText}>{profileStatus}</Text> : null}
-          </CollapsibleSection>
-
-          {allRoles.length > 1 ? (
-            <CollapsibleSection
-              title="Role"
-              subtitle={`Using Zook as ${titleCaseFromCode(activeRole)}`}
-            >
-              <View style={styles.roleGrid}>
-                <Text style={styles.sectionMiniLabel}>Use Zook as</Text>
-                <View style={styles.roleRow}>
-                  {allRoles.map((role) => (
-                    <Pressable
-                      key={role}
-                      onPress={() => void switchRole(role)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Switch to ${titleCaseFromCode(role)}`}
-                      style={[
-                        styles.roleButton,
-                        role === activeRole ? styles.roleButtonActive : null,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.roleButtonText,
-                          role === activeRole ? styles.roleButtonTextActive : null,
-                        ]}
-                      >
-                        {titleCaseFromCode(role)}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            </CollapsibleSection>
-          ) : null}
-
-          <CollapsibleSection
-            title="Notifications"
-            subtitle={`${notificationPreferences.scope === "organization" ? "Gym-specific" : "Global"} preferences`}
-            defaultOpen
-          >
-            <GlassCard variant="compact" contentStyle={styles.preferenceStack}>
-              <PreferenceToggle
-                title="Push notifications"
-                subtitle="Allow this device to receive enabled notification categories"
-                value={notificationPreferences.pushEnabled}
-                disabled={busy === "preference-pushEnabled"}
-                onValueChange={(value) => void updatePreference("pushEnabled", value)}
-              />
-              {preferenceRows.map((row) => (
-                <PreferenceToggle
-                  key={row.key}
-                  title={row.title}
-                  subtitle={row.subtitle}
-                  value={notificationPreferences[row.key]}
-                  disabled={busy === `preference-${row.key}`}
-                  onValueChange={(value) => void updatePreference(row.key, value)}
-                />
-              ))}
-            </GlassCard>
-            {preferenceStatus ? <Text style={styles.statusText}>{preferenceStatus}</Text> : null}
-          </CollapsibleSection>
-
-          {referralCode ? (
-            <CollapsibleSection
-              title="Referral"
-              subtitle={`Code ${referralCode}`}
-              defaultOpen={false}
-            >
+            {referralCode ? (
               <GlassCard variant="success" contentStyle={styles.referralContent}>
                 <View style={styles.referralHeader}>
                   <IconBubble icon="gift-outline" tone="lime" size={40} />
@@ -513,47 +473,34 @@ export default function Settings() {
                   </ZookButton>
                 </View>
               </GlassCard>
-            </CollapsibleSection>
-          ) : null}
+            ) : null}
+          </CollapsibleSection>
 
           <CollapsibleSection
-            title="System"
-            subtitle="Help, policies, and app info"
-            defaultOpen={false}
+            title="Notifications"
+            subtitle={`${notificationPreferences.scope === "organization" ? "Gym-specific" : "Global"} preferences`}
+            defaultOpen
           >
-            <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
-              <Pressable
-                onPress={() => void Linking.openURL("mailto:help@zook.app")}
-                accessibilityRole="button"
-                accessibilityLabel="Contact support"
-              >
-                <ListRow
-                  title="Contact support"
-                  subtitle="Email help@zook.app with account or gym issues"
-                  icon="mail-outline"
-                  tone="blue"
+            <GlassCard variant="compact" contentStyle={styles.preferenceStack}>
+              <PreferenceToggle
+                title="Push notifications"
+                subtitle="Allow this device to receive enabled notification categories"
+                value={notificationPreferences.pushEnabled}
+                disabled={busy === "preference-pushEnabled"}
+                onValueChange={(value) => void updatePreference("pushEnabled", value)}
+              />
+              {preferenceRows.map((row) => (
+                <PreferenceToggle
+                  key={row.key}
+                  title={row.title}
+                  subtitle={row.subtitle}
+                  value={notificationPreferences[row.key]}
+                  disabled={busy === `preference-${row.key}`}
+                  onValueChange={(value) => void updatePreference(row.key, value)}
                 />
-              </Pressable>
-              <ListRow
-                title="About Zook"
-                subtitle="Gym operations, memberships, PT, and member experience"
-                icon="information-circle-outline"
-                tone="lime"
-              />
-              <ListRow
-                title="Signed-in gym"
-                subtitle={
-                  activeOrganization
-                    ? `${activeOrganization.name} · ${activeOrganization.city}`
-                    : "No active gym"
-                }
-                icon="business-outline"
-                tone="neutral"
-              />
+              ))}
             </GlassCard>
-            <PrimaryButton onPress={() => void logout()} tone="danger">
-              Logout
-            </PrimaryButton>
+            {preferenceStatus ? <Text style={styles.statusText}>{preferenceStatus}</Text> : null}
           </CollapsibleSection>
 
           <CollapsibleSection
@@ -612,6 +559,47 @@ export default function Settings() {
               />
             </GlassCard>
           </CollapsibleSection>
+
+          <CollapsibleSection
+            title="System"
+            subtitle="Help, policies, and app info"
+            defaultOpen={false}
+          >
+            <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
+              <Pressable
+                onPress={() => void Linking.openURL("mailto:help@zook.app")}
+                accessibilityRole="button"
+                accessibilityLabel="Contact support"
+              >
+                <ListRow
+                  title="Contact support"
+                  subtitle="Email help@zook.app with account or gym issues"
+                  icon="mail-outline"
+                  tone="blue"
+                />
+              </Pressable>
+              <ListRow
+                title="About Zook"
+                subtitle="Gym operations, memberships, PT, and member experience"
+                icon="information-circle-outline"
+                tone="lime"
+              />
+              <ListRow
+                title="Signed-in gym"
+                subtitle={
+                  activeOrganization
+                    ? `${activeOrganization.name} · ${activeOrganization.city}`
+                    : "No active gym"
+                }
+                icon="business-outline"
+                tone="neutral"
+              />
+            </GlassCard>
+          </CollapsibleSection>
+
+          <PrimaryButton onPress={() => void logout()} tone="danger">
+            Logout
+          </PrimaryButton>
         </ScrollView>
         <BottomNav />
       </ZookScreen>

@@ -37,6 +37,7 @@ type IconName = keyof typeof Ionicons.glyphMap;
 // Metro resolves static image requires at build time.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const zookMarkSource = require("../../assets/icons/ic_launcher_foreground.png");
+const iconOnlyHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
 
 const brandMarkSizes: Record<BrandMarkSize, number> = {
   sm: 32,
@@ -353,6 +354,7 @@ export function ProfileShortcut({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={() => pressWithHaptics(() => router.push("/settings"))}
+      hitSlop={iconOnlyHitSlop}
       style={({ pressed }) => [
         styles.profileShortcut,
         { width: size, height: size, borderRadius: size / 2 },
@@ -1297,6 +1299,7 @@ export function ProductCard({
               accessibilityRole="button"
               accessibilityLabel={`Remove ${name}`}
               accessibilityState={{ disabled: !canDecrement }}
+              hitSlop={iconOnlyHitSlop}
               style={[styles.productStepperButton, !canDecrement ? styles.disabled : null]}
             >
               <Ionicons name="remove" size={16} color={colors.lime} />
@@ -1310,6 +1313,7 @@ export function ProductCard({
               accessibilityRole="button"
               accessibilityLabel={`Add ${name}`}
               accessibilityState={{ disabled: !canIncrement }}
+              hitSlop={iconOnlyHitSlop}
               style={[styles.productStepperButton, !canIncrement ? styles.disabled : null]}
             >
               <Ionicons name="add" size={16} color={colors.lime} />

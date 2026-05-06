@@ -218,15 +218,15 @@ export default function TrainerClientDetail() {
             >
               Create Plan
             </ZookButton>
-              <ZookButton
-                href={aiDraftHref}
-                disabled={!client}
-                tone="secondary"
-                style={styles.actionHalf}
-                icon="sparkles-outline"
-              >
+            <ZookButton
+              href={aiDraftHref}
+              disabled={!client}
+              tone="secondary"
+              style={styles.actionHalf}
+              icon="sparkles-outline"
+            >
               Generate with AI
-              </ZookButton>
+            </ZookButton>
           </View>
 
           <SegmentedControl options={tabs} value={tab} onChange={setTab} />
@@ -281,13 +281,25 @@ export default function TrainerClientDetail() {
                   ),
                 )}
               </View>
-              <ZookButton
-                onPress={() => void saveDraft()}
-                icon="save-outline"
-                disabled={savingPlan}
-              >
-                Save draft
-              </ZookButton>
+              <View style={styles.actionRow}>
+                <ZookButton
+                  onPress={() => void saveDraft()}
+                  icon="save-outline"
+                  disabled={savingPlan}
+                  style={styles.actionHalf}
+                >
+                  Save draft
+                </ZookButton>
+                <ZookButton
+                  href={aiDraftHref}
+                  disabled={!client || savingPlan}
+                  tone="secondary"
+                  style={styles.actionHalf}
+                  icon="sparkles-outline"
+                >
+                  Generate with AI
+                </ZookButton>
+              </View>
               <SecondaryButton onPress={() => void assignPlan()} disabled={savingPlan}>
                 Assign to client
               </SecondaryButton>

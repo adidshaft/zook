@@ -48,6 +48,12 @@ type ExerciseEntry = {
   weightKg: string;
 };
 
+const iconHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
+
+function emptyExercise(): ExerciseEntry {
+  return { exerciseName: "", setsCompleted: "", reps: "", weightKg: "" };
+}
+
 export default function TrackingEntry() {
   const { activeOrgId, token } = useAuth();
   const router = useRouter();
@@ -61,9 +67,7 @@ export default function TrackingEntry() {
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [exercises, setExercises] = useState<ExerciseEntry[]>([
-    { exerciseName: "", setsCompleted: "", reps: "", weightKg: "" },
-  ]);
+  const [exercises, setExercises] = useState<ExerciseEntry[]>([emptyExercise()]);
 
   function updateExercise(index: number, field: keyof ExerciseEntry, value: string) {
     setExercises((current) =>
@@ -74,14 +78,13 @@ export default function TrackingEntry() {
   }
 
   function addExercise() {
-    setExercises((current) => [
-      ...current,
-      { exerciseName: "", setsCompleted: "", reps: "", weightKg: "" },
-    ]);
+    setExercises((current) => [...current, emptyExercise()]);
   }
 
   function deleteExercise(index: number) {
-    setExercises((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setExercises((current) =>
+      current.length <= 1 ? [emptyExercise()] : current.filter((_, itemIndex) => itemIndex !== index),
+    );
   }
 
   async function saveWorkout() {
@@ -279,6 +282,7 @@ export default function TrackingEntry() {
                 onPress={addExercise}
                 accessibilityRole="button"
                 accessibilityLabel="Add exercise"
+                hitSlop={iconHitSlop}
                 style={styles.addButton}
               >
                 <Ionicons name="add" size={20} color={colors.bg} />
@@ -302,6 +306,7 @@ export default function TrackingEntry() {
                     onPress={() => deleteExercise(index)}
                     accessibilityRole="button"
                     accessibilityLabel={`Delete ${exercise.exerciseName || "exercise"}`}
+                    hitSlop={iconHitSlop}
                     style={styles.deleteButton}
                   >
                     <Ionicons name="close" size={16} color={colors.red} />
@@ -386,15 +391,19 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   typeChip: {
+    flexBasis: "47%",
+    flexGrow: 1,
+    minHeight: 64,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
-    borderRadius: 999,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: "rgba(255,255,255,0.04)",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   typeChipActive: {
     borderColor: colors.lime,
