@@ -141,6 +141,8 @@ export const publicMessages = {
     membershipPreview: "What you get with this gym",
     choosePlanProfile:
       "Choose a plan here, then continue in Zook for check-ins, workouts, notifications, and desk pickup.",
+    gymTaglineFallback:
+      "Join this gym, choose a plan, check in with QR, follow assigned plans, and pick up desk orders through Zook.",
     viewPlans: "View plans",
     openInApp: "Open in app",
     scanToJoin: "Scan from your phone to join instantly",
@@ -315,6 +317,8 @@ export const publicMessages = {
     membershipPreview: "इस जिम में आपको क्या मिलेगा",
     choosePlanProfile:
       "यहां प्लान चुनें, फिर चेक-इन, वर्कआउट, नोटिफिकेशन और डेस्क पिकअप के लिए Zook में जारी रखें.",
+    gymTaglineFallback:
+      "इस जिम से जुड़ें, प्लान चुनें, QR से चेक-इन करें, असाइन किए गए प्लान फॉलो करें और डेस्क ऑर्डर Zook से पिकअप करें.",
     viewPlans: "प्लान देखें",
     openInApp: "ऐप में खोलें",
     scanToJoin: "फोन से स्कैन करें और तुरंत जुड़ें",

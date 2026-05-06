@@ -223,8 +223,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                 <MapPin size={18} /> {org.address} · {org.city}, {org.state}
               </p>
               <p className="mt-5 max-w-2xl text-base leading-7 text-white/62">
-                {org.tagline ||
-                  "Join this gym, choose a plan, check in with QR, follow assigned plans, and pick up desk orders through Zook."}
+                {org.tagline || t("gymTaglineFallback")}
               </p>
               {org.openingHoursSummary ? (
                 <p className="mt-3 text-sm text-lime-100/75">{org.openingHoursSummary}</p>

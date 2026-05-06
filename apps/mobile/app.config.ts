@@ -29,6 +29,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   },
   plugins: [
     "expo-router",
+    "expo-font",
     "expo-notifications",
     "expo-secure-store",
     [
