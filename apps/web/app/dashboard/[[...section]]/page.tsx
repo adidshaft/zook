@@ -8,8 +8,11 @@ const dashboardAccessPermissions = new Set([
   "ORG_MANAGE_STAFF",
   "ORG_MANAGE_PROFILE",
   "ORG_MANAGE_BILLING",
+  "MEMBERS_VIEW",
   "MEMBERS_MANAGE",
   "PAYMENTS_VIEW",
+  "PLANS_CREATE",
+  "PT_RECORD",
 ]);
 
 function canAccessWebDashboard(session: Awaited<ReturnType<typeof requireDashboardSession>>) {

@@ -21,7 +21,12 @@ export default async function MyMembershipPage() {
   if (session.user.isPlatformAdmin) {
     redirect("/platform");
   }
-  if (roles.some((role) => role === "OWNER" || role === "ADMIN" || role === "RECEPTIONIST")) {
+  if (
+    roles.some(
+      (role) =>
+        role === "OWNER" || role === "ADMIN" || role === "RECEPTIONIST" || role === "TRAINER",
+    )
+  ) {
     redirect("/dashboard");
   }
 

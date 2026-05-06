@@ -55,6 +55,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
       ? t("signInPlatform")
       : t("signInDefault"),
   );
+  const roleLabels = [t("roleMember"), t("roleTrainer"), t("roleOwner"), t("roleReceptionist")];
 
   useEffect(() => {
     if (stage === "otp") {
@@ -164,6 +165,16 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
       <p className="mt-2 text-sm leading-6 text-white/55" role="alert" aria-live="polite">
         {message}
       </p>
+      <div className="mt-4 flex flex-wrap gap-2" aria-label={t("loginRoleHint")}>
+        {roleLabels.map((role) => (
+          <span
+            key={role}
+            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/62"
+          >
+            {role}
+          </span>
+        ))}
+      </div>
       <form
         className="mt-6 grid gap-3"
         onSubmit={(event) => {

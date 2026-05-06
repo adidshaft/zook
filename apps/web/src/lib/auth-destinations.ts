@@ -1,6 +1,6 @@
 import type { AuthSessionSummary, Role } from "@zook/core";
 
-const gymDashboardRoles = new Set<Role>(["OWNER", "ADMIN", "RECEPTIONIST"]);
+const gymDashboardRoles = new Set<Role>(["OWNER", "ADMIN", "RECEPTIONIST", "TRAINER"]);
 
 function hasGymDashboardAccess(session: Pick<AuthSessionSummary, "activeOrganization">) {
   return Boolean(
@@ -20,7 +20,10 @@ export function resolvePostLoginPath(
   requestedPath?: string | null,
 ) {
   if (requestedPath?.startsWith("/platform")) {
-    return session?.user.isPlatformAdmin ? requestedPath : "/dashboard";
+    if (session?.user.isPlatformAdmin) {
+      return requestedPath;
+    }
+    return resolvePostLoginPath(session);
   }
   if (requestedPath) {
     return requestedPath;
