@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { hasPermission, type Permission, type Role } from "@zook/core";
 import { GlassCard, Pill } from "./glass-card";
 import { webApiFetch } from "@/lib/api-client";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
@@ -20,6 +21,23 @@ type Audience =
   | "selected_members"
   | "single_member"
   | "assigned_clients";
+type PermissionAudience =
+  | "selected"
+  | "single_member"
+  | "assigned_clients"
+  | "all_active_members"
+  | "expiring_soon"
+  | "plan"
+  | "branch_members";
+
+const notificationPermissionByType: Record<NotificationType, Permission> = {
+  TRANSACTIONAL: "NOTIFICATION_SEND_SELECTED",
+  OPERATIONAL: "NOTIFICATION_SEND_OPERATIONAL",
+  PROMOTIONAL: "NOTIFICATION_SEND_PROMOTIONAL",
+  ENGAGEMENT: "NOTIFICATION_SEND_PROMOTIONAL",
+  PLAN: "NOTIFICATION_SEND_PLAN",
+  SECURITY: "NOTIFICATION_SEND_SELECTED",
+};
 
 type NotificationRow = {
   id: string;
@@ -30,6 +48,14 @@ type NotificationRow = {
   audience: string;
   pushEnabled?: boolean;
   createdAt: string;
+  createdByName?: string | null;
+  recipientStats?: {
+    total: number;
+    delivered: number;
+    read: number;
+    failed: number;
+    scheduled: number;
+  };
 };
 
 type TemplateRow = {
@@ -53,6 +79,12 @@ type Preview = {
   willDeliver: number;
   blockedByOptOut: number;
   blockedByMinor: number;
+  budget?: {
+    orgAllRemaining: number;
+    orgOperationalRemaining: number;
+    orgPromoRemaining: number;
+    senderRemaining: number;
+  };
 };
 
 const messageTypes: Array<{ value: NotificationType; label: string; detail: string }> = [
@@ -88,7 +120,36 @@ function memberLabel(member: MemberRow) {
   return member.profile?.name ?? member.profile?.phone ?? member.userId;
 }
 
-export function NotificationComposerPanel({ orgId }: { orgId: string }) {
+function permissionAudience(audience: Audience): PermissionAudience {
+  if (audience === "selected_members") return "selected";
+  if (audience === "membership_plan") return "plan";
+  return audience;
+}
+
+function canUseNotificationOption(input: {
+  roles: Role[];
+  permissions: Permission[];
+  type: NotificationType;
+  audience: PermissionAudience;
+}) {
+  if (input.audience === "assigned_clients") {
+    return hasPermission(input.roles, "NOTIFICATION_SEND_ASSIGNED", input.permissions);
+  }
+  if (input.audience === "single_member") {
+    return hasPermission(input.roles, "NOTIFICATION_SEND_SELECTED", input.permissions);
+  }
+  return hasPermission(input.roles, notificationPermissionByType[input.type], input.permissions);
+}
+
+export function NotificationComposerPanel({
+  orgId,
+  roles = [],
+  permissions = [],
+}: {
+  orgId: string;
+  roles?: Role[];
+  permissions?: Permission[];
+}) {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
@@ -106,6 +167,8 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
   const [daysAhead, setDaysAhead] = useState("7");
   const [pushEnabled, setPushEnabled] = useState(true);
   const [scheduleAt, setScheduleAt] = useState("");
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -134,11 +197,42 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
     void loadResources();
   }, [loadResources]);
 
-  const availableAudiences = useMemo(() => audienceOptions(type), [type]);
+  const typePermissions = useMemo(
+    () =>
+      new Map(
+        messageTypes.map((option) => [
+          option.value,
+          audienceOptions(option.value).some((candidate) =>
+            canUseNotificationOption({
+              roles,
+              permissions,
+              type: option.value,
+              audience: permissionAudience(candidate.value),
+            }),
+          ),
+        ]),
+      ),
+    [permissions, roles],
+  );
+  const availableAudiences = useMemo(
+    () =>
+      audienceOptions(type).map((option) => ({
+        ...option,
+        allowed: canUseNotificationOption({
+          roles,
+          permissions,
+          type,
+          audience: permissionAudience(option.value),
+        }),
+      })),
+    [permissions, roles, type],
+  );
+  const canManageTemplates = permissions.includes("NOTIFICATION_MANAGE_TEMPLATES");
 
   useEffect(() => {
-    if (!availableAudiences.some((option) => option.value === audience)) {
-      setAudience(availableAudiences[0]?.value ?? "all_active_members");
+    const firstAllowed = availableAudiences.find((option) => option.allowed);
+    if (!availableAudiences.some((option) => option.value === audience && option.allowed)) {
+      setAudience(firstAllowed?.value ?? "all_active_members");
       setPreview(null);
     }
   }, [audience, availableAudiences]);
@@ -218,11 +312,19 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
       setSaving(true);
       setError("");
       await webApiFetch(`/api/orgs/${orgId}/notifications`, { method: "POST", body: payload() });
+      if (saveAsTemplate && templateName.trim()) {
+        await webApiFetch(`/api/orgs/${orgId}/notifications/templates`, {
+          method: "POST",
+          body: { name: templateName.trim(), title, body, type },
+        });
+      }
       await loadResources();
       setTitle("");
       setBody("");
       setType("OPERATIONAL");
       setAudience("all_active_members");
+      setSaveAsTemplate(false);
+      setTemplateName("");
       setPreview(null);
       setStep(1);
     } catch (cause) {
@@ -249,6 +351,7 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
                 <button
                   key={option.value}
                   type="button"
+                  disabled={!typePermissions.get(option.value)}
                   onClick={() => {
                     setType(option.value);
                     setPreview(null);
@@ -257,10 +360,13 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
                     type === option.value
                       ? "border-lime-300 bg-lime-300/12"
                       : "border-white/10 bg-black/20 hover:bg-white/6"
-                  }`}
+                  } disabled:cursor-not-allowed disabled:opacity-40`}
                 >
                   <p className="font-medium text-white">{option.label}</p>
                   <p className="mt-1 text-sm text-white/45">{option.detail}</p>
+                  {!typePermissions.get(option.value) ? (
+                    <p className="mt-2 text-xs text-amber-100/80">Not available for your role</p>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -273,6 +379,7 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
                   <button
                     key={option.value}
                     type="button"
+                    disabled={!option.allowed}
                     onClick={() => {
                       setAudience(option.value);
                       setPreview(null);
@@ -281,9 +388,12 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
                       audience === option.value
                         ? "border-lime-300 bg-lime-300/12 text-white"
                         : "border-white/10 bg-black/20 text-white/65 hover:bg-white/6"
-                    }`}
+                    } disabled:cursor-not-allowed disabled:opacity-40`}
                   >
                     {option.label}
+                    {!option.allowed ? (
+                      <span className="mt-1 block text-xs text-amber-100/80">Not available for your role</span>
+                    ) : null}
                   </button>
                 ))}
               </div>
@@ -342,6 +452,25 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
                 </label>
                 <input type="datetime-local" value={scheduleAt} onChange={(event) => setScheduleAt(event.target.value)} className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none" />
               </div>
+              {canManageTemplates ? (
+                <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70">
+                  <input
+                    type="checkbox"
+                    checked={saveAsTemplate}
+                    onChange={(event) => setSaveAsTemplate(event.target.checked)}
+                  />
+                  Save as template
+                </label>
+              ) : null}
+              {canManageTemplates && saveAsTemplate ? (
+                <input
+                  value={templateName}
+                  onChange={(event) => setTemplateName(event.target.value)}
+                  placeholder="Template name"
+                  maxLength={80}
+                  className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
+                />
+              ) : null}
             </div>
           ) : null}
 
@@ -357,6 +486,12 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
                 <Pill tone="lime">{preview?.willDeliver ?? 0} will receive</Pill>
                 <Pill tone="amber">{preview?.blockedByOptOut ?? 0} opted out</Pill>
                 <Pill tone="neutral">{preview?.blockedByMinor ?? 0} minors skipped</Pill>
+              </div>
+              <div className="grid gap-3 md:grid-cols-4">
+                <Pill tone="blue">{preview?.budget?.senderRemaining ?? 0} sender left</Pill>
+                <Pill tone="lime">{preview?.budget?.orgAllRemaining ?? 0} gym left</Pill>
+                <Pill tone="amber">{preview?.budget?.orgPromoRemaining ?? 0} announcements left</Pill>
+                <Pill tone="neutral">{preview?.budget?.orgOperationalRemaining ?? 0} updates left</Pill>
               </div>
             </div>
           ) : null}
@@ -404,6 +539,11 @@ export function NotificationComposerPanel({ orgId }: { orgId: string }) {
                 <p className="mt-2 text-sm text-white/55">{notification.body}</p>
                 <p className="mt-2 text-xs text-white/40">
                   {formatEnumLabel(notification.type)} · {formatEnumLabel(notification.audience)} · {formatDateTime(notification.createdAt)}
+                </p>
+                <p className="mt-2 text-xs text-white/40">
+                  {notification.createdByName ? `Sent by ${notification.createdByName} · ` : ""}
+                  {notification.recipientStats?.total ?? 0} recipients · {notification.recipientStats?.delivered ?? 0} delivered · {notification.recipientStats?.read ?? 0} read
+                  {notification.recipientStats?.scheduled ? ` · ${notification.recipientStats.scheduled} scheduled` : ""}
                 </p>
               </div>
             ))
@@ -589,6 +729,11 @@ export function NotificationHistoryPanel({
                 <p className="mt-2 text-sm text-white/55">{notification.body}</p>
                 <p className="mt-2 text-xs text-white/40">
                   {formatEnumLabel(notification.type)} · {formatEnumLabel(notification.audience)} · {formatDateTime(notification.createdAt)}
+                </p>
+                <p className="mt-2 text-xs text-white/40">
+                  {notification.createdByName ? `Sent by ${notification.createdByName} · ` : ""}
+                  {notification.recipientStats?.total ?? 0} recipients · {notification.recipientStats?.delivered ?? 0} delivered · {notification.recipientStats?.read ?? 0} read
+                  {notification.recipientStats?.scheduled ? ` · ${notification.recipientStats.scheduled} scheduled` : ""}
                 </p>
               </div>
               <Pill tone={notification.status === "SENT" ? "lime" : "amber"}>{formatEnumLabel(notification.status)}</Pill>

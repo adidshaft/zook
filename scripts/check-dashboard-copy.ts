@@ -10,6 +10,7 @@ const scanTargets = [
   "apps/web/src/components/dashboard-shell.tsx",
   "apps/web/src/components/desk-panel.tsx",
   "apps/web/src/components/notification-composer-panel.tsx",
+  "apps/web/messages/dashboard",
 ];
 
 const banned = [
@@ -20,11 +21,22 @@ const banned = [
   /\bsystem checks?\b/i,
   /\bplatform team\b/i,
   /\binternal dashboard\b/i,
+  /\bmvp\b/i,
+  /\bfixture\b/i,
+  /\bstub\b/i,
+  /\bposture\b/i,
+  /\blane\b/i,
+  /\bguardrail\b/i,
+  /\bsurface\b/i,
+  /\bread-first\b/i,
+  /\brollup\b/i,
+  /\bseed this\b/i,
+  /\bpersisted\b/i,
 ];
 
 const files = execFileSync("rg", ["--files", ...scanTargets], { cwd: root, encoding: "utf8" })
   .split("\n")
-  .filter((file) => /\.(tsx|ts)$/.test(file));
+  .filter((file) => /\.(tsx|ts|json)$/.test(file));
 
 const failures: string[] = [];
 for (const file of files) {

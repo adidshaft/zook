@@ -82,6 +82,7 @@ import {
   decideClassEnrollment,
   decideAttendanceStatus,
   encodeQrPayload,
+  evaluateOperatingHours,
   fulfillShopOrderForContext,
   normalizeUsername,
   PersonalTrackingService,
@@ -114,7 +115,7 @@ import { fail, ok, readJson } from "./response";
 import { resolveSessionSummaryFromToken } from "./session";
 import { writeAuditLog } from "./audit";
 import { getDevOtpResponseValue } from "./auth-response";
-import { assertRateLimit, getRateLimitDiagnostics } from "./rate-limit";
+import { assertRateLimit, defaultRateLimitRules, getRateLimitDiagnostics } from "./rate-limit";
 import { getServerCacheDiagnostics } from "./server-cache";
 import { createRequestId, currentRequestId, runWithRequestState } from "./request-state";
 import { getErrorReporter } from "./error-reporter";
@@ -298,7 +299,7 @@ const staffRoleUpdateSchema = z
     }
   });
 
-const timeStringSchema = z.string().regex(/^\d{2}:\d{2}$/);
+const timeStringSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 const dayHoursSchema = z.union([
   z.object({ closed: z.literal(true) }),
   z.object({ open: timeStringSchema, close: timeStringSchema }),
@@ -2707,6 +2708,81 @@ async function enforceNotificationBudgets(input: {
       "Some members have already received too many messages today.",
     );
   }
+}
+
+function notificationDayStart(now = new Date()) {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+async function getNotificationBudgetSnapshot(input: {
+  orgId: string;
+  senderUserId: string;
+  now?: Date;
+}) {
+  const createdAt = { gte: notificationDayStart(input.now) };
+  const [orgAllCount, orgOperationalCount, orgPromoCount, senderCount] = await Promise.all([
+    prisma.notification.count({ where: { orgId: input.orgId, createdAt } }),
+    prisma.notification.count({
+      where: { orgId: input.orgId, type: "OPERATIONAL", createdAt },
+    }),
+    prisma.notification.count({
+      where: { orgId: input.orgId, type: { in: ["PROMOTIONAL", "ENGAGEMENT"] }, createdAt },
+    }),
+    prisma.notification.count({
+      where: { orgId: input.orgId, createdById: input.senderUserId, createdAt },
+    }),
+  ]);
+  return {
+    orgAllRemaining: Math.max(defaultRateLimitRules.notificationOrgAllDaily.limit - orgAllCount, 0),
+    orgOperationalRemaining: Math.max(
+      defaultRateLimitRules.notificationOrgOperationalDaily.limit - orgOperationalCount,
+      0,
+    ),
+    orgPromoRemaining: Math.max(defaultRateLimitRules.notificationOrgPromoDaily.limit - orgPromoCount, 0),
+    senderRemaining: Math.max(defaultRateLimitRules.notificationSenderDaily.limit - senderCount, 0),
+  };
+}
+
+async function splitRecipientsByDailyCap(input: {
+  orgId: string;
+  recipientUserIds: string[];
+  now?: Date;
+}) {
+  if (!input.recipientUserIds.length) {
+    return { sendNowUserIds: [] as string[], scheduledUserIds: [] as string[] };
+  }
+  const notifications = await prisma.notification.findMany({
+    where: { orgId: input.orgId, createdAt: { gte: notificationDayStart(input.now) } },
+    select: { id: true },
+  });
+  const notificationIds = notifications.map((notification) => notification.id);
+  if (!notificationIds.length) {
+    return { sendNowUserIds: input.recipientUserIds, scheduledUserIds: [] as string[] };
+  }
+  const rows = await prisma.notificationRecipient.findMany({
+    where: {
+      userId: { in: input.recipientUserIds },
+      notificationId: { in: notificationIds },
+      deliveryStatus: { not: "scheduled" },
+    },
+    select: { userId: true },
+  });
+  const counts = rows.reduce<Map<string, number>>((map, row) => {
+    map.set(row.userId, (map.get(row.userId) ?? 0) + 1);
+    return map;
+  }, new Map());
+  const sendNowUserIds: string[] = [];
+  const scheduledUserIds: string[] = [];
+  for (const userId of input.recipientUserIds) {
+    if ((counts.get(userId) ?? 0) >= defaultRateLimitRules.notificationRecipientDaily.limit) {
+      scheduledUserIds.push(userId);
+    } else {
+      sendNowUserIds.push(userId);
+    }
+  }
+  return { sendNowUserIds, scheduledUserIds };
 }
 
 function toCouponInput(coupon: {
@@ -7482,7 +7558,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       }),
       prisma.branch.findUnique({
         where: { id: decoded.branchId },
-        select: { id: true, name: true },
+        select: { id: true, name: true, operatingHours: true },
       }),
     ]);
     const plan = subscription
@@ -7507,6 +7583,17 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     }
     if (!org || !subscription) {
       return fail("NO_ACTIVE_MEMBERSHIP", "No active membership", 400);
+    }
+    if (!branch) {
+      return fail("BRANCH_NOT_FOUND", "Branch not found", 404);
+    }
+    const branchHours = evaluateOperatingHours({ operatingHours: branch.operatingHours, now });
+    if (!branchHours.open) {
+      return fail(
+        "BRANCH_CLOSED",
+        "This branch is closed right now. Ask reception for manual check-in.",
+        400,
+      );
     }
     try {
       assertMinorConsentGranted({
@@ -9603,6 +9690,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       willDeliver: preview.willDeliver,
       blockedByOptOut: preview.blockedByOptOut,
       blockedByMinor: preview.blockedByMinor,
+      budget: await getNotificationBudgetSnapshot({ orgId, senderUserId: userId }),
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "notifications"])) {
@@ -9643,12 +9731,22 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       daysAhead: body.daysAhead,
       excludeMinors: body.excludeMinors,
     }));
+    const recipientSplit = body.scheduleAt
+      ? { sendNowUserIds: recipientUserIds, scheduledUserIds: [] as string[] }
+      : await splitRecipientsByDailyCap({ orgId, recipientUserIds });
     await enforceNotificationBudgets({
       orgId,
       senderUserId: userId,
       type: body.type,
-      recipientUserIds,
+      recipientUserIds: recipientSplit.sendNowUserIds,
     });
+    const scheduledFor = new Date();
+    scheduledFor.setDate(scheduledFor.getDate() + 1);
+    scheduledFor.setHours(8, 0, 0, 0);
+    const onlyScheduledRecipients =
+      !body.scheduleAt &&
+      recipientSplit.scheduledUserIds.length > 0 &&
+      recipientSplit.sendNowUserIds.length === 0;
     const notification = await prisma.notification.create({
       data: clean({
         orgId,
@@ -9659,9 +9757,13 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         body: body.body,
         audience: body.audience,
         pushEnabled: body.pushEnabled,
-        scheduledAt: body.scheduleAt ? new Date(body.scheduleAt) : undefined,
-        status: body.scheduleAt ? "SCHEDULED" : "SENT",
-        sentAt: body.scheduleAt ? undefined : new Date(),
+        scheduledAt: body.scheduleAt
+          ? new Date(body.scheduleAt)
+          : onlyScheduledRecipients
+            ? scheduledFor
+            : undefined,
+        status: body.scheduleAt || onlyScheduledRecipients ? "SCHEDULED" : "SENT",
+        sentAt: body.scheduleAt || onlyScheduledRecipients ? undefined : new Date(),
         metadata: clean({
           selectedUserIds: body.selectedUserIds.length ? body.selectedUserIds : undefined,
           singleUserId: body.singleUserId,
@@ -9670,18 +9772,32 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
           daysAhead: body.daysAhead,
           templateId: body.templateId,
           excludeMinors: body.excludeMinors,
+          scheduledRecipientCount: recipientSplit.scheduledUserIds.length || undefined,
+          scheduledRecipientUserIds: recipientSplit.scheduledUserIds.length
+            ? recipientSplit.scheduledUserIds
+            : undefined,
+          scheduledRecipientsFor: recipientSplit.scheduledUserIds.length
+            ? scheduledFor.toISOString()
+            : undefined,
           ...(body.metadata ?? {}),
         }) as Prisma.InputJsonValue,
       }),
     });
     if (recipientUserIds.length) {
       await prisma.notificationRecipient.createMany({
-        data: recipientUserIds.map((recipientUserId) => ({
-          notificationId: notification.id,
-          userId: recipientUserId,
-          deliveryStatus: body.scheduleAt ? "scheduled" : "in_app",
-          ...(body.scheduleAt ? {} : { deliveredAt: new Date() }),
-        })),
+        data: [
+          ...recipientSplit.sendNowUserIds.map((recipientUserId) => ({
+            notificationId: notification.id,
+            userId: recipientUserId,
+            deliveryStatus: body.scheduleAt ? "scheduled" : "in_app",
+            ...(body.scheduleAt ? {} : { deliveredAt: new Date() }),
+          })),
+          ...recipientSplit.scheduledUserIds.map((recipientUserId) => ({
+            notificationId: notification.id,
+            userId: recipientUserId,
+            deliveryStatus: "scheduled",
+          })),
+        ],
         skipDuplicates: true,
       });
     }
@@ -9696,7 +9812,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
           pushEnabled: notification.pushEnabled,
           metadata: notification.metadata,
         },
-        userIds: recipientUserIds,
+        userIds: recipientSplit.sendNowUserIds,
       });
     }
     await writeAuditLog({
@@ -9709,10 +9825,15 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       metadata: {
         type: notification.type,
         audience: notification.audience,
-        recipients: recipientUserIds.length,
+        recipients: recipientSplit.sendNowUserIds.length,
+        scheduledRecipients: recipientSplit.scheduledUserIds.length,
       },
     });
-    return ok({ notification, recipientCount: recipientUserIds.length });
+    return ok({
+      notification,
+      recipientCount: recipientSplit.sendNowUserIds.length,
+      scheduledRecipientCount: recipientSplit.scheduledUserIds.length,
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "notifications", "templates"])) {
     const orgId = path[1]!;
@@ -9797,11 +9918,69 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
+    const notifications = await prisma.notification.findMany({
+      where: { orgId },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    const notificationIds = notifications.map((notification) => notification.id);
+    const creatorIds = notifications
+      .map((notification) => notification.createdById)
+      .filter((id): id is string => Boolean(id));
+    const [recipients, creators] = await Promise.all([
+      notificationIds.length
+        ? prisma.notificationRecipient.findMany({
+            where: { notificationId: { in: notificationIds } },
+            select: {
+              notificationId: true,
+              deliveryStatus: true,
+              deliveredAt: true,
+              readAt: true,
+            },
+          })
+        : Promise.resolve([]),
+      creatorIds.length
+        ? prisma.user.findMany({
+            where: { id: { in: creatorIds } },
+            select: { id: true, name: true, email: true },
+          })
+        : Promise.resolve([]),
+    ]);
+    const creatorById = new Map(creators.map((creator) => [creator.id, creator]));
+    const recipientStats = recipients.reduce<
+      Map<string, { total: number; delivered: number; read: number; failed: number; scheduled: number }>
+    >((map, recipient) => {
+      const current = map.get(recipient.notificationId) ?? {
+        total: 0,
+        delivered: 0,
+        read: 0,
+        failed: 0,
+        scheduled: 0,
+      };
+      current.total += 1;
+      if (recipient.deliveredAt || recipient.deliveryStatus === "in_app") current.delivered += 1;
+      if (recipient.readAt) current.read += 1;
+      if (recipient.deliveryStatus === "failed") current.failed += 1;
+      if (recipient.deliveryStatus === "scheduled") current.scheduled += 1;
+      map.set(recipient.notificationId, current);
+      return map;
+    }, new Map());
     return ok({
-      notifications: await prisma.notification.findMany({
-        where: { orgId },
-        orderBy: { createdAt: "desc" },
-        take: 100,
+      notifications: notifications.map((notification) => {
+        const creator = notification.createdById
+          ? creatorById.get(notification.createdById)
+          : null;
+        return {
+          ...notification,
+          createdByName: creator?.name ?? creator?.email ?? null,
+          recipientStats: recipientStats.get(notification.id) ?? {
+            total: 0,
+            delivered: 0,
+            read: 0,
+            failed: 0,
+            scheduled: 0,
+          },
+        };
       }),
     });
   }

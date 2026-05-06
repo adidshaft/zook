@@ -38,6 +38,7 @@ import type {
   MemberRow,
   ShopOrderRow,
 } from "../dashboard-operational-model";
+import type { Permission, Role } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
 import {
   CsvExportButton,
@@ -207,12 +208,16 @@ export function NotificationsPanel({
   organization,
   summary,
   initialNotifications,
+  roles = [],
+  permissions = [],
   view = "compose",
 }: {
   orgId: string;
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
   initialNotifications: NotificationSnapshot[];
+  roles?: Role[];
+  permissions?: Permission[];
   view?: "compose" | "templates" | "history";
 }) {
   if (view === "templates") {
@@ -238,7 +243,7 @@ export function NotificationsPanel({
 
   return (
     <div className="grid gap-4">
-      <NotificationComposerPanel orgId={orgId} />
+      <NotificationComposerPanel orgId={orgId} roles={roles} permissions={permissions} />
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <GlassCard>
           <SectionHeader

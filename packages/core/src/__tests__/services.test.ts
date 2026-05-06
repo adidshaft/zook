@@ -33,6 +33,7 @@ import {
   decideAttendanceStatus,
   defaultAIQuotaForRole,
   encodeQrPayload,
+  evaluateOperatingHours,
   evaluateSubscription,
   fulfillShopOrder,
   fulfillShopOrderForContext,
@@ -366,6 +367,45 @@ describe("attendance", () => {
 
   it("requires a manual override reason", () => {
     expect(() => requireManualOverrideReason()).toThrow("reason required");
+  });
+
+  it("evaluates branch working hours in the gym timezone", () => {
+    const hours = {
+      mon: { open: "06:00", close: "22:00" },
+      tue: { closed: true },
+      wed: { open: "22:00", close: "02:00" },
+    };
+
+    expect(
+      evaluateOperatingHours({
+        operatingHours: hours,
+        now: new Date("2026-05-04T03:00:00.000Z"),
+      }).open,
+    ).toBe(true);
+    expect(
+      evaluateOperatingHours({
+        operatingHours: hours,
+        now: new Date("2026-05-03T23:00:00.000Z"),
+      }),
+    ).toMatchObject({ open: false, reason: "branch_closed", dayKey: "mon" });
+    expect(
+      evaluateOperatingHours({
+        operatingHours: hours,
+        now: new Date("2026-05-05T07:00:00.000Z"),
+      }),
+    ).toMatchObject({ open: false, reason: "branch_closed", dayKey: "tue" });
+    expect(
+      evaluateOperatingHours({
+        operatingHours: hours,
+        now: new Date("2026-05-06T18:00:00.000Z"),
+      }).open,
+    ).toBe(true);
+    expect(
+      evaluateOperatingHours({
+        operatingHours: hours,
+        now: new Date("2026-05-06T20:00:00.000Z"),
+      }).open,
+    ).toBe(true);
   });
 });
 

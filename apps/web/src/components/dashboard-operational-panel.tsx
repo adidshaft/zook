@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { formatBranchName } from "@zook/core";
+import { formatBranchName, type Permission, type Role } from "@zook/core";
 import { BodyCompositionTimeline } from "./dashboard/body-composition-timeline";
 import {
   AiPanel,
@@ -85,11 +85,255 @@ type BranchFormState = {
   active?: boolean;
 };
 
-function branchFormPayload(form: BranchFormState) {
-  let operatingHours: unknown;
-  if (form.hoursText?.trim()) {
-    operatingHours = JSON.parse(form.hoursText);
+type BranchDayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+type BranchDayHours = { closed: true } | { open: string; close: string };
+type BranchHoursValue = Partial<Record<BranchDayKey, BranchDayHours>>;
+type BranchHoursPreset = "standard" | "early" | "always";
+
+const branchDayLabels: Array<{ key: BranchDayKey; label: string }> = [
+  { key: "mon", label: "Mon" },
+  { key: "tue", label: "Tue" },
+  { key: "wed", label: "Wed" },
+  { key: "thu", label: "Thu" },
+  { key: "fri", label: "Fri" },
+  { key: "sat", label: "Sat" },
+  { key: "sun", label: "Sun" },
+];
+
+const branchTimeOptions = [
+  ...Array.from({ length: 48 }, (_, index) => {
+    const hour = Math.floor(index / 2);
+    const minute = index % 2 === 0 ? "00" : "30";
+    return `${String(hour).padStart(2, "0")}:${minute}`;
+  }),
+  "23:59",
+];
+
+function formatBranchTime(value: string) {
+  const [hourText = "0", minuteText = "00"] = value.split(":");
+  const hour = Number(hourText);
+  const displayHour = hour % 12 || 12;
+  const suffix = hour >= 12 ? "PM" : "AM";
+  return minuteText === "00" ? `${displayHour} ${suffix}` : `${displayHour}:${minuteText} ${suffix}`;
+}
+
+function buildBranchHours(open: string, close: string, sundayClosed = false): BranchHoursValue {
+  return branchDayLabels.reduce<BranchHoursValue>((hours, day) => {
+    hours[day.key] = sundayClosed && day.key === "sun" ? { closed: true } : { open, close };
+    return hours;
+  }, {});
+}
+
+function branchHoursPreset(preset: BranchHoursPreset): BranchHoursValue {
+  if (preset === "always") {
+    return buildBranchHours("00:00", "23:59");
   }
+  return buildBranchHours(preset === "early" ? "05:00" : "06:00", "22:00", true);
+}
+
+function isValidDayHours(value: unknown): value is BranchDayHours {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const day = value as Record<string, unknown>;
+  if (day.closed === true) {
+    return true;
+  }
+  return typeof day.open === "string" && typeof day.close === "string";
+}
+
+function normalizeBranchHours(input: unknown): BranchHoursValue {
+  if (!input || typeof input !== "object") {
+    return branchHoursPreset("standard");
+  }
+  const fallbackHours = branchHoursPreset("standard");
+  return branchDayLabels.reduce<BranchHoursValue>((hours, day) => {
+    const dayHours = (input as Partial<Record<BranchDayKey, unknown>>)[day.key];
+    hours[day.key] = isValidDayHours(dayHours)
+      ? dayHours
+      : (fallbackHours[day.key] ?? { open: "06:00", close: "22:00" });
+    return hours;
+  }, {});
+}
+
+function parseBranchHoursText(value?: string): BranchHoursValue {
+  if (!value?.trim()) {
+    return branchHoursPreset("standard");
+  }
+  try {
+    return normalizeBranchHours(JSON.parse(value));
+  } catch {
+    return branchHoursPreset("standard");
+  }
+}
+
+function serializeBranchHours(hours: BranchHoursValue) {
+  return JSON.stringify(normalizeBranchHours(hours));
+}
+
+const defaultBranchHoursText = serializeBranchHours(branchHoursPreset("standard"));
+
+function formatBranchHoursSummary(input: unknown) {
+  const hours = normalizeBranchHours(input);
+  const openDays = branchDayLabels.filter((day) => {
+    const dayHours = hours[day.key];
+    return dayHours && !("closed" in dayHours);
+  });
+  if (!openDays.length) {
+    return "Closed all week";
+  }
+  const first = openDays[0];
+  const firstHours = first ? hours[first.key] : null;
+  if (!firstHours || "closed" in firstHours) {
+    return "Working hours set";
+  }
+  const sameEveryOpenDay = openDays.every((day) => {
+    const dayHours = hours[day.key];
+    return (
+      dayHours &&
+      !("closed" in dayHours) &&
+      dayHours.open === firstHours.open &&
+      dayHours.close === firstHours.close
+    );
+  });
+  const dayText = openDays.length === 7 ? "Every day" : openDays.map((day) => day.label).join(", ");
+  return sameEveryOpenDay
+    ? `${dayText}, ${formatBranchTime(firstHours.open)} - ${formatBranchTime(firstHours.close)}`
+    : "Custom working hours set";
+}
+
+function BranchHoursEditor({
+  value,
+  onChange,
+  compact = false,
+}: {
+  value?: string;
+  onChange: (value: string) => void;
+  compact?: boolean;
+}) {
+  const hours = parseBranchHoursText(value);
+
+  function updateDay(dayKey: BranchDayKey, next: BranchDayHours) {
+    onChange(serializeBranchHours({ ...hours, [dayKey]: next }));
+  }
+
+  function applyPreset(preset: BranchHoursPreset) {
+    onChange(serializeBranchHours(branchHoursPreset(preset)));
+  }
+
+  function copyMondayToAll() {
+    const monday = hours.mon ?? { open: "06:00", close: "22:00" };
+    onChange(
+      serializeBranchHours(
+        branchDayLabels.reduce<BranchHoursValue>((next, day) => {
+          next[day.key] = monday;
+          return next;
+        }, {}),
+      ),
+    );
+  }
+
+  return (
+    <div
+      className={`rounded-[22px] border border-white/10 bg-black/20 md:col-span-2 ${
+        compact ? "p-3" : "p-4"
+      }`}
+    >
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-medium text-white">Working hours</p>
+          <p className="mt-1 text-xs text-white/45">{formatBranchHoursSummary(hours)}</p>
+        </div>
+        <button
+          type="button"
+          onClick={copyMondayToAll}
+          className="zook-focus rounded-full border border-white/10 px-3 py-2 text-xs text-white/70 transition hover:bg-white/8"
+        >
+          Copy Mon
+        </button>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {[
+          ["standard", "6 AM - 10 PM"],
+          ["early", "5 AM - 10 PM"],
+          ["always", "Open all day"],
+        ].map(([preset, label]) => (
+          <button
+            key={preset}
+            type="button"
+            onClick={() => applyPreset(preset as BranchHoursPreset)}
+            className="zook-focus rounded-full border border-white/10 px-3 py-2 text-xs text-white/70 transition hover:bg-white/8"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="mt-4 grid gap-2">
+        {branchDayLabels.map((day) => {
+          const dayHours = hours[day.key] ?? { open: "06:00", close: "22:00" };
+          const isClosed = "closed" in dayHours;
+          const open = isClosed ? "06:00" : dayHours.open;
+          const close = isClosed ? "22:00" : dayHours.close;
+          return (
+            <div
+              key={day.key}
+              className="grid gap-2 rounded-2xl border border-white/10 bg-black/25 p-3"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-semibold text-white/80">{day.label}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateDay(day.key, isClosed ? { open, close } : { closed: true })
+                  }
+                  className={`zook-focus rounded-full border px-3 py-2 text-xs font-medium transition ${
+                    isClosed
+                      ? "border-amber-300/30 bg-amber-300/10 text-amber-100"
+                      : "border-lime-300/30 bg-lime-300/10 text-lime-100"
+                  }`}
+                >
+                  {isClosed ? "Closed" : "Open"}
+                </button>
+              </div>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <select
+                  aria-label={`${day.label} opening time`}
+                  value={open}
+                  disabled={isClosed}
+                  onChange={(event) => updateDay(day.key, { open: event.target.value, close })}
+                  className="zook-focus min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white outline-none disabled:opacity-35"
+                >
+                  {branchTimeOptions.map((option) => (
+                    <option key={option} value={option} className="bg-black">
+                      {formatBranchTime(option)}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-white/35">to</span>
+                <select
+                  aria-label={`${day.label} closing time`}
+                  value={close}
+                  disabled={isClosed}
+                  onChange={(event) => updateDay(day.key, { open, close: event.target.value })}
+                  className="zook-focus min-w-0 rounded-2xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white outline-none disabled:opacity-35"
+                >
+                  {branchTimeOptions.map((option) => (
+                    <option key={option} value={option} className="bg-black">
+                      {formatBranchTime(option)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function branchFormPayload(form: BranchFormState) {
+  const operatingHours = parseBranchHoursText(form.hoursText);
   return {
     name: form.name,
     address: form.address,
@@ -104,7 +348,7 @@ function branchFormPayload(form: BranchFormState) {
       ?.split(",")
       .map((item) => item.trim())
       .filter(Boolean),
-    ...(operatingHours ? { operatingHours } : {}),
+    operatingHours,
     isDefault: form.isDefault,
     active: form.active,
   };
@@ -121,6 +365,8 @@ export function DashboardOperationalPanel({
   initialNotifications,
   initialProducts,
   initialAiUsage,
+  roles = [],
+  permissions = [],
 }: {
   orgId: string;
   sectionKey: string;
@@ -132,6 +378,8 @@ export function DashboardOperationalPanel({
   initialNotifications: NotificationSnapshot[];
   initialProducts: ProductSnapshot[];
   initialAiUsage: AIUsageRow[];
+  roles?: Role[];
+  permissions?: Permission[];
 }) {
   const mode = resolveMode(sectionKey);
   const [queueBusyId, setQueueBusyId] = useState<string | null>(null);
@@ -218,7 +466,7 @@ export function DashboardOperationalPanel({
     whatsappNumber: "",
     managerId: "",
     amenitiesText: "",
-    hoursText: "",
+    hoursText: defaultBranchHoursText,
     isDefault: false,
   });
   const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
@@ -759,7 +1007,7 @@ export function DashboardOperationalPanel({
         whatsappNumber: "",
         managerId: "",
         amenitiesText: "",
-        hoursText: "",
+        hoursText: defaultBranchHoursText,
         isDefault: false,
       });
       branchesState.reload();
@@ -802,7 +1050,7 @@ export function DashboardOperationalPanel({
       whatsappNumber: branch.whatsappNumber ?? "",
       managerId: branch.managerId ?? "",
       amenitiesText: branch.amenities?.join(", ") ?? "",
-      hoursText: branch.operatingHours ? JSON.stringify(branch.operatingHours) : "",
+      hoursText: serializeBranchHours(normalizeBranchHours(branch.operatingHours)),
       isDefault: branch.isDefault,
     });
     setFormError("");
@@ -830,38 +1078,6 @@ export function DashboardOperationalPanel({
     } finally {
       setFormBusy(null);
     }
-  }
-
-  function applyBranchHoursPreset(
-    target: "create" | "edit",
-    preset: "standard" | "early" | "always",
-  ) {
-    const hours =
-      preset === "always"
-        ? {
-            mon: { open: "00:00", close: "23:59" },
-            tue: { open: "00:00", close: "23:59" },
-            wed: { open: "00:00", close: "23:59" },
-            thu: { open: "00:00", close: "23:59" },
-            fri: { open: "00:00", close: "23:59" },
-            sat: { open: "00:00", close: "23:59" },
-            sun: { open: "00:00", close: "23:59" },
-          }
-        : {
-            mon: { open: preset === "early" ? "05:00" : "06:00", close: "22:00" },
-            tue: { open: preset === "early" ? "05:00" : "06:00", close: "22:00" },
-            wed: { open: preset === "early" ? "05:00" : "06:00", close: "22:00" },
-            thu: { open: preset === "early" ? "05:00" : "06:00", close: "22:00" },
-            fri: { open: preset === "early" ? "05:00" : "06:00", close: "22:00" },
-            sat: { open: preset === "early" ? "05:00" : "06:00", close: "22:00" },
-            sun: { closed: true },
-          };
-    const hoursText = JSON.stringify(hours);
-    if (target === "edit") {
-      setBranchEditForm((current) => ({ ...current, hoursText }));
-      return;
-    }
-    setBranchForm((current) => ({ ...current, hoursText }));
   }
 
   async function saveReferralPolicy() {
@@ -1183,6 +1399,8 @@ export function DashboardOperationalPanel({
         organization={organization}
         summary={summary}
         initialNotifications={initialNotifications}
+        roles={roles}
+        permissions={permissions}
         view={
           mode === "notification-templates"
             ? "templates"
@@ -2598,22 +2816,11 @@ export function DashboardOperationalPanel({
               <input value={branchForm.whatsappNumber} onChange={(event) => setBranchForm((current) => ({ ...current, whatsappNumber: event.target.value }))} placeholder="WhatsApp number" className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none" />
               <input value={branchForm.amenitiesText} onChange={(event) => setBranchForm((current) => ({ ...current, amenitiesText: event.target.value }))} placeholder="Amenities, separated by commas" className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none" />
             </div>
-            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <p className="text-sm font-medium text-white">Working hours</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[
-                  ["standard", "6 AM - 10 PM"],
-                  ["early", "5 AM - 10 PM"],
-                  ["always", "Open all day"],
-                ].map(([preset, label]) => (
-                  <button key={preset} type="button" onClick={() => applyBranchHoursPreset("create", preset as "standard" | "early" | "always")} className="zook-focus rounded-full border border-white/10 px-3 py-2 text-xs text-white/70 transition hover:bg-white/8">
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <input value={branchForm.hoursText} onChange={(event) => setBranchForm((current) => ({ ...current, hoursText: event.target.value }))} placeholder="Pick a preset or add custom hours" className="zook-focus mt-3 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none" />
-            </div>
-            <button onClick={() => void createBranch()} disabled={formBusy === "branch"} className="zook-focus min-h-11 rounded-full bg-lime-300 px-5 text-sm font-semibold text-black disabled:opacity-60">
+            <BranchHoursEditor
+              value={branchForm.hoursText}
+              onChange={(hoursText) => setBranchForm((current) => ({ ...current, hoursText }))}
+            />
+            <button onClick={() => void createBranch()} disabled={formBusy === "branch"} className="zook-focus min-h-11 w-full rounded-full bg-lime-300 px-5 text-sm font-semibold text-black disabled:opacity-60">
               {formBusy === "branch" ? "Adding..." : "Add branch"}
             </button>
           </div>
@@ -2647,12 +2854,12 @@ export function DashboardOperationalPanel({
                         ))}
                       </select>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => applyBranchHoursPreset("edit", "standard")} className="zook-focus rounded-full border border-white/10 px-3 py-2 text-xs text-white/70">6 AM - 10 PM</button>
-                      <button type="button" onClick={() => applyBranchHoursPreset("edit", "early")} className="zook-focus rounded-full border border-white/10 px-3 py-2 text-xs text-white/70">5 AM - 10 PM</button>
-                      <button type="button" onClick={() => applyBranchHoursPreset("edit", "always")} className="zook-focus rounded-full border border-white/10 px-3 py-2 text-xs text-white/70">Open all day</button>
-                    </div>
-                    <input value={branchEditForm.hoursText} onChange={(event) => setBranchEditForm((current) => ({ ...current, hoursText: event.target.value }))} placeholder="Pick a preset or add custom hours" className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none" />
+                    <BranchHoursEditor
+                      value={branchEditForm.hoursText}
+                      onChange={(hoursText) =>
+                        setBranchEditForm((current) => ({ ...current, hoursText }))
+                      }
+                    />
                     <div className="flex flex-wrap gap-2">
                       <button onClick={() => void saveBranchEdit(branch)} disabled={formBusy === `branch:${branch.id}`} className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60">Save branch</button>
                       <button onClick={() => setEditingBranchId(null)} className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70">Cancel</button>
@@ -2663,6 +2870,7 @@ export function DashboardOperationalPanel({
                     <div>
                       <p className="font-medium text-white">{branch.name}</p>
                       <p className="mt-1 text-sm text-white/50">{branch.address} · {branch.city}, {branch.state} {branch.pincode}</p>
+                      <p className="mt-1 text-xs text-white/45">{formatBranchHoursSummary(branch.operatingHours)}</p>
                       <p className="mt-1 text-xs text-white/40">
                         {[branch.contactPhone, branch.contactEmail, branch.managerId ? "Manager assigned" : null].filter(Boolean).join(" · ") || "Add contact details before opening this branch"}
                       </p>
@@ -2939,13 +3147,10 @@ export function DashboardOperationalPanel({
                 placeholder="Amenities, comma separated"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none md:col-span-2"
               />
-              <input
+              <BranchHoursEditor
                 value={branchForm.hoursText}
-                onChange={(event) =>
-                  setBranchForm((current) => ({ ...current, hoursText: event.target.value }))
-                }
-                placeholder="Working hours, or manage them from Branches"
-                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none md:col-span-2"
+                onChange={(hoursText) => setBranchForm((current) => ({ ...current, hoursText }))}
+                compact
               />
             </div>
             {branches.length === 0 && !branchesState.loading ? (
@@ -3093,16 +3298,12 @@ export function DashboardOperationalPanel({
                         placeholder="Amenities, comma separated"
                         className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none md:col-span-2"
                       />
-                      <input
+                      <BranchHoursEditor
                         value={branchEditForm.hoursText}
-                        onChange={(event) =>
-                          setBranchEditForm((current) => ({
-                            ...current,
-                            hoursText: event.target.value,
-                          }))
+                        onChange={(hoursText) =>
+                          setBranchEditForm((current) => ({ ...current, hoursText }))
                         }
-                        placeholder="Working hours, or manage them from Branches"
-                        className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none md:col-span-2"
+                        compact
                       />
                     </div>
                     <button

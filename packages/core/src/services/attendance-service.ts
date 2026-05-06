@@ -2,6 +2,20 @@ import { createHmac, randomBytes } from "node:crypto";
 import type { AttendanceMode, AttendanceStatus, MemberSubscription, MembershipPlan, OrganizationStatus } from "../types";
 import { evaluateSubscription } from "./membership-service";
 
+type BranchDayKey = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
+type BranchDayHours = { closed: true } | { open: string; close: string };
+
+const branchDayKeys: BranchDayKey[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const weekdayToBranchDay: Record<string, BranchDayKey> = {
+  sun: "sun",
+  mon: "mon",
+  tue: "tue",
+  wed: "wed",
+  thu: "thu",
+  fri: "fri",
+  sat: "sat",
+};
+
 export interface QrPayload {
   orgId: string;
   branchId: string;
@@ -65,6 +79,105 @@ export function decideAttendanceStatus(input: {
     return input.suspiciousFlags.length ? "FLAGGED" : "APPROVED";
   }
   return input.suspiciousFlags.length ? "PENDING_APPROVAL" : "APPROVED";
+}
+
+function parseHourMinute(value: unknown): number | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value);
+  if (!match) {
+    return null;
+  }
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function readDayHours(value: unknown): BranchDayHours | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const day = value as Record<string, unknown>;
+  if (day.closed === true) {
+    return { closed: true };
+  }
+  if (parseHourMinute(day.open) == null || parseHourMinute(day.close) == null) {
+    return null;
+  }
+  return { open: String(day.open), close: String(day.close) };
+}
+
+function localBranchDay(now: Date, timeZone: string): { dayKey: BranchDayKey; minutes: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const weekday = parts.find((part) => part.type === "weekday")?.value.slice(0, 3).toLowerCase();
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  const fallbackDay = branchDayKeys[now.getUTCDay()] ?? "sun";
+  return {
+    dayKey: weekdayToBranchDay[weekday ?? ""] ?? fallbackDay,
+    minutes: hour * 60 + minute,
+  };
+}
+
+function isWithinTimeWindow(current: number, open: number, close: number): boolean {
+  if (open === close) {
+    return true;
+  }
+  if (open < close) {
+    return current >= open && current < close;
+  }
+  return current >= open || current < close;
+}
+
+function previousBranchDay(dayKey: BranchDayKey): BranchDayKey {
+  const index = branchDayKeys.indexOf(dayKey);
+  return branchDayKeys[(index + branchDayKeys.length - 1) % branchDayKeys.length] ?? "sun";
+}
+
+export function evaluateOperatingHours(input: {
+  operatingHours?: unknown;
+  now?: Date;
+  timeZone?: string;
+}): { open: boolean; reason?: "branch_closed"; dayKey?: BranchDayKey } {
+  const { operatingHours, now = new Date(), timeZone = "Asia/Kolkata" } = input;
+  if (!operatingHours || typeof operatingHours !== "object") {
+    return { open: true };
+  }
+  const { dayKey, minutes } = localBranchDay(now, timeZone);
+  const hoursByDay = operatingHours as Partial<Record<BranchDayKey, unknown>>;
+  const dayHours = readDayHours(hoursByDay[dayKey]);
+  const previousHours = readDayHours(hoursByDay[previousBranchDay(dayKey)]);
+  if (previousHours && !("closed" in previousHours)) {
+    const previousOpen = parseHourMinute(previousHours.open);
+    const previousClose = parseHourMinute(previousHours.close);
+    if (
+      previousOpen != null &&
+      previousClose != null &&
+      previousOpen > previousClose &&
+      minutes < previousClose
+    ) {
+      return { open: true, dayKey };
+    }
+  }
+  if (!dayHours) {
+    return { open: true, dayKey };
+  }
+  if ("closed" in dayHours) {
+    return { open: false, reason: "branch_closed", dayKey };
+  }
+  const open = parseHourMinute(dayHours.open);
+  const close = parseHourMinute(dayHours.close);
+  if (open == null || close == null) {
+    return { open: true, dayKey };
+  }
+  return isWithinTimeWindow(minutes, open, close)
+    ? { open: true, dayKey }
+    : { open: false, reason: "branch_closed", dayKey };
 }
 
 export function validateAttendanceScan(input: {

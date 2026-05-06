@@ -61,6 +61,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Dashboard copy guard
+        run: pnpm check:dashboard-copy
+
       - name: Typecheck
         run: pnpm typecheck
 

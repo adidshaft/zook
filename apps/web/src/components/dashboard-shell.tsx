@@ -871,6 +871,8 @@ export function DashboardShell({
               initialNotifications={data.notifications}
               initialProducts={data.products}
               initialAiUsage={data.aiUsage}
+              roles={roles}
+              permissions={[...activePermissions]}
             />
           ) : null}
         </section>
