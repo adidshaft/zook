@@ -70,7 +70,26 @@ export default async function StatusPage() {
 
         <GlassCard>
           <h2 className="text-2xl font-semibold text-white">Components</h2>
-          <div className="mt-5 overflow-x-auto">
+          <div className="mt-5 grid gap-3 md:hidden">
+            {components.map(([key, component]) => (
+              <div key={key} className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-white">{component.label}</p>
+                    <p className="mt-2 text-sm text-white/55">{component.detail}</p>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-2 text-sm text-white/72">
+                    <StatusIcon status={component.status} />
+                    {formatEnumLabel(component.status)}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs uppercase tracking-[0.18em] text-white/35">
+                  Provider <span className="ml-2 text-white/60">{component.provider ?? "Zook"}</span>
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 hidden overflow-x-auto md:block">
             <table className="w-full min-w-[680px] border-separate border-spacing-0 text-left text-sm">
               <thead className="text-xs uppercase tracking-[0.18em] text-white/35">
                 <tr>
