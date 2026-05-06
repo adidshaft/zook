@@ -1,15 +1,18 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function ZookLogo({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="flex items-center gap-3">
-      <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-2xl border border-white/15 bg-white/5 shadow-[0_12px_40px_rgba(185,244,85,0.22)]">
-        <span
-          aria-hidden
-          className="grid h-10 w-10 place-items-center rounded-2xl bg-[radial-gradient(circle_at_top,#d9ff8c_0%,#b9f455_45%,#6d9d15_100%)] text-lg font-black text-black"
-        >
-          Z
-        </span>
+      <span className="relative h-10 w-10 overflow-hidden rounded-2xl shadow-[0_12px_40px_rgba(185,244,85,0.24)]">
+        <Image
+          src="/icons/AppIcon-1024.png"
+          alt=""
+          fill
+          priority
+          sizes="40px"
+          className="object-cover"
+        />
       </span>
       {!compact ? (
         <span>
