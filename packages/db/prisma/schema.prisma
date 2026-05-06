@@ -422,6 +422,7 @@ model User {
   isPlatformAdmin  Boolean   @default(false)
   marketingOptIn   Boolean   @default(true)
   aiConsent        Boolean   @default(false)
+  preferredLocale  String    @default("en")
   deletedAt        DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -592,6 +593,14 @@ model Branch {
   latitude       Decimal?       @db.Decimal(10, 7)
   longitude      Decimal?       @db.Decimal(10, 7)
   locationSource LocationSource @default(MANUAL)
+  contactPhone   String?
+  contactEmail   String?
+  operatingHours Json?
+  amenities      String[]       @default([])
+  managerId      String?
+  logoAssetId    String?
+  coverAssetId   String?
+  whatsappNumber String?
   isDefault      Boolean        @default(false)
   active         Boolean        @default(true)
   createdAt      DateTime       @default(now())
@@ -599,6 +608,7 @@ model Branch {
 
   @@unique([orgId, name])
   @@index([orgId])
+  @@index([orgId, managerId])
 }
 
 model OrganizationUser {
@@ -1738,6 +1748,7 @@ model AIQuota {
 model Notification {
   id          String             @id @default(cuid())
   orgId       String?
+  branchId    String?
   createdById String?
   type        NotificationType
   status      NotificationStatus @default(DRAFT)
@@ -1752,6 +1763,7 @@ model Notification {
   updatedAt   DateTime           @updatedAt
 
   @@index([orgId, status])
+  @@index([orgId, branchId, status])
 }
 
 model NotificationRecipient {

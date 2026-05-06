@@ -13,11 +13,21 @@ const notificationPermissionByType: Record<NotificationType, Permission> = {
 export function canSendNotification(input: {
   roles: Role[];
   type: NotificationType;
-  audience: "selected" | "assigned_clients" | "all_active_members" | "expiring_soon" | "plan";
+  audience:
+    | "selected"
+    | "single_member"
+    | "assigned_clients"
+    | "all_active_members"
+    | "expiring_soon"
+    | "plan"
+    | "branch_members";
   permissions?: Permission[];
 }): boolean {
   if (input.audience === "assigned_clients") {
     return hasPermission(input.roles, "NOTIFICATION_SEND_ASSIGNED", input.permissions);
+  }
+  if (input.audience === "single_member") {
+    return hasPermission(input.roles, "NOTIFICATION_SEND_SELECTED", input.permissions);
   }
   return hasPermission(input.roles, notificationPermissionByType[input.type], input.permissions);
 }

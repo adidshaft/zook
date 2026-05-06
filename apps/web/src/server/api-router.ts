@@ -33,6 +33,7 @@ import {
   type Permission,
   type PaymentMandateStatus,
   type AIRequestType,
+  type NotificationType,
   type PlanType,
   type Role,
 } from "@zook/core";
@@ -196,19 +197,35 @@ const completeMockPaymentSchema = z.object({
 
 const manualMembershipPaymentSchema = z
   .object({
-    memberUserId: z.string(),
+    purpose: z.enum(["MEMBERSHIP", "SHOP_ORDER", "OTHER"]).default("MEMBERSHIP"),
+    memberUserId: z.string().optional(),
     planId: z.string().optional(),
     subscriptionId: z.string().optional(),
+    shopOrderId: z.string().optional(),
+    description: z.string().trim().max(500).optional(),
     amountPaise: z.number().int().positive(),
     mode: z.enum(["CASH", "DIRECT_UPI", "BANK_TRANSFER", "CARD", "OTHER"]),
     proofAssetId: z.string().optional(),
     receiptNumber: z.string().optional(),
     notes: z.string().max(500).optional(),
   })
-  .refine(
-    (value) => Boolean(value.planId || value.subscriptionId),
-    "A planId or subscriptionId is required",
-  );
+  .superRefine((value, ctx) => {
+    if (value.purpose === "MEMBERSHIP" && !value.memberUserId) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A member is required." });
+    }
+    if (value.purpose === "MEMBERSHIP" && !value.planId && !value.subscriptionId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A plan or subscription is required.",
+      });
+    }
+    if (value.purpose === "SHOP_ORDER" && !value.shopOrderId) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A shop order is required." });
+    }
+    if (value.purpose === "OTHER" && !value.description) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A description is required." });
+    }
+  });
 
 const attendanceRejectSchema = z.object({
   reason: z.string().trim().min(2).max(200),
@@ -225,39 +242,111 @@ const manualAttendanceSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+const notificationAudienceKinds = [
+  "selected_members",
+  "single_member",
+  "all_active_members",
+  "expiring_soon",
+  "assigned_clients",
+  "membership_plan",
+  "branch_members",
+] as const;
+
 const notificationComposerSchema = notificationSchema.extend({
-  audience: z.enum([
-    "selected_members",
-    "all_active_members",
-    "expiring_soon",
-    "assigned_clients",
-    "membership_plan",
-  ]),
+  audience: z.enum(notificationAudienceKinds),
+  branchId: z.string().optional().nullable(),
+  singleUserId: z.string().optional(),
   selectedUserIds: z.array(z.string()).default([]),
   planId: z.string().optional(),
+  daysAhead: z.number().int().min(1).max(30).default(7),
+  templateId: z.string().optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
   excludeMinors: z.boolean().default(false),
+}).superRefine((value, ctx) => {
+  if (value.audience === "single_member" && !value.singleUserId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose one member." });
+  }
+  if (value.audience === "selected_members" && value.selectedUserIds.length === 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose at least one member." });
+  }
+  if (value.audience === "membership_plan" && !value.planId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose a plan." });
+  }
+  if (value.audience === "branch_members" && !value.branchId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose a branch." });
+  }
 });
 
 const staffInviteSchema = z.object({
   email: z.string().trim().email(),
   role: z.enum(["ADMIN", "RECEPTIONIST", "TRAINER"]),
-});
-
-const staffRoleUpdateSchema = z.object({
-  role: z.enum(["ADMIN", "RECEPTIONIST", "TRAINER"]),
   branchId: z.string().optional().nullable(),
 });
 
-const branchManageSchema = z.object({
+const staffRoleUpdateSchema = z
+  .object({
+    role: z.enum(["ADMIN", "RECEPTIONIST", "TRAINER"]),
+    branchId: z.string().optional().nullable(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.role === "RECEPTIONIST" && !value.branchId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Receptionists must be assigned to one branch.",
+        path: ["branchId"],
+      });
+    }
+  });
+
+const timeStringSchema = z.string().regex(/^\d{2}:\d{2}$/);
+const dayHoursSchema = z.union([
+  z.object({ closed: z.literal(true) }),
+  z.object({ open: timeStringSchema, close: timeStringSchema }),
+]);
+const operatingHoursSchema = z
+  .object({
+    mon: dayHoursSchema,
+    tue: dayHoursSchema,
+    wed: dayHoursSchema,
+    thu: dayHoursSchema,
+    fri: dayHoursSchema,
+    sat: dayHoursSchema,
+    sun: dayHoursSchema,
+  })
+  .partial();
+
+const branchManageBaseSchema = z.object({
   name: z.string().trim().min(2).max(120),
-  address: z.string().trim().min(3).max(240),
+  address: z.string().trim().min(10).max(240),
   city: z.string().trim().min(2).max(80),
   state: z.string().trim().min(2).max(80),
   pincode: z.string().regex(/^\d{6}$/),
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
+  locationSource: z.enum(["MANUAL", "GOOGLE_PLACE", "GOOGLE_MAPS_LINK"]).optional(),
+  contactPhone: z.string().trim().min(8).max(20).optional().nullable(),
+  contactEmail: z.string().trim().email().optional().nullable(),
+  whatsappNumber: z.string().trim().min(8).max(20).optional().nullable(),
+  operatingHours: operatingHoursSchema.optional().nullable(),
+  amenities: z.array(z.string().trim().min(1).max(48)).max(40).optional(),
+  managerId: z.string().optional().nullable(),
+  logoAssetId: z.string().optional().nullable(),
+  coverAssetId: z.string().optional().nullable(),
   isDefault: z.boolean().optional(),
   active: z.boolean().optional(),
+});
+
+const branchManageSchema = branchManageBaseSchema.superRefine((value, ctx) => {
+  if (
+    value.locationSource === "GOOGLE_PLACE" &&
+    (value.latitude == null || value.longitude == null)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Choose the branch location on the map before saving.",
+      path: ["latitude"],
+    });
+  }
 });
 
 const permissionOverrideSchema = z.object({
@@ -409,6 +498,7 @@ const memberWellnessProfileSchema = z.object({
     .optional(),
   dateOfBirth: z.string().trim().optional(),
   fitnessGoal: z.string().trim().max(240).optional(),
+  preferredLocale: z.enum(["en", "hi"]).optional(),
   weightKg: z.number().positive().max(500).optional(),
   dietPreference: z.string().trim().max(120).optional(),
   allergies: z.string().trim().max(240).optional(),
@@ -728,6 +818,18 @@ async function resolveOrgBranch(orgId: string, branchId?: string | null) {
     throw notFoundError(branchId ? "Branch not found" : "Default branch not found");
   }
   return branch;
+}
+
+async function assertBranchManager(orgId: string, managerId?: string | null) {
+  if (!managerId) {
+    return;
+  }
+  const assignment = await prisma.organizationRoleAssignment.findFirst({
+    where: { orgId, userId: managerId, role: { in: ["OWNER", "ADMIN"] } },
+  });
+  if (!assignment) {
+    throw validationError("Branch manager must be an active owner or admin.");
+  }
 }
 
 function queryBranchId(request: NextRequest) {
@@ -2350,27 +2452,107 @@ function notificationPreferenceAllowsType(
   return true;
 }
 
+function starterNotificationTemplates(orgId: string, createdById: string) {
+  const templates: Array<{
+    name: string;
+    type: NotificationType;
+    title: string;
+    body: string;
+  }> = [
+    {
+      name: "Renewal nudge",
+      type: "PLAN",
+      title: "Your membership is ending soon",
+      body: "Renew at the desk or reply in the app if you want help choosing your next plan.",
+    },
+    {
+      name: "Class moved",
+      type: "OPERATIONAL",
+      title: "Class timing changed",
+      body: "Today's class has moved. Please check the new time before you leave for the gym.",
+    },
+    {
+      name: "Holiday closure",
+      type: "OPERATIONAL",
+      title: "Gym closed for a holiday",
+      body: "The gym will stay closed on the announced date. Regular timings resume after that.",
+    },
+    {
+      name: "New plan launch",
+      type: "PROMOTIONAL",
+      title: "New membership plan available",
+      body: "A new plan is now available. Open Zook or visit the desk to choose what fits you.",
+    },
+    {
+      name: "Welcome new member",
+      type: "TRANSACTIONAL",
+      title: "Welcome to the gym",
+      body: "Your membership is active. Show your QR code at the desk when you arrive.",
+    },
+    {
+      name: "Birthday wish",
+      type: "ENGAGEMENT",
+      title: "Happy birthday",
+      body: "Wishing you a strong year ahead. We are glad to have you with us.",
+    },
+    {
+      name: "Stock arrival",
+      type: "OPERATIONAL",
+      title: "Shop item back in stock",
+      body: "The item you asked about is back at the gym shop. Visit the desk to pick it up.",
+    },
+    {
+      name: "Event update",
+      type: "OPERATIONAL",
+      title: "Gym event update",
+      body: "An event update is available for members. Open Zook for the latest details.",
+    },
+  ];
+  return templates.map((template) => ({
+    orgId,
+    createdById,
+    active: true,
+    ...template,
+  }));
+}
+
 async function resolveNotificationRecipients(input: {
   orgId: string;
   senderUserId: string;
-  audience:
-    | "selected_members"
-    | "all_active_members"
-    | "expiring_soon"
-    | "assigned_clients"
-    | "membership_plan";
-  type: "TRANSACTIONAL" | "OPERATIONAL" | "PROMOTIONAL" | "ENGAGEMENT" | "PLAN" | "SECURITY";
+  audience: (typeof notificationAudienceKinds)[number];
+  type: NotificationType;
   selectedUserIds?: string[];
+  singleUserId?: string;
   planId?: string;
+  branchId?: string | null;
+  daysAhead?: number;
+  excludeMinors?: boolean;
+}) {
+  const preview = await resolveNotificationPreview(input);
+  return preview.recipientUserIds;
+}
+
+async function resolveNotificationPreview(input: {
+  orgId: string;
+  senderUserId: string;
+  audience: (typeof notificationAudienceKinds)[number];
+  type: NotificationType;
+  selectedUserIds?: string[];
+  singleUserId?: string;
+  planId?: string;
+  branchId?: string | null;
+  daysAhead?: number;
   excludeMinors?: boolean;
 }) {
   const today = new Date();
-  const nextWeek = new Date();
-  nextWeek.setDate(today.getDate() + 7);
+  const endsBy = new Date();
+  endsBy.setDate(today.getDate() + (input.daysAhead ?? 7));
 
   let candidateUserIds: string[] = [];
   if (input.audience === "selected_members") {
     candidateUserIds = input.selectedUserIds ?? [];
+  } else if (input.audience === "single_member") {
+    candidateUserIds = input.singleUserId ? [input.singleUserId] : [];
   } else if (input.audience === "assigned_clients") {
     const assignments = await prisma.trainerAssignment.findMany({
       where: { orgId: input.orgId, trainerUserId: input.senderUserId, active: true },
@@ -2391,7 +2573,10 @@ async function resolveNotificationRecipients(input: {
       where: {
         orgId: input.orgId,
         status: "ACTIVE",
-        ...(input.audience === "expiring_soon" ? { endsAt: { gte: today, lte: nextWeek } } : {}),
+        ...(input.audience === "expiring_soon" ? { endsAt: { gte: today, lte: endsBy } } : {}),
+        ...(input.audience === "branch_members" && input.branchId
+          ? { branchId: input.branchId }
+          : {}),
       },
       select: { memberUserId: true },
     });
@@ -2400,7 +2585,13 @@ async function resolveNotificationRecipients(input: {
 
   const uniqueUserIds = Array.from(new Set(candidateUserIds));
   if (!uniqueUserIds.length) {
-    return [];
+    return {
+      recipientUserIds: [],
+      resolvedRecipients: 0,
+      willDeliver: 0,
+      blockedByOptOut: 0,
+      blockedByMinor: 0,
+    };
   }
 
   const memberships = await prisma.organizationUser.findMany({
@@ -2409,7 +2600,13 @@ async function resolveNotificationRecipients(input: {
   });
   const orgUserIds = memberships.map((membership) => membership.userId);
   if (!orgUserIds.length) {
-    return [];
+    return {
+      recipientUserIds: [],
+      resolvedRecipients: uniqueUserIds.length,
+      willDeliver: 0,
+      blockedByOptOut: 0,
+      blockedByMinor: 0,
+    };
   }
 
   const [users, preferences] = await Promise.all([
@@ -2425,16 +2622,21 @@ async function resolveNotificationRecipients(input: {
     }
   }
 
-  return users
-    .filter((user) => {
-      if (input.excludeMinors && user.isMinor) {
-        return false;
-      }
-      const preference = preferenceByUserId.get(user.id);
-      if (!notificationPreferenceAllowsType(preference, input.type)) {
-        return false;
-      }
-      return canReceiveNotification(input.type, {
+  const recipientUserIds: string[] = [];
+  let blockedByOptOut = 0;
+  let blockedByMinor = 0;
+
+  for (const user of users) {
+    if (input.excludeMinors && user.isMinor) {
+      blockedByMinor += 1;
+      continue;
+    }
+    const preference = preferenceByUserId.get(user.id);
+    if (!notificationPreferenceAllowsType(preference, input.type)) {
+      blockedByOptOut += 1;
+      continue;
+    }
+    const allowed = canReceiveNotification(input.type, {
         isMinor: user.isMinor,
         guardianConsentGranted: !user.guardianPending,
         marketingOptIn: preference
@@ -2442,9 +2644,69 @@ async function resolveNotificationRecipients(input: {
           : user.marketingOptIn,
         aiConsent: user.aiConsent,
         hasProfilePhoto: Boolean(user.profilePhotoUrl),
-      });
-    })
-    .map((user) => user.id);
+    });
+    if (!allowed) {
+      if (user.isMinor && (input.type === "PROMOTIONAL" || input.type === "ENGAGEMENT")) {
+        blockedByMinor += 1;
+      } else {
+        blockedByOptOut += 1;
+      }
+      continue;
+    }
+    recipientUserIds.push(user.id);
+  }
+
+  return {
+    recipientUserIds,
+    resolvedRecipients: orgUserIds.length,
+    willDeliver: recipientUserIds.length,
+    blockedByOptOut,
+    blockedByMinor,
+  };
+}
+
+async function enforceNotificationBudgets(input: {
+  orgId: string;
+  senderUserId: string;
+  type: NotificationType;
+  recipientUserIds: string[];
+}) {
+  await assertRateLimit(
+    "notificationSenderMinute",
+    `${input.orgId}:${input.senderUserId}`,
+    "Please wait a moment before sending another message.",
+  );
+  await assertRateLimit(
+    "notificationSenderDaily",
+    `${input.orgId}:${input.senderUserId}`,
+    "This sender has reached today's message limit.",
+  );
+  await assertRateLimit(
+    "notificationOrgAllDaily",
+    input.orgId,
+    "This gym has reached today's message limit.",
+  );
+  if (input.type === "OPERATIONAL") {
+    await assertRateLimit(
+      "notificationOrgOperationalDaily",
+      input.orgId,
+      "This gym has reached today's operational message limit.",
+    );
+  }
+  if (input.type === "PROMOTIONAL" || input.type === "ENGAGEMENT") {
+    await assertRateLimit(
+      "notificationOrgPromoDaily",
+      input.orgId,
+      "This gym has reached today's announcement limit.",
+    );
+  }
+  for (const recipientUserId of input.recipientUserIds) {
+    await assertRateLimit(
+      "notificationRecipientDaily",
+      `${input.orgId}:${recipientUserId}`,
+      "Some members have already received too many messages today.",
+    );
+  }
 }
 
 function toCouponInput(coupon: {
@@ -3309,6 +3571,7 @@ async function handleMeData(request: NextRequest, path: string[]) {
           name: body.name,
           dateOfBirth,
           fitnessGoal: body.fitnessGoal,
+          preferredLocale: body.preferredLocale,
         }),
       });
       const currentProfile = orgId
@@ -4283,7 +4546,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
         }),
       });
       const branch = await tx.branch.create({
-        data: {
+        data: clean({
           orgId: created.id,
           name: `${created.name} Main`,
           address: created.address,
@@ -4292,8 +4555,18 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           pincode: created.pincode,
           latitude: created.latitude,
           longitude: created.longitude,
+          contactPhone: created.contactPhone,
+          contactEmail: created.contactEmail,
+          whatsappNumber: created.contactPhone,
+          operatingHours:
+            created.operatingHours === null
+              ? undefined
+              : (created.operatingHours as Prisma.InputJsonValue),
+          amenities: Array.isArray(created.amenities)
+            ? created.amenities.filter((item): item is string => typeof item === "string")
+            : [],
           isDefault: true,
-        },
+        }),
       });
       await tx.organizationUser.create({ data: { orgId: created.id, userId } });
       await tx.organizationRoleAssignment.create({
@@ -4307,6 +4580,9 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           orgId: created.id,
           keyValues: { defaultBranchId: branch.id, attendanceMode: "EXCEPTION_APPROVAL" },
         },
+      });
+      await tx.notificationTemplate.createMany({
+        data: starterNotificationTemplates(created.id, userId),
       });
       return created;
     });
@@ -4526,7 +4802,24 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_LOCATION");
+    await assertRateLimit(
+      "branchCreationBurstByOwner",
+      `${orgId}:${userId}`,
+      "Please wait a moment before adding another branch.",
+    );
+    await assertRateLimit(
+      "branchCreationByOwner",
+      `${orgId}:${userId}`,
+      "Please wait a moment before adding another branch.",
+    );
     const body = branchManageSchema.parse(await readJson(request));
+    await assertBranchManager(orgId, body.managerId);
+    const duplicate = await prisma.branch.findFirst({
+      where: { orgId, address: body.address, city: body.city, active: true },
+    });
+    if (duplicate) {
+      throw conflictError("A branch with this address already exists.");
+    }
     const branch = await prisma.$transaction(async (tx) => {
       if (body.isDefault) {
         await tx.branch.updateMany({
@@ -4544,6 +4837,15 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           pincode: body.pincode,
           latitude: body.latitude != null ? new Prisma.Decimal(body.latitude) : undefined,
           longitude: body.longitude != null ? new Prisma.Decimal(body.longitude) : undefined,
+          locationSource: body.locationSource ?? "MANUAL",
+          contactPhone: body.contactPhone,
+          contactEmail: body.contactEmail,
+          whatsappNumber: body.whatsappNumber ?? body.contactPhone,
+          operatingHours: body.operatingHours as Prisma.InputJsonValue | undefined,
+          amenities: body.amenities,
+          managerId: body.managerId,
+          logoAssetId: body.logoAssetId,
+          coverAssetId: body.coverAssetId,
           isDefault: body.isDefault ?? false,
           active: body.active ?? true,
         }),
@@ -4576,10 +4878,25 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     const branchId = path[3]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_LOCATION");
-    const body = branchManageSchema.partial().parse(await readJson(request));
+    const body = branchManageBaseSchema.partial().parse(await readJson(request));
     const existing = await prisma.branch.findFirst({ where: { id: branchId, orgId } });
     if (!existing) {
       throw notFoundError("Branch not found");
+    }
+    await assertBranchManager(orgId, body.managerId);
+    if (body.address || body.city) {
+      const duplicate = await prisma.branch.findFirst({
+        where: {
+          orgId,
+          address: body.address ?? existing.address,
+          city: body.city ?? existing.city,
+          active: true,
+          id: { not: branchId },
+        },
+      });
+      if (duplicate) {
+        throw conflictError("A branch with this address already exists.");
+      }
     }
     const branch = await prisma.$transaction(async (tx) => {
       if (body.isDefault) {
@@ -4598,6 +4915,18 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           pincode: body.pincode,
           latitude: body.latitude != null ? new Prisma.Decimal(body.latitude) : body.latitude,
           longitude: body.longitude != null ? new Prisma.Decimal(body.longitude) : body.longitude,
+          locationSource: body.locationSource,
+          contactPhone: body.contactPhone,
+          contactEmail: body.contactEmail,
+          whatsappNumber: body.whatsappNumber,
+          operatingHours:
+            body.operatingHours === null
+              ? Prisma.JsonNull
+              : (body.operatingHours as Prisma.InputJsonValue | undefined),
+          amenities: body.amenities,
+          managerId: body.managerId,
+          logoAssetId: body.logoAssetId,
+          coverAssetId: body.coverAssetId,
           isDefault: body.isDefault,
           active: body.active,
         }),
@@ -7036,7 +7365,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["attendance", "dev-scan"])) {
     const appEnv = (process.env.APP_ENV ?? process.env.ENV_PROFILE ?? "local").toLowerCase();
     if (appEnv !== "local" || process.env.NODE_ENV === "production") {
-      throw forbiddenError("Sample check-in is not available here.");
+      throw forbiddenError("Test check-in is only available in development.");
     }
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
@@ -7061,7 +7390,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
           ...attendanceWithEntryCode(existing),
           checkedInAt: existing.checkedInAt,
           branchName: branch.name,
-          planName: "Sample check-in",
+          planName: "Test check-in",
         },
         status: existing.status,
         duplicate: true,
@@ -7095,7 +7424,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         ...attendanceWithEntryCode(record),
         checkedInAt: record.checkedInAt,
         branchName: branch.name,
-        planName: "Sample check-in",
+        planName: "Test check-in",
       },
       status: record.status,
       duplicate: false,
@@ -7972,8 +8301,29 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     });
     return ok({ permission });
   }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "shop", "orders", /.+/, "manual-payment"])
+  ) {
+    const orgId = path[1]!;
+    const shopOrderId = path[4]!;
+    const payload = (await readJson(request)) as Record<string, unknown>;
+    return handleManualPaymentRequest(request, orgId, {
+      ...payload,
+      purpose: "SHOP_ORDER",
+      shopOrderId,
+    });
+  }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "manual-payments"])) {
     const orgId = path[1]!;
+    return handleManualPaymentRequest(request, orgId, await readJson(request));
+  }
+
+  async function handleManualPaymentRequest(
+    request: NextRequest,
+    orgId: string,
+    rawBody: unknown,
+  ) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = assertManualPaymentRecordContext(ctx, orgId);
     await assertRateLimit(
@@ -7981,18 +8331,102 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       `${orgId}:${userId}`,
       "Too many manual payments from this account today.",
     );
-    const body = manualMembershipPaymentSchema.parse(await readJson(request));
-    const memberUser = await prisma.user.findUnique({ where: { id: body.memberUserId } });
+    const body = manualMembershipPaymentSchema.parse(rawBody);
     const proofAsset = await getOrganizationScopedFileAsset(body.proofAssetId, orgId, [
       "payment_proof",
     ]);
+
+    if (body.purpose === "SHOP_ORDER") {
+      const shopOrderId = body.shopOrderId!;
+      const order = await prisma.shopOrder.findFirst({ where: { id: shopOrderId, orgId } });
+      if (!order) {
+        throw notFoundError("Shop order not found");
+      }
+      if (order.paymentId || !["PENDING_PAYMENT", "PAID"].includes(order.status)) {
+        throw conflictError("This shop order cannot be paid at the desk.");
+      }
+      const payment = await prisma.payment.create({
+        data: clean({
+          orgId,
+          branchId: order.branchId,
+          userId: order.userId,
+          purpose: "SHOP_ORDER",
+          amountPaise: body.amountPaise,
+          status: "SUCCEEDED",
+          mode: body.mode,
+          proofAssetId: proofAsset?.id,
+          receiptNumber: body.receiptNumber,
+          notes: body.notes,
+          recordedById: userId,
+          recordedAt: new Date(),
+        }),
+      });
+      const updatedOrder = await prisma.shopOrder.update({
+        where: { id: order.id },
+        data: {
+          paymentId: payment.id,
+          status: order.status === "PENDING_PAYMENT" ? "READY_FOR_PICKUP" : order.status,
+        },
+      });
+      await createDirectNotification({
+        orgId,
+        createdById: userId,
+        type: "TRANSACTIONAL",
+        title: "Order ready for pickup",
+        body: "Your desk payment is recorded. Your order is ready for pickup at the gym.",
+        audience: "selected_member",
+        userIds: [order.userId],
+        metadata: clean({ paymentId: payment.id, shopOrderId: order.id }),
+      });
+      await writeAuditLog({
+        request,
+        orgId,
+        actorUserId: userId,
+        action: "payment.shop_manual_recorded",
+        entityType: "payment",
+        entityId: payment.id,
+        metadata: { shopOrderId: order.id, amountPaise: payment.amountPaise, mode: payment.mode },
+      });
+      return ok({ payment, order: updatedOrder });
+    }
+
+    if (body.purpose === "OTHER") {
+      const payment = await prisma.payment.create({
+        data: clean({
+          orgId,
+          purpose: "MANUAL_ADJUSTMENT",
+          amountPaise: body.amountPaise,
+          status: "SUCCEEDED",
+          mode: body.mode,
+          proofAssetId: proofAsset?.id,
+          receiptNumber: body.receiptNumber,
+          notes: body.notes,
+          recordedById: userId,
+          recordedAt: new Date(),
+          metadata: { description: body.description },
+        }),
+      });
+      await writeAuditLog({
+        request,
+        orgId,
+        actorUserId: userId,
+        action: "payment.general_manual_recorded",
+        entityType: "payment",
+        entityId: payment.id,
+        metadata: { amountPaise: payment.amountPaise, mode: payment.mode },
+      });
+      return ok({ payment });
+    }
+
+    const memberUserId = body.memberUserId!;
+    const memberUser = await prisma.user.findUnique({ where: { id: memberUserId } });
     if (!memberUser) {
       throw notFoundError("Member not found");
     }
-    await assertOrgUser({ orgId, userId: body.memberUserId, role: "MEMBER" });
+    await assertOrgUser({ orgId, userId: memberUserId, role: "MEMBER" });
     const basePaymentData = clean({
       orgId,
-      userId: body.memberUserId,
+      userId: memberUserId,
       purpose: "MEMBERSHIP",
       amountPaise: body.amountPaise,
       status: "SUCCEEDED",
@@ -8007,7 +8441,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     let subscription = null as Awaited<ReturnType<typeof prisma.memberSubscription.create>> | null;
     if (body.subscriptionId) {
       const existingSubscription = await prisma.memberSubscription.findFirst({
-        where: { id: body.subscriptionId, orgId, memberUserId: body.memberUserId },
+        where: { id: body.subscriptionId, orgId, memberUserId },
       });
       if (!existingSubscription) {
         throw notFoundError("Subscription not found");
@@ -8086,7 +8520,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         data: clean({
           orgId,
           branchId: branch.id,
-          memberUserId: body.memberUserId,
+          memberUserId,
           planId: plan.id,
           status: "ACTIVE",
           startsAt: window.startsAt,
@@ -8099,7 +8533,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     }
     await ensureOrganizationMembership({
       orgId,
-      userId: body.memberUserId,
+      userId: memberUserId,
       profilePhotoUrl: memberUser.profilePhotoUrl,
       marketingOptIn: memberUser.isMinor ? false : memberUser.marketingOptIn,
     });
@@ -8110,7 +8544,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       title: "Membership activated",
       body: "Your membership has been activated with an offline payment record.",
       audience: "selected_member",
-      userIds: [body.memberUserId],
+      userIds: [memberUserId],
       metadata: clean({ paymentId: payment.id, subscriptionId: subscription?.id }),
     });
     await writeAuditLog({
@@ -9122,22 +9556,22 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       }),
     });
   }
-  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "notifications"])) {
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "notifications", "preview"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
-    await assertRateLimit(
-      "notificationSendByActor",
-      `${orgId}:${userId}`,
-      "Too many notification sends from this account.",
-    );
     const body = notificationComposerSchema.parse(await readJson(request));
+    if (body.branchId) {
+      await resolveOrgBranch(orgId, body.branchId);
+    }
     const permissionAudience =
       body.audience === "selected_members"
         ? "selected"
-        : body.audience === "membership_plan"
-          ? "plan"
-          : body.audience;
+        : body.audience === "single_member"
+          ? "single_member"
+          : body.audience === "membership_plan"
+            ? "plan"
+            : body.audience;
     if (
       !canSendNotification({
         roles: ctx.roles,
@@ -9148,18 +9582,73 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     ) {
       throw forbiddenError("You do not have permission to send this notification.");
     }
-    const recipientUserIds = await resolveNotificationRecipients({
+    const preview = await resolveNotificationPreview(clean({
       orgId,
       senderUserId: userId,
       audience: body.audience,
       type: body.type,
       selectedUserIds: body.selectedUserIds,
-      ...(body.planId ? { planId: body.planId } : {}),
+      singleUserId: body.singleUserId,
+      planId: body.planId,
+      branchId: body.branchId,
+      daysAhead: body.daysAhead,
       excludeMinors: body.excludeMinors,
+    }));
+    return ok({
+      resolvedRecipients: preview.resolvedRecipients,
+      willDeliver: preview.willDeliver,
+      blockedByOptOut: preview.blockedByOptOut,
+      blockedByMinor: preview.blockedByMinor,
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "notifications"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
+    const body = notificationComposerSchema.parse(await readJson(request));
+    if (body.branchId) {
+      await resolveOrgBranch(orgId, body.branchId);
+    }
+    const permissionAudience =
+      body.audience === "selected_members"
+        ? "selected"
+        : body.audience === "single_member"
+          ? "single_member"
+          : body.audience === "membership_plan"
+            ? "plan"
+            : body.audience;
+    if (
+      !canSendNotification({
+        roles: ctx.roles,
+        permissions: ctx.permissions,
+        type: body.type,
+        audience: permissionAudience,
+      })
+    ) {
+      throw forbiddenError("You do not have permission to send this notification.");
+    }
+    const recipientUserIds = await resolveNotificationRecipients(clean({
+      orgId,
+      senderUserId: userId,
+      audience: body.audience,
+      type: body.type,
+      selectedUserIds: body.selectedUserIds,
+      singleUserId: body.singleUserId,
+      ...(body.planId ? { planId: body.planId } : {}),
+      branchId: body.branchId,
+      daysAhead: body.daysAhead,
+      excludeMinors: body.excludeMinors,
+    }));
+    await enforceNotificationBudgets({
+      orgId,
+      senderUserId: userId,
+      type: body.type,
+      recipientUserIds,
     });
     const notification = await prisma.notification.create({
       data: clean({
         orgId,
+        branchId: body.branchId,
         createdById: userId,
         type: body.type,
         title: body.title,
@@ -9171,8 +9660,13 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         sentAt: body.scheduleAt ? undefined : new Date(),
         metadata: clean({
           selectedUserIds: body.selectedUserIds.length ? body.selectedUserIds : undefined,
+          singleUserId: body.singleUserId,
           planId: body.planId,
+          branchId: body.branchId,
+          daysAhead: body.daysAhead,
+          templateId: body.templateId,
           excludeMinors: body.excludeMinors,
+          ...(body.metadata ?? {}),
         }) as Prisma.InputJsonValue,
       }),
     });
@@ -9215,6 +9709,34 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       },
     });
     return ok({ notification, recipientCount: recipientUserIds.length });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "notifications", "templates"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
+    return ok({
+      templates: await prisma.notificationTemplate.findMany({
+        where: { orgId, active: true },
+        orderBy: [{ type: "asc" }, { name: "asc" }],
+      }),
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "notifications", "templates"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "NOTIFICATION_MANAGE_TEMPLATES");
+    const body = z
+      .object({
+        name: z.string().trim().min(2).max(80),
+        type: z.enum(["TRANSACTIONAL", "OPERATIONAL", "PROMOTIONAL", "ENGAGEMENT", "PLAN", "SECURITY"]),
+        title: z.string().trim().min(2).max(120),
+        body: z.string().trim().min(2).max(600),
+      })
+      .parse(await readJson(request));
+    const template = await prisma.notificationTemplate.create({
+      data: { orgId, createdById: userId, ...body },
+    });
+    return ok({ template });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "notifications"])) {
     const orgId = path[1]!;

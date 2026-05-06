@@ -338,7 +338,7 @@ async function getOrganizationDashboardDataUncached(
         label: "Today attendance",
         value: String(todayAttendance),
         delta: branchScope.selectedBranch
-          ? `${branchScope.selectedBranch.name} QR scans`
+          ? `${branchScope.selectedBranch.name} QR check-ins`
           : "Main branch unavailable",
       },
       {
@@ -350,7 +350,7 @@ async function getOrganizationDashboardDataUncached(
       {
         label: "Cash collected",
         value: `₹${((manualPaymentsToday._sum.amountPaise ?? 0) / 100).toFixed(0)}`,
-        delta: "manual/offline today",
+        delta: "collected at desk today",
       },
       {
         label: "Revenue",
@@ -659,7 +659,7 @@ export async function getOrganizationActiveShopOrders(
   const orders = await prisma.shopOrder.findMany({
     where: {
       orgId,
-      status: { in: ["PAID", "READY_FOR_PICKUP"] },
+      status: { in: ["PENDING_PAYMENT", "PAID", "READY_FOR_PICKUP"] },
       ...(filters.branchId ? { branchId: filters.branchId } : {}),
     },
     orderBy: { createdAt: "desc" },

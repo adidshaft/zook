@@ -1,11 +1,19 @@
 import type { AuthSessionSummary, Role } from "@zook/core";
 
-const gymDashboardRoles = new Set<Role>(["OWNER", "ADMIN", "RECEPTIONIST", "TRAINER"]);
+const ownerDashboardRoles = new Set<Role>(["OWNER", "ADMIN"]);
+const receptionistRoles = new Set<Role>(["RECEPTIONIST"]);
+const trainerRoles = new Set<Role>(["TRAINER"]);
 
-function hasGymDashboardAccess(session: Pick<AuthSessionSummary, "activeOrganization">) {
-  return Boolean(
-    session.activeOrganization?.roles.some((role) => gymDashboardRoles.has(role)),
-  );
+export function hasOwnerDashboardAccess(session: Pick<AuthSessionSummary, "activeOrganization">) {
+  return Boolean(session.activeOrganization?.roles.some((role) => ownerDashboardRoles.has(role)));
+}
+
+export function hasDeskAccess(session: Pick<AuthSessionSummary, "activeOrganization">) {
+  return Boolean(session.activeOrganization?.roles.some((role) => receptionistRoles.has(role)));
+}
+
+export function hasCoachAccess(session: Pick<AuthSessionSummary, "activeOrganization">) {
+  return Boolean(session.activeOrganization?.roles.some((role) => trainerRoles.has(role)));
 }
 
 function hasMemberAccess(session: Pick<AuthSessionSummary, "activeOrganization">) {
@@ -31,8 +39,14 @@ export function resolvePostLoginPath(
   if (session?.user.isPlatformAdmin) {
     return "/platform";
   }
-  if (session && hasGymDashboardAccess(session)) {
+  if (session && hasOwnerDashboardAccess(session)) {
     return "/dashboard";
+  }
+  if (session && hasDeskAccess(session)) {
+    return "/desk";
+  }
+  if (session && hasCoachAccess(session)) {
+    return "/coach";
   }
   if (session && hasMemberAccess(session)) {
     return "/me";
@@ -42,13 +56,19 @@ export function resolvePostLoginPath(
 
 export function publicAccountLink(
   session: Pick<AuthSessionSummary, "activeOrganization" | "user"> | null | undefined,
-  labels: { dashboard: string; membership: string },
+  labels: { dashboard: string; desk?: string; coach?: string; membership: string },
 ) {
   if (!session || session.user.isPlatformAdmin) {
     return null;
   }
-  if (hasGymDashboardAccess(session)) {
+  if (hasOwnerDashboardAccess(session)) {
     return { href: "/dashboard", label: labels.dashboard };
+  }
+  if (hasDeskAccess(session)) {
+    return { href: "/desk", label: labels.desk ?? "Desk" };
+  }
+  if (hasCoachAccess(session)) {
+    return { href: "/coach", label: labels.coach ?? "Coach" };
   }
   if (hasMemberAccess(session)) {
     return { href: "/me", label: labels.membership };

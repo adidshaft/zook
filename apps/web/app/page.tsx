@@ -43,6 +43,8 @@ export default async function HomePage({
   const session = await resolveSessionSummaryFromToken(cookieStore.get(sessionCookieName)?.value);
   const accountLink = publicAccountLink(session, {
     dashboard: t("dashboard"),
+    desk: t("desk"),
+    coach: t("coach"),
     membership: t("myMembership"),
   });
   const productCards: Array<[LucideIcon, string, string]> = [

@@ -252,6 +252,17 @@ export type BranchRow = {
   city: string;
   state: string;
   pincode: string;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  locationSource?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  whatsappNumber?: string | null;
+  operatingHours?: Record<string, unknown> | null;
+  amenities?: string[];
+  managerId?: string | null;
+  logoAssetId?: string | null;
+  coverAssetId?: string | null;
   isDefault: boolean;
   active: boolean;
 };

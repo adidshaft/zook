@@ -68,7 +68,7 @@ export function useOperationalResource<T>({
         if (!active) {
           return;
         }
-        setError(cause instanceof Error ? cause.message : "Unable to load this surface.");
+        setError(cause instanceof Error ? cause.message : "Unable to load this view.");
       } finally {
         if (active) {
           setLoading(false);

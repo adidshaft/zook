@@ -69,6 +69,47 @@ import {
   type StaffUserRow,
 } from "./dashboard-operational-model";
 
+type BranchFormState = {
+  name?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  whatsappNumber?: string;
+  managerId?: string;
+  amenitiesText?: string;
+  hoursText?: string;
+  isDefault?: boolean;
+  active?: boolean;
+};
+
+function branchFormPayload(form: BranchFormState) {
+  let operatingHours: unknown;
+  if (form.hoursText?.trim()) {
+    operatingHours = JSON.parse(form.hoursText);
+  }
+  return {
+    name: form.name,
+    address: form.address,
+    city: form.city,
+    state: form.state,
+    pincode: form.pincode,
+    contactPhone: form.contactPhone?.trim() || undefined,
+    contactEmail: form.contactEmail?.trim() || undefined,
+    whatsappNumber: form.whatsappNumber?.trim() || undefined,
+    managerId: form.managerId?.trim() || undefined,
+    amenities: form.amenitiesText
+      ?.split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    ...(operatingHours ? { operatingHours } : {}),
+    isDefault: form.isDefault,
+    active: form.active,
+  };
+}
+
 export function DashboardOperationalPanel({
   orgId,
   sectionKey,
@@ -172,6 +213,12 @@ export function DashboardOperationalPanel({
     city: organization.city ?? "",
     state: organization.state ?? "",
     pincode: "",
+    contactPhone: "",
+    contactEmail: "",
+    whatsappNumber: "",
+    managerId: "",
+    amenitiesText: "",
+    hoursText: "",
     isDefault: false,
   });
   const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
@@ -699,7 +746,7 @@ export function DashboardOperationalPanel({
       setFormStatus("");
       await webApiFetch(`/api/orgs/${orgId}/branches`, {
         method: "POST",
-        body: branchForm,
+        body: branchFormPayload(branchForm),
       });
       setBranchForm({
         name: "",
@@ -707,6 +754,12 @@ export function DashboardOperationalPanel({
         city: organization.city ?? "",
         state: organization.state ?? "",
         pincode: "",
+        contactPhone: "",
+        contactEmail: "",
+        whatsappNumber: "",
+        managerId: "",
+        amenitiesText: "",
+        hoursText: "",
         isDefault: false,
       });
       branchesState.reload();
@@ -718,14 +771,14 @@ export function DashboardOperationalPanel({
     }
   }
 
-  async function updateBranch(branch: BranchRow, patch: Partial<BranchRow>) {
+  async function updateBranch(branch: BranchRow, patch: Partial<BranchRow> | BranchFormState) {
     try {
       setFormBusy(`branch:${branch.id}`);
       setFormError("");
       setFormStatus("");
       await webApiFetch(`/api/orgs/${orgId}/branches/${branch.id}`, {
         method: "PATCH",
-        body: patch,
+        body: "amenitiesText" in patch || "hoursText" in patch ? branchFormPayload(patch as typeof branchForm) : patch,
       });
       branchesState.reload();
       setFormStatus("Branch updated.");
@@ -744,6 +797,12 @@ export function DashboardOperationalPanel({
       city: branch.city,
       state: branch.state,
       pincode: branch.pincode,
+      contactPhone: branch.contactPhone ?? "",
+      contactEmail: branch.contactEmail ?? "",
+      whatsappNumber: branch.whatsappNumber ?? "",
+      managerId: branch.managerId ?? "",
+      amenitiesText: branch.amenities?.join(", ") ?? "",
+      hoursText: branch.operatingHours ? JSON.stringify(branch.operatingHours) : "",
       isDefault: branch.isDefault,
     });
     setFormError("");
@@ -1099,8 +1158,8 @@ export function DashboardOperationalPanel({
           <GlassCard className="xl:col-span-1">
             <SectionHeader
               eyebrow="Members"
-              title="Roster and contact posture"
-              description="Profiles here come from the persisted membership directory, so owners and admins are reading the same book."
+              title="Member roster"
+              description="Profiles come from the member directory."
               badge={<Pill tone="lime">{members.length} profiles</Pill>}
               action={<CsvExportButton href={`/api/orgs/${orgId}/reports/members.csv`} />}
             />
@@ -1272,7 +1331,7 @@ export function DashboardOperationalPanel({
             <SectionHeader
               eyebrow="Pipeline"
               title="Join request queue"
-              description="Approval-required flows surface here so ownership can clear or stop memberships before payment."
+              description="Approval-required requests appear here so owners can approve or reject memberships before payment."
               badge={
                 <Pill tone={joinRequests.length ? "amber" : "lime"}>
                   {joinRequests.length} pending
@@ -1414,7 +1473,7 @@ export function DashboardOperationalPanel({
           <SectionHeader
             eyebrow="Orders"
             title="Pickup and fulfillment queue"
-            description="These are the live shop orders that the desk can monitor before pickup and fulfillment."
+            description="Orders ready for payment or pickup."
             badge={
               <Pill tone={readyOrders.length ? "amber" : "lime"}>{readyOrders.length} ready</Pill>
             }
@@ -1475,7 +1534,7 @@ export function DashboardOperationalPanel({
             <SectionHeader
               eyebrow="Inventory"
               title="Low-stock watch"
-              description="Inventory is sorted by stock so desk and owner surfaces can quickly spot refill pressure."
+              description="Inventory is sorted by stock so the team can spot refill needs."
               badge={
                 <Pill tone={summary.lowStockProducts > 0 ? "amber" : "lime"}>
                   {summary.lowStockProducts} low
@@ -1486,7 +1545,7 @@ export function DashboardOperationalPanel({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="font-medium text-white">Add shop product</p>
-                  <p className="mt-1 text-xs text-white/45">Creates a real inventory item.</p>
+                  <p className="mt-1 text-xs text-white/45">Adds a new product to your shop.</p>
                 </div>
                 <Pill tone="blue">Create</Pill>
               </div>
@@ -1785,7 +1844,7 @@ export function DashboardOperationalPanel({
           <GlassCard>
             <SectionHeader
               eyebrow="Queue health"
-              title="Shop posture"
+              title="Shop status"
               description="A quick operational read on how shop traffic is moving right now."
             />
             <ReadoutGrid
@@ -1830,7 +1889,7 @@ export function DashboardOperationalPanel({
               <div>
                 <p className="font-medium text-white">Invite staff</p>
                 <p className="mt-1 text-xs text-white/45">
-                  Adds a real role assignment for this gym.
+                  Invites a new team member.
                 </p>
               </div>
               <Pill tone="lime">Invite</Pill>
@@ -1879,7 +1938,7 @@ export function DashboardOperationalPanel({
           <SectionHeader
             eyebrow="Team"
             title="Operational roles"
-            description="This shows all non-member role assignments in the organization so ownership can verify who can act on sensitive surfaces."
+            description="Your team and their roles."
             badge={<Pill tone="blue">{staffAssignments.length} assignments</Pill>}
           />
           <div className="mt-5">
@@ -2196,7 +2255,7 @@ export function DashboardOperationalPanel({
             ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
               <EmptyState
                 title="Loading membership offers"
-                description="Pulling live plan definitions from the org route."
+                description="Loading your plans."
               />
             ) : (
               <DataTable
@@ -2464,6 +2523,7 @@ export function DashboardOperationalPanel({
         summary={summary}
         queuedOrders={queuedOrders}
         membershipPlans={membershipPlans}
+        members={members}
         payments={payments}
         paymentsState={paymentsState}
         shopOrders={shopOrders}
@@ -2516,7 +2576,7 @@ export function DashboardOperationalPanel({
           <SectionHeader
             eyebrow="Today"
             title="Daily command grid"
-            description="A compact, read-first rollup for owners and desk operators. The goal is to show what needs action before you start drilling into individual sections."
+            description="Today's check-ins, revenue, stock, and member requests in one view."
             badge={<StatusPill value={formatEnumLabel(organization.status)} />}
             action={
               <Link
@@ -2539,12 +2599,12 @@ export function DashboardOperationalPanel({
               {
                 label: "Attendance today",
                 value: formatCompactNumber(summary.todayAttendance),
-                meta: "QR scans with entry codes",
+                meta: "QR check-ins with entry codes",
               },
               {
                 label: "Revenue",
                 value: formatInr(summary.revenuePaise),
-                meta: `${formatInr(summary.cashCollectedPaise)} manual / offline`,
+                meta: `${formatInr(summary.cashCollectedPaise)} collected at desk`,
               },
               {
                 label: "Low stock",
@@ -2572,7 +2632,7 @@ export function DashboardOperationalPanel({
           <SectionHeader
             eyebrow="Next Up"
             title="Shift watchlist"
-            description="Fast paths into the surfaces that usually need attention first."
+            description="Quick links to what needs attention today."
           />
           <div className="mt-5 grid gap-3">
             {overviewWorkflowCards.map((item) => (
@@ -2594,7 +2654,7 @@ export function DashboardOperationalPanel({
           <SectionHeader
             eyebrow="Branches"
             title="Location control"
-            description="Keep branch setup light: one default branch for most gyms, branch actions when the org actually expands."
+            description="You have one branch by default. Add another branch when this gym expands."
             badge={
               <Pill tone={branches.length > 1 ? "blue" : "neutral"}>
                 {branches.length || 1} branches
@@ -2653,6 +2713,66 @@ export function DashboardOperationalPanel({
                   Add
                 </button>
               </div>
+              <input
+                value={branchForm.contactPhone}
+                onChange={(event) =>
+                  setBranchForm((current) => ({ ...current, contactPhone: event.target.value }))
+                }
+                placeholder="Branch phone"
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              />
+              <input
+                value={branchForm.contactEmail}
+                onChange={(event) =>
+                  setBranchForm((current) => ({ ...current, contactEmail: event.target.value }))
+                }
+                placeholder="Branch email"
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              />
+              <input
+                value={branchForm.whatsappNumber}
+                onChange={(event) =>
+                  setBranchForm((current) => ({ ...current, whatsappNumber: event.target.value }))
+                }
+                placeholder="WhatsApp number"
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              />
+              <select
+                value={branchForm.managerId}
+                onChange={(event) =>
+                  setBranchForm((current) => ({ ...current, managerId: event.target.value }))
+                }
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              >
+                <option value="" className="bg-black">
+                  No manager assigned
+                </option>
+                {staffAssignments
+                  .filter((assignment) => assignment.role === "OWNER" || assignment.role === "ADMIN")
+                  .map((assignment) => (
+                    <option key={assignment.userId} value={assignment.userId} className="bg-black">
+                      {staffUsersById.get(assignment.userId)?.name ??
+                        staffUsersById.get(assignment.userId)?.email ??
+                        "Team member"}
+                    </option>
+                  ))}
+              </select>
+              <input
+                value={branchForm.amenitiesText}
+                onChange={(event) =>
+                  setBranchForm((current) => ({ ...current, amenitiesText: event.target.value }))
+                }
+                placeholder="Amenities, comma separated"
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none md:col-span-2"
+              />
+              <input
+                value={branchForm.hoursText}
+                onChange={(event) =>
+                  setBranchForm((current) => ({ ...current, hoursText: event.target.value }))
+                }
+                placeholder='Hours JSON, e.g. {"mon":{"open":"06:00","close":"22:00"}}'
+                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none md:col-span-2"
+              />
             </div>
             {branches.length === 0 && !branchesState.loading ? (
               <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
@@ -2725,6 +2845,91 @@ export function DashboardOperationalPanel({
                           Save
                         </button>
                       </div>
+                      <input
+                        value={branchEditForm.contactPhone}
+                        onChange={(event) =>
+                          setBranchEditForm((current) => ({
+                            ...current,
+                            contactPhone: event.target.value,
+                          }))
+                        }
+                        placeholder="Branch phone"
+                        className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+                      />
+                      <input
+                        value={branchEditForm.contactEmail}
+                        onChange={(event) =>
+                          setBranchEditForm((current) => ({
+                            ...current,
+                            contactEmail: event.target.value,
+                          }))
+                        }
+                        placeholder="Branch email"
+                        className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+                      />
+                      <input
+                        value={branchEditForm.whatsappNumber}
+                        onChange={(event) =>
+                          setBranchEditForm((current) => ({
+                            ...current,
+                            whatsappNumber: event.target.value,
+                          }))
+                        }
+                        placeholder="WhatsApp number"
+                        className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+                      />
+                      <select
+                        value={branchEditForm.managerId}
+                        onChange={(event) =>
+                          setBranchEditForm((current) => ({
+                            ...current,
+                            managerId: event.target.value,
+                          }))
+                        }
+                        className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+                      >
+                        <option value="" className="bg-black">
+                          No manager assigned
+                        </option>
+                        {staffAssignments
+                          .filter(
+                            (assignment) =>
+                              assignment.role === "OWNER" || assignment.role === "ADMIN",
+                          )
+                          .map((assignment) => (
+                            <option
+                              key={assignment.userId}
+                              value={assignment.userId}
+                              className="bg-black"
+                            >
+                              {staffUsersById.get(assignment.userId)?.name ??
+                                staffUsersById.get(assignment.userId)?.email ??
+                                "Team member"}
+                            </option>
+                          ))}
+                      </select>
+                      <input
+                        value={branchEditForm.amenitiesText}
+                        onChange={(event) =>
+                          setBranchEditForm((current) => ({
+                            ...current,
+                            amenitiesText: event.target.value,
+                          }))
+                        }
+                        placeholder="Amenities, comma separated"
+                        className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none md:col-span-2"
+                      />
+                      <input
+                        value={branchEditForm.hoursText}
+                        onChange={(event) =>
+                          setBranchEditForm((current) => ({
+                            ...current,
+                            hoursText: event.target.value,
+                          }))
+                        }
+                        placeholder='Hours JSON, e.g. {"mon":{"open":"06:00","close":"22:00"}}'
+                        className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none md:col-span-2"
+                      />
                     </div>
                     <button
                       onClick={() => setEditingBranchId(null)}
@@ -2739,6 +2944,11 @@ export function DashboardOperationalPanel({
                       <p className="text-sm font-medium text-white">{branch.name}</p>
                       <p className="mt-1 text-xs text-white/45">
                         {branch.address} · {branch.city}, {branch.state} {branch.pincode}
+                      </p>
+                      <p className="mt-1 text-xs text-white/40">
+                        {[branch.contactPhone, branch.contactEmail, branch.managerId ? "Manager assigned" : null]
+                          .filter(Boolean)
+                          .join(" · ") || "Add phone, hours, and manager before opening this branch"}
                       </p>
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
@@ -3487,7 +3697,7 @@ export function DashboardOperationalPanel({
           <SectionHeader
             eyebrow="Inventory and Governance"
             title="Edges worth watching"
-            description="The point here is to surface quiet operational risk before it spills into member experience."
+            description="These checks show quiet operational risk before members feel it."
           />
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
@@ -3524,7 +3734,7 @@ export function DashboardOperationalPanel({
 
             <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
-                Control posture
+                Control status
               </p>
               <ReadoutGrid
                 className="mt-4"
@@ -3541,7 +3751,7 @@ export function DashboardOperationalPanel({
                     meta: `${organization.city}${organization.state ? `, ${organization.state}` : ""}`,
                   },
                   {
-                    label: "Contact lane",
+                    label: "Primary contact",
                     value: organization.contactEmail ?? organization.contactPhone ?? "Desk-owned",
                     meta: "Primary escalation route",
                   },

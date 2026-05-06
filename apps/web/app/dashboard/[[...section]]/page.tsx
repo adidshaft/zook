@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import { getDashboardData } from "@/lib/data";
+import { hasCoachAccess, hasDeskAccess, hasOwnerDashboardAccess } from "@/lib/auth-destinations";
 import { requireDashboardSession } from "@/lib/server-auth";
 import { redirect } from "next/navigation";
 
@@ -39,9 +40,26 @@ export default async function DashboardPage({
   if (!session.activeOrgId) {
     redirect(session.user.isPlatformAdmin ? "/platform" : "/gyms");
   }
+  if (!session.user.isPlatformAdmin && hasDeskAccess(session)) {
+    redirect("/desk");
+  }
+  if (!session.user.isPlatformAdmin && hasCoachAccess(session)) {
+    redirect("/coach");
+  }
+  if (!session.user.isPlatformAdmin && !hasOwnerDashboardAccess(session)) {
+    redirect("/gyms");
+  }
   if (!canAccessWebDashboard(session)) {
     redirect("/gyms");
   }
   const data = await getDashboardData(session.activeOrgId, branchId);
-  return <DashboardShell section={section} data={data} isPlatformAdmin={session.user.isPlatformAdmin} />;
+  return (
+    <DashboardShell
+      section={section}
+      data={data}
+      isPlatformAdmin={session.user.isPlatformAdmin}
+      roles={session.activeOrganization?.roles ?? []}
+      user={{ name: session.user.name, email: session.user.email }}
+    />
+  );
 }

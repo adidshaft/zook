@@ -30,7 +30,7 @@ const demoNotifications = zookDemoFixtures.notifications.map((notification) => (
 const demoAiUsage = zookDemoFixtures.aiUsageRecords.map((usage) => ({
   id: usage.id,
   role: usage.actorRole,
-  provider: "MOCK",
+  provider: "demo",
   requestType: usage.requestType,
   promptSummary: usage.promptSummary,
   responseSummary: "Draft ready for trainer review",
@@ -86,7 +86,7 @@ function getDemoDashboardData(scope: "org" | "platform") {
             { label: "Assistant drafts", value: "18", delta: "Trainer drafts this month" },
           ]
         : [
-            { label: "Organizations", value: "1", delta: "Demo data" },
+            { label: "Organizations", value: "1", delta: "Sample data" },
             { label: "Active orgs", value: "1", delta: "0 suspended" },
             { label: "Service status", value: "5", delta: "Ready" },
             { label: "Safety reviews", value: "0", delta: "No open reviews" },
@@ -198,22 +198,22 @@ export async function getDashboardData(orgId?: string, branchId?: string) {
 export async function getEmptyDashboardData(orgId?: string) {
   const zeroMetrics = orgId
     ? [
-        { label: "Today attendance", value: "0", delta: "Data unavailable" },
-        { label: "Active members", value: "0", delta: "Data unavailable" },
-        { label: "Expiring soon", value: "0", delta: "Data unavailable" },
-        { label: "Cash collected", value: "₹0", delta: "Data unavailable" },
-        { label: "Revenue", value: "₹0", delta: "Data unavailable" },
-        { label: "Low stock", value: "0", delta: "Data unavailable" },
-        { label: "Notification queue", value: "0", delta: "Data unavailable" },
-        { label: "Assistant drafts", value: "0", delta: "Data unavailable" },
-        { label: "Trial days", value: "0", delta: "Data unavailable" },
+        { label: "Today attendance", value: "0", delta: "-" },
+        { label: "Active members", value: "0", delta: "-" },
+        { label: "Expiring soon", value: "0", delta: "-" },
+        { label: "Cash collected", value: "₹0", delta: "-" },
+        { label: "Revenue", value: "₹0", delta: "-" },
+        { label: "Low stock", value: "0", delta: "-" },
+        { label: "Notification queue", value: "0", delta: "-" },
+        { label: "Assistant drafts", value: "0", delta: "-" },
+        { label: "Trial days", value: "0", delta: "-" },
       ]
     : [
-        { label: "Organizations", value: "0", delta: "Data unavailable" },
-        { label: "Trial gyms", value: "0", delta: "Data unavailable" },
-        { label: "Suspended", value: "0", delta: "Data unavailable" },
-        { label: "Assistant drafts", value: "0", delta: "Data unavailable" },
-        { label: "Safety reviews", value: "0", delta: "Data unavailable" },
+        { label: "Organizations", value: "0", delta: "-" },
+        { label: "Trial gyms", value: "0", delta: "-" },
+        { label: "Suspended", value: "0", delta: "-" },
+        { label: "Assistant drafts", value: "0", delta: "-" },
+        { label: "Safety reviews", value: "0", delta: "-" },
       ];
   return {
     scope: orgId ? ("org" as const) : ("platform" as const),

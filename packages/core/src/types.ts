@@ -215,6 +215,7 @@ export interface AuthSessionUser {
   isPlatformAdmin: boolean;
   marketingOptIn: boolean;
   aiConsent: boolean;
+  preferredLocale?: string;
 }
 
 export interface AuthSessionSummary {

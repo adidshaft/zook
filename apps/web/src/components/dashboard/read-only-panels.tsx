@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AttendanceApprovalsPanel } from "../attendance-approvals-panel";
 import { AttendanceQrPanel } from "../attendance-qr-panel";
 import { NotificationComposerPanel } from "../notification-composer-panel";
@@ -30,8 +31,10 @@ import type {
   OrganizationSnapshot,
   OrganizationSummary,
   PaymentRow,
+  MemberRow,
   ShopOrderRow,
 } from "../dashboard-operational-model";
+import { webApiFetch } from "@/lib/api-client";
 import {
   CsvExportButton,
   ErrorNotice,
@@ -48,7 +51,12 @@ type PagedState = LoadingState & {
   hasMore: boolean;
   loadingMore: boolean;
   loadMore: () => void;
+  reload?: () => void;
 };
+
+function formatPaymentMode(mode: string) {
+  return mode === "MOCK_ONLINE" ? "Online" : formatEnumLabel(mode);
+}
 
 export function AttendancePanel({
   orgId,
@@ -75,7 +83,7 @@ export function AttendancePanel({
           <AttendanceQrPanel orgId={orgId} />
           <GlassCard>
             <SectionHeader
-              eyebrow="Entry Protocol"
+              eyebrow="Entry & attendance"
               title="QR code and entry codes"
               description="Members scan the displayed gym QR, receive a unique entry code, and show it at the floor or desk."
               badge={<StatusPill value="Self-approved QR" tone="lime" />}
@@ -88,7 +96,7 @@ export function AttendancePanel({
                   value: selectedBranchName,
                   meta: branchScope.selectedBranch
                     ? "QR and member attendance use this branch"
-                    : "Add a default branch before production launch",
+                    : "Set up your branch to start accepting members",
                 },
                 {
                   label: "Today scans",
@@ -198,8 +206,8 @@ export function NotificationsPanel({
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <GlassCard>
           <SectionHeader
-            eyebrow="Guardrails"
-            title="Delivery posture"
+            eyebrow="Message limits"
+            title="Delivery status"
             description="Operational messages should stay crisp, permission-safe, and relevant to the floor or membership journey."
             badge={
               <Pill tone={summary.notificationQueueCount > 0 ? "amber" : "lime"}>
@@ -221,10 +229,10 @@ export function NotificationsPanel({
                 meta: "Current history in this org snapshot",
               },
               {
-                label: "Audience mode",
+                label: "Audience",
                 value:
                   summary.activeMembers > 0 ? "Live member targeting" : "No active audience yet",
-                meta: "Uses persisted org memberships",
+                meta: "Live member list",
               },
               {
                 label: "Escalation load",
@@ -266,7 +274,7 @@ export function NotificationsPanel({
             ) : (
               <EmptyState
                 title="No notifications in history yet"
-                description="Compose a first operational message to seed this surface and validate the org’s delivery lane."
+                description="You have not sent any messages yet. Compose one to update your members."
               />
             )}
           </div>
@@ -281,6 +289,7 @@ export function PaymentsPanel({
   summary,
   queuedOrders,
   membershipPlans,
+  members,
   payments,
   paymentsState,
   shopOrders,
@@ -290,20 +299,59 @@ export function PaymentsPanel({
   summary: OrganizationSummary;
   queuedOrders: ShopOrderRow[];
   membershipPlans: MembershipPlanRow[];
+  members: MemberRow[];
   payments: PaymentRow[];
   paymentsState: PagedState;
   shopOrders: ShopOrderRow[];
   shopOrdersState: LoadingState;
 }) {
+  const [manualPayment, setManualPayment] = useState({
+    memberUserId: "",
+    planId: "",
+    amountRupees: "",
+    mode: "CASH",
+    receiptNumber: "",
+    notes: "",
+  });
+  const [manualPaymentStatus, setManualPaymentStatus] = useState("");
+  const [manualPaymentBusy, setManualPaymentBusy] = useState(false);
+
+  async function recordOfflinePayment(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      setManualPaymentBusy(true);
+      setManualPaymentStatus("");
+      const amountPaise = Math.round(Number(manualPayment.amountRupees) * 100);
+      await webApiFetch(`/api/orgs/${orgId}/manual-payments`, {
+        method: "POST",
+        body: {
+          memberUserId: manualPayment.memberUserId,
+          planId: manualPayment.planId,
+          amountPaise,
+          mode: manualPayment.mode,
+          receiptNumber: manualPayment.receiptNumber || undefined,
+          notes: manualPayment.notes || undefined,
+        },
+      });
+      setManualPaymentStatus(`Payment recorded for ${formatInr(amountPaise)}.`);
+      setManualPayment((current) => ({ ...current, receiptNumber: "", notes: "" }));
+      paymentsState.reload?.();
+    } catch (cause) {
+      setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to record payment.");
+    } finally {
+      setManualPaymentBusy(false);
+    }
+  }
+
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <GlassCard variant="strong">
-          <p className="text-sm text-white/48">Manual / offline</p>
+          <p className="text-sm text-white/48">Collected at the desk</p>
           <div className="metric mt-3 text-4xl font-semibold text-white">
             {formatInr(summary.cashCollectedPaise)}
           </div>
-          <p className="mt-2 text-xs text-white/55">Collected today via desk-recorded flows.</p>
+          <p className="mt-2 text-xs text-white/55">Cash, UPI, card, and bank transfers recorded today.</p>
         </GlassCard>
         <GlassCard variant="strong">
           <p className="text-sm text-white/48">Successful revenue</p>
@@ -318,7 +366,7 @@ export function PaymentsPanel({
             {formatCompactNumber(queuedOrders.length)}
           </div>
           <p className="mt-2 text-xs text-white/55">
-            Orders waiting for payment completion or desk follow-up.
+            Orders waiting for payment or pickup.
           </p>
         </GlassCard>
         <GlassCard variant="strong">
@@ -335,7 +383,7 @@ export function PaymentsPanel({
           <SectionHeader
             eyebrow="Payments"
             title="Payments ledger"
-            description="Membership, shop, online, and offline payments are shown from the org-scoped payment ledger."
+            description="Membership, shop, online, and desk payments are shown in this gym's ledger."
             badge={<Pill tone="blue">{payments.length} loaded</Pill>}
             action={<CsvExportButton href={`/api/orgs/${orgId}/reports/payments.csv`} />}
           />
@@ -370,7 +418,7 @@ export function PaymentsPanel({
                     {
                       id: "mode",
                       header: "Mode",
-                      render: (payment) => formatEnumLabel(payment.mode),
+                      render: (payment) => formatPaymentMode(payment.mode),
                     },
                     {
                       id: "recorded",
@@ -410,9 +458,118 @@ export function PaymentsPanel({
 
         <GlassCard>
           <SectionHeader
+            eyebrow="Record offline payment"
+            title="Collected at the desk"
+            description="Use this for cash, UPI, card, or bank transfer membership payments."
+          />
+          <form className="mt-5 grid gap-3" onSubmit={(event) => void recordOfflinePayment(event)}>
+            <select
+              value={manualPayment.memberUserId}
+              onChange={(event) =>
+                setManualPayment((current) => ({ ...current, memberUserId: event.target.value }))
+              }
+              className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white"
+              required
+            >
+              <option value="" className="bg-black">
+                Choose member
+              </option>
+              {members.map((member) => (
+                <option key={member.profile.id} value={member.user?.id ?? ""} className="bg-black">
+                  {member.user?.name ?? member.user?.email ?? "Member"}
+                </option>
+              ))}
+            </select>
+            <select
+              value={manualPayment.planId}
+              onChange={(event) => {
+                const plan = membershipPlans.find((candidate) => candidate.id === event.target.value);
+                setManualPayment((current) => ({
+                  ...current,
+                  planId: event.target.value,
+                  amountRupees: plan ? String(plan.pricePaise / 100) : current.amountRupees,
+                }));
+              }}
+              className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white"
+              required
+            >
+              <option value="" className="bg-black">
+                Choose plan
+              </option>
+              {membershipPlans
+                .filter((plan) => plan.active)
+                .map((plan) => (
+                  <option key={plan.id} value={plan.id} className="bg-black">
+                    {plan.name} - {formatInr(plan.pricePaise)}
+                  </option>
+                ))}
+            </select>
+            <div className="grid gap-3 md:grid-cols-2">
+              <input
+                value={manualPayment.amountRupees}
+                onChange={(event) =>
+                  setManualPayment((current) => ({ ...current, amountRupees: event.target.value }))
+                }
+                inputMode="decimal"
+                placeholder="Amount"
+                className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white"
+                required
+              />
+              <select
+                value={manualPayment.mode}
+                onChange={(event) =>
+                  setManualPayment((current) => ({ ...current, mode: event.target.value }))
+                }
+                className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white"
+              >
+                <option value="CASH" className="bg-black">
+                  Cash
+                </option>
+                <option value="DIRECT_UPI" className="bg-black">
+                  UPI
+                </option>
+                <option value="CARD" className="bg-black">
+                  Card
+                </option>
+                <option value="BANK_TRANSFER" className="bg-black">
+                  Bank transfer
+                </option>
+              </select>
+            </div>
+            <input
+              value={manualPayment.receiptNumber}
+              onChange={(event) =>
+                setManualPayment((current) => ({ ...current, receiptNumber: event.target.value }))
+              }
+              placeholder="Reference number"
+              className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white"
+            />
+            <textarea
+              value={manualPayment.notes}
+              onChange={(event) =>
+                setManualPayment((current) => ({ ...current, notes: event.target.value }))
+              }
+              placeholder="Notes"
+              className="zook-focus min-h-24 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white"
+            />
+            <button
+              type="submit"
+              disabled={manualPaymentBusy}
+              className="zook-focus min-h-11 rounded-full bg-lime-300 px-5 text-sm font-semibold text-black disabled:opacity-50"
+            >
+              {manualPaymentBusy ? "Recording..." : "Record payment"}
+            </button>
+            {manualPaymentStatus ? (
+              <p className="text-sm text-white/58">{manualPaymentStatus}</p>
+            ) : null}
+          </form>
+        </GlassCard>
+
+        <GlassCard>
+          <SectionHeader
             eyebrow="Settlement Queue"
             title="Orders affecting cashflow"
-            description="Shop orders are the clearest current payment queue exposed to the dashboard. This keeps desk staff anchored on what still needs attention."
+            description="Orders waiting for payment or pickup appear here."
             badge={
               <Pill tone={queuedOrders.length ? "amber" : "lime"}>
                 {queuedOrders.length} unsettled
@@ -482,8 +639,8 @@ export function PaymentsPanel({
         <GlassCard>
           <SectionHeader
             eyebrow="Levers"
-            title="Revenue levers"
-            description="The org already exposes the main pressure points: renewals, low stock, and queue-heavy notifications."
+            title="Revenue opportunities"
+            description="Renewals, low stock, and scheduled messages that may need attention."
           />
           <ReadoutGrid
             className="mt-5"
@@ -532,9 +689,9 @@ export function ReportsPanel({
     <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
       <GlassCard>
         <SectionHeader
-          eyebrow="Daily Rollup"
+          eyebrow="Daily summary"
           title="Operational report pack"
-          description="This is a readout-friendly version of the org summary so owners can scan memberships, floor activity, and revenue in one pass."
+          description="Memberships, floor activity, and revenue in one report."
         />
         <ReadoutGrid
           className="mt-5"
@@ -543,7 +700,7 @@ export function ReportsPanel({
             {
               label: "Branch scope",
               value: selectedBranchName,
-              meta: "Attendance and memberships are branch-filterable",
+              meta: "Attendance and memberships can be filtered by branch",
             },
             {
               label: "Active members",
@@ -553,7 +710,7 @@ export function ReportsPanel({
             {
               label: "Attendance today",
               value: formatCompactNumber(summary.todayAttendance),
-              meta: "QR scans with entry codes",
+              meta: "QR check-ins with entry codes",
             },
             {
               label: "Revenue today",
@@ -583,8 +740,8 @@ export function ReportsPanel({
         <GlassCard>
           <SectionHeader
             eyebrow="Governance"
-            title="Control posture"
-            description="These signals tell you whether the org is operating cleanly or building up hidden risk."
+            title="Control status"
+            description="Review admin changes, pending messages, and unresolved checks."
           />
           <ReadoutGrid
             className="mt-5"

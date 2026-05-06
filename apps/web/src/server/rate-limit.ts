@@ -55,6 +55,14 @@ export const defaultRateLimitRules = {
   manualPaymentByActorOrg: { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
   referralRedeemByActor: { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
   staffInviteByActorOrg: { limit: 10, windowMs: 24 * 60 * 60 * 1000 },
+  branchCreationByOwner: { limit: 10, windowMs: 24 * 60 * 60 * 1000 },
+  branchCreationBurstByOwner: { limit: 1, windowMs: 60 * 1000 },
+  notificationOrgAllDaily: { limit: 50, windowMs: 24 * 60 * 60 * 1000 },
+  notificationOrgOperationalDaily: { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
+  notificationOrgPromoDaily: { limit: 2, windowMs: 24 * 60 * 60 * 1000 },
+  notificationSenderDaily: { limit: 25, windowMs: 24 * 60 * 60 * 1000 },
+  notificationSenderMinute: { limit: 4, windowMs: 60 * 1000 },
+  notificationRecipientDaily: { limit: 4, windowMs: 24 * 60 * 60 * 1000 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export class InMemoryRateLimitStore implements RateLimitStore {

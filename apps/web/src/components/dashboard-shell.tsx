@@ -17,7 +17,7 @@ import {
   Store,
   Users,
 } from "lucide-react";
-import { formatBranchName, joinModeLabel } from "@zook/core";
+import { formatBranchName, joinModeLabel, permissionsForRoles } from "@zook/core";
 import {
   EmptyState,
   MetricCard,
@@ -31,6 +31,7 @@ import { DashboardSignOutButton } from "./dashboard-sign-out-button";
 import { ZookLogo } from "./zook-logo";
 import { ZookButtonLink } from "./zook-button";
 import { formatDate, formatDaysRemaining, formatEnumLabel, titleFromSection } from "@/lib/format";
+import type { Permission, Role } from "@zook/core";
 
 type DashboardData = Awaited<ReturnType<typeof import("@/lib/data").getDashboardData>>;
 
@@ -56,7 +57,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     label: "Members",
     items: [
       { label: "Directory", href: "/dashboard/members", icon: Users, shortLabel: "Members" },
-      { label: "Memberships", href: "/dashboard/membership-plans", icon: ClipboardList },
+      { label: "Plans", href: "/dashboard/membership-plans", icon: ClipboardList },
     ],
   },
   {
@@ -283,20 +284,27 @@ export function DashboardShell({
   section,
   data,
   isPlatformAdmin,
+  roles,
+  user,
 }: {
   section: string[] | undefined;
   data: DashboardData;
   isPlatformAdmin: boolean;
+  roles: Role[];
+  user: { name: string; email: string };
 }) {
   const title = titleFromSection(section);
   const sectionKey = section?.join("/") ?? "";
   const activeOrg = data.orgs[0];
   const selectedBranch = data.branchScope.selectedBranch;
+  const permissions = new Set<Permission>(permissionsForRoles(roles));
+  const canShowQr = permissions.has("ATTENDANCE_QR_DISPLAY");
+  const canViewReports = permissions.has("ORG_VIEW_REPORTS");
   const runtimeLabel = data.connected
     ? "Live workspace"
     : data.fallbackMode === "demo"
-      ? "Demo data — not connected to live database"
-      : "Data unavailable";
+      ? "Sample data"
+      : "";
 
   if (!activeOrg) {
     return (
@@ -352,7 +360,7 @@ export function DashboardShell({
   const pageDescription =
     sectionKey === ""
       ? "Live check-ins, members, payments, stock, and follow-ups in one owner view."
-      : "Use this section for daily gym operations. Changes save automatically in Zook.";
+      : "Manage daily gym work here. Changes save automatically in Zook.";
   const currentDashboardPath = `/dashboard${sectionKey ? `/${sectionKey}` : ""}`;
   const branchHref = (branchId: string) =>
     `${currentDashboardPath}?branchId=${encodeURIComponent(branchId)}`;
@@ -383,19 +391,6 @@ export function DashboardShell({
                   tone={selectedBranch ? "lime" : "amber"}
                 />
               </div>
-              {data.branchScope.branches.length > 1 ? (
-                <div className="mt-4 grid gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/30">
-                    Branch view
-                  </p>
-                  <BranchSwitcher
-                    branches={data.branchScope.branches}
-                    selectedBranchId={selectedBranch?.id}
-                    branchHref={branchHref}
-                    compact
-                  />
-                </div>
-              ) : null}
             </div>
 
             <nav className="mt-6 grid gap-5">
@@ -451,7 +446,7 @@ export function DashboardShell({
                   {
                     label: "Attendance mode",
                     value: formatEnumLabel(activeOrg.attendanceMode),
-                    meta: `${data.summary.todayAttendance} QR entry scans today`,
+                    meta: `${data.summary.todayAttendance} QR check-ins today`,
                   },
                   {
                     label: "Trial runway",
@@ -459,14 +454,13 @@ export function DashboardShell({
                     meta: formatDate(activeOrg.trialEndAt),
                   },
                   {
-                    label: "Escalation lane",
+                    label: "Primary contact",
                     value: activeOrg.contactEmail ?? activeOrg.contactPhone ?? "Desk-owned",
-                    meta: "Primary contact for ops issues",
+                    meta: "Primary contact",
                   },
                 ]}
               />
             </div>
-            <DashboardSignOutButton />
           </GlassCard>
         </aside>
 
@@ -506,7 +500,9 @@ export function DashboardShell({
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
+                  {runtimeLabel ? (
+                    <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
+                  ) : null}
                   <StatusPill value={formatEnumLabel(activeOrg.status)} />
                   <StatusPill value={joinModeLabel(activeOrg.joinMode)} tone="blue" />
                   <StatusPill
@@ -529,15 +525,24 @@ export function DashboardShell({
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <ZookButtonLink
-                  href="/dashboard/attendance/qr-display"
-                  leadingIcon={<QrCode size={18} />}
-                >
-                  Show QR
-                </ZookButtonLink>
-                <ZookButtonLink href="/dashboard/reports" tone="secondary">
-                  Reports
-                </ZookButtonLink>
+                <div className="mr-1 hidden text-right md:block">
+                  <p className="text-sm font-medium text-white">{user.name}</p>
+                  <p className="text-xs text-white/42">{user.email}</p>
+                </div>
+                {canShowQr ? (
+                  <ZookButtonLink
+                    href="/dashboard/attendance/qr-display"
+                    leadingIcon={<QrCode size={18} />}
+                  >
+                    Show QR
+                  </ZookButtonLink>
+                ) : null}
+                {canViewReports ? (
+                  <ZookButtonLink href="/dashboard/reports" tone="secondary">
+                    Reports
+                  </ZookButtonLink>
+                ) : null}
+                <DashboardSignOutButton compact />
               </div>
             </div>
           </GlassCard>
@@ -568,9 +573,9 @@ export function DashboardShell({
             <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
               <GlassCard>
                 <SectionHeader
-                  eyebrow="Operator lane"
+                  eyebrow="Needs attention"
                   title="Needs attention"
-                  description="The few places an owner usually checks before the next rush, shift change, or callback."
+                  description="Quick links to what needs attention today."
                 />
                 <div className="mt-5 grid gap-3 md:grid-cols-2">
                   {workflowCards.map((card) => (
@@ -590,7 +595,7 @@ export function DashboardShell({
 
               <GlassCard>
                 <SectionHeader
-                  eyebrow="Org posture"
+                  eyebrow="Gym status"
                   title="Gym status"
                   description="The current operating context for this dashboard."
                 />
@@ -605,7 +610,7 @@ export function DashboardShell({
                     {
                       label: "Branch scope",
                       value: formatBranchName(selectedBranch),
-                      meta: "Branch-ready data scoped to the active branch",
+                      meta: "Showing data for the active branch",
                     },
                     {
                       label: "Join mode",

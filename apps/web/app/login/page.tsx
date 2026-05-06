@@ -34,6 +34,8 @@ export default async function LoginPage({
   const session = await resolveSessionSummaryFromToken(cookieStore.get(sessionCookieName)?.value);
   const accountLink = publicAccountLink(session, {
     dashboard: t("dashboard"),
+    desk: t("desk"),
+    coach: t("coach"),
     membership: t("myMembership"),
   });
 

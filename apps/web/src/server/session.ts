@@ -110,6 +110,7 @@ export async function resolveSessionSummaryFromToken(
       isPlatformAdmin: user.isPlatformAdmin,
       marketingOptIn: user.marketingOptIn,
       aiConsent: user.aiConsent,
+      preferredLocale: user.preferredLocale,
       ...(user.phone ? { phone: user.phone } : {}),
       ...(user.profilePhotoUrl ? { profilePhotoUrl: user.profilePhotoUrl } : {}),
     },
