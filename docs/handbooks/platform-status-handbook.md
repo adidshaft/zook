@@ -1,6 +1,6 @@
 # Platform Status Handbook
 
-![Status page](./handbooks/screenshots/platform-status.png)
+![Status page](./screenshots/platform-status.png)
 
 ## What The Status Page Does
 

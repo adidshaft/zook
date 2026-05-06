@@ -1,6 +1,6 @@
 # Member Handbook
 
-![Member home](./handbooks/screenshots/member-home.jpg)
+![Member home](./screenshots/member-home.jpg)
 
 ## Test Accounts
 
@@ -22,7 +22,7 @@
 
 ## Web Entry Points
 
-![Public gym profile](./handbooks/screenshots/member-public-gym.png)
+![Public gym profile](./screenshots/member-public-gym.png)
 
 - `/find` discovers gyms.
 - `/g/[username]` shows the public gym profile.
@@ -32,7 +32,7 @@
 
 ## Mobile Entry Points
 
-![Member check-in](./handbooks/screenshots/member-check-in.jpg)
+![Member check-in](./screenshots/member-check-in.jpg)
 
 - `/` opens the member home.
 - `/scan` opens check-in.

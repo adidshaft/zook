@@ -1,6 +1,6 @@
 # Owner Handbook
 
-![Owner setup](./handbooks/screenshots/owner-start-gym.png)
+![Owner setup](./screenshots/owner-start-gym.png)
 
 ## What Owners Can Do
 

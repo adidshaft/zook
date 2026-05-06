@@ -1964,6 +1964,7 @@ export function BottomNav({
           isMemberNav ? styles.memberBottomNavItem : null,
           raised ? styles.memberBottomNavItemRaised : null,
           active ? styles.bottomNavItemActive : null,
+          active && isMemberNav ? styles.memberBottomNavItemActive : null,
           active && raised ? styles.memberBottomNavItemRaisedActive : null,
         ])}
       >
@@ -1996,7 +1997,11 @@ export function BottomNav({
     );
 
     if (isMemberNav) {
-      return <View key={`${String(tab.href)}-${tab.label}`}>{item}</View>;
+      return (
+        <View key={`${String(tab.href)}-${tab.label}`} style={styles.memberBottomNavSlot}>
+          {item}
+        </View>
+      );
     }
 
     return (
@@ -2970,9 +2975,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    gap: 6,
+    gap: 0,
     overflow: "hidden",
   },
   bottomNavItem: {
@@ -2984,11 +2989,17 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   memberBottomNavItem: {
-    flex: 1,
-    width: undefined,
+    width: 68,
+    maxWidth: 68,
     minWidth: 0,
     height: 56,
     borderRadius: 20,
+  },
+  memberBottomNavSlot: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "center",
+    justifyContent: "center",
   },
   memberBottomNavItemRaised: {
     flexGrow: 0,
@@ -3012,6 +3023,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(185,244,85,0.16)",
     borderWidth: 1,
     borderColor: "rgba(185,244,85,0.26)",
+  },
+  memberBottomNavItemActive: {
+    backgroundColor: "rgba(185,244,85,0.11)",
+    borderColor: "rgba(185,244,85,0.2)",
   },
   memberBottomNavItemRaisedActive: {
     backgroundColor: colors.lime,
