@@ -1,0 +1,153 @@
+"use client";
+
+import { InsightsInventoryCard } from "./overview/insights-inventory-card";
+import { ReferralDiscountControls } from "./overview/referral-discount-controls";
+import { TopCommandSection } from "./overview/top-command-section";
+import type { OverviewOperationalSectionProps } from "./overview/types";
+
+export function OverviewOperationalSection({
+  orgId,
+  organization,
+  summary,
+  auditLogCount,
+  initialNotifications,
+  initialProducts,
+  initialAiUsage,
+  overviewWorkflowCards,
+  branches,
+  branchesState,
+  branchForm,
+  setBranchForm,
+  editingBranchId,
+  setEditingBranchId,
+  branchEditForm,
+  setBranchEditForm,
+  staffAssignments,
+  staffUsersById,
+  formBusy,
+  formError,
+  formStatus,
+  createBranch,
+  saveBranchEdit,
+  startBranchEdit,
+  updateBranch,
+  deactivateBranch,
+  referralPolicy,
+  referralPolicyState,
+  referralAnalytics,
+  referralAnalyticsState,
+  referralsState,
+  couponsState,
+  coupons,
+  offers,
+  referrals,
+  referralUsersById,
+  membershipPlans,
+  couponForm,
+  setCouponForm,
+  editingCouponId,
+  setEditingCouponId,
+  couponEditForm,
+  setCouponEditForm,
+  offerForm,
+  setOfferForm,
+  editingOfferId,
+  setEditingOfferId,
+  offerEditForm,
+  setOfferEditForm,
+  referralForm,
+  setReferralForm,
+  policyForm,
+  setPolicyForm,
+  createCoupon,
+  updateCoupon,
+  toggleCoupon,
+  startCouponEdit,
+  createOffer,
+  updateOffer,
+  toggleOffer,
+  startOfferEdit,
+  createReferral,
+  updateReferral,
+  saveReferralPolicy,
+}: OverviewOperationalSectionProps) {
+  void orgId;
+
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <TopCommandSection
+          organization={organization}
+          summary={summary}
+          overviewWorkflowCards={overviewWorkflowCards}
+          branches={branches}
+          branchesState={branchesState}
+          branchForm={branchForm}
+          setBranchForm={setBranchForm}
+          editingBranchId={editingBranchId}
+          setEditingBranchId={setEditingBranchId}
+          branchEditForm={branchEditForm}
+          setBranchEditForm={setBranchEditForm}
+          staffAssignments={staffAssignments}
+          staffUsersById={staffUsersById}
+          formBusy={formBusy}
+          createBranch={createBranch}
+          saveBranchEdit={saveBranchEdit}
+          startBranchEdit={startBranchEdit}
+          updateBranch={updateBranch}
+          deactivateBranch={deactivateBranch}
+        />
+        <ReferralDiscountControls
+          referralPolicy={referralPolicy}
+          referralPolicyState={referralPolicyState}
+          referralAnalytics={referralAnalytics}
+          referralAnalyticsState={referralAnalyticsState}
+          referralsState={referralsState}
+          couponsState={couponsState}
+          coupons={coupons}
+          offers={offers}
+          referrals={referrals}
+          referralUsersById={referralUsersById}
+          membershipPlans={membershipPlans}
+          couponForm={couponForm}
+          setCouponForm={setCouponForm}
+          editingCouponId={editingCouponId}
+          setEditingCouponId={setEditingCouponId}
+          couponEditForm={couponEditForm}
+          setCouponEditForm={setCouponEditForm}
+          offerForm={offerForm}
+          setOfferForm={setOfferForm}
+          editingOfferId={editingOfferId}
+          setEditingOfferId={setEditingOfferId}
+          offerEditForm={offerEditForm}
+          setOfferEditForm={setOfferEditForm}
+          referralForm={referralForm}
+          setReferralForm={setReferralForm}
+          policyForm={policyForm}
+          setPolicyForm={setPolicyForm}
+          formBusy={formBusy}
+          formError={formError}
+          formStatus={formStatus}
+          createCoupon={createCoupon}
+          updateCoupon={updateCoupon}
+          toggleCoupon={toggleCoupon}
+          startCouponEdit={startCouponEdit}
+          createOffer={createOffer}
+          updateOffer={updateOffer}
+          toggleOffer={toggleOffer}
+          startOfferEdit={startOfferEdit}
+          createReferral={createReferral}
+          updateReferral={updateReferral}
+          saveReferralPolicy={saveReferralPolicy}
+        />
+      </div>
+      <InsightsInventoryCard
+        organization={organization}
+        auditLogCount={auditLogCount}
+        initialNotifications={initialNotifications}
+        initialProducts={initialProducts}
+        initialAiUsage={initialAiUsage}
+      />
+    </div>
+  );
+}

@@ -435,7 +435,7 @@ export async function getOrganizationMembers(orgId: string) {
     take: 100,
   });
   const memberUserIds = profiles.map((profile) => profile.userId);
-  const [users, subscriptions, attendance, trainerAssignments] = await Promise.all([
+  const [users, subscriptions, attendance, payments, trainerAssignments] = await Promise.all([
     prisma.user.findMany({
       where: { id: { in: memberUserIds } },
     }),
@@ -446,6 +446,11 @@ export async function getOrganizationMembers(orgId: string) {
     prisma.attendanceRecord.findMany({
       where: { orgId, userId: { in: memberUserIds } },
       orderBy: { checkedInAt: "desc" },
+      take: Math.max(memberUserIds.length * 3, 20),
+    }),
+    prisma.payment.findMany({
+      where: { orgId, userId: { in: memberUserIds } },
+      orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
       take: Math.max(memberUserIds.length * 3, 20),
     }),
     prisma.trainerAssignment.findMany({
@@ -466,6 +471,8 @@ export async function getOrganizationMembers(orgId: string) {
     profile,
     user: serializeUserForReadModel(usersById.get(profile.userId) ?? null),
     lastCheckIn: attendance.find((record) => record.userId === profile.userId) ?? null,
+    recentCheckIns: attendance.filter((record) => record.userId === profile.userId).slice(0, 3),
+    lastPayment: payments.find((payment) => payment.userId === profile.userId) ?? null,
     activeSubscription:
       subscriptions.find(
         (subscription) =>

@@ -45,6 +45,59 @@ export function canReceiveNotification(type: NotificationType, user: UserSafetyS
   return true;
 }
 
+export type NotificationRateLimitKey =
+  | "notificationSenderMinute"
+  | "notificationSenderDaily"
+  | "notificationOrgAllDaily"
+  | "notificationOrgOperationalDaily"
+  | "notificationOrgPromoDaily"
+  | "notificationRecipientDaily";
+
+export async function enforceNotificationRateLimits(input: {
+  orgId: string;
+  senderUserId: string;
+  type: NotificationType;
+  recipientUserIds: string[];
+  consume: (rule: NotificationRateLimitKey, key: string, message: string) => Promise<void>;
+}) {
+  await input.consume(
+    "notificationSenderMinute",
+    `${input.orgId}:${input.senderUserId}`,
+    "Please wait a moment before sending another message.",
+  );
+  await input.consume(
+    "notificationSenderDaily",
+    `${input.orgId}:${input.senderUserId}`,
+    "This sender has reached today's message limit.",
+  );
+  await input.consume(
+    "notificationOrgAllDaily",
+    input.orgId,
+    "This gym has reached today's message limit.",
+  );
+  if (input.type === "OPERATIONAL") {
+    await input.consume(
+      "notificationOrgOperationalDaily",
+      input.orgId,
+      "This gym has reached today's operational message limit.",
+    );
+  }
+  if (input.type === "PROMOTIONAL" || input.type === "ENGAGEMENT") {
+    await input.consume(
+      "notificationOrgPromoDaily",
+      input.orgId,
+      "This gym has reached today's announcement limit.",
+    );
+  }
+  for (const recipientUserId of input.recipientUserIds) {
+    await input.consume(
+      "notificationRecipientDaily",
+      `${input.orgId}:${recipientUserId}`,
+      "Some members have already received too many messages today.",
+    );
+  }
+}
+
 export type WhatsAppTransactionalTopic = "PAYMENT" | "ATTENDANCE" | "MEMBERSHIP";
 
 const whatsappFanoutTopics = new Set<WhatsAppTransactionalTopic>([

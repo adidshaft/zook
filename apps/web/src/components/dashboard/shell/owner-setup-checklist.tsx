@@ -1,0 +1,113 @@
+import Link from "next/link";
+import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
+import { GlassCard } from "../../glass-card";
+import { ZookButtonLink } from "../../zook-button";
+import { interpolate } from "./copy";
+import type { DashboardCopy, DashboardData } from "./types";
+
+export function OwnerSetupChecklist({
+  activeOrg,
+  hasBranch,
+  summary,
+  copy,
+}: {
+  activeOrg: DashboardData["orgs"][number];
+  hasBranch: boolean;
+  summary: DashboardData["summary"];
+  copy: DashboardCopy;
+}) {
+  const profileReady = activeOrg.status === "ACTIVE" && hasBranch && Boolean(activeOrg.city);
+  const joinReady =
+    summary.activeMembers > 0 || summary.joinRequests > 0 || summary.revenuePaise > 0;
+  const checklist = [
+    {
+      label: copy.dashboard.completeGymProfile,
+      detail: copy.dashboard.completeGymProfileDetail,
+      href: "/dashboard/public-profile",
+      done: profileReady,
+    },
+    {
+      label: copy.dashboard.createFirstPlanStep,
+      detail: copy.dashboard.createFirstPlanDetail,
+      href: "/dashboard/membership-plans",
+      done: joinReady,
+    },
+    {
+      label: copy.dashboard.inviteTeam,
+      detail: copy.dashboard.inviteTeamDetail,
+      href: "/dashboard/staff",
+      done: (summary.staffCount ?? 0) > 1,
+    },
+    {
+      label: copy.dashboard.shareGymLink,
+      detail: copy.dashboard.shareGymLinkDetail,
+      href: "/dashboard/public-profile",
+      done: summary.joinRequests > 0 || summary.activeMembers > 0,
+    },
+  ];
+  const completed = checklist.filter((item) => item.done).length;
+
+  return (
+    <GlassCard variant="strong" className="overflow-hidden">
+      <div className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr] xl:items-center">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-lime-200/70">
+            {copy.dashboard.setupEyebrow}
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+            {interpolate(copy.dashboard.setupTitle, { orgName: activeOrg.name })}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-white/55">
+            {copy.dashboard.setupDescription}
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <ZookButtonLink
+              href="/dashboard/membership-plans"
+              size="md"
+              trailingIcon={<ArrowRight size={16} />}
+            >
+              {copy.dashboard.createFirstPlan}
+            </ZookButtonLink>
+            <span className="text-sm text-white/45">
+              {interpolate(copy.dashboard.setupComplete, {
+                completed,
+                total: checklist.length,
+              })}
+            </span>
+          </div>
+          <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-lime-300 transition-all duration-500"
+              style={{ width: `${(completed / checklist.length) * 100}%` }}
+            />
+          </div>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {checklist.map((item) => {
+            const Icon = item.done ? CheckCircle2 : Circle;
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="group rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/6"
+              >
+                <div className="flex items-start gap-3">
+                  <Icon
+                    size={20}
+                    className={
+                      item.done ? "mt-0.5 shrink-0 text-lime-200" : "mt-0.5 shrink-0 text-white/30"
+                    }
+                  />
+                  <div className="min-w-0">
+                    <p className="font-medium text-white">{item.label}</p>
+                    <p className="mt-1 text-xs leading-5 text-white/48">{item.detail}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </GlassCard>
+  );
+}

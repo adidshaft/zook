@@ -1,0 +1,394 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Permission, Role } from "@zook/core";
+import { webApiFetch } from "@/lib/api-client";
+import { GlassCard, Pill } from "../glass-card";
+import {
+  AudienceStep,
+  ComposerDeliveryHistory,
+  MessageDraftStep,
+  MessageTypeStep,
+  ReviewStep,
+} from "./composer-steps";
+import {
+  audienceOptions,
+  canUseNotificationOption,
+  messageTypes,
+  permissionAudience,
+  type Audience,
+  type BranchRow,
+  type MemberRow,
+  type NotificationRow,
+  type NotificationType,
+  type PlanRow,
+  type Preview,
+  type TemplateRow,
+} from "./shared";
+
+export function NotificationComposerPanel({
+  orgId,
+  roles = [],
+  permissions = [],
+}: {
+  orgId: string;
+  roles?: Role[];
+  permissions?: Permission[];
+}) {
+  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
+  const [members, setMembers] = useState<MemberRow[]>([]);
+  const [branches, setBranches] = useState<BranchRow[]>([]);
+  const [plans, setPlans] = useState<PlanRow[]>([]);
+  const [step, setStep] = useState(1);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [type, setType] = useState<NotificationType>("OPERATIONAL");
+  const [audience, setAudience] = useState<Audience>("all_active_members");
+  const [branchId, setBranchId] = useState("");
+  const [planId, setPlanId] = useState("");
+  const [singleUserId, setSingleUserId] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [daysAhead, setDaysAhead] = useState("7");
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [scheduleAt, setScheduleAt] = useState("");
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const loadResources = useCallback(async () => {
+    try {
+      const [notificationPayload, templatePayload, memberPayload, branchPayload, planPayload] =
+        await Promise.all([
+          webApiFetch<{ notifications: NotificationRow[] }>(`/api/orgs/${orgId}/notifications`),
+          webApiFetch<{ templates: TemplateRow[] }>(`/api/orgs/${orgId}/notifications/templates`),
+          webApiFetch<{ members: MemberRow[] }>(`/api/orgs/${orgId}/members?limit=100`),
+          webApiFetch<{ branches: BranchRow[] }>(`/api/orgs/${orgId}/branches`),
+          webApiFetch<{ plans: PlanRow[] }>(`/api/orgs/${orgId}/membership-plans`),
+        ]);
+      setNotifications(notificationPayload.notifications);
+      setTemplates(templatePayload.templates);
+      setMembers(memberPayload.members);
+      setBranches(branchPayload.branches);
+      setPlans(planPayload.plans.filter((plan) => plan.active !== false));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to load message tools.");
+    }
+  }, [orgId]);
+
+  useEffect(() => {
+    void loadResources();
+  }, [loadResources]);
+
+  const typePermissions = useMemo(
+    () =>
+      new Map(
+        messageTypes.map((option) => [
+          option.value,
+          audienceOptions(option.value).some((candidate) =>
+            canUseNotificationOption({
+              roles,
+              permissions,
+              type: option.value,
+              audience: permissionAudience(candidate.value),
+            }),
+          ),
+        ]),
+      ),
+    [permissions, roles],
+  );
+  const availableAudiences = useMemo(
+    () =>
+      audienceOptions(type).map((option) => ({
+        ...option,
+        allowed: canUseNotificationOption({
+          roles,
+          permissions,
+          type,
+          audience: permissionAudience(option.value),
+        }),
+      })),
+    [permissions, roles, type],
+  );
+  const canManageTemplates = permissions.includes("NOTIFICATION_MANAGE_TEMPLATES");
+
+  useEffect(() => {
+    const firstAllowed = availableAudiences.find((option) => option.allowed);
+    if (!availableAudiences.some((option) => option.value === audience && option.allowed)) {
+      setAudience(firstAllowed?.value ?? "all_active_members");
+      setPreview(null);
+    }
+  }, [audience, availableAudiences]);
+
+  function payload() {
+    return {
+      title,
+      body,
+      type,
+      audience,
+      pushEnabled,
+      branchId: branchId || undefined,
+      planId: planId || undefined,
+      singleUserId: singleUserId || undefined,
+      selectedUserIds,
+      daysAhead: Number(daysAhead) || 7,
+      scheduleAt: scheduleAt ? new Date(scheduleAt).toISOString() : undefined,
+    };
+  }
+
+  function applyTemplate(template: TemplateRow) {
+    setTitle(template.title);
+    setBody(template.body);
+    setType(template.type);
+    setPreview(null);
+    setStep(3);
+  }
+
+  function validateDraft() {
+    if (!title.trim() || !body.trim()) {
+      setError("Add a title and message before sending.");
+      return false;
+    }
+    if (audience === "branch_members" && !branchId) {
+      setError("Choose a branch.");
+      return false;
+    }
+    if (audience === "membership_plan" && !planId) {
+      setError("Choose a plan.");
+      return false;
+    }
+    if (audience === "single_member" && !singleUserId) {
+      setError("Choose one member.");
+      return false;
+    }
+    if (audience === "selected_members" && selectedUserIds.length === 0) {
+      setError("Choose at least one member.");
+      return false;
+    }
+    setError("");
+    return true;
+  }
+
+  function canPreviewDraft() {
+    if (!title.trim() || !body.trim()) return false;
+    if (audience === "branch_members" && !branchId) return false;
+    if (audience === "membership_plan" && !planId) return false;
+    if (audience === "single_member" && !singleUserId) return false;
+    if (audience === "selected_members" && selectedUserIds.length === 0) return false;
+    return true;
+  }
+
+  async function loadPreview() {
+    if (!validateDraft()) return;
+    try {
+      setSaving(true);
+      setPreview(
+        await webApiFetch<Preview>(`/api/orgs/${orgId}/notifications/preview`, {
+          method: "POST",
+          body: payload(),
+        }),
+      );
+      setStep(4);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to preview recipients.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!canPreviewDraft()) {
+      setPreview(null);
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      webApiFetch<Preview>(`/api/orgs/${orgId}/notifications/preview`, {
+        method: "POST",
+        body: payload(),
+      })
+        .then((nextPreview) => setPreview(nextPreview))
+        .catch(() => setPreview(null));
+    }, 450);
+    return () => window.clearTimeout(timeout);
+  }, [
+    orgId,
+    title,
+    body,
+    type,
+    audience,
+    pushEnabled,
+    branchId,
+    planId,
+    singleUserId,
+    selectedUserIds,
+    daysAhead,
+    scheduleAt,
+  ]);
+
+  async function submitNotification() {
+    if (!preview && !validateDraft()) return;
+    try {
+      setSaving(true);
+      setError("");
+      await webApiFetch(`/api/orgs/${orgId}/notifications`, { method: "POST", body: payload() });
+      if (saveAsTemplate && templateName.trim()) {
+        await webApiFetch(`/api/orgs/${orgId}/notifications/templates`, {
+          method: "POST",
+          body: { name: templateName.trim(), title, body, type },
+        });
+      }
+      await loadResources();
+      setTitle("");
+      setBody("");
+      setType("OPERATIONAL");
+      setAudience("all_active_members");
+      setSaveAsTemplate(false);
+      setTemplateName("");
+      setPreview(null);
+      setStep(1);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to send notification.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+      <GlassCard>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold">Send a message</h2>
+            <p className="mt-2 text-sm text-white/50">
+              Choose the purpose, audience, message, then review delivery.
+            </p>
+          </div>
+          <Pill tone="blue">Step {step} of 4</Pill>
+        </div>
+        <div className="mt-5 grid gap-4">
+          {step === 1 ? (
+            <MessageTypeStep
+              type={type}
+              typePermissions={typePermissions}
+              onSelect={(nextType) => {
+                setType(nextType);
+                setPreview(null);
+              }}
+            />
+          ) : null}
+
+          {step === 2 ? (
+            <AudienceStep
+              audience={audience}
+              availableAudiences={availableAudiences}
+              branchId={branchId}
+              branches={branches}
+              daysAhead={daysAhead}
+              members={members}
+              planId={planId}
+              plans={plans}
+              selectedUserIds={selectedUserIds}
+              singleUserId={singleUserId}
+              onAudienceChange={(nextAudience) => {
+                setAudience(nextAudience);
+                setPreview(null);
+              }}
+              onBranchChange={setBranchId}
+              onDaysAheadChange={setDaysAhead}
+              onPlanChange={setPlanId}
+              onSelectedUsersChange={setSelectedUserIds}
+              onSingleUserChange={setSingleUserId}
+            />
+          ) : null}
+
+          {step === 3 ? (
+            <MessageDraftStep
+              body={body}
+              canManageTemplates={canManageTemplates}
+              pushEnabled={pushEnabled}
+              saveAsTemplate={saveAsTemplate}
+              scheduleAt={scheduleAt}
+              templateName={templateName}
+              templates={templates}
+              title={title}
+              onApplyTemplate={applyTemplate}
+              onBodyChange={(nextBody) => {
+                setBody(nextBody);
+                setPreview(null);
+              }}
+              onPushEnabledChange={setPushEnabled}
+              onSaveAsTemplateChange={setSaveAsTemplate}
+              onScheduleAtChange={setScheduleAt}
+              onTemplateNameChange={setTemplateName}
+              onTitleChange={(nextTitle) => {
+                setTitle(nextTitle);
+                setPreview(null);
+              }}
+            />
+          ) : null}
+
+          {step === 4 ? <ReviewStep body={body} preview={preview} title={title} /> : null}
+
+          {error ? (
+            <p className="rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+              {error}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setStep(Math.max(1, step - 1))}
+              className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
+            >
+              Back
+            </button>
+            <div className="flex flex-wrap gap-2">
+              {step < 3 ? (
+                <button
+                  type="button"
+                  onClick={() => setStep(step + 1)}
+                  className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
+                >
+                  Continue
+                </button>
+              ) : null}
+              {step === 3 ? (
+                <button
+                  type="button"
+                  onClick={() => void loadPreview()}
+                  disabled={saving}
+                  className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+                >
+                  Preview recipients
+                </button>
+              ) : null}
+              {step === 4 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      window.confirm(`Send this message to ${preview?.willDeliver ?? 0} members?`)
+                    ) {
+                      void submitNotification();
+                    }
+                  }}
+                  disabled={saving || !preview?.willDeliver}
+                  className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+                >
+                  Send to {preview?.willDeliver ?? 0} members
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <h2 className="text-xl font-semibold">Delivery history</h2>
+        <ComposerDeliveryHistory notifications={notifications} />
+      </GlassCard>
+    </div>
+  );
+}

@@ -4,20 +4,27 @@ import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import clsx from "clsx";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function DashboardSignOutButton({
   className,
   compact = false,
+  label = "Sign out",
+  busyLabel = "Signing out...",
 }: {
   className?: string | undefined;
   compact?: boolean | undefined;
+  label?: string | undefined;
+  busyLabel?: string | undefined;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
 
   async function signOut() {
     setSigningOut(true);
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    queryClient.clear();
     router.push("/login");
     router.refresh();
   }
@@ -35,7 +42,7 @@ export function DashboardSignOutButton({
       )}
     >
       <LogOut size={18} />
-      {signingOut ? "Signing out..." : "Sign out"}
+      {signingOut ? busyLabel : label}
     </button>
   );
 }

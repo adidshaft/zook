@@ -1,230 +1,43 @@
 "use client";
 
+import type { FormEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  CheckCircle2,
-  CreditCard,
-  IndianRupee,
-  ListChecks,
-  QrCode,
-  Search,
-  ShoppingBag,
-  XCircle,
-} from "lucide-react";
-import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
+import { IndianRupee, ListChecks, QrCode, Search, ShoppingBag } from "lucide-react";
+import { formatInr } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
-import { GlassCard, Pill } from "./glass-card";
+import { Pill } from "./glass-card";
 import { DashboardLocaleToggle } from "./dashboard-locale-toggle";
 import { DashboardSignOutButton } from "./dashboard-sign-out-button";
+import { deskTranslations } from "./desk/copy";
+import { MemberTab } from "./desk/member-tab";
+import { PaymentTab } from "./desk/payment-tab";
+import { PickupTab } from "./desk/pickup-tab";
+import { QueueTab } from "./desk/queue-tab";
+import type {
+  AttendanceQueueRecord,
+  BranchSummary,
+  MemberRow,
+  PaymentFormState,
+  PaymentPurpose,
+  PlanRow,
+  ReceiptDetails,
+  ShopOrder,
+  TabKey,
+} from "./desk/types";
 
-type BranchSummary = { id: string; name: string; isDefault?: boolean; active?: boolean };
-
-type AttendanceQueueRecord = {
-  id: string;
-  status: string;
-  checkedInAt: string;
-  suspiciousFlags?: string[] | null;
-  branchName?: string | null;
-  user?: { id?: string; name?: string | null; email?: string | null; phone?: string | null } | null;
-  profile?: { profilePhotoUrl?: string | null } | null;
-  plan?: { name?: string | null } | null;
-  subscription?: { endsAt?: string | null; remainingVisits?: number | null } | null;
-};
-
-type MemberRow = {
-  profile: { id: string; profilePhotoUrl?: string | null };
-  user: { id: string; name: string; email: string; phone?: string | null } | null;
-  lastCheckIn?: { checkedInAt: string; status: string } | null;
-  activeSubscription?: {
-    id: string;
-    planId: string;
-    status: string;
-    endsAt?: string | null;
-    remainingVisits?: number | null;
-  } | null;
-};
-
-type PlanRow = { id: string; name: string; pricePaise: number; active: boolean };
-
-type ShopOrder = {
-  id: string;
-  status: string;
-  totalPaise: number;
-  paymentId?: string | null;
-  pickupCode?: string | null;
-  user?: { id: string; name: string; email?: string | null; phone?: string | null } | null;
-  items?: Array<{
-    id: string;
-    quantity: number;
-    unitPaise: number;
-    product?: { name?: string | null } | null;
-  }>;
-};
-
-type TabKey = "queue" | "member" | "payment" | "pickup";
-
-const tabs: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
+const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: "queue", label: "Queue", icon: <ListChecks size={18} /> },
   { key: "member", label: "Member", icon: <Search size={18} /> },
   { key: "payment", label: "Payment", icon: <IndianRupee size={18} /> },
   { key: "pickup", label: "Pickup", icon: <ShoppingBag size={18} /> },
 ];
 
-const deskTranslations = {
-  en: {
-    tabs: { queue: "Queue", member: "Member", payment: "Payment", pickup: "Pickup" },
-    mainBranch: "Main branch",
-    checkInsToday: "check-ins today",
-    todayQueue: "Today's queue",
-    queueDescription: "Review flagged entries and keep the check-in line moving.",
-    pending: "pending",
-    member: "Member",
-    membership: "Membership",
-    branch: "branch",
-    approve: "Approve",
-    reject: "Reject",
-    noReview: "No entries need review right now.",
-    recentCheckIns: "Recent check-ins",
-    noCheckIns: "No check-ins yet today.",
-    findMember: "Find a member",
-    searchPlaceholder: "Search by name, phone, or email",
-    phoneEnding: "Phone ending",
-    noActivePlan: "No active plan",
-    profilePhotoMissing: "Profile photo not added yet.",
-    noActiveMembership: "No active membership",
-    validUntil: "Valid until",
-    recentActivity: "Recent activity",
-    lastCheckIn: "Last check-in",
-    selectMember: "Select a member to see membership status and quick actions.",
-    recordPayment: "Record payment",
-    paymentDescription: "Use this for cash, UPI, card, or bank transfer collected at the desk.",
-    chooseMember: "Choose member",
-    plan: "Plan",
-    renewExisting: "Renew existing subscription",
-    mode: "Mode",
-    amount: "Amount",
-    referenceNumber: "Reference number",
-    referencePlaceholder: "UPI ref or receipt number",
-    notes: "Notes",
-    recording: "Recording...",
-    receiptReady: "Receipt ready",
-    receiptAmount: "Amount",
-    receiptMode: "Mode",
-    receiptReference: "Reference",
-    notAdded: "Not added",
-    printReceipt: "Print receipt",
-    shopPickup: "Shop pickup",
-    pickupDescription: "Verify pickup codes and mark ready orders fulfilled.",
-    fulfilledToday: "fulfilled today",
-    codeVerified: "Code verified",
-    verifyCode: "Verify code",
-    markFulfilled: "Mark fulfilled",
-    noPickupOrders: "No pickup orders are waiting right now.",
-    showEntryQr: "Show entry QR",
-    entryApproved: "Entry approved.",
-    entryRejected: "Entry rejected.",
-    unableEntry: "Unable to update entry.",
-    paymentRecorded: "Payment recorded. Receipt amount:",
-    unablePayment: "Unable to record payment.",
-    shopPaymentRecorded: "Shop payment recorded. Receipt amount:",
-    unableShopPayment: "Unable to record shop payment.",
-    pickupVerified: "Pickup code verified.",
-    unablePickupVerify: "Unable to verify pickup code.",
-    pickupFulfilled: "Pickup marked fulfilled.",
-    unablePickup: "Unable to fulfill pickup.",
-    paymentPrompt: "Reference number or UPI ID, if available",
-    pickupPrompt: "Enter the pickup code shown by the member",
-  },
-  hi: {
-    tabs: { queue: "लाइन", member: "मेंबर", payment: "पेमेंट", pickup: "पिकअप" },
-    mainBranch: "मुख्य ब्रांच",
-    checkInsToday: "आज check-ins",
-    todayQueue: "आज की लाइन",
-    queueDescription: "Flagged entries देखें और check-in line smoothly चलाएं.",
-    pending: "pending",
-    member: "मेंबर",
-    membership: "मेंबरशिप",
-    branch: "ब्रांच",
-    approve: "Approve करें",
-    reject: "Reject करें",
-    noReview: "अभी review के लिए कोई entry नहीं है.",
-    recentCheckIns: "Recent check-ins",
-    noCheckIns: "आज अभी कोई check-in नहीं हुआ.",
-    findMember: "मेंबर ढूंढें",
-    searchPlaceholder: "नाम, फोन या ईमेल से खोजें",
-    phoneEnding: "फोन ending",
-    noActivePlan: "Active plan नहीं है",
-    profilePhotoMissing: "Profile photo अभी add नहीं है.",
-    noActiveMembership: "Active membership नहीं है",
-    validUntil: "Valid until",
-    recentActivity: "Recent activity",
-    lastCheckIn: "Last check-in",
-    selectMember: "Membership status और quick actions देखने के लिए member चुनें.",
-    recordPayment: "Payment record करें",
-    paymentDescription: "Desk पर cash, UPI, card या bank transfer collect करने के लिए.",
-    chooseMember: "Member चुनें",
-    plan: "Plan",
-    renewExisting: "Existing subscription renew करें",
-    mode: "Mode",
-    amount: "Amount",
-    referenceNumber: "Reference number",
-    referencePlaceholder: "UPI ref या receipt number",
-    notes: "Notes",
-    recording: "Recording...",
-    receiptReady: "Receipt ready",
-    receiptAmount: "Amount",
-    receiptMode: "Mode",
-    receiptReference: "Reference",
-    notAdded: "Add नहीं है",
-    printReceipt: "Receipt print करें",
-    shopPickup: "Shop pickup",
-    pickupDescription: "Pickup code verify करें और ready orders fulfill करें.",
-    fulfilledToday: "आज fulfilled",
-    codeVerified: "Code verified",
-    verifyCode: "Code verify करें",
-    markFulfilled: "Fulfilled mark करें",
-    noPickupOrders: "अभी कोई pickup order waiting में नहीं है.",
-    showEntryQr: "Entry QR दिखाएं",
-    entryApproved: "Entry approve हो गई.",
-    entryRejected: "Entry reject हो गई.",
-    unableEntry: "Entry update नहीं हो पाई.",
-    paymentRecorded: "Payment record हो गया. Receipt amount:",
-    unablePayment: "Payment record नहीं हो पाया.",
-    shopPaymentRecorded: "Shop payment record हो गया. Receipt amount:",
-    unableShopPayment: "Shop payment record नहीं हो पाया.",
-    pickupVerified: "Pickup code verify हो गया.",
-    unablePickupVerify: "Pickup code verify नहीं हो पाया.",
-    pickupFulfilled: "Pickup fulfilled mark हो गया.",
-    unablePickup: "Pickup fulfill नहीं हो पाया.",
-    paymentPrompt: "Reference number या UPI ID, अगर है",
-    pickupPrompt: "Member का pickup code enter करें",
-  },
-} as const;
-
 function withBranch(path: string, branch?: BranchSummary | null) {
   if (!branch?.id) return path;
   const separator = path.includes("?") ? "&" : "?";
   return `${path}${separator}branchId=${encodeURIComponent(branch.id)}`;
-}
-
-function memberLabel(member: MemberRow | null) {
-  return member?.user?.name ?? member?.user?.email ?? "Member";
-}
-
-function orderItemsSummary(order: ShopOrder) {
-  const items = order.items ?? [];
-  if (!items.length) return "No items listed";
-  return items
-    .slice(0, 2)
-    .map((item) => `${item.quantity} x ${item.product?.name ?? "Item"}`)
-    .join(", ");
-}
-
-function phoneLast4(phone?: string | null) {
-  const digits = phone?.replace(/\D/g, "") ?? "";
-  return digits ? digits.slice(-4) : "not added";
 }
 
 export function DeskPanel({
@@ -244,22 +57,21 @@ export function DeskPanel({
   const [toast, setToast] = useState("");
   const [memberQuery, setMemberQuery] = useState("");
   const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
-  const [paymentForm, setPaymentForm] = useState({
+  const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
+    purpose: "MEMBERSHIP",
     memberUserId: "",
     planId: "",
     subscriptionId: "",
+    shopOrderId: "",
     amountRupees: "",
     mode: "CASH",
+    description: "",
     receiptNumber: "",
     notes: "",
   });
   const [verifiedOrderIds, setVerifiedOrderIds] = useState<string[]>([]);
-  const [lastReceipt, setLastReceipt] = useState<{
-    title: string;
-    amountPaise: number;
-    mode: string;
-    reference?: string | undefined;
-  } | null>(null);
+  const [skippedCodeOrderIds, setSkippedCodeOrderIds] = useState<string[]>([]);
+  const [lastReceipt, setLastReceipt] = useState<ReceiptDetails | null>(null);
 
   const pendingState = useOperationalResource<{ records: AttendanceQueueRecord[] }>({
     path: withBranch(`/api/orgs/${orgId}/attendance/live`, branch),
@@ -270,17 +82,28 @@ export function DeskPanel({
     refreshMs: 30_000,
   });
   const membersState = useOperationalResource<{ members: MemberRow[] }>({
-    path: `/api/orgs/${orgId}/members?limit=100`,
+    path: withBranch(`/api/orgs/${orgId}/members?limit=100`, branch),
   });
   const plansState = useOperationalResource<{ plans: PlanRow[] }>({
-    path: `/api/orgs/${orgId}/membership-plans`,
+    path: withBranch(`/api/orgs/${orgId}/membership-plans`, branch),
   });
-  const ordersState = useOperationalResource<{ orders: ShopOrder[]; summary?: { fulfilledToday: number } }>({
+  const ordersState = useOperationalResource<{
+    orders: ShopOrder[];
+    summary?: { fulfilledToday: number };
+  }>({
     path: withBranch(`/api/orgs/${orgId}/shop/orders/active`, branch),
     refreshMs: 30_000,
   });
 
   const members = membersState.data?.members ?? [];
+  const pendingRecords = pendingState.data?.records ?? [];
+  const todayRecords = todayState.data?.records ?? [];
+  const activeOrders = ordersState.data?.orders ?? [];
+  const payAtDeskOrders = activeOrders.filter(
+    (order) => order.status === "PENDING_PAYMENT" && !order.paymentId,
+  );
+  const activePlans = (plansState.data?.plans ?? []).filter((plan) => plan.active);
+
   const filteredMembers = useMemo(() => {
     const query = memberQuery.trim().toLowerCase();
     if (!query) return members.slice(0, 8);
@@ -294,13 +117,158 @@ export function DeskPanel({
       .slice(0, 12);
   }, [memberQuery, members]);
 
+  function memberPaymentDefaults(member: MemberRow | null) {
+    const subscription = member?.activeSubscription;
+    const plan = (plansState.data?.plans ?? []).find(
+      (candidate) => candidate.id === subscription?.planId,
+    );
+    const canActivateExisting = subscription?.status === "PENDING_PAYMENT";
+    return {
+      planId: !canActivateExisting && subscription?.planId ? subscription.planId : "",
+      subscriptionId: canActivateExisting && subscription?.id ? subscription.id : "",
+      amountRupees: plan ? String(plan.pricePaise / 100) : "",
+    };
+  }
+
+  function updatePaymentForm(patch: Partial<PaymentFormState>) {
+    setPaymentForm((current) => ({ ...current, ...patch }));
+  }
+
   function selectMember(member: MemberRow) {
+    const defaults = memberPaymentDefaults(member);
     setSelectedMember(member);
     setPaymentForm((current) => ({
       ...current,
       memberUserId: member.user?.id ?? "",
-      subscriptionId: member.activeSubscription?.id ?? "",
+      planId: defaults.planId,
+      subscriptionId: defaults.subscriptionId,
+      amountRupees: defaults.amountRupees || current.amountRupees,
     }));
+  }
+
+  function selectPaymentOrder(order: ShopOrder) {
+    setPaymentForm((current) => ({
+      ...current,
+      purpose: "SHOP_ORDER",
+      shopOrderId: order.id,
+      memberUserId: order.user?.id ?? current.memberUserId,
+      planId: "",
+      subscriptionId: "",
+      amountRupees: String(order.totalPaise / 100),
+    }));
+    const orderMember = members.find((member) => member.user?.id === order.user?.id);
+    if (orderMember) {
+      setSelectedMember(orderMember);
+    }
+  }
+
+  function jumpToShopPayment(order: ShopOrder) {
+    selectPaymentOrder(order);
+    setActiveTab("payment");
+  }
+
+  function handlePurposeChange(purpose: PaymentPurpose) {
+    const defaults = memberPaymentDefaults(selectedMember);
+    setPaymentForm((current) => ({
+      ...current,
+      purpose,
+      planId: purpose === "MEMBERSHIP" ? defaults.planId : "",
+      subscriptionId:
+        purpose === "MEMBERSHIP" ? defaults.subscriptionId || current.subscriptionId : "",
+      shopOrderId: "",
+      amountRupees:
+        purpose === "SHOP_ORDER" ? "" : defaults.amountRupees || current.amountRupees,
+    }));
+  }
+
+  function handlePaymentMemberChange(userId: string) {
+    const member = members.find((candidate) => candidate.user?.id === userId);
+    const defaults = memberPaymentDefaults(member ?? null);
+    if (member) {
+      setSelectedMember(member);
+    }
+    setPaymentForm((current) => ({
+      ...current,
+      memberUserId: userId,
+      planId: defaults.planId,
+      subscriptionId: defaults.subscriptionId,
+      amountRupees: defaults.amountRupees || current.amountRupees,
+    }));
+  }
+
+  function handlePaymentOrderChange(orderId: string) {
+    const order = activeOrders.find((candidate) => candidate.id === orderId);
+    if (order) {
+      selectPaymentOrder(order);
+      return;
+    }
+    setPaymentForm((current) => ({ ...current, shopOrderId: "", amountRupees: "" }));
+  }
+
+  function handlePaymentPlanChange(planId: string) {
+    const plan = activePlans.find((candidate) => candidate.id === planId);
+    setPaymentForm((current) => ({
+      ...current,
+      planId,
+      subscriptionId: "",
+      amountRupees: plan ? String(plan.pricePaise / 100) : current.amountRupees,
+    }));
+  }
+
+  function handleMemberPayment(member: MemberRow) {
+    setActiveTab("payment");
+    selectMember(member);
+  }
+
+  function skipPickupCode(orderId: string) {
+    setSkippedCodeOrderIds((current) => (current.includes(orderId) ? current : [...current, orderId]));
+  }
+
+  async function overrideMemberEntry(member: MemberRow) {
+    if (!member.user?.id || !branch?.id) return;
+    try {
+      setBusyId(`override:${member.user.id}`);
+      setToast("");
+      await webApiFetch(`/api/orgs/${orgId}/attendance/manual`, {
+        method: "POST",
+        body: {
+          memberUserId: member.user.id,
+          branchId: branch.id,
+          reason: "Allowed by reception after identity check.",
+        },
+      });
+      todayState.reload();
+      setToast(copy.entryApproved);
+    } catch (cause) {
+      setToast(cause instanceof Error ? cause.message : copy.unableEntry);
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function sendMemberMessage(member: MemberRow) {
+    if (!member.user?.id) return;
+    const body = window.prompt(copy.directMessagePrompt);
+    if (!body?.trim()) return;
+    try {
+      setBusyId(`message:${member.user.id}`);
+      setToast("");
+      await webApiFetch(`/api/orgs/${orgId}/notifications`, {
+        method: "POST",
+        body: {
+          type: "TRANSACTIONAL",
+          title: copy.deskMessageTitle,
+          body,
+          audience: { kind: "single_member", userId: member.user.id },
+          pushEnabled: true,
+        },
+      });
+      setToast(copy.messageSent);
+    } catch (cause) {
+      setToast(cause instanceof Error ? cause.message : copy.unableMessage);
+    } finally {
+      setBusyId("");
+    }
   }
 
   async function updateAttendance(recordId: string, action: "approve" | "reject") {
@@ -321,61 +289,67 @@ export function DeskPanel({
     }
   }
 
-  async function recordPayment(event: React.FormEvent<HTMLFormElement>) {
+  async function recordPayment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
       setBusyId("payment");
       setToast("");
       const amountPaise = Math.round(Number(paymentForm.amountRupees) * 100);
+      const selectedOrder = activeOrders.find((order) => order.id === paymentForm.shopOrderId);
       const body = {
-        memberUserId: paymentForm.memberUserId,
+        purpose: paymentForm.purpose,
+        memberUserId: paymentForm.memberUserId || undefined,
         planId: paymentForm.planId || undefined,
         subscriptionId: paymentForm.subscriptionId || undefined,
+        shopOrderId: paymentForm.shopOrderId || undefined,
+        description: paymentForm.description || undefined,
         amountPaise,
         mode: paymentForm.mode,
         receiptNumber: paymentForm.receiptNumber || undefined,
         notes: paymentForm.notes || undefined,
       };
-      await webApiFetch(`/api/orgs/${orgId}/manual-payments`, { method: "POST", body });
-      setToast(`${copy.paymentRecorded} ${formatInr(amountPaise)}.`);
+      const path =
+        paymentForm.purpose === "SHOP_ORDER" && paymentForm.shopOrderId
+          ? `/api/orgs/${orgId}/shop/orders/${paymentForm.shopOrderId}/manual-payment`
+          : `/api/orgs/${orgId}/manual-payments`;
+      await webApiFetch(path, { method: "POST", body });
+      if (paymentForm.purpose === "SHOP_ORDER") {
+        ordersState.reload();
+      }
+      setToast(
+        `${paymentForm.purpose === "SHOP_ORDER" ? copy.shopPaymentRecorded : copy.paymentRecorded} ${formatInr(amountPaise)}.`,
+      );
       setLastReceipt({
-        title: copy.recordPayment,
+        title:
+          paymentForm.purpose === "SHOP_ORDER" && selectedOrder
+            ? `Shop order ${selectedOrder.id.slice(-8).toUpperCase()}`
+            : paymentForm.purpose === "OTHER"
+              ? paymentForm.description || copy.otherPayment
+              : copy.membershipPayment,
+        payer:
+          paymentForm.purpose === "SHOP_ORDER"
+            ? selectedOrder?.user?.name
+            : (selectedMember?.user?.name ??
+              members.find((member) => member.user?.id === paymentForm.memberUserId)?.user?.name),
         amountPaise,
         mode: paymentForm.mode,
         reference: paymentForm.receiptNumber || undefined,
+        recordedAt: new Date().toISOString(),
       });
-      setPaymentForm((current) => ({ ...current, receiptNumber: "", notes: "" }));
+      setPaymentForm((current) => ({
+        ...current,
+        ...(current.purpose === "SHOP_ORDER" ? { shopOrderId: "" } : {}),
+        receiptNumber: "",
+        notes: "",
+      }));
     } catch (cause) {
-      setToast(cause instanceof Error ? cause.message : copy.unablePayment);
-    } finally {
-      setBusyId("");
-    }
-  }
-
-  async function recordShopPayment(order: ShopOrder) {
-    const reference = window.prompt(copy.paymentPrompt, "") ?? "";
-    try {
-      setBusyId(`pay:${order.id}`);
-      setToast("");
-      await webApiFetch(`/api/orgs/${orgId}/shop/orders/${order.id}/manual-payment`, {
-        method: "POST",
-        body: {
-          amountPaise: order.totalPaise,
-          mode: "DIRECT_UPI",
-          receiptNumber: reference || undefined,
-          notes: "Recorded at reception pickup.",
-        },
-      });
-      ordersState.reload();
-      setLastReceipt({
-        title: `Shop order ${order.id.slice(-8).toUpperCase()}`,
-        amountPaise: order.totalPaise,
-        mode: "DIRECT_UPI",
-        reference: reference || undefined,
-      });
-      setToast(`${copy.shopPaymentRecorded} ${formatInr(order.totalPaise)}.`);
-    } catch (cause) {
-      setToast(cause instanceof Error ? cause.message : copy.unableShopPayment);
+      setToast(
+        cause instanceof Error
+          ? cause.message
+          : paymentForm.purpose === "SHOP_ORDER"
+            ? copy.unableShopPayment
+            : copy.unablePayment,
+      );
     } finally {
       setBusyId("");
     }
@@ -408,7 +382,13 @@ export function DeskPanel({
     try {
       setBusyId(orderId);
       setToast("");
-      await webApiFetch(`/api/orgs/${orgId}/shop/orders/${orderId}/fulfill`, { method: "POST" });
+      const skipped = skippedCodeOrderIds.includes(orderId);
+      await webApiFetch(`/api/orgs/${orgId}/shop/orders/${orderId}/fulfill`, {
+        method: "POST",
+        body: skipped
+          ? { pickupCodeSkipped: true, skipReason: "Skipped by reception at handover." }
+          : {},
+      });
       ordersState.reload();
       setToast(copy.pickupFulfilled);
     } catch (cause) {
@@ -417,11 +397,6 @@ export function DeskPanel({
       setBusyId("");
     }
   }
-
-  const pendingRecords = pendingState.data?.records ?? [];
-  const todayRecords = todayState.data?.records ?? [];
-  const activeOrders = ordersState.data?.orders ?? [];
-  const activePlans = (plansState.data?.plans ?? []).filter((plan) => plan.active);
 
   return (
     <main className="min-h-dvh pb-28">
@@ -438,8 +413,12 @@ export function DeskPanel({
               </Pill>
             </div>
           </div>
-          <DashboardLocaleToggle locale={locale ?? undefined} />
-          <DashboardSignOutButton compact />
+          <DashboardLocaleToggle locale={locale ?? undefined} labels={copy.common} />
+          <DashboardSignOutButton
+            compact
+            label={copy.common.signOut}
+            busyLabel={copy.common.signingOut}
+          />
         </div>
       </header>
 
@@ -451,393 +430,62 @@ export function DeskPanel({
         ) : null}
 
         {activeTab === "queue" ? (
-          <div className="grid gap-4">
-            <GlassCard>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h1 className="text-2xl font-semibold text-white">{copy.todayQueue}</h1>
-                  <p className="mt-1 text-sm text-white/48">
-                    {copy.queueDescription}
-                  </p>
-                </div>
-                <Pill tone={pendingRecords.length ? "amber" : "lime"}>
-                  {pendingRecords.length} {copy.pending}
-                </Pill>
-              </div>
-              <div className="mt-5 grid gap-3">
-                {pendingRecords.length ? (
-                  pendingRecords.map((record) => (
-                    <div key={record.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-                      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                        <div>
-                          <p className="font-medium text-white">
-                            {record.user?.name ?? record.user?.email ?? "Member"}
-                          </p>
-                          <p className="mt-1 text-sm text-white/48">
-                            {record.suspiciousFlags?.length
-                              ? record.suspiciousFlags.map(formatEnumLabel).join(", ")
-                              : formatEnumLabel(record.status)}
-                            {" - "}
-                            {formatDateTime(record.checkedInAt)}
-                          </p>
-                          <p className="mt-1 text-xs text-white/38">
-                            {record.plan?.name ?? copy.membership} at{" "}
-                            {record.branchName ?? branch?.name ?? copy.branch}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            disabled={busyId === record.id}
-                            onClick={() => void updateAttendance(record.id, "approve")}
-                            className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
-                          >
-                            <CheckCircle2 size={16} />
-                            {copy.approve}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busyId === record.id}
-                            onClick={() => void updateAttendance(record.id, "reject")}
-                            className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/72 disabled:opacity-50"
-                          >
-                            <XCircle size={16} />
-                            {copy.reject}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-[22px] border border-white/10 bg-black/20 p-5 text-sm text-white/48">
-                    {copy.noReview}
-                  </div>
-                )}
-              </div>
-            </GlassCard>
-
-            <GlassCard>
-              <h2 className="text-xl font-semibold text-white">{copy.recentCheckIns}</h2>
-              <div className="mt-4 grid gap-2">
-                {todayRecords.slice(0, 10).map((record) => (
-                  <div key={record.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                    <span className="text-sm font-medium text-white/78">
-                      {record.user?.name ?? record.user?.email ?? "Member"}
-                    </span>
-                    <span className="text-xs text-white/45">{formatDateTime(record.checkedInAt)}</span>
-                  </div>
-                ))}
-                {!todayRecords.length ? (
-                  <p className="text-sm text-white/45">{copy.noCheckIns}</p>
-                ) : null}
-              </div>
-            </GlassCard>
-          </div>
+          <QueueTab
+            copy={copy}
+            pendingRecords={pendingRecords}
+            todayRecords={todayRecords}
+            branchName={branch?.name ?? null}
+            busyId={busyId}
+            onUpdateAttendance={(recordId, action) => void updateAttendance(recordId, action)}
+          />
         ) : null}
 
         {activeTab === "member" ? (
-          <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-            <GlassCard>
-              <h1 className="text-2xl font-semibold text-white">{copy.findMember}</h1>
-              <div className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/25 px-3">
-                <Search size={18} className="text-white/40" />
-                <input
-                  value={memberQuery}
-                  onChange={(event) => setMemberQuery(event.target.value)}
-                  placeholder={copy.searchPlaceholder}
-                  className="zook-focus min-h-12 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/32"
-                />
-              </div>
-              <div className="mt-4 grid gap-2">
-                {filteredMembers.map((member) => (
-                  <button
-                    key={member.profile.id}
-                    type="button"
-                    onClick={() => selectMember(member)}
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-left transition hover:bg-white/8"
-                  >
-                    <p className="text-sm font-medium text-white">{memberLabel(member)}</p>
-                    <p className="mt-1 text-xs text-white/42">
-                      {copy.phoneEnding} {phoneLast4(member.user?.phone)} -{" "}
-                      {member.activeSubscription
-                        ? formatEnumLabel(member.activeSubscription.status)
-                        : copy.noActivePlan}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </GlassCard>
-
-            <GlassCard>
-              {selectedMember ? (
-                <>
-                  <div className="flex items-start gap-4">
-                    <div className="grid h-20 w-20 shrink-0 place-items-center rounded-3xl bg-lime-300/15 text-2xl font-semibold text-lime-100">
-                      {memberLabel(selectedMember).slice(0, 1)}
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-2xl font-semibold text-white">{memberLabel(selectedMember)}</h2>
-                      <p className="mt-1 text-sm text-white/48">
-                        {copy.phoneEnding} {phoneLast4(selectedMember.user?.phone)}
-                      </p>
-                      {!selectedMember.profile.profilePhotoUrl ? (
-                        <p className="mt-2 text-xs text-white/38">{copy.profilePhotoMissing}</p>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="mt-5 grid gap-3">
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <p className="text-xs uppercase tracking-[0.16em] text-white/35">
-                        {copy.membership}
-                      </p>
-                      <p className="mt-2 text-lg font-semibold text-white">
-                        {selectedMember.activeSubscription
-                          ? formatEnumLabel(selectedMember.activeSubscription.status)
-                          : copy.noActiveMembership}
-                      </p>
-                      <p className="mt-1 text-sm text-white/48">
-                        {copy.validUntil} {formatDate(selectedMember.activeSubscription?.endsAt)}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <p className="text-xs uppercase tracking-[0.16em] text-white/35">
-                        {copy.recentActivity}
-                      </p>
-                      <p className="mt-2 text-sm text-white/68">
-                        {copy.lastCheckIn}:{" "}
-                        {formatDateTime(selectedMember.lastCheckIn?.checkedInAt)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveTab("payment");
-                          selectMember(selectedMember);
-                        }}
-                        className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
-                      >
-                        {copy.recordPayment}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="rounded-[22px] border border-dashed border-white/12 p-5 text-sm text-white/48">
-                  {copy.selectMember}
-                </div>
-              )}
-            </GlassCard>
-          </div>
+          <MemberTab
+            copy={copy}
+            memberQuery={memberQuery}
+            filteredMembers={filteredMembers}
+            selectedMember={selectedMember}
+            busyId={busyId}
+            onMemberQueryChange={setMemberQuery}
+            onSelectMember={selectMember}
+            onRecordPayment={handleMemberPayment}
+            onOverrideEntry={(member) => void overrideMemberEntry(member)}
+            onSendMessage={(member) => void sendMemberMessage(member)}
+          />
         ) : null}
 
         {activeTab === "payment" ? (
-          <GlassCard>
-            <div className="flex items-center gap-3">
-              <CreditCard className="text-lime-200" size={22} />
-              <div>
-                <h1 className="text-2xl font-semibold text-white">{copy.recordPayment}</h1>
-                <p className="mt-1 text-sm text-white/48">{copy.paymentDescription}</p>
-              </div>
-            </div>
-            <form className="mt-5 grid gap-4" onSubmit={(event) => void recordPayment(event)}>
-              <label className="grid gap-2 text-sm text-white/62">
-                {copy.member}
-                <select
-                  value={paymentForm.memberUserId}
-                  onChange={(event) =>
-                    setPaymentForm((current) => ({ ...current, memberUserId: event.target.value }))
-                  }
-                  className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
-                  required
-                >
-                  <option value="" className="bg-black">
-                    {copy.chooseMember}
-                  </option>
-                  {members.map((member) => (
-                    <option key={member.profile.id} value={member.user?.id ?? ""} className="bg-black">
-                      {memberLabel(member)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-2 text-sm text-white/62">
-                  {copy.plan}
-                  <select
-                    value={paymentForm.planId}
-                    onChange={(event) => {
-                      const plan = activePlans.find((candidate) => candidate.id === event.target.value);
-                      setPaymentForm((current) => ({
-                        ...current,
-                        planId: event.target.value,
-                        subscriptionId: "",
-                        amountRupees: plan ? String(plan.pricePaise / 100) : current.amountRupees,
-                      }));
-                    }}
-                    className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
-                  >
-                    <option value="" className="bg-black">
-                      {copy.renewExisting}
-                    </option>
-                    {activePlans.map((plan) => (
-                      <option key={plan.id} value={plan.id} className="bg-black">
-                        {plan.name} - {formatInr(plan.pricePaise)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm text-white/62">
-                  {copy.mode}
-                  <select
-                    value={paymentForm.mode}
-                    onChange={(event) =>
-                      setPaymentForm((current) => ({ ...current, mode: event.target.value }))
-                    }
-                    className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
-                  >
-                    <option value="CASH" className="bg-black">Cash</option>
-                    <option value="DIRECT_UPI" className="bg-black">UPI</option>
-                    <option value="CARD" className="bg-black">Card</option>
-                    <option value="BANK_TRANSFER" className="bg-black">Bank transfer</option>
-                    <option value="OTHER" className="bg-black">Other</option>
-                  </select>
-                </label>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-2 text-sm text-white/62">
-                  {copy.amount}
-                  <input
-                    value={paymentForm.amountRupees}
-                    onChange={(event) =>
-                      setPaymentForm((current) => ({ ...current, amountRupees: event.target.value }))
-                    }
-                    inputMode="decimal"
-                    placeholder="2500"
-                    className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
-                    required
-                  />
-                </label>
-                <label className="grid gap-2 text-sm text-white/62">
-                  {copy.referenceNumber}
-                  <input
-                    value={paymentForm.receiptNumber}
-                    onChange={(event) =>
-                      setPaymentForm((current) => ({ ...current, receiptNumber: event.target.value }))
-                    }
-                    placeholder={copy.referencePlaceholder}
-                    className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
-                  />
-                </label>
-              </div>
-              <label className="grid gap-2 text-sm text-white/62">
-                {copy.notes}
-                <textarea
-                  value={paymentForm.notes}
-                  onChange={(event) =>
-                    setPaymentForm((current) => ({ ...current, notes: event.target.value }))
-                  }
-                  className="zook-focus min-h-24 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={busyId === "payment"}
-                className="zook-focus min-h-12 rounded-full bg-lime-300 px-5 text-sm font-semibold text-black disabled:opacity-50"
-              >
-                {busyId === "payment" ? copy.recording : copy.recordPayment}
-              </button>
-            </form>
-            {lastReceipt ? (
-              <div className="mt-5 rounded-[22px] border border-lime-300/20 bg-lime-300/10 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lime-100/70">
-                  {copy.receiptReady}
-                </p>
-                <p className="mt-2 text-lg font-semibold text-white">{lastReceipt.title}</p>
-                <p className="mt-2 text-sm text-white/65">
-                  {copy.receiptAmount}: {formatInr(lastReceipt.amountPaise)}
-                </p>
-                <p className="mt-1 text-sm text-white/65">
-                  {copy.receiptMode}: {formatEnumLabel(lastReceipt.mode)}
-                </p>
-                <p className="mt-1 text-sm text-white/65">
-                  {copy.receiptReference}: {lastReceipt.reference || copy.notAdded}
-                </p>
-                <button type="button" onClick={() => window.print()} className="zook-focus mt-4 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72">
-                  {copy.printReceipt}
-                </button>
-              </div>
-            ) : null}
-          </GlassCard>
+          <PaymentTab
+            copy={copy}
+            busyId={busyId}
+            paymentForm={paymentForm}
+            members={members}
+            activePlans={activePlans}
+            payAtDeskOrders={payAtDeskOrders}
+            lastReceipt={lastReceipt}
+            onSubmit={(event) => void recordPayment(event)}
+            onPurposeChange={handlePurposeChange}
+            onMemberChange={handlePaymentMemberChange}
+            onOrderChange={handlePaymentOrderChange}
+            onPlanChange={handlePaymentPlanChange}
+            onFormChange={updatePaymentForm}
+          />
         ) : null}
 
         {activeTab === "pickup" ? (
-          <GlassCard>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h1 className="text-2xl font-semibold text-white">{copy.shopPickup}</h1>
-                <p className="mt-1 text-sm text-white/48">{copy.pickupDescription}</p>
-              </div>
-              <Pill tone="blue">
-                {ordersState.data?.summary?.fulfilledToday ?? 0} {copy.fulfilledToday}
-              </Pill>
-            </div>
-            <div className="mt-5 grid gap-3">
-              {activeOrders.map((order) => {
-                const verified = verifiedOrderIds.includes(order.id);
-                return (
-                  <div key={order.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-                    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-                      <div>
-                        <p className="font-medium text-white">{order.user?.name ?? "Member"}</p>
-                        <p className="mt-1 text-sm text-white/48">{orderItemsSummary(order)}</p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Pill tone={order.status === "READY_FOR_PICKUP" ? "lime" : "amber"}>
-                            {formatEnumLabel(order.status)}
-                          </Pill>
-                          <Pill>{formatInr(order.totalPaise)}</Pill>
-                          {verified ? <Pill tone="lime">{copy.codeVerified}</Pill> : null}
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={busyId === `verify:${order.id}`}
-                          onClick={() => void verifyPickupCode(order)}
-                          className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/72"
-                        >
-                          {copy.verifyCode}
-                        </button>
-                        {order.status === "PENDING_PAYMENT" && !order.paymentId ? (
-                          <button
-                            type="button"
-                            disabled={busyId === `pay:${order.id}`}
-                            onClick={() => void recordShopPayment(order)}
-                            className="zook-focus rounded-full border border-lime-300/40 px-4 py-2 text-sm font-semibold text-lime-100 disabled:opacity-50"
-                          >
-                            {copy.recordPayment}
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          disabled={busyId === order.id || (!verified && order.status !== "READY_FOR_PICKUP")}
-                          onClick={() => void fulfillOrder(order.id)}
-                          className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-45"
-                        >
-                          {copy.markFulfilled}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {!activeOrders.length ? (
-                <p className="rounded-[22px] border border-white/10 bg-black/20 p-5 text-sm text-white/48">
-                  {copy.noPickupOrders}
-                </p>
-              ) : null}
-            </div>
-          </GlassCard>
+          <PickupTab
+            copy={copy}
+            activeOrders={activeOrders}
+            fulfilledToday={ordersState.data?.summary?.fulfilledToday ?? 0}
+            verifiedOrderIds={verifiedOrderIds}
+            skippedCodeOrderIds={skippedCodeOrderIds}
+            busyId={busyId}
+            onVerifyPickupCode={(order) => void verifyPickupCode(order)}
+            onSkipCode={skipPickupCode}
+            onJumpToShopPayment={jumpToShopPayment}
+            onFulfillOrder={(orderId) => void fulfillOrder(orderId)}
+          />
         ) : null}
       </section>
 
