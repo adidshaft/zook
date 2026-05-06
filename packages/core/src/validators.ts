@@ -114,6 +114,12 @@ export const createOrganizationSchema = z.object({
   username: usernameSchema,
   contactPhone: z.string().min(8).max(20),
   contactEmail: emailSchema,
+  gstNumber: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/)
+    .optional(),
   address: z.string().min(3).max(240),
   city: z.string().min(2).max(80),
   state: z.string().min(2).max(80),

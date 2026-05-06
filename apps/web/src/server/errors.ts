@@ -5,13 +5,23 @@ export class ApiRouteError extends Error {
   code: string;
   status: number;
   details?: unknown;
+  headers?: HeadersInit;
 
-  constructor(status: number, code: string, message: string, details?: unknown) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    details?: unknown,
+    headers?: HeadersInit,
+  ) {
     super(message);
     this.name = "ApiRouteError";
     this.status = status;
     this.code = code;
     this.details = details;
+    if (headers !== undefined) {
+      this.headers = headers;
+    }
   }
 }
 
@@ -35,8 +45,18 @@ export function conflictError(message = "Conflict") {
   return new ApiRouteError(409, "conflict", message);
 }
 
-export function rateLimitedError(message = "Rate limited") {
-  return new ApiRouteError(429, "rate_limited", message);
+export function payloadTooLargeError(message = "Payload too large", details?: unknown) {
+  return new ApiRouteError(413, "payload_too_large", message, details);
+}
+
+export function rateLimitedError(message = "Rate limited", retryAfterSeconds?: number) {
+  return new ApiRouteError(
+    429,
+    "rate_limited",
+    message,
+    retryAfterSeconds ? { retryAfterSeconds } : undefined,
+    retryAfterSeconds ? { "retry-after": String(retryAfterSeconds) } : undefined,
+  );
 }
 
 export function internalError(message = "Internal error") {
@@ -45,7 +65,13 @@ export function internalError(message = "Internal error") {
 
 export function toErrorResponse(error: unknown) {
   if (error instanceof ApiRouteError) {
-    return fail(error.code, error.message, error.status, error.details);
+    const response = fail(error.code, error.message, error.status, error.details);
+    if (error.headers) {
+      for (const [key, value] of new Headers(error.headers).entries()) {
+        response.headers.set(key, value);
+      }
+    }
+    return response;
   }
   if (error instanceof ZodError) {
     return fail("validation_error", "Validation failed", 400, error.flatten());
@@ -56,8 +82,10 @@ export function toErrorResponse(error: unknown) {
   if (error instanceof Error) {
     return fail(
       "internal_error",
-      process.env.NODE_ENV === "development" ? error.message || "Unexpected error" : "Unexpected error",
-      500
+      process.env.NODE_ENV === "development"
+        ? error.message || "Unexpected error"
+        : "Unexpected error",
+      500,
     );
   }
   return fail("internal_error", "Unexpected error", 500);

@@ -93,6 +93,7 @@ import {
   conflictError,
   forbiddenError,
   notFoundError,
+  payloadTooLargeError,
   toErrorResponse,
   unauthorizedError,
   validationError,
@@ -108,6 +109,7 @@ import { assertSafeMutationRequest, getClientIp } from "./security";
 import { buildGymDiscoveryResults } from "./gym-discovery";
 import { getHealthPayload, getReadinessPayload } from "./readiness";
 import { logApiRequest } from "./request-logger";
+import { captureRouteError } from "./sentry";
 import {
   assertCanAccessFileAsset,
   assertCanServeLocalPublicFileAsset,
@@ -506,6 +508,120 @@ function clean<T extends Record<string, unknown>>(input: T): any {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
 }
 
+function sha256(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function responseBodyForStorage(text: string): Prisma.InputJsonValue {
+  if (!text) {
+    return {};
+  }
+  try {
+    return JSON.parse(text) as Prisma.InputJsonValue;
+  } catch {
+    return { rawBody: text };
+  }
+}
+
+function isIdempotentOperation(path: string[], method: string) {
+  if (method !== "POST") {
+    return false;
+  }
+  return (
+    pathMatches(path, ["payments", "checkout"]) ||
+    pathMatches(path, ["payments", "mock", /.+/, "complete"]) ||
+    pathMatches(path, ["attendance", "scan"]) ||
+    pathMatches(path, ["orgs", /.+/, "manual-payments"]) ||
+    pathMatches(path, ["shop", "orders"])
+  );
+}
+
+async function withIdempotency(
+  request: NextRequest,
+  path: string[],
+  execute: () => Promise<NextResponse>,
+) {
+  const idempotencyKey = request.headers.get("idempotency-key")?.trim();
+  if (!idempotencyKey || !isIdempotentOperation(path, request.method)) {
+    return execute();
+  }
+
+  const ctx = await getRequestContext(
+    request,
+    path[0] === "orgs" && path[1] ? { orgId: path[1] } : {},
+  );
+  const operation = `${request.method} /api/${path.join("/")}`;
+  const requestHash = sha256(idempotencyKey);
+  const createdAfter = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const idempotency = (prisma as any).requestIdempotency;
+  const existing = await idempotency.findFirst({
+    where: {
+      userId: ctx.userId ?? null,
+      operation,
+      requestHash,
+      createdAt: { gte: createdAfter },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (existing) {
+    const replay = NextResponse.json(existing.body, {
+      status: existing.status,
+      headers: {
+        "x-idempotency-replay": "true",
+      },
+    });
+    const requestId = currentRequestId();
+    if (requestId) {
+      replay.headers.set("x-request-id", requestId);
+    }
+    return replay;
+  }
+
+  const response = await execute();
+  const responseText = await response.clone().text();
+  const storedBody = responseBodyForStorage(responseText);
+  try {
+    await idempotency.create({
+      data: {
+        userId: ctx.userId ?? null,
+        operation,
+        requestHash,
+        resultHash: sha256(responseText),
+        status: response.status,
+        body: storedBody,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const duplicate = await idempotency.findFirst({
+        where: {
+          userId: ctx.userId ?? null,
+          operation,
+          requestHash,
+          createdAt: { gte: createdAfter },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      if (duplicate) {
+        const replay = NextResponse.json(duplicate.body, {
+          status: duplicate.status,
+          headers: {
+            "x-idempotency-replay": "true",
+          },
+        });
+        const requestId = currentRequestId();
+        if (requestId) {
+          replay.headers.set("x-request-id", requestId);
+        }
+        return replay;
+      }
+    }
+    throw error;
+  }
+  return response;
+}
+
 function parseMemberProfileNotes(notes?: string | null) {
   if (!notes) {
     return {};
@@ -690,6 +806,18 @@ async function parseFileUploadRequest(request: NextRequest) {
       visibility,
     });
   } catch (error) {
+    if (error instanceof Error && /^File exceeds\b/.test(error.message)) {
+      throw payloadTooLargeError(error.message, {
+        category,
+        maxSizeBytes: storageProvider.validateFile({
+          category,
+          contentType: file.type || "application/octet-stream",
+          sizeBytes: 1,
+          originalName: file.name,
+          visibility,
+        }).maxSizeBytes,
+      });
+    }
     throw validationError(error instanceof Error ? error.message : "Invalid upload.");
   }
 
@@ -722,6 +850,128 @@ function pathMatches(path: string[], pattern: Array<string | RegExp>) {
   return pattern.every((part, index) =>
     typeof part === "string" ? part === path[index] : part.test(path[index] ?? ""),
   );
+}
+
+function parseCursorPagination(request: NextRequest, defaultLimit: number, maxLimit: number) {
+  const rawLimit = Number(request.nextUrl.searchParams.get("limit") ?? defaultLimit);
+  const limit = Number.isFinite(rawLimit)
+    ? Math.min(Math.max(Math.floor(rawLimit), 1), maxLimit)
+    : defaultLimit;
+  const cursor = request.nextUrl.searchParams.get("cursor")?.trim() || undefined;
+  return { limit, cursor };
+}
+
+function pageResult<T extends { id: string }>(items: T[], limit: number) {
+  const hasMore = items.length > limit;
+  const pageItems = hasMore ? items.slice(0, limit) : items;
+  return {
+    items: pageItems,
+    nextCursor: hasMore ? (pageItems.at(-1)?.id ?? null) : null,
+  };
+}
+
+async function listOrganizationMembersPage(orgId: string, request: NextRequest) {
+  const { limit, cursor } = parseCursorPagination(request, 50, 100);
+  const profiles = await prisma.memberProfile.findMany({
+    where: { orgId },
+    orderBy: { createdAt: "desc" },
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  });
+  const page = pageResult(profiles, limit);
+  const memberUserIds = page.items.map((profile) => profile.userId);
+  const [users, subscriptions, attendance] = await Promise.all([
+    prisma.user.findMany({ where: { id: { in: memberUserIds } } }),
+    prisma.memberSubscription.findMany({
+      where: { orgId, memberUserId: { in: memberUserIds } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.attendanceRecord.findMany({
+      where: { orgId, userId: { in: memberUserIds } },
+      orderBy: { checkedInAt: "desc" },
+      take: Math.max(memberUserIds.length * 3, 20),
+    }),
+  ]);
+  const usersById = new Map(users.map((user) => [user.id, user]));
+  return {
+    members: page.items.map((profile) => {
+      const user = usersById.get(profile.userId) ?? null;
+      return {
+        profile,
+        user: user ? { ...user, email: publicUserEmail(user.email) ?? "" } : null,
+        lastCheckIn: attendance.find((record) => record.userId === profile.userId) ?? null,
+        activeSubscription:
+          subscriptions.find(
+            (subscription) =>
+              subscription.memberUserId === profile.userId && subscription.status === "ACTIVE",
+          ) ??
+          subscriptions.find((subscription) => subscription.memberUserId === profile.userId) ??
+          null,
+      };
+    }),
+    nextCursor: page.nextCursor,
+    limit,
+  };
+}
+
+async function listOrganizationPaymentsPage(orgId: string, request: NextRequest) {
+  const { limit, cursor } = parseCursorPagination(request, 50, 100);
+  const payments = await prisma.payment.findMany({
+    where: { orgId },
+    orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  });
+  const page = pageResult(payments, limit);
+  const users = await prisma.user.findMany({
+    where: {
+      id: { in: page.items.map((payment) => payment.userId).filter(Boolean) as string[] },
+    },
+  });
+  const usersById = new Map(users.map((user) => [user.id, user]));
+  return {
+    payments: page.items.map((payment) => {
+      const user = payment.userId ? usersById.get(payment.userId) : undefined;
+      return {
+        ...payment,
+        user: user ? { ...user, email: publicUserEmail(user.email) ?? "" } : null,
+      };
+    }),
+    nextCursor: page.nextCursor,
+    limit,
+  };
+}
+
+async function listOrganizationAttendancePage(orgId: string, request: NextRequest) {
+  const { limit, cursor } = parseCursorPagination(request, 50, 100);
+  const branchId = queryBranchId(request);
+  if (branchId) {
+    await resolveOrgBranch(orgId, branchId);
+  }
+  const records = await prisma.attendanceRecord.findMany({
+    where: { orgId, ...(branchId ? { branchId } : {}) },
+    orderBy: { checkedInAt: "desc" },
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  });
+  const page = pageResult(records, limit);
+  return {
+    attendance: await enrichAttendanceRecords(page.items),
+    nextCursor: page.nextCursor,
+    limit,
+  };
+}
+
+async function listOrganizationAuditLogsPage(orgId: string, request: NextRequest) {
+  const { limit, cursor } = parseCursorPagination(request, 100, 200);
+  const logs = await prisma.auditLog.findMany({
+    where: { orgId },
+    orderBy: { createdAt: "desc" },
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  });
+  const page = pageResult(logs, limit);
+  return { auditLogs: page.items, nextCursor: page.nextCursor, limit };
 }
 
 async function listTrackingWorkouts(userId: string) {
@@ -2395,6 +2645,8 @@ class PrismaAuthRepo {
     attempts: number;
     maxAttempts: number;
     resendCount: number;
+    ipFailureCount: number;
+    lockedUntil: Date | null;
     ipAddress: string | null;
     consumedAt: Date | null;
     expiresAt: Date;
@@ -2411,6 +2663,8 @@ class PrismaAuthRepo {
       attempts: row.attempts,
       maxAttempts: row.maxAttempts,
       resendCount: row.resendCount,
+      ipFailureCount: row.ipFailureCount,
+      lockedUntil: row.lockedUntil ?? undefined,
       ipAddress: row.ipAddress ?? undefined,
       consumedAt: row.consumedAt ?? undefined,
       expiresAt: row.expiresAt,
@@ -2460,8 +2714,15 @@ class PrismaAuthRepo {
     return row ? this.toOtpRecord(row) : undefined;
   }
 
-  async incrementOtpAttempt(id: string) {
-    await prisma.otpChallenge.update({ where: { id }, data: { attempts: { increment: 1 } } });
+  async recordOtpFailure(input: { id: string; failureCount: number; lockedUntil?: Date }) {
+    await prisma.otpChallenge.update({
+      where: { id: input.id },
+      data: {
+        attempts: { increment: 1 },
+        ipFailureCount: input.failureCount,
+        ...(input.lockedUntil ? { lockedUntil: input.lockedUntil } : {}),
+      },
+    });
   }
 
   async refreshOtp(input: { id: string; codeHash: string; expiresAt: Date; ipAddress?: string }) {
@@ -2471,6 +2732,8 @@ class PrismaAuthRepo {
         codeHash: input.codeHash,
         expiresAt: input.expiresAt,
         attempts: 0,
+        ipFailureCount: 0,
+        lockedUntil: null,
         resendCount: { increment: 1 },
         createdAt: new Date(),
         ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
@@ -3502,8 +3765,18 @@ async function handleFiles(request: NextRequest, path: string[]) {
 
 async function handleOrganizations(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", "public", "search"])) {
+    await assertRateLimit(
+      "publicOrgSearchByIp",
+      getClientIp(request),
+      "Too many gym searches from this IP.",
+    );
     const query = request.nextUrl.searchParams.get("q") ?? "";
     const city = request.nextUrl.searchParams.get("city") ?? undefined;
+    const limit = Math.min(
+      50,
+      Math.max(1, Number(request.nextUrl.searchParams.get("limit") ?? 50)),
+    );
+    const cursor = request.nextUrl.searchParams.get("cursor") ?? undefined;
     const nearLat = request.nextUrl.searchParams.get("nearLat");
     const nearLng = request.nextUrl.searchParams.get("nearLng");
     const gyms = await prisma.organization.findMany({
@@ -3518,10 +3791,13 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
             }
           : {}),
       },
-      take: 25,
+      orderBy: { createdAt: "desc" },
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      take: limit + 1,
     });
+    const pageGyms = gyms.slice(0, limit);
     const results = buildGymDiscoveryResults({
-      gyms: gyms.map((gym) => ({
+      gyms: pageGyms.map((gym) => ({
         id: gym.id,
         name: gym.name,
         username: gym.username,
@@ -3544,7 +3820,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
         : {}),
       mapProvider: getMapProviderOrThrow(),
     });
-    return ok({ gyms: results });
+    return ok({ gyms: results, nextCursor: gyms.length > limit ? gyms[limit]?.id : null });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", "public", /.+/])) {
     const username = path[2]!;
@@ -3722,6 +3998,11 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["orgs"])) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
+    await assertRateLimit(
+      "organizationCreateByActor",
+      userId,
+      "You can create one organization per day from this account.",
+    );
     const body = createOrganizationSchema.parse(await readJson(request));
     const username = normalizeUsername(body.username);
     const trial = createTrialWindow();
@@ -3732,6 +4013,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           username,
           contactPhone: body.contactPhone,
           contactEmail: body.contactEmail,
+          gstNumber: body.gstNumber,
           address: body.address,
           city: body.city,
           state: body.state,
@@ -4136,6 +4418,9 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    if (request.nextUrl.searchParams.has("limit") || request.nextUrl.searchParams.has("cursor")) {
+      return ok(await listOrganizationMembersPage(orgId, request));
+    }
     return ok({ members: await getOrganizationMembers(orgId) });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members", /.+/])) {
@@ -4358,7 +4643,9 @@ async function handleReports(request: NextRequest, path: string[]) {
   });
 
   const reportRoutes: Record<string, OrgReportType> = {
+    "members.csv": "members",
     "attendance.csv": "attendance",
+    "payments.csv": "payments",
     "revenue.csv": "revenue",
     "manual-cash.csv": "manual-cash",
     "expiring-members.csv": "expiring-members",
@@ -4398,20 +4685,24 @@ async function handleReports(request: NextRequest, path: string[]) {
       throw forbiddenError("You do not have permission to export this report.");
     }
 
-    const rows =
-      report === "attendance"
-        ? await reportsService.attendanceReport(orgId, filters)
-        : report === "revenue"
-          ? await reportsService.revenueReport(orgId, filters)
-          : report === "manual-cash"
-            ? await reportsService.manualCashReport(orgId, filters)
-            : report === "expiring-members"
-              ? await reportsService.membershipExpiryReport(orgId, filters)
-              : report === "referrals"
-                ? await reportsService.referralReport(orgId, filters)
-                : report === "shop"
-                  ? await reportsService.shopReport(orgId, filters)
-                  : await reportsService.aiUsageReport(orgId, filters);
+    const rows: Array<Record<string, unknown>> =
+      report === "members"
+        ? await reportsService.membersReport(orgId, filters)
+        : report === "attendance"
+          ? await reportsService.attendanceReport(orgId, filters)
+          : report === "payments"
+            ? await reportsService.paymentsReport(orgId, filters)
+            : report === "revenue"
+              ? await reportsService.revenueReport(orgId, filters)
+              : report === "manual-cash"
+                ? await reportsService.manualCashReport(orgId, filters)
+                : report === "expiring-members"
+                  ? await reportsService.membershipExpiryReport(orgId, filters)
+                  : report === "referrals"
+                    ? await reportsService.referralReport(orgId, filters)
+                    : report === "shop"
+                      ? await reportsService.shopReport(orgId, filters)
+                      : await reportsService.aiUsageReport(orgId, filters);
 
     await writeAuditLog({
       request,
@@ -4591,15 +4882,18 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
     const orgId = path[1]!;
+    await assertRateLimit(
+      "joinRequestByActorOrg",
+      `${orgId}:${userId}`,
+      "Too many join requests for this gym today.",
+    );
     const body = joinRequestSchema.parse(await readJson(request));
     const organization = await prisma.organization.findUnique({ where: { id: orgId } });
     if (!organization || organization.visibility === "HIDDEN") {
       throw notFoundError("Gym not found");
     }
     if (organization.joinMode === "OPEN_JOIN") {
-      throw conflictError(
-        "This gym supports direct join. Choose a plan and continue to payment.",
-      );
+      throw conflictError("This gym supports direct join. Choose a plan and continue to payment.");
     }
     if (organization.joinMode === "INVITE_ONLY" && !body.referralCode) {
       throw forbiddenError("Invite-only gyms require a valid referral or invite code.");
@@ -4661,6 +4955,12 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "PAYMENTS_RECORD_OFFLINE");
     return ok({ payments: await getOrganizationRecentPayments(orgId) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "payments"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgAnyPermission(ctx, orgId, ["PAYMENTS_VIEW", "PAYMENTS_RECORD_OFFLINE"]);
+    return ok(await listOrganizationPaymentsPage(orgId, request));
   }
   if (
     request.method === "POST" &&
@@ -6281,6 +6581,13 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
 }
 
 async function handleAttendance(request: NextRequest, path: string[]) {
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "attendance"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgAnyPermission(ctx, orgId, ["ATTENDANCE_APPROVE", "MEMBERS_VIEW"]);
+    return ok(await listOrganizationAttendancePage(orgId, request));
+  }
+
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "attendance", "qr-token"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -6970,6 +7277,11 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_STAFF");
+    await assertRateLimit(
+      "staffInviteByActorOrg",
+      `${orgId}:${userId}`,
+      "Too many staff invites from this account today.",
+    );
     const body = staffInviteSchema.parse(await readJson(request));
     const [organization, inviter] = await Promise.all([
       prisma.organization.findUnique({ where: { id: orgId } }),
@@ -7126,6 +7438,11 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "PAYMENTS_RECORD_OFFLINE");
+    await assertRateLimit(
+      "manualPaymentByActorOrg",
+      `${orgId}:${userId}`,
+      "Too many manual payments from this account today.",
+    );
     const body = manualMembershipPaymentSchema.parse(await readJson(request));
     const memberUser = await prisma.user.findUnique({ where: { id: body.memberUserId } });
     const proofAsset = await getOrganizationScopedFileAsset(body.proofAssetId, orgId, [
@@ -8486,13 +8803,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "PRIVACY_VIEW_AUDIT");
-    return ok({
-      auditLogs: await prisma.auditLog.findMany({
-        where: { orgId },
-        orderBy: { createdAt: "desc" },
-        take: 100,
-      }),
-    });
+    return ok(await listOrganizationAuditLogsPage(orgId, request));
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "products"])) {
     const orgId = path[1]!;
@@ -9244,45 +9555,47 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
       assertSafeMutationRequest(request);
       const path = rawPath.filter(Boolean);
       assertServerRuntimeConfig(path);
-      for (const handler of [
-        handleHealthReadiness,
-        handleAuth,
-        handleMeData,
-        handleTracking,
-        handleFiles,
-        handleOrganizations,
-        handleReports,
-        handleMembershipPayments,
-        handleCouponsReferrals,
-        handleAttendance,
-        handleStaffPlansGoals,
-        handleAiNotificationsShopPrivacyPlatform,
-      ]) {
-        const response = await handler(request, path);
-        if (response) {
-          response.headers.set("x-request-id", requestId);
-          logApiRequest({
-            requestId,
-            method: request.method,
-            path: `/${path.join("/")}`,
-            status: response.status,
-            durationMs: Date.now() - startedAt,
-            ...(path[0] === "orgs" && path[1] ? { orgId: path[1] } : {}),
-          });
-          return response;
+      return await withIdempotency(request, path, async () => {
+        for (const handler of [
+          handleHealthReadiness,
+          handleAuth,
+          handleMeData,
+          handleTracking,
+          handleFiles,
+          handleOrganizations,
+          handleReports,
+          handleMembershipPayments,
+          handleCouponsReferrals,
+          handleAttendance,
+          handleStaffPlansGoals,
+          handleAiNotificationsShopPrivacyPlatform,
+        ]) {
+          const response = await handler(request, path);
+          if (response) {
+            response.headers.set("x-request-id", requestId);
+            logApiRequest({
+              requestId,
+              method: request.method,
+              path: `/${path.join("/")}`,
+              status: response.status,
+              durationMs: Date.now() - startedAt,
+              ...(path[0] === "orgs" && path[1] ? { orgId: path[1] } : {}),
+            });
+            return response;
+          }
         }
-      }
-      const response = fail("not_found", `No API route matched /api/${path.join("/")}`, 404);
-      response.headers.set("x-request-id", requestId);
-      logApiRequest({
-        requestId,
-        method: request.method,
-        path: `/${path.join("/")}`,
-        status: response.status,
-        durationMs: Date.now() - startedAt,
-        ...(path[0] === "orgs" && path[1] ? { orgId: path[1] } : {}),
+        const response = fail("not_found", `No API route matched /api/${path.join("/")}`, 404);
+        response.headers.set("x-request-id", requestId);
+        logApiRequest({
+          requestId,
+          method: request.method,
+          path: `/${path.join("/")}`,
+          status: response.status,
+          durationMs: Date.now() - startedAt,
+          ...(path[0] === "orgs" && path[1] ? { orgId: path[1] } : {}),
+        });
+        return response;
       });
-      return response;
     } catch (error) {
       errorReporter.captureException(error, {
         requestId,
@@ -9290,14 +9603,11 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
         path: `/${rawPath.join("/")}`,
         ...(rawPath[0] === "orgs" && rawPath[1] ? { orgId: rawPath[1] } : {}),
       });
-      console.error("zook.api.error", {
+      captureRouteError(error, {
         requestId,
         method: request.method,
-        path: rawPath.join("/"),
-        message: error instanceof Error ? error.message : "Unexpected error",
-        ...(process.env.NODE_ENV === "development" && error instanceof Error && error.stack
-          ? { stack: error.stack }
-          : {}),
+        path: `/${rawPath.join("/")}`,
+        ...(rawPath[0] === "orgs" && rawPath[1] ? { orgId: rawPath[1] } : {}),
       });
       const response = toErrorResponse(error);
       response.headers.set("x-request-id", requestId);

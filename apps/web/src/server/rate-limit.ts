@@ -49,6 +49,12 @@ export const defaultRateLimitRules = {
   privacyRequestByActor: { limit: 6, windowMs: 60 * 60 * 1000 },
   fileUploadByActor: { limit: 24, windowMs: 10 * 60 * 1000 },
   qrScanByActor: { limit: 20, windowMs: 5 * 60 * 1000 },
+  organizationCreateByActor: { limit: 1, windowMs: 24 * 60 * 60 * 1000 },
+  publicOrgSearchByIp: { limit: 100, windowMs: 60 * 1000 },
+  joinRequestByActorOrg: { limit: 10, windowMs: 24 * 60 * 60 * 1000 },
+  manualPaymentByActorOrg: { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
+  referralRedeemByActor: { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
+  staffInviteByActorOrg: { limit: 10, windowMs: 24 * 60 * 60 * 1000 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export class InMemoryRateLimitStore implements RateLimitStore {
@@ -235,7 +241,10 @@ export async function assertRateLimit(
   const result = await getRateLimitStore().consume(`${ruleName}:${identity}`, rule);
   if (!result.allowed) {
     const retryAfterSeconds = Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000));
-    throw rateLimitedError(message ?? `Too many requests. Try again in ${retryAfterSeconds}s.`);
+    throw rateLimitedError(
+      message ?? `Too many requests. Try again in ${retryAfterSeconds}s.`,
+      retryAfterSeconds,
+    );
   }
   return result;
 }

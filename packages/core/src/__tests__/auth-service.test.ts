@@ -8,12 +8,13 @@ class InMemoryAuthRepo implements AuthRepository {
   sessions: Array<{ userId: string; tokenHash: string; expiresAt: Date; revokedAt?: Date }> = [];
 
   async createOtp(
-    input: Omit<OtpChallengeRecord, "id" | "attempts" | "resendCount">,
+    input: Omit<OtpChallengeRecord, "id" | "attempts" | "resendCount" | "ipFailureCount">,
   ): Promise<OtpChallengeRecord> {
     const record: OtpChallengeRecord = {
       id: `otp_${this.challenges.length + 1}`,
       attempts: 0,
       resendCount: 0,
+      ipFailureCount: 0,
       ...input,
     };
     this.challenges.push(record);
@@ -29,10 +30,20 @@ class InMemoryAuthRepo implements AuthRepository {
       .find((challenge) => challenge.identifier === identifier && challenge.purpose === purpose);
   }
 
-  async incrementOtpAttempt(id: string): Promise<void> {
-    const challenge = this.challenges.find((item) => item.id === id);
+  async recordOtpFailure(input: {
+    id: string;
+    failureCount: number;
+    lockedUntil?: Date;
+  }): Promise<void> {
+    const challenge = this.challenges.find((item) => item.id === input.id);
     if (challenge) {
       challenge.attempts += 1;
+      challenge.ipFailureCount = input.failureCount;
+      if (input.lockedUntil) {
+        challenge.lockedUntil = input.lockedUntil;
+      } else {
+        delete challenge.lockedUntil;
+      }
     }
   }
 
@@ -49,6 +60,8 @@ class InMemoryAuthRepo implements AuthRepository {
     challenge.codeHash = input.codeHash;
     challenge.expiresAt = input.expiresAt;
     challenge.attempts = 0;
+    challenge.ipFailureCount = 0;
+    delete challenge.lockedUntil;
     challenge.resendCount += 1;
     challenge.createdAt = new Date();
     return challenge;
@@ -159,6 +172,27 @@ describe("auth service", () => {
       service.verifyOtp({ identifier: email, code: "123456", userId: "user_1" }),
     ).rejects.toThrow("Invalid OTP");
     expect(repo.challenges[0]?.attempts).toBe(1);
+  });
+
+  it("temporarily locks repeated invalid otp attempts and sends a suspicious activity email", async () => {
+    const service = new AuthService(repo, emailProvider, () => new Date());
+    await service.requestOtp(email);
+    if (repo.challenges[0]) {
+      repo.challenges[0].expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    }
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await expect(
+        service.verifyOtp({ identifier: email, code: "123456", userId: "user_1" }),
+      ).rejects.toThrow("Invalid OTP");
+      if (attempt < 4) {
+        vi.advanceTimersByTime(16 * 60 * 1000);
+      }
+    }
+
+    expect(repo.challenges[0]?.attempts).toBe(5);
+    expect(repo.challenges[0]?.lockedUntil?.getTime()).toBeGreaterThan(Date.now());
+    expect(emailProvider.sent.some((event) => event.kind === "notification")).toBe(true);
   });
 
   it("expired otp fails", async () => {

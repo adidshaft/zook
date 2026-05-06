@@ -64,7 +64,10 @@ export default async function MockCheckoutPage({
     : null;
 
   return (
-    <main className="grid min-h-screen place-items-center px-5 py-8">
+    <main className="grid min-h-screen place-items-center px-5 py-16">
+      <div className="fixed inset-x-0 top-0 z-20 border-b border-amber-300/30 bg-amber-300 px-4 py-3 text-center text-sm font-semibold text-black shadow-lg shadow-amber-950/20">
+        🧪 TEST MODE · No real payment. Click any outcome to simulate.
+      </div>
       <div className="absolute left-5 top-5">
         <ZookLogo />
       </div>

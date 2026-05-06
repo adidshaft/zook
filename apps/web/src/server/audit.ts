@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { redactPII } from "@zook/core";
 import { Prisma, prisma } from "@zook/db";
 import { currentRequestId } from "./request-state";
 
@@ -26,7 +27,7 @@ export async function writeAuditLog(input: {
       ...(input.request?.headers.get("user-agent")
         ? { userAgent: input.request.headers.get("user-agent") as string }
         : {}),
-      ...(input.metadata ? { metadata: input.metadata as Prisma.InputJsonValue } : {})
-    }
+      ...(input.metadata ? { metadata: redactPII(input.metadata) as Prisma.InputJsonValue } : {}),
+    },
   });
 }

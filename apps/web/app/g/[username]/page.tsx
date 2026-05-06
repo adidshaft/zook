@@ -1,16 +1,85 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { MapPin, QrCode, ShieldCheck, Smartphone } from "lucide-react";
+import { MapPin, QrCode, ShieldCheck, Smartphone, Star } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
+import { ShareButton } from "@/components/share-button";
 import { ZookLogo } from "@/components/zook-logo";
-import { formatInr } from "@/lib/format";
+import { formatInr, joinModeLabel } from "@/lib/format";
 import { getPublicGymProfileData } from "@/server/public-gym-read-models";
 
-export default async function GymPublicPage({ params }: { params: Promise<{ username: string }> }) {
+type GymPublicPageProps = { params: Promise<{ username: string }> };
+
+function priceSummary(plans: Array<{ pricePaise: number }>) {
+  if (!plans.length) {
+    return "Memberships not published yet";
+  }
+  const minPlanPrice = Math.min(...plans.map((plan) => plan.pricePaise));
+  return `Starting at ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/month`;
+}
+
+function trainerTags(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [];
+  }
+  const record = value as Record<string, unknown>;
+  const raw = [
+    ...(Array.isArray(record.specialties) ? record.specialties : []),
+    ...(Array.isArray(record.certifications) ? record.certifications : []),
+  ];
+  return raw.filter((item): item is string => typeof item === "string").slice(0, 4);
+}
+
+export async function generateMetadata({ params }: GymPublicPageProps): Promise<Metadata> {
+  const { username } = await params;
+  const data = await getPublicGymProfileData(username);
+  if (!data) {
+    return {
+      title: "Gym not found | Zook",
+      description: "Find gyms that use Zook for memberships, QR entry, and member workflows.",
+    };
+  }
+  return {
+    title: `${data.org.name} | Zook`,
+    description:
+      data.org.tagline ??
+      `Join ${data.org.name} in ${data.org.city}. ${priceSummary(data.plans)} on Zook.`,
+    alternates: { canonical: `/g/${data.org.username}` },
+    openGraph: {
+      title: `${data.org.name} on Zook`,
+      description: `${data.org.city}, ${data.org.state} · ${priceSummary(data.plans)}`,
+      type: "website",
+      images: data.org.coverImageUrl ? [{ url: data.org.coverImageUrl }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${data.org.name} on Zook`,
+      description: `${data.org.city}, ${data.org.state} · ${priceSummary(data.plans)}`,
+    },
+  };
+}
+
+export default async function GymPublicPage({ params }: GymPublicPageProps) {
   const { username } = await params;
   const data = await getPublicGymProfileData(username);
 
   if (!data) {
-    return <main className="p-8">Gym not found.</main>;
+    return (
+      <main className="grid min-h-dvh place-items-center px-5 py-8">
+        <GlassCard className="max-w-xl text-center">
+          <Pill tone="amber">Gym not found</Pill>
+          <h1 className="mt-5 text-3xl font-semibold text-white">Gym not found</h1>
+          <p className="mt-3 text-sm leading-6 text-white/55">
+            This link may be expired or the gym may have moved.
+          </p>
+          <Link
+            href="/gyms"
+            className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
+          >
+            Find gyms
+          </Link>
+        </GlassCard>
+      </main>
+    );
   }
   const { org, plans, trainers } = data;
   const minPlanPrice = Math.min(...plans.map((plan) => plan.pricePaise));
@@ -20,9 +89,38 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
     ? org.gallery
     : [org.coverImageUrl].filter((imageUrl): imageUrl is string => Boolean(imageUrl));
   const facilities = org.facilities.length ? org.facilities : org.amenities;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "HealthClub",
+    name: org.name,
+    url: `/g/${org.username}`,
+    image: org.coverImageUrl ?? org.logoUrl ?? undefined,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: org.address,
+      addressLocality: org.city,
+      addressRegion: org.state,
+      addressCountry: "IN",
+    },
+    openingHoursSpecification: org.openingHoursSummary
+      ? [{ "@type": "OpeningHoursSpecification", description: org.openingHoursSummary }]
+      : undefined,
+    makesOffer: plans.length
+      ? {
+          "@type": "AggregateOffer",
+          priceCurrency: "INR",
+          lowPrice: Math.round(minPlanPrice / 100),
+          offerCount: plans.length,
+        }
+      : undefined,
+  };
 
   return (
     <main className="min-h-dvh px-5 py-5">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="mx-auto grid max-w-7xl gap-5">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <ZookLogo />
@@ -42,6 +140,8 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
               <img
                 src={org.coverImageUrl}
                 alt={`${org.name} gym interior`}
+                loading="lazy"
+                decoding="async"
                 className="absolute inset-0 h-full w-full object-cover opacity-30"
               />
             ) : null}
@@ -52,11 +152,13 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                   <img
                     src={org.logoUrl}
                     alt={`${org.name} logo`}
+                    loading="lazy"
+                    decoding="async"
                     className="h-14 w-14 rounded-2xl border border-white/15 object-cover"
                   />
                 ) : null}
                 <div className="flex flex-wrap gap-2">
-                  <Pill tone="lime">{org.joinMode.replaceAll("_", " ")}</Pill>
+                  <Pill tone="lime">{joinModeLabel(org.joinMode)}</Pill>
                   {org.gymType ? <Pill tone="blue">{org.gymType}</Pill> : null}
                 </div>
               </div>
@@ -67,7 +169,7 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                 <MapPin size={18} /> {org.address} · {org.city}, {org.state}
               </p>
               <p className="mt-5 max-w-2xl text-base leading-7 text-white/62">
-              {org.tagline ||
+                {org.tagline ||
                   "Join this gym, choose a plan, check in with QR, follow assigned plans, and pick up desk orders through Zook."}
               </p>
               {org.openingHoursSummary ? (
@@ -92,18 +194,18 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
           <GlassCard variant="strong" className="h-fit">
             <p className="text-sm text-white/45">Membership preview</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">
-              {hasPublicPlans
-                ? `Plans from ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}`
-                : "Memberships not published yet"}
+              {hasPublicPlans ? priceSummary(plans) : "Memberships not published yet"}
             </h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
-              Choose a plan here, then continue in Zook for check-ins, workouts, notifications,
-              and desk pickup.
+              Choose a plan here, then continue in Zook for check-ins, workouts, notifications, and
+              desk pickup.
             </p>
             <div className="mt-5 rounded-[28px] border border-white/10 bg-white p-4">
               <img
                 src={`/qr/${org.username}?target=join`}
                 alt={`Join ${org.name} on Zook`}
+                loading="lazy"
+                decoding="async"
                 className="aspect-square w-full rounded-[18px]"
               />
             </div>
@@ -141,35 +243,42 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
         <section className="grid gap-4 lg:grid-cols-3">
           {plans.length ? (
             plans.map((plan) => (
-              <GlassCard key={plan.id}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <Pill tone={plan.id === "plan-hybrid-pro" ? "lime" : "neutral"}>
-                      {plan.type.replaceAll("_", " ")}
-                    </Pill>
-                    <h2 className="mt-4 text-2xl font-semibold text-white">{plan.name}</h2>
+              <Link
+                key={plan.id}
+                href={`/join/${org.username}?plan=${plan.id}`}
+                className="zook-focus block rounded-[28px] transition hover:-translate-y-0.5"
+              >
+                <GlassCard className="h-full transition hover:border-lime-300/25 hover:bg-white/[0.075]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <Pill tone={plan.id === "plan-hybrid-pro" ? "lime" : "neutral"}>
+                        {plan.type.replaceAll("_", " ")}
+                      </Pill>
+                      <h2 className="mt-4 text-2xl font-semibold text-white">{plan.name}</h2>
+                    </div>
+                    <p className="metric text-2xl font-semibold text-lime-200">
+                      {formatInr(plan.pricePaise)}
+                    </p>
                   </div>
-                  <p className="metric text-2xl font-semibold text-lime-200">
-                    {formatInr(plan.pricePaise)}
+                  <p className="mt-3 text-sm leading-6 text-white/52">{plan.description}</p>
+                  <p className="mt-4 text-sm text-white/45">
+                    {plan.durationDays
+                      ? `${plan.durationDays} days`
+                      : plan.type === "TRIAL"
+                        ? "Trial"
+                        : "Visit pack"}{" "}
+                    · {plan.visitLimit || "Unlimited"} {plan.visitLimit === 1 ? "visit" : "visits"}
                   </p>
-                </div>
-                <p className="mt-3 text-sm leading-6 text-white/52">{plan.description}</p>
-                <p className="mt-4 text-sm text-white/45">
-                {plan.durationDays
-                  ? `${plan.durationDays} days`
-                  : plan.type === "TRIAL"
-                    ? "Trial"
-                    : "Visit pack"} ·{" "}
-                {plan.visitLimit || "Unlimited"} {plan.visitLimit === 1 ? "visit" : "visits"}
-                </p>
-              </GlassCard>
+                </GlassCard>
+              </Link>
             ))
           ) : (
             <GlassCard className="lg:col-span-3">
               <Pill tone="amber">Plans unavailable</Pill>
               <h2 className="mt-4 text-2xl font-semibold text-white">No public plans yet</h2>
               <p className="mt-3 text-sm leading-6 text-white/55">
-                This gym can still use Zook internally, but public sign-up starts only after an owner publishes a membership plan.
+                This gym can still use Zook internally, but public sign-up starts only after an
+                owner publishes a membership plan.
               </p>
             </GlassCard>
           )}
@@ -221,6 +330,11 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                 <QrCode size={16} />
                 Download QR
               </a>
+              <ShareButton
+                title={`${org.name} on Zook`}
+                text={`Join ${org.name} in ${org.city} on Zook.`}
+                path={`/g/${org.username}`}
+              />
             </div>
           </GlassCard>
         </section>
@@ -232,6 +346,8 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                 key={imageUrl}
                 src={imageUrl}
                 alt={`${org.name} facility photo`}
+                loading="lazy"
+                decoding="async"
                 className="aspect-[4/3] rounded-[28px] border border-white/10 object-cover"
               />
             ))}
@@ -252,6 +368,8 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                       <img
                         src={trainer.profilePhotoUrl}
                         alt={`${trainer.name} profile photo`}
+                        loading="lazy"
+                        decoding="async"
                         className="h-11 w-11 rounded-2xl border border-white/10 object-cover"
                       />
                     ) : null}
@@ -260,6 +378,12 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
                       <p className="mt-1 text-sm text-white/45">
                         {trainer.bio ?? "Trainer details will appear after the gym publishes them."}
                       </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {trainerTags(trainer.specialties).map((tag) => (
+                          <Pill key={tag}>{tag}</Pill>
+                        ))}
+                        <Pill tone="blue">Available for PT</Pill>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -275,6 +399,18 @@ export default async function GymPublicPage({ params }: { params: Promise<{ user
             <p className="mt-3 text-sm leading-6 text-white/55">
               Have a referral or invite code? Apply it during payment so the gym can track the
               source and any eligible discount.
+            </p>
+          </GlassCard>
+        </section>
+        <section>
+          <GlassCard>
+            <div className="flex items-center gap-3">
+              <Star className="text-amber-100" size={22} />
+              <h2 className="text-2xl font-semibold text-white">Reviews</h2>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-white/55">
+              Member reviews will appear here after this gym starts collecting feedback through
+              Zook.
             </p>
           </GlassCard>
         </section>

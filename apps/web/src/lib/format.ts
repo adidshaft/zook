@@ -2,14 +2,14 @@ export function formatInr(paise: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(paise / 100);
 }
 
 export function formatCompactNumber(value: number): string {
   return new Intl.NumberFormat("en-IN", {
     notation: "compact",
-    maximumFractionDigits: value >= 100 ? 0 : 1
+    maximumFractionDigits: value >= 100 ? 0 : 1,
   }).format(value);
 }
 
@@ -29,7 +29,7 @@ export function formatDate(value: Date | string | null | undefined): string {
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
-    year: "numeric"
+    year: "numeric",
   }).format(date);
 }
 
@@ -43,7 +43,7 @@ export function formatDateTime(value: Date | string | null | undefined): string 
     month: "short",
     year: "numeric",
     hour: "numeric",
-    minute: "2-digit"
+    minute: "2-digit",
   }).format(date);
 }
 
@@ -55,6 +55,21 @@ export function formatEnumLabel(value: string | null | undefined): string {
     .replace(/[-_]+/g, " ")
     .toLowerCase()
     .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+export function joinModeLabel(
+  mode: "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY" | string | null | undefined,
+): string {
+  if (mode === "OPEN_JOIN") {
+    return "Anyone can join";
+  }
+  if (mode === "APPROVAL_REQUIRED") {
+    return "Approval required";
+  }
+  if (mode === "INVITE_ONLY") {
+    return "Invite only";
+  }
+  return formatEnumLabel(mode);
 }
 
 export function formatDaysRemaining(days: number): string {
@@ -70,8 +85,8 @@ export function titleFromSection(section?: string[]): string {
   }
   return section
     .map((part) => {
-      if (part === "ai") return "Plan drafts";
-      if (part === "audit") return "Activity history";
+      if (part === "ai") return "AI workout drafts";
+      if (part === "audit") return "Audit log";
       return formatEnumLabel(part);
     })
     .join(" / ");

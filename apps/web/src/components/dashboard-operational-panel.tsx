@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { formatBranchName } from "@zook/core";
 import { AttendanceApprovalsPanel } from "./attendance-approvals-panel";
 import { AttendanceQrPanel } from "./attendance-qr-panel";
 import {
@@ -314,7 +315,9 @@ export function DashboardOperationalPanel({
   const referralUsersById = new Map(
     (referralsState.data?.users ?? []).map((user) => [user.id, user]),
   );
-  const selectedBranchName = branchScope.selectedBranch?.name ?? "Default Branch missing";
+  const selectedBranchName = formatBranchName(
+    branchScope.selectedBranch ?? branchScope.branches[0],
+  );
 
   const planNamesById = new Map(membershipPlans.map((plan) => [plan.id, plan.name]));
   const staffUsersById = new Map(staffUsers.map((user) => [user.id, user]));
@@ -1333,7 +1336,20 @@ export function DashboardOperationalPanel({
                   ]}
                   rows={members}
                   rowKey={(row) => row.profile.id}
-                  empty="No member profiles are available for this organization yet."
+                  empty={
+                    <EmptyState
+                      title="No members yet"
+                      description="Create your first membership plan and share your join link to start accepting members."
+                      action={
+                        <Link
+                          href="/dashboard/membership-plans"
+                          className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
+                        >
+                          Create a plan
+                        </Link>
+                      }
+                    />
+                  }
                 />
               )}
             </div>
@@ -2619,7 +2635,12 @@ export function DashboardOperationalPanel({
                   ]}
                   rows={shopOrders}
                   rowKey={(order) => order.id}
-                  empty="No payment-linked shop orders are available."
+                  empty={
+                    <EmptyState
+                      title="No payments yet"
+                      description="Payments appear here when members buy memberships or shop pickups."
+                    />
+                  }
                 />
               )}
             </div>
@@ -2729,7 +2750,7 @@ export function DashboardOperationalPanel({
               columns={1}
               items={[
                 {
-                  label: "Activity history",
+                  label: "Audit log",
                   value: formatCompactNumber(auditLogCount),
                   meta: "Admin changes saved in Zook",
                 },
@@ -4004,7 +4025,7 @@ export function DashboardOperationalPanel({
                 columns={1}
                 items={[
                   {
-                    label: "Activity history",
+                    label: "Audit log",
                     value: formatCompactNumber(auditLogCount),
                     meta: "Admin action history",
                   },

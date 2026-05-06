@@ -1,5 +1,6 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import type { DiagnosticProvider, ProviderInstanceDiagnostics } from "../types";
+import { zookLogger } from "../logger";
 
 export interface OtpEmailInput {
   to: string;
@@ -80,7 +81,7 @@ function escapeHtml(value: string) {
 function formatDateTime(value: Date) {
   return new Intl.DateTimeFormat("en-IN", {
     dateStyle: "medium",
-    timeStyle: "short"
+    timeStyle: "short",
   }).format(value);
 }
 
@@ -95,7 +96,10 @@ function renderEmailShell(input: {
   footerNote: string;
 }) {
   const summaryHtml = input.summaryLines
-    .map((line) => `<p style="margin:0 0 10px;color:#c7d1dd;font-size:14px;line-height:1.6;">${escapeHtml(line)}</p>`)
+    .map(
+      (line) =>
+        `<p style="margin:0 0 10px;color:#c7d1dd;font-size:14px;line-height:1.6;">${escapeHtml(line)}</p>`,
+    )
     .join("");
 
   const actionHtml =
@@ -149,11 +153,12 @@ function buildOtpEmail(input: OtpEmailInput): EmailMessage {
       summaryLines: [
         `Purpose: ${input.purpose ?? "login"}`,
         `Expires: ${expiryLabel}`,
-        "If you did not request this sign-in, you can safely ignore this email."
+        "If you did not request this sign-in, you can safely ignore this email.",
       ],
       code: input.code,
-      footerNote: "Security note: Zook staff will never ask you for this OTP by call, chat, or WhatsApp."
-    })
+      footerNote:
+        "Security note: Zook staff will never ask you for this OTP by call, chat, or WhatsApp.",
+    }),
   };
 }
 
@@ -182,13 +187,14 @@ function buildNotificationEmail(input: NotificationEmailInput): EmailMessage {
       intro,
       summaryLines: [
         input.body,
-        ...(input.organizationName ? [`Organization: ${input.organizationName}`] : [])
+        ...(input.organizationName ? [`Organization: ${input.organizationName}`] : []),
       ],
       ...(input.actionLabel && input.actionUrl
         ? { actionLabel: input.actionLabel, actionUrl: input.actionUrl }
         : {}),
-      footerNote: "If this update looks unusual, sign in to Zook directly instead of following any forwarded links."
-    })
+      footerNote:
+        "If this update looks unusual, sign in to Zook directly instead of following any forwarded links.",
+    }),
   };
 }
 
@@ -206,11 +212,12 @@ function buildStaffInviteEmail(input: StaffInviteEmailInput): EmailMessage {
       summaryLines: [
         `Role: ${roleLabel}`,
         ...(input.expiresAt ? [`Invite expires: ${formatDateTime(input.expiresAt)}`] : []),
-        "Accept the invitation from a trusted link and finish sign-in with your OTP."
+        "Accept the invitation from a trusted link and finish sign-in with your OTP.",
       ],
       ...(input.inviteUrl ? { actionLabel: "Accept invite", actionUrl: input.inviteUrl } : {}),
-      footerNote: "Only continue if you were expecting this invitation from your gym owner or admin."
-    })
+      footerNote:
+        "Only continue if you were expecting this invitation from your gym owner or admin.",
+    }),
   };
 }
 
@@ -229,12 +236,13 @@ function buildGuardianConsentEmail(input: GuardianConsentEmailInput): EmailMessa
         ...(input.guardianName ? [`Guardian: ${input.guardianName}`] : []),
         ...codeLine,
         ...(input.expiresAt ? [`Expires: ${formatDateTime(input.expiresAt)}`] : []),
-        "Without guardian consent, membership activation, attendance, and personalized AI features stay blocked."
+        "Without guardian consent, membership activation, attendance, and personalized AI features stay blocked.",
       ],
       ...(input.consentUrl ? { actionLabel: "Review consent", actionUrl: input.consentUrl } : {}),
       ...(input.code ? { code: input.code } : {}),
-      footerNote: "If you were not expecting this request, contact the gym directly before sharing any OTP."
-    })
+      footerNote:
+        "If you were not expecting this request, contact the gym directly before sharing any OTP.",
+    }),
   };
 }
 
@@ -248,8 +256,8 @@ export class MockEmailProvider implements EmailProvider {
       configured: true,
       metadata: {
         delivery: "in-memory",
-        sentCount: this.sent.length
-      }
+        sentCount: this.sent.length,
+      },
     };
   }
 
@@ -260,10 +268,14 @@ export class MockEmailProvider implements EmailProvider {
       email: input.to,
       template: message.template,
       subject: message.subject,
-      code: input.code
+      code: input.code,
     });
     if (process.env.NODE_ENV !== "production" || process.env.ALLOW_MOCK_EMAIL_OTP_LOGS === "true") {
-      console.info(`[Zook mock email] OTP for ${input.to}: ${input.code}`);
+      zookLogger.info("zook.mock_email.otp_sent", {
+        to: input.to,
+        purpose: input.purpose ?? "login",
+        code: input.code,
+      });
     }
   }
 
@@ -274,7 +286,7 @@ export class MockEmailProvider implements EmailProvider {
       email: input.to,
       template: message.template,
       subject: message.subject,
-      previewText: message.previewText
+      previewText: message.previewText,
     });
   }
 
@@ -285,7 +297,7 @@ export class MockEmailProvider implements EmailProvider {
       email: input.to,
       template: message.template,
       subject: message.subject,
-      previewText: message.previewText
+      previewText: message.previewText,
     });
   }
 
@@ -296,7 +308,7 @@ export class MockEmailProvider implements EmailProvider {
       email: input.to,
       template: message.template,
       subject: message.subject,
-      previewText: message.previewText
+      previewText: message.previewText,
     });
   }
 }
@@ -341,8 +353,8 @@ export class SMTPEmailProvider extends BaseTransactionalEmailProvider {
       secure: input.port === 465,
       auth: {
         user: input.user,
-        pass: input.pass
-      }
+        pass: input.pass,
+      },
     });
     this.host = input.host;
     this.port = input.port;
@@ -359,8 +371,8 @@ export class SMTPEmailProvider extends BaseTransactionalEmailProvider {
       metadata: {
         host: this.host,
         port: this.port,
-        fromEmail: this.fromEmail
-      }
+        fromEmail: this.fromEmail,
+      },
     };
   }
 
@@ -370,13 +382,16 @@ export class SMTPEmailProvider extends BaseTransactionalEmailProvider {
       to: input.to,
       subject: input.message.subject,
       text: input.message.text,
-      html: input.message.html
+      html: input.message.html,
     });
   }
 }
 
 export class ResendEmailProvider extends BaseTransactionalEmailProvider {
-  constructor(private readonly apiKey: string, fromEmail = "Zook <noreply@zook.app>") {
+  constructor(
+    private readonly apiKey: string,
+    fromEmail = "Zook <noreply@zook.app>",
+  ) {
     super(fromEmail);
   }
 
@@ -386,8 +401,8 @@ export class ResendEmailProvider extends BaseTransactionalEmailProvider {
       mode: "live",
       configured: Boolean(this.apiKey),
       metadata: {
-        fromEmail: this.fromEmail
-      }
+        fromEmail: this.fromEmail,
+      },
     };
   }
 
@@ -396,15 +411,15 @@ export class ResendEmailProvider extends BaseTransactionalEmailProvider {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         from: this.fromEmail,
         to: input.to,
         subject: input.message.subject,
         text: input.message.text,
-        html: input.message.html
-      })
+        html: input.message.html,
+      }),
     });
     if (!response.ok) {
       throw new Error(`Resend request failed with status ${response.status}`);

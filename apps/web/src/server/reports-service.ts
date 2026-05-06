@@ -2,7 +2,9 @@ import type { Permission, RequestContext } from "@zook/core";
 import { prisma } from "@zook/db";
 
 export type OrgReportType =
+  | "members"
   | "attendance"
+  | "payments"
   | "revenue"
   | "manual-cash"
   | "expiring-members"
@@ -74,7 +76,7 @@ export function renderCsv(input: {
   const headers = Array.from(new Set(input.rows.flatMap((row) => Object.keys(row))));
   const lines = [
     `# report=${input.report},generatedBy=${input.generatedBy},generatedAt=${generatedAt.toISOString()}`,
-    headers.join(",")
+    headers.join(","),
   ];
 
   for (const row of input.rows) {
@@ -86,14 +88,24 @@ export function renderCsv(input: {
 
 export function parseReportFilters(searchParams: URLSearchParams): ReportFilters {
   return {
-    ...(parseDate(searchParams.get("from")) ? { from: startOfDay(parseDate(searchParams.get("from")) as Date) } : {}),
-    ...(parseDate(searchParams.get("to")) ? { to: endOfDay(parseDate(searchParams.get("to")) as Date) } : {}),
+    ...(parseDate(searchParams.get("from"))
+      ? { from: startOfDay(parseDate(searchParams.get("from")) as Date) }
+      : {}),
+    ...(parseDate(searchParams.get("to"))
+      ? { to: endOfDay(parseDate(searchParams.get("to")) as Date) }
+      : {}),
     ...(searchParams.get("planId") ? { planId: searchParams.get("planId") as string } : {}),
-    ...(searchParams.get("trainerId") ? { trainerId: searchParams.get("trainerId") as string } : {}),
-    ...(searchParams.get("memberStatus") ? { memberStatus: searchParams.get("memberStatus") as string } : {}),
-    ...(searchParams.get("paymentMode") ? { paymentMode: searchParams.get("paymentMode") as string } : {}),
+    ...(searchParams.get("trainerId")
+      ? { trainerId: searchParams.get("trainerId") as string }
+      : {}),
+    ...(searchParams.get("memberStatus")
+      ? { memberStatus: searchParams.get("memberStatus") as string }
+      : {}),
+    ...(searchParams.get("paymentMode")
+      ? { paymentMode: searchParams.get("paymentMode") as string }
+      : {}),
     ...(searchParams.get("branchId") ? { branchId: searchParams.get("branchId") as string } : {}),
-    ...(searchParams.get("format") ? { exportFormat: searchParams.get("format") as string } : {})
+    ...(searchParams.get("format") ? { exportFormat: searchParams.get("format") as string } : {}),
   };
 }
 
@@ -101,7 +113,7 @@ function between(from?: Date, to?: Date) {
   return from || to
     ? {
         ...(from ? { gte: from } : {}),
-        ...(to ? { lte: to } : {})
+        ...(to ? { lte: to } : {}),
       }
     : undefined;
 }
@@ -126,12 +138,65 @@ export function canExportOrgReport(input: {
     return hasPermission(input.ctx, "MEMBERS_VIEW") || hasPermission(input.ctx, "ORG_VIEW_REPORTS");
   }
   if (input.report === "ai-usage") {
-    return hasPermission(input.ctx, "AI_MANAGE_SETTINGS") || hasPermission(input.ctx, "ORG_VIEW_REPORTS");
+    return (
+      hasPermission(input.ctx, "AI_MANAGE_SETTINGS") || hasPermission(input.ctx, "ORG_VIEW_REPORTS")
+    );
   }
   return hasPermission(input.ctx, "ORG_VIEW_REPORTS");
 }
 
 export class ReportsService {
+  async membersReport(orgId: string, filters: ReportFilters) {
+    const createdAt = between(filters.from, filters.to);
+    const profiles = await prisma.memberProfile.findMany({
+      where: {
+        orgId,
+        ...(createdAt ? { createdAt } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: 1_000,
+    });
+    const memberUserIds = profiles.map((profile) => profile.userId);
+    const [users, subscriptions] = await Promise.all([
+      prisma.user.findMany({ where: { id: { in: memberUserIds } } }),
+      prisma.memberSubscription.findMany({
+        where: {
+          orgId,
+          memberUserId: { in: memberUserIds },
+          ...(filters.memberStatus ? { status: filters.memberStatus as never } : {}),
+          ...(filters.planId ? { planId: filters.planId } : {}),
+          ...(filters.branchId ? { branchId: filters.branchId } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+    const usersById = new Map(users.map((user) => [user.id, user]));
+    const subscriptionsByUserId = new Map(
+      subscriptions.map((subscription) => [subscription.memberUserId, subscription]),
+    );
+
+    return profiles
+      .map((profile) => {
+        const subscription = subscriptionsByUserId.get(profile.userId) ?? null;
+        if ((filters.memberStatus || filters.planId || filters.branchId) && !subscription) {
+          return null;
+        }
+        const user = usersById.get(profile.userId);
+        return {
+          memberId: profile.userId,
+          memberName: user?.name ?? "",
+          memberEmail: user?.email ?? "",
+          memberPhone: user?.phone ?? "",
+          membershipStatus: subscription?.status ?? "",
+          planId: subscription?.planId ?? "",
+          branchId: subscription?.branchId ?? "",
+          joinedAt: formatDate(profile.createdAt),
+          membershipEndsAt: formatDate(subscription?.endsAt),
+        };
+      })
+      .filter(Boolean) as Array<Record<string, unknown>>;
+  }
+
   async attendanceReport(orgId: string, filters: ReportFilters) {
     const checkedInAt = between(filters.from, filters.to);
     const records = await prisma.attendanceRecord.findMany({
@@ -139,12 +204,14 @@ export class ReportsService {
         orgId,
         ...(checkedInAt ? { checkedInAt } : {}),
         ...(filters.branchId ? { branchId: filters.branchId } : {}),
-        ...(filters.memberStatus ? { status: filters.memberStatus as never } : {})
+        ...(filters.memberStatus ? { status: filters.memberStatus as never } : {}),
       },
       orderBy: { checkedInAt: "desc" },
-      take: 500
+      take: 500,
     });
-    const users = await prisma.user.findMany({ where: { id: { in: records.map((record) => record.userId) } } });
+    const users = await prisma.user.findMany({
+      where: { id: { in: records.map((record) => record.userId) } },
+    });
     const usersById = new Map(users.map((user) => [user.id, user]));
 
     return records.map((record) => ({
@@ -157,7 +224,7 @@ export class ReportsService {
       checkedInAt: formatDate(record.checkedInAt),
       approvedAt: formatDate(record.approvedAt),
       rejectionReason: record.rejectionReason ?? "",
-      suspiciousFlags: record.suspiciousFlags ?? ""
+      suspiciousFlags: record.suspiciousFlags ?? "",
     }));
   }
 
@@ -168,12 +235,14 @@ export class ReportsService {
         orgId,
         status: { in: ["SUCCEEDED", "REFUNDED", "PARTIALLY_REFUNDED"] },
         ...(createdAt ? { createdAt } : {}),
-        ...(filters.paymentMode ? { mode: filters.paymentMode as never } : {})
+        ...(filters.paymentMode ? { mode: filters.paymentMode as never } : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: 500
+      take: 500,
     });
-    const users = await prisma.user.findMany({ where: { id: { in: payments.map((payment) => payment.userId).filter(Boolean) as string[] } } });
+    const users = await prisma.user.findMany({
+      where: { id: { in: payments.map((payment) => payment.userId).filter(Boolean) as string[] } },
+    });
     const usersById = new Map(users.map((user) => [user.id, user]));
 
     return payments.map((payment) => ({
@@ -182,10 +251,44 @@ export class ReportsService {
       status: payment.status,
       mode: payment.mode,
       amountPaise: payment.amountPaise,
-      memberName: payment.userId ? usersById.get(payment.userId)?.name ?? "" : "",
+      memberName: payment.userId ? (usersById.get(payment.userId)?.name ?? "") : "",
       receiptNumber: payment.receiptNumber ?? "",
       provider: payment.provider ?? "",
-      createdAt: formatDate(payment.createdAt)
+      createdAt: formatDate(payment.createdAt),
+    }));
+  }
+
+  async paymentsReport(orgId: string, filters: ReportFilters) {
+    const createdAt = between(filters.from, filters.to);
+    const payments = await prisma.payment.findMany({
+      where: {
+        orgId,
+        ...(createdAt ? { createdAt } : {}),
+        ...(filters.paymentMode ? { mode: filters.paymentMode as never } : {}),
+      },
+      orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
+      take: 1_000,
+    });
+    const users = await prisma.user.findMany({
+      where: { id: { in: payments.map((payment) => payment.userId).filter(Boolean) as string[] } },
+    });
+    const usersById = new Map(users.map((user) => [user.id, user]));
+
+    return payments.map((payment) => ({
+      paymentId: payment.id,
+      sessionId: payment.sessionId ?? "",
+      purpose: payment.purpose,
+      status: payment.status,
+      mode: payment.mode,
+      amountPaise: payment.amountPaise,
+      memberId: payment.userId ?? "",
+      memberName: payment.userId ? (usersById.get(payment.userId)?.name ?? "") : "",
+      provider: payment.provider ?? "",
+      providerRef: payment.providerRef ?? "",
+      receiptNumber: payment.receiptNumber ?? "",
+      recordedById: payment.recordedById ?? "",
+      recordedAt: formatDate(payment.recordedAt),
+      createdAt: formatDate(payment.createdAt),
     }));
   }
 
@@ -196,10 +299,10 @@ export class ReportsService {
         orgId,
         status: "SUCCEEDED",
         mode: { in: ["CASH", "DIRECT_UPI", "BANK_TRANSFER", "OTHER"] },
-        ...(recordedAt ? { recordedAt } : {})
+        ...(recordedAt ? { recordedAt } : {}),
       },
       orderBy: { recordedAt: "desc" },
-      take: 500
+      take: 500,
     });
 
     return payments.map((payment) => ({
@@ -209,7 +312,7 @@ export class ReportsService {
       recordedById: payment.recordedById ?? "",
       recordedAt: formatDate(payment.recordedAt),
       proofAssetId: payment.proofAssetId ?? "",
-      metadata: payment.metadata ?? ""
+      metadata: payment.metadata ?? "",
     }));
   }
 
@@ -220,16 +323,16 @@ export class ReportsService {
         status: "ACTIVE",
         endsAt: between(filters.from, filters.to) ?? { not: null },
         ...(filters.planId ? { planId: filters.planId } : {}),
-        ...(filters.branchId ? { branchId: filters.branchId } : {})
+        ...(filters.branchId ? { branchId: filters.branchId } : {}),
       },
       orderBy: { endsAt: "asc" },
-      take: 500
+      take: 500,
     });
     const users = await prisma.user.findMany({
-      where: { id: { in: subscriptions.map((subscription) => subscription.memberUserId) } }
+      where: { id: { in: subscriptions.map((subscription) => subscription.memberUserId) } },
     });
     const plans = await prisma.membershipPlan.findMany({
-      where: { id: { in: subscriptions.map((subscription) => subscription.planId) } }
+      where: { id: { in: subscriptions.map((subscription) => subscription.planId) } },
     });
     const usersById = new Map(users.map((user) => [user.id, user]));
     const plansById = new Map(plans.map((plan) => [plan.id, plan]));
@@ -241,7 +344,7 @@ export class ReportsService {
       planName: plansById.get(subscription.planId)?.name ?? "",
       endsAt: formatDate(subscription.endsAt),
       remainingVisits: subscription.remainingVisits ?? "",
-      status: subscription.status
+      status: subscription.status,
     }));
   }
 
@@ -252,16 +355,22 @@ export class ReportsService {
         orgId,
         ...(createdAt ? { createdAt } : {}),
         ...(filters.planId ? { planId: filters.planId } : {}),
-        ...(filters.branchId ? { branchId: filters.branchId } : {})
+        ...(filters.branchId ? { branchId: filters.branchId } : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: 500
+      take: 500,
     });
     const plans = await prisma.membershipPlan.findMany({
-      where: { id: { in: subscriptions.map((subscription) => subscription.planId) } }
+      where: { id: { in: subscriptions.map((subscription) => subscription.planId) } },
     });
     const payments = await prisma.payment.findMany({
-      where: { id: { in: subscriptions.map((subscription) => subscription.paymentId).filter(Boolean) as string[] } }
+      where: {
+        id: {
+          in: subscriptions
+            .map((subscription) => subscription.paymentId)
+            .filter(Boolean) as string[],
+        },
+      },
     });
     const plansById = new Map(plans.map((plan) => [plan.id, plan]));
     const paymentsById = new Map(payments.map((payment) => [payment.id, payment]));
@@ -275,7 +384,7 @@ export class ReportsService {
         amountPaise: payment?.amountPaise ?? "",
         paymentMode: payment?.mode ?? "",
         activatedAt: formatDate(subscription.startsAt),
-        createdAt: formatDate(subscription.createdAt)
+        createdAt: formatDate(subscription.createdAt),
       };
     });
   }
@@ -285,20 +394,23 @@ export class ReportsService {
     const redemptions = await prisma.referralRedemption.findMany({
       where: {
         orgId,
-        ...(createdAt ? { createdAt } : {})
+        ...(createdAt ? { createdAt } : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: 500
+      take: 500,
     });
     const codes = await prisma.referralCode.findMany({
-      where: { id: { in: redemptions.map((redemption) => redemption.referralCodeId) } }
+      where: { id: { in: redemptions.map((redemption) => redemption.referralCodeId) } },
     });
     const users = await prisma.user.findMany({
       where: {
         id: {
-          in: [...redemptions.map((redemption) => redemption.referredUserId), ...codes.map((code) => code.referrerUserId)]
-        }
-      }
+          in: [
+            ...redemptions.map((redemption) => redemption.referredUserId),
+            ...codes.map((code) => code.referrerUserId),
+          ],
+        },
+      },
     });
     const codesById = new Map(codes.map((code) => [code.id, code]));
     const usersById = new Map(users.map((user) => [user.id, user]));
@@ -308,10 +420,10 @@ export class ReportsService {
       return {
         redemptionId: redemption.id,
         code: code?.code ?? "",
-        referrerName: code ? usersById.get(code.referrerUserId)?.name ?? "" : "",
+        referrerName: code ? (usersById.get(code.referrerUserId)?.name ?? "") : "",
         referredName: usersById.get(redemption.referredUserId)?.name ?? "",
         suspicious: redemption.suspicious,
-        createdAt: formatDate(redemption.createdAt)
+        createdAt: formatDate(redemption.createdAt),
       };
     });
   }
@@ -321,12 +433,14 @@ export class ReportsService {
     const orders = await prisma.shopOrder.findMany({
       where: {
         orgId,
-        ...(createdAt ? { createdAt } : {})
+        ...(createdAt ? { createdAt } : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: 500
+      take: 500,
     });
-    const items = await prisma.shopOrderItem.findMany({ where: { orderId: { in: orders.map((order) => order.id) } } });
+    const items = await prisma.shopOrderItem.findMany({
+      where: { orderId: { in: orders.map((order) => order.id) } },
+    });
 
     return orders.map((order) => ({
       orderId: order.id,
@@ -335,7 +449,7 @@ export class ReportsService {
       pickupCode: order.pickupCode ?? "",
       itemCount: items.filter((item) => item.orderId === order.id).length,
       createdAt: formatDate(order.createdAt),
-      fulfilledAt: formatDate(order.fulfilledAt)
+      fulfilledAt: formatDate(order.fulfilledAt),
     }));
   }
 
@@ -345,12 +459,14 @@ export class ReportsService {
       where: {
         orgId,
         ...(createdAt ? { createdAt } : {}),
-        ...(filters.trainerId ? { userId: filters.trainerId } : {})
+        ...(filters.trainerId ? { userId: filters.trainerId } : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: 500
+      take: 500,
     });
-    const users = await prisma.user.findMany({ where: { id: { in: usage.map((entry) => entry.userId) } } });
+    const users = await prisma.user.findMany({
+      where: { id: { in: usage.map((entry) => entry.userId) } },
+    });
     const usersById = new Map(users.map((user) => [user.id, user]));
 
     return usage.map((entry) => ({
@@ -363,7 +479,7 @@ export class ReportsService {
       tokenEstimate: entry.tokenEstimate,
       quotaConsumed: entry.quotaConsumed,
       imageCount: entry.imageCount,
-      createdAt: formatDate(entry.createdAt)
+      createdAt: formatDate(entry.createdAt),
     }));
   }
 
@@ -371,20 +487,22 @@ export class ReportsService {
     const assignments = await prisma.trainerAssignment.findMany({
       where: { orgId, trainerUserId: trainerId, active: true },
       orderBy: { createdAt: "desc" },
-      take: 500
+      take: 500,
     });
     const users = await prisma.user.findMany({
-      where: { id: { in: assignments.map((assignment) => assignment.memberUserId) } }
+      where: { id: { in: assignments.map((assignment) => assignment.memberUserId) } },
     });
     const subscriptions = await prisma.memberSubscription.findMany({
       where: {
         orgId,
         memberUserId: { in: assignments.map((assignment) => assignment.memberUserId) },
-        ...(filters.memberStatus ? { status: filters.memberStatus as never } : {})
-      }
+        ...(filters.memberStatus ? { status: filters.memberStatus as never } : {}),
+      },
     });
     const usersById = new Map(users.map((user) => [user.id, user]));
-    const subscriptionsByUser = new Map(subscriptions.map((subscription) => [subscription.memberUserId, subscription]));
+    const subscriptionsByUser = new Map(
+      subscriptions.map((subscription) => [subscription.memberUserId, subscription]),
+    );
 
     return assignments.map((assignment) => {
       const subscription = subscriptionsByUser.get(assignment.memberUserId);
@@ -394,7 +512,7 @@ export class ReportsService {
         memberName: usersById.get(assignment.memberUserId)?.name ?? "",
         membershipStatus: subscription?.status ?? "",
         endsAt: formatDate(subscription?.endsAt),
-        assignedAt: formatDate(assignment.createdAt)
+        assignedAt: formatDate(assignment.createdAt),
       };
     });
   }
@@ -404,10 +522,10 @@ export class ReportsService {
     const logs = await prisma.auditLog.findMany({
       where: {
         orgId,
-        ...(createdAt ? { createdAt } : {})
+        ...(createdAt ? { createdAt } : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: 500
+      take: 500,
     });
 
     return logs.map((log) => ({
@@ -417,7 +535,7 @@ export class ReportsService {
       entityId: log.entityId ?? "",
       actorUserId: log.actorUserId ?? "",
       requestId: log.requestId ?? "",
-      createdAt: formatDate(log.createdAt)
+      createdAt: formatDate(log.createdAt),
     }));
   }
 }

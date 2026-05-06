@@ -17,6 +17,7 @@ import {
   Store,
   Users,
 } from "lucide-react";
+import { formatBranchName, joinModeLabel } from "@zook/core";
 import {
   EmptyState,
   MetricCard,
@@ -67,7 +68,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     label: "Communication",
     items: [
       { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
-      { label: "Plan drafts", href: "/dashboard/ai", icon: Brain },
+      { label: "AI workout drafts", href: "/dashboard/ai", icon: Brain },
     ],
   },
   {
@@ -75,7 +76,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { label: "Gym profile", href: "/dashboard/public-profile", icon: Globe2 },
       {
-        label: "Activity history",
+        label: "Audit log",
         href: "/dashboard/audit",
         icon: History,
         shortLabel: "Activity",
@@ -287,7 +288,7 @@ export function DashboardShell({
   const runtimeLabel = data.connected
     ? "Live workspace"
     : data.fallbackMode === "demo"
-      ? "Sample view"
+      ? "Demo data — not connected to live database"
       : "Data unavailable";
 
   if (!activeOrg) {
@@ -369,13 +370,9 @@ export function DashboardShell({
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <StatusPill value={formatEnumLabel(activeOrg.status)} />
-                <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />
+                <StatusPill value={joinModeLabel(activeOrg.joinMode)} tone="blue" />
                 <StatusPill
-                  value={
-                    selectedBranch?.isDefault
-                      ? "Default Branch"
-                      : (selectedBranch?.name ?? "Default Branch missing")
-                  }
+                  value={formatBranchName(selectedBranch)}
                   tone={selectedBranch ? "lime" : "amber"}
                 />
               </div>
@@ -441,8 +438,8 @@ export function DashboardShell({
                 items={[
                   {
                     label: "Branch scope",
-                    value: selectedBranch?.name ?? "Default Branch missing",
-                    meta: "MVP mobile flows use the active/default branch",
+                    value: formatBranchName(selectedBranch),
+                    meta: "MVP mobile flows use the active branch",
                   },
                   {
                     label: "Attendance mode",
@@ -503,13 +500,9 @@ export function DashboardShell({
                 <div className="flex flex-wrap items-center gap-2">
                   <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
                   <StatusPill value={formatEnumLabel(activeOrg.status)} />
-                  <StatusPill value={formatEnumLabel(activeOrg.joinMode)} tone="blue" />
+                  <StatusPill value={joinModeLabel(activeOrg.joinMode)} tone="blue" />
                   <StatusPill
-                    value={
-                      selectedBranch?.isDefault
-                        ? "Default Branch"
-                        : (selectedBranch?.name ?? "Default Branch missing")
-                    }
+                    value={formatBranchName(selectedBranch)}
                     tone={selectedBranch ? "lime" : "amber"}
                   />
                 </div>
@@ -603,12 +596,12 @@ export function DashboardShell({
                     },
                     {
                       label: "Branch scope",
-                      value: selectedBranch?.name ?? "Default Branch missing",
-                      meta: "Branch-ready data, default-branch-centered MVP",
+                      value: formatBranchName(selectedBranch),
+                      meta: "Branch-ready data scoped to the active branch",
                     },
                     {
                       label: "Join mode",
-                      value: formatEnumLabel(activeOrg.joinMode),
+                      value: joinModeLabel(activeOrg.joinMode),
                       meta: `${data.summary.joinRequests} inbound requests`,
                     },
                     {

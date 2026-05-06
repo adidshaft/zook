@@ -442,6 +442,8 @@ model OtpChallenge {
   attempts    Int       @default(0)
   maxAttempts Int       @default(5)
   resendCount Int       @default(0)
+  ipFailureCount Int     @default(0)
+  lockedUntil DateTime?
   ipAddress   String?
   consumedAt  DateTime?
   expiresAt   DateTime
@@ -450,7 +452,23 @@ model OtpChallenge {
   @@index([email, purpose])
   @@index([identifier, purpose])
   @@index([phone, purpose])
+  @@index([ipAddress, purpose])
+  @@index([lockedUntil])
   @@index([expiresAt])
+}
+
+model RequestIdempotency {
+  id          String   @id @default(cuid())
+  userId      String?
+  operation   String
+  requestHash String
+  resultHash  String
+  status      Int
+  body        Json
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, operation, requestHash])
+  @@index([createdAt])
 }
 
 model FileAsset {

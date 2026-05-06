@@ -322,7 +322,7 @@ export async function getOrganizationDashboardData(
         value: String(todayAttendance),
         delta: branchScope.selectedBranch
           ? `${branchScope.selectedBranch.name} QR scans`
-          : "Default Branch missing",
+          : "Main branch unavailable",
       },
       {
         label: "Active members",

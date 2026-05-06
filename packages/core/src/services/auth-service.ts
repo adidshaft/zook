@@ -15,6 +15,8 @@ export interface OtpChallengeRecord {
   attempts: number;
   maxAttempts: number;
   resendCount: number;
+  ipFailureCount?: number;
+  lockedUntil?: Date;
   ipAddress?: string;
   consumedAt?: Date;
   expiresAt: Date;
@@ -26,7 +28,7 @@ export interface AuthRepository {
     input: Omit<OtpChallengeRecord, "id" | "attempts" | "resendCount">,
   ): Promise<OtpChallengeRecord>;
   findLatestOtp(identifier: string, purpose?: string): Promise<OtpChallengeRecord | undefined>;
-  incrementOtpAttempt(id: string): Promise<void>;
+  recordOtpFailure(input: { id: string; failureCount: number; lockedUntil?: Date }): Promise<void>;
   refreshOtp(input: {
     id: string;
     codeHash: string;
@@ -82,6 +84,31 @@ export class AuthService {
       throw new Error("SMS provider is not configured.");
     }
     await this.smsProvider.sendOtp({ phone: identifier.value, code, expiresAt });
+  }
+
+  private lockUntilForFailureCount(failureCount: number) {
+    if (failureCount >= 5) {
+      return new Date(this.now().getTime() + 24 * 60 * 60 * 1000);
+    }
+    if (failureCount >= 4) {
+      return new Date(this.now().getTime() + 15 * 60 * 1000);
+    }
+    if (failureCount >= 3) {
+      return new Date(this.now().getTime() + 5 * 60 * 1000);
+    }
+    return undefined;
+  }
+
+  private async sendSuspiciousActivityNotice(identifier: LoginIdentifier) {
+    if (identifier.kind !== "email") {
+      return;
+    }
+    await this.emailProvider.sendNotificationEmail({
+      to: identifier.value,
+      title: "Suspicious sign-in activity blocked",
+      body: "We blocked additional OTP attempts for your Zook account for 24 hours after repeated failed verification attempts. If this was not you, no action is needed.",
+      variant: "generic",
+    });
   }
 
   async requestOtp(
@@ -142,6 +169,9 @@ export class AuthService {
     if (challenge.consumedAt) {
       throw new Error("OTP already consumed");
     }
+    if (challenge.lockedUntil && challenge.lockedUntil > this.now()) {
+      throw new Error("OTP temporarily locked. Try again later.");
+    }
     if (challenge.expiresAt <= this.now()) {
       throw new Error("OTP expired");
     }
@@ -151,7 +181,16 @@ export class AuthService {
     const devCodeAllowed = getAllowedFixedOtp() === input.code;
     const matches = challenge.codeHash === AuthService.hash(input.code) || devCodeAllowed;
     if (!matches) {
-      await this.repo.incrementOtpAttempt(challenge.id);
+      const failureCount = challenge.attempts + 1;
+      const lockedUntil = this.lockUntilForFailureCount(failureCount);
+      await this.repo.recordOtpFailure({
+        id: challenge.id,
+        failureCount,
+        ...(lockedUntil ? { lockedUntil } : {}),
+      });
+      if (failureCount >= 5) {
+        await this.sendSuspiciousActivityNotice(identifier);
+      }
       throw new Error("Invalid OTP");
     }
     await this.repo.consumeOtp(challenge.id);

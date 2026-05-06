@@ -76,7 +76,7 @@ export default async function PlatformPage() {
   const runtimeLabel = data.connected
     ? "System online"
     : data.fallbackMode === "demo"
-      ? "Sample view"
+      ? "Demo data — production data unavailable"
       : "Data unavailable";
 
   return (
@@ -86,17 +86,18 @@ export default async function PlatformPage() {
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <Pill tone={data.connected ? "lime" : "amber"}>
-                  {runtimeLabel}
-                </Pill>
+                <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
                 <Pill tone="amber">Platform team</Pill>
               </div>
               <div className="mt-4 flex items-center gap-3">
                 <ShieldAlert className="text-amber-100" />
                 <div>
-                  <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Platform overview</h1>
+                  <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
+                    Platform overview
+                  </h1>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
-                    Service status, gym accounts, assistant activity, and safety reviews in one place.
+                    Service status, gym accounts, assistant activity, and safety reviews in one
+                    place.
                   </p>
                 </div>
               </div>
@@ -108,12 +109,14 @@ export default async function PlatformPage() {
         </GlassCard>
 
         <nav className="flex gap-2 overflow-x-auto rounded-[28px] border border-white/10 bg-white/5 p-3">
-          {([
-            ["Status", "#readiness"],
-            ["Gyms", "#organizations"],
-            ["Assistant", "#ai-traffic"],
-            ["Safety", "#abuse-flags"],
-          ] as Array<[string, string]>).map(([item, href], index) => (
+          {(
+            [
+              ["Status", "#readiness"],
+              ["Gyms", "#organizations"],
+              ["Assistant", "#ai-traffic"],
+              ["Safety", "#abuse-flags"],
+            ] as Array<[string, string]>
+          ).map(([item, href], index) => (
             <Link
               key={item}
               href={href}
@@ -132,7 +135,11 @@ export default async function PlatformPage() {
               value={metric.value}
               delta={metric.delta}
               tone={metricTone(metric.label)}
-              icon={metric.label === "Organizations" ? <ShieldAlert size={18} className="text-amber-100" /> : undefined}
+              icon={
+                metric.label === "Organizations" ? (
+                  <ShieldAlert size={18} className="text-amber-100" />
+                ) : undefined
+              }
             />
           ))}
         </div>

@@ -16,9 +16,7 @@ type CheckoutSessionSummary = {
 
 export function CheckoutPanel({ session }: { session: CheckoutSessionSummary | null }) {
   const [status, setStatus] = useState(session?.status ?? "MISSING");
-  const [message, setMessage] = useState(
-    "Confirm payment to continue.",
-  );
+  const [message, setMessage] = useState("Choose an outcome to simulate this payment session.");
 
   async function complete(nextStatus: "SUCCEEDED" | "FAILED" | "PENDING") {
     if (!session) return;
@@ -53,6 +51,9 @@ export function CheckoutPanel({ session }: { session: CheckoutSessionSummary | n
 
   return (
     <div className="glass-panel w-full max-w-xl rounded-[28px] p-8">
+      <div className="sticky top-4 z-10 mb-5 rounded-2xl border border-amber-300/30 bg-amber-300/15 px-4 py-3 text-sm font-semibold text-amber-50 shadow-[var(--zook-shadow-glass)]">
+        TEST MODE · No real payment. Click any outcome to simulate.
+      </div>
       <div className="mb-5 flex items-center justify-between">
         <div>
           <p className="text-sm text-white/45">Payment confirmation</p>
@@ -83,23 +84,31 @@ export function CheckoutPanel({ session }: { session: CheckoutSessionSummary | n
           className="zook-focus rounded-2xl bg-lime-300 px-4 py-3 font-semibold text-black"
         >
           <CheckCircle2 className="mx-auto mb-2" />
-          Success
+          Simulate Success
         </button>
         <button
           onClick={() => complete("PENDING")}
           className="zook-focus rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-amber-100"
         >
           <Clock className="mx-auto mb-2" />
-          Pending
+          Simulate Pending
         </button>
         <button
           onClick={() => complete("FAILED")}
           className="zook-focus rounded-2xl border border-red-300/30 bg-red-300/10 px-4 py-3 text-red-100"
         >
           <XCircle className="mx-auto mb-2" />
-          Failure
+          Simulate Failure
         </button>
       </div>
+      {status === "SUCCEEDED" ? (
+        <a
+          href="zook://"
+          className="zook-focus mt-5 inline-flex w-full items-center justify-center rounded-full border border-lime-300/40 bg-lime-300/10 px-5 py-3 text-sm font-semibold text-lime-100 transition hover:bg-lime-300/16"
+        >
+          Open in Zook app
+        </a>
+      ) : null}
     </div>
   );
 }

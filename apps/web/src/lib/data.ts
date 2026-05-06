@@ -84,7 +84,7 @@ function getDemoDashboardData(scope: "org" | "platform") {
             { label: "Assistant drafts", value: "18", delta: "Trainer drafts this month" },
           ]
         : [
-            { label: "Organizations", value: "1", delta: "Sample view" },
+            { label: "Organizations", value: "1", delta: "Demo data" },
             { label: "Active orgs", value: "1", delta: "0 suspended" },
             { label: "Service status", value: "5", delta: "Ready" },
             { label: "Safety reviews", value: "0", delta: "No open reviews" },
@@ -97,16 +97,16 @@ function getDemoDashboardData(scope: "org" | "platform") {
     joinRequests: zookDemoFixtures.joinRequests,
     auditLogCount: zookDemoFixtures.auditLogs.length,
     branchScope: {
-      branches: [{ id: "branch-default", name: "Default Branch", isDefault: true, active: true }],
+      branches: [{ id: "branch-default", name: "Main branch", isDefault: true, active: true }],
       defaultBranch: {
         id: "branch-default",
-        name: "Default Branch",
+        name: "Main branch",
         isDefault: true,
         active: true,
       },
       selectedBranch: {
         id: "branch-default",
-        name: "Default Branch",
+        name: "Main branch",
         isDefault: true,
         active: true,
       },

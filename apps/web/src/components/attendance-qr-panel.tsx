@@ -18,7 +18,7 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
       setError("");
       const payload = await webApiFetch<{ qrPayload: string; expiresAt: string }>(
         `/api/orgs/${orgId}/attendance/qr-token`,
-        { method: "POST" }
+        { method: "POST" },
       );
       setQrPayload(payload.qrPayload);
       setExpiresAt(payload.expiresAt);
@@ -73,9 +73,7 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Entry QR code</h2>
-          <p className="mt-1 text-sm text-white/45">
-            Display this at reception or the entry gate.
-          </p>
+          <p className="mt-1 text-sm text-white/45">Display this at reception or the entry gate.</p>
         </div>
         <button
           onClick={() => void loadToken()}
@@ -112,11 +110,13 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
                   Display this code at reception or the entry gate. Members scan it from the mobile
                   app and receive a short entry code for the desk.
                 </p>
-                {qrRenderError ? <p className="mt-3 text-sm text-red-200">{qrRenderError}</p> : null}
+                {qrRenderError ? (
+                  <p className="mt-3 text-sm text-red-200">{qrRenderError}</p>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
                 <Pill tone="lime">Secure code</Pill>
-                <Pill>Default Branch</Pill>
+                <Pill>Main branch</Pill>
                 {expiresAt ? <Pill>Expires {new Date(expiresAt).toLocaleTimeString()}</Pill> : null}
               </div>
               <details className="rounded-2xl border border-white/10 bg-black/35 p-4">

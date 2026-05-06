@@ -552,8 +552,8 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
         <GlassCard>
           <SectionHeader
             eyebrow="Location"
-            title="Address and Default Branch"
-            description="The Default Branch follows this address for MVP setup. Advanced multi-branch editing can live here later."
+            title="Address and main branch"
+            description="The main branch follows this address for MVP setup. Advanced multi-branch editing can live here later."
           />
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <Field
@@ -583,7 +583,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                 header: "Status",
                 render: (branch) => (
                   <StatusPill
-                    value={branch.isDefault ? "Default Branch" : branch.active ? "Active" : "Inactive"}
+                    value={branch.isDefault ? "Main branch" : branch.active ? "Active" : "Inactive"}
                     tone={branch.isDefault ? "lime" : "neutral"}
                   />
                 ),

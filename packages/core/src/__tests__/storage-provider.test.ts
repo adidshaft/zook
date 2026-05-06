@@ -64,6 +64,19 @@ describe("storage provider", () => {
     ).toMatchObject({ extension: "json", contentType: "application/json" });
   });
 
+  it("builds upload keys without trusting the original file basename", () => {
+    const key = buildStorageKey({
+      category: "product_image",
+      orgId: "Org 123",
+      fileId: "file_abc",
+      originalName: "../unsafe name.png",
+      now: new Date("2026-04-24T00:00:00.000Z")
+    });
+
+    expect(key).toBe("org-123/product_image/file-abc-1776988800000.png");
+    expect(key).not.toContain("unsafe");
+  });
+
   it("validates public organization gallery assets", () => {
     expect(
       validateStorageFile({

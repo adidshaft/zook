@@ -30,10 +30,14 @@ async function apiFetch<T>(url: string, init?: RequestInit) {
     ...init,
     headers: {
       "content-type": "application/json",
-      ...(init?.headers ?? {})
-    }
+      ...(init?.headers ?? {}),
+    },
   });
-  const payload = (await response.json()) as { ok: boolean; data?: T; error?: { message?: string } };
+  const payload = (await response.json()) as {
+    ok: boolean;
+    data?: T;
+    error?: { message?: string };
+  };
   if (!response.ok || !payload.ok || !payload.data) {
     throw new Error(payload.error?.message ?? "Request failed.");
   }
@@ -41,7 +45,7 @@ async function apiFetch<T>(url: string, init?: RequestInit) {
 }
 
 export default function GuardianConsentPage({
-  params
+  params,
 }: {
   params: Promise<{ challengeId: string }>;
 }) {
@@ -55,11 +59,15 @@ export default function GuardianConsentPage({
   async function load() {
     setLoading(true);
     try {
-      const payload = await apiFetch<GuardianConsentPayload>(`/api/guardian-consent/${challengeId}`);
+      const payload = await apiFetch<GuardianConsentPayload>(
+        `/api/guardian-consent/${challengeId}`,
+      );
       setData(payload);
       setMessage("");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to load guardian consent request.");
+      setMessage(
+        error instanceof Error ? error.message : "Unable to load guardian consent request.",
+      );
     } finally {
       setLoading(false);
     }
@@ -84,12 +92,12 @@ export default function GuardianConsentPage({
     try {
       await apiFetch(`/api/guardian-consent/${challengeId}/verify`, {
         method: "POST",
-        body: JSON.stringify({ code })
+        body: JSON.stringify({ code }),
       });
       setMessage("Guardian consent verified successfully.");
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to verify guardian OTP.");
+      setMessage(error instanceof Error ? error.message : "Unable to verify guardian code.");
     } finally {
       setSubmitting(false);
     }
@@ -100,12 +108,12 @@ export default function GuardianConsentPage({
     try {
       await apiFetch(`/api/guardian-consent/${challengeId}/resend`, {
         method: "POST",
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       });
-      setMessage("A fresh guardian OTP has been sent.");
+      setMessage("A fresh guardian verification code has been sent.");
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to resend guardian OTP.");
+      setMessage(error instanceof Error ? error.message : "Unable to resend guardian code.");
     } finally {
       setSubmitting(false);
     }
@@ -125,22 +133,48 @@ export default function GuardianConsentPage({
               {data?.minor?.firstName ?? "Minor member"}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/65">
-              Guardian consent allows Zook to activate membership and attendance for this minor member. Personalized coaching stays age-safe, and marketing stays off unless consent is explicitly granted later.
+              Guardian consent allows Zook to activate membership and attendance for this minor
+              member. Personalized coaching stays age-safe, and marketing stays off unless consent
+              is explicitly granted later.
             </p>
+          </div>
+          <div className="grid gap-3 text-sm leading-6 text-white/65">
+            {[
+              "You confirm you are the minor member's legal guardian.",
+              "You allow fitness program use, attendance, and membership activation.",
+              "AI assistance remains limited to age-safe coaching support.",
+              "Consent records are retained for safety, audit, export, and deletion requests.",
+            ].map((item) => (
+              <div key={item} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                {item}
+              </div>
+            ))}
           </div>
           <div className="grid gap-3 text-sm text-white/70 md:grid-cols-2">
             <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
-              <div className="text-xs uppercase tracking-[0.18em] text-white/40">Requesting gym</div>
-              <div className="mt-2 text-base font-medium text-white">{data?.org?.name ?? "Zook"}</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-white/40">
+                Requesting gym
+              </div>
+              <div className="mt-2 text-base font-medium text-white">
+                {data?.org?.name ?? "Zook"}
+              </div>
             </div>
             <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
               <div className="text-xs uppercase tracking-[0.18em] text-white/40">Relationship</div>
-              <div className="mt-2 text-base font-medium text-white">{data?.consent?.relationship ?? "Guardian"}</div>
+              <div className="mt-2 text-base font-medium text-white">
+                {data?.consent?.relationship ?? "Guardian"}
+              </div>
             </div>
           </div>
           <div className="rounded-3xl border border-white/10 bg-black/20 p-4 text-sm leading-7 text-white/65">
-            <p>Before consent: membership activation, attendance check-in, and trainer-driven personalization stay blocked.</p>
-            <p>After consent: membership and attendance can proceed, coaching stays age-safe, and promotional messaging remains off by default.</p>
+            <p>
+              Before consent: membership activation, attendance check-in, and trainer-driven
+              personalization stay blocked.
+            </p>
+            <p>
+              After consent: membership and attendance can proceed, coaching stays age-safe, and
+              promotional messaging remains off by default.
+            </p>
           </div>
         </div>
         <div className="rounded-[28px] border border-white/10 bg-black/30 p-5">
@@ -151,7 +185,11 @@ export default function GuardianConsentPage({
           ) : (
             <div className="space-y-4">
               <div className={`flex items-center gap-2 text-sm font-medium ${statusTone}`}>
-                {data?.challenge.status === "VERIFIED" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                {data?.challenge.status === "VERIFIED" ? (
+                  <CheckCircle2 size={16} />
+                ) : (
+                  <AlertCircle size={16} />
+                )}
                 Status: {data?.challenge.status ?? "UNKNOWN"}
               </div>
               {data?.challenge.expiresAt ? (
@@ -159,7 +197,15 @@ export default function GuardianConsentPage({
                   Expires {new Date(data.challenge.expiresAt).toLocaleString("en-IN")}
                 </p>
               ) : null}
-              {message ? <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">{message}</p> : null}
+              {message ? (
+                <p
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80"
+                  role="alert"
+                  aria-live="polite"
+                >
+                  {message}
+                </p>
+              ) : null}
               {data?.challenge.status === "VERIFIED" ? (
                 <div className="rounded-2xl border border-lime-300/20 bg-lime-300/10 p-4 text-sm text-lime-100">
                   Guardian consent has already been verified for this request.
@@ -167,11 +213,16 @@ export default function GuardianConsentPage({
               ) : (
                 <>
                   <label className="grid gap-2 text-sm text-white/70">
-                    Guardian OTP
+                    Guardian verification code
                     <input
-                      aria-label="Guardian OTP"
+                      aria-label="Guardian verification code"
                       value={code}
-                      onChange={(event) => setCode(event.target.value)}
+                      onChange={(event) =>
+                        setCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                      }
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
                       className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
                       placeholder="Enter 6-digit code"
                     />
@@ -181,7 +232,11 @@ export default function GuardianConsentPage({
                     disabled={submitting || code.trim().length !== 6}
                     className="zook-focus flex w-full items-center justify-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {submitting ? <LoaderCircle className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+                    {submitting ? (
+                      <LoaderCircle className="animate-spin" size={16} />
+                    ) : (
+                      <ShieldCheck size={16} />
+                    )}
                     Verify consent
                   </button>
                   <button
@@ -190,7 +245,7 @@ export default function GuardianConsentPage({
                     className="zook-focus flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <RefreshCw size={16} />
-                    Resend OTP
+                    Request a fresh code
                   </button>
                 </>
               )}

@@ -1,7 +1,12 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl as getS3SignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { DiagnosticProvider, ProviderInstanceDiagnostics } from "../types";
 
@@ -16,7 +21,7 @@ export const storageFileCategories = [
   "org_gallery",
   "ai_generated_image",
   "body_progress_photo",
-  "privacy_export"
+  "privacy_export",
 ] as const;
 
 export type StorageFileCategory = (typeof storageFileCategories)[number];
@@ -66,6 +71,17 @@ export interface StorageProvider extends DiagnosticProvider {
 
 const megabyte = 1024 * 1024;
 
+function defaultMaxUploadBytes(category: StorageFileCategory) {
+  if (category === "profile_photo") {
+    return 5 * megabyte;
+  }
+  if (category === "privacy_export") {
+    return 100 * megabyte;
+  }
+  const envLimit = Number(process.env.MAX_FILE_SIZE_BYTES ?? 10 * megabyte);
+  return Number.isFinite(envLimit) && envLimit > 0 ? Math.floor(envLimit) : 10 * megabyte;
+}
+
 const fileRules: Record<
   StorageFileCategory,
   {
@@ -81,78 +97,78 @@ const fileRules: Record<
     contentTypes: ["image/jpeg", "image/png", "image/webp"],
     defaultVisibility: "private",
     allowedVisibilities: ["private", "org"],
-    defaultExtension: "jpg"
+    defaultExtension: "jpg",
   },
   payment_proof: {
     maxSizeBytes: 10 * megabyte,
     contentTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf"],
     defaultVisibility: "private",
     allowedVisibilities: ["private"],
-    defaultExtension: "pdf"
+    defaultExtension: "pdf",
   },
   product_image: {
     maxSizeBytes: 6 * megabyte,
     contentTypes: ["image/jpeg", "image/png", "image/webp"],
     defaultVisibility: "public",
     allowedVisibilities: ["org", "public"],
-    defaultExtension: "jpg"
+    defaultExtension: "jpg",
   },
   plan_image: {
     maxSizeBytes: 6 * megabyte,
     contentTypes: ["image/jpeg", "image/png", "image/webp"],
     defaultVisibility: "org",
     allowedVisibilities: ["org", "public"],
-    defaultExtension: "jpg"
+    defaultExtension: "jpg",
   },
   trainer_upi_qr: {
     maxSizeBytes: 4 * megabyte,
     contentTypes: ["image/jpeg", "image/png", "image/webp"],
     defaultVisibility: "org",
     allowedVisibilities: ["private", "org"],
-    defaultExtension: "png"
+    defaultExtension: "png",
   },
   org_logo: {
     maxSizeBytes: 4 * megabyte,
     contentTypes: ["image/jpeg", "image/png", "image/webp", "image/svg+xml"],
     defaultVisibility: "public",
     allowedVisibilities: ["public"],
-    defaultExtension: "png"
+    defaultExtension: "png",
   },
   org_cover: {
     maxSizeBytes: 8 * megabyte,
     contentTypes: ["image/jpeg", "image/png", "image/webp"],
     defaultVisibility: "public",
     allowedVisibilities: ["public"],
-    defaultExtension: "jpg"
+    defaultExtension: "jpg",
   },
   org_gallery: {
     maxSizeBytes: 8 * megabyte,
     contentTypes: ["image/jpeg", "image/png", "image/webp"],
     defaultVisibility: "public",
     allowedVisibilities: ["public"],
-    defaultExtension: "jpg"
+    defaultExtension: "jpg",
   },
   ai_generated_image: {
     maxSizeBytes: 6 * megabyte,
     contentTypes: ["image/jpeg", "image/png", "image/webp", "image/svg+xml"],
     defaultVisibility: "org",
     allowedVisibilities: ["org", "public"],
-    defaultExtension: "png"
+    defaultExtension: "png",
   },
   body_progress_photo: {
     maxSizeBytes: 8 * megabyte,
     contentTypes: ["image/jpeg", "image/png", "image/webp"],
     defaultVisibility: "private",
     allowedVisibilities: ["private"],
-    defaultExtension: "jpg"
+    defaultExtension: "jpg",
   },
   privacy_export: {
-    maxSizeBytes: 12 * megabyte,
+    maxSizeBytes: 100 * megabyte,
     contentTypes: ["application/json"],
     defaultVisibility: "private",
     allowedVisibilities: ["private"],
-    defaultExtension: "json"
-  }
+    defaultExtension: "json",
+  },
 };
 
 const contentTypeByExtension: Record<string, string> = {
@@ -162,7 +178,7 @@ const contentTypeByExtension: Record<string, string> = {
   webp: "image/webp",
   svg: "image/svg+xml",
   pdf: "application/pdf",
-  json: "application/json"
+  json: "application/json",
 };
 
 const extensionByContentType: Record<string, string> = {
@@ -171,7 +187,7 @@ const extensionByContentType: Record<string, string> = {
   "image/webp": "webp",
   "image/svg+xml": "svg",
   "application/pdf": "pdf",
-  "application/json": "json"
+  "application/json": "json",
 };
 
 function normalizeOriginalName(originalName?: string) {
@@ -203,10 +219,18 @@ function splitNameParts(fileName: string) {
   return { normalizedBaseName, extension };
 }
 
-function resolveExtension(originalName: string | undefined, contentType: string, defaultExtension: string) {
+function resolveExtension(
+  originalName: string | undefined,
+  contentType: string,
+  defaultExtension: string,
+) {
   const fromName = originalName ? splitNameParts(originalName).extension : "";
   const fromType = extensionByContentType[contentType];
-  if (fromName && contentTypeByExtension[fromName] && contentTypeByExtension[fromName] !== contentType) {
+  if (
+    fromName &&
+    contentTypeByExtension[fromName] &&
+    contentTypeByExtension[fromName] !== contentType
+  ) {
     throw new Error(`File extension .${fromName} does not match MIME type ${contentType}.`);
   }
   return fromType || fromName || defaultExtension;
@@ -246,14 +270,21 @@ function encodeKeyPath(key: string) {
 
 function sanitizeSegment(value: string | undefined, fallback: string) {
   const source = (value ?? fallback).trim().toLowerCase();
-  return source
-    .replace(/[^a-z0-9-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "") || fallback;
+  return (
+    source
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || fallback
+  );
 }
 
 function resolveLocalStorageSecret(secret?: string) {
-  return secret ?? process.env.STORAGE_URL_SIGNING_SECRET ?? process.env.SESSION_SECRET ?? "zook-local-storage-secret";
+  return (
+    secret ??
+    process.env.STORAGE_URL_SIGNING_SECRET ??
+    process.env.SESSION_SECRET ??
+    "zook-local-storage-secret"
+  );
 }
 
 function resolveLocalStorageRootDir(rootDir = process.env.STORAGE_LOCAL_DIR ?? ".local/uploads") {
@@ -268,7 +299,9 @@ function assertWithinRoot(rootDir: string, filePath: string) {
   }
 }
 
-export function validateStorageFile(input: StorageFileValidationInput): StorageFileValidationResult {
+export function validateStorageFile(
+  input: StorageFileValidationInput,
+): StorageFileValidationResult {
   const rule = fileRules[input.category];
   const contentType = input.contentType.trim().toLowerCase();
 
@@ -281,8 +314,11 @@ export function validateStorageFile(input: StorageFileValidationInput): StorageF
   if (!Number.isFinite(input.sizeBytes) || input.sizeBytes <= 0) {
     throw new Error("Upload size must be greater than zero.");
   }
-  if (input.sizeBytes > rule.maxSizeBytes) {
-    throw new Error(`File exceeds the ${Math.floor(rule.maxSizeBytes / megabyte)} MB limit for ${input.category}.`);
+  const maxSizeBytes = defaultMaxUploadBytes(input.category);
+  if (input.sizeBytes > maxSizeBytes) {
+    throw new Error(
+      `File exceeds the ${Math.floor(maxSizeBytes / megabyte)} MB limit for ${input.category}.`,
+    );
   }
 
   const originalName = normalizeOriginalName(input.originalName);
@@ -295,7 +331,7 @@ export function validateStorageFile(input: StorageFileValidationInput): StorageF
     normalizedBaseName,
     extension: resolveExtension(originalName, contentType, rule.defaultExtension),
     visibility: normalizeVisibility(input.category, input.visibility),
-    maxSizeBytes: rule.maxSizeBytes
+    maxSizeBytes,
   };
 }
 
@@ -303,53 +339,65 @@ export function buildStorageKey(input: {
   category: StorageFileCategory;
   orgId?: string | null;
   ownerUserId?: string | null;
+  fileId?: string;
   originalName?: string;
   now?: Date;
 }) {
   const rule = fileRules[input.category];
   const originalName = normalizeOriginalName(input.originalName ?? "upload");
-  const { normalizedBaseName, extension: rawExtension } = splitNameParts(originalName);
+  const { extension: rawExtension } = splitNameParts(originalName);
   const timestamp = input.now ?? new Date();
-  const year = timestamp.getUTCFullYear();
-  const month = String(timestamp.getUTCMonth() + 1).padStart(2, "0");
-  const randomSuffix = randomBytes(6).toString("hex");
+  const fileId = sanitizeSegment(input.fileId ?? randomBytes(12).toString("hex"), "file");
   const extension = rawExtension || rule.defaultExtension;
 
   return [
-    input.orgId ? `orgs/${sanitizeSegment(input.orgId, "shared")}` : "global",
-    input.ownerUserId ? `users/${sanitizeSegment(input.ownerUserId, "system")}` : "users/system",
+    input.orgId ? sanitizeSegment(input.orgId, "shared") : "global",
     input.category,
-    `${year}/${month}`,
-    `${Date.now()}-${randomSuffix}-${normalizedBaseName}.${extension}`
+    `${fileId}-${timestamp.getTime()}.${extension}`,
   ].join("/");
 }
 
-export function createLocalStorageSignature(input: { key: string; expiresAt: number; secret?: string }) {
+export function createLocalStorageSignature(input: {
+  key: string;
+  expiresAt: number;
+  secret?: string;
+}) {
   return createHmac("sha256", resolveLocalStorageSecret(input.secret))
     .update(`${input.key}:${input.expiresAt}`)
     .digest("hex");
 }
 
-export function verifyLocalStorageSignature(input: { key: string; expiresAt: number; signature: string; secret?: string }) {
+export function verifyLocalStorageSignature(input: {
+  key: string;
+  expiresAt: number;
+  signature: string;
+  secret?: string;
+}) {
   if (!input.signature) {
     return false;
   }
   if (Number.isNaN(input.expiresAt) || input.expiresAt <= Date.now()) {
     return false;
   }
-  return createLocalStorageSignature({
-    key: input.key,
-    expiresAt: input.expiresAt,
-    ...(input.secret ? { secret: input.secret } : {})
-  }) === input.signature;
+  return (
+    createLocalStorageSignature({
+      key: input.key,
+      expiresAt: input.expiresAt,
+      ...(input.secret ? { secret: input.secret } : {}),
+    }) === input.signature
+  );
 }
 
-export function buildLocalStorageSignedUrl(input: { key: string; expiresInSeconds?: number; secret?: string }) {
+export function buildLocalStorageSignedUrl(input: {
+  key: string;
+  expiresInSeconds?: number;
+  secret?: string;
+}) {
   const expiresAt = Date.now() + (input.expiresInSeconds ?? 10 * 60) * 1000;
   const signature = createLocalStorageSignature({
     key: input.key,
     expiresAt,
-    ...(input.secret ? { secret: input.secret } : {})
+    ...(input.secret ? { secret: input.secret } : {}),
   });
   return `/api/files/local?key=${encodeURIComponent(input.key)}&expires=${expiresAt}&signature=${signature}`;
 }
@@ -373,8 +421,8 @@ export class LocalStorageProvider implements StorageProvider {
       mode: "local",
       configured: true,
       metadata: {
-        pathPrefix: this.rootDir
-      }
+        pathPrefix: this.rootDir,
+      },
     };
   }
 
@@ -396,7 +444,7 @@ export class LocalStorageProvider implements StorageProvider {
       url:
         validated.visibility === "public"
           ? buildLocalStoragePublicUrl(input.key)
-          : buildLocalStorageSignedUrl({ key: input.key, secret: this.signingSecret })
+          : buildLocalStorageSignedUrl({ key: input.key, secret: this.signingSecret }),
     };
   }
 
@@ -404,7 +452,7 @@ export class LocalStorageProvider implements StorageProvider {
     return buildLocalStorageSignedUrl({
       key: input.key,
       ...(input.expiresInSeconds !== undefined ? { expiresInSeconds: input.expiresInSeconds } : {}),
-      secret: this.signingSecret
+      secret: this.signingSecret,
     });
   }
 
@@ -425,7 +473,7 @@ export class LocalStorageProvider implements StorageProvider {
     return {
       body,
       contentType: resolveContentTypeFromKey(input.key),
-      sizeBytes: body.byteLength
+      sizeBytes: body.byteLength,
     };
   }
 }
@@ -443,16 +491,16 @@ export class S3CompatibleStorageProvider implements StorageProvider {
       secretAccessKey: string;
       publicBaseUrl?: string;
       forcePathStyle?: boolean;
-    }
+    },
   ) {
     this.client = new S3Client({
       region: options.region,
       ...(options.endpoint ? { endpoint: options.endpoint } : {}),
       credentials: {
         accessKeyId: options.accessKeyId,
-        secretAccessKey: options.secretAccessKey
+        secretAccessKey: options.secretAccessKey,
       },
-      forcePathStyle: options.forcePathStyle ?? Boolean(options.endpoint)
+      forcePathStyle: options.forcePathStyle ?? Boolean(options.endpoint),
     });
   }
 
@@ -465,8 +513,8 @@ export class S3CompatibleStorageProvider implements StorageProvider {
         bucket: this.options.bucket,
         region: this.options.region,
         hasEndpoint: Boolean(this.options.endpoint),
-        hasPublicBaseUrl: Boolean(this.options.publicBaseUrl)
-      }
+        hasPublicBaseUrl: Boolean(this.options.publicBaseUrl),
+      },
     };
   }
 
@@ -482,8 +530,8 @@ export class S3CompatibleStorageProvider implements StorageProvider {
         Key: input.key,
         Body: toBuffer(input.body),
         ContentType: validated.contentType,
-        ...(input.cacheControl ? { CacheControl: input.cacheControl } : {})
-      })
+        ...(input.cacheControl ? { CacheControl: input.cacheControl } : {}),
+      }),
     );
 
     return {
@@ -491,7 +539,7 @@ export class S3CompatibleStorageProvider implements StorageProvider {
       url:
         validated.visibility === "public"
           ? await this.getPublicUrl({ key: input.key })
-          : await this.getSignedUrl({ key: input.key })
+          : await this.getSignedUrl({ key: input.key }),
     };
   }
 
@@ -500,9 +548,9 @@ export class S3CompatibleStorageProvider implements StorageProvider {
       this.client,
       new GetObjectCommand({
         Bucket: this.options.bucket,
-        Key: input.key
+        Key: input.key,
       }),
-      { expiresIn: input.expiresInSeconds ?? 10 * 60 }
+      { expiresIn: input.expiresInSeconds ?? 10 * 60 },
     );
   }
 
@@ -521,8 +569,8 @@ export class S3CompatibleStorageProvider implements StorageProvider {
     await this.client.send(
       new DeleteObjectCommand({
         Bucket: this.options.bucket,
-        Key: input.key
-      })
+        Key: input.key,
+      }),
     );
   }
 }

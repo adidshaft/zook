@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@zook/db";
+import { CheckoutStatusEffect } from "@/components/checkout-status-effect";
 import { RazorpayCheckoutPanel } from "@/components/razorpay-checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
 import { formatInr, formatEnumLabel, formatDateTime } from "@/lib/format";
@@ -31,6 +32,10 @@ export default async function HostedCheckoutPage({
   const { sessionId } = await params;
   const session = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
   const checkoutData = session ? readCheckoutData(session.metadata) : null;
+  const expiresInMs = session ? new Date(session.expiresAt).getTime() - Date.now() : 0;
+  const showExpiryWarning = expiresInMs > 0 && expiresInMs < 5 * 60 * 1000;
+  const expiryMinutes = Math.max(0, Math.floor(expiresInMs / 60_000));
+  const expirySeconds = Math.max(0, Math.floor((expiresInMs % 60_000) / 1000));
 
   if (!session) {
     return (
@@ -40,7 +45,9 @@ export default async function HostedCheckoutPage({
         </div>
         <div className="glass-panel w-full max-w-xl rounded-[28px] p-8">
           <p className="text-sm text-white/45">Payment link</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">This payment link is no longer active</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-white">
+            This payment link is no longer active
+          </h1>
           <p className="mt-3 text-sm leading-6 text-white/60">
             Please return to Zook and start checkout again.
           </p>
@@ -55,6 +62,10 @@ export default async function HostedCheckoutPage({
         <ZookLogo />
       </div>
       <div className="glass-panel w-full max-w-2xl rounded-[28px] p-8">
+        <CheckoutStatusEffect
+          status={session.status}
+          redirectPath={session.purpose === "MEMBERSHIP" ? "/dashboard" : "/login"}
+        />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm text-white/45">Secure payment</p>
@@ -70,6 +81,23 @@ export default async function HostedCheckoutPage({
         <p className="mt-5 text-sm leading-6 text-white/60">
           Complete payment here. Your membership or order updates automatically after confirmation.
         </p>
+        <p className="mt-2 text-sm font-medium text-lime-100">
+          Secured by{" "}
+          {session.provider.toLowerCase() === "razorpay"
+            ? "Razorpay"
+            : paymentPartnerLabel(session.provider)}
+        </p>
+        {showExpiryWarning ? (
+          <div className="mt-5 rounded-[22px] border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm text-amber-50">
+            This payment link expires in {expiryMinutes}m{" "}
+            {expirySeconds.toString().padStart(2, "0")}s.
+          </div>
+        ) : null}
+        {session.status === "SUCCEEDED" ? (
+          <div className="mt-5 rounded-[22px] border border-lime-300/25 bg-lime-300/10 px-4 py-3 text-sm text-lime-100">
+            Payment confirmed. Redirecting you back to Zook in 3 seconds.
+          </div>
+        ) : null}
 
         <div className="mt-6 grid gap-4 rounded-[24px] border border-white/10 bg-black/20 p-5 text-sm text-white/70 md:grid-cols-2">
           <div>
@@ -95,7 +123,10 @@ export default async function HostedCheckoutPage({
             <p className="text-xs uppercase tracking-[0.2em] text-white/35">What happens next</p>
             <div className="mt-3 grid gap-3 text-sm text-white/70 md:grid-cols-3">
               {["Pay securely", "Zook confirms it", "Access updates"].map((step) => (
-                <div key={step} className="rounded-2xl border border-white/10 bg-black/20 p-3 text-white">
+                <div
+                  key={step}
+                  className="rounded-2xl border border-white/10 bg-black/20 p-3 text-white"
+                >
                   {step}
                 </div>
               ))}

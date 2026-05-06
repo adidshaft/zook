@@ -3,7 +3,7 @@ import { CheckCircle2, LockKeyhole } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { JoinCheckoutButton } from "@/components/join-checkout-button";
 import { ZookLogo } from "@/components/zook-logo";
-import { formatInr } from "@/lib/format";
+import { formatInr, joinModeLabel } from "@/lib/format";
 import { getPublicGymProfileData, type PublicGymReferral } from "@/server/public-gym-read-models";
 
 function discountFor(referral: PublicGymReferral | null, planPricePaise: number) {
@@ -43,7 +43,7 @@ function visitLabel(visitLimit: number | null) {
 
 export default async function JoinPage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ username: string }>;
   searchParams: Promise<{ plan?: string; ref?: string }>;
@@ -64,20 +64,30 @@ export default async function JoinPage({
   if (joinMode === "APPROVAL_REQUIRED") {
     return (
       <main className="grid min-h-screen place-items-center px-5 py-8">
-        <div className="absolute left-5 top-5"><ZookLogo /></div>
+        <div className="absolute left-5 top-5">
+          <ZookLogo />
+        </div>
         <GlassCard className="max-w-xl">
           <Pill tone="amber">Approval required</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-white">Approval required</h1>
           <p className="mt-3 text-sm leading-6 text-white/55">
-            This gym reviews access before checkout. Sign in to request access; Zook will show the request status in your inbox.
+            This gym reviews access before checkout. Sign in to request access; Zook will show the
+            request status in your inbox.
           </p>
           <Link
-            href={loginRedirect(selectedPlan ? joinPath(org.username, selectedPlan.id, referral) : `/g/${org.username}`)}
+            href={loginRedirect(
+              selectedPlan
+                ? joinPath(org.username, selectedPlan.id, referral)
+                : `/g/${org.username}`,
+            )}
             className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
           >
             Sign in to request access
           </Link>
-          <Link href={`/g/${org.username}`} className="zook-focus ml-3 mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70">
+          <Link
+            href={`/g/${org.username}`}
+            className="zook-focus ml-3 mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70"
+          >
             Back to gym
           </Link>
         </GlassCard>
@@ -88,14 +98,19 @@ export default async function JoinPage({
   if (joinMode === "INVITE_ONLY" && !referral) {
     return (
       <main className="grid min-h-screen place-items-center px-5 py-8">
-        <div className="absolute left-5 top-5"><ZookLogo /></div>
+        <div className="absolute left-5 top-5">
+          <ZookLogo />
+        </div>
         <GlassCard className="max-w-xl">
-          <Pill tone="red">Invite only</Pill>
+          <Pill tone="red">{joinModeLabel(joinMode)}</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-white">Invite code required</h1>
           <p className="mt-3 text-sm leading-6 text-white/55">
             This gym requires an active referral or invite code before checkout can start.
           </p>
-          <Link href={`/g/${org.username}`} className="zook-focus mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70">
+          <Link
+            href={`/g/${org.username}`}
+            className="zook-focus mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70"
+          >
             Back to gym
           </Link>
         </GlassCard>
@@ -108,39 +123,122 @@ export default async function JoinPage({
       <div className="mx-auto grid max-w-6xl gap-5">
         <header className="flex items-center justify-between">
           <ZookLogo />
-          <Link href={`/g/${org.username}`} className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70">
+          <Link
+            href={`/g/${org.username}`}
+            className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
+          >
             Gym profile
           </Link>
         </header>
 
         <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
           <GlassCard variant="strong">
-            <Pill tone="lime">Secure payment</Pill>
-            <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white">Review your membership</h1>
+            <Pill tone="lime">{joinModeLabel(joinMode)}</Pill>
+            <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white">
+              Review your membership
+            </h1>
+            {data.plans.length > 1 ? (
+              <div className="mt-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                  Choose plan
+                </p>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  {data.plans.map((plan) => {
+                    const isSelected = plan.id === selectedPlan.id;
+                    return (
+                      <Link
+                        key={plan.id}
+                        href={joinPath(org.username, plan.id, referral)}
+                        className={`zook-focus rounded-[22px] border p-4 transition ${
+                          isSelected
+                            ? "border-lime-300/45 bg-lime-300/12"
+                            : "border-white/10 bg-black/20 hover:bg-white/8"
+                        }`}
+                        aria-current={isSelected ? "true" : undefined}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-medium text-white">{plan.name}</p>
+                            <p className="mt-1 text-xs text-white/45">
+                              {validityLabel(plan)} · {visitLabel(plan.visitLimit)}
+                            </p>
+                          </div>
+                          <span className="font-semibold text-lime-200">
+                            {formatInr(plan.pricePaise)}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
             <div className="mt-6 grid gap-3">
               <Readout label="Gym" value={`${org.name} · ${org.city}`} />
               <Readout label="Plan" value={selectedPlan.name} />
-              <Readout label="Validity" value={validityLabel(selectedPlan)} />
+              <Readout label="Duration" value={validityLabel(selectedPlan)} />
               <Readout label="Visits" value={visitLabel(selectedPlan.visitLimit)} />
-              <Readout label="Referral applied" value={referral ? `-${formatInr(discountPaise)} (${referral.code})` : "None"} />
+              <Readout
+                label="Referral applied"
+                value={
+                  referral
+                    ? `Referral ${referral.code} applied · -${formatInr(discountPaise)}`
+                    : "None"
+                }
+              />
             </div>
+            <form className="mt-6 grid gap-2">
+              <input type="hidden" name="plan" value={selectedPlan.id} />
+              {referral ? <input type="hidden" name="ref" value={referral.code} /> : null}
+              <label
+                htmlFor="coupon-code"
+                className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35"
+              >
+                Coupon code
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  id="coupon-code"
+                  name="coupon"
+                  placeholder="Enter coupon"
+                  className="zook-focus min-h-11 flex-1 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
+                />
+                <button
+                  type="submit"
+                  className="zook-focus rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white/72"
+                >
+                  Apply
+                </button>
+              </div>
+            </form>
           </GlassCard>
 
           <GlassCard>
             <p className="text-sm text-white/45">Final amount</p>
-            <p className="metric mt-2 text-5xl font-semibold text-lime-200">{formatInr(finalAmount)}</p>
+            <p className="metric mt-2 text-5xl font-semibold text-lime-200">
+              {formatInr(finalAmount)}
+            </p>
             <div className="mt-6 grid gap-3">
-              {["Secure payment page", "Payment is confirmed", "Membership starts automatically"].map((step, index) => (
-                <div key={step} className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4">
-                  <CheckCircle2 className="text-lime-200" size={20} />
-                  <p className="text-sm text-white/75">{index + 1}. {step}</p>
-                </div>
-              ))}
+              {["Enter payment details", "Payment confirmed", "Membership activates"].map(
+                (step, index) => (
+                  <div
+                    key={step}
+                    className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4"
+                  >
+                    <CheckCircle2 className="text-lime-200" size={20} />
+                    <p className="text-sm text-white/75">
+                      {index + 1}. {step}
+                    </p>
+                  </div>
+                ),
+              )}
             </div>
-            <div className="mt-5 rounded-[22px] border border-amber-300/20 bg-amber-300/10 p-4">
+            <div className="mt-5 rounded-[22px] border border-sky-300/20 bg-sky-300/10 p-4">
               <div className="flex items-center gap-3">
-                <LockKeyhole className="text-amber-100" size={20} />
-                <p className="text-sm font-medium text-amber-50">Your membership activates only after payment confirmation.</p>
+                <LockKeyhole className="text-sky-100" size={20} />
+                <p className="text-sm font-medium text-sky-50">
+                  Your membership activates after payment confirmation.
+                </p>
               </div>
             </div>
             {data.connected ? (
@@ -151,12 +249,18 @@ export default async function JoinPage({
                 loginPath={loginRedirect(joinPath(org.username, selectedPlan.id, referral))}
               />
             ) : (
-              <Link
-                href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}
-                className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
-              >
-                Continue to Test Checkout
-              </Link>
+              <>
+                <div className="mt-6 rounded-[22px] border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
+                  Test mode is on for this environment. The next page simulates payment outcomes and
+                  will not collect real money.
+                </div>
+                <Link
+                  href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}
+                  className="zook-focus mt-4 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+                >
+                  Continue to simulated payment
+                </Link>
+              </>
             )}
           </GlassCard>
         </section>

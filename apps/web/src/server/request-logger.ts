@@ -1,4 +1,5 @@
 import { getProviderRegistryDiagnostics } from "@zook/core/providers";
+import { zookLogger } from "@zook/core";
 import { getRateLimitDiagnostics } from "./rate-limit";
 
 export function summarizeProviderDiagnostics() {
@@ -12,11 +13,11 @@ export function summarizeProviderDiagnostics() {
           activeProvider: value.activeProvider,
           status: value.status,
           mode: value.mode,
-          configured: value.configured
-        }
-      ])
+          configured: value.configured,
+        },
+      ]),
     ),
-    rateLimit: getRateLimitDiagnostics()
+    rateLimit: getRateLimitDiagnostics(),
   };
 }
 
@@ -30,14 +31,19 @@ export function logApiRequest(input: {
   orgId?: string;
   providerError?: string;
 }) {
-  console.info("zook.api.request", {
-    requestId: input.requestId,
-    method: input.method,
-    path: input.path,
-    status: input.status,
-    durationMs: input.durationMs,
-    ...(input.userId ? { userId: input.userId } : {}),
-    ...(input.orgId ? { orgId: input.orgId } : {}),
-    ...(input.providerError ? { providerError: input.providerError } : {})
-  });
+  zookLogger.info(
+    "zook.api.request",
+    {
+      method: input.method,
+      path: input.path,
+      status: input.status,
+      durationMs: input.durationMs,
+      ...(input.providerError ? { providerError: input.providerError } : {}),
+    },
+    {
+      requestId: input.requestId,
+      ...(input.userId ? { userId: input.userId } : {}),
+      ...(input.orgId ? { orgId: input.orgId } : {}),
+    },
+  );
 }
