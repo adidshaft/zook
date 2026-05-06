@@ -369,7 +369,7 @@ export default function MembershipScreen() {
 
           {latestSubscription ? (
             <>
-              <SectionHeader title="Latest membership" />
+              <SectionHeader title="Active membership" />
               <GlassCard
                 variant={latestSubscription.status === "ACTIVE" ? "success" : "default"}
                 contentStyle={styles.featuredContent}

@@ -180,19 +180,20 @@ async function main() {
 
   const users = await Promise.all(
     [
-      ["platform", "Platform Admin", "platform@zook.local", true, false],
-      ["owner", "Aarav Owner", "owner@zook.local", false, false],
-      ["admin", "Meera Admin", "admin@zook.local", false, false],
-      ["reception", "Riya Reception", "reception@zook.local", false, false],
-      ["trainer", "Kabir Trainer", "trainer@zook.local", false, false],
-      ["member", "Nisha Member", "member@zook.local", false, false],
-      ["minor", "Isha Minor", "minor@zook.local", false, true],
-    ].map(([key, name, email, isPlatformAdmin, isMinor]) =>
+      ["platform", "Platform Admin", "platform@zook.local", "+919000000001", true, false],
+      ["owner", "Aarav Owner", "owner@zook.local", "+919988777665", false, false],
+      ["admin", "Meera Admin", "admin@zook.local", "+919700000002", false, false],
+      ["reception", "Riya Reception", "reception@zook.local", "+919765432109", false, false],
+      ["trainer", "Kabir Trainer", "trainer@zook.local", "+919123456780", false, false],
+      ["member", "Nisha Member", "member@zook.local", "+919876543210", false, false],
+      ["minor", "Isha Minor", "minor@zook.local", "+919000012345", false, true],
+    ].map(([key, name, email, phone, isPlatformAdmin, isMinor]) =>
       prisma.user.create({
         data: {
           name: String(name),
           email: String(email),
-          phone: "+91 90000 00000",
+          phone: String(phone),
+          phoneVerifiedAt: new Date(),
           dateOfBirth: isMinor ? new Date("2011-08-18") : new Date("1995-04-12"),
           profilePhotoUrl: `/seed/avatars/${key}.svg`,
           fitnessGoal: isMinor ? "Build healthy habits safely" : "Strength and consistency",

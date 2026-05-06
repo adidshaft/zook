@@ -1,4 +1,5 @@
 import type { AuthSessionSummary, Role } from "./types";
+import { normalizeLoginIdentifier } from "./validators";
 import {
   type DemoAttendanceAttempt,
   type DemoAttendanceOutcome,
@@ -158,11 +159,23 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
         if (code !== "000000") {
           throw new Error("Invalid mock OTP. Use 000000 for local demo.");
         }
-        const email = identifier.includes("@") ? identifier : "member@zook.local";
+        const normalized = normalizeLoginIdentifier(identifier);
+        const user =
+          normalized.kind === "email"
+            ? findRequired(
+                state.users,
+                (candidate) => candidate.email.toLowerCase() === normalized.value.toLowerCase(),
+                "User",
+              )
+            : findRequired(
+                state.users,
+                (candidate) => candidate.phone === normalized.value,
+                "User",
+              );
         return {
           token: `mock-session-${identifier}`,
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          session: buildSession(state, email, activeOrgId),
+          session: buildSession(state, user.email, activeOrgId),
         };
       },
     },

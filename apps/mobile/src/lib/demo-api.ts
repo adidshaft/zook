@@ -1,5 +1,5 @@
 import { zookDemoFixtures } from "@zook/core";
-import { getOfflineDemoSession } from "./demo-mode";
+import { DEMO_MEMBER_EMAIL, DEMO_MEMBER_PHONE, getOfflineDemoSession } from "./demo-mode";
 
 function normalizePath(path: string) {
   return path.startsWith("/") ? path : `/${path}`;
@@ -49,6 +49,10 @@ function demoProfile() {
       latestMeasurementAt: nowIso(),
     },
   };
+}
+
+function demoBody(init: { body?: unknown }) {
+  return init.body && typeof init.body === "object" ? (init.body as Record<string, unknown>) : {};
 }
 
 function demoGymProfile(username: string) {
@@ -274,6 +278,18 @@ export async function demoMobileApiFetch<T>(
   }
 
   if (pathname === "/auth/verify-otp") {
+    const body = demoBody(init);
+    const identifier = String(body.identifier ?? "").trim().toLowerCase();
+    const phoneIdentifier = String(body.identifier ?? "").replace(/\D/g, "");
+    if (
+      body.code !== "000000" ||
+      !(
+        identifier === DEMO_MEMBER_EMAIL ||
+        phoneIdentifier === DEMO_MEMBER_PHONE.replace(/\D/g, "")
+      )
+    ) {
+      throw new Error("Use member@zook.local or +91 98765 43210 with OTP 000000 for demo mode.");
+    }
     return {
       token: "offline-demo-session",
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),

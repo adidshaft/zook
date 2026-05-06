@@ -94,7 +94,7 @@ export default function AttendanceResultScreen() {
     record.branchName === legacyDefaultBranchName
       ? "Main branch"
       : (record.branchName ?? "Assigned branch");
-  const planName = record.planName ?? "Latest membership";
+  const planName = record.planName ?? "Active membership";
   const planTarget: Href =
     activeRole === "TRAINER" ? "/trainer?view=plans" : "/plans?view=detail";
   const isFirstCheckIn =

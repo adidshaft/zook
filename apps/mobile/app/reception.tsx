@@ -627,7 +627,7 @@ export default function Reception() {
               />
               <ListRow
                 title="Invoice"
-                subtitle={membership?.id ? "Latest membership selected" : "No membership selected"}
+                subtitle={membership?.id ? "Active membership selected" : "No membership selected"}
                 leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />}
                 trailing={<Text style={styles.rowAmount}>{formatInr(dueAmount)} due</Text>}
               />

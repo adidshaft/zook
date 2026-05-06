@@ -1,6 +1,25 @@
 import { expect, type APIResponse, type Page } from "@playwright/test";
+import {
+  QA_DEMO_ACCOUNT_EMAIL,
+  QA_DEMO_ACCOUNT_PHONE,
+  QA_FRESH_ACCOUNT_EMAIL,
+  QA_FRESH_ACCOUNT_PHONE,
+  QA_TEST_OTP,
+} from "@zook/core";
 import { AuthService } from "@zook/core/services";
 import { prisma, type MembershipPlan, type Organization } from "@zook/db";
+
+export const QA_FRESH_ACCOUNT = {
+  email: QA_FRESH_ACCOUNT_EMAIL,
+  phone: QA_FRESH_ACCOUNT_PHONE,
+  otp: QA_TEST_OTP,
+};
+
+export const QA_DEMO_ACCOUNT = {
+  email: QA_DEMO_ACCOUNT_EMAIL,
+  phone: QA_DEMO_ACCOUNT_PHONE,
+  otp: QA_TEST_OTP,
+};
 
 export async function expectApiOk<T = unknown>(response: APIResponse) {
   const payload = (await response.json()) as { ok?: boolean; data?: T; error?: { message?: string } };
@@ -33,7 +52,7 @@ export function expectNoConsoleErrors(page: Page) {
   };
 }
 
-export async function getLatestEmailOtpFromMockOrUseDevCode(page: Page, _email: string) {
+export async function getLatestOtpFromMockOrUseDevCode(page: Page, _identifier: string) {
   const fixedCode = process.env.OTP_FIXED_CODE_DEV?.trim();
   if (fixedCode) {
     return fixedCode;
@@ -50,11 +69,11 @@ export async function getLatestEmailOtpFromMockOrUseDevCode(page: Page, _email: 
   );
 }
 
-export async function loginWithOtp(page: Page, email: string) {
+export async function loginWithOtp(page: Page, identifier: string) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
+  await page.getByLabel(/email|phone/i).fill(identifier);
   await page.getByRole("button", { name: "Send OTP" }).click();
-  const code = await getLatestEmailOtpFromMockOrUseDevCode(page, email);
+  const code = await getLatestOtpFromMockOrUseDevCode(page, identifier);
   await page.getByLabel("OTP").fill(code);
   await Promise.all([
     page.waitForURL(/\/(?:dashboard|platform)(?:$|[/?#])/, { timeout: 10_000 }),

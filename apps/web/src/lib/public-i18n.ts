@@ -170,7 +170,6 @@ export const publicMessages = {
     visibleTrainers: "Visible trainers",
     trainersPending: "Trainer profiles will appear after the gym publishes them.",
     bioComingSoon: "Bio coming soon.",
-    availablePT: "Available for PT",
     referral: "Referral",
     referralCopy:
       "Have a referral or invite code? Apply it during payment so the gym can track the source and any eligible discount.",
@@ -346,7 +345,6 @@ export const publicMessages = {
     visibleTrainers: "दिखने वाले ट्रेनर",
     trainersPending: "जिम प्रकाशित करेगा तो ट्रेनर प्रोफाइल यहां दिखेंगी.",
     bioComingSoon: "बायो जल्द आएगा.",
-    availablePT: "PT के लिए उपलब्ध",
     referral: "रेफरल",
     referralCopy:
       "रेफरल या आमंत्रण कोड है? भुगतान के दौरान लगाएं ताकि जिम स्रोत और छूट ट्रैक कर सके.",

@@ -468,7 +468,6 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                               {certification}
                             </Pill>
                           ))}
-                          {trainer.ptAvailable ? <Pill tone="blue">{t("availablePT")}</Pill> : null}
                         </div>
                       </div>
                     </div>

@@ -86,7 +86,9 @@ describe("Phase 4 schema hardening", () => {
       /prisma\.incidentLog\.createMany\(/,
       /prisma\.auditLog\.createMany\(\{[\s\S]*riskLevel:/,
       /prisma\.auditLog\.createMany\(\{[\s\S]*before:/,
-      /prisma\.auditLog\.createMany\(\{[\s\S]*after:/
+      /prisma\.auditLog\.createMany\(\{[\s\S]*after:/,
+      /member@zook\.local[\s\S]*\+919876543210/,
+      /phoneVerifiedAt: new Date\(\)/,
     ];
 
     for (const pattern of requiredPatterns) {

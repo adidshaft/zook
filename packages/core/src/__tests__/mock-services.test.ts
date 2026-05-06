@@ -1,7 +1,27 @@
 import { describe, expect, it } from "vitest";
 import { createZookMockServices } from "../mock-services";
+import {
+  QA_DEMO_ACCOUNT_EMAIL,
+  QA_DEMO_ACCOUNT_PHONE,
+  QA_FRESH_ACCOUNT_EMAIL,
+  QA_FRESH_ACCOUNT_PHONE,
+  isQaDemoIdentifier,
+  isQaFreshIdentifier,
+} from "../test-identities";
 
 describe("Zook mock service facades", () => {
+  it("recognizes documented QA login identities", () => {
+    expect(isQaFreshIdentifier(QA_FRESH_ACCOUNT_EMAIL)).toBe(true);
+    expect(isQaFreshIdentifier("+91 90000 11111")).toBe(true);
+    expect(isQaFreshIdentifier(QA_FRESH_ACCOUNT_PHONE)).toBe(true);
+    expect(isQaFreshIdentifier(QA_DEMO_ACCOUNT_EMAIL)).toBe(false);
+
+    expect(isQaDemoIdentifier(QA_DEMO_ACCOUNT_EMAIL)).toBe(true);
+    expect(isQaDemoIdentifier("+91 98765 43210")).toBe(true);
+    expect(isQaDemoIdentifier(QA_DEMO_ACCOUNT_PHONE)).toBe(true);
+    expect(isQaDemoIdentifier(QA_FRESH_ACCOUNT_EMAIL)).toBe(false);
+  });
+
   it("keeps membership activation behind mock payment confirmation", async () => {
     const services = createZookMockServices();
     const membership = await services.membershipService.getCurrentMembership("user-aarav", "org-iron-temple");
@@ -54,5 +74,16 @@ describe("Zook mock service facades", () => {
     expect(providers.length).toBeGreaterThan(0);
     expect(providers.every((provider) => provider.secretVisible === false)).toBe(true);
     expect(JSON.stringify(providers)).not.toContain("RAZORPAY_KEY_SECRET=");
+  });
+
+  it("resolves demo email and phone to the same complete account", async () => {
+    const services = createZookMockServices();
+    const byEmail = await services.authService.verifyOtp("member@zook.local", "000000");
+    const byPhone = await services.authService.verifyOtp("+91 98765 43210", "000000");
+
+    expect(byEmail.session.user.email).toBe("member@zook.local");
+    expect(byPhone.session.user.email).toBe("member@zook.local");
+    expect(byPhone.session.user.phone).toBe("+919876543210");
+    expect(byPhone.session.activeOrganization?.roles).toContain("MEMBER");
   });
 });

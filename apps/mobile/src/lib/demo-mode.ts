@@ -1,9 +1,10 @@
-import { zookDemoFixtures } from "@zook/core";
+import { QA_DEMO_ACCOUNT_EMAIL, QA_DEMO_ACCOUNT_PHONE, zookDemoFixtures } from "@zook/core";
 import { roles, type AuthSessionSummary, type Role } from "@zook/core";
 import { isOfflineDemoMode } from "./runtime-mode";
 
 export const DEMO_AUTH_TOKEN = "offline-demo-session";
-export const DEMO_MEMBER_EMAIL = "member@zook.local";
+export const DEMO_MEMBER_EMAIL = QA_DEMO_ACCOUNT_EMAIL;
+export const DEMO_MEMBER_PHONE = QA_DEMO_ACCOUNT_PHONE;
 
 export { isOfflineDemoMode };
 

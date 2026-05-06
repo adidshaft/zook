@@ -22,6 +22,10 @@ import {
   isInternalPhoneEmail,
   getAllowedFixedOtp,
   isMockPaymentCompletionAllowed,
+  isQaDemoIdentifier,
+  isQaFreshIdentifier,
+  QA_DEMO_ACCOUNT_EMAIL,
+  QA_DEMO_ACCOUNT_PHONE,
   normalizePhoneNumber,
   permissions,
   roles,
@@ -1177,6 +1181,70 @@ async function getUserByIdentifierOrCreate(identifier: { kind: "email" | "phone"
   return identifier.kind === "email"
     ? getUserByEmailOrCreate(identifier.value)
     : getUserByPhoneOrCreate(identifier.value);
+}
+
+function localQaIdentitiesAllowed() {
+  return (
+    process.env.APP_ENV === "local" ||
+    process.env.ENV_PROFILE === "local" ||
+    process.env.NODE_ENV !== "production"
+  );
+}
+
+function assertLocalQaIdentityAllowed() {
+  if (!localQaIdentitiesAllowed()) {
+    throw validationError("Fresh QA identities are only available in local development.");
+  }
+}
+
+async function createFreshQaUser(identifier: { kind: "email" | "phone"; value: string }) {
+  assertLocalQaIdentityAllowed();
+  const nonce = `${Date.now().toString(36)}${randomBytes(4).toString("hex")}`;
+  return prisma.user.create({
+    data: {
+      email:
+        identifier.kind === "email"
+          ? `fresh+${nonce}@zook.local`
+          : `fresh-phone+${nonce}@zook.local`,
+      name: "Fresh QA User",
+      ...(identifier.kind === "phone" ? { phone: identifier.value, phoneVerifiedAt: new Date() } : {}),
+      ...(identifier.kind === "email" ? { emailVerifiedAt: new Date() } : {}),
+      marketingOptIn: false,
+      aiConsent: false,
+    },
+  });
+}
+
+async function getDemoQaUserOrCreate() {
+  const existing = await prisma.user.findUnique({ where: { email: QA_DEMO_ACCOUNT_EMAIL } });
+  const data = {
+    phone: QA_DEMO_ACCOUNT_PHONE,
+    emailVerifiedAt: new Date(),
+    phoneVerifiedAt: new Date(),
+  };
+  if (existing) {
+    return prisma.user.update({ where: { id: existing.id }, data });
+  }
+  return prisma.user.create({
+    data: {
+      email: QA_DEMO_ACCOUNT_EMAIL,
+      name: "Nisha Member",
+      ...data,
+    },
+  });
+}
+
+async function getAuthUserForVerifiedIdentifier(identifier: {
+  kind: "email" | "phone";
+  value: string;
+}) {
+  if (isQaFreshIdentifier(identifier)) {
+    return createFreshQaUser(identifier);
+  }
+  if (isQaDemoIdentifier(identifier)) {
+    return getDemoQaUserOrCreate();
+  }
+  return getUserByIdentifierOrCreate(identifier);
 }
 
 async function markUserIdentifierVerified(
@@ -2930,7 +2998,13 @@ async function handleAuth(request: NextRequest, path: string[]) {
       "Too many OTP requests for this account.",
     );
     await assertRateLimit("otpRequestByIp", ipAddress, "Too many OTP requests from this IP.");
-    await getUserByIdentifierOrCreate(body.identifier);
+    if (isQaFreshIdentifier(body.identifier)) {
+      assertLocalQaIdentityAllowed();
+    } else if (isQaDemoIdentifier(body.identifier)) {
+      await getDemoQaUserOrCreate();
+    } else {
+      await getUserByIdentifierOrCreate(body.identifier);
+    }
     const challenge = await auth.requestOtp(
       body.identifier,
       ipAddress !== "unknown" ? { ipAddress } : {},
@@ -2955,7 +3029,7 @@ async function handleAuth(request: NextRequest, path: string[]) {
       ipAddress,
       "Too many OTP verification attempts from this IP.",
     );
-    const user = await getUserByIdentifierOrCreate(body.identifier);
+    const user = await getAuthUserForVerifiedIdentifier(body.identifier);
     const session = await auth.verifyOtp(
       clean({
         identifier: body.identifier,

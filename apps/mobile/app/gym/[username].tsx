@@ -478,7 +478,7 @@ function buildJoinSteps(
   if (joinMode === "APPROVAL_REQUIRED") {
     return [
       {
-        title: "Submit request",
+        title: "Send request",
         body: "Send your request before payment if this gym reviews new members.",
       },
       {
@@ -505,7 +505,7 @@ function buildJoinSteps(
         body: "Once the code is accepted, plans are ready to join.",
       },
       {
-        title: "Complete payment",
+        title: "Pay securely",
         body: "Payment activates the membership once the invite rules are met.",
       },
     ];
@@ -518,7 +518,7 @@ function buildJoinSteps(
     },
     {
       title: "Pay instantly",
-      body: "Complete payment directly from mobile.",
+      body: "Pay securely from mobile.",
     },
     {
       title: "Start training",
