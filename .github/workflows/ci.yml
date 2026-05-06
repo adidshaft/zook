@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zook_test
+          POSTGRES_USER: zook
+          POSTGRES_PASSWORD: zook
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zook -d zook_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://zook:zook@localhost:5432/zook_test
+      APP_ENV: test
+      API_MODE: backend
+      SESSION_SECRET: ci-session-secret-at-least-32-characters
+      STORAGE_PROVIDER: local
+      STORAGE_LOCAL_DIR: .local/ci-uploads
+      RATE_LIMIT_PROVIDER: memory
+      OTP_FIXED_CODE_DEV: "000000"
+      ALLOW_DEV_OTP_RESPONSE: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Service tests
+        run: pnpm test:services
+
+      - name: DB-backed web tests
+        run: pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web

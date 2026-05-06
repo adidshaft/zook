@@ -97,3 +97,16 @@ Current tap routing targets:
 - the current pilot prioritizes persistence and invalid-token handling over advanced delivery analytics
 - Expo Go should not be used as the final push-validation environment for the private pilot
 - physical-device push and deep-link QA were not performed in the 2026-05-03 hardening pass
+
+## Expo Push Provider Certification
+
+Before production launch, complete and record a staging run on physical iOS and Android devices:
+
+1. Build an EAS development or preview binary for both platforms.
+2. Sign in, grant notification permission, and register the Expo push token through `/api/push/register-device`.
+3. Send a transactional notification for membership, attendance, or shop pickup.
+4. Confirm `PushDelivery` records success or a provider-specific failure.
+5. Tap the notification and verify the deep link lands on the intended in-app screen.
+6. Unregister or logout and confirm the device is revoked where practical.
+
+Record the staging date, EAS build IDs, device OS versions, push token record IDs, delivery IDs, and deep-link result here before launch.

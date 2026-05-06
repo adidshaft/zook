@@ -141,6 +141,18 @@ https://<your-web-host>/api/payments/webhooks/razorpay
 - Razorpay test credentials and real signed webhook delivery were not verified during the 2026-05-03 hardening pass
 - payment application is more idempotent, but high-concurrency webhook behavior still needs staging/DB acceptance under realistic duplicate delivery
 
+## Razorpay Provider Certification
+
+Before production launch, complete and record a staging run with real Razorpay test credentials:
+
+1. Create a membership checkout and complete the Razorpay-hosted test payment.
+2. Deliver the signed webhook to `/api/payments/webhooks/razorpay`.
+3. Replay the same webhook and confirm the response is idempotent and no duplicate `Payment`, membership activation, coupon redemption, referral redemption, stock decrement, or pickup code is created.
+4. Send a webhook with an invalid signature and confirm it is rejected without business-state changes.
+5. Force a business-state application failure in staging and confirm the webhook attempt is quarantined with provider IDs but without secrets.
+
+Record the staging date, Razorpay dashboard event IDs, Zook `PaymentWebhookAttempt` IDs, duplicate replay result, and any quarantine result here before launch.
+
 ## Future Notes
 
 - UPI AutoPay and card mandates remain future work

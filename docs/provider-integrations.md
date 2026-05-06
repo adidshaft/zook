@@ -224,3 +224,15 @@ The mobile client is still finishing the native permission/token UX, so Expo pus
 - Staging and production must opt into live providers explicitly.
 - Partial live setup is treated as a setup error, not a silent fallback.
 - Admin diagnostics can safely inspect provider readiness without exposing secrets.
+
+## OpenAI Provider Certification
+
+Before production launch, complete and record a staging run with a real OpenAI key:
+
+1. Set `AI_PROVIDER=openai` with a staging-safe key and confirm `/api/ready` reports AI as configured.
+2. Generate a trainer draft for an assigned client with recent member context.
+3. Exercise a safety prompt that should be blocked or redirected and confirm the guardrail response.
+4. Force or simulate a provider timeout and confirm the API returns a controlled error while writing a request log with request ID and no prompt secrets.
+5. Validate the accepted response shape before assigning the plan to a member.
+
+Record the staging date, request IDs, model name, timeout result, safety-prompt result, and reviewer sign-off here before launch.

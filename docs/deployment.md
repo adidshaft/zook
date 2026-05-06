@@ -65,6 +65,15 @@ Zook keeps local development mock-first while making staging realistic enough fo
 - seed demo users disabled by default
 - `RATE_LIMIT_PROVIDER=upstash` required for durable shared limits
 
+## GitHub Branch Protection
+
+Configure `main` in GitHub branch protection before launch:
+
+- require the `CI` workflow to pass
+- require at least one approving review
+- block force pushes
+- keep administrators included unless an incident override is explicitly approved
+
 ## Required Checks
 
 Run these before deploy:

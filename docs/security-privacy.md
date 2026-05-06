@@ -98,3 +98,16 @@ Privileged mutations now write audit entries for:
 - Provider keys stay server-side.
 - Mobile/web clients never receive payment, AI, storage, or map secrets.
 - Mock providers remain the default local runtime so development is cheap and deterministic.
+
+## S3/R2 Storage Certification
+
+Before production launch, complete and record a staging run with a real private bucket:
+
+1. Set `STORAGE_PROVIDER=s3` or `STORAGE_PROVIDER=r2` with staging credentials and confirm `/api/ready` reports storage configured.
+2. Upload each launch-critical category: `profile_photo`, `payment_proof`, `org_logo`, `org_cover`, and `privacy_export`.
+3. Confirm oversized uploads return HTTP 413 and unsupported MIME types are rejected.
+4. Confirm generated object keys follow `{orgId}/{category}/{fileId}-{timestamp}.{ext}` and do not include client filenames.
+5. Confirm private files require a signed URL and org/user permissions, while public logo/cover files are readable without exposing bucket credentials.
+6. Delete a test file and confirm the asset can no longer be served.
+
+Record the staging date, bucket name or environment alias, file asset IDs, signed URL checks, access-denied checks, and deletion result here before launch.
