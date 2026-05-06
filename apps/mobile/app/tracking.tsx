@@ -8,6 +8,7 @@ import {
   IconBubble,
   MobileHeader,
   SectionHeader,
+  StickyActionBar,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -149,6 +150,11 @@ export default function TrackingDashboard() {
             </GlassCard>
           )}
         </ScrollView>
+        <StickyActionBar>
+          <ZookButton href="/tracking-entry" icon="add-outline">
+            Log workout
+          </ZookButton>
+        </StickyActionBar>
         <BottomNav />
       </ZookScreen>
     </>
@@ -267,7 +273,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 12,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
   },
   heroContent: {
     gap: spacing.md,

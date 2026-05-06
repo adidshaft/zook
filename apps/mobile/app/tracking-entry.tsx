@@ -11,6 +11,7 @@ import {
   IconBubble,
   MobileHeader,
   SectionHeader,
+  StickyActionBar,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -61,8 +62,7 @@ export default function TrackingEntry() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [exercises, setExercises] = useState<ExerciseEntry[]>([
-    { exerciseName: "Bench Press", setsCompleted: "4", reps: "8", weightKg: "60" },
-    { exerciseName: "Cable Row", setsCompleted: "4", reps: "10", weightKg: "40" },
+    { exerciseName: "", setsCompleted: "", reps: "", weightKg: "" },
   ]);
 
   function updateExercise(index: number, field: keyof ExerciseEntry, value: string) {
@@ -86,6 +86,13 @@ export default function TrackingEntry() {
 
   async function saveWorkout() {
     if (!token) {
+      return;
+    }
+    const hasValidExercise = exercises.some(
+      (exercise) => exercise.exerciseName.trim().length > 0 && Number(exercise.setsCompleted) > 0,
+    );
+    if (!hasValidExercise) {
+      setMessage("Add at least one exercise with a name and sets greater than 0.");
       return;
     }
     setSaving(true);
@@ -304,25 +311,29 @@ export default function TrackingEntry() {
                   <GlassInput
                     label="Sets"
                     value={exercise.setsCompleted}
-                    onChangeText={(value) => updateExercise(index, "setsCompleted", value)}
+                    onChangeText={(value) =>
+                      updateExercise(index, "setsCompleted", value.replace(/\D/g, ""))
+                    }
                     keyboardType="number-pad"
-                    placeholder="4"
+                    placeholder="3"
                     style={styles.metricInput}
                   />
                   <GlassInput
-                    label="Reps"
+                    label="Reps per set"
                     value={exercise.reps}
-                    onChangeText={(value) => updateExercise(index, "reps", value)}
+                    onChangeText={(value) => updateExercise(index, "reps", value.replace(/\D/g, ""))}
                     keyboardType="number-pad"
-                    placeholder="10"
+                    placeholder="8"
                     style={styles.metricInput}
                   />
                   <GlassInput
-                    label="Kg"
+                    label="Weight (kg)"
                     value={exercise.weightKg}
-                    onChangeText={(value) => updateExercise(index, "weightKg", value)}
+                    onChangeText={(value) =>
+                      updateExercise(index, "weightKg", value.replace(/[^\d.]/g, ""))
+                    }
                     keyboardType="decimal-pad"
-                    placeholder="60"
+                    placeholder="0"
                     style={styles.metricInput}
                   />
                 </View>
@@ -334,6 +345,8 @@ export default function TrackingEntry() {
             <Text style={styles.statusMessage}>{message}</Text>
           ) : null}
 
+        </ScrollView>
+        <StickyActionBar>
           <ZookButton
             onPress={() => void saveWorkout()}
             disabled={saving}
@@ -341,7 +354,7 @@ export default function TrackingEntry() {
           >
             {saving ? "Saving..." : "Save workout"}
           </ZookButton>
-        </ScrollView>
+        </StickyActionBar>
         <BottomNav />
       </ZookScreen>
     </>
@@ -355,7 +368,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
   },
   iconButton: {
     width: 44,

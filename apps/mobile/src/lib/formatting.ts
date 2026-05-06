@@ -98,3 +98,12 @@ export function titleCaseFromCode(value?: string | null) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
+
+export function joinModeLabel(
+  mode?: "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY" | string | null,
+) {
+  if (mode === "OPEN_JOIN") return "Anyone can join";
+  if (mode === "APPROVAL_REQUIRED") return "Approval required";
+  if (mode === "INVITE_ONLY") return "Invite only";
+  return titleCaseFromCode(mode);
+}

@@ -18,7 +18,7 @@ import {
 import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { gymApi } from "@/lib/domain-api";
-import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, formatLongDate, joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
 import { useGymProfile } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -138,7 +138,7 @@ export default function GymProfileScreen() {
             title={gym.name}
             subtitle={`${gym.city}, ${gym.state}`}
             trailing={
-              <Pill tone={toneForJoinMode(gym.joinMode)}>{titleCaseFromCode(gym.joinMode)}</Pill>
+              <Pill tone={toneForJoinMode(gym.joinMode)}>{joinModeLabel(gym.joinMode)}</Pill>
             }
           />
         ) : (
@@ -158,8 +158,9 @@ export default function GymProfileScreen() {
 
         {!gymQuery.isLoading && !gym ? (
           <EmptyState
-            title="Gym profile unavailable"
-            body="This public gym could not be found or is no longer visible."
+            title="Gym not found"
+            body="This link may be expired or the gym may have moved."
+            action={<PrimaryButton href="/find-gyms">Find gyms</PrimaryButton>}
           />
         ) : null}
 

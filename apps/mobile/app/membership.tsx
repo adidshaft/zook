@@ -350,18 +350,20 @@ export default function MembershipScreen() {
             <GlassCard variant="compact" contentStyle={styles.emptyContent}>
               <IconBubble icon="card-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
-                <Text style={styles.emptyTitle}>No memberships yet</Text>
-                <Text style={styles.emptyBody}>Join a gym to see your membership here.</Text>
+                <Text style={styles.emptyTitle}>No memberships</Text>
+                <Text style={styles.emptyBody}>
+                  Browse gyms and purchase a membership to get started.
+                </Text>
               </View>
               <ZookButton href="/find-gyms" icon="search-outline">
-                Browse gyms
+                Find gyms
               </ZookButton>
             </GlassCard>
           ) : null}
 
           {latestSubscription ? (
             <>
-              <SectionHeader title="Current plan" />
+              <SectionHeader title="Latest membership" />
               <GlassCard
                 variant={latestSubscription.status === "ACTIVE" ? "success" : "default"}
                 contentStyle={styles.featuredContent}
@@ -691,7 +693,7 @@ function RenewalSheet({
               icon="refresh-outline"
               style={styles.actionHalf}
             >
-              {renewing ? "Starting..." : "Continue"}
+              {renewing ? "Starting..." : "Continue to payment"}
             </ZookButton>
           </View>
         </View>

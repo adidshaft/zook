@@ -130,23 +130,44 @@ export const layout = {
 export const shadows = {
   glowLime: {
     shadowColor: colors.lime,
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
     elevation: 2,
   },
   glowLimeSoft: {
     shadowColor: colors.lime,
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
+    elevation: 1,
+  },
+  glowDark: {
+    shadowColor: "#000",
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 14 },
     elevation: 1,
   },
   glass: {
     shadowColor: "#000",
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.14,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 14 },
+    elevation: 1,
+  },
+  glowAmberSoft: {
+    shadowColor: colors.amber,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 1,
+  },
+  glowRedSoft: {
+    shadowColor: colors.red,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 1,
   },
   card: {
@@ -156,6 +177,12 @@ export const shadows = {
     shadowOffset: { width: 0, height: 10 },
     elevation: 1,
   },
+};
+
+export const shadowIntensity = {
+  subtle: 0.06,
+  normal: 0.12,
+  strong: 0.18,
 };
 
 export const palettes = {
@@ -219,5 +246,6 @@ export const zookTokens = {
   typography,
   layout,
   shadow: shadows,
+  shadowIntensity,
   palette: palettes,
 } as const;

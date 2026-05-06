@@ -5,6 +5,7 @@ import type { PaymentMode } from "@zook/core";
 import {
   AuditWarning,
   BottomNav,
+  EmptyState,
   FormField,
   GlassCard,
   IconBubble,
@@ -56,6 +57,12 @@ const paymentModes: Array<{ label: string; value: DeskPaymentMode }> = [
   { label: "Bank", value: "BANK_TRANSFER" },
   { label: "Card", value: "CARD" },
   { label: "Manual", value: "OTHER" },
+];
+
+const reasonSuggestions = [
+  "Desk confirmed member identity",
+  "Member showed active membership",
+  "QR was unreadable at entry",
 ];
 
 function normalizeView(value: string | string[] | undefined): DeskView {
@@ -132,6 +139,8 @@ export default function Reception() {
     Boolean(member?.id) &&
     Boolean(membership?.id);
   const canVerifyCode = Boolean(verifyCode.trim() && token && activeOrgId);
+  const amountInvalid =
+    amount.trim().length > 0 && (!Number.isFinite(amountPaise) || amountPaise <= 0);
 
   useEffect(() => {
     setVerifyMessage("");
@@ -356,7 +365,7 @@ export default function Reception() {
               >
                 Verify Code
               </PrimaryButton>
-              {verifyMessage ? <Text style={styles.statusText}>{verifyMessage}</Text> : null}
+              {verifyMessage ? <VerificationResult message={verifyMessage} /> : null}
             </GlassCard>
 
             <SectionHeader
@@ -385,7 +394,7 @@ export default function Reception() {
                           {attempt.user?.name ?? attempt.user?.email ?? "Member check-in"}
                         </Text>
                         <Text style={styles.cardBody}>
-                          {attempt.branchName ?? "Default Branch"} ·{" "}
+                          {attempt.branchName ?? "Main branch"} ·{" "}
                           {attempt.plan?.name ?? "Membership"} ·{" "}
                           {deskReasonCopy(
                             Array.isArray(attempt.suspiciousFlags)
@@ -411,7 +420,26 @@ export default function Reception() {
                         ))}
                     </View>
                     {index === 0 ? (
-                      <FormField label="Decision reason" value={reason} onChangeText={setReason} />
+                      <View style={styles.formStack}>
+                        <FormField
+                          label="Decision reason"
+                          value={reason}
+                          onChangeText={setReason}
+                          multiline
+                        />
+                        <View style={styles.suggestionRow}>
+                          {reasonSuggestions.map((suggestion) => (
+                            <Pressable
+                              key={suggestion}
+                              onPress={() => setReason(suggestion)}
+                              accessibilityRole="button"
+                              style={styles.suggestionChip}
+                            >
+                              <Text style={styles.suggestionText}>{suggestion}</Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </View>
                     ) : null}
                     <View style={styles.actionRow}>
                       <PrimaryButton
@@ -456,6 +484,11 @@ export default function Reception() {
               placeholder="Search member by name, email, phone, member ID"
             />
             <View style={styles.stack}>
+              {!membersQuery.isLoading && !filteredMembers.length ? (
+                <GlassCard variant="compact" padding={14}>
+                  <EmptyState title="No members found" body="Try a different name or email." />
+                </GlassCard>
+              ) : null}
               {filteredMembers.slice(0, 4).map((user) => {
                 const selected = user.profile.userId === selectedMemberRecord?.profile.userId;
                 return (
@@ -573,9 +606,7 @@ export default function Reception() {
               />
               <ListRow
                 title="Invoice"
-                subtitle={
-                  membership?.id ? "Active membership selected" : "No active membership selected"
-                }
+                subtitle={membership?.id ? "Latest membership selected" : "No membership selected"}
                 leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />}
                 trailing={<Text style={styles.rowAmount}>{formatInr(dueAmount)} due</Text>}
               />
@@ -589,9 +620,10 @@ export default function Reception() {
                 <FormField
                   label="Amount received"
                   value={amount}
-                  onChangeText={setAmount}
+                  onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
                   keyboardType="numeric"
                   required
+                  error={amountInvalid ? "Enter an amount greater than 0." : undefined}
                 />
                 <FormField
                   label="Receipt or reference"
@@ -670,7 +702,7 @@ export default function Reception() {
               >
                 Verify Pickup Code
               </PrimaryButton>
-              {verifyMessage ? <Text style={styles.statusText}>{verifyMessage}</Text> : null}
+              {verifyMessage ? <VerificationResult message={verifyMessage} /> : null}
             </GlassCard>
             <SectionHeader
               title="Fulfillment Queue"
@@ -732,8 +764,26 @@ export default function Reception() {
           </>
         ) : null}
       </ScrollView>
-      <BottomNav role="RECEPTIONIST" />
+      <BottomNav role="RECEPTIONIST" activeTab={view === "desk" ? undefined : view} />
     </ZookScreen>
+  );
+}
+
+function VerificationResult({ message }: { message: string }) {
+  const success = /verified|match/i.test(message) && !/not valid|no active|not ready/i.test(message);
+  return (
+    <GlassCard
+      variant={success ? "success" : "warning"}
+      padding={12}
+      contentStyle={styles.verificationResult}
+    >
+      <IconBubble
+        icon={success ? "checkmark-circle-outline" : "alert-circle-outline"}
+        tone={success ? "lime" : "amber"}
+        size={34}
+      />
+      <Text style={styles.verificationText}>{message}</Text>
+    </GlassCard>
   );
 }
 
@@ -874,6 +924,24 @@ const styles = StyleSheet.create({
     color: colors.muted,
     ...typography.small,
   },
+  suggestionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  suggestionChip: {
+    minHeight: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    paddingHorizontal: 10,
+    justifyContent: "center",
+  },
+  suggestionText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
   formStack: {
     gap: spacing.md,
   },
@@ -910,6 +978,16 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: colors.lime,
+    ...typography.bodyStrong,
+  },
+  verificationResult: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  verificationText: {
+    flex: 1,
+    color: colors.text,
     ...typography.bodyStrong,
   },
   rowAmount: {

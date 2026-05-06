@@ -14,7 +14,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { toWebUrl } from "@/lib/api";
-import { titleCaseFromCode } from "@/lib/formatting";
+import { joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
 import { useGymSearch } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -179,7 +179,9 @@ export default function FindGyms() {
                           {gym.city}, {gym.state}
                         </Text>
                       </View>
-                      <Pill tone={toneForJoinMode(gym.joinMode)}>{titleCaseFromCode(gym.joinMode)}</Pill>
+                      <Pill tone={toneForJoinMode(gym.joinMode)}>
+                        {joinModeLabel(gym.joinMode)}
+                      </Pill>
                     </View>
 
                     {(gym.amenities ?? []).length > 0 ? (

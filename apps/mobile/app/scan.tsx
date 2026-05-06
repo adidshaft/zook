@@ -18,6 +18,7 @@ import {
   BottomNav,
   CollapsibleSection,
   GlassCard,
+  IconBubble,
   MobileHeader,
   ScannerFrame,
   ZookButton,
@@ -214,6 +215,25 @@ export default function Scan() {
             showProfileShortcut={false}
           />
 
+          {cameraBlocked ? (
+            <GlassCard variant="danger" contentStyle={styles.blockedPermissionContent}>
+              <IconBubble icon="camera-outline" tone="red" size={42} />
+              <View style={styles.blockedPermissionCopy}>
+                <Text style={styles.cameraFallbackTitle}>Camera access blocked</Text>
+                <Text style={styles.cameraFallbackText}>
+                  Allow camera access in Settings to scan QR codes.
+                </Text>
+              </View>
+              <ZookButton
+                onPress={() => void Linking.openSettings()}
+                tone="secondary"
+                icon="settings-outline"
+              >
+                Open settings
+              </ZookButton>
+            </GlassCard>
+          ) : null}
+
           <View style={styles.cameraCard}>
             {hasCamera ? (
               <CameraView
@@ -380,6 +400,15 @@ const styles = StyleSheet.create({
   permissionButton: {
     minHeight: 38,
     marginTop: spacing.xs,
+  },
+  blockedPermissionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  blockedPermissionCopy: {
+    flex: 1,
+    gap: 4,
   },
   errorContent: {
     gap: spacing.sm,

@@ -47,6 +47,8 @@ function titleCaseStatus(status?: string | null) {
   return "Recorded";
 }
 
+const legacyDefaultBranchName = ["Default", "Branch"].join(" ");
+
 export default function AttendanceResultScreen() {
   const router = useRouter();
   const routeParams = useLocalSearchParams<{
@@ -88,10 +90,10 @@ export default function AttendanceResultScreen() {
   const tone = pending ? "amber" : approved ? "lime" : "red";
   const code = record.entryCode ?? record.id.slice(-8).toUpperCase();
   const branchName =
-    record.branchName === "Default Branch"
-      ? "Default Branch"
+    record.branchName === legacyDefaultBranchName
+      ? "Main branch"
       : (record.branchName ?? "Assigned branch");
-  const planName = record.planName ?? "Active membership";
+  const planName = record.planName ?? "Latest membership";
   const firstTrainerClientWithPlan =
     trainerClientsQuery.data?.clients.find((client) => (client.summary?.activePlans ?? 0) > 0)
       ?.memberUserId ?? null;

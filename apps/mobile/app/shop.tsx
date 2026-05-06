@@ -27,6 +27,7 @@ import {
   SecondaryButton,
   SectionHeader,
   Skeleton,
+  StickyActionBar,
   StatusChip,
   ZookButton,
   ZookScreen,
@@ -51,9 +52,9 @@ const categories: Array<{ label: string; value: Category }> = [
   { label: "All", value: "ALL" },
   { label: "Water", value: "WATER" },
   { label: "Shake", value: "PROTEIN_SHAKE" },
-  { label: "Cup", value: "SHAKER" },
+  { label: "Cups", value: "SHAKER" },
   { label: "Towel", value: "TOWEL" },
-  { label: "Other", value: "SUPPLEMENT" },
+  { label: "Supplements", value: "SUPPLEMENT" },
 ];
 
 function firstParam(value?: string | string[]) {
@@ -280,7 +281,18 @@ export default function Shop() {
 
   if (checkoutState === "pickup" && order) {
     return (
-      <ShopShell selectedPath="/shop">
+      <ShopShell
+        selectedPath="/shop"
+        stickyAction={
+          <ZookButton
+            onPress={() => void continuePayment()}
+            disabled={completeMockPayment.isPending}
+            icon="card-outline"
+          >
+            {completeMockPayment.isPending ? "Confirming..." : "Continue to payment"}
+          </ZookButton>
+        }
+      >
         <MobileHeader
           title="Ready for pickup"
           subtitle="Show this code at the front desk."
@@ -355,13 +367,6 @@ export default function Shop() {
             <Text style={styles.cardBody}>Order total</Text>
             <Text style={styles.totalText}>{formatInr(order.totalPaise)}</Text>
           </View>
-          <ZookButton
-            onPress={() => void continuePayment()}
-            disabled={completeMockPayment.isPending}
-            icon="card-outline"
-          >
-            {completeMockPayment.isPending ? "Confirming..." : "Continue"}
-          </ZookButton>
         </GlassCard>
       </ShopShell>
     );
@@ -369,7 +374,23 @@ export default function Shop() {
 
   if (checkoutState === "cart") {
     return (
-      <ShopShell selectedPath="/shop">
+      <ShopShell
+        selectedPath="/shop"
+        stickyAction={
+          <View style={styles.actionRow}>
+            <SecondaryButton onPress={() => setCheckoutState("browse")} style={styles.actionHalf}>
+              Back
+            </SecondaryButton>
+            <ZookButton
+              onPress={() => void createCheckout()}
+              disabled={!cartItems.length || createOrder.isPending}
+              style={styles.actionHalf}
+            >
+              {createOrder.isPending ? "Creating..." : "Continue to payment"}
+            </ZookButton>
+          </View>
+        }
+      >
         <MobileHeader
           eyebrow="Cart"
           title="Review order"
@@ -424,18 +445,6 @@ export default function Shop() {
           <Text style={styles.cardBody}>Subtotal</Text>
           <Text style={styles.totalText}>{formatInr(totalPaise)}</Text>
         </GlassCard>
-        <View style={styles.actionRow}>
-          <SecondaryButton onPress={() => setCheckoutState("browse")} style={styles.actionHalf}>
-            Back
-          </SecondaryButton>
-          <ZookButton
-            onPress={() => void createCheckout()}
-            disabled={!cartItems.length || createOrder.isPending}
-            style={styles.actionHalf}
-          >
-            {createOrder.isPending ? "Creating..." : "Continue"}
-          </ZookButton>
-        </View>
       </ShopShell>
     );
   }
@@ -600,14 +609,18 @@ function ShopShell({
   children,
   selectedPath,
   floatingAction,
+  stickyAction,
 }: {
   children: ReactNode;
   selectedPath: string;
   floatingAction?: ReactNode;
+  stickyAction?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
   const contentPaddingBottom =
-    layout.bottomNavContentPadding + (floatingAction ? layout.stickyActionHeight : 0);
+    layout.bottomNavContentPadding +
+    (floatingAction ? layout.stickyActionHeight : 0) +
+    (stickyAction ? layout.stickyActionHeight : 0);
   const floatingBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + 18;
 
   return (
@@ -630,6 +643,7 @@ function ShopShell({
             {floatingAction}
           </View>
         ) : null}
+        {stickyAction ? <StickyActionBar>{stickyAction}</StickyActionBar> : null}
         <BottomNav selectedPath={selectedPath} />
       </ZookScreen>
     </>

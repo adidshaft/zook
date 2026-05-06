@@ -50,32 +50,32 @@ function toneForType(type?: string | null) {
 }
 
 function groupByDate(items: InboxNotification[]) {
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const todayKey = today.toISOString().slice(0, 10);
-  const yesterdayKey = yesterday.toISOString().slice(0, 10);
-
-  const groups: Array<{ label: string; items: InboxNotification[] }> = [];
-  const buckets: Record<string, InboxNotification[]> = {};
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfYesterday = new Date(startOfToday);
+  startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfWeek.getDate() - 6);
+  const buckets = new Map(
+    ["Today", "Yesterday", "Earlier this week", "Older"].map((label) => [
+      label,
+      [] as InboxNotification[],
+    ]),
+  );
 
   for (const item of items) {
-    const dateKey = item.notification?.createdAt?.slice(0, 10) ?? "unknown";
-    if (!buckets[dateKey]) {
-      buckets[dateKey] = [];
-    }
-    buckets[dateKey].push(item);
+    const createdAt = item.notification?.createdAt
+      ? new Date(item.notification.createdAt)
+      : new Date(0);
+    if (createdAt >= startOfToday) buckets.get("Today")?.push(item);
+    else if (createdAt >= startOfYesterday) buckets.get("Yesterday")?.push(item);
+    else if (createdAt >= startOfWeek) buckets.get("Earlier this week")?.push(item);
+    else buckets.get("Older")?.push(item);
   }
 
-  for (const [key, bucketItems] of Object.entries(buckets)) {
-    let label = key;
-    if (key === todayKey) label = "Today";
-    else if (key === yesterdayKey) label = "Yesterday";
-    else label = new Date(key).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    groups.push({ label, items: bucketItems });
-  }
-
-  return groups;
+  return Array.from(buckets.entries())
+    .filter(([, bucketItems]) => bucketItems.length > 0)
+    .map(([label, bucketItems]) => ({ label, items: bucketItems }));
 }
 
 export default function NotificationsScreen() {
@@ -216,10 +216,8 @@ export default function NotificationsScreen() {
             <GlassCard variant="compact" contentStyle={styles.emptyContent}>
               <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
-                <Text style={styles.emptyTitle}>No notifications yet</Text>
-                <Text style={styles.emptyBody}>
-                  Gym updates, payment alerts, and plan messages will appear here.
-                </Text>
+                <Text style={styles.emptyTitle}>No notifications</Text>
+                <Text style={styles.emptyBody}>You're all caught up.</Text>
               </View>
             </GlassCard>
           ) : null}

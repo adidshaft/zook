@@ -296,13 +296,24 @@ export default function Plans() {
             </View>
           </ScrollView>
           <StickyActionBar>
-            <ZookButton
-              onPress={() => void completeWorkout()}
-              disabled={!selectedAssignment || completePlan.isPending}
-              icon="checkmark-circle-outline"
-            >
-              {completePlan.isPending ? "Completing..." : "Complete Workout"}
-            </ZookButton>
+            <View style={styles.stickyActionRow}>
+              <ZookButton
+                onPress={() => setFeedbackOpen(true)}
+                tone="secondary"
+                icon="send-outline"
+                style={styles.stickyActionHalf}
+              >
+                Send Feedback
+              </ZookButton>
+              <ZookButton
+                onPress={() => void completeWorkout()}
+                disabled={!selectedAssignment || completePlan.isPending}
+                icon="checkmark-circle-outline"
+                style={styles.stickyActionHalf}
+              >
+                {completePlan.isPending ? "Completing..." : "Complete Workout"}
+              </ZookButton>
+            </View>
           </StickyActionBar>
         </ZookScreen>
       </>
@@ -336,8 +347,8 @@ export default function Plans() {
             {!plansQuery.isLoading && !filteredPlans.length ? (
               <GlassCard variant="compact" style={styles.emptyPlanCard}>
                 <EmptyState
-                  title="No plans assigned"
-                  body="Workout and diet plans from your coach will show up here."
+                  title="No plan assigned"
+                  body="Your trainer will create and assign a plan for you."
                 />
               </GlassCard>
             ) : null}
@@ -543,5 +554,12 @@ const styles = StyleSheet.create({
   },
   emptyPlanCard: {
     width: "100%",
+  },
+  stickyActionRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  stickyActionHalf: {
+    flex: 1,
   },
 });

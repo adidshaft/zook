@@ -30,6 +30,7 @@ export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 export type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type GlassCardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
+type GlassCardGlowTone = "lime" | "amber" | "red" | "success";
 type BrandMarkSize = "sm" | "md" | "lg";
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -93,7 +94,7 @@ const buttonPalettes: Record<
     backgroundColor: colors.lime,
     borderColor: colors.lime,
     color: colors.bg,
-    glow: shadows.glowLime,
+    glow: shadows.glowLimeSoft,
   },
   secondary: {
     backgroundColor: "rgba(255,255,255,0.045)",
@@ -119,7 +120,7 @@ const glassCardVariants: Record<
   default: {
     backgroundColor: colors.glassFill,
     borderColor: colors.glassStroke,
-    shadow: shadows.glass,
+    shadow: shadows.glowDark,
   },
   compact: {
     backgroundColor: colors.glassFill,
@@ -129,12 +130,10 @@ const glassCardVariants: Record<
   selected: {
     backgroundColor: palettes.lime.fillSoft,
     borderColor: palettes.lime.stroke,
-    shadow: shadows.glowLimeSoft,
   },
   success: {
     backgroundColor: palettes.lime.fillSoft,
     borderColor: palettes.lime.stroke,
-    shadow: shadows.glowLimeSoft,
   },
   warning: {
     backgroundColor: palettes.warning.fill,
@@ -144,6 +143,13 @@ const glassCardVariants: Record<
     backgroundColor: palettes.danger.fill,
     borderColor: palettes.danger.stroke,
   },
+};
+
+const glassGlowStyles: Record<GlassCardGlowTone, ViewStyle> = {
+  lime: shadows.glowLimeSoft,
+  success: shadows.glowLimeSoft,
+  amber: shadows.glowAmberSoft,
+  red: shadows.glowRedSoft,
 };
 
 const metricPalettes = {
@@ -371,6 +377,7 @@ export function GlassCard({
   style,
   contentStyle,
   glow = false,
+  glowTone,
   variant = "default",
   padding,
   radius,
@@ -382,6 +389,7 @@ export function GlassCard({
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   glow?: boolean;
+  glowTone?: GlassCardGlowTone;
   variant?: GlassCardVariant;
   padding?: number;
   radius?: number;
@@ -390,15 +398,17 @@ export function GlassCard({
   onPress?: PressHandler;
 }) {
   const palette = glassCardVariants[variant];
+  const resolvedGlowTone = glowTone ?? (glow ? "lime" : undefined);
   const cardStyle = [
     styles.glassCard,
     palette.shadow,
+    resolvedGlowTone ? glassGlowStyles[resolvedGlowTone] : null,
     {
       backgroundColor: palette.backgroundColor,
       borderColor: palette.borderColor,
       borderRadius: radius ?? (variant === "compact" ? radii.smallCard : radii.mainCard),
     },
-    glow ? styles.glassCardGlow : null,
+    resolvedGlowTone ? styles.glassCardGlow : null,
     disabled ? styles.disabled : null,
     style,
   ];
@@ -1777,11 +1787,13 @@ export function BottomNav({
   selectedPath,
   role,
   activeView,
+  activeTab,
 }: {
   tabs?: DockTab[];
   selectedPath?: string;
   role?: Role;
   activeView?: string;
+  activeTab?: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -1805,7 +1817,8 @@ export function BottomNav({
   const bottom = Math.max(insets.bottom, 12);
 
   const navItems = resolvedTabs.map((tab) => {
-    const currentView = activeView ?? (Array.isArray(params.view) ? params.view[0] : params.view);
+    const currentView =
+      activeTab ?? activeView ?? (Array.isArray(params.view) ? params.view[0] : params.view);
     const clientDetailMatches = tab.label === "Clients" && activePath.startsWith("/trainer/client");
     const roleRootPath =
       tab.matchPath === "/trainer" || tab.matchPath === "/reception" || tab.matchPath === "/owner";
@@ -1902,7 +1915,7 @@ export function BottomNav({
 
   return (
     <BlurView
-      intensity={54}
+      intensity={18}
       tint="dark"
       style={StyleSheet.flatten([
         styles.bottomNav,

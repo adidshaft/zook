@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   BottomNav,
   EmptyState,
@@ -35,6 +35,7 @@ import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type OwnerView = "command" | "approvals" | "revenue" | "stock" | "members";
 type Drilldown = Exclude<OwnerView, "command">;
+type MemberFilter = "all" | "active" | "expiring" | "expired";
 
 function normalizeView(value: string | string[] | undefined): OwnerView {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -84,6 +85,7 @@ export default function Owner() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const view = normalizeView(params.view ?? offlineDemoViewOverride());
   const [memberSearch, setMemberSearch] = useState("");
+  const [memberFilter, setMemberFilter] = useState<MemberFilter>("all");
   const [actionStatus, setActionStatus] = useState("");
   const shellRole = activeRole === "ADMIN" ? "ADMIN" : "OWNER";
   const dashboardQuery = useOwnerDashboard();
@@ -116,14 +118,32 @@ export default function Owner() {
   const branchName =
     dashboard?.branchScope?.selectedBranch?.name ??
     dashboard?.branchScope?.defaultBranch?.name ??
-    "Default Branch";
+    "Main branch";
   const memberSearchTerm = memberSearch.trim().toLowerCase();
   const members = membersQuery.data?.members ?? [];
   const paymentExceptionCount = payments.filter((payment) => payment.status !== "SUCCEEDED").length;
   const filteredMembers = members.filter((member) => {
     const name = member.user?.name.toLowerCase() ?? "";
     const email = member.user?.email.toLowerCase() ?? "";
-    return !memberSearchTerm || name.includes(memberSearchTerm) || email.includes(memberSearchTerm);
+    const searchMatch =
+      !memberSearchTerm || name.includes(memberSearchTerm) || email.includes(memberSearchTerm);
+    const status = String(member.activeSubscription?.status ?? "").toLowerCase();
+    const expiresAt = member.activeSubscription?.endsAt
+      ? new Date(member.activeSubscription.endsAt)
+      : null;
+    const daysLeft = expiresAt
+      ? Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null;
+    const filterMatch =
+      memberFilter === "all" ||
+      (memberFilter === "active" && status === "active") ||
+      (memberFilter === "expired" && (status === "expired" || (daysLeft !== null && daysLeft <= 0))) ||
+      (memberFilter === "expiring" &&
+        status === "active" &&
+        daysLeft !== null &&
+        daysLeft > 0 &&
+        daysLeft <= 30);
+    return searchMatch && filterMatch;
   });
   const needsAttention = [
     {
@@ -191,6 +211,18 @@ export default function Owner() {
     setActionStatus("Join request rejected.");
   }
 
+  async function reorderProduct(product: {
+    name: string;
+    stock?: number | null;
+    lowStockThreshold?: number | null;
+  }) {
+    const subject = encodeURIComponent(`Reorder ${product.name}`);
+    const body = encodeURIComponent(
+      `Hi,\n\nPlease share supplier options for ${product.name}.\n\nCurrent stock: ${product.stock ?? 0}\nThreshold: ${product.lowStockThreshold ?? 0}\n\nThanks.`,
+    );
+    await Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
+  }
+
   return (
     <ZookScreen>
       <ScrollView
@@ -230,38 +262,62 @@ export default function Owner() {
         {view === "command" ? (
           <>
             <View style={styles.metricGrid}>
-              <MetricTile
-                label="Active members"
-                value={formatCompactNumber(activeMembers)}
-                detail={branchName}
-                tone="lime"
-                icon="people-outline"
+              <Pressable
+                onPress={() => router.replace("/owner?view=members")}
+                accessibilityRole="button"
+                accessibilityLabel="Open members"
                 style={styles.metricHalf}
-              />
-              <MetricTile
-                label="Today check-ins"
-                value={formatCompactNumber(todayCheckIns)}
-                detail={`${attentionAttempts.length} pending review`}
-                tone="blue"
-                icon="qr-code-outline"
+              >
+                <MetricTile
+                  label="Active members"
+                  value={formatCompactNumber(activeMembers)}
+                  detail={branchName}
+                  tone="lime"
+                  icon="people-outline"
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => router.replace("/owner?view=approvals")}
+                accessibilityRole="button"
+                accessibilityLabel="Open scan reviews"
                 style={styles.metricHalf}
-              />
-              <MetricTile
-                label="Revenue"
-                value={formatInr(revenuePaise)}
-                detail="Collected + pickup"
-                tone="amber"
-                icon="trending-up-outline"
+              >
+                <MetricTile
+                  label="Today check-ins"
+                  value={formatCompactNumber(todayCheckIns)}
+                  detail={`${attentionAttempts.length} pending review`}
+                  tone="blue"
+                  icon="qr-code-outline"
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => router.replace("/owner?view=revenue")}
+                accessibilityRole="button"
+                accessibilityLabel="Open revenue"
                 style={styles.metricHalf}
-              />
-              <MetricTile
-                label="Approvals"
-                value={String(pendingApprovals)}
-                detail="Needs attention"
-                tone="violet"
-                icon="checkmark-done-outline"
+              >
+                <MetricTile
+                  label="Revenue"
+                  value={formatInr(revenuePaise)}
+                  detail="Collected + pickup"
+                  tone="amber"
+                  icon="trending-up-outline"
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => router.replace("/owner?view=approvals")}
+                accessibilityRole="button"
+                accessibilityLabel="Open approvals"
                 style={styles.metricHalf}
-              />
+              >
+                <MetricTile
+                  label="Approvals"
+                  value={String(pendingApprovals)}
+                  detail="Needs attention"
+                  tone="violet"
+                  icon="checkmark-done-outline"
+                />
+              </Pressable>
             </View>
 
             <SectionHeader title="Needs attention" />
@@ -301,6 +357,31 @@ export default function Owner() {
               placeholder="Search by name or email"
               leading={<Ionicons name="search-outline" size={17} color={colors.muted} />}
             />
+            <View style={styles.filterRow}>
+              {[
+                ["all", "All"],
+                ["active", "Active"],
+                ["expiring", "Expiring"],
+                ["expired", "Expired"],
+              ].map(([value, label]) => {
+                const selected = memberFilter === value;
+                return (
+                  <Pressable
+                    key={value}
+                    onPress={() => setMemberFilter(value as MemberFilter)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    style={[styles.filterChip, selected ? styles.filterChipActive : null]}
+                  >
+                    <Text
+                      style={[styles.filterChipText, selected ? styles.filterChipTextActive : null]}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
             <SectionHeader title="Members" subtitle={`${filteredMembers.length} members`} />
             <View style={styles.membersStack}>
@@ -383,6 +464,15 @@ export default function Owner() {
               />
             </View>
 
+            {pendingApprovals === 0 ? (
+              <GlassCard variant="compact">
+                <EmptyState
+                  title="All caught up"
+                  body="No pending join requests or scan reviews."
+                />
+              </GlassCard>
+            ) : null}
+
             <SectionHeader title="Request list" subtitle="Pending join decisions" />
             <View style={styles.stack}>
               {joinRequests.length ? (
@@ -429,7 +519,7 @@ export default function Owner() {
                   <GlassCard key={attempt.id} contentStyle={styles.stack}>
                     <ListRow
                       title={attempt.user?.name ?? attempt.user?.email ?? "Member check-in"}
-                      subtitle={`${attempt.branchName ?? "Default Branch"} · ${titleCase(attempt.status)} · ${cleanReviewReason(Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null)}`}
+                      subtitle={`${attempt.branchName ?? "Main branch"} · ${titleCase(attempt.status)} · ${cleanReviewReason(Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null)}`}
                       leading={
                         <IconBubble
                           icon={attempt.status === "FLAGGED" ? "alert-outline" : "qr-code-outline"}
@@ -544,13 +634,22 @@ export default function Owner() {
                     title={product.name}
                     subtitle={`${formatInr(product.pricePaise)} · threshold ${product.lowStockThreshold}`}
                     leading={<IconBubble icon="cube-outline" tone="amber" />}
-                    trailing={<Text style={styles.rowAmount}>{product.stock} left</Text>}
+                    trailing={
+                      <Pressable
+                        onPress={() => void reorderProduct(product)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Reorder ${product.name}`}
+                        style={styles.reorderButton}
+                      >
+                        <Text style={styles.reorderText}>Reorder</Text>
+                      </Pressable>
+                    }
                   />
                 ))
               ) : (
                 <EmptyState
-                  title="Stock looks healthy"
-                  body="Products below their threshold will appear here."
+                  title="All products in stock"
+                  body="No items below threshold."
                 />
               )}
             </GlassCard>
@@ -577,7 +676,11 @@ export default function Owner() {
         ) : null}
         {actionStatus ? <Text style={styles.statusText}>{actionStatus}</Text> : null}
       </ScrollView>
-      <BottomNav role={shellRole} activeView={view === "command" ? undefined : view} />
+      <BottomNav
+        role={shellRole}
+        activeView={view === "command" ? undefined : view}
+        activeTab={view === "command" ? undefined : view}
+      />
     </ZookScreen>
   );
 }
@@ -667,11 +770,49 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.bodyStrong,
   },
+  reorderButton: {
+    minHeight: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(242,201,76,0.28)",
+    backgroundColor: "rgba(242,201,76,0.08)",
+    paddingHorizontal: 10,
+    justifyContent: "center",
+  },
+  reorderText: {
+    color: colors.amber,
+    ...typography.caption,
+  },
   stack: {
     gap: 12,
   },
   membersStack: {
     gap: spacing.md,
+  },
+  filterRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  filterChip: {
+    minHeight: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    paddingHorizontal: 12,
+    justifyContent: "center",
+  },
+  filterChipActive: {
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.14)",
+  },
+  filterChipText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  filterChipTextActive: {
+    color: colors.lime,
   },
   membersStateContent: {
     minHeight: 72,

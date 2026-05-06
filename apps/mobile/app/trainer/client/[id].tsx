@@ -166,6 +166,19 @@ export default function TrainerClientDetail() {
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
 
+          {!clientsQuery.isLoading && !client ? (
+            <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
+              <IconBubble icon="person-outline" tone="neutral" size={42} />
+              <View style={styles.clientCopy}>
+                <Text style={styles.cardTitle}>Client not found</Text>
+                <Text style={styles.cardBody}>Select a client from your list to view details.</Text>
+              </View>
+              <ZookButton href="/trainer?view=clients" tone="secondary" icon="people-outline">
+                Back to clients
+              </ZookButton>
+            </GlassCard>
+          ) : null}
+
           <GlassCard variant="compact" contentStyle={styles.snapshotContent}>
             <SectionHeader
               title="Coaching snapshot"
@@ -205,15 +218,15 @@ export default function TrainerClientDetail() {
             >
               Create Plan
             </ZookButton>
-            <ZookButton
-              href={aiDraftHref}
-              disabled={!client}
-              tone="secondary"
-              style={styles.actionHalf}
-              icon="sparkles-outline"
-            >
-              Generate Draft
-            </ZookButton>
+              <ZookButton
+                href={aiDraftHref}
+                disabled={!client}
+                tone="secondary"
+                style={styles.actionHalf}
+                icon="sparkles-outline"
+              >
+              Generate with AI
+              </ZookButton>
           </View>
 
           <SegmentedControl options={tabs} value={tab} onChange={setTab} />
@@ -273,10 +286,10 @@ export default function TrainerClientDetail() {
                 icon="save-outline"
                 disabled={savingPlan}
               >
-                Save Draft
+                Save draft
               </ZookButton>
               <SecondaryButton onPress={() => void assignPlan()} disabled={savingPlan}>
-                Assign Plan
+                Assign to client
               </SecondaryButton>
             </GlassCard>
           ) : null}
@@ -392,6 +405,10 @@ const styles = StyleSheet.create({
   },
   snapshotContent: {
     gap: 10,
+  },
+  notFoundContent: {
+    alignItems: "center",
+    gap: spacing.md,
   },
   clientTop: {
     flexDirection: "row",

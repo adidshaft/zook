@@ -140,7 +140,7 @@ export default function Home() {
             />
           }
         >
-          <BlurView intensity={58} tint="dark" style={styles.homeHeader}>
+          <BlurView intensity={24} tint="dark" style={styles.homeHeader}>
             <Pressable
               onPress={() => setProfileOpen(true)}
               style={({ pressed }) => (pressed ? styles.pressedAvatar : null)}
@@ -231,8 +231,9 @@ export default function Home() {
 
           {hasMembership ? (
             <GlassCard
-              variant={membershipExpired ? "warning" : "success"}
+              variant={membershipExpired ? "warning" : "default"}
               contentStyle={styles.membershipContent}
+              style={membershipExpired ? null : styles.membershipHealthyCard}
             >
               <View style={styles.membershipTop}>
                 <View style={styles.membershipCopy}>
@@ -243,7 +244,7 @@ export default function Home() {
                       size={30}
                     />
                     <Text style={styles.mutedSmall}>
-                      {membershipExpired ? "Renewal needed" : "Active Membership"}
+                      {membershipExpired ? "Renewal needed" : "Latest membership"}
                     </Text>
                   </View>
                   <View style={styles.membershipTitleRow}>
@@ -470,22 +471,22 @@ function FirstRunCard({
   const copy = {
     NO_GYM: {
       icon: "search-outline" as const,
-      title: "Find your gym",
-      body: "Join a nearby Zook gym to unlock check-ins, plans, payments, and progress.",
-      cta: "Browse gyms",
+      title: "No gym yet",
+      body: "Browse gyms and join one to get started.",
+      cta: "Find gyms",
       href: "/find-gyms" as Href,
     },
     NO_MEMBERSHIP: {
       icon: "card-outline" as const,
-      title: "Choose a membership",
-      body: "Pick an active plan before check-ins and daily programming start.",
+      title: "No active membership",
+      body: "Choose a plan and activate your membership.",
       cta: "View plans",
       href: (gymUsername ? `/gym/${gymUsername}` : "/membership") as Href,
     },
     NEVER_CHECKED_IN: {
       icon: "qr-code-outline" as const,
-      title: "First check-in pending",
-      body: "Your membership is active. Scan the gym QR when you arrive for the first visit.",
+      title: "Ready to check in?",
+      body: "Scan the gym QR to start your first session.",
       cta: "Open scanner",
       href: "/scan" as Href,
     },
@@ -494,7 +495,7 @@ function FirstRunCard({
   return (
     <Link href={copy.href} asChild>
       <Pressable accessibilityRole="link" accessibilityLabel={copy.cta}>
-        <GlassCard variant="success" contentStyle={styles.firstRunContent}>
+        <GlassCard variant="compact" contentStyle={styles.firstRunContent}>
           <IconBubble icon={copy.icon} tone="lime" size={46} />
           <View style={styles.firstRunCopy}>
             <Text style={styles.firstRunTitle}>{copy.title}</Text>
@@ -620,6 +621,9 @@ const styles = StyleSheet.create({
   membershipContent: {
     padding: 16,
     gap: 10,
+  },
+  membershipHealthyCard: {
+    borderColor: "rgba(185,244,85,0.2)",
   },
   membershipTop: {
     minHeight: 88,

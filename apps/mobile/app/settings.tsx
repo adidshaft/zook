@@ -116,6 +116,12 @@ export default function Settings() {
   const referralLink = referralCode ? toWebUrl(`/r/${referralCode}`) : "";
 
   useEffect(() => {
+    if (!copiedReferral) return;
+    const timeout = setTimeout(() => setCopiedReferral(false), 2000);
+    return () => clearTimeout(timeout);
+  }, [copiedReferral]);
+
+  useEffect(() => {
     const profile = profileQuery.data;
     setProfileForm({
       name: profile?.user.name ?? session?.user.name ?? "",
@@ -297,7 +303,7 @@ export default function Settings() {
           contentContainerStyle={styles.content}
         >
           <MobileHeader
-            title="Settings"
+            title="Profile"
             subtitle="Account, notifications, and support"
             leading={
               <Pressable
@@ -313,7 +319,7 @@ export default function Settings() {
           />
 
           <CollapsibleSection
-            title="Profile"
+            title="Account"
             subtitle={session?.user.email || profileForm.phone || "Signed in"}
             defaultOpen
           >
@@ -496,7 +502,7 @@ export default function Settings() {
                     icon={copiedReferral ? "checkmark-outline" : "copy-outline"}
                     style={styles.actionHalf}
                   >
-                    {copiedReferral ? "Copied" : "Copy"}
+                    {copiedReferral ? "Copied!" : "Copy"}
                   </ZookButton>
                   <ZookButton
                     onPress={() => void shareReferral()}
@@ -511,7 +517,7 @@ export default function Settings() {
           ) : null}
 
           <CollapsibleSection
-            title="App and support"
+            title="System"
             subtitle="Help, policies, and app info"
             defaultOpen={false}
           >
@@ -550,7 +556,11 @@ export default function Settings() {
             </PrimaryButton>
           </CollapsibleSection>
 
-          <CollapsibleSection title="Privacy" subtitle="Export or delete data" defaultOpen={false}>
+          <CollapsibleSection
+            title="Privacy & data"
+            subtitle="Export or delete data"
+            defaultOpen={false}
+          >
             <AuditWarning>
               These requests are saved and reviewed before anything changes.
             </AuditWarning>
