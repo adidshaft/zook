@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowRight, Mail } from "lucide-react";
 import { ApiError, parseApiResponse } from "@zook/core";
 import { ZookButton } from "./zook-button";
+import { resolvePostLoginPath } from "@/lib/auth-destinations";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 
 const OTP_RESEND_COOLDOWN_SECONDS = 30;
@@ -36,25 +37,6 @@ function rateLimitMessage(response: Response, locale: PublicLocale) {
   const retryAfter = Number(response.headers.get("retry-after"));
   const seconds = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : 60;
   return { seconds, message: publicT(locale, "tooManyAttempts", { seconds }) };
-}
-
-function resolvePostLoginPath(
-  session: {
-    user?: { isPlatformAdmin?: boolean };
-    activeOrgId?: string;
-  } | undefined,
-  requestedPath: string | null,
-) {
-  if (requestedPath?.startsWith("/platform")) {
-    return session?.user?.isPlatformAdmin ? requestedPath : "/dashboard";
-  }
-  if (requestedPath) {
-    return requestedPath;
-  }
-  if (session?.user?.isPlatformAdmin) {
-    return "/platform";
-  }
-  return session?.activeOrgId ? "/dashboard" : "/gyms";
 }
 
 export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
@@ -148,7 +130,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
         body: JSON.stringify({ identifier: trimmedIdentifier, code: otpCode }),
       });
       const payload = await parseApiResponse<{
-        session?: { user?: { isPlatformAdmin?: boolean }; activeOrgId?: string };
+        session?: Parameters<typeof resolvePostLoginPath>[0];
       }>(response).catch((error) => {
         if (error instanceof ApiError && error.status === 429) {
           throw new Error(rateLimitMessage(response, locale).message);

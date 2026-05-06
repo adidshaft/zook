@@ -9,6 +9,7 @@ import {
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
+import { resolvePostLoginPath } from "@/lib/auth-destinations";
 import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
 
@@ -18,22 +19,6 @@ function firstParam(value?: string | string[]) {
 
 function safeRedirectTarget(value?: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : null;
-}
-
-function postLoginPath(
-  session: NonNullable<Awaited<ReturnType<typeof resolveSessionSummaryFromToken>>>,
-  requestedPath?: string | null,
-) {
-  if (requestedPath?.startsWith("/platform")) {
-    return session.user.isPlatformAdmin ? requestedPath : "/dashboard";
-  }
-  if (requestedPath) {
-    return requestedPath;
-  }
-  if (session.user.isPlatformAdmin) {
-    return "/platform";
-  }
-  return session.activeOrgId ? "/dashboard" : "/gyms";
 }
 
 export default async function LoginPage({
@@ -50,7 +35,7 @@ export default async function LoginPage({
   const session = await resolveSessionSummaryFromToken(cookieStore.get(sessionCookieName)?.value);
 
   if (session) {
-    redirect(postLoginPath(session, redirectTarget));
+    redirect(resolvePostLoginPath(session, redirectTarget));
   }
 
   return (

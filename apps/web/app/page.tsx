@@ -24,6 +24,7 @@ import {
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
+import { publicAccountLink } from "@/lib/auth-destinations";
 import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
 
@@ -40,12 +41,10 @@ export default async function HomePage({
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const cookieStore = await cookies();
   const session = await resolveSessionSummaryFromToken(cookieStore.get(sessionCookieName)?.value);
-  const signedInHref = session?.user.isPlatformAdmin
-    ? "/platform"
-    : session?.activeOrgId
-      ? "/dashboard"
-      : "/gyms";
-  const signedInLabel = session?.user.isPlatformAdmin ? t("platformDashboard") : t("dashboard");
+  const accountLink = publicAccountLink(session, {
+    dashboard: t("dashboard"),
+    membership: t("myMembership"),
+  });
   const productCards: Array<[LucideIcon, string, string]> = [
     [Users, t("owners"), t("ownersValue")],
     [Smartphone, t("members"), t("membersValue")],
@@ -88,9 +87,15 @@ export default async function HomePage({
             >
               {t("startGym")}
             </ZookButtonLink>
-            <ZookButtonLink href={localizedPath(signedInHref, locale)} tone="ghost" size="sm">
-              {session ? signedInLabel : t("login")}
-            </ZookButtonLink>
+            {accountLink ? (
+              <ZookButtonLink href={localizedPath(accountLink.href, locale)} tone="ghost" size="sm">
+                {accountLink.label}
+              </ZookButtonLink>
+            ) : (
+              <ZookButtonLink href={localizedPath("/login", locale)} tone="ghost" size="sm">
+                {t("login")}
+              </ZookButtonLink>
+            )}
           </div>
         </header>
 
@@ -264,9 +269,15 @@ export default async function HomePage({
         <footer className="flex flex-col gap-3 border-t border-white/10 py-6 text-sm text-white/42 md:flex-row md:items-center md:justify-between">
           <p>© {new Date().getFullYear()} Zook. All rights reserved.</p>
           <div className="flex flex-wrap gap-4">
-            <Link href={localizedPath(signedInHref, locale)} className="transition hover:text-white">
-              {session ? signedInLabel : t("login")}
-            </Link>
+            {accountLink ? (
+              <Link href={localizedPath(accountLink.href, locale)} className="transition hover:text-white">
+                {accountLink.label}
+              </Link>
+            ) : (
+              <Link href={localizedPath("/login", locale)} className="transition hover:text-white">
+                {t("login")}
+              </Link>
+            )}
             <Link
               href={localizedPath("/start-gym", locale)}
               className="transition hover:text-white"
