@@ -1,9 +1,9 @@
 "use client";
 
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { IndianRupee, ListChecks, QrCode, Search, ShoppingBag } from "lucide-react";
+import { QrCode } from "lucide-react";
 import { formatInr } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
@@ -13,6 +13,7 @@ import { DashboardSignOutButton } from "./dashboard-sign-out-button";
 import { deskTranslations } from "./desk/copy";
 import { MemberTab } from "./desk/member-tab";
 import { PaymentTab } from "./desk/payment-tab";
+import { DeskBottomNav, withBranch } from "./desk/panel-config";
 import { PickupTab } from "./desk/pickup-tab";
 import { QueueTab } from "./desk/queue-tab";
 import type {
@@ -26,19 +27,6 @@ import type {
   ShopOrder,
   TabKey,
 } from "./desk/types";
-
-const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
-  { key: "queue", label: "Queue", icon: <ListChecks size={18} /> },
-  { key: "member", label: "Member", icon: <Search size={18} /> },
-  { key: "payment", label: "Payment", icon: <IndianRupee size={18} /> },
-  { key: "pickup", label: "Pickup", icon: <ShoppingBag size={18} /> },
-];
-
-function withBranch(path: string, branch?: BranchSummary | null) {
-  if (!branch?.id) return path;
-  const separator = path.includes("?") ? "&" : "?";
-  return `${path}${separator}branchId=${encodeURIComponent(branch.id)}`;
-}
 
 export function DeskPanel({
   orgId,
@@ -65,6 +53,7 @@ export function DeskPanel({
     shopOrderId: "",
     amountRupees: "",
     mode: "CASH",
+    proofAssetId: "",
     description: "",
     receiptNumber: "",
     notes: "",
@@ -101,6 +90,9 @@ export function DeskPanel({
   const activeOrders = ordersState.data?.orders ?? [];
   const payAtDeskOrders = activeOrders.filter(
     (order) => order.status === "PENDING_PAYMENT" && !order.paymentId,
+  );
+  const pickupOrders = activeOrders.filter(
+    (order) => order.status === "READY_FOR_PICKUP" || (order.status === "PENDING_PAYMENT" && !order.paymentId),
   );
   const activePlans = (plansState.data?.plans ?? []).filter((plan) => plan.active);
 
@@ -305,6 +297,7 @@ export function DeskPanel({
         description: paymentForm.description || undefined,
         amountPaise,
         mode: paymentForm.mode,
+        proofAssetId: paymentForm.proofAssetId || undefined,
         receiptNumber: paymentForm.receiptNumber || undefined,
         notes: paymentForm.notes || undefined,
       };
@@ -463,6 +456,7 @@ export function DeskPanel({
             members={members}
             activePlans={activePlans}
             payAtDeskOrders={payAtDeskOrders}
+            orgId={orgId}
             lastReceipt={lastReceipt}
             onSubmit={(event) => void recordPayment(event)}
             onPurposeChange={handlePurposeChange}
@@ -476,7 +470,7 @@ export function DeskPanel({
         {activeTab === "pickup" ? (
           <PickupTab
             copy={copy}
-            activeOrders={activeOrders}
+            activeOrders={pickupOrders}
             fulfilledToday={ordersState.data?.summary?.fulfilledToday ?? 0}
             verifiedOrderIds={verifiedOrderIds}
             skippedCodeOrderIds={skippedCodeOrderIds}
@@ -497,23 +491,7 @@ export function DeskPanel({
         <QrCode size={24} />
       </Link>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#070907]/94 px-3 py-2 backdrop-blur-xl">
-        <div className="mx-auto grid max-w-5xl grid-cols-4 gap-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`zook-focus grid min-h-14 place-items-center rounded-2xl text-xs font-semibold transition ${
-                activeTab === tab.key ? "bg-lime-300 text-black" : "text-white/58 hover:bg-white/8"
-              }`}
-            >
-              {tab.icon}
-              <span>{copy.tabs[tab.key]}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      <DeskBottomNav activeTab={activeTab} copy={copy} onChange={setActiveTab} />
     </main>
   );
 }

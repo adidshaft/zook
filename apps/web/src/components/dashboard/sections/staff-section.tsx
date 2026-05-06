@@ -22,6 +22,7 @@ type ResourceState = {
 type StaffInviteState = {
   email: string;
   role: StaffRole;
+  branchId: string;
 };
 
 type StaffSectionProps = {
@@ -48,6 +49,41 @@ type StaffSectionProps = {
   revokeStaff: (assignmentId: string) => Promise<void>;
   deleteCoachPlan: (plan: CoachPlanRow) => Promise<void>;
 };
+
+const roleCapabilitySections = [
+  {
+    title: "Receptionist",
+    items: [
+      "Check in members",
+      "Override entry when QR fails",
+      "Approve or reject pending entries",
+      "Record cash, UPI, card, and bank payments",
+      "Verify and fulfill shop pickups",
+      "Send one-member desk updates",
+    ],
+  },
+  {
+    title: "Admin",
+    items: [
+      "Manage members and join requests",
+      "Manage plans, coupons, and offers",
+      "Manage shop products and orders",
+      "Send broadcast messages within limits",
+      "View reports and activity logs",
+      "Manage branches and staff except billing",
+    ],
+  },
+  {
+    title: "Owner",
+    items: [
+      "Manage billing and invoices",
+      "Refund payments",
+      "Transfer ownership",
+      "Modify role permissions",
+      "Manage every admin workflow",
+    ],
+  },
+];
 
 export function StaffSection({
   organization,
@@ -100,6 +136,7 @@ export function StaffSection({
                 setStaffInvite((current) => ({
                   ...current,
                   role: event.target.value as StaffRole,
+                  branchId: event.target.value === "RECEPTIONIST" ? current.branchId : "",
                 }))
               }
               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
@@ -115,6 +152,27 @@ export function StaffSection({
               </option>
             </select>
           </div>
+          {staffInvite.role === "RECEPTIONIST" ? (
+            <select
+              value={staffInvite.branchId}
+              onChange={(event) =>
+                setStaffInvite((current) => ({ ...current, branchId: event.target.value }))
+              }
+              className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              required
+            >
+              <option value="" className="bg-black">
+                Assign branch
+              </option>
+              {branches
+                .filter((branch) => branch.active !== false)
+                .map((branch) => (
+                  <option key={branch.id} value={branch.id} className="bg-black">
+                    {branch.name}
+                  </option>
+                ))}
+            </select>
+          ) : null}
           <button
             onClick={() => void inviteStaff()}
             disabled={formBusy === "staff"}
@@ -270,6 +328,26 @@ export function StaffSection({
               empty="No staff assignments are recorded beyond members."
             />
           )}
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <SectionHeader
+          eyebrow="Access"
+          title="What each role can do"
+          description="Use this when explaining access to a new team member."
+        />
+        <div className="mt-5 grid gap-3">
+          {roleCapabilitySections.map((section) => (
+            <div key={section.title} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <p className="font-semibold text-white">{section.title}</p>
+              <div className="mt-3 grid gap-2">
+                {section.items.map((item) => (
+                  <p key={item} className="text-sm text-white/58">{item}</p>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </GlassCard>
 

@@ -330,3 +330,131 @@ export function StatusPill({
     </Pill>
   );
 }
+
+const inputClass =
+  "zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white placeholder:text-white/35 disabled:opacity-50";
+
+export function TextInput({
+  label,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return (
+    <label className={clsx("grid gap-2 text-sm text-white/62", className)}>
+      {label}
+      <input {...props} className={inputClass} />
+    </label>
+  );
+}
+
+export function DatePicker({
+  label,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return <TextInput {...props} type="date" label={label} className={className} />;
+}
+
+export function MoneyInput({
+  label,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return <TextInput {...props} inputMode="decimal" label={label} className={className} />;
+}
+
+export function SelectInput({
+  label,
+  children,
+  className,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { label: string }) {
+  return (
+    <label className={clsx("grid gap-2 text-sm text-white/62", className)}>
+      {label}
+      <select
+        {...props}
+        className={clsx(
+          "zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white disabled:opacity-50",
+        )}
+      >
+        {children}
+      </select>
+    </label>
+  );
+}
+
+export function ToggleSwitch({
+  label,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={clsx(
+        "zook-focus inline-flex min-h-11 items-center justify-between gap-4 rounded-full border px-4 text-sm font-semibold transition disabled:opacity-50",
+        checked
+          ? "border-lime-300/50 bg-lime-300/15 text-lime-50"
+          : "border-white/10 bg-black/30 text-white/62",
+      )}
+    >
+      {label}
+      <span
+        className={clsx(
+          "h-5 w-9 rounded-full border p-0.5 transition",
+          checked ? "border-lime-300 bg-lime-300/40" : "border-white/15 bg-white/8",
+        )}
+      >
+        <span
+          className={clsx(
+            "block h-3.5 w-3.5 rounded-full bg-white transition",
+            checked ? "translate-x-4 bg-lime-100" : "translate-x-0 bg-white/55",
+          )}
+        />
+      </span>
+    </button>
+  );
+}
+
+export function TableLoader({ label = "Loading..." }: { label?: string }) {
+  return <EmptyState title={label} description="Fresh data is loading now." />;
+}
+
+export function ConfirmDialog({
+  title,
+  description,
+  confirmLabel = "Confirm",
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  description?: string;
+  confirmLabel?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="rounded-[24px] border border-white/10 bg-black/55 p-4 shadow-2xl">
+      <p className="font-semibold text-white">{title}</p>
+      {description ? <p className="mt-1 text-sm text-white/55">{description}</p> : null}
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        <button type="button" onClick={onCancel} className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70">
+          Cancel
+        </button>
+        <button type="button" onClick={onConfirm} className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black">
+          {confirmLabel}
+        </button>
+      </div>
+    </div>
+  );
+}

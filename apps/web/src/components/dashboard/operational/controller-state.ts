@@ -96,6 +96,7 @@ export function createEmptyStaffInvite() {
   return {
     email: "",
     role: "TRAINER" as StaffRole,
+    branchId: "",
   };
 }
 

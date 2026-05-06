@@ -55,6 +55,7 @@ export type PaymentFormState = {
   shopOrderId: string;
   amountRupees: string;
   mode: string;
+  proofAssetId: string;
   description: string;
   receiptNumber: string;
   notes: string;

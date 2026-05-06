@@ -105,13 +105,15 @@ export function createStaffBranchesActions({
       state.setFormBusy("branch");
       state.setFormError("");
       state.setFormStatus("");
-      await webApiFetch(`/api/orgs/${orgId}/branches`, {
+      const payload = await webApiFetch<{ warnings?: string[] }>(`/api/orgs/${orgId}/branches`, {
         method: "POST",
         body: branchFormPayload(state.branchForm),
       });
       state.setBranchForm(state.emptyBranchForm);
       resources.branchesState.reload();
-      state.setFormStatus("Branch created.");
+      state.setFormStatus(
+        payload.warnings?.length ? `Branch created. ${payload.warnings.join(" ")}` : "Branch created.",
+      );
     } catch (cause) {
       state.setFormError(cause instanceof Error ? cause.message : "Unable to create branch.");
     } finally {
@@ -124,7 +126,7 @@ export function createStaffBranchesActions({
       state.setFormBusy(`branch:${branch.id}`);
       state.setFormError("");
       state.setFormStatus("");
-      await webApiFetch(`/api/orgs/${orgId}/branches/${branch.id}`, {
+      const payload = await webApiFetch<{ warnings?: string[] }>(`/api/orgs/${orgId}/branches/${branch.id}`, {
         method: "PATCH",
         body:
           "amenitiesText" in patch || "hoursText" in patch
@@ -132,7 +134,9 @@ export function createStaffBranchesActions({
             : patch,
       });
       resources.branchesState.reload();
-      state.setFormStatus("Branch updated.");
+      state.setFormStatus(
+        payload.warnings?.length ? `Branch updated. ${payload.warnings.join(" ")}` : "Branch updated.",
+      );
     } catch (cause) {
       state.setFormError(cause instanceof Error ? cause.message : "Unable to update branch.");
     } finally {
@@ -154,6 +158,9 @@ export function createStaffBranchesActions({
       managerId: branch.managerId ?? "",
       amenitiesText: branch.amenities?.join(", ") ?? "",
       hoursText: serializeBranchHours(normalizeBranchHours(branch.operatingHours)),
+      latitude: branch.latitude ? String(branch.latitude) : "",
+      longitude: branch.longitude ? String(branch.longitude) : "",
+      locationSource: branch.locationSource === "GOOGLE_PLACE" ? "GOOGLE_PLACE" : "MANUAL",
       commerceSetup: "SHARED",
       isDefault: branch.isDefault,
     });

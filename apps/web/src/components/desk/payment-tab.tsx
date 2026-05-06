@@ -6,6 +6,7 @@ import type { DeskCopy } from "./copy";
 import type { MemberRow, PaymentFormState, PaymentPurpose, PlanRow, ReceiptDetails, ShopOrder } from "./types";
 import { memberLabel, orderItemsSummary } from "./utils";
 import { ReceiptCard } from "./receipt-card";
+import { PaymentProofUpload } from "../payment-proof-upload";
 
 export function PaymentTab({
   copy,
@@ -14,6 +15,7 @@ export function PaymentTab({
   members,
   activePlans,
   payAtDeskOrders,
+  orgId,
   lastReceipt,
   onSubmit,
   onPurposeChange,
@@ -28,6 +30,7 @@ export function PaymentTab({
   members: MemberRow[];
   activePlans: PlanRow[];
   payAtDeskOrders: ShopOrder[];
+  orgId: string;
   lastReceipt: ReceiptDetails | null;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onPurposeChange: (purpose: PaymentPurpose) => void;
@@ -36,6 +39,11 @@ export function PaymentTab({
   onPlanChange: (planId: string) => void;
   onFormChange: (patch: Partial<PaymentFormState>) => void;
 }) {
+  const selectedPaymentMember = members.find(
+    (member) => member.user?.id === paymentForm.memberUserId,
+  );
+  const activeSubscription = selectedPaymentMember?.activeSubscription;
+
   return (
     <GlassCard>
       <div className="flex items-center gap-3">
@@ -120,23 +128,44 @@ export function PaymentTab({
         ) : null}
         <div className="grid gap-4 md:grid-cols-2">
           {paymentForm.purpose === "MEMBERSHIP" ? (
-            <label className="grid gap-2 text-sm text-white/62">
-              {copy.plan}
-              <select
-                value={paymentForm.planId}
-                onChange={(event) => onPlanChange(event.target.value)}
-                className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
-              >
-                <option value="" className="bg-black">
-                  {copy.renewExisting}
-                </option>
-                {activePlans.map((plan) => (
-                  <option key={plan.id} value={plan.id} className="bg-black">
-                    {plan.name} - {formatInr(plan.pricePaise)}
+            <div className="grid gap-3">
+              {activeSubscription ? (
+                <label className="grid gap-2 text-sm text-white/62">
+                  {copy.membership}
+                  <select
+                    value={paymentForm.subscriptionId}
+                    onChange={(event) =>
+                      onFormChange({ subscriptionId: event.target.value, planId: "" })
+                    }
+                    className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
+                  >
+                    <option value="" className="bg-black">
+                      New membership
+                    </option>
+                    <option value={activeSubscription.id} className="bg-black">
+                      {copy.renewExisting}
+                    </option>
+                  </select>
+                </label>
+              ) : null}
+              <label className="grid gap-2 text-sm text-white/62">
+                {copy.plan}
+                <select
+                  value={paymentForm.planId}
+                  onChange={(event) => onPlanChange(event.target.value)}
+                  className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
+                >
+                  <option value="" className="bg-black">
+                    {activeSubscription ? "Use selected membership" : copy.renewExisting}
                   </option>
-                ))}
-              </select>
-            </label>
+                  {activePlans.map((plan) => (
+                    <option key={plan.id} value={plan.id} className="bg-black">
+                      {plan.name} - {formatInr(plan.pricePaise)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           ) : null}
           <label className="grid gap-2 text-sm text-white/62">
             {copy.mode}
@@ -197,6 +226,13 @@ export function PaymentTab({
             />
           </label>
         </div>
+        <PaymentProofUpload
+          orgId={orgId}
+          value={paymentForm.proofAssetId}
+          onChange={(proofAssetId) => onFormChange({ proofAssetId })}
+          label={copy.proofFileId}
+          placeholder={copy.proofPlaceholder}
+        />
         <label className="grid gap-2 text-sm text-white/62">
           {copy.notes}
           <textarea

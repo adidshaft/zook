@@ -323,6 +323,7 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
         setEditingBranchId={setEditingBranchId}
         staffAssignments={staffAssignments}
         staffUsersById={staffUsersById}
+        membershipPlans={membershipPlans}
         formError={formError}
         formStatus={formStatus}
         formBusy={formBusy}

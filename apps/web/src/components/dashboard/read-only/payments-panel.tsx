@@ -16,20 +16,9 @@ import type { Permission } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-shared";
 import type { LoadingState, PagedState } from "./types";
-
-function formatPaymentMode(mode: string) {
-  return mode === "MOCK_ONLINE" ? "Online" : formatEnumLabel(mode);
-}
-
-type PaymentReceiptState = {
-  title: string;
-  amountPaise: number;
-  mode: string;
-  reference?: string | undefined;
-  recordedAt: string;
-};
-
-const modeOptions = ["CASH", "DIRECT_UPI", "BANK_TRANSFER", "CARD", "OTHER"] as const;
+import { formatPaymentMode, modeOptions, type PaymentReceiptState } from "./payments-utils";
+import { PaymentProofUpload } from "../../payment-proof-upload";
+import { ShopOrderPaymentControl } from "./shop-order-payment-control";
 
 export function PaymentsPanel({
   orgId,
@@ -61,6 +50,7 @@ export function PaymentsPanel({
     planId: "",
     amountRupees: "",
     mode: "CASH",
+    proofAssetId: "",
     receiptNumber: "",
     notes: "",
   });
@@ -81,6 +71,7 @@ export function PaymentsPanel({
           planId: manualPayment.planId,
           amountPaise,
           mode: manualPayment.mode,
+          proofAssetId: manualPayment.proofAssetId || undefined,
           receiptNumber: manualPayment.receiptNumber || undefined,
           notes: manualPayment.notes || undefined,
         },
@@ -97,37 +88,6 @@ export function PaymentsPanel({
       paymentsState.reload?.();
     } catch (cause) {
       setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to record payment.");
-    } finally {
-      setManualPaymentBusy(false);
-    }
-  }
-
-  async function recordShopOrderPayment(order: ShopOrderRow) {
-    const reference = window.prompt("Reference number or UPI ID, if available", "") ?? "";
-    try {
-      setManualPaymentBusy(true);
-      setManualPaymentStatus("");
-      await webApiFetch(`/api/orgs/${orgId}/shop/orders/${order.id}/manual-payment`, {
-        method: "POST",
-        body: {
-          amountPaise: order.totalPaise,
-          mode: "DIRECT_UPI",
-          receiptNumber: reference || undefined,
-          notes: "Recorded from the owner payment queue.",
-        },
-      });
-      setManualPaymentStatus(`Shop payment recorded for ${formatInr(order.totalPaise)}.`);
-      setLastReceipt({
-        title: `Shop order ${order.id.slice(-8).toUpperCase()}`,
-        amountPaise: order.totalPaise,
-        mode: "DIRECT_UPI",
-        reference: reference || undefined,
-        recordedAt: new Date().toISOString(),
-      });
-      paymentsState.reload?.();
-      shopOrdersState.reload?.();
-    } catch (cause) {
-      setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to record shop payment.");
     } finally {
       setManualPaymentBusy(false);
     }
@@ -319,6 +279,13 @@ export function PaymentsPanel({
                 ))}
               </select>
             </div>
+            <PaymentProofUpload
+              orgId={orgId}
+              value={manualPayment.proofAssetId}
+              onChange={(proofAssetId) =>
+                setManualPayment((current) => ({ ...current, proofAssetId }))
+              }
+            />
             <input
               value={manualPayment.receiptNumber}
               onChange={(event) =>
@@ -433,15 +400,20 @@ export function PaymentsPanel({
                     align: "right",
                     render: (order) =>
                       order.status === "PENDING_PAYMENT" && !order.paymentId ? (
-                        <button
-                          type="button"
+                        <ShopOrderPaymentControl
+                          orgId={orgId}
+                          order={order}
                           disabled={manualPaymentBusy || !canRecordOffline}
-                          title={!canRecordOffline ? permissionMessage : undefined}
-                          onClick={() => void recordShopOrderPayment(order)}
-                          className="zook-focus rounded-full border border-lime-300/40 px-3 py-1 text-xs font-semibold text-lime-100 transition hover:bg-lime-300/10 disabled:opacity-50"
-                        >
-                          Record payment
-                        </button>
+                          disabledTitle={!canRecordOffline ? permissionMessage : undefined}
+                          onRecorded={(receipt) => {
+                            setManualPaymentStatus(
+                              `Shop payment recorded for ${formatInr(order.totalPaise)}.`,
+                            );
+                            setLastReceipt(receipt);
+                            paymentsState.reload?.();
+                            shopOrdersState.reload?.();
+                          }}
+                        />
                       ) : (
                         <span className="text-xs text-white/35">Settled</span>
                       ),

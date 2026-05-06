@@ -279,11 +279,21 @@ const notificationComposerSchema = notificationSchema.extend({
   }
 });
 
-const staffInviteSchema = z.object({
-  email: z.string().trim().email(),
-  role: z.enum(["ADMIN", "RECEPTIONIST", "TRAINER"]),
-  branchId: z.string().optional().nullable(),
-});
+const staffInviteSchema = z
+  .object({
+    email: z.string().trim().email(),
+    role: z.enum(["ADMIN", "RECEPTIONIST", "TRAINER"]),
+    branchId: z.string().optional().nullable(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.role === "RECEPTIONIST" && !value.branchId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Choose the branch this receptionist will manage.",
+        path: ["branchId"],
+      });
+    }
+  });
 
 const staffRoleUpdateSchema = z
   .object({
@@ -365,6 +375,62 @@ const branchManageSchema = branchManageBaseSchema.superRefine((value, ctx) => {
     });
   }
 });
+
+const pincodeStatePrefixes: Record<string, string[]> = {
+  Maharashtra: ["40", "41", "42", "43", "44"],
+  Karnataka: ["56", "57", "58", "59"],
+  Delhi: ["11"],
+  "Uttar Pradesh": ["20", "21", "22", "24", "25", "26", "27", "28"],
+  Haryana: ["12", "13"],
+  Punjab: ["14", "15", "16"],
+  Rajasthan: ["30", "31", "32", "33", "34"],
+  Gujarat: ["36", "37", "38", "39"],
+  Tamilnadu: ["60", "61", "62", "63", "64"],
+  "Tamil Nadu": ["60", "61", "62", "63", "64"],
+  Kerala: ["67", "68", "69"],
+  Telangana: ["50"],
+  "Andhra Pradesh": ["51", "52", "53"],
+  Odisha: ["75", "76", "77"],
+  "West Bengal": ["70", "71", "72", "73", "74"],
+  Bihar: ["80", "81", "82", "83", "84", "85"],
+  Jharkhand: ["82", "83"],
+  Assam: ["78"],
+};
+
+function branchLocationWarnings(input: { state?: string | null; pincode?: string | null }) {
+  const state = input.state?.trim();
+  const pincode = input.pincode?.trim();
+  if (!state || !pincode || !/^\d{6}$/.test(pincode)) {
+    return [];
+  }
+  const prefixes = Object.entries(pincodeStatePrefixes).find(
+    ([candidate]) => candidate.toLowerCase() === state.toLowerCase(),
+  )?.[1];
+  if (!prefixes?.length || prefixes.some((prefix) => pincode.startsWith(prefix))) {
+    return [];
+  }
+  return [
+    `The pincode does not look typical for ${state}. You can still save it if the address is correct.`,
+  ];
+}
+
+async function resolveBranchLocation(input: z.infer<typeof branchManageBaseSchema>) {
+  if (input.latitude != null && input.longitude != null) {
+    return input;
+  }
+  const place = await getMapProviderOrThrow().geocodeAddress({
+    address: input.address,
+    city: input.city,
+    state: input.state,
+    pincode: input.pincode,
+  });
+  return {
+    ...input,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    locationSource: place.locationSource === "MOCK" ? "MANUAL" : place.locationSource,
+  };
+}
 
 const permissionOverrideSchema = z.object({
   role: z
@@ -4928,7 +4994,8 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       `${orgId}:${userId}`,
       "Please wait a moment before adding another branch.",
     );
-    const body = branchManageSchema.parse(await readJson(request));
+    const body = await resolveBranchLocation(branchManageSchema.parse(await readJson(request)));
+    const warnings = branchLocationWarnings(body);
     await assertBranchManager(orgId, body.managerId);
     const duplicate = await prisma.branch.findFirst({
       where: { orgId, address: body.address, city: body.city, active: true },
@@ -4987,7 +5054,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       entityId: branch.id,
       metadata: { name: branch.name, isDefault: branch.isDefault },
     });
-    return ok({ branch });
+    return ok({ branch, warnings });
   }
   if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "branches", /.+/])) {
     const orgId = path[1]!;
@@ -4999,6 +5066,10 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     if (!existing) {
       throw notFoundError("Branch not found");
     }
+    const warnings = branchLocationWarnings({
+      state: body.state ?? existing.state,
+      pincode: body.pincode ?? existing.pincode,
+    });
     await assertBranchManager(orgId, body.managerId);
     if (body.address || body.city) {
       const duplicate = await prisma.branch.findFirst({
@@ -5014,6 +5085,24 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
         throw conflictError("A branch with this address already exists.");
       }
     }
+    const resolvedBody =
+      (body.address || body.city || body.state || body.pincode) &&
+      (body.latitude == null || body.longitude == null)
+        ? await resolveBranchLocation({
+            name: body.name ?? existing.name,
+            address: body.address ?? existing.address,
+            city: body.city ?? existing.city,
+            state: body.state ?? existing.state,
+            pincode: body.pincode ?? existing.pincode,
+            latitude: body.latitude ?? undefined,
+            longitude: body.longitude ?? undefined,
+            locationSource: body.locationSource ?? undefined,
+            contactPhone: body.contactPhone ?? existing.contactPhone ?? "",
+            contactEmail: body.contactEmail ?? existing.contactEmail,
+            whatsappNumber: body.whatsappNumber ?? existing.whatsappNumber,
+            operatingHours: (body.operatingHours ?? existing.operatingHours) as never,
+          })
+        : body;
     const branch = await prisma.$transaction(async (tx) => {
       if (body.isDefault) {
         await tx.branch.updateMany({
@@ -5024,17 +5113,19 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       const updated = await tx.branch.update({
         where: { id: branchId },
         data: clean({
-          name: body.name,
-          address: body.address,
-          city: body.city,
-          state: body.state,
-          pincode: body.pincode,
-          latitude: body.latitude != null ? new Prisma.Decimal(body.latitude) : body.latitude,
-          longitude: body.longitude != null ? new Prisma.Decimal(body.longitude) : body.longitude,
-          locationSource: body.locationSource,
-          contactPhone: body.contactPhone,
-          contactEmail: body.contactEmail,
-          whatsappNumber: body.whatsappNumber,
+          name: resolvedBody.name,
+          address: resolvedBody.address,
+          city: resolvedBody.city,
+          state: resolvedBody.state,
+          pincode: resolvedBody.pincode,
+          latitude:
+            resolvedBody.latitude != null ? new Prisma.Decimal(resolvedBody.latitude) : resolvedBody.latitude,
+          longitude:
+            resolvedBody.longitude != null ? new Prisma.Decimal(resolvedBody.longitude) : resolvedBody.longitude,
+          locationSource: resolvedBody.locationSource,
+          contactPhone: resolvedBody.contactPhone,
+          contactEmail: resolvedBody.contactEmail,
+          whatsappNumber: resolvedBody.whatsappNumber,
           operatingHours:
             body.operatingHours === null
               ? Prisma.JsonNull
@@ -5071,7 +5162,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       entityId: branch.id,
       metadata: { name: branch.name, isDefault: branch.isDefault, active: branch.active },
     });
-    return ok({ branch });
+    return ok({ branch, warnings });
   }
   if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "branches", /.+/])) {
     const orgId = path[1]!;
@@ -8109,6 +8200,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         id: invite.id,
         email: invite.email,
         role: invite.role,
+        branchId: invite.branchId,
         acceptedAt: invite.acceptedAt,
         expiresAt: invite.expiresAt,
       },
@@ -8141,11 +8233,12 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       });
       const roleAssignment = await tx.organizationRoleAssignment.upsert({
         where: { orgId_userId_role: { orgId: invite.orgId, userId, role: invite.role } },
-        update: { assignedById: invite.invitedById },
+        update: { assignedById: invite.invitedById, branchId: invite.branchId },
         create: {
           orgId: invite.orgId,
           userId,
           role: invite.role,
+          branchId: invite.branchId,
           assignedById: invite.invitedById,
         },
       });
@@ -8188,6 +8281,15 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       "Too many staff invites from this account today.",
     );
     const body = staffInviteSchema.parse(await readJson(request));
+    if (body.branchId) {
+      const branch = await prisma.branch.findFirst({
+        where: { id: body.branchId, orgId, active: true },
+        select: { id: true },
+      });
+      if (!branch) {
+        throw validationError("Choose an active branch for this receptionist.");
+      }
+    }
     const [organization, inviter] = await Promise.all([
       prisma.organization.findUnique({ where: { id: orgId } }),
       prisma.user.findUnique({ where: { id: userId } }),
@@ -8197,6 +8299,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         orgId,
         email: body.email,
         role: body.role,
+        branchId: body.role === "RECEPTIONIST" ? (body.branchId ?? null) : null,
         token: randomBytes(18).toString("base64url"),
         invitedById: userId,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -8224,7 +8327,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       action: "staff.invited",
       entityType: "staff_invitation",
       entityId: invite.id,
-      metadata: { email: body.email, role: body.role },
+      metadata: { email: body.email, role: body.role, branchId: body.branchId ?? null },
     });
     return ok({ invite });
   }

@@ -660,6 +660,7 @@ model StaffInvitation {
   orgId        String
   email        String
   role         Role
+  branchId     String?
   token        String    @unique
   invitedById  String
   acceptedById String?
@@ -668,6 +669,7 @@ model StaffInvitation {
   createdAt    DateTime  @default(now())
 
   @@index([orgId, email])
+  @@index([orgId, branchId])
 }
 
 model SaaSSubscription {

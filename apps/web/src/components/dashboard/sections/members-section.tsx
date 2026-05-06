@@ -217,7 +217,7 @@ export function MembersSection({
                       description="Create your first membership plan and share your join link to start accepting members."
                       action={
                         <Link
-                          href="/dashboard/membership-plans"
+                          href="/dashboard/plans"
                           className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
                         >
                           Create a plan

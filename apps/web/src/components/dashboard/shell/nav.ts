@@ -62,7 +62,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
       {
         key: "plans",
         label: "Plans",
-        href: "/dashboard/membership-plans",
+        href: "/dashboard/plans",
         icon: ClipboardList,
         permissions: ["MEMBERSHIP_PLAN_MANAGE"],
       },

@@ -29,7 +29,7 @@ export function OwnerSetupChecklist({
     {
       label: copy.dashboard.createFirstPlanStep,
       detail: copy.dashboard.createFirstPlanDetail,
-      href: "/dashboard/membership-plans",
+      href: "/dashboard/plans",
       done: joinReady,
     },
     {
@@ -62,7 +62,7 @@ export function OwnerSetupChecklist({
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <ZookButtonLink
-              href="/dashboard/membership-plans"
+              href="/dashboard/plans"
               size="md"
               trailingIcon={<ArrowRight size={16} />}
             >
