@@ -5,6 +5,7 @@ export interface MembershipEvaluation {
   reason?: string;
   consumesVisit: boolean;
   remainingVisits?: number;
+  warnings?: string[];
 }
 
 export function computeSubscriptionWindow(plan: MembershipPlan, now = new Date()): { startsAt: Date; endsAt?: Date; remainingVisits?: number } {
@@ -30,9 +31,7 @@ export function evaluateSubscription(
   if (input.orgStatus === "SUSPENDED" || input.orgStatus === "CANCELLED" || input.orgStatus === "TRIAL_EXPIRED") {
     return { valid: false, reason: "organization_inactive", consumesVisit: false };
   }
-  if (!input.hasProfilePhoto) {
-    return { valid: false, reason: "profile_photo_required", consumesVisit: false };
-  }
+  const warnings = input.hasProfilePhoto === false ? ["profile_photo_recommended"] : [];
   if (subscription.status !== "ACTIVE") {
     return { valid: false, reason: `subscription_${subscription.status.toLowerCase()}`, consumesVisit: false };
   }
@@ -49,7 +48,8 @@ export function evaluateSubscription(
   return {
     valid: true,
     consumesVisit,
-    ...(subscription.remainingVisits !== undefined ? { remainingVisits: subscription.remainingVisits } : {})
+    ...(subscription.remainingVisits !== undefined ? { remainingVisits: subscription.remainingVisits } : {}),
+    ...(warnings.length ? { warnings } : {})
   };
 }
 

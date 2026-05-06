@@ -75,6 +75,30 @@ function checkoutUrl(url: string) {
   return /^https?:\/\//i.test(url) ? url : toWebUrl(url);
 }
 
+function pickupQrCells(value: string) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return Array.from({ length: 49 }, (_, index) => {
+    const finder =
+      (index < 14 && index % 7 < 2) ||
+      (index % 7 > 4 && index < 14) ||
+      (index > 34 && index % 7 < 2);
+    return finder || ((hash >> (index % 24)) + index) % 3 === 0;
+  });
+}
+
+function PickupQr({ value }: { value: string }) {
+  return (
+    <View accessibilityLabel="Pickup QR code" style={styles.pickupQr}>
+      {pickupQrCells(value).map((filled, index) => (
+        <View key={`${value}-${index}`} style={[styles.pickupQrCell, filled ? styles.pickupQrCellFilled : null]} />
+      ))}
+    </View>
+  );
+}
+
 export default function Shop() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -289,10 +313,13 @@ export default function Shop() {
   }
 
   if (checkoutState === "pickup" && order) {
+    const canContinuePayment = order.status === "PENDING_PAYMENT" && Boolean(checkoutSession);
+    const canShowPickupQr = order.status === "READY_FOR_PICKUP" || order.status === "FULFILLED";
     return (
       <ShopShell
         selectedPath="/shop"
         stickyAction={
+          canContinuePayment ? (
           <ZookButton
             onPress={() => void continuePayment()}
             disabled={completeMockPayment.isPending}
@@ -300,6 +327,7 @@ export default function Shop() {
           >
             {completeMockPayment.isPending ? t("shop.confirming") : t("shop.continuePayment")}
           </ZookButton>
+          ) : null
         }
       >
         <MobileHeader
@@ -313,6 +341,13 @@ export default function Shop() {
           <Text style={styles.pickupCode}>{order.pickupCode ?? t("shop.pending")}</Text>
           <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
         </GlassCard>
+        {canShowPickupQr ? (
+          <GlassCard variant="compact" contentStyle={styles.pickupQrContent}>
+            <Text style={styles.pickupQrTitle}>Show this to collect your order</Text>
+            <PickupQr value={`zook://pickup/${order.id}`} />
+            <Text style={styles.pickupQrCode}>Code: {order.pickupCode ?? t("shop.pending")}</Text>
+          </GlassCard>
+        ) : null}
         <GlassCard variant="compact" contentStyle={styles.stack}>
           {(order.items.length
             ? order.items
@@ -863,6 +898,37 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 34,
     fontFamily: "Inter_600SemiBold",
+    fontVariant: ["tabular-nums"],
+  },
+  pickupQrContent: {
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  pickupQrTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+    textAlign: "center",
+  },
+  pickupQr: {
+    width: 154,
+    height: 154,
+    borderRadius: 18,
+    backgroundColor: colors.text,
+    padding: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  pickupQrCell: {
+    width: 18,
+    height: 18,
+    backgroundColor: colors.text,
+  },
+  pickupQrCellFilled: {
+    backgroundColor: colors.bg,
+  },
+  pickupQrCode: {
+    color: colors.muted,
+    ...typography.caption,
     fontVariant: ["tabular-nums"],
   },
 });

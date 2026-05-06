@@ -13,6 +13,7 @@ const zeroSummary = {
   notificationQueueCount: 0,
   aiUsageThisMonth: 0,
   trialDaysRemaining: 0,
+  staffCount: 0,
 };
 
 const demoOrg = zookDemoFixtures.organizations[0];
@@ -54,6 +55,7 @@ function getDemoDashboardData(scope: "org" | "platform") {
     notificationQueueCount: 4,
     aiUsageThisMonth: 18,
     trialDaysRemaining: 21,
+    staffCount: 4,
   };
   const org = {
     id: demoOrg?.id ?? "org-iron-temple",

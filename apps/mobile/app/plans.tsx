@@ -24,6 +24,8 @@ import {
   type MyPlanRecord,
   type PlanExerciseRecord,
 } from "@/lib/query-hooks";
+import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { plansApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type PlanView = "assigned" | "detail";
@@ -72,6 +74,7 @@ export default function Plans() {
   const [feedbackNote, setFeedbackNote] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState("");
   const [exercises, setExercises] = useState<PlanExercise[]>([]);
+  const { activeOrgId, token } = useAuth();
   const plansQuery = useMyPlans();
   const completePlan = useCompletePlanAssignment();
   const plans = plansQuery.data?.plans ?? [];
@@ -132,6 +135,12 @@ export default function Plans() {
     );
   }, [exercisesQuery.data?.exercises]);
 
+  useEffect(() => {
+    setFeedbackStatus("");
+    setFeedbackNote("");
+    setFeedbackOpen(false);
+  }, [selectedAssignment?.id]);
+
   function toggleExercise(name: string) {
     setCompleted((current) => {
       const next = new Set(current);
@@ -144,12 +153,29 @@ export default function Plans() {
     });
   }
 
-  function sendFeedback() {
+  async function sendFeedback() {
     const cleanNote = feedbackNote.trim();
-    setFeedbackStatus(cleanNote ? "Sent to coach." : "Pick one note first.");
-    if (cleanNote) {
+    if (!cleanNote) {
+      setFeedbackStatus("Pick one note first.");
+      return;
+    }
+    if (!selectedAssignment || !token || !activeOrgId) {
+      setFeedbackStatus("Sign in again to send feedback.");
+      return;
+    }
+    setFeedbackStatus("Sending...");
+    try {
+      await plansApi.sendFeedback({
+        token,
+        orgId: activeOrgId,
+        assignmentId: selectedAssignment.id,
+        message: cleanNote,
+      });
+      setFeedbackStatus("Sent to coach.");
       setFeedbackOpen(false);
       setFeedbackNote("");
+    } catch (error) {
+      setFeedbackStatus(getApiErrorMessage(error) || "Failed to send. Try again.");
     }
   }
 
@@ -244,7 +270,7 @@ export default function Plans() {
                   style={styles.feedbackInput}
                 />
                 <ZookButton
-                  onPress={sendFeedback}
+                  onPress={() => void sendFeedback()}
                   icon="send-outline"
                   style={styles.feedbackSendButton}
                 >

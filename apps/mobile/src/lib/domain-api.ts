@@ -210,6 +210,19 @@ export const plansApi = {
       body: options.body,
     });
   },
+  sendFeedback<T = { ok: boolean }>(
+    options: RequestOptions & { assignmentId: string; message: string },
+  ) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/plan-feedback`, {
+      method: "POST",
+      token: options.token,
+      orgId: options.orgId,
+      body: {
+        planAssignmentId: options.assignmentId,
+        message: options.message,
+      },
+    });
+  },
 };
 
 export const shopApi = {
@@ -330,6 +343,19 @@ export const trainerApi = {
       },
     });
   },
+  updateClientNote<T = { note: string }>(
+    options: RequestOptions & { trainerUserId: string; clientId: string; note: string },
+  ) {
+    return mobileApiFetch<T>(
+      `/orgs/${options.orgId}/trainers/${options.trainerUserId}/clients/${options.clientId}/note`,
+      {
+        method: "PATCH",
+        token: options.token,
+        orgId: options.orgId,
+        body: { note: options.note },
+      },
+    );
+  },
 };
 
 export const receptionApi = {
@@ -383,6 +409,13 @@ export const notificationsApi = {
     return mobileApiFetch(`/me/notifications/${options.id}/read`, {
       method: "POST",
       token: options.token,
+    });
+  },
+  markAllRead(options: RequestOptions & { ids: string[] }) {
+    return mobileApiFetch("/me/notifications/read", {
+      method: "POST",
+      token: options.token,
+      body: { ids: options.ids },
     });
   },
   updatePreferences(options: RequestOptions & { preferences: Record<string, unknown> }) {

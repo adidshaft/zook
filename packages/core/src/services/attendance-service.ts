@@ -76,7 +76,7 @@ export function validateAttendanceScan(input: {
   wrongBranch?: boolean;
   failedScanCount?: number;
   now?: Date;
-}): { allowed: boolean; suspiciousFlags: string[]; reason?: string } {
+}): { allowed: boolean; suspiciousFlags: string[]; warnings: string[]; reason?: string } {
   const suspiciousFlags: string[] = [];
   if (input.wrongBranch) {
     suspiciousFlags.push("wrong_branch");
@@ -96,10 +96,11 @@ export function validateAttendanceScan(input: {
     return {
       allowed: false,
       suspiciousFlags,
+      warnings: evaluation.warnings ?? [],
       ...(evaluation.reason ? { reason: evaluation.reason } : {})
     };
   }
-  return { allowed: true, suspiciousFlags };
+  return { allowed: true, suspiciousFlags, warnings: evaluation.warnings ?? [] };
 }
 
 export function requireManualOverrideReason(reason?: string): void {

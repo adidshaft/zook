@@ -118,16 +118,19 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
     }
   }
 
-  async function verifyOtp() {
+  async function verifyOtp(overrideCode?: string) {
     setSubmitting("verify");
     try {
       const trimmedIdentifier = identifier.trim();
+      const otpCode = sanitizeOtpCode(overrideCode ?? code);
       const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
-        body: JSON.stringify({ identifier: trimmedIdentifier, code: sanitizeOtpCode(code) }),
+        body: JSON.stringify({ identifier: trimmedIdentifier, code: otpCode }),
       });
-      await parseApiResponse(response).catch((error) => {
+      const payload = await parseApiResponse<{
+        session?: { user?: { isPlatformAdmin?: boolean }; roles?: string[] };
+      }>(response).catch((error) => {
         if (error instanceof ApiError && error.status === 429) {
           throw new Error(rateLimitMessage(response, locale).message);
         }
@@ -137,10 +140,21 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
       const safeRedirect =
         redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
       window.location.href =
-        safeRedirect ?? (trimmedIdentifier.startsWith("platform") ? "/platform" : "/dashboard");
+        safeRedirect ??
+        (payload.session?.user?.isPlatformAdmin || payload.session?.roles?.includes("PLATFORM_ADMIN")
+          ? "/platform"
+          : "/dashboard");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t("unableVerifyOtp"));
       setSubmitting(null);
+    }
+  }
+
+  function handleOtpChange(value: string) {
+    const nextCode = sanitizeOtpCode(value);
+    setCode(nextCode);
+    if (nextCode.length === 6 && submitting === null) {
+      void verifyOtp(nextCode);
     }
   }
 
@@ -194,7 +208,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
               autoComplete="one-time-code"
               placeholder="6-digit code"
               value={code}
-              onChange={(event) => setCode(sanitizeOtpCode(event.target.value))}
+              onChange={(event) => handleOtpChange(event.target.value)}
               maxLength={6}
               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
             />

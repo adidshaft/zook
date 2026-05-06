@@ -276,6 +276,7 @@ async function getOrganizationDashboardDataUncached(
     aiUsageThisMonth,
     failedNotifications,
     auditLogCount,
+    staffCount,
   ] = await Promise.all([
     prisma.organization.findUniqueOrThrow({ where: { id: orgId } }),
     prisma.memberSubscription.count({ where: { orgId, status: "ACTIVE", ...branchWhere } }),
@@ -315,6 +316,9 @@ async function getOrganizationDashboardDataUncached(
     prisma.aIUsageLog.count({ where: { orgId, createdAt: { gte: monthStart } } }),
     prisma.notification.count({ where: { orgId, status: { in: ["FAILED", "SCHEDULED"] } } }),
     prisma.auditLog.count({ where: { orgId } }),
+    prisma.organizationRoleAssignment.count({
+      where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },
+    }),
   ]);
 
   const lowStockProducts = lowStockProductsRaw
@@ -379,6 +383,7 @@ async function getOrganizationDashboardDataUncached(
       notificationQueueCount: failedNotifications,
       aiUsageThisMonth,
       trialDaysRemaining,
+      staffCount,
     },
   };
 }

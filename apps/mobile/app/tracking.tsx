@@ -74,7 +74,9 @@ export default function TrackingDashboard() {
   const latestWorkout = recentWorkouts[0] ? workoutToEntry(recentWorkouts[0]) : null;
   const bodyProgressEntries = bodyProgressQuery.data?.entries ?? [];
   const weeklyCount = summary?.weeklyCount ?? 0;
+  const weeklyGoal = 5;
   const totalDuration = summary?.totalDuration ?? 0;
+  const currentStreak = computeWorkoutStreak(recentWorkouts);
 
   return (
     <>
@@ -103,8 +105,12 @@ export default function TrackingDashboard() {
               </View>
               <View style={styles.weekRing}>
                 <Text style={styles.weekRingValue}>{weeklyCount}</Text>
-                <Text style={styles.weekRingLabel}>/ 5</Text>
+                <Text style={styles.weekRingLabel}>/ {weeklyGoal}</Text>
               </View>
+            </View>
+            <View style={styles.streakIndicator}>
+              <Ionicons name="flame-outline" size={18} color={colors.amber} />
+              <Text style={styles.streakText}>{currentStreak} day streak</Text>
             </View>
             <Link href="/tracking-history" asChild>
               <Pressable accessibilityRole="link" style={styles.viewAllLink}>
@@ -177,6 +183,25 @@ export default function TrackingDashboard() {
       </ZookScreen>
     </>
   );
+}
+
+function computeWorkoutStreak(
+  workouts: Array<{ startedAt: string }>,
+) {
+  const days = new Set(
+    workouts
+      .map((workout) => new Date(workout.startedAt))
+      .filter((date) => Number.isFinite(date.getTime()))
+      .map((date) => date.toISOString().slice(0, 10)),
+  );
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  let streak = 0;
+  while (days.has(cursor.toISOString().slice(0, 10))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
 }
 
 function TodaySessionPreview({ entry }: { entry: WorkoutLogEntry }) {
@@ -577,17 +602,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.violet,
   },
-  logButton: {
+  streakIndicator: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    borderRadius: 999,
-    backgroundColor: colors.lime,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
-  logButtonText: {
-    color: colors.bg,
+  streakText: {
+    color: colors.amber,
     ...typography.caption,
   },
   loadingContent: {

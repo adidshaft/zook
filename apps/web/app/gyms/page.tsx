@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin, Search } from "lucide-react";
-import { zookDemoFixtures } from "@zook/core";
-import { MockMapProvider } from "@zook/core/providers";
+import { getMapProvider } from "@zook/core/providers";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { PublicNav } from "@/components/public-nav";
@@ -35,7 +34,11 @@ function toPositivePage(value?: string) {
   return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
 }
 
-function demoGyms(query?: string, city?: string): GymResult[] {
+async function demoGyms(query?: string, city?: string): Promise<GymResult[]> {
+  const [{ zookDemoFixtures }, { MockMapProvider }] = await Promise.all([
+    import("@zook/core"),
+    import("@zook/core/providers"),
+  ]);
   const plansByOrgId = new Map<string, Array<{ pricePaise: number }>>();
   for (const plan of zookDemoFixtures.membershipPlans) {
     if (!plan.publicVisible) {
@@ -127,7 +130,7 @@ async function searchGyms(query?: string, city?: string): Promise<GymResult[]> {
       })),
       ...(query ? { query } : {}),
       ...(city ? { city } : {}),
-      mapProvider: new MockMapProvider(),
+      mapProvider: getMapProvider(),
     });
     return results.map((gym) => {
       const orgPlans = plansByOrgId.get(gym.id) ?? [];

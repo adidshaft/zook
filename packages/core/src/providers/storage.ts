@@ -8,6 +8,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getS3SignedUrl } from "@aws-sdk/s3-request-presigner";
+import { getAppEnv } from "../runtime-env";
 import type { DiagnosticProvider, ProviderInstanceDiagnostics } from "../types";
 
 export const storageFileCategories = [
@@ -287,12 +288,14 @@ function sanitizeSegment(value: string | undefined, fallback: string) {
 }
 
 function resolveLocalStorageSecret(secret?: string) {
-  return (
-    secret ??
-    process.env.STORAGE_URL_SIGNING_SECRET ??
-    process.env.SESSION_SECRET ??
-    "zook-local-storage-secret"
-  );
+  const resolved = secret ?? process.env.STORAGE_URL_SIGNING_SECRET ?? process.env.SESSION_SECRET;
+  if (resolved) {
+    return resolved;
+  }
+  if (getAppEnv() === "local") {
+    return "zook-local-storage-secret";
+  }
+  throw new Error("STORAGE_URL_SIGNING_SECRET is required in non-local environments.");
 }
 
 function resolveLocalStorageRootDir(rootDir = process.env.STORAGE_LOCAL_DIR ?? ".local/uploads") {

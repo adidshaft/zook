@@ -166,6 +166,7 @@ export interface TrainerClientRecord {
     dietPreference?: string;
     allergies?: string;
     summaryNote?: string;
+    trainerNote?: string;
     activePlans?: number;
     recentFeedback?: Array<{
       assignmentId: string;

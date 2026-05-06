@@ -169,6 +169,10 @@ function LayoutContent() {
         <Stack.Screen name="reception" options={{ animation: "none" }} />
         <Stack.Screen name="trainer/index" options={{ animation: "none" }} />
         <Stack.Screen name="trainer/client/[id]" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen
+          name="trainer/client/[id]/ai-draft"
+          options={{ animation: "slide_from_right" }}
+        />
         <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen
           name="attendance/[attendanceRecordId]"
@@ -265,12 +269,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 15,
     lineHeight: 22,
-  },
-  configErrorMeta: {
-    color: colors.amber,
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.5,
   },
   demoStrip: {
     position: "absolute",

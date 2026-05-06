@@ -264,8 +264,6 @@ export default function GymProfileScreen() {
                 value={gym.address ?? `${gym.city}, ${gym.state}`}
                 tone="blue"
               />
-              <InfoRow label="Entry" value="Scan QR and show entry code" tone="lime" />
-              <InfoRow label="Trial flow" value="Tour + optional body check" tone="amber" />
             </GlassCard>
 
             {gallery.length ? (
@@ -313,7 +311,7 @@ export default function GymProfileScreen() {
                       <View style={styles.trainerCopy}>
                         <Text style={styles.trainerName}>{trainer.name}</Text>
                         <Text style={styles.sectionBody} numberOfLines={2}>
-                          {trainer.bio ?? "Strength, conditioning, and member onboarding."}
+                          {trainer.bio ?? "Bio coming soon."}
                         </Text>
                         <View style={styles.trainerSpecialties}>
                           {normalizeSpecialties(trainer.specialties)
@@ -536,7 +534,7 @@ function normalizeSpecialties(value: unknown) {
   if (value && typeof value === "object") {
     return Object.values(value).filter((item): item is string => typeof item === "string");
   }
-  return ["Strength", "Mobility", "Nutrition"];
+  return [];
 }
 
 function normalizeMediaUrl(value?: string | null) {
@@ -650,7 +648,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   firstFoldEndCard: {
-    marginBottom: 150,
+    marginBottom: spacing.xxxl,
   },
   galleryRow: {
     gap: spacing.md,

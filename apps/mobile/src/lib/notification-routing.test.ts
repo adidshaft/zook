@@ -32,7 +32,7 @@ describe("parseDeepLinkUrl", () => {
 });
 
 describe("mapNotificationPayloadToHref", () => {
-  it("routes order notifications to the dedicated order alias", () => {
+  it("routes order notifications to the shop pickup screen", () => {
     const mapped = parseHref(
       mapNotificationPayloadToHref({
         orderId: "order_1",
@@ -41,8 +41,9 @@ describe("mapNotificationPayloadToHref", () => {
       }),
     );
 
-    expect(mapped.path).toBe("/order/order_1");
+    expect(mapped.path).toBe("/shop");
     expect(mapped.params).toEqual({
+      orderId: "order_1",
       focus: "shop-order",
       notificationId: "notif_1",
       orgId: "org_1",
@@ -80,13 +81,14 @@ describe("mapNotificationPayloadToHref", () => {
     });
   });
 
-  it("routes plan notifications to the plan alias", () => {
+  it("routes plan notifications to the plans screen", () => {
     const mapped = parseHref(
       mapNotificationPayloadToHref({ assignmentId: "assign_1", notificationId: "notif_3" }),
     );
 
-    expect(mapped.path).toBe("/plan/assign_1");
+    expect(mapped.path).toBe("/plans");
     expect(mapped.params).toEqual({
+      assignmentId: "assign_1",
       focus: "plan",
       notificationId: "notif_3",
     });

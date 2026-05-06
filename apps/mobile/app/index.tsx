@@ -20,14 +20,15 @@ import { useAuth } from "@/lib/auth";
 import { useMemberHome } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
-function initialsFor(name: string) {
+function initialsFor(name?: string | null) {
+  const cleanName = name?.trim() ?? "";
   return (
-    name
+    cleanName
       .split(" ")
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
-      .join("") || "AM"
+      .join("") || cleanName.charAt(0).toUpperCase() || "?"
   );
 }
 
@@ -203,9 +204,7 @@ export default function Home() {
           {loadingHome ? <HomeSkeleton /> : null}
 
           {firstRunState ? (
-            firstRunState !== "NEVER_CHECKED_IN" ? (
-              <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} />
-            ) : null
+            <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} />
           ) : null}
 
           {hasMembership ? (
@@ -298,7 +297,7 @@ export default function Home() {
                       {memberName}
                     </Text>
                     <Text numberOfLines={1} style={styles.drawerMuted}>
-                      {session?.user.email || session?.user.phone || "member@zook.local"}
+                      {session?.user.email ?? session?.user.phone ?? ""}
                     </Text>
                   </View>
                   <Pressable
@@ -770,42 +769,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.bodyStrong,
   },
-  membershipContent: {
-    padding: 16,
-    gap: 10,
-  },
-  membershipHealthyCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.lime,
-    borderColor: "rgba(185,244,85,0.24)",
-    backgroundColor: "rgba(185,244,85,0.075)",
-  },
-  membershipUrgentCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.amber,
-  },
-  membershipTop: {
-    minHeight: 88,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  checkInContent: {
-    minHeight: 78,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    padding: 14,
-  },
-  checkInCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  checkInTitle: {
-    color: colors.text,
-    ...typography.headerTitle,
-  },
   checkInCta: {
     minHeight: 34,
     borderRadius: 17,
@@ -910,15 +873,6 @@ const styles = StyleSheet.create({
     color: colors.bg,
     ...typography.caption,
   },
-  planContent: {
-    padding: 14,
-  },
-  planRow: {
-    minHeight: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
   planCopy: {
     flex: 1,
     gap: 2,
@@ -926,9 +880,6 @@ const styles = StyleSheet.create({
   planTitle: {
     color: colors.text,
     ...typography.bodyStrong,
-  },
-  trackContent: {
-    padding: 14,
   },
   trackRow: {
     minHeight: 52,

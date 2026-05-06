@@ -449,7 +449,7 @@ export default function MembershipScreen() {
                         ? latestSubscription.autopay?.nextChargeAt
                           ? `Next renewal ${formatLongDate(latestSubscription.autopay.nextChargeAt)}`
                           : "Recurring renewal is enabled."
-                        : "Authorize Razorpay test mode to renew this plan automatically."}
+                        : "Authorize automatic renewal to renew this plan automatically."}
                     </Text>
                     {autopayStatus ? (
                       <Text style={styles.autopayStatus}>{autopayStatus}</Text>

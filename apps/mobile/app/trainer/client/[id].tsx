@@ -1,7 +1,7 @@
 import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import type { Href } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   AuditWarning,
@@ -19,7 +19,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
-import { plansApi } from "@/lib/domain-api";
+import { plansApi, trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -44,9 +44,11 @@ export default function TrainerClientDetail() {
   const { activeOrgId, token } = useAuth();
   const [tab, setTab] = useState<ClientTab>("summary");
   const [status, setStatus] = useState("");
-  const [planTitle, setPlanTitle] = useState("Push Day Strength Block");
+  const [planTitle, setPlanTitle] = useState("");
   const [savingPlan, setSavingPlan] = useState(false);
   const [savedPlan, setSavedPlan] = useState<{ id: string; title: string } | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [noteSaved, setNoteSaved] = useState(false);
   const clientsQuery = useTrainerClients();
   const client =
     clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
@@ -60,6 +62,11 @@ export default function TrainerClientDetail() {
   const activePlans = client?.summary?.activePlans ?? 0;
   const recentFeedback = client?.summary?.recentFeedback ?? [];
   const recentWorkouts = client?.summary?.recentWorkouts ?? [];
+
+  useEffect(() => {
+    setNoteText(client?.summary?.trainerNote ?? "");
+    setNoteSaved(false);
+  }, [client?.memberUserId, client?.summary?.trainerNote]);
 
   function buildPlanPayload() {
     return {
@@ -113,8 +120,9 @@ export default function TrainerClientDetail() {
     setSavingPlan(true);
     setStatus("");
     try {
+      const nextPlanTitle = planTitle.trim() || `${clientName} workout plan`;
       const plan =
-        savedPlan && savedPlan.title === planTitle
+        savedPlan && savedPlan.title === nextPlanTitle
           ? savedPlan
           : await plansApi
               .create<{ plan: { id: string; title: string } }>({
@@ -138,6 +146,30 @@ export default function TrainerClientDetail() {
       setStatus(getApiErrorMessage(error));
     } finally {
       setSavingPlan(false);
+    }
+  }
+
+  async function saveNote() {
+    if (!token || !activeOrgId || !client || !client.trainerUserId) {
+      setStatus("Select a client before saving a note.");
+      return;
+    }
+    setNoteSaved(false);
+    setStatus("");
+    try {
+      await trainerApi.updateClientNote({
+        token,
+        orgId: activeOrgId,
+        trainerUserId: client.trainerUserId,
+        clientId: client.memberUserId,
+        note: noteText,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
+      setNoteSaved(true);
+      setStatus("Trainer note saved.");
+      setTimeout(() => setNoteSaved(false), 2000);
+    } catch (error) {
+      setStatus(getApiErrorMessage(error));
     }
   }
 
@@ -350,31 +382,42 @@ export default function TrainerClientDetail() {
             <GlassCard contentStyle={styles.stack}>
               <FormField
                 label="Trainer note"
+                value={noteText}
+                onChangeText={setNoteText}
                 multiline
                 placeholder="Add coaching note for your own follow-up..."
               />
+              <ZookButton
+                onPress={() => void saveNote()}
+                disabled={!client}
+                icon={noteSaved ? "checkmark-outline" : "save-outline"}
+              >
+                {noteSaved ? "Saved" : "Save note"}
+              </ZookButton>
               <AuditWarning>
                 Only assigned trainers and owners/admins can see trainer notes.
               </AuditWarning>
             </GlassCard>
           ) : null}
 
-          <GlassCard variant="warning" contentStyle={styles.draftPromptContent}>
-            <View style={styles.attentionHeader}>
-              <IconBubble icon="reader-outline" tone="amber" />
-              <View style={styles.clientCopy}>
-                <Text style={styles.cardTitle}>Draft review</Text>
-                <Text style={styles.cardBody}>
-                  Generated plans require edits and approval before assigning.
-                </Text>
+          {savedPlan ? (
+            <GlassCard variant="warning" contentStyle={styles.draftPromptContent}>
+              <View style={styles.attentionHeader}>
+                <IconBubble icon="reader-outline" tone="amber" />
+                <View style={styles.clientCopy}>
+                  <Text style={styles.cardTitle}>Draft review</Text>
+                  <Text style={styles.cardBody}>
+                    {savedPlan.title} is saved as a draft. Review before assigning.
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Link href={aiDraftHref} asChild>
-              <Pressable accessibilityRole="link">
-                <StatusChip status="Open review" tone="amber" icon="chevron-forward" />
-              </Pressable>
-            </Link>
-          </GlassCard>
+              <Link href={aiDraftHref} asChild>
+                <Pressable accessibilityRole="link">
+                  <StatusChip status="Open review" tone="amber" icon="chevron-forward" />
+                </Pressable>
+              </Link>
+            </GlassCard>
+          ) : null}
 
           {status ? (
             <GlassCard variant="success" contentStyle={styles.statusContent}>

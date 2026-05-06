@@ -50,7 +50,10 @@ export default function TrackingHistory() {
       completed: boolean;
     }>;
   }>;
-  const series = useMemo(() => buildHistorySeries(workouts), [workouts, selectedWindow]);
+  const series = useMemo(
+    () => buildHistorySeries(workouts, selectedWindow),
+    [workouts, selectedWindow],
+  );
 
   return (
     <>

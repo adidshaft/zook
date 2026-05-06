@@ -116,7 +116,29 @@ export default async function JoinPage({
   const nextLocale = alternatePublicLocale(locale);
 
   if (!org || !selectedPlan) {
-    return <main className="p-8">{t("joinUnavailable")}</main>;
+    return (
+      <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen py-1">
+        <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
+          <PublicNav
+            showLogin={false}
+            languageHref={localizedPath(`/join/${username}`, nextLocale)}
+            languageLabel={t("languageSwitch")}
+            backHref={localizedPath("/gyms", locale)}
+            backLabel={t("findGym")}
+          />
+          <GlassCard className="mx-auto max-w-xl text-center">
+            <Pill tone="amber">{t("joinUnavailable")}</Pill>
+            <p className="mt-4 text-sm leading-6 text-white/55">{t("joinUnavailable")}</p>
+            <Link
+              href={localizedPath("/gyms", locale)}
+              className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
+            >
+              {t("findGym")}
+            </Link>
+          </GlassCard>
+        </div>
+      </main>
+    );
   }
 
   if (joinMode === "APPROVAL_REQUIRED") {
@@ -326,7 +348,7 @@ export default async function JoinPage({
                   locale,
                 )}
               />
-            ) : (
+            ) : process.env.NODE_ENV === "development" ? (
               <>
                 <div className="mt-6 rounded-[22px] border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
                   {t("testMode")}
@@ -338,6 +360,16 @@ export default async function JoinPage({
                   {t("simulatedPayment")}
                 </Link>
               </>
+            ) : (
+              <div className="mt-6 rounded-[22px] border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
+                <p>Payment is temporarily unavailable. Please try again in a few minutes.</p>
+                <Link
+                  href={joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale)}
+                  className="zook-focus mt-4 inline-flex rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  Retry
+                </Link>
+              </div>
             )}
           </GlassCard>
         </section>

@@ -58,7 +58,7 @@ export default function TrackingEntry() {
   const { activeOrgId, token } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [title, setTitle] = useState("Strength Session");
+  const [title, setTitle] = useState("");
   const [workoutType, setWorkoutType] = useState("strength");
   const [startedAt, setStartedAt] = useState(defaultStartedAt());
   const [endedAt, setEndedAt] = useState(defaultEndedAt());
@@ -98,6 +98,10 @@ export default function TrackingEntry() {
       setMessage("Add at least one exercise with a name and sets greater than 0.");
       return;
     }
+    if (endedAt <= startedAt) {
+      setMessage("End time must be after start time.");
+      return;
+    }
     setSaving(true);
     try {
       await memberApi.createTrackingWorkout({
@@ -105,7 +109,7 @@ export default function TrackingEntry() {
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
         body: {
           ...(activeOrgId ? { organizationId: activeOrgId } : {}),
-          title,
+          title: title.trim() || "Workout",
           workoutType,
           startedAt: startedAt.toISOString(),
           endedAt: endedAt.toISOString(),
@@ -195,7 +199,7 @@ export default function TrackingEntry() {
               label="Session title"
               value={title}
               onChangeText={setTitle}
-              placeholder="Morning push day"
+              placeholder="e.g. Upper body, Leg day"
             />
 
             <View style={styles.dateRow}>

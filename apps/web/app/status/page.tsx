@@ -54,7 +54,7 @@ function UptimeBars({ status }: { status: string }) {
             "block flex-1 rounded-sm",
             status === "down"
               ? "bg-red-300/70"
-              : status === "degraded" || index === 14
+              : status === "degraded"
                 ? "bg-amber-200/70"
                 : "bg-lime-300/70",
           ].join(" ")}
@@ -84,7 +84,6 @@ export default async function StatusPage({
       key: "checkins",
       label: "Check-ins",
       detail: "Members can scan QR codes and desks can approve entries.",
-      uptime: "99.98% past 30d",
       status: aggregateServiceStatus([
         payload.components.web.status,
         payload.components.db.status,
@@ -94,7 +93,6 @@ export default async function StatusPage({
       key: "payments",
       label: "Payments",
       detail: "Membership checkout and payment confirmations are available.",
-      uptime: "99.92% past 30d",
       status: aggregateServiceStatus([
         payload.components.web.status,
         payload.components.db.status,
@@ -105,7 +103,6 @@ export default async function StatusPage({
       key: "app",
       label: "App & web",
       detail: "Member, trainer, reception, and owner screens are loading.",
-      uptime: "99.99% past 30d",
       status: aggregateServiceStatus([
         payload.components.web.status,
         payload.components.db.status,
@@ -120,6 +117,11 @@ export default async function StatusPage({
       : publicStatus === "down"
         ? "Some Zook services are down"
         : "Some Zook services are slower than usual";
+  const degradedCount = userServices.filter((service) => service.status !== "operational").length;
+  const uptimeLabel =
+    publicStatus === "operational"
+      ? "All systems operational"
+      : `${degradedCount} service${degradedCount === 1 ? "" : "s"} in mock mode or degraded`;
 
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
@@ -166,7 +168,7 @@ export default async function StatusPage({
               </div>
               <UptimeBars status={service.status} />
               <p className="mt-4 text-sm leading-6 text-white/55">{service.detail}</p>
-              <p className="mt-3 text-xs text-white/42">{service.uptime}</p>
+              <p className="mt-3 text-xs text-white/42">{uptimeLabel}</p>
             </GlassCard>
           ))}
         </section>
@@ -177,24 +179,13 @@ export default async function StatusPage({
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
                 Recent incidents · 90 days
               </p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">2 resolved · 0 open</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-white">Incident history</h2>
             </div>
-            <Pill tone="lime">All clear today</Pill>
+            <Pill tone={statusTone(publicStatus)}>{formatEnumLabel(publicStatus)}</Pill>
           </div>
-          <div className="mt-5 divide-y divide-white/10">
-            {[
-              ["Brief check-in delays in Mumbai region", "Resolved · 18 Apr · 22m"],
-              ["Membership payments retried automatically", "Resolved · 28 Mar · 8m"],
-            ].map(([title, meta]) => (
-              <div key={title} className="flex items-center justify-between gap-4 py-4 text-sm">
-                <span className="inline-flex items-center gap-2 text-white/78">
-                  <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
-                  {title}
-                </span>
-                <span className="text-right text-white/45">{meta}</span>
-              </div>
-            ))}
-          </div>
+          <p className="mt-5 text-sm text-white/50">
+            Incident history will appear here once monitoring is active.
+          </p>
           <p className="mt-5 text-sm text-white/50">
             Looking for engineering detail?{" "}
             <Link href="/status?engineering=1" className="text-white underline decoration-white/30">

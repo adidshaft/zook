@@ -27,6 +27,7 @@ import {
 } from "./dashboard-primitives";
 import { GlassCard, Pill, type PillTone } from "./glass-card";
 import { DashboardOperationalPanelShell } from "./dashboard-operational-panel-shell";
+import { DashboardSignOutButton } from "./dashboard-sign-out-button";
 import { ZookLogo } from "./zook-logo";
 import { ZookButtonLink } from "./zook-button";
 import { formatDate, formatDaysRemaining, formatEnumLabel, titleFromSection } from "@/lib/format";
@@ -204,7 +205,7 @@ function OwnerSetupChecklist({
       label: "Invite your team",
       detail: "Add trainers, reception, and admins before peak-hour ops.",
       href: "/dashboard/staff",
-      done: false,
+      done: (summary.staffCount ?? 0) > 1,
     },
     {
       label: "Share your gym link",
@@ -240,6 +241,12 @@ function OwnerSetupChecklist({
             <span className="text-sm text-white/45">
               {completed} of {checklist.length} complete
             </span>
+          </div>
+          <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-lime-300 transition-all duration-500"
+              style={{ width: `${(completed / checklist.length) * 100}%` }}
+            />
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
@@ -439,7 +446,7 @@ export function DashboardShell({
                   {
                     label: "Branch scope",
                     value: formatBranchName(selectedBranch),
-                    meta: "MVP mobile flows use the active branch",
+                    meta: "Mobile app uses this branch for check-ins and plans.",
                   },
                   {
                     label: "Attendance mode",
@@ -459,6 +466,7 @@ export function DashboardShell({
                 ]}
               />
             </div>
+            <DashboardSignOutButton />
           </GlassCard>
         </aside>
 

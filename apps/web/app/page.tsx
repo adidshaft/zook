@@ -251,7 +251,7 @@ export default async function HomePage({
         </section>
 
         <footer className="flex flex-col gap-3 border-t border-white/10 py-6 text-sm text-white/42 md:flex-row md:items-center md:justify-between">
-          <p>© 2026 Zook. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Zook. All rights reserved.</p>
           <div className="flex flex-wrap gap-4">
             <Link href={localizedPath("/login", locale)} className="transition hover:text-white">
               {t("login")}
@@ -262,18 +262,12 @@ export default async function HomePage({
             >
               {t("startGym")}
             </Link>
-            <a
-              href="mailto:legal@zook.app?subject=Privacy%20policy"
-              className="transition hover:text-white"
-            >
+            <Link href={localizedPath("/privacy", locale)} className="transition hover:text-white">
               {t("privacy")}
-            </a>
-            <a
-              href="mailto:legal@zook.app?subject=Terms%20of%20service"
-              className="transition hover:text-white"
-            >
+            </Link>
+            <Link href={localizedPath("/terms", locale)} className="transition hover:text-white">
               {t("terms")}
-            </a>
+            </Link>
             <a href="mailto:hello@zook.app" className="transition hover:text-white">
               {t("contact")}
             </a>

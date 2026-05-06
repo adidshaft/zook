@@ -155,11 +155,40 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
   const joinRequestId = pickFirstString(input, ["joinRequestId"]);
   const attendanceRecordId = pickFirstString(input, ["attendanceRecordId"]);
   const notificationType = readString(input?.type)?.toUpperCase();
+  const targetType = readString(input?.targetType)?.toLowerCase();
+  const targetId = readString(input?.targetId);
+
+  if (targetType && targetId) {
+    if (targetType === "plan") {
+      return buildHref(
+        "/plans",
+        maybeAttachNotificationId({ ...params, assignmentId: targetId, focus: "plan" }, input),
+      );
+    }
+    if (targetType === "order") {
+      return buildHref(
+        "/shop",
+        maybeAttachNotificationId({ ...params, orderId: targetId, focus: "pickup" }, input),
+      );
+    }
+    if (targetType === "membership") {
+      return buildHref(
+        "/membership",
+        maybeAttachNotificationId({ ...params, subscriptionId: targetId, focus: "membership" }, input),
+      );
+    }
+    if (targetType === "attendance") {
+      return buildHref(
+        `/attendance/${encodePathSegment(targetId)}`,
+        maybeAttachNotificationId({ ...params, focus: "attendance" }, input),
+      );
+    }
+  }
 
   if (orderId) {
     return buildHref(
-      `/order/${encodePathSegment(orderId)}`,
-      maybeAttachNotificationId({ ...params, focus: "shop-order" }, input),
+      "/shop",
+      maybeAttachNotificationId({ ...params, orderId, focus: "shop-order" }, input),
     );
   }
 
@@ -180,10 +209,11 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
 
   if (assignmentId) {
     return buildHref(
-      `/plan/${encodePathSegment(assignmentId)}`,
+      "/plans",
       maybeAttachNotificationId(
         {
           ...params,
+          assignmentId,
           ...(planId ? { planId } : {}),
           focus: hasPtContext(input) ? "pt-update" : "plan",
         },

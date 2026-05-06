@@ -515,6 +515,19 @@ const planCompletionInputSchema = z.object({
   feedback: z.string().max(500).optional(),
 });
 
+const planFeedbackSchema = z.object({
+  planAssignmentId: z.string(),
+  message: z.string().trim().min(1).max(500),
+});
+
+const trainerClientNoteSchema = z.object({
+  note: z.string().max(2_000).default(""),
+});
+
+const notificationBulkReadSchema = z.object({
+  ids: z.array(z.string()).max(100).default([]),
+});
+
 const classInputSchema = z.object({
   branchId: z.string(),
   trainerId: z.string(),
@@ -7164,6 +7177,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       status,
       duplicate: false,
       suspiciousFlags: validation.suspiciousFlags,
+      warnings: validation.warnings,
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "reception", "verify-code"])) {
@@ -8070,6 +8084,50 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     });
     return ok({ profile, upiQrFile: upiQrAsset });
   }
+  if (
+    request.method === "PATCH" &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients", /.+/, "note"])
+  ) {
+    const orgId = path[1]!;
+    const trainerId = path[3]!;
+    const clientId = path[5]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const requesterId = requireAuth(ctx);
+    if (requesterId === trainerId) {
+      requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    } else {
+      requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    }
+    const assignment = await prisma.trainerAssignment.findFirst({
+      where: { orgId, trainerUserId: trainerId, memberUserId: clientId, active: true },
+    });
+    if (!assignment) {
+      throw notFoundError("Trainer client not found");
+    }
+    const body = trainerClientNoteSchema.parse(await readJson(request));
+    const currentProfile = await prisma.memberProfile.findUnique({
+      where: { orgId_userId: { orgId, userId: clientId } },
+    });
+    const nextNotes = {
+      ...parseMemberProfileNotes(currentProfile?.notes),
+      trainerNote: body.note.trim() || undefined,
+    };
+    const profile = await prisma.memberProfile.upsert({
+      where: { orgId_userId: { orgId, userId: clientId } },
+      update: { notes: JSON.stringify(nextNotes) },
+      create: { orgId, userId: clientId, notes: JSON.stringify(nextNotes) },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: requesterId,
+      action: "trainer.client_note.updated",
+      entityType: "member_profile",
+      entityId: profile.id,
+      metadata: { trainerUserId: trainerId, memberUserId: clientId },
+    });
+    return ok({ note: body.note });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients"])) {
     const orgId = path[1]!;
     const trainerId = path[3]!;
@@ -8581,6 +8639,65 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     });
     return ok({ assignment });
   }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "plan-feedback"])) {
+    const orgId = path[1]!;
+    const userId = requireAuth(await getRequestContext(request, { orgId }));
+    const body = planFeedbackSchema.parse(await readJson(request));
+    const assignment = await prisma.planAssignment.findFirst({
+      where: {
+        id: body.planAssignmentId,
+        orgId,
+        assignedToUserId: userId,
+        active: true,
+      },
+    });
+    if (!assignment) {
+      throw notFoundError("Plan assignment not found");
+    }
+    const plan = await prisma.planContent.findFirst({
+      where: { id: assignment.planId, orgId },
+      select: { title: true },
+    });
+    const progress = await prisma.planProgress.upsert({
+      where: { assignmentId_userId: { assignmentId: assignment.id, userId } },
+      update: { feedback: body.message },
+      create: {
+        orgId,
+        assignmentId: assignment.id,
+        userId,
+        progressJson: {},
+        completionPct: 0,
+        feedback: body.message,
+      },
+    });
+    const trainerIds = assignment.assignedById
+      ? [assignment.assignedById]
+      : (
+          await prisma.trainerAssignment.findMany({
+            where: { orgId, memberUserId: userId, active: true },
+            select: { trainerUserId: true },
+          })
+        ).map((trainer) => trainer.trainerUserId);
+    const recipientIds = [...new Set(trainerIds.filter((trainerId) => trainerId !== userId))];
+    if (recipientIds.length) {
+      await createDirectNotification({
+        orgId,
+        createdById: userId,
+        type: "PLAN",
+        title: `Plan feedback: ${plan?.title ?? "Training plan"}`,
+        body: body.message,
+        audience: "selected_trainers",
+        userIds: recipientIds,
+        metadata: {
+          targetType: "plan",
+          targetId: assignment.id,
+          assignmentId: assignment.id,
+          planId: assignment.planId,
+        },
+      });
+    }
+    return ok({ ok: true, progress, notified: recipientIds.length });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "plans"])) {
     const userId = requireAuth(await getRequestContext(request));
     return ok({ plans: await listPlanAssignmentsForUser(userId) });
@@ -9070,6 +9187,18 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         data: { readAt: record.readAt ?? new Date() },
       }),
     });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "notifications", "read"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const body = notificationBulkReadSchema.parse(await readJson(request));
+    if (!body.ids.length) {
+      return ok({ count: 0 });
+    }
+    const result = await prisma.notificationRecipient.updateMany({
+      where: { id: { in: body.ids }, userId, readAt: null },
+      data: { readAt: new Date() },
+    });
+    return ok({ count: result.count });
   }
   if (request.method === "PATCH" && pathMatches(path, ["me", "notification-preferences"])) {
     const userId = requireAuth(await getRequestContext(request));

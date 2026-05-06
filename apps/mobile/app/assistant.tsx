@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import * as Clipboard from "expo-clipboard";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,6 +14,7 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { aiApi } from "@/lib/domain-api";
 import { useMyPlans, useMyProfile, useTrainerClients } from "@/lib/query-hooks";
+import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type ChatMessage = {
@@ -33,6 +35,16 @@ const trainerPrompts = [
   "Suggest safe exercise swaps.",
 ];
 
+function starterMessage(isTrainer: boolean): ChatMessage {
+  return {
+    id: `hello-${isTrainer ? "trainer" : "member"}`,
+    role: "assistant",
+    body: isTrainer
+      ? "Send a client summary, workout data, or a natural-language question. I can help draft plans, diet notes, and recovery guidance."
+      : "Ask in any language. I can help with your assigned plans, diet preferences, recovery, and gym routine.",
+  };
+}
+
 export default function AssistantScreen() {
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
@@ -43,18 +55,13 @@ export default function AssistantScreen() {
   const trainerClientsQuery = useTrainerClients();
   const isTrainer = hasAnyRole("TRAINER");
   const canUseAi = hasAnyRole("TRAINER", "MEMBER");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "hello",
-      role: "assistant",
-      body: isTrainer
-        ? "Send a client summary, workout data, or a natural-language question. I can help draft plans, diet notes, and recovery guidance."
-        : "Ask in any language. I can help with your assigned plans, diet preferences, recovery, and gym routine.",
-    },
-  ]);
+  const storageKey = `zook_assistant_messages_${activeOrgId ?? "global"}_${activeRole ?? "member"}`;
+  const hydratedRef = useRef(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([starterMessage(isTrainer)]);
   const [draft, setDraft] = useState("");
   const [attachSummary, setAttachSummary] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("");
 
   const plansCount = plansQuery.data?.plans?.length ?? 0;
   const firstClient = trainerClientsQuery.data?.clients?.[0];
@@ -75,6 +82,43 @@ export default function AssistantScreen() {
         profile?.wellness?.allergies ? `Allergies: ${profile.wellness.allergies}` : null,
         `Plans: ${plansCount}`,
       ].filter(Boolean).join("\n");
+
+  useEffect(() => {
+    hydratedRef.current = false;
+    void getStoredValue(storageKey).then((stored) => {
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as ChatMessage[];
+          if (Array.isArray(parsed) && parsed.length) {
+            setMessages(parsed.slice(-50));
+          } else {
+            setMessages([starterMessage(isTrainer)]);
+          }
+        } catch {
+          setMessages([starterMessage(isTrainer)]);
+        }
+      } else {
+        setMessages([starterMessage(isTrainer)]);
+      }
+      hydratedRef.current = true;
+    });
+  }, [isTrainer, storageKey]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || !messages.length) {
+      return;
+    }
+    void setStoredValue(storageKey, JSON.stringify(messages.slice(-50)));
+  }, [messages, storageKey]);
+
+  async function copyMessage(message: ChatMessage) {
+    if (message.role !== "assistant") {
+      return;
+    }
+    await Clipboard.setStringAsync(message.body);
+    setCopyStatus("Copied");
+    setTimeout(() => setCopyStatus(""), 1400);
+  }
 
   async function askAssistant(override?: string) {
     const prompt = (override ?? draft).trim();
@@ -112,16 +156,10 @@ export default function AssistantScreen() {
   }
 
   function resetConversation() {
-    setMessages([
-      {
-        id: `hello-${Date.now()}`,
-        role: "assistant",
-        body: isTrainer
-          ? "Send a client summary, workout data, or a natural-language question. I can help draft plans, diet notes, and recovery guidance."
-          : "Ask in any language. I can help with your assigned plans, diet preferences, recovery, and gym routine.",
-      },
-    ]);
+    setMessages([{ ...starterMessage(isTrainer), id: `hello-${Date.now()}` }]);
     setDraft("");
+    setCopyStatus("");
+    void deleteStoredValue(storageKey);
   }
 
   const suggestedPrompts = isTrainer ? trainerPrompts : memberPrompts;
@@ -187,6 +225,7 @@ export default function AssistantScreen() {
             <Ionicons name="refresh-outline" size={16} color={colors.muted} />
             <Text style={styles.controlChipText}>Clear</Text>
           </Pressable>
+          {copyStatus ? <Text style={styles.copyStatus}>{copyStatus}</Text> : null}
         </View>
 
         {messages.length <= 1 ? (
@@ -216,8 +255,11 @@ export default function AssistantScreen() {
 
         <View style={styles.chatStack}>
           {messages.map((message) => (
-            <View
+            <Pressable
               key={message.id}
+              onLongPress={() => void copyMessage(message)}
+              accessibilityRole={message.role === "assistant" ? "button" : undefined}
+              accessibilityHint={message.role === "assistant" ? "Long press to copy" : undefined}
               style={[
                 styles.messageBubble,
                 message.role === "user" ? styles.userBubble : styles.assistantBubble,
@@ -231,7 +273,7 @@ export default function AssistantScreen() {
               <Text style={[styles.messageText, message.role === "user" ? styles.userText : null]}>
                 {message.body}
               </Text>
-            </View>
+            </Pressable>
           ))}
           {loading ? (
             <View style={[styles.messageBubble, styles.assistantBubble]}>
@@ -301,7 +343,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lime,
   },
   controlsRow: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
+    flexWrap: "wrap",
   },
   controlChip: {
     flexDirection: "row",
@@ -325,6 +370,10 @@ const styles = StyleSheet.create({
   },
   controlChipTextActive: {
     color: colors.bg,
+  },
+  copyStatus: {
+    color: colors.lime,
+    ...typography.small,
   },
   suggestionRow: {
     flexDirection: "row",

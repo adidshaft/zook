@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, QrCode, ShieldCheck, Smartphone, Star } from "lucide-react";
+import { MapPin, QrCode, ShieldCheck, Star } from "lucide-react";
 import { resolvePlanName } from "@zook/ui";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { PublicNav } from "@/components/public-nav";
+import { PublicGymActions } from "@/components/public-gym-actions";
 import { ShareButton } from "@/components/share-button";
 import { formatInr } from "@/lib/format";
 import {
@@ -267,7 +268,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                 unoptimized
               />
             </div>
-            <p className="mt-3 text-center text-xs text-white/45">Scan from your phone to join instantly</p>
+            <p className="mt-3 text-center text-xs text-white/45">{t("scanToJoin")}</p>
             {hasPublicPlans ? (
               <Link
                 href="#plans"
@@ -280,13 +281,14 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                 {priceSummary([], locale)}
               </div>
             )}
-            <a
-              href={`zook://join/${org.username}`}
-              className="zook-focus mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-lime-300 px-5 py-3 text-sm font-medium text-lime-200 transition hover:bg-lime-300/10"
-            >
-              <Smartphone size={17} />
-              {t("openInApp")}
-            </a>
+            <PublicGymActions
+              username={org.username}
+              appStoreUrl={org.appStoreUrl}
+              playStoreUrl={org.playStoreUrl}
+              openLabel={t("openInApp")}
+              copyLabel={t("copyJoinLink")}
+              copiedLabel={t("copied")}
+            />
             <div className="mt-5 rounded-[24px] border border-white/10 bg-black/20 p-4">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="text-lime-200" size={22} />
@@ -312,7 +314,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <Pill tone={plan.id === recommendedPlanId ? "lime" : "neutral"}>
-                        {plan.id === recommendedPlanId ? "Most popular" : plan.type.replaceAll("_", " ")}
+                        {plan.id === recommendedPlanId ? t("mostPopular") : plan.type.replaceAll("_", " ")}
                       </Pill>
                       <h2 className="mt-4 max-w-full truncate text-2xl font-semibold text-white">
                         {resolvePlanName(plan)}
@@ -325,11 +327,12 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                   <p className="mt-3 text-sm leading-6 text-white/52">{plan.description}</p>
                   <p className="mt-4 text-sm text-white/45">
                     {plan.durationDays
-                      ? `${plan.durationDays} days`
+                      ? `${plan.durationDays} ${t("days")}`
                       : plan.type === "TRIAL"
-                        ? "Trial"
-                        : "Visit pack"}{" "}
-                    · {plan.visitLimit || "Unlimited"} {plan.visitLimit === 1 ? "visit" : "visits"}
+                        ? t("trial")
+                        : t("visitPack")}{" "}
+                    · {plan.visitLimit || t("unlimited")}{" "}
+                    {plan.visitLimit === 1 ? t("visit") : t("visits")}
                   </p>
                 </GlassCard>
               </Link>
@@ -341,14 +344,13 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                 {priceSummary([], locale)}
               </h2>
               <p className="mt-3 text-sm leading-6 text-white/55">
-                This gym can still use Zook internally, but public sign-up starts only after an
-                owner publishes a membership plan.
+                {t("noPublicPlanCopy")}
               </p>
             </GlassCard>
           )}
           {plans.length > visiblePlans.length ? (
             <p className="lg:col-span-3 text-sm text-white/45">
-              See all {plans.length} plans at the gym desk. Custom add-ons are available after sign-up.
+              {t("seeAllPlansPrefix")} {plans.length} {t("seeAllPlansSuffix")}
             </p>
           ) : null}
         </section>
@@ -373,7 +375,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
           <GlassCard>
             <h2 className="text-2xl font-semibold text-white">{t("shareOrInstall")}</h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
-              Scan the QR, open this gym in Zook, or install the app and search for {org.name}.
+              {t("shareInstallCopyPrefix")} {org.name}.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               {org.appStoreUrl ? (
@@ -381,7 +383,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                   href={org.appStoreUrl}
                   className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
                 >
-                  App Store
+                  {t("appStore")}
                 </a>
               ) : null}
               {org.playStoreUrl ? (
@@ -389,7 +391,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                   href={org.playStoreUrl}
                   className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
                 >
-                  Play Store
+                  {t("playStore")}
                 </a>
               ) : null}
               <a
@@ -403,6 +405,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                 title={`${org.name} on Zook`}
                 text={`Join ${org.name} in ${org.city} on Zook.`}
                 path={`/g/${org.username}`}
+                label={t("shareJoinLink")}
               />
             </div>
           </GlassCard>
@@ -455,8 +458,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                       <div className="min-w-0">
                         <p className="font-medium text-white">{trainer.name}</p>
                         <p className="mt-1 text-sm text-white/45">
-                          {trainer.bio ??
-                            "Trainer details will appear after the gym publishes them."}
+                          {trainer.bio ?? t("bioComingSoon")}
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {profileDetails.specialties.slice(0, 3).map((specialty) => (
@@ -467,7 +469,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                               {certification}
                             </Pill>
                           ))}
-                          <Pill tone="blue">Available for PT</Pill>
+                          {trainer.ptAvailable ? <Pill tone="blue">{t("availablePT")}</Pill> : null}
                         </div>
                       </div>
                     </div>
@@ -483,6 +485,12 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
           <GlassCard>
             <h2 className="text-2xl font-semibold text-white">{t("referral")}</h2>
             <p className="mt-3 text-sm leading-6 text-white/55">{t("referralCopy")}</p>
+            <Link
+              href={localizedPath(`/join/${org.username}`, locale, { ref: "" })}
+              className="zook-focus mt-5 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
+            >
+              {t("shareJoinLink")}
+            </Link>
           </GlassCard>
         </section>
         <section>

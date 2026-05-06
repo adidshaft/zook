@@ -57,8 +57,22 @@ function serializePlatformAbuseFlag(flag: {
   };
 }
 
-export default async function PlatformPage() {
+const platformSectionAnchors: Record<string, string> = {
+  status: "readiness",
+  gyms: "organizations",
+  assistant: "ai-traffic",
+  safety: "abuse-flags",
+};
+
+export default async function PlatformPage({
+  params,
+}: {
+  params: Promise<{ section?: string[] }>;
+}) {
   await requirePlatformSession();
+  const { section } = await params;
+  const sectionKey = section?.[0] ?? "status";
+  const activeAnchor = platformSectionAnchors[sectionKey] ?? "readiness";
   const data = await getDashboardData();
   const runtimeLabel = data.connected
     ? "System online"
@@ -103,16 +117,16 @@ export default async function PlatformPage() {
         <nav className="flex gap-2 overflow-x-auto rounded-[28px] border border-white/10 bg-white/5 p-3">
           {(
             [
-              ["Status", "#readiness"],
-              ["Gyms", "#organizations"],
-              ["Assistant", "#ai-traffic"],
-              ["Safety", "#abuse-flags"],
-            ] as Array<[string, string]>
-          ).map(([item, href], index) => (
+              ["Status", "/platform/status", "status"],
+              ["Gyms", "/platform/gyms", "gyms"],
+              ["Assistant", "/platform/assistant", "assistant"],
+              ["Safety", "/platform/safety", "safety"],
+            ] as Array<[string, string, string]>
+          ).map(([item, href, key]) => (
             <Link
               key={item}
               href={href}
-              className={`zook-focus shrink-0 rounded-full px-4 py-2 text-sm ${index === 0 ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"}`}
+              className={`zook-focus shrink-0 rounded-full px-4 py-2 text-sm ${key === sectionKey ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"}`}
             >
               {item}
             </Link>
@@ -142,6 +156,7 @@ export default async function PlatformPage() {
         </div>
 
         <PlatformOperationsPanel
+          initialSection={activeAnchor}
           initialOrgs={data.orgs.map(serializePlatformOrganization)}
           initialFlags={data.platform.abuseFlags.map(serializePlatformAbuseFlag)}
         />

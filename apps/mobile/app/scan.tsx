@@ -41,6 +41,7 @@ type ScanResult = {
   status?: string | null;
   duplicate?: boolean;
   suspiciousFlags?: unknown;
+  warnings?: unknown;
 };
 type ScanState = "idle" | "checking" | "accepted" | "failed";
 type ScanMode = "scan" | "code";
@@ -76,6 +77,19 @@ export default function Scan() {
       return "Already checked in today.";
     }
     return result.attendance.reason ?? "";
+  }
+
+  function scanWarnings(result: ScanResult) {
+    if (!Array.isArray(result.warnings)) {
+      return "";
+    }
+    return result.warnings
+      .map((warning) =>
+        warning === "profile_photo_recommended"
+          ? "Add a profile photo after check-in so the desk can verify you faster next time."
+          : String(warning),
+      )
+      .join(" ");
   }
 
   async function completeScan(payload: string) {
@@ -114,6 +128,7 @@ export default function Scan() {
           planName: result.attendance.planName ?? "",
           checkedInAt: result.attendance.checkedInAt ?? "",
           reason: scanReason(result),
+          warning: scanWarnings(result),
         },
       });
     } catch (error) {
@@ -166,6 +181,7 @@ export default function Scan() {
           planName: result.attendance.planName ?? "",
           checkedInAt: result.attendance.checkedInAt ?? "",
           reason: scanReason(result),
+          warning: scanWarnings(result),
         },
       });
     } catch (error) {
@@ -179,11 +195,12 @@ export default function Scan() {
   }
 
   function handleBarcode({ data }: BarcodeScanningResult) {
-    if (data) {
-      void completeScan(data);
+    if (!data || data.trim() === "") {
+      setErrorMessage("Could not read QR code. Try again.");
+      setScanState("failed");
       return;
     }
-    void completeDevScan();
+    void completeScan(data);
   }
 
   function submitCode() {

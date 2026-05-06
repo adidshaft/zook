@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DataTable, EmptyState, ReadoutGrid, SectionHeader, StatusPill, toneFromStatus } from "./dashboard-primitives";
 import { GlassCard, Pill } from "./glass-card";
 import { formatCompactNumber, formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
@@ -62,10 +62,12 @@ type ProviderDiagnostics = {
 
 export function PlatformOperationsPanel({
   initialOrgs,
-  initialFlags
+  initialFlags,
+  initialSection = "readiness"
 }: {
   initialOrgs: PlatformOrganization[];
   initialFlags: PlatformAbuseFlag[];
+  initialSection?: string;
 }) {
   const [busyOrgId, setBusyOrgId] = useState<string | null>(null);
   const [statusError, setStatusError] = useState("");
@@ -96,6 +98,10 @@ export function PlatformOperationsPanel({
   const defaultProviders = providerEntries.filter(([, provider]) => provider.status === "default");
   const suspendedOrganizations = organizations.filter((org) => org.status === "SUSPENDED");
   const openFlags = flags.filter((flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved");
+
+  useEffect(() => {
+    document.getElementById(initialSection)?.scrollIntoView({ block: "start" });
+  }, [initialSection]);
 
   async function updateOrganizationStatus(orgId: string, status: "ACTIVE" | "SUSPENDED" | "CANCELLED") {
     try {

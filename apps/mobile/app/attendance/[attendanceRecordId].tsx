@@ -14,7 +14,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
-import { useMyAttendance, useTrainerClients } from "@/lib/query-hooks";
+import { useMyAttendance } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type AttendanceRecord = {
@@ -33,9 +33,9 @@ function firstParam(value?: string | string[]) {
 }
 
 function formatTime(value?: string | null) {
-  if (!value) return "7:14 AM";
+  if (!value) return "--:--";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "7:14 AM";
+  if (Number.isNaN(date.getTime())) return "--:--";
   return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
@@ -59,10 +59,10 @@ export default function AttendanceResultScreen() {
     planName?: string | string[];
     checkedInAt?: string | string[];
     reason?: string | string[];
+    warning?: string | string[];
   }>();
   const { activeRole } = useAuth();
   const attendanceQuery = useMyAttendance();
-  const trainerClientsQuery = useTrainerClients(undefined, undefined, activeRole === "TRAINER");
   const records = (attendanceQuery.data?.attendance ?? []) as AttendanceRecord[];
   const attendanceRecordId = firstParam(routeParams.attendanceRecordId);
   const routeStatus = firstParam(routeParams.status);
@@ -83,6 +83,7 @@ export default function AttendanceResultScreen() {
       : {}),
     ...(firstParam(routeParams.reason) ? { reason: firstParam(routeParams.reason) } : {}),
   };
+  const warning = firstParam(routeParams.warning);
 
   const pending = record.status === "PENDING_APPROVAL";
   const blocked = record.status === "REJECTED" || record.status === "FLAGGED";
@@ -94,15 +95,12 @@ export default function AttendanceResultScreen() {
       ? "Main branch"
       : (record.branchName ?? "Assigned branch");
   const planName = record.planName ?? "Latest membership";
-  const firstTrainerClientWithPlan =
-    trainerClientsQuery.data?.clients.find((client) => (client.summary?.activePlans ?? 0) > 0)
-      ?.memberUserId ?? null;
   const planTarget: Href =
-    activeRole === "TRAINER" && firstTrainerClientWithPlan
-      ? `/trainer/client/${firstTrainerClientWithPlan}`
-      : activeRole === "TRAINER"
-        ? "/trainer?view=plans"
-        : "/plans?view=detail";
+    activeRole === "TRAINER" ? "/trainer?view=plans" : "/plans?view=detail";
+  const isFirstCheckIn =
+    approved &&
+    Boolean(recordFromApi) &&
+    records.filter((candidate) => candidate.status === "APPROVED").length <= 1;
 
   return (
     <>
@@ -146,6 +144,28 @@ export default function AttendanceResultScreen() {
                   : (record.reason ?? "Entry approved for your gym")}
             </Text>
           </View>
+
+          {isFirstCheckIn ? (
+            <GlassCard variant="selected" contentStyle={styles.firstCheckInContent}>
+              <IconBubble icon="sparkles-outline" tone="lime" size={42} />
+              <View style={styles.firstCheckInCopy}>
+                <Text style={styles.firstCheckInTitle}>First check-in!</Text>
+                <Text style={styles.firstCheckInBody}>
+                  You're officially part of the gym. Keep the streak going.
+                </Text>
+              </View>
+            </GlassCard>
+          ) : null}
+
+          {approved && warning ? (
+            <GlassCard contentStyle={styles.warningContent}>
+              <IconBubble icon="person-circle-outline" tone="amber" size={42} />
+              <View style={styles.warningCopy}>
+                <Text style={styles.warningTitle}>Profile photo recommended</Text>
+                <Text style={styles.warningBody}>{warning}</Text>
+              </View>
+            </GlassCard>
+          ) : null}
 
           {pending ? (
             <>
@@ -309,6 +329,24 @@ const styles = StyleSheet.create({
     ...typography.body,
     textAlign: "center",
   },
+  firstCheckInContent: {
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  firstCheckInCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  firstCheckInTitle: {
+    color: colors.text,
+    ...typography.h3,
+  },
+  firstCheckInBody: {
+    color: colors.muted,
+    ...typography.small,
+  },
   pendingCodeContent: {
     alignItems: "center",
     padding: 14,
@@ -344,6 +382,24 @@ const styles = StyleSheet.create({
     ...typography.h3,
   },
   reasonBody: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  warningContent: {
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  warningCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  warningTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  warningBody: {
     color: colors.muted,
     ...typography.small,
   },

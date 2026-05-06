@@ -107,7 +107,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
   const [gstNumber, setGstNumber] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
-  const [state, setState] = useState(INDIAN_STATES[0] ?? "Maharashtra");
+  const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
   const [joinMode, setJoinMode] = useState<"OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY">(
     "OPEN_JOIN",
@@ -385,6 +385,9 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                   onChange={(event) => setState(event.target.value)}
                   className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
                 >
+                  <option value="" disabled className="bg-black">
+                    Select state
+                  </option>
                   {INDIAN_STATES.map((stateName) => (
                     <option key={stateName} value={stateName} className="bg-black">
                       {stateName}

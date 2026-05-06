@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { PaymentMode } from "@zook/core";
 import {
   AuditWarning,
@@ -81,12 +81,12 @@ export default function Reception() {
   const router = useRouter();
   const { activeOrgId, logout, session, token } = useAuth();
   const view = normalizeView(params.view);
-  const [reason, setReason] = useState("Desk confirmed member identity");
+  const [reason, setReason] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
   const [verifyMessage, setVerifyMessage] = useState("");
   const [memberSearch, setMemberSearch] = useState("");
   const [paymentMode, setPaymentMode] = useState<DeskPaymentMode>("DIRECT_UPI");
-  const [amount, setAmount] = useState("2499");
+  const [amount, setAmount] = useState("");
   const [referenceId, setReferenceId] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
   const [paymentReason, setPaymentReason] = useState("Desk collected payment");
@@ -152,14 +152,24 @@ export default function Reception() {
   }
 
   async function approveAttendance(attemptId: string) {
-    await approveAttendanceMutation.mutateAsync(attemptId);
+    try {
+      await approveAttendanceMutation.mutateAsync(attemptId);
+      setAttendanceStatus("Check-in approved.");
+    } catch (error) {
+      Alert.alert("Failed", getApiErrorMessage(error) || "Could not approve. Please try again.");
+    }
   }
 
   async function rejectAttendance(attemptId: string) {
-    await rejectAttendanceMutation.mutateAsync({
-      recordId: attemptId,
-      reason: reason || "Reception rejected scan after review",
-    });
+    try {
+      await rejectAttendanceMutation.mutateAsync({
+        recordId: attemptId,
+        reason: reason || "Reception rejected scan after review",
+      });
+      setAttendanceStatus("Check-in rejected.");
+    } catch (error) {
+      Alert.alert("Failed", getApiErrorMessage(error) || "Could not reject. Please try again.");
+    }
   }
 
   async function verifyEntryCode() {
@@ -172,11 +182,17 @@ export default function Reception() {
       setVerifyMessage("Sign in and select a gym before verifying.");
       return;
     }
-    const result = await receptionApi.verifyCode<ReceptionCodeVerification>({
-      token,
-      orgId: activeOrgId,
-      code: normalized,
-    });
+    let result: ReceptionCodeVerification;
+    try {
+      result = await receptionApi.verifyCode<ReceptionCodeVerification>({
+        token,
+        orgId: activeOrgId,
+        code: normalized,
+      });
+    } catch (error) {
+      setVerifyMessage(getApiErrorMessage(error) || "Could not verify this code.");
+      return;
+    }
     if (!result.match) {
       setVerifyMessage("No active entry or pickup code found.");
       return;
@@ -223,7 +239,12 @@ export default function Reception() {
   }
 
   async function fulfillOrder(orderId: string) {
-    await fulfillOrderMutation.mutateAsync(orderId);
+    try {
+      await fulfillOrderMutation.mutateAsync(orderId);
+      setPaymentStatus("Pickup fulfilled.");
+    } catch (error) {
+      Alert.alert("Failed", getApiErrorMessage(error) || "Could not fulfill this order.");
+    }
   }
 
   async function recordManualAttendance() {

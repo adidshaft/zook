@@ -111,13 +111,10 @@ export default function NotificationsScreen() {
   async function markAllRead() {
     if (!token || busyId) return;
     const unread = notifications.filter((item) => !item.readAt);
-    for (const item of unread) {
-      try {
-        await notificationsApi.markRead({ id: item.id, token });
-      } catch {
-        // continue marking others
-      }
+    if (!unread.length) {
+      return;
     }
+    await notificationsApi.markAllRead({ ids: unread.map((item) => item.id), token });
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
       queryClient.invalidateQueries({ queryKey: ["me", "home"] }),

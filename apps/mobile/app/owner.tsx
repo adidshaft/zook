@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   BottomNav,
   BranchSelectorChip,
@@ -31,7 +31,7 @@ import {
   useOwnerDashboard,
   useRejectJoinRequest,
 } from "@/lib/query-hooks";
-import { useAuth } from "@/lib/auth";
+import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type OwnerView = "command" | "approvals" | "revenue" | "stock" | "members";
@@ -45,7 +45,7 @@ function normalizeView(value: string | string[] | undefined): OwnerView {
 }
 
 function offlineDemoViewOverride() {
-  return isOfflineDemoMode() ? process.env.EXPO_PUBLIC_OFFLINE_DEMO_VIEW : undefined;
+  return __DEV__ && isOfflineDemoMode() ? process.env.EXPO_PUBLIC_OFFLINE_DEMO_VIEW : undefined;
 }
 
 function cleanReviewReason(reason?: string | null) {
@@ -198,18 +198,30 @@ export default function Owner() {
     target: Drilldown;
   }>;
   async function approveAttendance(attemptId: string) {
-    await approveAttendanceMutation.mutateAsync(attemptId);
-    setActionStatus("Check-in approved.");
+    try {
+      await approveAttendanceMutation.mutateAsync(attemptId);
+      setActionStatus("Check-in approved.");
+    } catch (error) {
+      Alert.alert("Failed", getApiErrorMessage(error) || "Could not approve check-in.");
+    }
   }
 
   async function approveJoinRequest(joinRequestId: string) {
-    await approveJoinRequestMutation.mutateAsync(joinRequestId);
-    setActionStatus("Join request approved.");
+    try {
+      await approveJoinRequestMutation.mutateAsync(joinRequestId);
+      setActionStatus("Join request approved.");
+    } catch (error) {
+      Alert.alert("Failed", getApiErrorMessage(error) || "Could not approve join request.");
+    }
   }
 
   async function rejectJoinRequest(joinRequestId: string) {
-    await rejectJoinRequestMutation.mutateAsync(joinRequestId);
-    setActionStatus("Join request rejected.");
+    try {
+      await rejectJoinRequestMutation.mutateAsync(joinRequestId);
+      setActionStatus("Join request rejected.");
+    } catch (error) {
+      Alert.alert("Failed", getApiErrorMessage(error) || "Could not reject join request.");
+    }
   }
 
   async function reorderProduct(product: {

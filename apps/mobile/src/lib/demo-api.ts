@@ -400,7 +400,14 @@ export async function demoMobileApiFetch<T>(
   if (pathname.match(/^\/me\/plans\/[^/]+\/complete$/)) {
     return { progress: { completionPct: 100, progressJson: init.body ?? {} }, completedExercises: [] } as T;
   }
+  if (pathname.match(/^\/orgs\/[^/]+\/plan-feedback$/)) {
+    return { ok: true } as T;
+  }
   if (pathname === "/me/notifications") return { notifications: zookDemoFixtures.notifications } as T;
+  if (pathname === "/me/notifications/read") {
+    const body = init.body as { ids?: string[] } | undefined;
+    return { count: body?.ids?.length ?? 0 } as T;
+  }
   if (pathname === "/me/consents") {
     return {
       exportRequests: [],
@@ -504,6 +511,11 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname.includes("/trainers/") && pathname.endsWith("/clients")) {
     return demoTrainerClients() as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/trainers\/[^/]+\/clients\/[^/]+\/note$/)) {
+    const body = init.body as { note?: string } | undefined;
+    return { note: body?.note ?? "" } as T;
   }
 
   if (pathname.match(/\/join-requests\/[^/]+\/approve$/)) {

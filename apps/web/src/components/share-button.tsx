@@ -2,7 +2,17 @@
 
 import { Share2 } from "lucide-react";
 
-export function ShareButton({ title, text, path }: { title: string; text: string; path: string }) {
+export function ShareButton({
+  title,
+  text,
+  path,
+  label = "Share",
+}: {
+  title: string;
+  text: string;
+  path: string;
+  label?: string;
+}) {
   async function share() {
     const url = new URL(path, window.location.origin).toString();
     if (navigator.share) {
@@ -19,7 +29,7 @@ export function ShareButton({ title, text, path }: { title: string; text: string
       className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
     >
       <Share2 size={16} />
-      Share
+      {label}
     </button>
   );
 }

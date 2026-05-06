@@ -21,6 +21,7 @@ export type PublicGymTrainer = {
   profilePhotoUrl: string | null;
   bio: string | null;
   specialties: unknown;
+  ptAvailable: boolean;
   visibleToMembers: boolean;
 };
 
@@ -119,6 +120,20 @@ function publicTrainerPhotoUrl(value: string | null | undefined) {
   return value;
 }
 
+function hasPtAvailability(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.ptAvailable === "boolean") {
+    return record.ptAvailable;
+  }
+  if (Array.isArray(record.slots)) {
+    return record.slots.length > 0;
+  }
+  return false;
+}
+
 function durationHandle(plan: { type: string; durationDays: number | null }) {
   if (plan.type === "TRIAL") return "trial";
   if (!plan.durationDays) return "visit-pack";
@@ -211,6 +226,7 @@ function demoPublicGymProfile(
           profilePhotoUrl: null,
           bio: null,
           specialties: null,
+          ptAvailable: false,
           visibleToMembers: true,
         };
       }),
@@ -319,6 +335,7 @@ async function publicGymProfileFromDb(
           profilePhotoUrl: publicTrainerPhotoUrl(user?.profilePhotoUrl),
           bio: profile?.bio ?? null,
           specialties: profile?.specialties ?? null,
+          ptAvailable: hasPtAvailability(profile?.availability),
           visibleToMembers: profile?.visibleToMembers ?? true,
         };
       })
