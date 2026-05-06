@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin, QrCode, ShieldCheck, Smartphone, Star } from "lucide-react";
+import { resolvePlanName } from "@zook/ui";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { PublicNav } from "@/components/public-nav";
 import { ShareButton } from "@/components/share-button";
@@ -32,10 +33,6 @@ function priceSummary(plans: Array<{ pricePaise: number }>, locale: "en" | "hi" 
   return locale === "hi"
     ? `शुरुआत ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/माह`
     : `Starting at ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/month`;
-}
-
-function displayPlanName(name: string) {
-  return name.length > 40 ? `${name.slice(0, 40)}...` : name;
 }
 
 function trainerProfileDetails(value: unknown) {
@@ -120,6 +117,11 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
   const minPlanPrice = paidPlans.length
     ? Math.min(...paidPlans.map((plan) => plan.pricePaise))
     : null;
+  const visiblePlans = plans.slice(0, 6);
+  const recommendedPlanId =
+    paidPlans.find((plan) => plan.durationDays && plan.durationDays <= 45)?.id ??
+    paidPlans[0]?.id ??
+    plans[0]?.id;
   const hasPublicPlans = plans.length > 0;
   const gallery = org.gallery.length
     ? org.gallery
@@ -297,20 +299,23 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
 
         <section id="plans" className="grid scroll-mt-5 gap-4 lg:grid-cols-3">
           {plans.length ? (
-            plans.map((plan) => (
+            visiblePlans.map((plan) => (
               <Link
                 key={plan.id}
-                href={localizedPath(`/join/${org.username}`, locale, { plan: plan.id })}
+                href={localizedPath(`/join/${org.username}`, locale, { plan: plan.handle })}
                 className="zook-focus block rounded-[28px] transition hover:-translate-y-0.5"
               >
-                <GlassCard className="h-full transition hover:border-lime-300/25 hover:bg-white/[0.075]">
+                <GlassCard
+                  variant={plan.id === recommendedPlanId ? "selected" : "default"}
+                  className="h-full transition hover:border-lime-300/25 hover:bg-white/[0.075]"
+                >
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <Pill tone={plan.id === "plan-hybrid-pro" ? "lime" : "neutral"}>
-                        {plan.type.replaceAll("_", " ")}
+                      <Pill tone={plan.id === recommendedPlanId ? "lime" : "neutral"}>
+                        {plan.id === recommendedPlanId ? "Most popular" : plan.type.replaceAll("_", " ")}
                       </Pill>
                       <h2 className="mt-4 max-w-full truncate text-2xl font-semibold text-white">
-                        {displayPlanName(plan.name)}
+                        {resolvePlanName(plan)}
                       </h2>
                     </div>
                     <p className="metric shrink-0 text-2xl font-semibold text-lime-200">
@@ -341,6 +346,11 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
               </p>
             </GlassCard>
           )}
+          {plans.length > visiblePlans.length ? (
+            <p className="lg:col-span-3 text-sm text-white/45">
+              See all {plans.length} plans at the gym desk. Custom add-ons are available after sign-up.
+            </p>
+          ) : null}
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">

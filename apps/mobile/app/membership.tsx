@@ -701,7 +701,7 @@ function RenewalSheet({
               icon="refresh-outline"
               style={styles.actionHalf}
             >
-              {renewing ? "Starting..." : "Continue to payment"}
+              {renewing ? "Starting..." : "Pay securely"}
             </ZookButton>
           </View>
         </View>

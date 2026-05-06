@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { WorkoutLogEntry } from "@zook/core";
 import {
+  BottomNav,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -127,6 +128,21 @@ export default function TrackingDashboard() {
             </View>
           ) : null}
 
+          {!habits.length && !trackingQuery.isLoading ? (
+            <GlassCard variant="compact" contentStyle={styles.habitPromptContent}>
+              <IconBubble icon="flash-outline" tone="neutral" size={38} />
+              <View style={styles.habitPromptCopy}>
+                <Text style={styles.habitPromptTitle}>Build a habit</Text>
+                <Text numberOfLines={1} style={styles.habitPromptBody}>
+                  Sleep, water, steps. Log them daily.
+                </Text>
+              </View>
+              <ZookButton href="/tracking-entry" tone="secondary" size="sm">
+                Add
+              </ZookButton>
+            </GlassCard>
+          ) : null}
+
           {bodyProgressEntries.length ? (
             <BodyProgressTimeline entries={bodyProgressEntries} token={token} />
           ) : null}
@@ -152,11 +168,12 @@ export default function TrackingDashboard() {
             </GlassCard>
           )}
         </ScrollView>
-        <StickyActionBar>
+        <StickyActionBar bottomOffset={layout.bottomNavHeight + 22}>
           <ZookButton href="/tracking-entry" icon="add-outline" fullWidth>
             Log workout
           </ZookButton>
         </StickyActionBar>
+        <BottomNav selectedPath="/more" />
       </ZookScreen>
     </>
   );
@@ -530,6 +547,24 @@ const styles = StyleSheet.create({
   habitName: {
     color: colors.text,
     ...typography.cardTitle,
+  },
+  habitPromptContent: {
+    minHeight: 68,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  habitPromptCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  habitPromptTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  habitPromptBody: {
+    color: colors.muted,
+    ...typography.small,
   },
   habitBar: {
     height: 7,

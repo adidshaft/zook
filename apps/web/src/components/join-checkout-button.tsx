@@ -79,7 +79,7 @@ export function JoinCheckoutButton({
         disabled={busy}
         className="zook-focus inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black disabled:opacity-55"
       >
-        {busy ? "Starting payment..." : "Continue to payment"}
+        {busy ? "Starting payment..." : "Pay securely"}
       </button>
       {error ? (
         <p

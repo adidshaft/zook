@@ -4,13 +4,6 @@ import type { TrackingSummaryMetric, WorkoutHistorySeries, WorkoutLogEntry } fro
 import { StyleSheet, Text, View } from "react-native";
 import { colors, radii } from "@/lib/theme";
 
-const tonePalette = {
-  lime: { surface: "rgba(185,244,85,0.1)", ink: colors.lime },
-  amber: { surface: "rgba(255,182,80,0.1)", ink: colors.amber },
-  blue: { surface: "rgba(125,211,252,0.1)", ink: colors.blue },
-  violet: { surface: "rgba(185,169,255,0.1)", ink: colors.violet }
-} as const;
-
 export function TrackingSectionHeader({
   title,
   href,
@@ -37,17 +30,20 @@ export function TrackingSectionHeader({
 }
 
 export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric }) {
-  const palette = tonePalette[metric.tone];
-
   return (
-    <View style={[styles.summaryTile, { backgroundColor: palette.surface }]}>
+    <View style={styles.summaryTile}>
       <Text style={styles.summaryLabel}>
         {metric.label}
       </Text>
-      <Text style={[styles.summaryValue, { color: palette.ink }]}>
+      <Text style={styles.summaryValue}>
         {metric.value}
       </Text>
-      <Text style={[styles.summaryDetail, { color: palette.ink }]}>
+      <Text
+        style={[
+          styles.summaryDetail,
+          /^[+-]/.test(metric.detail) ? styles.summaryDetailPositive : null
+        ]}
+      >
         {metric.detail}
       </Text>
     </View>
@@ -192,7 +188,10 @@ const styles = StyleSheet.create({
   },
   summaryTile: {
     width: "48%",
-    borderRadius: 26,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
     padding: 14,
     minHeight: 112,
     gap: 7
@@ -203,13 +202,18 @@ const styles = StyleSheet.create({
     fontWeight: "800"
   },
   summaryValue: {
+    color: colors.text,
     fontSize: 32,
     fontWeight: "900",
     lineHeight: 34
   },
   summaryDetail: {
+    color: colors.muted,
     fontSize: 13,
     lineHeight: 18
+  },
+  summaryDetailPositive: {
+    color: colors.lime
   },
   logCard: {
     borderRadius: 30,

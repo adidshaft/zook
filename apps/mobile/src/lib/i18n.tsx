@@ -17,6 +17,7 @@ export type TranslationKey =
   | "nav.checkIn"
   | "nav.scan"
   | "nav.tracking"
+  | "nav.more"
   | "nav.shop"
   | "nav.inbox"
   | "nav.assistant"
@@ -190,6 +191,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.checkIn": "Check in",
     "nav.scan": "Scan",
     "nav.tracking": "Tracking",
+    "nav.more": "More",
     "nav.shop": "Shop",
     "nav.inbox": "Inbox",
     "nav.assistant": "AI",
@@ -362,6 +364,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.checkIn": "चेक इन",
     "nav.scan": "स्कैन",
     "nav.tracking": "ट्रैकिंग",
+    "nav.more": "और",
     "nav.shop": "शॉप",
     "nav.inbox": "इनबॉक्स",
     "nav.assistant": "AI",

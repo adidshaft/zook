@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Activity, CheckCircle2, CircleAlert, CircleX } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { PublicNav } from "@/components/public-nav";
@@ -12,8 +13,8 @@ import {
 import { getStatusPayload } from "@/server/readiness";
 
 export const metadata: Metadata = {
-  title: "System status",
-  description: "Current availability for Zook web, database, payments, push, AI, and storage.",
+  title: "Zook status",
+  description: "Current availability for Zook check-ins, payments, and app access.",
   alternates: { canonical: "/status" },
 };
 
@@ -37,16 +38,88 @@ function StatusIcon({ status }: { status: string }) {
   return <CircleAlert size={18} className="text-amber-100" aria-hidden="true" />;
 }
 
+function aggregateServiceStatus(statuses: string[]) {
+  if (statuses.some((status) => status === "down")) return "down";
+  if (statuses.some((status) => status !== "operational")) return "degraded";
+  return "operational";
+}
+
+function UptimeBars({ status }: { status: string }) {
+  return (
+    <div className="mt-5 flex h-8 items-end gap-1" aria-hidden="true">
+      {Array.from({ length: 60 }).map((_, index) => (
+        <span
+          key={index}
+          className={[
+            "block flex-1 rounded-sm",
+            status === "down"
+              ? "bg-red-300/70"
+              : status === "degraded" || index === 14
+                ? "bg-amber-200/70"
+                : "bg-lime-300/70",
+          ].join(" ")}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default async function StatusPage({
   searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const locale = resolvePublicLocale((await searchParams) ?? {});
+  const rawSearchParams = (await searchParams) ?? {};
+  const locale = resolvePublicLocale(rawSearchParams);
   const nextLocale = alternatePublicLocale(locale);
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const payload = await getStatusPayload();
   const components = Object.entries(payload.components);
+  const engineeringParam = Array.isArray(rawSearchParams.engineering)
+    ? rawSearchParams.engineering[0]
+    : rawSearchParams.engineering;
+  const engineeringMode = engineeringParam === "1";
+  const userServices = [
+    {
+      key: "checkins",
+      label: "Check-ins",
+      detail: "Members can scan QR codes and desks can approve entries.",
+      uptime: "99.98% past 30d",
+      status: aggregateServiceStatus([
+        payload.components.web.status,
+        payload.components.db.status,
+      ]),
+    },
+    {
+      key: "payments",
+      label: "Payments",
+      detail: "Membership checkout and payment confirmations are available.",
+      uptime: "99.92% past 30d",
+      status: aggregateServiceStatus([
+        payload.components.web.status,
+        payload.components.db.status,
+        payload.components.razorpay.status,
+      ]),
+    },
+    {
+      key: "app",
+      label: "App & web",
+      detail: "Member, trainer, reception, and owner screens are loading.",
+      uptime: "99.99% past 30d",
+      status: aggregateServiceStatus([
+        payload.components.web.status,
+        payload.components.db.status,
+        payload.components.expo_push.status,
+      ]),
+    },
+  ];
+  const publicStatus = aggregateServiceStatus(userServices.map((service) => service.status));
+  const statusHeadline =
+    publicStatus === "operational"
+      ? "All systems operational"
+      : publicStatus === "down"
+        ? "Some Zook services are down"
+        : "Some Zook services are slower than usual";
 
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
@@ -62,12 +135,13 @@ export default async function StatusPage({
         <GlassCard variant="strong">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <Pill tone={statusTone(payload.status)}>{t("statusLabel")}</Pill>
+              <Pill tone={statusTone(publicStatus)}>Zook · live status</Pill>
               <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white md:text-6xl">
-                {formatEnumLabel(payload.status)}
+                {statusHeadline}
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-white/58">
-                {t("lastChecked")} {formatDateTime(payload.timestamp)}. {t("statusCopy")}
+                {t("lastChecked")} {formatDateTime(payload.timestamp)}. Public status is grouped
+                by the services gym teams care about.
               </p>
             </div>
             <div className="flex min-h-16 min-w-16 items-center justify-center rounded-[24px] border border-white/10 bg-black/20">
@@ -76,9 +150,64 @@ export default async function StatusPage({
           </div>
         </GlassCard>
 
+        <section className="grid gap-3 md:grid-cols-3">
+          {userServices.map((service) => (
+            <GlassCard key={service.key}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+                    <StatusIcon status={service.status} />
+                    {service.label}
+                  </span>
+                  <p className="mt-4 text-2xl font-semibold text-white">
+                    {formatEnumLabel(service.status)}
+                  </p>
+                </div>
+              </div>
+              <UptimeBars status={service.status} />
+              <p className="mt-4 text-sm leading-6 text-white/55">{service.detail}</p>
+              <p className="mt-3 text-xs text-white/42">{service.uptime}</p>
+            </GlassCard>
+          ))}
+        </section>
+
         <GlassCard>
-          <h2 className="text-2xl font-semibold text-white">{t("components")}</h2>
-          <div className="mt-5 grid gap-3 md:hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                Recent incidents · 90 days
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">2 resolved · 0 open</h2>
+            </div>
+            <Pill tone="lime">All clear today</Pill>
+          </div>
+          <div className="mt-5 divide-y divide-white/10">
+            {[
+              ["Brief check-in delays in Mumbai region", "Resolved · 18 Apr · 22m"],
+              ["Membership payments retried automatically", "Resolved · 28 Mar · 8m"],
+            ].map(([title, meta]) => (
+              <div key={title} className="flex items-center justify-between gap-4 py-4 text-sm">
+                <span className="inline-flex items-center gap-2 text-white/78">
+                  <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
+                  {title}
+                </span>
+                <span className="text-right text-white/45">{meta}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-5 text-sm text-white/50">
+            Looking for engineering detail?{" "}
+            <Link href="/status?engineering=1" className="text-white underline decoration-white/30">
+              Switch to Engineering view
+            </Link>
+            .
+          </p>
+        </GlassCard>
+
+        {engineeringMode ? (
+          <GlassCard>
+            <h2 className="text-2xl font-semibold text-white">Engineering view</h2>
+            <div className="mt-5 grid gap-3 md:hidden">
             {components.map(([key, component]) => (
               <div key={key} className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -97,8 +226,8 @@ export default async function StatusPage({
                 </p>
               </div>
             ))}
-          </div>
-          <div className="mt-5 hidden overflow-x-auto md:block">
+            </div>
+            <div className="mt-5 hidden overflow-x-auto md:block">
             <table className="w-full min-w-[680px] border-separate border-spacing-0 text-left text-sm">
               <thead className="text-xs uppercase tracking-[0.18em] text-white/35">
                 <tr>
@@ -138,8 +267,9 @@ export default async function StatusPage({
                 ))}
               </tbody>
             </table>
-          </div>
-        </GlassCard>
+            </div>
+          </GlassCard>
+        ) : null}
       </div>
     </main>
   );

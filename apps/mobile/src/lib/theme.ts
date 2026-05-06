@@ -122,9 +122,10 @@ export const layout = {
   formFieldGap: 12,
   sectionGap: 24,
   bottomNavHeight: 72,
-  bottomNavContentPadding: 132,
+  bottomNavContentPadding: 116,
   bottomNavHorizontalMargin: 18,
-  stickyActionHeight: 92,
+  stickyActionHeight: 108,
+  demoStripHeight: 28,
 };
 
 export const shadows = {

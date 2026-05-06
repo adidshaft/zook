@@ -5,13 +5,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { resolvePlanName } from "@zook/ui";
 import {
   BottomNav,
-  EmptyState,
   ErrorState,
   GlassCard,
   IconBubble,
-  SectionHeader,
   StickyActionBar,
   Skeleton,
   ZookButton,
@@ -37,6 +36,14 @@ function greetingForHour() {
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
+}
+
+function formatRenewalDate(value?: string | null) {
+  if (!value) return "renewal syncing";
+  return `Renews ${new Date(value).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+  })}`;
 }
 
 export default function Home() {
@@ -73,9 +80,9 @@ export default function Home() {
     typeof remainingVisits === "number" ? `${remainingVisits} visits remaining` : "Visits syncing";
   const unreadCount = memberHome?.unreadNotifications ?? 0;
   const assignedPlan = memberHome?.todayPlanName
-    ? {
+      ? {
         name: memberHome.todayPlanName,
-        type: "Tap to view",
+        type: "Today",
       }
     : null;
   const lastCheckIn = memberHome?.recentAttendance?.[0]?.checkedInAt
@@ -202,116 +209,70 @@ export default function Home() {
           ) : null}
 
           {hasMembership ? (
-            <GlassCard variant="default" contentStyle={styles.checkInContent}>
-              <IconBubble icon="qr-code-outline" tone="lime" size={46} />
-              <View style={styles.checkInCopy}>
-                <Text style={styles.checkInTitle}>Check in</Text>
-                <Text numberOfLines={1} style={styles.mutedSmall}>
-                  Scan the gym QR at the desk
-                </Text>
-              </View>
-              <ZookButton href="/scan" size="sm" accessibilityLabel="Scan gym QR">
-                Scan
-              </ZookButton>
-            </GlassCard>
-          ) : null}
-
-          {hasMembership ? (
-            <GlassCard
-              variant={membershipExpired ? "warning" : "default"}
-              contentStyle={styles.membershipContent}
-              style={membershipExpired ? styles.membershipUrgentCard : styles.membershipHealthyCard}
-            >
-              <View style={styles.membershipTop}>
-                <View style={styles.membershipCopy}>
-                  <View style={styles.membershipLabel}>
-                    <IconBubble
-                      icon={membershipExpired ? "alert-circle-outline" : "shield-checkmark-outline"}
-                      tone={membershipExpired ? "amber" : "lime"}
-                      size={30}
-                    />
-                    <Text style={styles.mutedSmall}>
-                      {membershipExpired ? "Renewal needed" : "Latest membership"}
-                    </Text>
-                  </View>
-                  <View style={styles.membershipTitleRow}>
-                    <Text style={styles.membershipTitle}>
-                      {memberHome?.activePlan?.name ?? "Membership"}
-                    </Text>
-                    <Text
-                      style={[styles.daysLeft, membershipExpired ? styles.daysLeftUrgent : null]}
-                    >
-                      {daysLeftLabel}
-                    </Text>
-                  </View>
-                  <Text style={styles.mutedBody}>{remainingVisitsLabel}</Text>
-                  {membershipExpired ? (
-                    <Text style={styles.renewalAlert}>
-                      Renew now to keep check-ins and workout plans active.
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
-            </GlassCard>
-          ) : null}
-
-          {hasMembership ? <SectionHeader title="Today's Plan" /> : null}
-
-          {hasMembership && assignedPlan ? (
-            <Link href="/plans" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel="Open today's plan">
-                <GlassCard contentStyle={styles.planContent}>
-                  <View style={styles.planRow}>
-                    <IconBubble icon="barbell-outline" tone="lime" size={44} />
-                    <View style={styles.planCopy}>
-                      <Text numberOfLines={1} style={styles.planTitle}>
-                        {assignedPlan.name}
+            <>
+              <MemberStateHero
+                expired={membershipExpired}
+                daysLeftLabel={daysLeftLabel}
+                planName={resolvePlanName(memberHome?.activePlan) ?? "Membership"}
+                visitLabel={remainingVisitsLabel}
+                renewalDate={memberHome?.activeMembership?.endsAt}
+                progressValue={
+                  typeof daysLeft === "number" && memberHome?.activePlan?.durationDays
+                    ? Math.max(
+                        0.08,
+                        Math.min(
+                          1,
+                          daysLeft / Math.max(memberHome.activePlan.durationDays, 1),
+                        ),
+                      )
+                    : 0.72
+                }
+              />
+              <View style={styles.todayGrid}>
+                <Link href="/plans" asChild>
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel="Open today's plan"
+                    style={styles.todayTilePressable}
+                  >
+                    <GlassCard variant="compact" style={styles.todayTile}>
+                      <Text style={styles.tileEyebrow}>Today</Text>
+                      <Text numberOfLines={1} style={styles.tileTitle}>
+                        {assignedPlan?.name ?? "No plan yet"}
                       </Text>
+                      <Text numberOfLines={1} style={styles.tileMeta}>
+                        {assignedPlan ? "Workout plan" : "Trainer will assign one"}
+                      </Text>
+                    </GlassCard>
+                  </Pressable>
+                </Link>
+                <GlassCard variant="compact" style={styles.todayTile}>
+                  <Text style={styles.tileEyebrow}>Streak</Text>
+                  <View style={styles.streakRow}>
+                    <Text style={styles.streakValue}>{memberHome?.streakDays ?? 0}</Text>
+                    <Ionicons name="flame-outline" size={16} color={colors.lime} />
+                    <Text style={styles.tileMeta}>days</Text>
+                  </View>
+                  <Text numberOfLines={1} style={styles.tileMeta}>
+                    Last visit {lastCheckIn}
+                  </Text>
+                </GlassCard>
+              </View>
+              <Link href="/tracking-entry" asChild>
+                <Pressable accessibilityRole="link" accessibilityLabel="Log today's workout">
+                  <GlassCard contentStyle={styles.secondaryActionContent}>
+                    <IconBubble icon="pulse-outline" tone="neutral" size={38} />
+                    <View style={styles.secondaryActionCopy}>
+                      <Text style={styles.secondaryActionTitle}>Log today's workout</Text>
                       <Text numberOfLines={1} style={styles.mutedSmall}>
-                        {assignedPlan.type}
+                        Track sets, reps, and weights.
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-                  </View>
-                </GlassCard>
-              </Pressable>
-            </Link>
-          ) : null}
-
-          {hasMembership && !assignedPlan ? (
-            <GlassCard variant="compact">
-              <EmptyState
-                icon="barbell-outline"
-                title="No plan assigned yet"
-                body="Your trainer will assign a workout plan once you join."
-              />
-            </GlassCard>
-          ) : null}
-
-          <Link href="/tracking" asChild>
-            <Pressable accessibilityRole="link" accessibilityLabel="Open workout tracking">
-              <GlassCard contentStyle={styles.trackContent}>
-                <View style={styles.trackRow}>
-                  <IconBubble icon="pulse-outline" tone="blue" size={42} />
-                  <View style={styles.trackCopy}>
-                    <Text style={styles.trackTitle}>Track progress</Text>
-                    <Text numberOfLines={1} style={styles.mutedSmall}>
-                      Log workouts and view your streak.
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-                </View>
-              </GlassCard>
-            </Pressable>
-          </Link>
-
-          {hasMembership ? (
-            <Text style={styles.progressSummary}>
-              {typeof remainingVisits === "number"
-                ? `${remainingVisits} visits left`
-                : "Visits syncing"}{" "}
-              · {memberHome?.streakDays ?? 0} day streak · Last visit {lastCheckIn}
-            </Text>
+                  </GlassCard>
+                </Pressable>
+              </Link>
+            </>
           ) : null}
         </ScrollView>
         {gymsOpen ? (
@@ -428,6 +389,78 @@ export default function Home() {
         {!gymsOpen && !renewalImminent ? <BottomNav /> : null}
       </ZookScreen>
     </>
+  );
+}
+
+function MemberStateHero({
+  daysLeftLabel,
+  expired,
+  planName,
+  progressValue,
+  renewalDate,
+  visitLabel,
+}: {
+  daysLeftLabel: string;
+  expired: boolean;
+  planName: string;
+  progressValue: number;
+  renewalDate?: string | null;
+  visitLabel: string;
+}) {
+  const boundedProgress =
+    `${Math.round(Math.max(0.06, Math.min(1, progressValue)) * 100)}%` as const;
+  const mainLabel = expired ? "Membership needs renewal" : daysLeftLabel;
+  const splitLabel = mainLabel.match(/^(\d+)\s+(.+)$/);
+
+  return (
+    <GlassCard
+      variant={expired ? "warning" : "selected"}
+      glow={!expired}
+      contentStyle={styles.memberHeroContent}
+    >
+      <Text style={styles.heroEyebrow}>
+        {expired ? "Renewal needed" : "Active membership"}
+      </Text>
+      <View style={styles.heroNumberRow}>
+        {splitLabel ? (
+          <>
+            <Text style={[styles.heroNumber, expired ? styles.heroNumberUrgent : null]}>
+              {splitLabel[1]}
+            </Text>
+            <Text style={styles.heroNumberSuffix}>{splitLabel[2]}</Text>
+          </>
+        ) : (
+          <Text style={[styles.heroTitle, expired ? styles.heroNumberUrgent : null]}>
+            {mainLabel}
+          </Text>
+        )}
+      </View>
+      <Text numberOfLines={1} style={styles.heroMeta}>
+        {planName} · {visitLabel} · {formatRenewalDate(renewalDate)}
+      </Text>
+      <View style={styles.heroMeterTrack}>
+        <View
+          style={[
+            styles.heroMeterFill,
+            { width: boundedProgress, backgroundColor: expired ? colors.amber : colors.lime },
+          ]}
+        />
+      </View>
+      <View style={styles.heroActions}>
+        <ZookButton href="/scan" icon="qr-code-outline" style={styles.heroPrimaryAction}>
+          Check in
+        </ZookButton>
+        <ZookButton
+          href="/membership"
+          tone="secondary"
+          icon="card-outline"
+          style={styles.heroSecondaryAction}
+          accessibilityLabel={expired ? "Renew membership" : "Open membership"}
+        >
+          {expired ? "Renew" : "Pay"}
+        </ZookButton>
+      </View>
+    </GlassCard>
   );
 }
 
@@ -624,6 +657,118 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "900",
     lineHeight: 12,
+  },
+  memberHeroContent: {
+    padding: 18,
+    gap: 10,
+  },
+  heroEyebrow: {
+    color: colors.muted,
+    ...typography.eyebrow,
+  },
+  heroNumberRow: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
+  },
+  heroNumber: {
+    color: colors.text,
+    fontSize: 40,
+    lineHeight: 44,
+    fontFamily: "Inter_700Bold",
+    fontVariant: ["tabular-nums"],
+  },
+  heroNumberUrgent: {
+    color: colors.amber,
+  },
+  heroNumberSuffix: {
+    color: colors.muted,
+    fontSize: 17,
+    lineHeight: 22,
+    fontFamily: "Inter_600SemiBold",
+  },
+  heroTitle: {
+    color: colors.text,
+    ...typography.headerTitle,
+  },
+  heroMeta: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  heroMeterTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    overflow: "hidden",
+  },
+  heroMeterFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+  heroActions: {
+    minHeight: 54,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  heroPrimaryAction: {
+    flex: 1,
+  },
+  heroSecondaryAction: {
+    width: 74,
+  },
+  todayGrid: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  todayTile: {
+    flex: 1,
+  },
+  todayTilePressable: {
+    flex: 1,
+  },
+  tileEyebrow: {
+    color: colors.muted,
+    ...typography.eyebrow,
+  },
+  tileTitle: {
+    color: colors.text,
+    marginTop: 5,
+    ...typography.bodyStrong,
+  },
+  tileMeta: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  streakRow: {
+    minHeight: 26,
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 5,
+    marginTop: 2,
+  },
+  streakValue: {
+    color: colors.lime,
+    fontSize: 24,
+    lineHeight: 28,
+    fontFamily: "Inter_700Bold",
+    fontVariant: ["tabular-nums"],
+  },
+  secondaryActionContent: {
+    minHeight: 62,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: 12,
+  },
+  secondaryActionCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  secondaryActionTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
   },
   membershipContent: {
     padding: 16,

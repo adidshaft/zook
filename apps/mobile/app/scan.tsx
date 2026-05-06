@@ -15,11 +15,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
-  CollapsibleSection,
   GlassCard,
   IconBubble,
   MobileHeader,
   ScannerFrame,
+  SegmentedControl,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -43,6 +43,12 @@ type ScanResult = {
   suspiciousFlags?: unknown;
 };
 type ScanState = "idle" | "checking" | "accepted" | "failed";
+type ScanMode = "scan" | "code";
+
+const scanModeOptions: Array<{ label: string; value: ScanMode }> = [
+  { label: "Scan QR", value: "scan" },
+  { label: "Enter code", value: "code" },
+];
 
 export default function Scan() {
   const router = useRouter();
@@ -50,6 +56,7 @@ export default function Scan() {
   const { activeOrgId, token } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
+  const [scanMode, setScanMode] = useState<ScanMode>("scan");
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [code, setCode] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -214,6 +221,8 @@ export default function Scan() {
             showProfileShortcut={false}
           />
 
+          <SegmentedControl options={scanModeOptions} value={scanMode} onChange={setScanMode} />
+
           {cameraBlocked ? (
             <GlassCard variant="danger" contentStyle={styles.blockedPermissionContent}>
               <IconBubble icon="camera-outline" tone="red" size={42} />
@@ -233,75 +242,103 @@ export default function Scan() {
             </GlassCard>
           ) : null}
 
-          <View style={styles.cameraCard}>
-            {hasCamera ? (
-              <CameraView
-                style={styles.camera}
-                facing="back"
-                onBarcodeScanned={completedRef.current ? undefined : handleBarcode}
-                barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-              />
-            ) : (
-              <View style={styles.cameraFallback}>
-                <Ionicons name="camera-outline" size={32} color={colors.lime} />
-                <Text style={styles.cameraFallbackTitle}>Camera needed</Text>
-                <Text style={styles.cameraFallbackText}>
-                  {cameraBlocked
-                    ? "Camera access is blocked. Open device settings to allow scanning."
-                    : "Allow camera access to scan the gym QR."}
-                </Text>
-                <ZookButton
-                  onPress={() =>
-                    cameraBlocked ? void Linking.openSettings() : void requestPermission()
-                  }
-                  tone="secondary"
-                  style={styles.permissionButton}
-                >
-                  {cameraBlocked ? "Open settings" : "Allow camera"}
-                </ZookButton>
+          {scanMode === "scan" ? (
+            <>
+              <View style={styles.cameraCard}>
+                {hasCamera ? (
+                  <CameraView
+                    style={styles.camera}
+                    facing="back"
+                    onBarcodeScanned={completedRef.current ? undefined : handleBarcode}
+                    barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+                  />
+                ) : (
+                  <View style={styles.cameraFallback}>
+                    <Ionicons name="camera-outline" size={32} color={colors.lime} />
+                    <Text style={styles.cameraFallbackTitle}>Camera needed</Text>
+                    <Text style={styles.cameraFallbackText}>
+                      {cameraBlocked
+                        ? "Camera access is blocked. Open device settings to allow scanning."
+                        : "Allow camera access to scan the gym QR."}
+                    </Text>
+                    <ZookButton
+                      onPress={() =>
+                        cameraBlocked ? void Linking.openSettings() : void requestPermission()
+                      }
+                      tone="secondary"
+                      style={styles.permissionButton}
+                    >
+                      {cameraBlocked ? "Open settings" : "Allow camera"}
+                    </ZookButton>
+                  </View>
+                )}
+                <View pointerEvents="none" style={styles.scannerOverlay}>
+                  <ScannerFrame tone={scanState === "failed" ? "red" : "lime"}>
+                    <View style={styles.scanLine} />
+                  </ScannerFrame>
+                </View>
+                <View style={styles.cameraBadge}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.cameraBadgeText}>
+                    {busy ? "Checking code..." : "Searching for code..."}
+                  </Text>
+                </View>
               </View>
-            )}
-            <View pointerEvents="none" style={styles.scannerOverlay}>
-              <ScannerFrame tone={scanState === "failed" ? "red" : "lime"} />
-            </View>
-            <View style={styles.cameraBadge}>
-              <Ionicons name="qr-code-outline" size={14} color={colors.lime} />
-              <Text style={styles.cameraBadgeText}>Point at desk QR</Text>
-            </View>
-          </View>
 
-          <Text style={styles.scanHint}>Point at the QR code at the gym entrance or desk</Text>
-
-          <CollapsibleSection
-            title="Enter code instead"
-            subtitle="Type the code shown at the gym desk."
-            defaultOpen={false}
-          >
-            <View style={styles.codeRow}>
-              <TextInput
-                value={code}
-                onChangeText={setCode}
-                autoCapitalize="characters"
-                placeholder="Paste QR code"
-                placeholderTextColor={colors.subtle}
-                style={styles.codeInput}
-                returnKeyType="done"
-                onSubmitEditing={submitCode}
-              />
-              <Pressable
-                onPress={submitCode}
-                disabled={busy || !code.trim()}
-                accessibilityRole="button"
-                accessibilityLabel="Check code"
-                style={[
-                  styles.codeButton,
-                  busy || !code.trim() ? styles.codeButtonDisabled : null,
-                ]}
-              >
-                <Ionicons name="arrow-forward" size={18} color={colors.bg} />
-              </Pressable>
-            </View>
-          </CollapsibleSection>
+              <GlassCard variant="compact" contentStyle={styles.helpContent}>
+                <IconBubble icon="shield-checkmark-outline" tone="neutral" size={36} />
+                <View style={styles.helpCopy}>
+                  <Text style={styles.helpTitle}>Camera not working?</Text>
+                  <Text style={styles.helpBody}>Switch to Enter code or ask the desk for help.</Text>
+                </View>
+                <Pressable
+                  onPress={() => setScanMode("code")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Enter code instead"
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                </Pressable>
+              </GlassCard>
+            </>
+          ) : (
+            <GlassCard variant="compact" contentStyle={styles.codeContent}>
+              <View style={styles.codeHeader}>
+                <Text style={styles.codeTitle}>Enter desk code</Text>
+                <Text style={styles.codeHint}>Use the code shown at the gym desk.</Text>
+              </View>
+              <View style={styles.codeRow}>
+                <TextInput
+                  value={code}
+                  onChangeText={setCode}
+                  autoCapitalize="characters"
+                  placeholder="Desk code"
+                  placeholderTextColor={colors.subtle}
+                  style={styles.codeInput}
+                  returnKeyType="done"
+                  onSubmitEditing={submitCode}
+                />
+                <Pressable
+                  onPress={submitCode}
+                  disabled={busy || !code.trim()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Check code"
+                  style={[
+                    styles.codeButton,
+                    busy || !code.trim() ? styles.codeButtonDisabled : null,
+                  ]}
+                >
+                  <Ionicons name="arrow-forward" size={18} color={colors.bg} />
+                </Pressable>
+              </View>
+              {busy ? (
+                <Text style={styles.checkingText}>
+                  <Text style={styles.checkingDot}>● </Text>
+                  Checking code...
+                </Text>
+              ) : null}
+            </GlassCard>
+          )}
 
           {errorMessage ? (
             <GlassCard variant="warning" contentStyle={styles.errorContent}>
@@ -324,11 +361,10 @@ export default function Scan() {
             <Pressable
               onPress={() => void completeDevScan()}
               accessibilityRole="button"
-              accessibilityLabel="Try sample check-in"
-              style={styles.devButton}
+              accessibilityLabel="Use sample data"
+              style={styles.devLink}
             >
-              <Ionicons name="qr-code-outline" size={16} color={colors.amber} />
-              <Text style={styles.devButtonText}>Try sample check-in</Text>
+              <Text style={styles.devLinkText}>Use sample data</Text>
             </Pressable>
           ) : null}
         </ScrollView>
@@ -424,9 +460,44 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
   },
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.lime,
+  },
   cameraBadgeText: {
     color: colors.text,
     ...typography.caption,
+  },
+  scanLine: {
+    width: 190,
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: colors.lime,
+    opacity: 0.72,
+    shadowColor: colors.lime,
+    shadowOpacity: 0.32,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  helpContent: {
+    minHeight: 74,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  helpCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  helpTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  helpBody: {
+    color: colors.muted,
+    ...typography.small,
   },
   scanHint: {
     color: colors.muted,
@@ -438,9 +509,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   codeHeader: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 6,
+    gap: 4,
   },
   codeTitle: {
     color: colors.text,
@@ -477,20 +546,21 @@ const styles = StyleSheet.create({
   codeButtonDisabled: {
     opacity: 0.45,
   },
-  devButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(242,201,76,0.3)",
-    backgroundColor: "rgba(242,201,76,0.08)",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+  checkingText: {
+    color: colors.muted,
+    ...typography.small,
   },
-  devButtonText: {
-    color: colors.amber,
+  checkingDot: {
+    color: colors.lime,
+  },
+  devLink: {
+    alignSelf: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  devLinkText: {
+    color: colors.muted,
+    textDecorationLine: "underline",
     ...typography.caption,
   },
 });

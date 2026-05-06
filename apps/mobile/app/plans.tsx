@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { resolvePlanName } from "@zook/ui";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import {
@@ -26,13 +27,13 @@ import {
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type PlanView = "assigned" | "detail";
-type PlanFilter = "all" | "workout" | "diet";
+type PlanFilter = "workout" | "diet" | "habits";
 type PlanExercise = { name: string; sets: string; equipment: string; reps: string };
 
 const filters: Array<{ label: string; value: PlanFilter }> = [
-  { label: "All", value: "all" },
   { label: "Workout", value: "workout" },
   { label: "Diet", value: "diet" },
+  { label: "Habits", value: "habits" },
 ];
 
 function firstParam(value?: string | string[]) {
@@ -40,7 +41,7 @@ function firstParam(value?: string | string[]) {
 }
 
 function planTitle(assignment?: MyPlanRecord | null) {
-  return assignment?.plan?.title ?? "Assigned plan";
+  return resolvePlanName(assignment?.plan) || "Assigned plan";
 }
 
 function planKind(assignment?: MyPlanRecord | null) {
@@ -64,7 +65,7 @@ export default function Plans() {
     focus?: string | string[];
   }>();
   const [view, setView] = useState<PlanView>("assigned");
-  const [filter, setFilter] = useState<PlanFilter>("all");
+  const [filter, setFilter] = useState<PlanFilter>("workout");
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   const [completed, setCompleted] = useState(new Set<string>());
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -75,7 +76,7 @@ export default function Plans() {
   const completePlan = useCompletePlanAssignment();
   const plans = plansQuery.data?.plans ?? [];
   const filteredPlans = plans.filter((assignment) => {
-    if (filter === "all") return true;
+    if (filter === "habits") return false;
     return planKind(assignment).includes(filter);
   });
   const selectedAssignment =
@@ -330,13 +331,62 @@ export default function Plans() {
           contentContainerStyle={styles.content}
         >
           <MobileHeader
-            title="Plans"
+            title="Plans & training"
+            subtitle="From your trainer · synced"
             showProfileShortcut={false}
           />
 
+          {selectedAssignment ? (
+            <GlassCard variant="selected" glow contentStyle={styles.activePlanContent}>
+              <View style={styles.activePlanTop}>
+                <View style={styles.activePlanCopy}>
+                  <Text style={styles.eyebrow}>ACTIVE</Text>
+                  <Text numberOfLines={1} style={styles.activePlanTitle}>
+                    {planTitle(selectedAssignment)}
+                  </Text>
+                  <Text numberOfLines={1} style={styles.activePlanMeta}>
+                    {coachName} · {planKind(selectedAssignment)}
+                  </Text>
+                </View>
+                <View style={styles.activePlanPercent}>
+                  <Text style={styles.activePlanPercentValue}>
+                    {selectedAssignment.progress?.completionPct ?? 0}
+                  </Text>
+                  <Text style={styles.activePlanPercentSuffix}>%</Text>
+                </View>
+              </View>
+              <ProgressBar
+                value={(selectedAssignment.progress?.completionPct ?? 0) / 100}
+                label="Progress"
+              />
+              <View style={styles.activePlanActions}>
+                <ZookButton
+                  onPress={() => {
+                    setSelectedAssignmentId(selectedAssignment.id);
+                    setView("detail");
+                  }}
+                  icon="play-outline"
+                  style={styles.activePlanPrimaryAction}
+                >
+                  Start today's session
+                </ZookButton>
+                <ZookButton
+                  onPress={() => {
+                    setSelectedAssignmentId(selectedAssignment.id);
+                    setView("detail");
+                  }}
+                  tone="secondary"
+                  style={styles.activePlanSecondaryAction}
+                >
+                  View
+                </ZookButton>
+              </View>
+            </GlassCard>
+          ) : null}
+
           <SegmentedControl options={filters} value={filter} onChange={setFilter} />
 
-          <SectionHeader title="Plan library" />
+          <SectionHeader title={filter === "habits" ? "Habits" : "Up next this week"} />
           <View style={styles.libraryGrid}>
             {plansQuery.isLoading ? (
               <GlassCard variant="compact" contentStyle={styles.stateContent}>
@@ -347,9 +397,13 @@ export default function Plans() {
             {!plansQuery.isLoading && !filteredPlans.length ? (
               <GlassCard variant="compact" style={styles.emptyPlanCard}>
                 <EmptyState
-                  icon="clipboard-outline"
-                  title="No plan assigned"
-                  body="Your trainer will create and assign a workout plan for you."
+                  icon={filter === "habits" ? "flash-outline" : "clipboard-outline"}
+                  title={filter === "habits" ? "No habits yet" : "No plan assigned"}
+                  body={
+                    filter === "habits"
+                      ? "Your trainer can add sleep, water, or step goals here."
+                      : "Your trainer will create and assign a workout plan for you."
+                  }
                 />
               </GlassCard>
             ) : null}
@@ -480,6 +534,54 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+  },
+  activePlanContent: {
+    gap: 14,
+    padding: 16,
+  },
+  activePlanTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  activePlanCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  activePlanTitle: {
+    color: colors.text,
+    ...typography.headerTitle,
+  },
+  activePlanMeta: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  activePlanPercent: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 2,
+  },
+  activePlanPercentValue: {
+    color: colors.lime,
+    fontSize: 26,
+    lineHeight: 30,
+    fontFamily: "Inter_700Bold",
+    fontVariant: ["tabular-nums"],
+  },
+  activePlanPercentSuffix: {
+    color: colors.muted,
+    ...typography.bodyStrong,
+  },
+  activePlanActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  activePlanPrimaryAction: {
+    flex: 1,
+  },
+  activePlanSecondaryAction: {
+    minWidth: 76,
   },
   progressContent: {
     gap: 14,

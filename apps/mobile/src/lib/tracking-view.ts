@@ -78,30 +78,30 @@ export function buildTrackingSummaryMetrics(input: {
   return [
     {
       id: "worked-out",
-      label: "Worked out",
+      label: "Active time",
       value: formatDuration(input.totalDuration),
-      detail: "This week",
+      detail: input.totalDuration > 0 ? "This week" : "No sessions yet",
       tone: "lime"
     },
     {
       id: "recent",
       label: "Sessions",
-      value: String(input.recentCount),
-      detail: "Sessions logged",
+      value: String(input.weeklyCount),
+      detail: "This week",
       tone: "lime"
     },
     {
       id: "weight",
       label: "Weight",
       value: input.latestWeightKg ? `${input.latestWeightKg} kg` : "--",
-      detail: "Last recorded",
+      detail: "Latest entry",
       tone: "blue"
     },
     {
       id: "habits",
       label: "Habits",
       value: String(input.habitsCount),
-      detail: "Active habits",
+      detail: input.habitsCount ? "Active habits" : "Add one",
       tone: "violet"
     }
   ];

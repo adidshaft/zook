@@ -26,6 +26,7 @@ import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/query-hooks";
+import { isOfflineDemoMode } from "@/lib/runtime-mode";
 import { colors, layout, palettes, radii, shadows, spacing, typography } from "@/lib/theme";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
@@ -258,12 +259,13 @@ export function ZookScreen({
   ambient?: boolean;
 }) {
   const insets = useSafeAreaInsets();
+  const demoStripHeight = isOfflineDemoMode() ? layout.demoStripHeight : 0;
   return (
     <View
       style={[
         styles.screen,
         {
-          paddingTop: insets.top,
+          paddingTop: insets.top + demoStripHeight,
           paddingBottom: bottomInset ? insets.bottom : 0,
         },
         style,
@@ -1597,7 +1599,13 @@ export function SwipeActionRow({
   );
 }
 
-export function StickyActionBar({ children }: { children: ReactNode }) {
+export function StickyActionBar({
+  bottomOffset = 0,
+  children,
+}: {
+  bottomOffset?: number;
+  children: ReactNode;
+}) {
   const insets = useSafeAreaInsets();
   return (
     <BlurView
@@ -1605,9 +1613,11 @@ export function StickyActionBar({ children }: { children: ReactNode }) {
       tint="dark"
       style={StyleSheet.flatten([
         styles.stickyActionBar,
-        { paddingBottom: Math.max(insets.bottom, 14) },
+        { bottom: bottomOffset, paddingBottom: Math.max(insets.bottom, 14) },
       ])}
     >
+      <View pointerEvents="none" style={styles.stickyActionFadeSoft} />
+      <View pointerEvents="none" style={styles.stickyActionFade} />
       {children}
     </BlurView>
   );
@@ -1673,6 +1683,7 @@ const navTranslationKeys: Record<string, TranslationKey> = {
   "Check in": "nav.checkIn",
   Scan: "nav.scan",
   Tracking: "nav.tracking",
+  More: "nav.more",
   Shop: "nav.shop",
   Inbox: "nav.inbox",
   AI: "nav.assistant",
@@ -1707,10 +1718,17 @@ const memberTabs: DockTab[] = [
   },
   {
     href: "/plans",
-    label: "Plan",
+    label: "Plans",
     icon: "barbell-outline",
     activeIcon: "barbell",
     matchPath: "/plans",
+  },
+  {
+    href: "/more" as Href,
+    label: "More",
+    icon: "grid-outline",
+    activeIcon: "grid",
+    matchPath: "/more",
   },
 ];
 
@@ -1992,7 +2010,6 @@ export function BottomNav({
     return (
       <View style={[styles.memberBottomNavShell, { bottom }]}>
         <BlurView intensity={18} tint="dark" style={styles.memberBottomNavBlur} />
-        <View pointerEvents="none" style={styles.memberBottomNavPlate} />
         <View style={styles.memberBottomNavItems}>{navItems}</View>
       </View>
     );
@@ -2846,13 +2863,27 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: "rgba(7,9,8,0.76)",
+    backgroundColor: "rgba(7,9,8,0.9)",
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.md,
     gap: spacing.sm,
-    overflow: "hidden",
+    overflow: "visible",
+  },
+  stickyActionFadeSoft: {
+    position: "absolute",
+    top: -34,
+    left: 0,
+    right: 0,
+    height: 18,
+    backgroundColor: "rgba(7,9,8,0.16)",
+  },
+  stickyActionFade: {
+    position: "absolute",
+    top: -18,
+    left: 0,
+    right: 0,
+    height: 18,
+    backgroundColor: "rgba(7,9,8,0.42)",
   },
   collapsibleContent: {
     padding: 0,
@@ -2908,11 +2939,11 @@ const styles = StyleSheet.create({
   memberBottomNavShell: {
     position: "absolute",
     zIndex: 50,
-    left: 22,
-    right: 22,
+    left: layout.bottomNavHorizontalMargin,
+    right: layout.bottomNavHorizontalMargin,
     height: 72,
     overflow: "hidden",
-    borderRadius: 24,
+    borderRadius: radii.bottomNav,
   },
   memberBottomNavBlur: {
     position: "absolute",
@@ -2920,24 +2951,15 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: 72,
-    borderRadius: 24,
+    borderRadius: radii.bottomNav,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-    backgroundColor: "rgba(7,9,8,0.84)",
+    borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(7,9,8,0.9)",
     overflow: "hidden",
     shadowColor: "#000",
     shadowOpacity: 0.24,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 12 },
-  },
-  memberBottomNavPlate: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 72,
-    borderRadius: 24,
-    backgroundColor: "rgba(7,9,8,0.82)",
   },
   memberBottomNavItems: {
     position: "absolute",
@@ -2950,7 +2972,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 8,
     paddingVertical: 8,
-    gap: 8,
+    gap: 6,
     overflow: "hidden",
   },
   bottomNavItem: {
@@ -2966,7 +2988,7 @@ const styles = StyleSheet.create({
     width: undefined,
     minWidth: 0,
     height: 56,
-    borderRadius: 18,
+    borderRadius: 20,
   },
   memberBottomNavItemRaised: {
     flexGrow: 0,
@@ -2987,9 +3009,9 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   bottomNavItemActive: {
-    backgroundColor: "rgba(185,244,85,0.18)",
+    backgroundColor: "rgba(185,244,85,0.16)",
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.34)",
+    borderColor: "rgba(185,244,85,0.26)",
   },
   memberBottomNavItemRaisedActive: {
     backgroundColor: colors.lime,

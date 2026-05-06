@@ -87,3 +87,46 @@ export const zookTokens = {
   typography: zookTypography,
   shadows: zookShadows,
 } as const;
+
+export type ZookPlanNameInput = {
+  id?: string | null;
+  name?: string | null;
+  title?: string | null;
+  type?: string | null;
+  durationDays?: number | null;
+  validityDays?: number | null;
+  visitLimit?: number | null;
+};
+
+function isInternalPlanName(value: string) {
+  return (
+    /\b(plan|branch|owner|playwright|pilot)\b.*\d{7,}/i.test(value) ||
+    /\d{10,}/.test(value) ||
+    /^[a-z]+_[a-z0-9]{10,}$/i.test(value)
+  );
+}
+
+function durationLabel(days?: number | null) {
+  if (!days || days <= 0) return "Monthly";
+  if (days <= 14) return "Trial";
+  if (days <= 45) return "Monthly";
+  if (days <= 110) return "Quarterly";
+  if (days <= 220) return "Half-yearly";
+  return "Annual";
+}
+
+function visitLabel(limit?: number | null) {
+  if (!limit || limit >= 999) return "Unlimited";
+  if (limit === 1) return "1 visit";
+  return `${limit} visits`;
+}
+
+export function resolvePlanName(plan?: ZookPlanNameInput | null) {
+  const rawName = (plan?.name ?? plan?.title ?? "").trim().replace(/\s+/g, " ");
+  if (rawName && !isInternalPlanName(rawName)) {
+    return rawName.length > 42 ? `${rawName.slice(0, 39).trim()}...` : rawName;
+  }
+
+  const days = plan?.durationDays ?? plan?.validityDays;
+  return `${durationLabel(days)} · ${visitLabel(plan?.visitLimit)}`;
+}

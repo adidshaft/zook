@@ -5,6 +5,7 @@ import { cachedJson } from "./server-cache";
 
 export type PublicGymPlan = {
   id: string;
+  handle: string;
   name: string;
   description: string | null;
   type: string;
@@ -118,6 +119,39 @@ function publicTrainerPhotoUrl(value: string | null | undefined) {
   return value;
 }
 
+function durationHandle(plan: { type: string; durationDays: number | null }) {
+  if (plan.type === "TRIAL") return "trial";
+  if (!plan.durationDays) return "visit-pack";
+  if (plan.durationDays <= 45) return "monthly";
+  if (plan.durationDays <= 110) return "quarterly";
+  if (plan.durationDays <= 220) return "half-yearly";
+  return "annual";
+}
+
+function publicPlanBaseHandle(plan: {
+  type: string;
+  durationDays: number | null;
+  pricePaise: number;
+  visitLimit: number | null;
+}) {
+  const visit = plan.visitLimit ? `${plan.visitLimit}-visit` : "unlimited";
+  const price = plan.pricePaise > 0 ? `${Math.round(plan.pricePaise / 100)}` : "free";
+  return `${durationHandle(plan)}-${visit}-${price}`;
+}
+
+function withPublicPlanHandles(plans: Array<Omit<PublicGymPlan, "handle">>): PublicGymPlan[] {
+  const seen = new Map<string, number>();
+  return plans.map((plan) => {
+    const base = publicPlanBaseHandle(plan);
+    const nextCount = (seen.get(base) ?? 0) + 1;
+    seen.set(base, nextCount);
+    return {
+      ...plan,
+      handle: nextCount === 1 ? base : `${base}-${nextCount}`,
+    };
+  });
+}
+
 function demoPublicGymProfile(
   username: string,
   referralCode?: string,
@@ -153,18 +187,20 @@ function demoPublicGymProfile(
       appStoreUrl: null,
       playStoreUrl: null,
     },
-    plans: zookDemoFixtures.membershipPlans
-      .filter((plan) => plan.orgId === org.id && plan.publicVisible)
-      .map((plan) => ({
-        id: plan.id,
-        name: plan.name,
-        description: plan.description,
-        type: plan.type,
-        pricePaise: plan.pricePaise,
-        durationDays: plan.durationDays,
-        visitLimit: plan.visitLimit || null,
-        publicVisible: plan.publicVisible,
-      })),
+    plans: withPublicPlanHandles(
+      zookDemoFixtures.membershipPlans
+        .filter((plan) => plan.orgId === org.id && plan.publicVisible)
+        .map((plan) => ({
+          id: plan.id,
+          name: plan.name,
+          description: plan.description,
+          type: plan.type,
+          pricePaise: plan.pricePaise,
+          durationDays: plan.durationDays,
+          visitLimit: plan.visitLimit || null,
+          publicVisible: plan.publicVisible,
+        })),
+    ),
     trainers: zookDemoFixtures.trainerClientAssignments
       .filter((assignment) => assignment.orgId === org.id)
       .map((assignment) => {
@@ -261,16 +297,18 @@ async function publicGymProfileFromDb(
       playStoreUrl:
         typeof settingValues.playStoreUrl === "string" ? settingValues.playStoreUrl : null,
     },
-    plans: plans.map((plan) => ({
-      id: plan.id,
-      name: plan.name,
-      description: plan.description,
-      type: plan.type,
-      pricePaise: plan.pricePaise,
-      durationDays: plan.durationDays,
-      visitLimit: plan.visitLimit,
-      publicVisible: plan.publicVisible,
-    })),
+    plans: withPublicPlanHandles(
+      plans.map((plan) => ({
+        id: plan.id,
+        name: plan.name,
+        description: plan.description,
+        type: plan.type,
+        pricePaise: plan.pricePaise,
+        durationDays: plan.durationDays,
+        visitLimit: plan.visitLimit,
+        publicVisible: plan.publicVisible,
+      })),
+    ),
     trainers: trainerAssignments
       .map((assignment) => {
         const user = trainerUsersById.get(assignment.userId) ?? null;

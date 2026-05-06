@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CheckCircle2, LockKeyhole } from "lucide-react";
+import { resolvePlanName } from "@zook/ui";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { CouponApplyForm } from "@/components/coupon-apply-form";
 import { JoinCheckoutButton } from "@/components/join-checkout-button";
@@ -34,12 +35,12 @@ function discountFor(referral: PublicGymReferral | null, planPricePaise: number)
 
 function joinPath(
   username: string,
-  planId: string,
+  planHandle: string,
   referral?: PublicGymReferral | null,
   couponCode?: string,
   locale: PublicLocale = "en",
 ) {
-  const query = new URLSearchParams({ plan: planId });
+  const query = new URLSearchParams({ plan: planHandle });
   if (referral) {
     query.set("ref", referral.code);
   }
@@ -79,10 +80,6 @@ function visitLabel(visitLimit: number | null, locale: PublicLocale) {
     : `${visitLimit} ${visitLimit === 1 ? "visit" : "visits"}`;
 }
 
-function displayPlanName(name: string) {
-  return name.length > 40 ? `${name.slice(0, 40)}...` : name;
-}
-
 export default async function JoinPage({
   params,
   searchParams,
@@ -95,7 +92,9 @@ export default async function JoinPage({
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const data = await getPublicGymProfileData(username, query.ref);
   const org = data?.org;
-  const selectedPlan = data?.plans.find((plan) => plan.id === query.plan) ?? data?.plans[0];
+  const selectedPlan =
+    data?.plans.find((plan) => plan.handle === query.plan || plan.id === query.plan) ??
+    data?.plans[0];
   const referral = data?.referral?.status === "active" ? data.referral : null;
   const couponCode = query.coupon?.trim().toUpperCase() || undefined;
   const couponPreview =
@@ -127,7 +126,7 @@ export default async function JoinPage({
           <PublicNav
             showLogin={false}
             languageHref={localizedPath(`/join/${org.username}`, nextLocale, {
-              plan: selectedPlan.id,
+              plan: selectedPlan.handle,
               ref: referral?.code,
               coupon: couponPreview?.code,
             })}
@@ -142,7 +141,7 @@ export default async function JoinPage({
           <Link
             href={loginRedirect(
               selectedPlan
-                ? joinPath(org.username, selectedPlan.id, referral, couponPreview?.code, locale)
+                ? joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale)
                 : localizedPath(`/g/${org.username}`, locale),
               locale,
             )}
@@ -194,7 +193,7 @@ export default async function JoinPage({
       <div className="mx-auto grid max-w-6xl gap-5 px-4 sm:px-6">
         <PublicNav
           showLogin={false}
-          languageHref={joinPath(org.username, selectedPlan.id, referral, couponPreview?.code, nextLocale)}
+          languageHref={joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, nextLocale)}
           languageLabel={t("languageSwitch")}
           backHref={localizedPath(`/g/${org.username}`, locale)}
           backLabel={t("gymProfile")}
@@ -223,7 +222,7 @@ export default async function JoinPage({
                         key={plan.id}
                         href={joinPath(
                           org.username,
-                          plan.id,
+                          plan.handle,
                           referral,
                           couponPreview?.code,
                           locale,
@@ -239,7 +238,7 @@ export default async function JoinPage({
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="truncate font-medium text-white">
-                              {displayPlanName(plan.name)}
+                              {resolvePlanName(plan)}
                             </p>
                             <p className="mt-1 text-xs text-white/45">
                               {validityLabel(plan, locale)} · {visitLabel(plan.visitLimit, locale)}
@@ -257,7 +256,7 @@ export default async function JoinPage({
             ) : null}
             <div className="mt-6 grid gap-3">
               <Readout label="Gym" value={`${org.name} · ${org.city}`} />
-              <Readout label={t("plan")} value={displayPlanName(selectedPlan.name)} />
+              <Readout label={t("plan")} value={resolvePlanName(selectedPlan)} />
               <Readout label={t("duration")} value={validityLabel(selectedPlan, locale)} />
               <Readout label={t("visits")} value={visitLabel(selectedPlan.visitLimit, locale)} />
               <Readout
@@ -323,7 +322,7 @@ export default async function JoinPage({
                 couponCode={couponPreview?.code ?? null}
                 referralCode={referral?.code ?? null}
                 loginPath={loginRedirect(
-                  joinPath(org.username, selectedPlan.id, referral, couponPreview?.code, locale),
+                  joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale),
                   locale,
                 )}
               />

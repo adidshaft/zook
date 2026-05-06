@@ -3,7 +3,7 @@ import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,
@@ -20,7 +20,7 @@ import { BranchSelectionProvider } from "@/lib/branch-selection";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
-import { colors } from "@/lib/theme";
+import { colors, layout } from "@/lib/theme";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -65,7 +65,7 @@ function safeRedirectTarget(value?: string | string[]) {
 }
 
 function LayoutContent() {
-  const { defaultRoute, hasActiveRole, hasAnyRole, status } = useAuth();
+  const { defaultRoute, hasActiveRole, hasAnyRole, logout, status } = useAuth();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const runtimeConfigError = getMobileRuntimeConfigError();
@@ -153,6 +153,7 @@ function LayoutContent() {
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
         <Stack.Screen name="plans" options={{ animation: "none" }} />
+        <Stack.Screen name="more" options={{ animation: "none" }} />
         <Stack.Screen name="scan" options={{ animation: "none" }} />
         <Stack.Screen name="tracking" options={{ animation: "none" }} />
         <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
@@ -177,10 +178,24 @@ function LayoutContent() {
       </Stack>
       {isOfflineDemoMode() ? (
         <View
-          pointerEvents="none"
-          style={[styles.demoBadge, { top: Math.max(insets.top + 8, 12) }]}
+          style={[
+            styles.demoStrip,
+            {
+              height: layout.demoStripHeight + insets.top,
+              paddingTop: insets.top,
+            },
+          ]}
         >
-          <Text style={styles.demoBadgeText}>{t("app.demoMode")}</Text>
+          <View style={styles.demoDot} />
+          <Text style={styles.demoStripText}>Demo · sample data</Text>
+          <Pressable
+            onPress={() => void logout()}
+            accessibilityRole="button"
+            accessibilityLabel="Use real account"
+            hitSlop={8}
+          >
+            <Text style={styles.demoStripLink}>Use real account</Text>
+          </Pressable>
         </View>
       ) : null}
     </>
@@ -257,22 +272,36 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
   },
-  demoBadge: {
+  demoStrip: {
     position: "absolute",
-    left: "50%",
-    minWidth: 104,
+    zIndex: 100,
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
     alignItems: "center",
-    transform: [{ translateX: -52 }],
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(242,201,76,0.45)",
-    backgroundColor: "rgba(242,201,76,0.16)",
+    gap: 7,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(242,201,76,0.22)",
+    backgroundColor: "rgba(242,201,76,0.1)",
   },
-  demoBadgeText: {
+  demoDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.amber,
+  },
+  demoStripText: {
+    flex: 1,
     color: colors.amber,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "700",
+  },
+  demoStripLink: {
+    color: colors.amber,
+    fontSize: 11,
+    fontWeight: "700",
+    textDecorationLine: "underline",
   },
 });
