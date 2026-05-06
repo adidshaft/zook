@@ -197,7 +197,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
           Start your gym on Zook.
         </h1>
         <p className="mt-5 max-w-2xl text-sm leading-6 text-white/58">
-          Create the organization, default branch, owner role, trial workspace, and public profile
+          Create the organization, main branch, owner role, trial workspace, and gym profile page
           shell from the web. Mobile stays focused on daily execution.
         </p>
         <div className="mt-8 grid gap-3">
@@ -205,7 +205,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
             "Creates the organization and default branch",
             "Assigns you as owner",
             "Publishes a public username for /in links",
-            "Unlocks the Public Profile editor and join QR",
+            "Unlocks the gym profile page editor and join QR",
           ].map((item) => (
             <div
               key={item}

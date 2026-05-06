@@ -149,6 +149,10 @@ function normalizeRateLimitProvider(value?: string | null): RateLimitProvider | 
   }
 }
 
+function isProductionAppEnv(env: NodeJS.ProcessEnv) {
+  return ["production", "prod"].includes(env.APP_ENV?.trim().toLowerCase() ?? "");
+}
+
 export function getRateLimitDiagnostics(
   env: NodeJS.ProcessEnv = process.env,
 ): RateLimitDiagnostics {
@@ -161,6 +165,16 @@ export function getRateLimitDiagnostics(
       configured: false,
       missingEnv: [],
       mode: "local",
+    };
+  }
+  if (isProductionAppEnv(env) && (selectedProvider === "memory" || selectedProvider === "disabled")) {
+    return {
+      selectedProvider,
+      activeProvider: null,
+      status: "misconfigured",
+      configured: false,
+      missingEnv: ["RATE_LIMIT_PROVIDER"],
+      mode: selectedProvider === "disabled" ? "disabled" : "local",
     };
   }
   if (selectedProvider === "disabled") {

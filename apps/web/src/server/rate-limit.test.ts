@@ -12,6 +12,7 @@ describe("rate limits", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-24T00:00:00.000Z"));
+    delete process.env.APP_ENV;
     process.env.RATE_LIMIT_PROVIDER = "memory";
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -92,5 +93,28 @@ describe("rate limits", () => {
         })
       })
     );
+  });
+
+  it("rejects local or disabled rate limiting in production diagnostics", async () => {
+    process.env.APP_ENV = "production";
+    process.env.RATE_LIMIT_PROVIDER = "memory";
+
+    expect(getRateLimitDiagnostics()).toMatchObject({
+      selectedProvider: "memory",
+      activeProvider: null,
+      status: "misconfigured",
+      configured: false,
+    });
+    await expect(assertRateLimit("publicOrgSearchByIp", "127.0.0.1")).rejects.toThrow(
+      /Too many requests/i,
+    );
+
+    process.env.RATE_LIMIT_PROVIDER = "disabled";
+    expect(getRateLimitDiagnostics()).toMatchObject({
+      selectedProvider: "disabled",
+      activeProvider: null,
+      status: "misconfigured",
+      configured: false,
+    });
   });
 });

@@ -190,7 +190,7 @@ function OwnerSetupChecklist({
   const checklist = [
     {
       label: "Complete gym profile",
-      detail: "Publish your address, join mode, and public profile.",
+      detail: "Publish your address, join mode, and gym profile page.",
       href: "/dashboard/public-profile",
       done: profileReady,
     },
@@ -208,7 +208,7 @@ function OwnerSetupChecklist({
     },
     {
       label: "Share your gym link",
-      detail: "Open the public profile and copy the join link or QR.",
+      detail: "Open the gym profile page and copy the join link or QR.",
       href: "/dashboard/public-profile",
       done: summary.joinRequests > 0 || summary.activeMembers > 0,
     },
