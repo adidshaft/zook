@@ -12,9 +12,9 @@ export const seedUsers = [
 
 export const demoGyms: GymPublicProfile[] = [
   {
-    id: "iron-house",
-    name: "Iron House Fitness",
-    username: "iron-house",
+    id: "aarogya-strength",
+    name: "Aarogya Strength Club",
+    username: "aarogya-strength",
     city: "Pune",
     state: "Maharashtra",
     visibility: "PUBLIC",
@@ -25,9 +25,9 @@ export const demoGyms: GymPublicProfile[] = [
     coverImageUrl: "/seed/covers/iron-house.svg"
   },
   {
-    id: "peaklab",
-    name: "PeakLab Gym",
-    username: "peaklab",
+    id: "indiranagar-performance",
+    name: "Indiranagar Performance Studio",
+    username: "indiranagar-performance",
     city: "Bengaluru",
     state: "Karnataka",
     visibility: "PUBLIC",

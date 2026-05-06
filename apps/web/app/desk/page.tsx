@@ -43,6 +43,7 @@ export default async function DeskPage() {
       orgId={organization.id}
       orgName={organization.name}
       branch={data.branchScope.selectedBranch}
+      locale={session.user.preferredLocale ?? "en"}
     />
   );
 }

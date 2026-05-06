@@ -2,7 +2,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { redirect } from "next/navigation";
 import { AttendanceQrPanel } from "@/components/attendance-qr-panel";
-import { hasDeskAccess } from "@/lib/auth-destinations";
+import { hasDeskAccess, hasOwnerDashboardAccess } from "@/lib/auth-destinations";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata = {
@@ -12,6 +12,9 @@ export const metadata = {
 
 export default async function DeskQrPage() {
   const session = await requireDashboardSession();
+  if (session.user.isPlatformAdmin || hasOwnerDashboardAccess(session)) {
+    redirect("/dashboard");
+  }
   if (!hasDeskAccess(session) || !session.activeOrgId) {
     redirect("/login");
   }

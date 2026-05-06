@@ -332,7 +332,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     {
       id: "user-aarav",
       email: "member@zook.local",
-      name: "Aarav Mehta",
+      name: "Nisha Menon",
       phone: "+919876543210",
       dateOfBirth: "1996-08-14",
       isMinor: false,
@@ -343,7 +343,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     {
       id: "user-owner",
       email: "owner@zook.local",
-      name: "Aarav Mehta",
+      name: "Aditya Rao",
       phone: "+919988777665",
       dateOfBirth: "1987-03-12",
       isMinor: false,
@@ -354,7 +354,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     {
       id: "user-rhea",
       email: "trainer@zook.local",
-      name: "Coach Rhea",
+      name: "Coach Rohan",
       phone: "+919123456780",
       dateOfBirth: "1993-11-19",
       isMinor: false,
@@ -365,7 +365,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     {
       id: "user-kabir",
       email: "kabir@zook.local",
-      name: "Coach Kabir",
+      name: "Coach Kavya",
       phone: "+919345678120",
       dateOfBirth: "1991-02-09",
       isMinor: false,
@@ -376,7 +376,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     {
       id: "user-priya",
       email: "reception@zook.local",
-      name: "Priya Sharma",
+      name: "Farah Khan",
       phone: "+919765432109",
       dateOfBirth: "1998-06-21",
       isMinor: false,
@@ -387,7 +387,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     {
       id: "user-riya",
       email: "minor@zook.local",
-      name: "Riya Shah",
+      name: "Ira Shah",
       phone: "+919000012345",
       dateOfBirth: "2011-09-18",
       isMinor: true,
@@ -398,23 +398,23 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   ],
   organizations: [
     {
-      id: "org-iron-temple",
-      name: "Iron Temple Gym",
-      username: "iron-temple",
+      id: "org-aarogya-strength",
+      name: "Aarogya Strength Club",
+      username: "aarogya-strength",
       city: "Pune",
       state: "Maharashtra",
       address: "Lane 7, Koregaon Park, Pune",
       status: "ACTIVE",
       joinMode: "OPEN_JOIN",
       amenities: ["Strength", "Cardio", "Personal Training", "Protein Bar", "Locker"],
-      ownerName: "Aarav Mehta",
+      ownerName: "Aditya Rao",
     },
   ],
   branches: [
     {
       id: "branch-default",
-      orgId: "org-iron-temple",
-      name: "Main branch",
+      orgId: "org-aarogya-strength",
+      name: "Aarogya Koregaon Park",
       city: "Pune",
       state: "Maharashtra",
       address: "Lane 7, Koregaon Park, Pune",
@@ -422,13 +422,13 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     },
   ],
   roleAssignments: [
-    { id: "role-aarav-member", orgId: "org-iron-temple", userId: "user-aarav", role: "MEMBER" },
-    { id: "role-owner-owner", orgId: "org-iron-temple", userId: "user-owner", role: "OWNER" },
-    { id: "role-owner-admin", orgId: "org-iron-temple", userId: "user-owner", role: "ADMIN" },
-    { id: "role-owner-member", orgId: "org-iron-temple", userId: "user-owner", role: "MEMBER" },
-    { id: "role-rhea-trainer", orgId: "org-iron-temple", userId: "user-rhea", role: "TRAINER" },
-    { id: "role-priya-reception", orgId: "org-iron-temple", userId: "user-priya", role: "RECEPTIONIST" },
-    { id: "role-riya-member", orgId: "org-iron-temple", userId: "user-riya", role: "MEMBER" },
+    { id: "role-aarav-member", orgId: "org-aarogya-strength", userId: "user-aarav", role: "MEMBER" },
+    { id: "role-owner-owner", orgId: "org-aarogya-strength", userId: "user-owner", role: "OWNER" },
+    { id: "role-owner-admin", orgId: "org-aarogya-strength", userId: "user-owner", role: "ADMIN" },
+    { id: "role-owner-member", orgId: "org-aarogya-strength", userId: "user-owner", role: "MEMBER" },
+    { id: "role-rohan-trainer", orgId: "org-aarogya-strength", userId: "user-rhea", role: "TRAINER" },
+    { id: "role-priya-reception", orgId: "org-aarogya-strength", userId: "user-priya", role: "RECEPTIONIST" },
+    { id: "role-riya-member", orgId: "org-aarogya-strength", userId: "user-riya", role: "MEMBER" },
   ],
   memberProfiles: [
     {
@@ -455,7 +455,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   membershipPlans: [
     {
       id: "plan-trial",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       name: "Trial Pass",
       description: "One supervised visit for new members.",
       type: "TRIAL",
@@ -466,7 +466,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     },
     {
       id: "plan-monthly-active",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       name: "Monthly Active",
       description: "30 days of gym access for regular training.",
       type: "DURATION",
@@ -477,7 +477,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     },
     {
       id: "plan-hybrid-pro",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       name: "Hybrid Pro",
       description: "30 days with 12 visits and coach plan access.",
       type: "HYBRID",
@@ -490,7 +490,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   memberships: [
     {
       id: "membership-aarav-hybrid",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       branchId: "branch-default",
       memberUserId: "user-aarav",
       planId: "plan-hybrid-pro",
@@ -504,7 +504,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     },
     {
       id: "membership-expired-demo",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       branchId: "branch-default",
       memberUserId: "user-priya",
       planId: "plan-hybrid-pro",
@@ -520,32 +520,32 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   joinRequests: [
     {
       id: "join-neha",
-      orgId: "org-iron-temple",
-      userId: "user-neha",
-      userName: "Neha Shah",
-      userEmail: "neha.shah@example.com",
+      orgId: "org-aarogya-strength",
+      userId: "user-pooja",
+      userName: "Pooja Malhotra",
+      userEmail: "pooja.malhotra@example.com",
       planId: "plan-hybrid-pro",
       status: "PENDING",
-      referralCode: "RHEA250",
+      referralCode: "ROHAN500",
       createdAt: "2026-04-26T06:50:00.000Z",
     },
   ],
   referralCodes: [
     {
-      id: "ref-rhea250",
-      orgId: "org-iron-temple",
-      code: "RHEA250",
+      id: "ref-rohan500",
+      orgId: "org-aarogya-strength",
+      code: "ROHAN500",
       status: "active",
       discountPaise: 25000,
-      referrerName: "Coach Rhea",
+      referrerName: "Coach Rohan",
     },
   ],
   attendanceSessions: [
     {
       id: "qr-current",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       branchId: "branch-default",
-      rollingToken: "zook://qr/org-iron-temple/branch-default/demo-approved",
+      rollingToken: "zook://qr/org-aarogya-strength/branch-default/demo-approved",
       issuedAt: "2026-04-26T01:42:00.000Z",
       expiresAt: "2026-04-26T01:42:30.000Z",
     },
@@ -553,42 +553,42 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   attendanceAttempts: [
     {
       id: "attendance-approved",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       branchId: "branch-default",
       memberUserId: "user-aarav",
-      memberName: "Aarav Mehta",
+      memberName: "Nisha Menon",
       status: "APPROVED",
       entryCode: "ZK-4821",
       checkedInAt: "2026-04-26T01:44:00.000Z",
-      branchName: "Main branch",
+      branchName: "Aarogya Koregaon Park",
       planName: "Hybrid Pro",
       reason: "Membership active and branch verified.",
       auditTrail: ["QR token valid", "Replay clear", "Membership active", "Minor gate clear"],
     },
     {
       id: "attendance-pending",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       branchId: "branch-default",
       memberUserId: "user-aarav",
-      memberName: "Aarav Mehta",
+      memberName: "Nisha Menon",
       status: "PENDING_APPROVAL",
-      entryCode: "ZK-7319",
+      entryCode: "AS-7319",
       checkedInAt: "2026-04-26T01:44:00.000Z",
-      branchName: "Main branch",
+      branchName: "Aarogya Koregaon Park",
       planName: "Hybrid Pro",
       reason: "Attendance approval mode is enabled.",
       auditTrail: ["QR token valid", "Membership active", "Desk approval required"],
     },
     {
       id: "attendance-flagged",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       branchId: "branch-default",
-      memberUserId: "user-neha",
-      memberName: "Neha Shah",
+      memberUserId: "user-pooja",
+      memberName: "Pooja Malhotra",
       status: "FLAGGED",
       entryCode: "ZK-1180",
       checkedInAt: "2026-04-26T01:48:00.000Z",
-      branchName: "Main branch",
+      branchName: "Aarogya Koregaon Park",
       planName: "Visit Pack",
       reason: "Replay protection detected a repeated scan.",
       auditTrail: ["QR token valid", "Replay suspicion", "Desk review required"],
@@ -597,7 +597,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   payments: [
     {
       id: "payment-hybrid-renewal",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       memberUserId: "user-aarav",
       purpose: "MEMBERSHIP",
       summary: "Hybrid Pro renewal",
@@ -611,7 +611,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   shopProducts: [
     {
       id: "product-protein-shake",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       name: "Protein Shake",
       category: "PROTEIN_SHAKE",
       pricePaise: 14900,
@@ -621,7 +621,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     },
     {
       id: "product-zook-shaker",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       name: "Zook Shaker",
       category: "SHAKER",
       pricePaise: 39900,
@@ -631,7 +631,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     },
     {
       id: "product-gym-towel",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       name: "Gym Towel",
       category: "TOWEL",
       pricePaise: 24900,
@@ -641,7 +641,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
     },
     {
       id: "product-water-bottle",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       name: "Water Bottle",
       category: "WATER",
       pricePaise: 4000,
@@ -653,11 +653,11 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   shopOrders: [
     {
       id: "order-aarav-pickup",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       memberUserId: "user-aarav",
       status: "READY_FOR_PICKUP",
       totalPaise: 54800,
-      pickupCode: "PK-9142",
+      pickupCode: "PU-9142",
       createdAt: "2026-04-26T02:15:00.000Z",
       items: [
         { productId: "product-protein-shake", quantity: 1, unitPaise: 14900 },
@@ -667,8 +667,8 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   ],
   trainerClientAssignments: [
     {
-      id: "assign-rhea-aarav",
-      orgId: "org-iron-temple",
+      id: "assign-rohan-nisha",
+      orgId: "org-aarogya-strength",
       trainerUserId: "user-rhea",
       memberUserId: "user-aarav",
       active: true,
@@ -676,8 +676,8 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   ],
   ptPacks: [
     {
-      id: "pt-aarav-rhea",
-      orgId: "org-iron-temple",
+      id: "pt-nisha-rohan",
+      orgId: "org-aarogya-strength",
       trainerUserId: "user-rhea",
       memberUserId: "user-aarav",
       label: "Strength PT Pack",
@@ -688,7 +688,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   trainingPlans: [
     {
       id: "plan-push-day",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       trainerUserId: "user-rhea",
       memberUserId: "user-aarav",
       title: "Push Day",
@@ -711,8 +711,8 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   ],
   planDrafts: [
     {
-      id: "draft-push-pull",
-      orgId: "org-iron-temple",
+      id: "draft-strength-block",
+      orgId: "org-aarogya-strength",
       trainerUserId: "user-rhea",
       memberUserId: "user-aarav",
       title: "4-week Push/Pull Routine",
@@ -735,10 +735,10 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   aiUsageRecords: [
     {
       id: "ai-draft-usage",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       actorRole: "TRAINER",
       requestType: "STRUCTURED_PLAN",
-      promptSummary: "Draft push/pull routine for Aarav Mehta",
+      promptSummary: "Draft push/pull routine for Nisha Menon",
       quotaConsumed: 1,
       safetyStatus: "CLEAR",
       createdAt: "2026-04-26T02:05:00.000Z",
@@ -747,11 +747,11 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   notifications: [
     {
       id: "notif-push-day",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       userId: "user-aarav",
       type: "PLAN",
       title: "Push Day assigned",
-      message: "Coach Rhea assigned Push Day for your next session.",
+      message: "Coach Rohan assigned Push Day for your next session.",
       targetRoute: "/plans",
       readAt: null,
       createdAt: "2026-04-26T01:30:00.000Z",
@@ -769,11 +769,11 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   auditLogs: [
     {
       id: "audit-offline-payment",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       action: "payment.offline.recorded",
       entityType: "PaymentRecord",
       entityId: "payment-hybrid-renewal",
-      actorName: "Priya Sharma",
+      actorName: "Farah Khan",
       reason: "Desk collected payment",
       createdAt: "2026-04-26T02:20:00.000Z",
       requestId: "req_demo_payment_01",
@@ -782,7 +782,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
   reportJobs: [
     {
       id: "report-attendance-apr",
-      orgId: "org-iron-temple",
+      orgId: "org-aarogya-strength",
       type: "attendance",
       status: "READY",
       createdAt: "2026-04-26T02:25:00.000Z",

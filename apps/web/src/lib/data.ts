@@ -58,9 +58,9 @@ function getDemoDashboardData(scope: "org" | "platform") {
     staffCount: 4,
   };
   const org = {
-    id: demoOrg?.id ?? "org-iron-temple",
-    name: demoOrg?.name ?? "Iron Temple Gym",
-    username: demoOrg?.username ?? "iron-temple",
+    id: demoOrg?.id ?? "org-aarogya-strength",
+    name: demoOrg?.name ?? "Aarogya Strength Club",
+    username: demoOrg?.username ?? "aarogya-strength",
     city: demoOrg?.city ?? "Pune",
     state: demoOrg?.state ?? "Maharashtra",
     status: "ACTIVE",
@@ -78,7 +78,7 @@ function getDemoDashboardData(scope: "org" | "platform") {
     metrics:
       scope === "org"
         ? [
-            { label: "Active Members", value: "412", delta: "Iron Temple Gym" },
+            { label: "Active Members", value: "412", delta: "Aarogya Strength Club" },
             { label: "Today's Check-ins", value: "48", delta: "3 pending approval" },
             { label: "Revenue", value: "₹82,450", delta: "Includes manual records" },
             { label: "Pending Join Requests", value: "7", delta: "Approval queue" },
@@ -99,16 +99,16 @@ function getDemoDashboardData(scope: "org" | "platform") {
     joinRequests: zookDemoFixtures.joinRequests,
     auditLogCount: zookDemoFixtures.auditLogs.length,
     branchScope: {
-      branches: [{ id: "branch-default", name: "Main branch", isDefault: true, active: true }],
+      branches: [{ id: "branch-default", name: "Aarogya Koregaon Park", isDefault: true, active: true }],
       defaultBranch: {
         id: "branch-default",
-        name: "Main branch",
+        name: "Aarogya Koregaon Park",
         isDefault: true,
         active: true,
       },
       selectedBranch: {
         id: "branch-default",
-        name: "Main branch",
+        name: "Aarogya Koregaon Park",
         isDefault: true,
         active: true,
       },

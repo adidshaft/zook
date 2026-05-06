@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   Bell,
-  Brain,
   CheckCircle2,
   Circle,
   ClipboardList,
@@ -37,59 +36,259 @@ import type { Permission, Role } from "@zook/core";
 type DashboardData = Awaited<ReturnType<typeof import("@/lib/data").getDashboardData>>;
 
 type NavItem = {
+  key: string;
   label: string;
   href: string;
   icon: LucideIcon;
   shortLabel?: string;
+  permissions?: Permission[];
 };
 
 const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Operations",
     items: [
-      { label: "Today", href: "/dashboard", icon: Dumbbell },
-      { label: "Attendance", href: "/dashboard/attendance", icon: QrCode },
-      { label: "Payments", href: "/dashboard/payments", icon: ReceiptText },
-      { label: "Shop", href: "/dashboard/shop/products", icon: Store },
-      { label: "Reports", href: "/dashboard/reports", icon: FileText },
+      { key: "today", label: "Today", href: "/dashboard", icon: Dumbbell },
+      {
+        key: "attendance",
+        label: "Attendance",
+        href: "/dashboard/attendance",
+        icon: QrCode,
+        permissions: ["ATTENDANCE_QR_DISPLAY", "ATTENDANCE_APPROVE"],
+      },
+      {
+        key: "payments",
+        label: "Payments",
+        href: "/dashboard/payments",
+        icon: ReceiptText,
+        permissions: ["PAYMENTS_VIEW"],
+      },
+      {
+        key: "shop",
+        label: "Shop",
+        href: "/dashboard/shop/products",
+        icon: Store,
+        permissions: ["SHOP_MANAGE_PRODUCTS"],
+      },
+      {
+        key: "reports",
+        label: "Reports",
+        href: "/dashboard/reports",
+        icon: FileText,
+        permissions: ["ORG_VIEW_REPORTS"],
+      },
     ],
   },
   {
     label: "Members",
     items: [
-      { label: "Directory", href: "/dashboard/members", icon: Users, shortLabel: "Members" },
-      { label: "Plans", href: "/dashboard/membership-plans", icon: ClipboardList },
+      {
+        key: "members",
+        label: "Members",
+        href: "/dashboard/members",
+        icon: Users,
+        permissions: ["MEMBERS_VIEW"],
+      },
+      {
+        key: "plans",
+        label: "Plans",
+        href: "/dashboard/membership-plans",
+        icon: ClipboardList,
+        permissions: ["MEMBERSHIP_PLAN_MANAGE"],
+      },
+      {
+        key: "team",
+        label: "Team",
+        href: "/dashboard/staff",
+        icon: Shield,
+        permissions: ["ORG_MANAGE_STAFF"],
+      },
     ],
   },
   {
-    label: "Team",
+    label: "Messages",
     items: [
-      { label: "Staff & trainers", href: "/dashboard/staff", icon: Shield, shortLabel: "Team" },
-    ],
-  },
-  {
-    label: "Communication",
-    items: [
-      { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
-      { label: "Templates", href: "/dashboard/notifications/templates", icon: ClipboardList },
-      { label: "History", href: "/dashboard/notifications/history", icon: History },
-      { label: "AI workout drafts", href: "/dashboard/ai", icon: Brain },
+      {
+        key: "messages",
+        label: "Messages",
+        href: "/dashboard/notifications",
+        icon: Bell,
+        permissions: ["NOTIFICATION_CREATE_DRAFT"],
+      },
     ],
   },
   {
     label: "Settings",
     items: [
-      { label: "Branches", href: "/dashboard/branches", icon: Globe2 },
-      { label: "Gym profile", href: "/dashboard/public-profile", icon: Globe2 },
       {
+        key: "branches",
+        label: "Branches",
+        href: "/dashboard/branches",
+        icon: Globe2,
+        permissions: ["ORG_MANAGE_LOCATION"],
+      },
+      {
+        key: "gymProfile",
+        label: "Gym profile",
+        href: "/dashboard/public-profile",
+        icon: Globe2,
+        permissions: ["ORG_MANAGE_PROFILE"],
+      },
+      {
+        key: "activity",
         label: "Audit log",
         href: "/dashboard/audit",
         icon: History,
         shortLabel: "Activity",
+        permissions: ["PRIVACY_VIEW_AUDIT"],
       },
     ],
   },
 ];
+
+const dashboardTranslations = {
+  en: {
+    navGroups: {
+      Operations: "Operations",
+      Members: "Members",
+      Messages: "Messages",
+      Settings: "Settings",
+    },
+    nav: {
+      today: "Today",
+      attendance: "Attendance",
+      payments: "Payments",
+      shop: "Shop",
+      reports: "Reports",
+      members: "Members",
+      plans: "Plans",
+      team: "Team",
+      messages: "Messages",
+      branches: "Branches",
+      gymProfile: "Gym profile",
+      activity: "Activity",
+    },
+    liveWorkspace: "Live workspace",
+    sampleData: "Sample data",
+    noOrgTitle: "No active gym is available",
+    noOrgDescription:
+      "Your sign-in is active, but no gym is connected to this account yet. Owners can create a gym profile from setup.",
+    startGym: "Start a gym",
+    liveOrganization: "Live gym",
+    gymStatus: "Gym status",
+    branchScope: "Branch scope",
+    branchScopeMeta: "The app uses this branch for check-ins and plans.",
+    attendanceMode: "Attendance mode",
+    trialRunway: "Trial runway",
+    primaryContact: "Primary contact",
+    todayAt: "Today at",
+    todayDescription: "Check-ins, members, payments, stock, and follow-ups in one owner view.",
+    sectionDescription: "Run daily gym work here. Changes save automatically in Zook.",
+    showQr: "Show QR",
+    reports: "Reports",
+    needsAttention: "Needs attention",
+    needsAttentionDescription: "Quick links to what needs attention today.",
+    showEntryQr: "Show entry QR",
+    reviewJoins: "Review joins",
+    checkStock: "Check stock",
+    reviewActivity: "Review activity",
+    scansToday: "scans today",
+    membershipRequests: "membership requests",
+    lowStockItems: "low-stock items",
+    activityEntries: "activity entries",
+    location: "Location",
+    locationMeta: "Current city",
+    showingBranch: "Showing data for the active branch",
+    joinMode: "Join mode",
+    inboundRequests: "inbound requests",
+    checkInsToday: "check-ins today",
+    trialEnd: "Trial end",
+  },
+  hi: {
+    navGroups: {
+      Operations: "काम",
+      Members: "मेंबर",
+      Messages: "मैसेज",
+      Settings: "सेटिंग",
+    },
+    nav: {
+      today: "आज",
+      attendance: "अटेंडेंस",
+      payments: "पेमेंट",
+      shop: "शॉप",
+      reports: "रिपोर्ट",
+      members: "मेंबर",
+      plans: "प्लान",
+      team: "टीम",
+      messages: "मैसेज",
+      branches: "ब्रांच",
+      gymProfile: "जिम प्रोफाइल",
+      activity: "गतिविधि",
+    },
+    liveWorkspace: "लाइव वर्कस्पेस",
+    sampleData: "सैंपल डेटा",
+    noOrgTitle: "कोई active gym नहीं मिला",
+    noOrgDescription:
+      "आपका sign-in active है, लेकिन इस account से अभी कोई gym जुड़ा नहीं है. Owner setup से gym profile बना सकते हैं.",
+    startGym: "जिम शुरू करें",
+    liveOrganization: "लाइव जिम",
+    gymStatus: "जिम स्टेटस",
+    branchScope: "ब्रांच",
+    branchScopeMeta: "App इसी branch का check-in और plan data इस्तेमाल करता है.",
+    attendanceMode: "अटेंडेंस मोड",
+    trialRunway: "ट्रायल बाकी",
+    primaryContact: "मुख्य संपर्क",
+    todayAt: "आज",
+    todayDescription: "Check-ins, members, payments, stock और follow-ups एक owner view में.",
+    sectionDescription: "Gym का daily काम यहीं चलाएं. बदलाव Zook में अपने आप सेव होते हैं.",
+    showQr: "QR दिखाएं",
+    reports: "रिपोर्ट",
+    needsAttention: "ध्यान देने वाली चीज़ें",
+    needsAttentionDescription: "आज जिन कामों पर ध्यान चाहिए, उनके quick links.",
+    showEntryQr: "Entry QR दिखाएं",
+    reviewJoins: "Join requests देखें",
+    checkStock: "Stock देखें",
+    reviewActivity: "Activity देखें",
+    scansToday: "आज scans",
+    membershipRequests: "membership requests",
+    lowStockItems: "low-stock items",
+    activityEntries: "activity entries",
+    location: "लोकेशन",
+    locationMeta: "Current city",
+    showingBranch: "Active branch का data दिख रहा है",
+    joinMode: "Join mode",
+    inboundRequests: "requests",
+    checkInsToday: "आज check-ins",
+    trialEnd: "Trial end",
+  },
+} as const;
+
+type DashboardTranslation = (typeof dashboardTranslations)[keyof typeof dashboardTranslations];
+
+function isHindi(locale?: string | null) {
+  return locale === "hi";
+}
+
+function filterNavGroups(groups: typeof navGroups, permissions: Set<Permission>) {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) =>
+          !item.permissions ||
+          item.permissions.some((permission) => permissions.has(permission)),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+function translatedGroupLabel(copy: DashboardTranslation, label: string) {
+  return copy.navGroups[label as keyof typeof copy.navGroups] ?? label;
+}
+
+function translatedNavLabel(copy: DashboardTranslation, item: NavItem) {
+  return copy.nav[item.key as keyof typeof copy.nav] ?? item.label;
+}
 
 function isActiveNav(href: string, sectionKey: string) {
   if (href === "/dashboard") {
@@ -289,25 +488,33 @@ export function DashboardShell({
   data,
   isPlatformAdmin,
   roles,
+  permissions,
   user,
 }: {
   section: string[] | undefined;
   data: DashboardData;
   isPlatformAdmin: boolean;
   roles: Role[];
+  permissions?: Permission[];
   user: { name: string; email: string; preferredLocale?: string | null };
 }) {
   const title = titleFromSection(section);
   const sectionKey = section?.join("/") ?? "";
   const activeOrg = data.orgs[0];
   const selectedBranch = data.branchScope.selectedBranch;
-  const permissions = new Set<Permission>(permissionsForRoles(roles));
-  const canShowQr = permissions.has("ATTENDANCE_QR_DISPLAY");
-  const canViewReports = permissions.has("ORG_VIEW_REPORTS");
+  const locale = isHindi(user.preferredLocale) ? "hi" : "en";
+  const copy = dashboardTranslations[locale];
+  const activePermissions = new Set<Permission>([
+    ...permissionsForRoles(roles),
+    ...(permissions ?? []),
+  ]);
+  const visibleNavGroups = filterNavGroups(navGroups, activePermissions);
+  const canShowQr = activePermissions.has("ATTENDANCE_QR_DISPLAY");
+  const canViewReports = activePermissions.has("ORG_VIEW_REPORTS");
   const runtimeLabel = data.connected
-    ? "Live workspace"
+    ? copy.liveWorkspace
     : data.fallbackMode === "demo"
-      ? "Sample data"
+      ? copy.sampleData
       : "";
 
   if (!activeOrg) {
@@ -316,11 +523,11 @@ export function DashboardShell({
         <div className="mx-auto max-w-[1100px]">
           <GlassCard variant="strong">
             <EmptyState
-              title="No active organization is available"
-              description="The dashboard session is live, but there is no gym bound to this view yet. Owners can create a gym profile from the web setup flow."
+              title={copy.noOrgTitle}
+              description={copy.noOrgDescription}
             />
             <ZookButtonLink href="/start-gym" className="mt-5">
-              Start a gym
+              {copy.startGym}
             </ZookButtonLink>
           </GlassCard>
         </div>
@@ -335,36 +542,36 @@ export function DashboardShell({
     tone: PillTone;
   }> = [
     {
-      label: "Show entry QR",
+      label: copy.showEntryQr,
       href: "/dashboard/attendance/approvals",
-      detail: `${data.summary.todayAttendance} scans today`,
+      detail: `${data.summary.todayAttendance} ${copy.scansToday}`,
       tone: "lime",
     },
     {
-      label: "Review joins",
+      label: copy.reviewJoins,
       href: "/dashboard/members",
-      detail: `${data.summary.joinRequests} membership requests`,
+      detail: `${data.summary.joinRequests} ${copy.membershipRequests}`,
       tone: data.summary.joinRequests > 0 ? "amber" : "lime",
     },
     {
-      label: "Check stock",
+      label: copy.checkStock,
       href: "/dashboard/shop/products",
-      detail: `${data.summary.lowStockProducts} low-stock items`,
+      detail: `${data.summary.lowStockProducts} ${copy.lowStockItems}`,
       tone: data.summary.lowStockProducts > 0 ? "amber" : "blue",
     },
     {
-      label: "Review activity",
+      label: copy.reviewActivity,
       href: "/dashboard/audit",
-      detail: `${data.auditLogCount} activity entries`,
+      detail: `${data.auditLogCount} ${copy.activityEntries}`,
       tone: data.auditLogCount > 0 ? "blue" : "neutral",
     },
   ];
 
-  const pageTitle = sectionKey === "" ? `Today at ${activeOrg.name}` : title;
+  const pageTitle = sectionKey === "" ? `${copy.todayAt} ${activeOrg.name}` : title;
   const pageDescription =
     sectionKey === ""
-      ? "Live check-ins, members, payments, stock, and follow-ups in one owner view."
-      : "Manage daily gym work here. Changes save automatically in Zook.";
+      ? copy.todayDescription
+      : copy.sectionDescription;
   const currentDashboardPath = `/dashboard${sectionKey ? `/${sectionKey}` : ""}`;
   const branchHref = (branchId: string) =>
     `${currentDashboardPath}?branchId=${encodeURIComponent(branchId)}`;
@@ -380,7 +587,7 @@ export function DashboardShell({
             <ZookLogo />
             <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
-                Live organization
+                {copy.liveOrganization}
               </p>
               <p className="mt-3 text-lg font-semibold text-white">{activeOrg.name}</p>
               <p className="mt-1 text-sm text-white/48">
@@ -398,12 +605,13 @@ export function DashboardShell({
             </div>
 
             <nav className="mt-6 grid gap-5">
-              {navGroups.map((group) => (
+              {visibleNavGroups.map((group) => (
                 <div key={group.label} className="grid gap-1">
                   <p className="px-3 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-white/30">
-                    {group.label}
+                    {translatedGroupLabel(copy, group.label)}
                   </p>
-                  {group.items.map(({ label, href, icon: Icon }) => {
+                  {group.items.map((item) => {
+                    const { href, icon: Icon } = item;
                     const active = isActiveNav(href, sectionKey);
                     return (
                       <Link
@@ -416,7 +624,7 @@ export function DashboardShell({
                         }`}
                       >
                         <Icon size={18} />
-                        {label}
+                        {translatedNavLabel(copy, item)}
                       </Link>
                     );
                   })}
@@ -436,31 +644,31 @@ export function DashboardShell({
 
             <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
-                Gym status
+                {copy.gymStatus}
               </p>
               <ReadoutGrid
                 className="mt-4"
                 columns={1}
                 items={[
                   {
-                    label: "Branch scope",
+                    label: copy.branchScope,
                     value: formatBranchName(selectedBranch),
-                    meta: "Mobile app uses this branch for check-ins and plans.",
+                    meta: copy.branchScopeMeta,
                   },
                   {
-                    label: "Attendance mode",
+                    label: copy.attendanceMode,
                     value: formatEnumLabel(activeOrg.attendanceMode),
-                    meta: `${data.summary.todayAttendance} QR check-ins today`,
+                    meta: `${data.summary.todayAttendance} ${copy.checkInsToday}`,
                   },
                   {
-                    label: "Trial runway",
+                    label: copy.trialRunway,
                     value: formatDaysRemaining(data.summary.trialDaysRemaining),
                     meta: formatDate(activeOrg.trialEndAt),
                   },
                   {
-                    label: "Primary contact",
+                    label: copy.primaryContact,
                     value: activeOrg.contactEmail ?? activeOrg.contactPhone ?? "Desk-owned",
-                    meta: "Primary contact",
+                    meta: copy.primaryContact,
                   },
                 ]}
               />
@@ -471,12 +679,13 @@ export function DashboardShell({
         <section className="grid min-w-0 content-start gap-4">
           <div className="relative lg:hidden">
             <nav className="flex gap-3 overflow-x-auto rounded-[24px] border border-white/10 bg-white/5 p-2 pr-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {navGroups.map((group) => (
+              {visibleNavGroups.map((group) => (
                 <div key={group.label} className="flex shrink-0 items-center gap-2">
                   <span className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
-                    {group.label}
+                    {translatedGroupLabel(copy, group.label)}
                   </span>
-                  {group.items.map(({ label, shortLabel, href, icon: Icon }) => {
+                  {group.items.map((item) => {
+                    const { href, icon: Icon } = item;
                     const active = isActiveNav(href, sectionKey);
                     return (
                       <Link
@@ -487,7 +696,7 @@ export function DashboardShell({
                         }`}
                       >
                         <Icon size={16} />
-                        {shortLabel ?? label}
+                        {translatedNavLabel(copy, item)}
                       </Link>
                     );
                   })}
@@ -538,12 +747,12 @@ export function DashboardShell({
                     href="/dashboard/attendance/qr-display"
                     leadingIcon={<QrCode size={18} />}
                   >
-                    Show QR
+                    {copy.showQr}
                   </ZookButtonLink>
                 ) : null}
                 {canViewReports ? (
                   <ZookButtonLink href="/dashboard/reports" tone="secondary">
-                    Reports
+                    {copy.reports}
                   </ZookButtonLink>
                 ) : null}
                 <DashboardLocaleToggle locale={user.preferredLocale ?? undefined} />
@@ -578,9 +787,9 @@ export function DashboardShell({
             <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
               <GlassCard>
                 <SectionHeader
-                  eyebrow="Needs attention"
-                  title="Needs attention"
-                  description="Quick links to what needs attention today."
+                  eyebrow={copy.needsAttention}
+                  title={copy.needsAttention}
+                  description={copy.needsAttentionDescription}
                 />
                 <div className="mt-5 grid gap-3 md:grid-cols-2">
                   {workflowCards.map((card) => (
@@ -600,35 +809,35 @@ export function DashboardShell({
 
               <GlassCard>
                 <SectionHeader
-                  eyebrow="Gym status"
-                  title="Gym status"
-                  description="The current operating context for this dashboard."
+                  eyebrow={copy.gymStatus}
+                  title={copy.gymStatus}
+                  description={copy.branchScopeMeta}
                 />
                 <ReadoutGrid
                   className="mt-5"
                   items={[
                     {
-                      label: "Location",
+                      label: copy.location,
                       value: `${activeOrg.city}${activeOrg.state ? `, ${activeOrg.state}` : ""}`,
-                      meta: "Current operating geography",
+                      meta: copy.locationMeta,
                     },
                     {
-                      label: "Branch scope",
+                      label: copy.branchScope,
                       value: formatBranchName(selectedBranch),
-                      meta: "Showing data for the active branch",
+                      meta: copy.showingBranch,
                     },
                     {
-                      label: "Join mode",
+                      label: copy.joinMode,
                       value: joinModeLabel(activeOrg.joinMode),
-                      meta: `${data.summary.joinRequests} inbound requests`,
+                      meta: `${data.summary.joinRequests} ${copy.inboundRequests}`,
                     },
                     {
-                      label: "Attendance mode",
+                      label: copy.attendanceMode,
                       value: formatEnumLabel(activeOrg.attendanceMode),
-                      meta: `${data.summary.todayAttendance} check-ins today`,
+                      meta: `${data.summary.todayAttendance} ${copy.checkInsToday}`,
                     },
                     {
-                      label: "Trial end",
+                      label: copy.trialEnd,
                       value: formatDate(activeOrg.trialEndAt),
                       meta: formatDaysRemaining(data.summary.trialDaysRemaining),
                     },

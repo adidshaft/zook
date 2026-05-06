@@ -181,12 +181,12 @@ async function main() {
   const users = await Promise.all(
     [
       ["platform", "Platform Admin", "platform@zook.local", "+919000000001", true, false],
-      ["owner", "Aarav Owner", "owner@zook.local", "+919988777665", false, false],
-      ["admin", "Meera Admin", "admin@zook.local", "+919700000002", false, false],
-      ["reception", "Riya Reception", "reception@zook.local", "+919765432109", false, false],
-      ["trainer", "Kabir Trainer", "trainer@zook.local", "+919123456780", false, false],
-      ["member", "Nisha Member", "member@zook.local", "+919876543210", false, false],
-      ["minor", "Isha Minor", "minor@zook.local", "+919000012345", false, true],
+      ["owner", "Aditya Rao", "owner@zook.local", "+919988777665", false, false],
+      ["admin", "Sneha Iyer", "admin@zook.local", "+919700000002", false, false],
+      ["reception", "Farah Khan", "reception@zook.local", "+919765432109", false, false],
+      ["trainer", "Rohan Kulkarni", "trainer@zook.local", "+919123456780", false, false],
+      ["member", "Nisha Menon", "member@zook.local", "+919876543210", false, false],
+      ["minor", "Ira Shah", "minor@zook.local", "+919000012345", false, true],
     ].map(([key, name, email, phone, isPlatformAdmin, isMinor]) =>
       prisma.user.create({
         data: {
@@ -226,20 +226,20 @@ async function main() {
     },
   });
 
-  const ironHouse = await prisma.organization.create({
+  const aarogyaStrength = await prisma.organization.create({
     data: {
-      name: "Iron House Fitness",
-      username: "iron-house",
+      name: "Aarogya Strength Club",
+      username: "aarogya-strength",
       contactPhone: "+91 98765 43210",
-      contactEmail: "hello@ironhouse.example",
-      address: "Koregaon Park Road",
+      contactEmail: "hello@aarogyastrength.example",
+      address: "Lane 7, Koregaon Park",
       city: "Pune",
       state: "Maharashtra",
       pincode: "411001",
       latitude: new Prisma.Decimal("18.5362"),
       longitude: new Prisma.Decimal("73.8930"),
       locationSource: LocationSource.MOCK,
-      amenities: ["Strength floor", "Cardio", "Locker", "Personal training"],
+      amenities: ["Strength floor", "Cardio", "Locker room", "Personal training", "Recovery corner"],
       operatingHours: { weekday: "05:30-22:30", sunday: "07:00-14:00" },
       visibility: GymVisibility.PUBLIC,
       joinMode: GymJoinMode.OPEN_JOIN,
@@ -250,20 +250,20 @@ async function main() {
     },
   });
 
-  const peakLab = await prisma.organization.create({
+  const indiranagarPerformance = await prisma.organization.create({
     data: {
-      name: "PeakLab Gym",
-      username: "peaklab",
+      name: "Indiranagar Performance Studio",
+      username: "indiranagar-performance",
       contactPhone: "+91 99887 76655",
-      contactEmail: "join@peaklab.example",
-      address: "Indiranagar 100 Feet Road",
+      contactEmail: "join@indiranagarperformance.example",
+      address: "12th Main Road, Indiranagar",
       city: "Bengaluru",
       state: "Karnataka",
       pincode: "560038",
       latitude: new Prisma.Decimal("12.9719"),
       longitude: new Prisma.Decimal("77.6412"),
       locationSource: LocationSource.MOCK,
-      amenities: ["Functional zone", "HIIT", "Nutrition desk"],
+      amenities: ["Functional zone", "HIIT", "Mobility area", "Nutrition desk"],
       operatingHours: { weekday: "06:00-22:00", sunday: "08:00-12:00" },
       visibility: GymVisibility.PUBLIC,
       joinMode: GymJoinMode.APPROVAL_REQUIRED,
@@ -273,37 +273,37 @@ async function main() {
     },
   });
 
-  const ironBranch = await prisma.branch.create({
+  const aarogyaBranch = await prisma.branch.create({
     data: {
-      orgId: ironHouse.id,
-      name: "Iron House Main",
-      address: ironHouse.address,
-      city: ironHouse.city,
-      state: ironHouse.state,
-      pincode: ironHouse.pincode,
-      latitude: ironHouse.latitude,
-      longitude: ironHouse.longitude,
+      orgId: aarogyaStrength.id,
+      name: "Aarogya Koregaon Park",
+      address: aarogyaStrength.address,
+      city: aarogyaStrength.city,
+      state: aarogyaStrength.state,
+      pincode: aarogyaStrength.pincode,
+      latitude: aarogyaStrength.latitude,
+      longitude: aarogyaStrength.longitude,
       locationSource: LocationSource.MOCK,
       isDefault: true,
     },
   });
 
-  const peakBranch = await prisma.branch.create({
+  const indiranagarBranch = await prisma.branch.create({
     data: {
-      orgId: peakLab.id,
-      name: "PeakLab Main",
-      address: peakLab.address,
-      city: peakLab.city,
-      state: peakLab.state,
-      pincode: peakLab.pincode,
-      latitude: peakLab.latitude,
-      longitude: peakLab.longitude,
+      orgId: indiranagarPerformance.id,
+      name: "Indiranagar 12th Main",
+      address: indiranagarPerformance.address,
+      city: indiranagarPerformance.city,
+      state: indiranagarPerformance.state,
+      pincode: indiranagarPerformance.pincode,
+      latitude: indiranagarPerformance.latitude,
+      longitude: indiranagarPerformance.longitude,
       locationSource: LocationSource.MOCK,
       isDefault: true,
     },
   });
 
-  for (const org of [ironHouse, peakLab]) {
+  for (const org of [aarogyaStrength, indiranagarPerformance]) {
     await prisma.saaSSubscription.create({
       data: {
         orgId: org.id,
@@ -333,41 +333,41 @@ async function main() {
   ] as const;
 
   for (const [userId, role] of orgUsers) {
-    await prisma.organizationUser.create({ data: { orgId: ironHouse.id, userId } });
+    await prisma.organizationUser.create({ data: { orgId: aarogyaStrength.id, userId } });
     await prisma.organizationRoleAssignment.create({
-      data: { orgId: ironHouse.id, userId, role, assignedById: owner.id },
+      data: { orgId: aarogyaStrength.id, userId, role, assignedById: owner.id },
     });
   }
 
-  await prisma.organizationUser.create({ data: { orgId: peakLab.id, userId: owner.id } });
+  await prisma.organizationUser.create({ data: { orgId: indiranagarPerformance.id, userId: owner.id } });
   await prisma.organizationRoleAssignment.create({
-    data: { orgId: peakLab.id, userId: owner.id, role: Role.OWNER, assignedById: owner.id },
+    data: { orgId: indiranagarPerformance.id, userId: owner.id, role: Role.OWNER, assignedById: owner.id },
   });
 
   for (const permission of ownerPermissions) {
     await prisma.organizationRolePermission.create({
-      data: { orgId: ironHouse.id, role: Role.OWNER, permission },
+      data: { orgId: aarogyaStrength.id, role: Role.OWNER, permission },
     });
   }
   for (const permission of adminPermissions) {
     await prisma.organizationRolePermission.create({
-      data: { orgId: ironHouse.id, role: Role.ADMIN, permission },
+      data: { orgId: aarogyaStrength.id, role: Role.ADMIN, permission },
     });
   }
   for (const permission of receptionistPermissions) {
     await prisma.organizationRolePermission.create({
-      data: { orgId: ironHouse.id, role: Role.RECEPTIONIST, permission },
+      data: { orgId: aarogyaStrength.id, role: Role.RECEPTIONIST, permission },
     });
   }
   for (const permission of trainerPermissions) {
     await prisma.organizationRolePermission.create({
-      data: { orgId: ironHouse.id, role: Role.TRAINER, permission },
+      data: { orgId: aarogyaStrength.id, role: Role.TRAINER, permission },
     });
   }
 
   await prisma.staffInvitation.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       email: "coach2@ironhouse.example",
       role: Role.TRAINER,
       token: "seed-trainer-invite",
@@ -379,7 +379,7 @@ async function main() {
   await prisma.memberProfile.createMany({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: member.id,
         profilePhotoUrl: member.profilePhotoUrl,
         profilePhotoConsentAt: new Date(),
@@ -387,7 +387,7 @@ async function main() {
         joinedViaReferralCodeId: null,
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: minor.id,
         profilePhotoUrl: minor.profilePhotoUrl,
         marketingOptIn: false,
@@ -412,7 +412,7 @@ async function main() {
   const guardianConsent = await prisma.guardianConsent.create({
     data: {
       minorUserId: minor.id,
-      guardianName: "Neha Guardian",
+      guardianName: "Kavita Guardian",
       guardianEmail: "guardian@zook.local",
       guardianPhone: "+91 91111 11111",
       relationship: "Parent",
@@ -458,28 +458,28 @@ async function main() {
   await prisma.consentRecord.createMany({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: member.id,
         type: ConsentType.PROFILE_PHOTO_ATTENDANCE,
         status: ConsentStatus.GRANTED,
         recordedById: member.id,
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: member.id,
         type: ConsentType.AI_PERSONALIZATION,
         status: ConsentStatus.GRANTED,
         recordedById: member.id,
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: minor.id,
         type: ConsentType.MARKETING,
         status: ConsentStatus.DENIED,
         recordedById: minor.id,
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: minor.id,
         type: ConsentType.GUARDIAN,
         status: ConsentStatus.PENDING,
@@ -490,14 +490,14 @@ async function main() {
         },
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: member.id,
         type: ConsentType.DATA_EXPORT,
         status: ConsentStatus.GRANTED,
         recordedById: member.id,
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: member.id,
         type: ConsentType.ACCOUNT_DELETION,
         status: ConsentStatus.PENDING,
@@ -508,7 +508,7 @@ async function main() {
 
   const exportAsset = await prisma.fileAsset.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       ownerUserId: member.id,
       originalName: "member-private-export.json",
       storageKey: "exports/member-private-export-2026-04-24.json",
@@ -525,7 +525,7 @@ async function main() {
 
   const exportRequest = await prisma.dataExportRequest.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       status: "completed",
       requestId: "exp_member_private_pilot_001",
@@ -541,7 +541,7 @@ async function main() {
   const exportJob = await prisma.dataExportJob.create({
     data: {
       requestId: exportRequest.id,
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       status: DataExportJobStatus.SUCCEEDED,
       format: DataExportFormat.JSON,
@@ -571,7 +571,7 @@ async function main() {
 
   const deletionRequest = await prisma.accountDeletionRequest.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       status: "scheduled",
       requestId: "del_member_private_pilot_001",
@@ -585,7 +585,7 @@ async function main() {
   const deletionJob = await prisma.accountDeletionJob.create({
     data: {
       requestId: deletionRequest.id,
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       status: AccountDeletionJobStatus.QUEUED,
       requestedById: member.id,
@@ -613,8 +613,8 @@ async function main() {
 
   const monthly = await prisma.membershipPlan.create({
     data: {
-      orgId: ironHouse.id,
-      branchId: ironBranch.id,
+      orgId: aarogyaStrength.id,
+      branchId: aarogyaBranch.id,
       name: "Monthly Unlimited",
       description: "Unlimited gym access for 30 days.",
       type: MembershipPlanType.DURATION,
@@ -627,8 +627,8 @@ async function main() {
 
   await prisma.membershipPlan.create({
     data: {
-      orgId: ironHouse.id,
-      branchId: ironBranch.id,
+      orgId: aarogyaStrength.id,
+      branchId: aarogyaBranch.id,
       name: "Annual Unlimited",
       description: "Best value annual access.",
       type: MembershipPlanType.DURATION,
@@ -640,8 +640,8 @@ async function main() {
 
   const visits = await prisma.membershipPlan.create({
     data: {
-      orgId: ironHouse.id,
-      branchId: ironBranch.id,
+      orgId: aarogyaStrength.id,
+      branchId: aarogyaBranch.id,
       name: "30 Visits / 180 Days",
       description: "Flexible pack for busy members.",
       type: MembershipPlanType.HYBRID,
@@ -654,8 +654,8 @@ async function main() {
 
   await prisma.membershipPlan.create({
     data: {
-      orgId: ironHouse.id,
-      branchId: ironBranch.id,
+      orgId: aarogyaStrength.id,
+      branchId: aarogyaBranch.id,
       name: "Trial Pass",
       description: "One free guided visit.",
       type: MembershipPlanType.TRIAL,
@@ -668,9 +668,9 @@ async function main() {
 
   await prisma.membershipPlan.create({
     data: {
-      orgId: peakLab.id,
-      branchId: peakBranch.id,
-      name: "PeakLab Monthly",
+      orgId: indiranagarPerformance.id,
+      branchId: indiranagarBranch.id,
+      name: "Indiranagar Performance Monthly",
       description: "Approval-required access.",
       type: MembershipPlanType.DURATION,
       pricePaise: paise(2499),
@@ -681,7 +681,7 @@ async function main() {
 
   const welcome = await prisma.coupon.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       code: "WELCOME10",
       type: CouponType.PERCENTAGE,
       valuePercentBps: 1000,
@@ -696,7 +696,7 @@ async function main() {
 
   await prisma.coupon.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       code: "NEW500",
       type: CouponType.FIXED_AMOUNT,
       valuePaise: paise(500),
@@ -710,7 +710,7 @@ async function main() {
 
   const referral = await prisma.referralCode.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       referrerUserId: member.id,
       code: "NISHAFIT",
       couponId: welcome.id,
@@ -722,7 +722,7 @@ async function main() {
   const paymentSession = await prisma.paymentSession.create({
     data: {
       provider: "mock",
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       purpose: PaymentPurpose.MEMBERSHIP,
       amountPaise: paise(1799),
@@ -741,7 +741,7 @@ async function main() {
 
   const payment = await prisma.payment.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       sessionId: paymentSession.id,
       purpose: PaymentPurpose.MEMBERSHIP,
@@ -750,7 +750,7 @@ async function main() {
       mode: PaymentMode.MOCK_ONLINE,
       provider: "mock",
       providerRef: "mock_seed_membership",
-      receiptNumber: "IH-REC-240424-001",
+      receiptNumber: "AS-REC-240424-001",
       notes: "Private pilot online payment linked to hardened webhook examples.",
       recordedAt: new Date(),
     },
@@ -770,7 +770,7 @@ async function main() {
 
   const paymentCapturedEvent = await prisma.paymentEvent.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       sessionId: paymentSession.id,
       paymentId: payment.id,
@@ -810,7 +810,7 @@ async function main() {
 
   const paymentRefundEvent = await prisma.paymentEvent.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       sessionId: paymentSession.id,
       paymentId: payment.id,
@@ -890,8 +890,8 @@ async function main() {
 
   const subscription = await prisma.memberSubscription.create({
     data: {
-      orgId: ironHouse.id,
-      branchId: ironBranch.id,
+      orgId: aarogyaStrength.id,
+      branchId: aarogyaBranch.id,
       memberUserId: member.id,
       planId: monthly.id,
       status: SubscriptionStatus.ACTIVE,
@@ -905,8 +905,8 @@ async function main() {
 
   await prisma.memberSubscription.create({
     data: {
-      orgId: ironHouse.id,
-      branchId: ironBranch.id,
+      orgId: aarogyaStrength.id,
+      branchId: aarogyaBranch.id,
       memberUserId: member.id,
       planId: visits.id,
       status: SubscriptionStatus.PAUSED,
@@ -919,8 +919,8 @@ async function main() {
 
   const attendance = await prisma.attendanceRecord.create({
     data: {
-      orgId: ironHouse.id,
-      branchId: ironBranch.id,
+      orgId: aarogyaStrength.id,
+      branchId: aarogyaBranch.id,
       userId: member.id,
       subscriptionId: subscription.id,
       status: AttendanceStatus.APPROVED,
@@ -935,7 +935,7 @@ async function main() {
 
   await prisma.membershipUsage.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       subscriptionId: subscription.id,
       attendanceId: attendance.id,
       usedVisits: 0,
@@ -944,7 +944,7 @@ async function main() {
 
   await prisma.attendanceOverride.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       attendanceRecordId: attendance.id,
       userId: member.id,
       reason: "system issue",
@@ -955,7 +955,7 @@ async function main() {
 
   await prisma.trainerProfile.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: trainer.id,
       bio: "Strength coach focused on safe, sustainable progress.",
       specialties: ["Strength", "Fat loss", "Beginner technique"],
@@ -967,7 +967,7 @@ async function main() {
 
   await prisma.trainerAssignment.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       trainerUserId: trainer.id,
       memberUserId: member.id,
       assignedById: owner.id,
@@ -976,7 +976,7 @@ async function main() {
 
   const ptPack = await prisma.personalTrainingPlan.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       trainerUserId: trainer.id,
       name: "12 Session Pack",
       description: "Technique and progression coaching.",
@@ -987,7 +987,7 @@ async function main() {
 
   await prisma.personalTrainingPlan.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       trainerUserId: trainer.id,
       name: "Monthly PT",
       description: "One month guided training.",
@@ -998,7 +998,7 @@ async function main() {
 
   const ptSub = await prisma.personalTrainingSubscription.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       memberUserId: member.id,
       trainerUserId: trainer.id,
       ptPlanId: ptPack.id,
@@ -1016,7 +1016,7 @@ async function main() {
 
   await prisma.personalTrainingSessionLog.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       subscriptionId: ptSub.id,
       trainerUserId: trainer.id,
       memberUserId: member.id,
@@ -1026,7 +1026,7 @@ async function main() {
 
   const plan = await prisma.planContent.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       creatorUserId: trainer.id,
       type: PlanType.WORKOUT,
       title: "Starter Strength Week",
@@ -1047,7 +1047,7 @@ async function main() {
 
   await prisma.planVersion.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       planId: plan.id,
       versionNo: 1,
       content: { title: "Starter Strength Week" },
@@ -1057,7 +1057,7 @@ async function main() {
 
   const assignment = await prisma.planAssignment.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       planId: plan.id,
       assignedById: trainer.id,
       assignedToUserId: member.id,
@@ -1067,7 +1067,7 @@ async function main() {
 
   await prisma.planProgress.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       assignmentId: assignment.id,
       userId: member.id,
       progressJson: { completed: ["Day 1"] },
@@ -1078,7 +1078,7 @@ async function main() {
 
   await prisma.resourceLibraryItem.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       title: "Beginner Strength Safety Notes",
       summary: "Prefer technique quality and gradual progression over load.",
       content: "Warm up, keep movements pain-free, and consult a professional for injuries.",
@@ -1089,7 +1089,7 @@ async function main() {
 
   const conversation = await prisma.aIConversation.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       title: "Plan clarification",
     },
@@ -1113,7 +1113,7 @@ async function main() {
   await prisma.aIUsageLog.createMany({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: member.id,
         role: Role.MEMBER,
         provider: AIProviderType.MOCK,
@@ -1124,7 +1124,7 @@ async function main() {
         quotaConsumed: 1,
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: trainer.id,
         role: Role.TRAINER,
         provider: AIProviderType.MOCK,
@@ -1141,7 +1141,7 @@ async function main() {
   await prisma.aIQuota.createMany({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: member.id,
         role: Role.MEMBER,
         textDailyLimit: 5,
@@ -1151,7 +1151,7 @@ async function main() {
         resetMonthAt: days(30),
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: trainer.id,
         role: Role.TRAINER,
         textDailyLimit: 25,
@@ -1161,7 +1161,7 @@ async function main() {
         resetMonthAt: days(30),
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         role: Role.OWNER,
         textDailyLimit: 25,
         textMonthLimit: 500,
@@ -1174,7 +1174,7 @@ async function main() {
 
   const notification = await prisma.notification.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       createdById: owner.id,
       type: NotificationType.OPERATIONAL,
       status: NotificationStatus.SENT,
@@ -1197,7 +1197,7 @@ async function main() {
 
   const guardianReminderNotification = await prisma.notification.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       createdById: owner.id,
       type: NotificationType.SECURITY,
       status: NotificationStatus.SENT,
@@ -1222,7 +1222,7 @@ async function main() {
 
   await prisma.notificationTemplate.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       type: NotificationType.TRANSACTIONAL,
       name: "Membership Expiring",
       title: "Your membership expires soon",
@@ -1235,7 +1235,7 @@ async function main() {
   await prisma.userNotificationPreference.createMany({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: member.id,
         transactional: true,
         operational: true,
@@ -1244,7 +1244,7 @@ async function main() {
         pushEnabled: true,
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: minor.id,
         transactional: true,
         operational: true,
@@ -1258,7 +1258,7 @@ async function main() {
   const pushDevices = await prisma.pushDevice.createManyAndReturn({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: member.id,
         platform: PushPlatform.IOS,
         provider: "expo",
@@ -1278,13 +1278,13 @@ async function main() {
         },
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         userId: minor.id,
         platform: PushPlatform.ANDROID,
         provider: "expo",
         token: "ExponentPushToken[minor-private-pilot-android]",
         status: PushDeviceStatus.INVALIDATED,
-        deviceLabel: "Isha Pixel 8",
+        deviceLabel: "Ira Pixel 8",
         deviceFingerprint: hash("minor-private-pilot-android"),
         appVersion: "1.4.0-pilot.2",
         osVersion: "Android 15",
@@ -1307,7 +1307,7 @@ async function main() {
 
   await prisma.pushDelivery.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       notificationId: notification.id,
       notificationRecipientId: memberRecipient.id,
       userId: member.id,
@@ -1331,7 +1331,7 @@ async function main() {
 
   const failedPushDelivery = await prisma.pushDelivery.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       notificationId: guardianReminderNotification.id,
       notificationRecipientId: minorRecipient.id,
       userId: minor.id,
@@ -1366,7 +1366,7 @@ async function main() {
   const firstBadge = await prisma.badge.findUniqueOrThrow({ where: { code: "FIRST_CHECKIN" } });
   await prisma.userBadge.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       badgeId: firstBadge.id,
       metadata: { source: "attendance" },
@@ -1375,7 +1375,7 @@ async function main() {
 
   await prisma.userGoal.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       type: "weekly_attendance",
       title: "Attend 4 times this week",
@@ -1387,7 +1387,7 @@ async function main() {
 
   const habit = await prisma.habitChecklist.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       title: "Recovery basics",
       items: ["Hydration", "8k steps", "Sleep reminder"],
@@ -1406,7 +1406,7 @@ async function main() {
   const workoutSession = await prisma.workoutSession.create({
     data: {
       userId: member.id,
-      organizationId: ironHouse.id,
+      organizationId: aarogyaStrength.id,
       title: "Upper Body Strength",
       workoutType: "strength",
       startedAt: pastDays(1),
@@ -1444,7 +1444,7 @@ async function main() {
   await prisma.bodyProgressEntry.create({
     data: {
       userId: member.id,
-      organizationId: ironHouse.id,
+      organizationId: aarogyaStrength.id,
       measuredAt: new Date(),
       weightKg: new Prisma.Decimal("68.4"),
       waistCm: new Prisma.Decimal("79.0"),
@@ -1456,7 +1456,7 @@ async function main() {
   const memberHabit = await prisma.memberHabit.create({
     data: {
       userId: member.id,
-      organizationId: ironHouse.id,
+      organizationId: aarogyaStrength.id,
       title: "Hydration",
       category: "HYDRATION",
       targetValue: 3,
@@ -1478,7 +1478,7 @@ async function main() {
 
   const challenge = await prisma.challenge.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       createdById: owner.id,
       title: "Comeback Week",
       description: "Opt-in five-day consistency challenge.",
@@ -1491,7 +1491,7 @@ async function main() {
 
   await prisma.challengeParticipant.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       challengeId: challenge.id,
       userId: member.id,
       visibleOnLeaderboard: false,
@@ -1500,7 +1500,7 @@ async function main() {
 
   await prisma.challengeProgress.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       challengeId: challenge.id,
       userId: member.id,
       value: 2,
@@ -1511,7 +1511,7 @@ async function main() {
   const products = await prisma.product.createManyAndReturn({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         name: "Water Bottle",
         description: "Reusable steel bottle.",
         category: ProductCategory.WATER,
@@ -1521,7 +1521,7 @@ async function main() {
         imageUrl: "/seed/products/water-bottle.svg",
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         name: "Protein Shake",
         description: "Post-workout shake, pickup at counter.",
         category: ProductCategory.PROTEIN_SHAKE,
@@ -1531,7 +1531,7 @@ async function main() {
         imageUrl: "/seed/products/protein-shake.svg",
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         name: "Shaker",
         description: "Leak-resistant shaker.",
         category: ProductCategory.SHAKER,
@@ -1548,25 +1548,25 @@ async function main() {
 
   const shopOrder = await prisma.shopOrder.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       status: OrderStatus.READY_FOR_PICKUP,
       totalPaise: paise(548),
-      pickupCode: "IH-PICK-101",
+      pickupCode: "AS-PICK-101",
     },
   });
 
   await prisma.shopOrderItem.createMany({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         orderId: shopOrder.id,
         productId: waterBottle.id,
         quantity: 1,
         unitPaise: paise(399),
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         orderId: shopOrder.id,
         productId: proteinShake.id,
         quantity: 1,
@@ -1577,9 +1577,9 @@ async function main() {
 
   await prisma.pickupCode.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       orderId: shopOrder.id,
-      code: "IH-PICK-101",
+      code: "AS-PICK-101",
       expiresAt: days(14),
     },
   });
@@ -1587,7 +1587,7 @@ async function main() {
   await prisma.inventoryMovement.createMany({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         productId: waterBottle.id,
         delta: -1,
         reason: "paid_order",
@@ -1595,7 +1595,7 @@ async function main() {
         createdById: member.id,
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         productId: proteinShake.id,
         delta: -1,
         reason: "paid_order",
@@ -1607,8 +1607,8 @@ async function main() {
 
   await prisma.membershipJoinRequest.create({
     data: {
-      orgId: peakLab.id,
-      branchId: peakBranch.id,
+      orgId: indiranagarPerformance.id,
+      branchId: indiranagarBranch.id,
       userId: member.id,
       status: "pending",
       message: "Looking for a functional training plan.",
@@ -1625,7 +1625,7 @@ async function main() {
 
   await prisma.organizationAbuseFlag.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       userId: member.id,
       type: "repeated_manual_override",
       severity: "low",
@@ -1635,7 +1635,7 @@ async function main() {
 
   const paymentHealthCheck = await prisma.providerHealthCheck.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       providerType: ProviderHealthDomain.PAYMENT,
       provider: "mock_payments",
       status: ProviderHealthCheckStatus.HEALTHY,
@@ -1652,7 +1652,7 @@ async function main() {
 
   const pushHealthCheck = await prisma.providerHealthCheck.create({
     data: {
-      orgId: ironHouse.id,
+      orgId: aarogyaStrength.id,
       providerType: ProviderHealthDomain.PUSH,
       provider: "expo_push",
       status: ProviderHealthCheckStatus.DEGRADED,
@@ -1672,7 +1672,7 @@ async function main() {
   await prisma.incidentLog.createMany({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         reportedById: platform.id,
         status: IncidentStatus.ACKNOWLEDGED,
         severity: IncidentSeverity.HIGH,
@@ -1692,7 +1692,7 @@ async function main() {
         },
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         reportedById: owner.id,
         status: IncidentStatus.MONITORING,
         severity: IncidentSeverity.MEDIUM,
@@ -1717,11 +1717,11 @@ async function main() {
   await prisma.auditLog.createMany({
     data: [
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         actorUserId: owner.id,
         action: "organization.seeded",
         entityType: "Organization",
-        entityId: ironHouse.id,
+        entityId: aarogyaStrength.id,
         after: {
           status: "TRIAL_ACTIVE",
           visibility: "PUBLIC",
@@ -1730,7 +1730,7 @@ async function main() {
         metadata: { seed: true },
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         actorUserId: reception.id,
         action: "manual_payment.recorded",
         entityType: "Payment",
@@ -1746,7 +1746,7 @@ async function main() {
         metadata: { mode: "mock_online" },
       },
       {
-        orgId: ironHouse.id,
+        orgId: aarogyaStrength.id,
         actorUserId: platform.id,
         action: "privacy.export.completed",
         entityType: "DataExportJob",
@@ -1773,8 +1773,8 @@ async function main() {
     member: member.email,
     minor: minor.email,
     otp: "000000",
-    ironHouse: "iron-house",
-    peakLab: "peaklab",
+    aarogyaStrength: "aarogya-strength",
+    indiranagarPerformance: "indiranagar-performance",
   });
 }
 

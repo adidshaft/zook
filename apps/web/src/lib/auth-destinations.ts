@@ -27,6 +27,18 @@ export function resolvePostLoginPath(
     | undefined,
   requestedPath?: string | null,
 ) {
+  if (requestedPath?.startsWith("/dashboard") && session && !hasOwnerDashboardAccess(session)) {
+    return resolvePostLoginPath(session);
+  }
+  if (requestedPath?.startsWith("/desk") && session && !hasDeskAccess(session)) {
+    return resolvePostLoginPath(session);
+  }
+  if (requestedPath?.startsWith("/coach") && session && !hasCoachAccess(session)) {
+    return resolvePostLoginPath(session);
+  }
+  if (requestedPath?.startsWith("/me") && session && !hasMemberAccess(session)) {
+    return resolvePostLoginPath(session);
+  }
   if (requestedPath?.startsWith("/platform")) {
     if (session?.user.isPlatformAdmin) {
       return requestedPath;

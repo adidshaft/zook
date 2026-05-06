@@ -93,7 +93,7 @@ function statusForOutcome(outcome: DemoAttendanceOutcome) {
 }
 
 function entryCodeForOutcome(outcome: DemoAttendanceOutcome) {
-  if (outcome === "pending") return "ZK-7319";
+  if (outcome === "pending") return "AS-7319";
   if (outcome === "rejected") return "ZK-9044";
   if (outcome === "flagged") return "ZK-1180";
   return "ZK-4821";
@@ -101,7 +101,7 @@ function entryCodeForOutcome(outcome: DemoAttendanceOutcome) {
 
 export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures) {
   const state = cloneFixtures(seed);
-  let activeOrgId = state.organizations[0]?.id ?? "org-iron-temple";
+  let activeOrgId = state.organizations[0]?.id ?? "org-aarogya-strength";
   let activeRole: Role = "MEMBER";
 
   function writeAudit(input: {
@@ -295,7 +295,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           orgId: activeOrgId,
           branchId: branch.id,
           memberUserId: "user-aarav",
-          memberName: "Aarav Mehta",
+          memberName: "Nisha Menon",
           status: statusForOutcome(outcome),
           entryCode: entryCodeForOutcome(outcome),
           checkedInAt: nowIso(),
@@ -350,7 +350,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           action: "attendance.approved",
           entityType: "AttendanceAttempt",
           entityId: attempt.id,
-          actorName: "Priya Sharma",
+          actorName: "Farah Khan",
           reason,
         });
         return attempt;
@@ -369,7 +369,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           action: "attendance.rejected",
           entityType: "AttendanceAttempt",
           entityId: attempt.id,
-          actorName: "Priya Sharma",
+          actorName: "Farah Khan",
           reason,
         });
         return attempt;
@@ -403,7 +403,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           action: "payment.offline.recorded",
           entityType: "PaymentRecord",
           entityId: payment.id,
-          actorName: "Priya Sharma",
+          actorName: "Farah Khan",
           reason: payload.reason,
         });
         return payment;
@@ -429,7 +429,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           memberUserId: "user-aarav",
           status: "PENDING_PAYMENT",
           totalPaise,
-          pickupCode: "PK-9142",
+          pickupCode: "PU-9142",
           items,
           createdAt: nowIso(),
         };
@@ -479,7 +479,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           action: "shop.order.fulfilled",
           entityType: "ShopOrder",
           entityId: order.id,
-          actorName: "Priya Sharma",
+          actorName: "Farah Khan",
           reason: "Pickup code verified at desk.",
         });
         return order;
@@ -550,7 +550,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
       }) {
         const template = findRequired(
           state.planDrafts,
-          (candidate) => candidate.id === "draft-push-pull",
+          (candidate) => candidate.id === "draft-strength-block",
           "Plan draft template",
         );
         const draft: DemoPlanDraft = {
@@ -614,7 +614,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           action: "plan.ai_draft.assigned",
           entityType: "PlanDraft",
           entityId: draft.id,
-          actorName: "Coach Rhea",
+          actorName: "Coach Rohan",
           reason: "Trainer reviewed and assigned AI draft.",
         });
         return plan;
@@ -737,7 +737,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           action: "privacy.export.requested",
           entityType: "User",
           entityId: userId,
-          actorName: "Aarav Mehta",
+          actorName: "Nisha Menon",
           reason: "Member requested data export.",
         });
         return job;
@@ -756,7 +756,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           action: "privacy.deletion.requested",
           entityType: "User",
           entityId: userId,
-          actorName: "Aarav Mehta",
+          actorName: "Nisha Menon",
           reason: "Member requested account deletion job.",
         });
         return job;

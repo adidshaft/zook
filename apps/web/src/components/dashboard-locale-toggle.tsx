@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { webApiFetch } from "@/lib/api-client";
 
 export function DashboardLocaleToggle({ locale }: { locale?: string | undefined }) {
+  const router = useRouter();
   const [currentLocale, setCurrentLocale] = useState(locale === "hi" ? "hi" : "en");
   const [busy, setBusy] = useState(false);
 
@@ -18,6 +20,7 @@ export function DashboardLocaleToggle({ locale }: { locale?: string | undefined 
         body: { preferredLocale: nextLocale },
       });
       setCurrentLocale(nextLocale);
+      router.refresh();
     } finally {
       setBusy(false);
     }

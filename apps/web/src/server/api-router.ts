@@ -5365,7 +5365,11 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "membership-plans"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
-    requireOrgPermission(ctx, orgId, "MEMBERSHIP_PLAN_MANAGE");
+    requireOrgAnyPermission(ctx, orgId, [
+      "MEMBERSHIP_PLAN_MANAGE",
+      "PAYMENTS_RECORD_OFFLINE",
+      "MEMBERS_VIEW",
+    ]);
     return ok({
       plans: await prisma.membershipPlan.findMany({
         where: { orgId },

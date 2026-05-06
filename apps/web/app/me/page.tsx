@@ -21,15 +21,14 @@ export default async function MyMembershipPage() {
   if (session.user.isPlatformAdmin) {
     redirect("/platform");
   }
+  if (roles.some((role) => role === "OWNER" || role === "ADMIN")) {
+    redirect("/dashboard");
+  }
+  if (roles.includes("RECEPTIONIST")) {
+    redirect("/desk");
+  }
   if (roles.includes("TRAINER")) {
     redirect("/coach");
-  }
-  if (
-    roles.some(
-      (role) => role === "OWNER" || role === "ADMIN" || role === "RECEPTIONIST",
-    )
-  ) {
-    redirect(roles.includes("RECEPTIONIST") ? "/desk" : "/dashboard");
   }
 
   const subscriptions = await prisma.memberSubscription.findMany({

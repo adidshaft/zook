@@ -79,8 +79,8 @@ Web:
 - `/dashboard`
 - `/dashboard/attendance/qr-display`
 - `/platform`
-- `/g/iron-house`
-- `/join/iron-house?plan=plan-hybrid-pro&ref=RHEA250`
+- `/g/aarogya-strength`
+- `/join/aarogya-strength?plan=plan-hybrid-pro&ref=ROHAN500`
 - `/r/NISHAFIT`
 - `/checkout/mock/demo` (local/mock mode only)
 - `/checkout/mock/{sessionId}` (local/mock payment sessions)
@@ -134,10 +134,10 @@ Mobile:
 
 - OTP: `000000`.
 - Member: login as `member@zook.local`, open Home, scan QR, simulate approved or pending, open Push Day, mark progress, add Protein Shake and Zook Shaker, confirm mock checkout, show pickup code.
-- Receptionist: switch to Receptionist in Profile, open Desk, approve pending scan, verify `ZK-7319`, record Direct UPI payment for Aarav, fulfill pickup order.
-- Trainer: switch to Trainer, open Aarav Mehta, generate/review AI draft, assign only after trainer approval.
+- Receptionist: switch to Receptionist in Profile, open Desk, approve pending scan, verify `AS-7319`, record Direct UPI payment for Nisha, fulfill pickup order.
+- Trainer: switch to Trainer, open Nisha Menon, generate/review AI draft, assign only after trainer approval.
 - Owner mobile: switch to Owner, open Needs attention, review approvals, revenue, and stock.
-- Public web: open `/g/iron-house`, select Hybrid Pro, apply `RHEA250`; backend-connected pages send users to login before checkout, while explicit local demo fallback can continue to `/checkout/mock/demo`.
+- Public web: open `/g/aarogya-strength`, select Hybrid Pro, apply `ROHAN500`; backend-connected pages send users to login before checkout, while explicit local demo fallback can continue to `/checkout/mock/demo`.
 - Owner/admin web: open `/dashboard` for Today’s Command Board, Attendance, Notifications, Shop, Reports, Staff, Audit, and Settings.
 - Platform admin: open `/platform` to inspect provider diagnostics and org operations. Diagnostics show request IDs and missing env names only, never secret values.
 

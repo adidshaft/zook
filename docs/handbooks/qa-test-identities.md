@@ -20,7 +20,7 @@ Both identifiers resolve to the same seeded member account.
 - Email: `member@zook.local`
 - Phone: `+91 98765 43210`
 - OTP: `000000`
-- Expected result: the full demo journey with Iron Temple membership, plan, attendance, tracking, notifications, shop, and public gym flows.
+- Expected result: the full demo journey with Aarogya Strength membership, plan, attendance, tracking, notifications, shop, and public gym flows.
 
 Use this account for screenshots, role walkthroughs, and end-to-end smoke tests where the app should feel populated.
 

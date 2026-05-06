@@ -35,7 +35,7 @@ export function getOfflineDemoSession(): AuthSessionSummary {
     user: {
       id: user?.id ?? "user-aarav",
       email: user?.email ?? DEMO_MEMBER_EMAIL,
-      name: user?.name ?? "Aarav Mehta",
+      name: user?.name ?? "Nisha Menon",
       phone: user?.phone,
       isMinor: user?.isMinor ?? false,
       guardianPending: user?.guardianPending ?? false,

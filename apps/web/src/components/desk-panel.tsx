@@ -16,6 +16,7 @@ import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/fo
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
 import { GlassCard, Pill } from "./glass-card";
+import { DashboardLocaleToggle } from "./dashboard-locale-toggle";
 import { DashboardSignOutButton } from "./dashboard-sign-out-button";
 
 type BranchSummary = { id: string; name: string; isDefault?: boolean; active?: boolean };
@@ -71,6 +72,137 @@ const tabs: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
   { key: "pickup", label: "Pickup", icon: <ShoppingBag size={18} /> },
 ];
 
+const deskTranslations = {
+  en: {
+    tabs: { queue: "Queue", member: "Member", payment: "Payment", pickup: "Pickup" },
+    mainBranch: "Main branch",
+    checkInsToday: "check-ins today",
+    todayQueue: "Today's queue",
+    queueDescription: "Review flagged entries and keep the check-in line moving.",
+    pending: "pending",
+    member: "Member",
+    membership: "Membership",
+    branch: "branch",
+    approve: "Approve",
+    reject: "Reject",
+    noReview: "No entries need review right now.",
+    recentCheckIns: "Recent check-ins",
+    noCheckIns: "No check-ins yet today.",
+    findMember: "Find a member",
+    searchPlaceholder: "Search by name, phone, or email",
+    phoneEnding: "Phone ending",
+    noActivePlan: "No active plan",
+    profilePhotoMissing: "Profile photo not added yet.",
+    noActiveMembership: "No active membership",
+    validUntil: "Valid until",
+    recentActivity: "Recent activity",
+    lastCheckIn: "Last check-in",
+    selectMember: "Select a member to see membership status and quick actions.",
+    recordPayment: "Record payment",
+    paymentDescription: "Use this for cash, UPI, card, or bank transfer collected at the desk.",
+    chooseMember: "Choose member",
+    plan: "Plan",
+    renewExisting: "Renew existing subscription",
+    mode: "Mode",
+    amount: "Amount",
+    referenceNumber: "Reference number",
+    referencePlaceholder: "UPI ref or receipt number",
+    notes: "Notes",
+    recording: "Recording...",
+    receiptReady: "Receipt ready",
+    receiptAmount: "Amount",
+    receiptMode: "Mode",
+    receiptReference: "Reference",
+    notAdded: "Not added",
+    printReceipt: "Print receipt",
+    shopPickup: "Shop pickup",
+    pickupDescription: "Verify pickup codes and mark ready orders fulfilled.",
+    fulfilledToday: "fulfilled today",
+    codeVerified: "Code verified",
+    verifyCode: "Verify code",
+    markFulfilled: "Mark fulfilled",
+    noPickupOrders: "No pickup orders are waiting right now.",
+    showEntryQr: "Show entry QR",
+    entryApproved: "Entry approved.",
+    entryRejected: "Entry rejected.",
+    unableEntry: "Unable to update entry.",
+    paymentRecorded: "Payment recorded. Receipt amount:",
+    unablePayment: "Unable to record payment.",
+    shopPaymentRecorded: "Shop payment recorded. Receipt amount:",
+    unableShopPayment: "Unable to record shop payment.",
+    pickupVerified: "Pickup code verified.",
+    unablePickupVerify: "Unable to verify pickup code.",
+    pickupFulfilled: "Pickup marked fulfilled.",
+    unablePickup: "Unable to fulfill pickup.",
+    paymentPrompt: "Reference number or UPI ID, if available",
+    pickupPrompt: "Enter the pickup code shown by the member",
+  },
+  hi: {
+    tabs: { queue: "लाइन", member: "मेंबर", payment: "पेमेंट", pickup: "पिकअप" },
+    mainBranch: "मुख्य ब्रांच",
+    checkInsToday: "आज check-ins",
+    todayQueue: "आज की लाइन",
+    queueDescription: "Flagged entries देखें और check-in line smoothly चलाएं.",
+    pending: "pending",
+    member: "मेंबर",
+    membership: "मेंबरशिप",
+    branch: "ब्रांच",
+    approve: "Approve करें",
+    reject: "Reject करें",
+    noReview: "अभी review के लिए कोई entry नहीं है.",
+    recentCheckIns: "Recent check-ins",
+    noCheckIns: "आज अभी कोई check-in नहीं हुआ.",
+    findMember: "मेंबर ढूंढें",
+    searchPlaceholder: "नाम, फोन या ईमेल से खोजें",
+    phoneEnding: "फोन ending",
+    noActivePlan: "Active plan नहीं है",
+    profilePhotoMissing: "Profile photo अभी add नहीं है.",
+    noActiveMembership: "Active membership नहीं है",
+    validUntil: "Valid until",
+    recentActivity: "Recent activity",
+    lastCheckIn: "Last check-in",
+    selectMember: "Membership status और quick actions देखने के लिए member चुनें.",
+    recordPayment: "Payment record करें",
+    paymentDescription: "Desk पर cash, UPI, card या bank transfer collect करने के लिए.",
+    chooseMember: "Member चुनें",
+    plan: "Plan",
+    renewExisting: "Existing subscription renew करें",
+    mode: "Mode",
+    amount: "Amount",
+    referenceNumber: "Reference number",
+    referencePlaceholder: "UPI ref या receipt number",
+    notes: "Notes",
+    recording: "Recording...",
+    receiptReady: "Receipt ready",
+    receiptAmount: "Amount",
+    receiptMode: "Mode",
+    receiptReference: "Reference",
+    notAdded: "Add नहीं है",
+    printReceipt: "Receipt print करें",
+    shopPickup: "Shop pickup",
+    pickupDescription: "Pickup code verify करें और ready orders fulfill करें.",
+    fulfilledToday: "आज fulfilled",
+    codeVerified: "Code verified",
+    verifyCode: "Code verify करें",
+    markFulfilled: "Fulfilled mark करें",
+    noPickupOrders: "अभी कोई pickup order waiting में नहीं है.",
+    showEntryQr: "Entry QR दिखाएं",
+    entryApproved: "Entry approve हो गई.",
+    entryRejected: "Entry reject हो गई.",
+    unableEntry: "Entry update नहीं हो पाई.",
+    paymentRecorded: "Payment record हो गया. Receipt amount:",
+    unablePayment: "Payment record नहीं हो पाया.",
+    shopPaymentRecorded: "Shop payment record हो गया. Receipt amount:",
+    unableShopPayment: "Shop payment record नहीं हो पाया.",
+    pickupVerified: "Pickup code verify हो गया.",
+    unablePickupVerify: "Pickup code verify नहीं हो पाया.",
+    pickupFulfilled: "Pickup fulfilled mark हो गया.",
+    unablePickup: "Pickup fulfill नहीं हो पाया.",
+    paymentPrompt: "Reference number या UPI ID, अगर है",
+    pickupPrompt: "Member का pickup code enter करें",
+  },
+} as const;
+
 function withBranch(path: string, branch?: BranchSummary | null) {
   if (!branch?.id) return path;
   const separator = path.includes("?") ? "&" : "?";
@@ -99,11 +231,14 @@ export function DeskPanel({
   orgId,
   orgName,
   branch,
+  locale,
 }: {
   orgId: string;
   orgName: string;
   branch: BranchSummary | null;
+  locale?: string | null;
 }) {
+  const copy = deskTranslations[locale === "hi" ? "hi" : "en"];
   const [activeTab, setActiveTab] = useState<TabKey>("queue");
   const [busyId, setBusyId] = useState("");
   const [toast, setToast] = useState("");
@@ -178,9 +313,9 @@ export function DeskPanel({
       });
       pendingState.reload();
       todayState.reload();
-      setToast(action === "approve" ? "Entry approved." : "Entry rejected.");
+      setToast(action === "approve" ? copy.entryApproved : copy.entryRejected);
     } catch (cause) {
-      setToast(cause instanceof Error ? cause.message : "Unable to update entry.");
+      setToast(cause instanceof Error ? cause.message : copy.unableEntry);
     } finally {
       setBusyId("");
     }
@@ -202,23 +337,23 @@ export function DeskPanel({
         notes: paymentForm.notes || undefined,
       };
       await webApiFetch(`/api/orgs/${orgId}/manual-payments`, { method: "POST", body });
-      setToast(`Payment recorded. Receipt amount: ${formatInr(amountPaise)}.`);
+      setToast(`${copy.paymentRecorded} ${formatInr(amountPaise)}.`);
       setLastReceipt({
-        title: "Membership payment",
+        title: copy.recordPayment,
         amountPaise,
         mode: paymentForm.mode,
         reference: paymentForm.receiptNumber || undefined,
       });
       setPaymentForm((current) => ({ ...current, receiptNumber: "", notes: "" }));
     } catch (cause) {
-      setToast(cause instanceof Error ? cause.message : "Unable to record payment.");
+      setToast(cause instanceof Error ? cause.message : copy.unablePayment);
     } finally {
       setBusyId("");
     }
   }
 
   async function recordShopPayment(order: ShopOrder) {
-    const reference = window.prompt("Reference number or UPI ID, if available", "") ?? "";
+    const reference = window.prompt(copy.paymentPrompt, "") ?? "";
     try {
       setBusyId(`pay:${order.id}`);
       setToast("");
@@ -238,16 +373,16 @@ export function DeskPanel({
         mode: "DIRECT_UPI",
         reference: reference || undefined,
       });
-      setToast(`Shop payment recorded. Receipt amount: ${formatInr(order.totalPaise)}.`);
+      setToast(`${copy.shopPaymentRecorded} ${formatInr(order.totalPaise)}.`);
     } catch (cause) {
-      setToast(cause instanceof Error ? cause.message : "Unable to record shop payment.");
+      setToast(cause instanceof Error ? cause.message : copy.unableShopPayment);
     } finally {
       setBusyId("");
     }
   }
 
   async function verifyPickupCode(order: ShopOrder) {
-    const code = window.prompt("Enter the pickup code shown by the member", order.pickupCode ?? "");
+    const code = window.prompt(copy.pickupPrompt, order.pickupCode ?? "");
     if (!code) {
       return;
     }
@@ -261,9 +396,9 @@ export function DeskPanel({
       setVerifiedOrderIds((current) =>
         current.includes(order.id) ? current : [...current, order.id],
       );
-      setToast("Pickup code verified.");
+      setToast(copy.pickupVerified);
     } catch (cause) {
-      setToast(cause instanceof Error ? cause.message : "Unable to verify pickup code.");
+      setToast(cause instanceof Error ? cause.message : copy.unablePickupVerify);
     } finally {
       setBusyId("");
     }
@@ -275,9 +410,9 @@ export function DeskPanel({
       setToast("");
       await webApiFetch(`/api/orgs/${orgId}/shop/orders/${orderId}/fulfill`, { method: "POST" });
       ordersState.reload();
-      setToast("Pickup marked fulfilled.");
+      setToast(copy.pickupFulfilled);
     } catch (cause) {
-      setToast(cause instanceof Error ? cause.message : "Unable to fulfill pickup.");
+      setToast(cause instanceof Error ? cause.message : copy.unablePickup);
     } finally {
       setBusyId("");
     }
@@ -297,10 +432,13 @@ export function DeskPanel({
               {orgName}
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Pill tone="lime">{branch?.name ?? "Main branch"}</Pill>
-              <Pill>{todayRecords.length} check-ins today</Pill>
+              <Pill tone="lime">{branch?.name ?? copy.mainBranch}</Pill>
+              <Pill>
+                {todayRecords.length} {copy.checkInsToday}
+              </Pill>
             </div>
           </div>
+          <DashboardLocaleToggle locale={locale ?? undefined} />
           <DashboardSignOutButton compact />
         </div>
       </header>
@@ -317,13 +455,13 @@ export function DeskPanel({
             <GlassCard>
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h1 className="text-2xl font-semibold text-white">Today's queue</h1>
+                  <h1 className="text-2xl font-semibold text-white">{copy.todayQueue}</h1>
                   <p className="mt-1 text-sm text-white/48">
-                    Review flagged entries and keep the check-in line moving.
+                    {copy.queueDescription}
                   </p>
                 </div>
                 <Pill tone={pendingRecords.length ? "amber" : "lime"}>
-                  {pendingRecords.length} pending
+                  {pendingRecords.length} {copy.pending}
                 </Pill>
               </div>
               <div className="mt-5 grid gap-3">
@@ -343,7 +481,8 @@ export function DeskPanel({
                             {formatDateTime(record.checkedInAt)}
                           </p>
                           <p className="mt-1 text-xs text-white/38">
-                            {record.plan?.name ?? "Membership"} at {record.branchName ?? branch?.name ?? "branch"}
+                            {record.plan?.name ?? copy.membership} at{" "}
+                            {record.branchName ?? branch?.name ?? copy.branch}
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -354,7 +493,7 @@ export function DeskPanel({
                             className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
                           >
                             <CheckCircle2 size={16} />
-                            Approve
+                            {copy.approve}
                           </button>
                           <button
                             type="button"
@@ -363,7 +502,7 @@ export function DeskPanel({
                             className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/72 disabled:opacity-50"
                           >
                             <XCircle size={16} />
-                            Reject
+                            {copy.reject}
                           </button>
                         </div>
                       </div>
@@ -371,14 +510,14 @@ export function DeskPanel({
                   ))
                 ) : (
                   <div className="rounded-[22px] border border-white/10 bg-black/20 p-5 text-sm text-white/48">
-                    No entries need review right now.
+                    {copy.noReview}
                   </div>
                 )}
               </div>
             </GlassCard>
 
             <GlassCard>
-              <h2 className="text-xl font-semibold text-white">Recent check-ins</h2>
+              <h2 className="text-xl font-semibold text-white">{copy.recentCheckIns}</h2>
               <div className="mt-4 grid gap-2">
                 {todayRecords.slice(0, 10).map((record) => (
                   <div key={record.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
@@ -389,7 +528,7 @@ export function DeskPanel({
                   </div>
                 ))}
                 {!todayRecords.length ? (
-                  <p className="text-sm text-white/45">No check-ins yet today.</p>
+                  <p className="text-sm text-white/45">{copy.noCheckIns}</p>
                 ) : null}
               </div>
             </GlassCard>
@@ -399,13 +538,13 @@ export function DeskPanel({
         {activeTab === "member" ? (
           <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
             <GlassCard>
-              <h1 className="text-2xl font-semibold text-white">Find a member</h1>
+              <h1 className="text-2xl font-semibold text-white">{copy.findMember}</h1>
               <div className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/25 px-3">
                 <Search size={18} className="text-white/40" />
                 <input
                   value={memberQuery}
                   onChange={(event) => setMemberQuery(event.target.value)}
-                  placeholder="Search by name, phone, or email"
+                  placeholder={copy.searchPlaceholder}
                   className="zook-focus min-h-12 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/32"
                 />
               </div>
@@ -419,7 +558,10 @@ export function DeskPanel({
                   >
                     <p className="text-sm font-medium text-white">{memberLabel(member)}</p>
                     <p className="mt-1 text-xs text-white/42">
-                      Phone ending {phoneLast4(member.user?.phone)} - {member.activeSubscription ? formatEnumLabel(member.activeSubscription.status) : "No active plan"}
+                      {copy.phoneEnding} {phoneLast4(member.user?.phone)} -{" "}
+                      {member.activeSubscription
+                        ? formatEnumLabel(member.activeSubscription.status)
+                        : copy.noActivePlan}
                     </p>
                   </button>
                 ))}
@@ -436,29 +578,34 @@ export function DeskPanel({
                     <div className="min-w-0">
                       <h2 className="text-2xl font-semibold text-white">{memberLabel(selectedMember)}</h2>
                       <p className="mt-1 text-sm text-white/48">
-                        Phone ending {phoneLast4(selectedMember.user?.phone)}
+                        {copy.phoneEnding} {phoneLast4(selectedMember.user?.phone)}
                       </p>
                       {!selectedMember.profile.profilePhotoUrl ? (
-                        <p className="mt-2 text-xs text-white/38">Profile photo not added yet.</p>
+                        <p className="mt-2 text-xs text-white/38">{copy.profilePhotoMissing}</p>
                       ) : null}
                     </div>
                   </div>
                   <div className="mt-5 grid gap-3">
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <p className="text-xs uppercase tracking-[0.16em] text-white/35">Membership</p>
+                      <p className="text-xs uppercase tracking-[0.16em] text-white/35">
+                        {copy.membership}
+                      </p>
                       <p className="mt-2 text-lg font-semibold text-white">
                         {selectedMember.activeSubscription
                           ? formatEnumLabel(selectedMember.activeSubscription.status)
-                          : "No active membership"}
+                          : copy.noActiveMembership}
                       </p>
                       <p className="mt-1 text-sm text-white/48">
-                        Valid until {formatDate(selectedMember.activeSubscription?.endsAt)}
+                        {copy.validUntil} {formatDate(selectedMember.activeSubscription?.endsAt)}
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <p className="text-xs uppercase tracking-[0.16em] text-white/35">Recent activity</p>
+                      <p className="text-xs uppercase tracking-[0.16em] text-white/35">
+                        {copy.recentActivity}
+                      </p>
                       <p className="mt-2 text-sm text-white/68">
-                        Last check-in: {formatDateTime(selectedMember.lastCheckIn?.checkedInAt)}
+                        {copy.lastCheckIn}:{" "}
+                        {formatDateTime(selectedMember.lastCheckIn?.checkedInAt)}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -470,14 +617,14 @@ export function DeskPanel({
                         }}
                         className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
                       >
-                        Record payment
+                        {copy.recordPayment}
                       </button>
                     </div>
                   </div>
                 </>
               ) : (
                 <div className="rounded-[22px] border border-dashed border-white/12 p-5 text-sm text-white/48">
-                  Select a member to see membership status and quick actions.
+                  {copy.selectMember}
                 </div>
               )}
             </GlassCard>
@@ -489,13 +636,13 @@ export function DeskPanel({
             <div className="flex items-center gap-3">
               <CreditCard className="text-lime-200" size={22} />
               <div>
-                <h1 className="text-2xl font-semibold text-white">Record payment</h1>
-                <p className="mt-1 text-sm text-white/48">Use this for cash, UPI, card, or bank transfer collected at the desk.</p>
+                <h1 className="text-2xl font-semibold text-white">{copy.recordPayment}</h1>
+                <p className="mt-1 text-sm text-white/48">{copy.paymentDescription}</p>
               </div>
             </div>
             <form className="mt-5 grid gap-4" onSubmit={(event) => void recordPayment(event)}>
               <label className="grid gap-2 text-sm text-white/62">
-                Member
+                {copy.member}
                 <select
                   value={paymentForm.memberUserId}
                   onChange={(event) =>
@@ -504,7 +651,9 @@ export function DeskPanel({
                   className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
                   required
                 >
-                  <option value="" className="bg-black">Choose member</option>
+                  <option value="" className="bg-black">
+                    {copy.chooseMember}
+                  </option>
                   {members.map((member) => (
                     <option key={member.profile.id} value={member.user?.id ?? ""} className="bg-black">
                       {memberLabel(member)}
@@ -514,7 +663,7 @@ export function DeskPanel({
               </label>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2 text-sm text-white/62">
-                  Plan
+                  {copy.plan}
                   <select
                     value={paymentForm.planId}
                     onChange={(event) => {
@@ -528,7 +677,9 @@ export function DeskPanel({
                     }}
                     className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
                   >
-                    <option value="" className="bg-black">Renew existing subscription</option>
+                    <option value="" className="bg-black">
+                      {copy.renewExisting}
+                    </option>
                     {activePlans.map((plan) => (
                       <option key={plan.id} value={plan.id} className="bg-black">
                         {plan.name} - {formatInr(plan.pricePaise)}
@@ -537,7 +688,7 @@ export function DeskPanel({
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm text-white/62">
-                  Mode
+                  {copy.mode}
                   <select
                     value={paymentForm.mode}
                     onChange={(event) =>
@@ -555,7 +706,7 @@ export function DeskPanel({
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2 text-sm text-white/62">
-                  Amount
+                  {copy.amount}
                   <input
                     value={paymentForm.amountRupees}
                     onChange={(event) =>
@@ -568,19 +719,19 @@ export function DeskPanel({
                   />
                 </label>
                 <label className="grid gap-2 text-sm text-white/62">
-                  Reference number
+                  {copy.referenceNumber}
                   <input
                     value={paymentForm.receiptNumber}
                     onChange={(event) =>
                       setPaymentForm((current) => ({ ...current, receiptNumber: event.target.value }))
                     }
-                    placeholder="UPI ref or receipt number"
+                    placeholder={copy.referencePlaceholder}
                     className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
                   />
                 </label>
               </div>
               <label className="grid gap-2 text-sm text-white/62">
-                Notes
+                {copy.notes}
                 <textarea
                   value={paymentForm.notes}
                   onChange={(event) =>
@@ -594,20 +745,26 @@ export function DeskPanel({
                 disabled={busyId === "payment"}
                 className="zook-focus min-h-12 rounded-full bg-lime-300 px-5 text-sm font-semibold text-black disabled:opacity-50"
               >
-                {busyId === "payment" ? "Recording..." : "Record payment"}
+                {busyId === "payment" ? copy.recording : copy.recordPayment}
               </button>
             </form>
             {lastReceipt ? (
               <div className="mt-5 rounded-[22px] border border-lime-300/20 bg-lime-300/10 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lime-100/70">
-                  Receipt ready
+                  {copy.receiptReady}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-white">{lastReceipt.title}</p>
-                <p className="mt-2 text-sm text-white/65">Amount: {formatInr(lastReceipt.amountPaise)}</p>
-                <p className="mt-1 text-sm text-white/65">Mode: {formatEnumLabel(lastReceipt.mode)}</p>
-                <p className="mt-1 text-sm text-white/65">Reference: {lastReceipt.reference || "Not added"}</p>
+                <p className="mt-2 text-sm text-white/65">
+                  {copy.receiptAmount}: {formatInr(lastReceipt.amountPaise)}
+                </p>
+                <p className="mt-1 text-sm text-white/65">
+                  {copy.receiptMode}: {formatEnumLabel(lastReceipt.mode)}
+                </p>
+                <p className="mt-1 text-sm text-white/65">
+                  {copy.receiptReference}: {lastReceipt.reference || copy.notAdded}
+                </p>
                 <button type="button" onClick={() => window.print()} className="zook-focus mt-4 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72">
-                  Print receipt
+                  {copy.printReceipt}
                 </button>
               </div>
             ) : null}
@@ -618,10 +775,12 @@ export function DeskPanel({
           <GlassCard>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-semibold text-white">Shop pickup</h1>
-                <p className="mt-1 text-sm text-white/48">Verify pickup codes and mark ready orders fulfilled.</p>
+                <h1 className="text-2xl font-semibold text-white">{copy.shopPickup}</h1>
+                <p className="mt-1 text-sm text-white/48">{copy.pickupDescription}</p>
               </div>
-              <Pill tone="blue">{ordersState.data?.summary?.fulfilledToday ?? 0} fulfilled today</Pill>
+              <Pill tone="blue">
+                {ordersState.data?.summary?.fulfilledToday ?? 0} {copy.fulfilledToday}
+              </Pill>
             </div>
             <div className="mt-5 grid gap-3">
               {activeOrders.map((order) => {
@@ -637,7 +796,7 @@ export function DeskPanel({
                             {formatEnumLabel(order.status)}
                           </Pill>
                           <Pill>{formatInr(order.totalPaise)}</Pill>
-                          {verified ? <Pill tone="lime">Code verified</Pill> : null}
+                          {verified ? <Pill tone="lime">{copy.codeVerified}</Pill> : null}
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -647,7 +806,7 @@ export function DeskPanel({
                           onClick={() => void verifyPickupCode(order)}
                           className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/72"
                         >
-                          Verify code
+                          {copy.verifyCode}
                         </button>
                         {order.status === "PENDING_PAYMENT" && !order.paymentId ? (
                           <button
@@ -656,7 +815,7 @@ export function DeskPanel({
                             onClick={() => void recordShopPayment(order)}
                             className="zook-focus rounded-full border border-lime-300/40 px-4 py-2 text-sm font-semibold text-lime-100 disabled:opacity-50"
                           >
-                            Record payment
+                            {copy.recordPayment}
                           </button>
                         ) : null}
                         <button
@@ -665,7 +824,7 @@ export function DeskPanel({
                           onClick={() => void fulfillOrder(order.id)}
                           className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-45"
                         >
-                          Mark fulfilled
+                          {copy.markFulfilled}
                         </button>
                       </div>
                     </div>
@@ -674,7 +833,7 @@ export function DeskPanel({
               })}
               {!activeOrders.length ? (
                 <p className="rounded-[22px] border border-white/10 bg-black/20 p-5 text-sm text-white/48">
-                  No pickup orders are waiting right now.
+                  {copy.noPickupOrders}
                 </p>
               ) : null}
             </div>
@@ -685,7 +844,7 @@ export function DeskPanel({
       <Link
         href="/desk/qr"
         className="zook-focus fixed bottom-24 right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-lime-300 text-black shadow-[var(--zook-shadow-glow-lime)]"
-        aria-label="Show entry QR"
+        aria-label={copy.showEntryQr}
       >
         <QrCode size={24} />
       </Link>
@@ -702,7 +861,7 @@ export function DeskPanel({
               }`}
             >
               {tab.icon}
-              <span>{tab.label}</span>
+              <span>{copy.tabs[tab.key]}</span>
             </button>
           ))}
         </div>

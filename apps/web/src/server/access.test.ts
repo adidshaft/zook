@@ -58,6 +58,23 @@ describe("request access guards", () => {
     );
   });
 
+  it("allows reception payment users through read-only plan lookups", () => {
+    const ctx: RequestContext = {
+      userId: "reception_1",
+      orgId: "org_a",
+      roles: ["RECEPTIONIST"],
+      permissions: ["PAYMENTS_RECORD_OFFLINE"]
+    };
+
+    expect(
+      requireOrgAnyPermission(ctx, "org_a", [
+        "MEMBERSHIP_PLAN_MANAGE",
+        "PAYMENTS_RECORD_OFFLINE",
+        "MEMBERS_VIEW"
+      ])
+    ).toBe("reception_1");
+  });
+
   it("allows platform admins into platform routes", () => {
     const ctx: RequestContext = {
       userId: "platform_1",
