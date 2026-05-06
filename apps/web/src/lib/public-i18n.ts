@@ -61,6 +61,8 @@ export const publicMessages = {
   en: {
     languageSwitch: "हिंदी",
     login: "Login",
+    dashboard: "Dashboard",
+    platformDashboard: "Zook admin",
     home: "Home",
     startGym: "Start your gym",
     findGym: "Find a gym",
@@ -236,6 +238,8 @@ export const publicMessages = {
   hi: {
     languageSwitch: "English",
     login: "लॉगिन",
+    dashboard: "डैशबोर्ड",
+    platformDashboard: "Zook एडमिन",
     home: "होम",
     startGym: "अपना जिम शुरू करें",
     findGym: "जिम खोजें",

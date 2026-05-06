@@ -20,6 +20,22 @@ function safeRedirectTarget(value?: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : null;
 }
 
+function postLoginPath(
+  session: NonNullable<Awaited<ReturnType<typeof resolveSessionSummaryFromToken>>>,
+  requestedPath?: string | null,
+) {
+  if (requestedPath?.startsWith("/platform")) {
+    return session.user.isPlatformAdmin ? requestedPath : "/dashboard";
+  }
+  if (requestedPath) {
+    return requestedPath;
+  }
+  if (session.user.isPlatformAdmin) {
+    return "/platform";
+  }
+  return session.activeOrgId ? "/dashboard" : "/gyms";
+}
+
 export default async function LoginPage({
   searchParams,
 }: {
@@ -34,7 +50,7 @@ export default async function LoginPage({
   const session = await resolveSessionSummaryFromToken(cookieStore.get(sessionCookieName)?.value);
 
   if (session) {
-    redirect(redirectTarget ?? (session.user.isPlatformAdmin ? "/platform" : "/dashboard"));
+    redirect(postLoginPath(session, redirectTarget));
   }
 
   return (

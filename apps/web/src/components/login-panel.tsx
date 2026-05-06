@@ -38,6 +38,25 @@ function rateLimitMessage(response: Response, locale: PublicLocale) {
   return { seconds, message: publicT(locale, "tooManyAttempts", { seconds }) };
 }
 
+function resolvePostLoginPath(
+  session: {
+    user?: { isPlatformAdmin?: boolean };
+    activeOrgId?: string;
+  } | undefined,
+  requestedPath: string | null,
+) {
+  if (requestedPath?.startsWith("/platform")) {
+    return session?.user?.isPlatformAdmin ? requestedPath : "/dashboard";
+  }
+  if (requestedPath) {
+    return requestedPath;
+  }
+  if (session?.user?.isPlatformAdmin) {
+    return "/platform";
+  }
+  return session?.activeOrgId ? "/dashboard" : "/gyms";
+}
+
 export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
   const searchParams = useSearchParams();
   const t = (key: Parameters<typeof publicT>[1], replacements: Record<string, string | number> = {}) =>
@@ -129,7 +148,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
         body: JSON.stringify({ identifier: trimmedIdentifier, code: otpCode }),
       });
       const payload = await parseApiResponse<{
-        session?: { user?: { isPlatformAdmin?: boolean }; roles?: string[] };
+        session?: { user?: { isPlatformAdmin?: boolean }; activeOrgId?: string };
       }>(response).catch((error) => {
         if (error instanceof ApiError && error.status === 429) {
           throw new Error(rateLimitMessage(response, locale).message);
@@ -139,11 +158,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
       const redirect = searchParams.get("redirect");
       const safeRedirect =
         redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
-      window.location.href =
-        safeRedirect ??
-        (payload.session?.user?.isPlatformAdmin || payload.session?.roles?.includes("PLATFORM_ADMIN")
-          ? "/platform"
-          : "/dashboard");
+      window.location.href = resolvePostLoginPath(payload.session, safeRedirect);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t("unableVerifyOtp"));
       setSubmitting(null);
