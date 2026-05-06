@@ -61,7 +61,16 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
           <h2 className="text-xl font-semibold">Exception feed</h2>
           <p className="mt-1 text-sm text-white/45">QR entry is self-approved; unusual scans appear here only when flagged.</p>
         </div>
-        <Pill tone="lime">{records.length} exceptions</Pill>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <a
+            href={`/api/orgs/${orgId}/reports/attendance.csv`}
+            download
+            className="zook-focus inline-flex min-h-11 items-center rounded-full border border-white/12 bg-white/6 px-4 text-sm font-semibold text-white/78 hover:border-lime-300/35 hover:text-lime-100"
+          >
+            Export CSV
+          </a>
+          <Pill tone="lime">{records.length} exceptions</Pill>
+        </div>
       </div>
       {error ? <p className="mt-4 text-sm text-red-200">{error}</p> : null}
       <div className="mt-5 grid gap-3">

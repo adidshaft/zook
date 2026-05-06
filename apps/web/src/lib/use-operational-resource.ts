@@ -1,7 +1,20 @@
 "use client";
 
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { webApiFetch } from "./api-client";
+
+type CursorPage = {
+  nextCursor?: string | null;
+};
+
+function withCursor(path: string, cursor: string | null) {
+  const url = new URL(path, window.location.origin);
+  if (cursor) {
+    url.searchParams.set("cursor", cursor);
+  }
+  return `${url.pathname}${url.search}`;
+}
 
 export function useOperationalResource<T>({
   path,
@@ -88,5 +101,42 @@ export function useOperationalResource<T>({
     reload() {
       setRevision((current) => current + 1);
     }
+  };
+}
+
+export function usePagedOperationalResource<TPage extends CursorPage, TItem>({
+  path,
+  enabled = true,
+  itemKey,
+}: {
+  path?: string | undefined;
+  enabled?: boolean | undefined;
+  itemKey: keyof TPage & string;
+}) {
+  const query = useInfiniteQuery<TPage, Error>({
+    queryKey: ["operational-resource", path],
+    enabled: Boolean(enabled && path),
+    initialPageParam: null,
+    queryFn: ({ pageParam }) => webApiFetch<TPage>(withCursor(path!, pageParam as string | null)),
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+  const pages = query.data?.pages ?? [];
+  const items = pages.flatMap((page) => {
+    const pageItems = page[itemKey];
+    return Array.isArray(pageItems) ? (pageItems as TItem[]) : [];
+  });
+
+  return {
+    items,
+    loading: query.isLoading,
+    loadingMore: query.isFetchingNextPage,
+    error: query.error?.message ?? "",
+    hasMore: Boolean(query.hasNextPage),
+    loadMore() {
+      void query.fetchNextPage();
+    },
+    reload() {
+      void query.refetch();
+    },
   };
 }

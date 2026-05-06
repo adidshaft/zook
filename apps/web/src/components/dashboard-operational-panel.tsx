@@ -24,7 +24,7 @@ import {
   formatEnumLabel,
   formatInr,
 } from "@/lib/format";
-import { useOperationalResource } from "@/lib/use-operational-resource";
+import { useOperationalResource, usePagedOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
 
 import {
@@ -32,6 +32,7 @@ import {
   formatPlanShape,
   resolveMode,
   type AIUsageRow,
+  type AttendanceRecordRow,
   type AuditLogRow,
   type BranchRow,
   type BranchScopeSnapshot,
@@ -48,6 +49,7 @@ import {
   type OfferRow,
   type OrganizationSnapshot,
   type OrganizationSummary,
+  type PaymentRow,
   type ProductCategory,
   type ProductRow,
   type ProductSnapshot,
@@ -63,6 +65,46 @@ import {
 
 function ErrorNotice({ message }: { message: string }) {
   return <ErrorState compact title="Unable to load this section" description={message} />;
+}
+
+function CsvExportButton({ href, label = "Export CSV" }: { href: string; label?: string }) {
+  return (
+    <a
+      href={href}
+      download
+      className="zook-focus inline-flex min-h-11 items-center rounded-full border border-white/12 bg-white/6 px-4 text-sm font-semibold text-white/78 hover:border-lime-300/35 hover:text-lime-100"
+    >
+      {label}
+    </a>
+  );
+}
+
+function LoadMoreButton({
+  hasMore,
+  loading,
+  onLoadMore,
+  count,
+}: {
+  hasMore: boolean;
+  loading: boolean;
+  onLoadMore: () => void;
+  count: number;
+}) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-white/45">
+      <span>Showing {count} rows</span>
+      {hasMore ? (
+        <button
+          type="button"
+          onClick={onLoadMore}
+          disabled={loading}
+          className="zook-focus min-h-11 rounded-full border border-white/10 px-4 text-sm font-semibold text-white/70 hover:border-lime-300/35 hover:text-lime-100 disabled:opacity-50"
+        >
+          {loading ? "Loading..." : "Load more"}
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 function formatAiResponseSummary(summary?: string | null) {
@@ -220,9 +262,13 @@ export function DashboardOperationalPanel({
   const [formError, setFormError] = useState("");
   const [formBusy, setFormBusy] = useState<string | null>(null);
 
-  const membersState = useOperationalResource<{ members: MemberRow[] }>({
-    path: `/api/orgs/${orgId}/members`,
+  const membersState = usePagedOperationalResource<
+    { members: MemberRow[]; nextCursor?: string | null; limit: number },
+    MemberRow
+  >({
+    path: `/api/orgs/${orgId}/members?limit=50`,
     enabled: mode === "members",
+    itemKey: "members",
   });
   const joinRequestsState = useOperationalResource<{ joinRequests: JoinRequestRow[] }>({
     path: `/api/orgs/${orgId}/join-requests`,
@@ -254,9 +300,29 @@ export function DashboardOperationalPanel({
     path: `/api/orgs/${orgId}/shop/orders`,
     enabled: mode === "shop" || mode === "payments",
   });
-  const auditLogsState = useOperationalResource<{ auditLogs: AuditLogRow[] }>({
-    path: `/api/orgs/${orgId}/audit-logs`,
+  const paymentsState = usePagedOperationalResource<
+    { payments: PaymentRow[]; nextCursor?: string | null; limit: number },
+    PaymentRow
+  >({
+    path: `/api/orgs/${orgId}/payments?limit=50`,
+    enabled: mode === "payments",
+    itemKey: "payments",
+  });
+  const attendanceState = usePagedOperationalResource<
+    { attendance: AttendanceRecordRow[]; nextCursor?: string | null; limit: number },
+    AttendanceRecordRow
+  >({
+    path: `/api/orgs/${orgId}/attendance?limit=50`,
+    enabled: mode === "attendance",
+    itemKey: "attendance",
+  });
+  const auditLogsState = usePagedOperationalResource<
+    { auditLogs: AuditLogRow[]; nextCursor?: string | null; limit: number },
+    AuditLogRow
+  >({
+    path: `/api/orgs/${orgId}/audit-logs?limit=100`,
     enabled: mode === "audit",
+    itemKey: "auditLogs",
   });
   const aiUsageState = useOperationalResource<{ usage: AIUsageRow[] }>({
     path: `/api/orgs/${orgId}/ai/usage`,
@@ -297,14 +363,16 @@ export function DashboardOperationalPanel({
   });
 
   const membershipPlans = membershipPlansState.data?.plans ?? [];
-  const members = membersState.data?.members ?? [];
+  const members = membersState.items;
   const joinRequests = joinRequestsState.data?.joinRequests ?? initialJoinRequests;
   const staffAssignments = staffState.data?.staff ?? [];
   const staffUsers = staffState.data?.users ?? [];
   const coachPlans = coachPlansState.data?.plans ?? [];
   const inventory = productsState.data?.products ?? [];
   const shopOrders = shopOrdersState.data?.orders ?? [];
-  const auditLogs = auditLogsState.data?.auditLogs ?? [];
+  const payments = paymentsState.items;
+  const attendanceRecords = attendanceState.items;
+  const auditLogs = auditLogsState.items;
   const aiUsage = aiUsageState.data?.usage ?? initialAiUsage;
   const coupons = couponsState.data?.coupons ?? [];
   const offers = offersState.data?.offers ?? [];
@@ -1102,6 +1170,75 @@ export function DashboardOperationalPanel({
             </GlassCard>
           </div>
         </div>
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Attendance"
+            title="Recent attendance scans"
+            description="A cursor-paged ledger of member check-ins for the selected organization."
+            badge={<Pill tone="blue">{attendanceRecords.length} loaded</Pill>}
+            action={<CsvExportButton href={`/api/orgs/${orgId}/reports/attendance.csv`} />}
+          />
+          <div className="mt-5">
+            {attendanceState.error ? (
+              <ErrorNotice message={attendanceState.error} />
+            ) : attendanceState.loading && attendanceRecords.length === 0 ? (
+              <EmptyState
+                title="Loading attendance"
+                description="Pulling the latest check-in ledger."
+              />
+            ) : (
+              <>
+                <DataTable
+                  columns={[
+                    {
+                      id: "member",
+                      header: "Member",
+                      render: (record) => (
+                        <div>
+                          <p className="font-medium text-white">
+                            {record.user?.name ?? record.user?.email ?? "Member"}
+                          </p>
+                          <p className="mt-1 text-xs text-white/45">
+                            {record.plan?.name ?? "Membership"}
+                          </p>
+                        </div>
+                      ),
+                    },
+                    {
+                      id: "status",
+                      header: "Status",
+                      render: (record) => <StatusPill value={formatEnumLabel(record.status)} />,
+                    },
+                    {
+                      id: "remaining",
+                      header: "Visits",
+                      align: "right",
+                      render: (record) =>
+                        record.subscription?.remainingVisits === null ||
+                        record.subscription?.remainingVisits === undefined
+                          ? "Open"
+                          : record.subscription.remainingVisits.toString(),
+                    },
+                    {
+                      id: "time",
+                      header: "Checked in",
+                      render: (record) => formatDateTime(record.checkedInAt),
+                    },
+                  ]}
+                  rows={attendanceRecords}
+                  rowKey={(record) => record.id}
+                  empty="No attendance scans are available yet."
+                />
+                <LoadMoreButton
+                  count={attendanceRecords.length}
+                  hasMore={attendanceState.hasMore}
+                  loading={attendanceState.loadingMore}
+                  onLoadMore={attendanceState.loadMore}
+                />
+              </>
+            )}
+          </div>
+        </GlassCard>
       </div>
     );
   }
@@ -1201,6 +1338,7 @@ export function DashboardOperationalPanel({
               title="Roster and contact posture"
               description="Profiles here come from the persisted membership directory, so owners and admins are reading the same book."
               badge={<Pill tone="lime">{members.length} profiles</Pill>}
+              action={<CsvExportButton href={`/api/orgs/${orgId}/reports/members.csv`} />}
             />
             {selectedMemberId ? (
               <div className="mt-4 rounded-[22px] border border-lime-200/15 bg-lime-200/8 p-4">
@@ -1266,8 +1404,9 @@ export function DashboardOperationalPanel({
                   description="Pulling the latest organization member list."
                 />
               ) : (
-                <DataTable
-                  columns={[
+                <>
+                  <DataTable
+                    columns={[
                     {
                       id: "member",
                       header: "Member",
@@ -1333,24 +1472,31 @@ export function DashboardOperationalPanel({
                         </button>
                       ),
                     },
-                  ]}
-                  rows={members}
-                  rowKey={(row) => row.profile.id}
-                  empty={
-                    <EmptyState
-                      title="No members yet"
-                      description="Create your first membership plan and share your join link to start accepting members."
-                      action={
-                        <Link
-                          href="/dashboard/membership-plans"
-                          className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
-                        >
-                          Create a plan
-                        </Link>
-                      }
-                    />
-                  }
-                />
+                    ]}
+                    rows={members}
+                    rowKey={(row) => row.profile.id}
+                    empty={
+                      <EmptyState
+                        title="No members yet"
+                        description="Create your first membership plan and share your join link to start accepting members."
+                        action={
+                          <Link
+                            href="/dashboard/membership-plans"
+                            className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
+                          >
+                            Create a plan
+                          </Link>
+                        }
+                      />
+                    }
+                  />
+                  <LoadMoreButton
+                    count={members.length}
+                    hasMore={membersState.hasMore}
+                    loading={membersState.loadingMore}
+                    onLoadMore={membersState.loadMore}
+                  />
+                </>
               )}
             </div>
           </GlassCard>
@@ -1505,6 +1651,7 @@ export function DashboardOperationalPanel({
             badge={
               <Pill tone={readyOrders.length ? "amber" : "lime"}>{readyOrders.length} ready</Pill>
             }
+            action={<CsvExportButton href={`/api/orgs/${orgId}/reports/shop.csv`} />}
           />
           <div className="mt-5">
             {shopOrdersState.error ? (
@@ -2576,6 +2723,83 @@ export function DashboardOperationalPanel({
         <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <GlassCard>
             <SectionHeader
+              eyebrow="Payments"
+              title="Payments ledger"
+              description="Membership, shop, online, and offline payments are shown from the org-scoped payment ledger."
+              badge={<Pill tone="blue">{payments.length} loaded</Pill>}
+              action={<CsvExportButton href={`/api/orgs/${orgId}/reports/payments.csv`} />}
+            />
+            <div className="mt-5">
+              {paymentsState.error ? (
+                <ErrorNotice message={paymentsState.error} />
+              ) : paymentsState.loading && payments.length === 0 ? (
+                <EmptyState title="Loading payments" description="Pulling recent payment records." />
+              ) : (
+                <>
+                  <DataTable
+                    columns={[
+                      {
+                        id: "member",
+                        header: "Member",
+                        render: (payment) => (
+                          <div>
+                            <p className="font-medium text-white">
+                              {payment.user?.name ?? payment.user?.email ?? "Walk-in or system"}
+                            </p>
+                            <p className="mt-1 text-xs text-white/45">
+                              {formatEnumLabel(payment.purpose)}
+                            </p>
+                          </div>
+                        ),
+                      },
+                      {
+                        id: "status",
+                        header: "Status",
+                        render: (payment) => <StatusPill value={formatEnumLabel(payment.status)} />,
+                      },
+                      {
+                        id: "mode",
+                        header: "Mode",
+                        render: (payment) => formatEnumLabel(payment.mode),
+                      },
+                      {
+                        id: "recorded",
+                        header: "Recorded",
+                        render: (payment) => formatDateTime(payment.recordedAt ?? payment.createdAt),
+                      },
+                      {
+                        id: "amount",
+                        header: "Amount",
+                        align: "right",
+                        render: (payment) => (
+                          <span className="font-medium text-white">
+                            {formatInr(payment.amountPaise)}
+                          </span>
+                        ),
+                      },
+                    ]}
+                    rows={payments}
+                    rowKey={(payment) => payment.id}
+                    empty={
+                      <EmptyState
+                        title="No payments yet"
+                        description="Payments appear here when members buy memberships or shop pickups."
+                      />
+                    }
+                  />
+                  <LoadMoreButton
+                    count={payments.length}
+                    hasMore={paymentsState.hasMore}
+                    loading={paymentsState.loadingMore}
+                    onLoadMore={paymentsState.loadMore}
+                  />
+                </>
+              )}
+            </div>
+          </GlassCard>
+
+          <GlassCard>
+            <SectionHeader
               eyebrow="Settlement Queue"
               title="Orders affecting cashflow"
               description="Shop orders are the clearest current payment queue exposed to the dashboard. This keeps desk staff anchored on what still needs attention."
@@ -2584,6 +2808,7 @@ export function DashboardOperationalPanel({
                   {queuedOrders.length} unsettled
                 </Pill>
               }
+              action={<CsvExportButton href={`/api/orgs/${orgId}/reports/shop.csv`} />}
             />
             <div className="mt-5">
               {shopOrdersState.error ? (
@@ -2806,6 +3031,7 @@ export function DashboardOperationalPanel({
             title="Admin activity"
             description="Sensitive changes, who made them, and when they happened."
             badge={<Pill tone="blue">{auditLogs.length || auditLogCount} entries</Pill>}
+            action={<CsvExportButton href={`/api/orgs/${orgId}/audit-logs.csv`} />}
           />
           <div className="mt-5">
             {auditLogsState.error ? (
@@ -2816,8 +3042,9 @@ export function DashboardOperationalPanel({
                 description="Getting the latest admin actions."
               />
             ) : (
-              <DataTable
-                columns={[
+              <>
+                <DataTable
+                  columns={[
                   {
                     id: "action",
                     header: "Action",
@@ -2845,11 +3072,18 @@ export function DashboardOperationalPanel({
                     header: "Created",
                     render: (log) => formatDateTime(log.createdAt),
                   },
-                ]}
-                rows={auditLogs}
-                rowKey={(log) => log.id}
-                empty="No admin activity is available yet."
-              />
+                  ]}
+                  rows={auditLogs}
+                  rowKey={(log) => log.id}
+                  empty="No admin activity is available yet."
+                />
+                <LoadMoreButton
+                  count={auditLogs.length}
+                  hasMore={auditLogsState.hasMore}
+                  loading={auditLogsState.loadingMore}
+                  onLoadMore={auditLogsState.loadMore}
+                />
+              </>
             )}
           </div>
         </GlassCard>

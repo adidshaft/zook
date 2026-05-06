@@ -264,6 +264,7 @@ export function DataTable<Row>({
             {columns.map((column) => (
               <th
                 key={column.id}
+                scope="col"
                 className={clsx(
                   "px-4 py-3 font-medium",
                   column.align === "right"

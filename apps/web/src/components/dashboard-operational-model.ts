@@ -90,6 +90,54 @@ export type MemberRow = {
     marketingOptIn?: boolean | null;
     createdAt: string;
   } | null;
+  lastCheckIn?: {
+    id: string;
+    status: string;
+    checkedInAt: string | Date;
+  } | null;
+  activeSubscription?: {
+    id: string;
+    status: string;
+    endsAt?: string | Date | null;
+    remainingVisits?: number | null;
+  } | null;
+};
+
+export type PaymentRow = {
+  id: string;
+  purpose: string;
+  amountPaise: number;
+  currency?: string | null;
+  status: string;
+  mode: string;
+  provider?: string | null;
+  providerRef?: string | null;
+  receiptNumber?: string | null;
+  recordedAt?: string | Date | null;
+  createdAt: string | Date;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string | null;
+  } | null;
+};
+
+export type AttendanceRecordRow = {
+  id: string;
+  status: string;
+  checkedInAt: string | Date;
+  user?: {
+    id?: string;
+    name?: string | null;
+    email?: string | null;
+  } | null;
+  plan?: { name?: string | null } | null;
+  subscription?: {
+    endsAt?: string | Date | null;
+    remainingVisits?: number | null;
+  } | null;
+  suspiciousFlags?: string[] | null;
 };
 
 export type MembershipPlanRow = {
