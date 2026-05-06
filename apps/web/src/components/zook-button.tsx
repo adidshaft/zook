@@ -4,7 +4,7 @@ import clsx from "clsx";
 type ZookButtonTone = "lime" | "secondary" | "ghost" | "danger";
 
 const toneClasses: Record<ZookButtonTone, string> = {
-  lime: "border-lime-300 bg-lime-300 text-black shadow-[var(--zook-shadow-glow-lime)] hover:bg-lime-200 active:bg-lime-300",
+  lime: "zook-button-lime border-lime-300 bg-lime-300 text-black shadow-[var(--zook-shadow-glow-lime)] hover:bg-lime-200 active:bg-lime-300",
   secondary:
     "border-white/14 bg-white/[0.06] text-white hover:bg-white/[0.1] active:bg-white/[0.08]",
   ghost:

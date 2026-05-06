@@ -45,3 +45,15 @@ textarea {
   outline: 2px solid var(--zook-lime);
   outline-offset: 3px;
 }
+
+.zook-button-lime,
+a.zook-focus.bg-lime-300,
+button.zook-focus.bg-lime-300 {
+  color: #050805 !important;
+}
+
+.zook-button-lime *,
+a.zook-focus.bg-lime-300 *,
+button.zook-focus.bg-lime-300 * {
+  color: inherit !important;
+}
