@@ -330,7 +330,7 @@ export default function Plans() {
           contentContainerStyle={styles.content}
         >
           <MobileHeader
-            title="Plan"
+            title="Plans"
             showProfileShortcut={false}
           />
 
@@ -347,8 +347,9 @@ export default function Plans() {
             {!plansQuery.isLoading && !filteredPlans.length ? (
               <GlassCard variant="compact" style={styles.emptyPlanCard}>
                 <EmptyState
+                  icon="clipboard-outline"
                   title="No plan assigned"
-                  body="Your trainer will create and assign a plan for you."
+                  body="Your trainer will create and assign a workout plan for you."
                 />
               </GlassCard>
             ) : null}

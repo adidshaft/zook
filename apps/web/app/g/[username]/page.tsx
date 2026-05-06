@@ -3,8 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, QrCode, ShieldCheck, Smartphone, Star } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
+import { PublicNav } from "@/components/public-nav";
 import { ShareButton } from "@/components/share-button";
-import { ZookLogo } from "@/components/zook-logo";
 import { formatInr } from "@/lib/format";
 import {
   alternatePublicLocale,
@@ -24,10 +24,18 @@ function priceSummary(plans: Array<{ pricePaise: number }>, locale: "en" | "hi" 
   if (!plans.length) {
     return locale === "hi" ? "सदस्यताएं अभी प्रकाशित नहीं" : "Memberships not published yet";
   }
-  const minPlanPrice = Math.min(...plans.map((plan) => plan.pricePaise));
+  const paidPlans = plans.filter((plan) => plan.pricePaise > 0);
+  if (!paidPlans.length) {
+    return locale === "hi" ? "मुफ़्त ट्रायल उपलब्ध" : "Free trial available";
+  }
+  const minPlanPrice = Math.min(...paidPlans.map((plan) => plan.pricePaise));
   return locale === "hi"
     ? `शुरुआत ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/माह`
     : `Starting at ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/month`;
+}
+
+function displayPlanName(name: string) {
+  return name.length > 40 ? `${name.slice(0, 40)}...` : name;
 }
 
 function trainerProfileDetails(value: unknown) {
@@ -83,9 +91,16 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
     return (
       <main
         lang={locale === "hi" ? "hi-IN" : "en-IN"}
-        className="grid min-h-dvh place-items-center px-5 py-8"
+        className="min-h-dvh py-1"
       >
-        <GlassCard className="max-w-xl text-center">
+        <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
+          <PublicNav
+            loginHref={localizedPath("/login", locale)}
+            loginLabel={t("login")}
+            languageHref={localizedPath(`/g/${username}`, nextLocale)}
+            languageLabel={t("languageSwitch")}
+          />
+        <GlassCard className="mx-auto max-w-xl text-center">
           <Pill tone="amber">{t("gymNotFound")}</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-white">{t("gymNotFound")}</h1>
           <p className="mt-3 text-sm leading-6 text-white/55">{t("gymNotFoundCopy")}</p>
@@ -96,11 +111,15 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
             {t("findGym")}
           </Link>
         </GlassCard>
+        </div>
       </main>
     );
   }
   const { org, plans, trainers } = data;
-  const minPlanPrice = Math.min(...plans.map((plan) => plan.pricePaise));
+  const paidPlans = plans.filter((plan) => plan.pricePaise > 0);
+  const minPlanPrice = paidPlans.length
+    ? Math.min(...paidPlans.map((plan) => plan.pricePaise))
+    : null;
   const hasPublicPlans = plans.length > 0;
   const gallery = org.gallery.length
     ? org.gallery
@@ -126,36 +145,25 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
       ? {
           "@type": "AggregateOffer",
           priceCurrency: "INR",
-          lowPrice: Math.round(minPlanPrice / 100),
+          lowPrice: minPlanPrice === null ? 0 : Math.round(minPlanPrice / 100),
           offerCount: plans.length,
         }
       : undefined,
   };
 
   return (
-    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh px-5 py-5">
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="mx-auto grid max-w-7xl gap-5">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <ZookLogo />
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={localizedPath("/login", locale)}
-              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
-            >
-              {t("login")}
-            </Link>
-            <Link
-              href={localizedPath(`/g/${org.username}`, nextLocale)}
-              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
-            >
-              {t("languageSwitch")}
-            </Link>
-          </div>
-        </header>
+      <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:px-6">
+        <PublicNav
+          loginHref={localizedPath("/login", locale)}
+          loginLabel={t("login")}
+          languageHref={localizedPath(`/g/${org.username}`, nextLocale)}
+          languageLabel={t("languageSwitch")}
+        />
 
         <section className="grid gap-5 lg:grid-cols-[1fr_380px]">
           <div className="glass-panel relative min-h-[560px] overflow-hidden rounded-[32px] p-6 md:p-8">
@@ -172,6 +180,22 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
             ) : null}
             <div className="absolute inset-0 bg-gradient-to-br from-black/82 via-black/62 to-black/82" />
             <div className="relative">
+              {org.coverImageUrl ? (
+                <div className="relative mb-5 h-48 w-full overflow-hidden rounded-2xl border border-white/10">
+                  <Image
+                    src={org.coverImageUrl}
+                    alt={`${org.name} gym`}
+                    fill
+                    sizes="(min-width: 1024px) calc(100vw - 430px), 100vw"
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+              ) : (
+                <div className="mb-5 flex h-32 w-full items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-zinc-800 to-zinc-950">
+                  <span className="text-4xl font-black text-zinc-500">{org.name[0]}</span>
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-3">
                 {org.logoUrl ? (
                   <Image
@@ -205,14 +229,18 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
             </div>
             <div className="mt-7 flex flex-wrap gap-2">
               {org.amenities.map((amenity) => (
-                <Pill key={amenity}>{amenity}</Pill>
+                <Pill key={amenity} className="border-white/15 bg-white/10 text-white/80">
+                  {amenity}
+                </Pill>
               ))}
             </div>
-            <div className="mt-10 grid gap-3 md:grid-cols-3">
+            <div className="mt-10 flex flex-wrap gap-6">
               {[t("choosePlan"), t("verifyEmail"), t("paySecurely")].map((step, index) => (
-                <div key={step} className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs font-semibold uppercase text-white/35">Step {index + 1}</p>
-                  <p className="mt-2 font-medium text-white">{step}</p>
+                <div key={step} className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-lime-300 text-xs font-bold text-black">
+                    {index + 1}
+                  </span>
+                  <p className="text-sm text-zinc-300">{step}</p>
                 </div>
               ))}
             </div>
@@ -226,17 +254,18 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
             <p className="mt-3 text-sm leading-6 text-white/55">
               {t("choosePlanProfile")}
             </p>
-            <div className="mt-5 rounded-[28px] border border-white/10 bg-white p-4">
+            <div className="mx-auto mt-5 w-40 rounded-[24px] border border-white/10 bg-white p-3">
               <Image
                 src={`/qr/${org.username}?target=join`}
                 alt={`Join ${org.name} on Zook`}
-                width={640}
-                height={640}
-                sizes="(min-width: 1024px) 320px, 100vw"
-                className="aspect-square w-full rounded-[18px]"
+                width={160}
+                height={160}
+                sizes="160px"
+                className="aspect-square w-full rounded-[14px]"
                 unoptimized
               />
             </div>
+            <p className="mt-3 text-center text-xs text-white/45">Scan from your phone to join instantly</p>
             {hasPublicPlans ? (
               <Link
                 href="#plans"
@@ -251,7 +280,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
             )}
             <a
               href={`zook://join/${org.username}`}
-              className="zook-focus mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm text-white/72"
+              className="zook-focus mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-lime-300 px-5 py-3 text-sm font-medium text-lime-200 transition hover:bg-lime-300/10"
             >
               <Smartphone size={17} />
               {t("openInApp")}
@@ -275,14 +304,16 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                 className="zook-focus block rounded-[28px] transition hover:-translate-y-0.5"
               >
                 <GlassCard className="h-full transition hover:border-lime-300/25 hover:bg-white/[0.075]">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
                       <Pill tone={plan.id === "plan-hybrid-pro" ? "lime" : "neutral"}>
                         {plan.type.replaceAll("_", " ")}
                       </Pill>
-                      <h2 className="mt-4 text-2xl font-semibold text-white">{plan.name}</h2>
+                      <h2 className="mt-4 max-w-full truncate text-2xl font-semibold text-white">
+                        {displayPlanName(plan.name)}
+                      </h2>
                     </div>
-                    <p className="metric text-2xl font-semibold text-lime-200">
+                    <p className="metric shrink-0 text-2xl font-semibold text-lime-200">
                       {formatInr(plan.pricePaise)}
                     </p>
                   </div>
@@ -318,7 +349,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
             <div className="mt-5 flex flex-wrap gap-2">
               {facilities.length ? (
                 facilities.map((facility) => (
-                  <Pill key={facility} tone="blue">
+                  <Pill key={facility} tone="blue" className="border-white/15 bg-white/10 text-white/80">
                     {facility}
                   </Pill>
                 ))

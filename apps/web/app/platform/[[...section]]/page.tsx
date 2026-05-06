@@ -1,4 +1,4 @@
-import { ShieldAlert } from "lucide-react";
+import { AlertTriangle, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { MetricCard } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
@@ -6,19 +6,6 @@ import { PlatformOperationsPanel } from "@/components/platform-operations-panel"
 import { requirePlatformSession } from "@/lib/server-auth";
 import { ZookLogo } from "@/components/zook-logo";
 import { getDashboardData } from "@/lib/data";
-
-function metricTone(label: string) {
-  if (label.includes("Suspended") || label.includes("Safety")) {
-    return "amber" as const;
-  }
-  if (label.includes("Assistant")) {
-    return "blue" as const;
-  }
-  if (label.includes("Organizations")) {
-    return "lime" as const;
-  }
-  return "neutral" as const;
-}
 
 function serializePlatformOrganization(org: {
   id: string;
@@ -78,6 +65,11 @@ export default async function PlatformPage() {
     : data.fallbackMode === "demo"
       ? "Demo data — production data unavailable"
       : "Data unavailable";
+  const suspendedCount = data.orgs.filter((org) => org.status === "SUSPENDED").length;
+  const safetyReviewCount = data.platform.abuseFlags.filter(
+    (flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved",
+  ).length;
+  const hasAlerts = suspendedCount > 0 || safetyReviewCount > 0;
 
   return (
     <main className="min-h-screen px-5 py-5">
@@ -90,7 +82,7 @@ export default async function PlatformPage() {
                 <Pill tone="amber">Platform team</Pill>
               </div>
               <div className="mt-4 flex items-center gap-3">
-                <ShieldAlert className="text-amber-100" />
+                {hasAlerts ? <AlertTriangle className="text-amber-100" /> : null}
                 <div>
                   <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
                     Platform overview
@@ -134,9 +126,14 @@ export default async function PlatformPage() {
               label={metric.label}
               value={metric.value}
               delta={metric.delta}
-              tone={metricTone(metric.label)}
+              tone={
+                (metric.label.includes("Suspended") && suspendedCount > 0) ||
+                (metric.label.includes("Safety") && safetyReviewCount > 0)
+                  ? "amber"
+                  : "neutral"
+              }
               icon={
-                metric.label === "Organizations" ? (
+                metric.label.includes("Safety") && safetyReviewCount > 0 ? (
                   <ShieldAlert size={18} className="text-amber-100" />
                 ) : undefined
               }

@@ -41,7 +41,7 @@ export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric 
 
   return (
     <View style={[styles.summaryTile, { backgroundColor: palette.surface }]}>
-      <Text style={[styles.summaryLabel, { color: palette.ink }]}>
+      <Text style={styles.summaryLabel}>
         {metric.label}
       </Text>
       <Text style={[styles.summaryValue, { color: palette.ink }]}>
@@ -198,6 +198,7 @@ const styles = StyleSheet.create({
     gap: 7
   },
   summaryLabel: {
+    color: colors.muted,
     fontSize: 13,
     fontWeight: "800"
   },

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Activity, ArrowLeft, CheckCircle2, CircleAlert, CircleX } from "lucide-react";
+import { Activity, CheckCircle2, CircleAlert, CircleX } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
-import { ZookLogo } from "@/components/zook-logo";
+import { PublicNav } from "@/components/public-nav";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import {
   alternatePublicLocale,
@@ -50,26 +49,15 @@ export default async function StatusPage({
   const components = Object.entries(payload.components);
 
   return (
-    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh px-5 py-5">
-      <div className="mx-auto grid max-w-5xl gap-5">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <ZookLogo />
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={localizedPath("/status", nextLocale)}
-              className="zook-focus inline-flex min-h-11 items-center rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/8"
-            >
-              {t("languageSwitch")}
-            </Link>
-            <Link
-              href={localizedPath("/", locale)}
-              className="zook-focus inline-flex min-h-11 items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/8"
-            >
-              <ArrowLeft size={16} aria-hidden="true" />
-              {t("home")}
-            </Link>
-          </div>
-        </header>
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
+      <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
+        <PublicNav
+          showLogin={false}
+          languageHref={localizedPath("/status", nextLocale)}
+          languageLabel={t("languageSwitch")}
+          backHref={localizedPath("/", locale)}
+          backLabel={t("home")}
+        />
 
         <GlassCard variant="strong">
           <div className="flex flex-wrap items-start justify-between gap-4">

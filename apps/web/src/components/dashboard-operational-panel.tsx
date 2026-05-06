@@ -345,6 +345,17 @@ export function DashboardOperationalPanel({
     };
   }
 
+  function validatePlanName(value: string) {
+    const trimmed = value.trim();
+    if (trimmed.length > 60) {
+      return "Plan name must be 60 characters or fewer.";
+    }
+    if (/\d{8,}/.test(trimmed)) {
+      return "Plan name cannot include raw numeric IDs.";
+    }
+    return "";
+  }
+
   function payloadForProductForm(form: typeof productForm) {
     return {
       name: form.name,
@@ -407,6 +418,11 @@ export function DashboardOperationalPanel({
 
   async function createMembershipPlan() {
     try {
+      const planNameError = validatePlanName(planForm.name);
+      if (planNameError) {
+        setFormError(planNameError);
+        return;
+      }
       setFormBusy("plan");
       setFormError("");
       setFormStatus("");
@@ -464,6 +480,13 @@ export function DashboardOperationalPanel({
     patch?: Partial<ReturnType<typeof payloadForPlanForm>>,
   ) {
     try {
+      if (!patch) {
+        const planNameError = validatePlanName(planEditForm.name);
+        if (planNameError) {
+          setFormError(planNameError);
+          return;
+        }
+      }
       setFormBusy(`plan:${planId}`);
       setFormError("");
       setFormStatus("");
@@ -2089,6 +2112,9 @@ export function DashboardOperationalPanel({
                   setPlanForm((current) => ({ ...current, name: event.target.value }))
                 }
                 placeholder="Plan name"
+                maxLength={60}
+                pattern="^(?!.*\\d{8,}).{1,60}$"
+                title="Use 60 characters or fewer and avoid raw numeric IDs."
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               />
               <select
@@ -2274,6 +2300,9 @@ export function DashboardOperationalPanel({
                       setPlanEditForm((current) => ({ ...current, name: event.target.value }))
                     }
                     placeholder="Plan name"
+                    maxLength={60}
+                    pattern="^(?!.*\\d{8,}).{1,60}$"
+                    title="Use 60 characters or fewer and avoid raw numeric IDs."
                     className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                   />
                   <select

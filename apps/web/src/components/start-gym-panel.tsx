@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { GlassCard, Pill } from "./glass-card";
 import { webApiFetch } from "@/lib/api-client";
 import { joinModeLabel } from "@/lib/format";
@@ -89,13 +89,21 @@ function slugFromName(value: string) {
     .slice(0, 32);
 }
 
+function safeOwnerEmail(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized.endsWith(".local") || normalized === "platform@zook.local") {
+    return "";
+  }
+  return value;
+}
+
 export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [gymType, setGymType] = useState(gymTypes[0] ?? "Strength gym");
   const [contactPhone, setContactPhone] = useState("");
-  const [contactEmail, setContactEmail] = useState(ownerEmail);
+  const [contactEmail, setContactEmail] = useState(safeOwnerEmail(ownerEmail));
   const [gstNumber, setGstNumber] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
@@ -211,7 +219,9 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
               key={item}
               className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
             >
-              <CheckCircle2 size={18} className="text-lime-200" />
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-lime-300">
+                <span className="h-2 w-2 rounded-full bg-lime-300" />
+              </span>
               <p className="text-sm text-white/70">{item}</p>
             </div>
           ))}
@@ -302,7 +312,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                 <input
                   value={contactEmail}
                   onChange={(event) => setContactEmail(event.target.value)}
-                  placeholder="owner@example.com"
+                  placeholder="your@email.com"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
                 />
               </label>

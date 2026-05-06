@@ -131,7 +131,7 @@ export function PlatformOperationsPanel({
               </button>
             }
           />
-        <div className="mt-5 grid gap-4 xl:grid-cols-[0.72fr_1.28fr]">
+        <div className="mt-5 grid gap-4">
           <ReadoutGrid
             items={[
               {
@@ -155,7 +155,7 @@ export function PlatformOperationsPanel({
                 meta: "Reports still needing review"
               }
             ]}
-            columns={2}
+            columns={4}
           />
           <DataTable
             columns={[
@@ -201,16 +201,6 @@ export function PlatformOperationsPanel({
                 id: "last",
                 header: "Checked",
                 render: ([, provider]) => provider.lastCheckedAt ? formatDateTime(provider.lastCheckedAt) : "Just now"
-              },
-              {
-                id: "request",
-                header: "Support note",
-                render: ([, provider]) => provider.requestId ? "Recorded" : "Not needed"
-              },
-              {
-                id: "notes",
-                header: "Notes",
-                render: ([, provider]) => provider.notes ? "Checked" : "Private settings stay hidden."
               }
             ]}
             rows={providerEntries}

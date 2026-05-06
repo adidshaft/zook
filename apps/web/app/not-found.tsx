@@ -1,26 +1,29 @@
 import Link from "next/link";
-import { GlassCard, Pill } from "@/components/glass-card";
-import { ZookLogo } from "@/components/zook-logo";
+import { PublicNav } from "@/components/public-nav";
 
 export default function NotFound() {
   return (
-    <main className="grid min-h-dvh place-items-center px-5 py-8">
-      <div className="absolute left-5 top-5">
-        <ZookLogo />
+    <main className="flex min-h-dvh flex-col bg-zinc-950">
+      <div className="mx-auto grid w-full max-w-5xl gap-5 px-4 sm:px-6">
+        <PublicNav showLogin={false} />
       </div>
-      <GlassCard className="max-w-lg">
-        <Pill tone="amber">Not found</Pill>
-        <h1 className="mt-5 text-3xl font-semibold text-white">This Zook page is not available.</h1>
-        <p className="mt-3 text-sm leading-6 text-white/55">
-          The link may be old, unpublished, or only available after signing in.
-        </p>
-        <Link
-          href="/"
-          className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
-        >
-          Back to Zook
-        </Link>
-      </GlassCard>
+      <div className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
+        <div className="max-w-sm text-center">
+          <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
+            Not found
+          </p>
+          <h1 className="mb-2 text-2xl font-black text-white">This page does not exist</h1>
+          <p className="mb-6 text-sm leading-6 text-zinc-400">
+            The link may be old, unpublished, or only available after signing in.
+          </p>
+          <Link
+            href="/"
+            className="zook-focus inline-flex items-center gap-2 rounded-xl bg-lime-300 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-lime-200"
+          >
+            Back to Zook
+          </Link>
+        </div>
+      </div>
     </main>
   );
 }

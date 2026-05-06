@@ -4,7 +4,6 @@ import * as Haptics from "expo-haptics";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  ActivityIndicator,
   Linking,
   Pressable,
   ScrollView,
@@ -271,44 +270,38 @@ export default function Scan() {
             </View>
           </View>
 
-          <View style={styles.validationStrip}>
-            <ValidationMini label="Membership" state={scanState} />
-            <ValidationMini label="Gym" state={scanState} />
-            <ValidationMini label="Check in" state={scanState} />
-          </View>
+          <Text style={styles.scanHint}>Point at the QR code at the gym entrance or desk</Text>
 
-          {__DEV__ ? (
-            <CollapsibleSection
-              title="Enter code instead"
-              subtitle="Development fallback for camera and QR testing."
-              defaultOpen={false}
-            >
-              <View style={styles.codeRow}>
-                <TextInput
-                  value={code}
-                  onChangeText={setCode}
-                  autoCapitalize="characters"
-                  placeholder="Paste QR code"
-                  placeholderTextColor={colors.subtle}
-                  style={styles.codeInput}
-                  returnKeyType="done"
-                  onSubmitEditing={submitCode}
-                />
-                <Pressable
-                  onPress={submitCode}
-                  disabled={busy || !code.trim()}
-                  accessibilityRole="button"
-                  accessibilityLabel="Check code"
-                  style={[
-                    styles.codeButton,
-                    busy || !code.trim() ? styles.codeButtonDisabled : null,
-                  ]}
-                >
-                  <Ionicons name="arrow-forward" size={18} color={colors.bg} />
-                </Pressable>
-              </View>
-            </CollapsibleSection>
-          ) : null}
+          <CollapsibleSection
+            title="Enter code instead"
+            subtitle="Type the code shown at the gym desk."
+            defaultOpen={false}
+          >
+            <View style={styles.codeRow}>
+              <TextInput
+                value={code}
+                onChangeText={setCode}
+                autoCapitalize="characters"
+                placeholder="Paste QR code"
+                placeholderTextColor={colors.subtle}
+                style={styles.codeInput}
+                returnKeyType="done"
+                onSubmitEditing={submitCode}
+              />
+              <Pressable
+                onPress={submitCode}
+                disabled={busy || !code.trim()}
+                accessibilityRole="button"
+                accessibilityLabel="Check code"
+                style={[
+                  styles.codeButton,
+                  busy || !code.trim() ? styles.codeButtonDisabled : null,
+                ]}
+              >
+                <Ionicons name="arrow-forward" size={18} color={colors.bg} />
+              </Pressable>
+            </View>
+          </CollapsibleSection>
 
           {errorMessage ? (
             <GlassCard variant="warning" contentStyle={styles.errorContent}>
@@ -342,23 +335,6 @@ export default function Scan() {
         <BottomNav />
       </ZookScreen>
     </>
-  );
-}
-
-function ValidationMini({ label, state }: { label: string; state: ScanState }) {
-  const icon = state === "failed" ? "close-circle" : "checkmark-circle";
-  const color = state === "failed" ? colors.red : colors.lime;
-  return (
-    <View style={styles.validationMini}>
-      {state === "checking" || state === "idle" ? (
-        <ActivityIndicator size="small" color={colors.lime} />
-      ) : (
-        <Ionicons name={icon} size={15} color={color} />
-      )}
-      <Text numberOfLines={1} style={styles.validationMiniText}>
-        {label}
-      </Text>
-    </View>
   );
 }
 
@@ -452,27 +428,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.caption,
   },
-  validationStrip: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  validationMini: {
-    flex: 1,
-    minHeight: 30,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    paddingHorizontal: 6,
-  },
-  validationMiniText: {
+  scanHint: {
     color: colors.muted,
-    fontSize: 10.5,
-    fontWeight: "700",
+    textAlign: "center",
+    ...typography.small,
   },
   codeContent: {
     padding: 12,

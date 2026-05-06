@@ -3,9 +3,10 @@ import { CheckCircle2, LockKeyhole } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { CouponApplyForm } from "@/components/coupon-apply-form";
 import { JoinCheckoutButton } from "@/components/join-checkout-button";
-import { ZookLogo } from "@/components/zook-logo";
+import { PublicNav } from "@/components/public-nav";
 import { formatInr } from "@/lib/format";
 import {
+  alternatePublicLocale,
   joinModeLabelForLocale,
   localizedPath,
   publicT,
@@ -78,6 +79,10 @@ function visitLabel(visitLimit: number | null, locale: PublicLocale) {
     : `${visitLimit} ${visitLimit === 1 ? "visit" : "visits"}`;
 }
 
+function displayPlanName(name: string) {
+  return name.length > 40 ? `${name.slice(0, 40)}...` : name;
+}
+
 export default async function JoinPage({
   params,
   searchParams,
@@ -109,6 +114,7 @@ export default async function JoinPage({
     (selectedPlan?.pricePaise ?? 0) - referralDiscountPaise - couponDiscountPaise,
   );
   const joinMode = org?.joinMode ?? "OPEN_JOIN";
+  const nextLocale = alternatePublicLocale(locale);
 
   if (!org || !selectedPlan) {
     return <main className="p-8">{t("joinUnavailable")}</main>;
@@ -116,14 +122,20 @@ export default async function JoinPage({
 
   if (joinMode === "APPROVAL_REQUIRED") {
     return (
-      <main
-        lang={locale === "hi" ? "hi-IN" : "en-IN"}
-        className="grid min-h-screen place-items-center px-5 py-8"
-      >
-        <div className="absolute left-5 top-5">
-          <ZookLogo />
-        </div>
-        <GlassCard className="max-w-xl">
+      <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen py-1">
+        <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
+          <PublicNav
+            showLogin={false}
+            languageHref={localizedPath(`/join/${org.username}`, nextLocale, {
+              plan: selectedPlan.id,
+              ref: referral?.code,
+              coupon: couponPreview?.code,
+            })}
+            languageLabel={t("languageSwitch")}
+            backHref={localizedPath(`/g/${org.username}`, locale)}
+            backLabel={t("backToGym")}
+          />
+        <GlassCard className="mx-auto max-w-xl">
           <Pill tone="amber">{t("approvalRequired")}</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-white">{t("approvalRequired")}</h1>
           <p className="mt-3 text-sm leading-6 text-white/55">{t("approvalCopy")}</p>
@@ -145,20 +157,23 @@ export default async function JoinPage({
             {t("backToGym")}
           </Link>
         </GlassCard>
+        </div>
       </main>
     );
   }
 
   if (joinMode === "INVITE_ONLY" && !referral) {
     return (
-      <main
-        lang={locale === "hi" ? "hi-IN" : "en-IN"}
-        className="grid min-h-screen place-items-center px-5 py-8"
-      >
-        <div className="absolute left-5 top-5">
-          <ZookLogo />
-        </div>
-        <GlassCard className="max-w-xl">
+      <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen py-1">
+        <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
+          <PublicNav
+            showLogin={false}
+            languageHref={localizedPath(`/join/${org.username}`, nextLocale)}
+            languageLabel={t("languageSwitch")}
+            backHref={localizedPath(`/g/${org.username}`, locale)}
+            backLabel={t("backToGym")}
+          />
+        <GlassCard className="mx-auto max-w-xl">
           <Pill tone="red">{joinModeLabelForLocale(joinMode, locale)}</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-white">{t("inviteRequired")}</h1>
           <p className="mt-3 text-sm leading-6 text-white/55">{t("inviteCopy")}</p>
@@ -169,22 +184,21 @@ export default async function JoinPage({
             {t("backToGym")}
           </Link>
         </GlassCard>
+        </div>
       </main>
     );
   }
 
   return (
-    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen px-5 py-5">
-      <div className="mx-auto grid max-w-6xl gap-5">
-        <header className="flex items-center justify-between">
-          <ZookLogo />
-          <Link
-            href={localizedPath(`/g/${org.username}`, locale)}
-            className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
-          >
-            {t("gymProfile")}
-          </Link>
-        </header>
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen py-1">
+      <div className="mx-auto grid max-w-6xl gap-5 px-4 sm:px-6">
+        <PublicNav
+          showLogin={false}
+          languageHref={joinPath(org.username, selectedPlan.id, referral, couponPreview?.code, nextLocale)}
+          languageLabel={t("languageSwitch")}
+          backHref={localizedPath(`/g/${org.username}`, locale)}
+          backLabel={t("gymProfile")}
+        />
 
         <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
           <GlassCard variant="strong">
@@ -224,7 +238,9 @@ export default async function JoinPage({
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="font-medium text-white">{plan.name}</p>
+                            <p className="truncate font-medium text-white">
+                              {displayPlanName(plan.name)}
+                            </p>
                             <p className="mt-1 text-xs text-white/45">
                               {validityLabel(plan, locale)} · {visitLabel(plan.visitLimit, locale)}
                             </p>
@@ -241,7 +257,7 @@ export default async function JoinPage({
             ) : null}
             <div className="mt-6 grid gap-3">
               <Readout label="Gym" value={`${org.name} · ${org.city}`} />
-              <Readout label={t("plan")} value={selectedPlan.name} />
+              <Readout label={t("plan")} value={displayPlanName(selectedPlan.name)} />
               <Readout label={t("duration")} value={validityLabel(selectedPlan, locale)} />
               <Readout label={t("visits")} value={visitLabel(selectedPlan.visitLimit, locale)} />
               <Readout

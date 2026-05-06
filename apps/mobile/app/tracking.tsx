@@ -4,7 +4,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { WorkoutLogEntry } from "@zook/core";
 import {
-  BottomNav,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -133,17 +132,7 @@ export default function TrackingDashboard() {
           ) : null}
 
           {/* Today's session */}
-          <SectionHeader
-            title="Last workout"
-            action={
-              <Link href="/tracking-entry" asChild>
-                <Pressable accessibilityRole="link" style={styles.logButton}>
-                  <Ionicons name="add" size={18} color={colors.bg} />
-                  <Text style={styles.logButtonText}>Log</Text>
-                </Pressable>
-              </Link>
-            }
-          />
+          <SectionHeader title="Last workout" />
           {trackingQuery.isLoading ? (
             <GlassCard variant="compact" contentStyle={styles.loadingContent}>
               <IconBubble icon="hourglass-outline" tone="amber" size={36} />
@@ -160,18 +149,14 @@ export default function TrackingDashboard() {
                   Log your first session to start tracking progress.
                 </Text>
               </View>
-              <ZookButton href="/tracking-entry" icon="add-outline">
-                Log workout
-              </ZookButton>
             </GlassCard>
           )}
         </ScrollView>
         <StickyActionBar>
-          <ZookButton href="/tracking-entry" icon="add-outline">
+          <ZookButton href="/tracking-entry" icon="add-outline" fullWidth>
             Log workout
           </ZookButton>
         </StickyActionBar>
-        <BottomNav />
       </ZookScreen>
     </>
   );
@@ -222,7 +207,7 @@ function BodyProgressCard({
   const { t } = useI18n();
   const bodyFat = progress.bodyFatPct ?? progress.bodyFatPercent;
   return (
-    <GlassCard variant="compact" contentStyle={styles.progressCard}>
+    <GlassCard variant="compact" style={styles.progressCardFrame} contentStyle={styles.progressCard}>
       <View style={styles.progressCardHeader}>
         <IconBubble icon="body-outline" tone="blue" size={34} />
         <View style={styles.progressCardCopy}>
@@ -280,7 +265,12 @@ function BodyProgressTimeline({
           const photoUrl = normalizeProgressPhotoUrl(entry);
           const bodyFat = entry.bodyFatPercent ?? entry.bodyFatPct;
           return (
-            <GlassCard key={entry.id} variant="compact" contentStyle={styles.photoTimelineCard}>
+            <GlassCard
+              key={entry.id}
+              variant="compact"
+              style={styles.photoTimelineCard}
+              contentStyle={styles.photoTimelineCardContent}
+            >
               <View style={styles.photoFrame}>
                 {photoUrl ? (
                   <Image
@@ -346,7 +336,7 @@ function HabitProgressCard({
   const completion = target > 0 ? Math.min(100, Math.round((completed / target) * 100)) : 0;
 
   return (
-    <GlassCard variant="compact" contentStyle={styles.progressCard}>
+    <GlassCard variant="compact" style={styles.progressCardFrame} contentStyle={styles.progressCard}>
       <View style={styles.progressCardHeader}>
         <IconBubble icon="repeat-outline" tone="violet" size={34} />
         <View style={styles.progressCardCopy}>
@@ -441,9 +431,12 @@ const styles = StyleSheet.create({
     gap: 10,
     flexWrap: "wrap",
   },
-  progressCard: {
+  progressCardFrame: {
     flexGrow: 1,
     flexBasis: "48%",
+    minWidth: 0,
+  },
+  progressCard: {
     minHeight: 150,
     gap: spacing.sm,
   },
@@ -493,6 +486,8 @@ const styles = StyleSheet.create({
   },
   photoTimelineCard: {
     width: 168,
+  },
+  photoTimelineCardContent: {
     gap: spacing.sm,
   },
   photoFrame: {

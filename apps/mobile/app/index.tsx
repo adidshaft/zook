@@ -7,16 +7,17 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
+  EmptyState,
   ErrorState,
   GlassCard,
   IconBubble,
   SectionHeader,
+  StickyActionBar,
   Skeleton,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
-import { titleCaseFromCode } from "@/lib/formatting";
 import { useMemberHome } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -42,7 +43,6 @@ export default function Home() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [gymsOpen, setGymsOpen] = useState(false);
   const { activeOrgId, session, setActiveOrgId } = useAuth();
   const homeQuery = useMemberHome();
@@ -71,29 +71,13 @@ export default function Home() {
     typeof daysLeft === "number" ? `${daysLeft} days left` : "Membership syncing";
   const remainingVisitsLabel =
     typeof remainingVisits === "number" ? `${remainingVisits} visits remaining` : "Visits syncing";
-  const attendanceMode = String(
-    (activeOrganization as { attendanceMode?: string } | null | undefined)?.attendanceMode ??
-      "EXCEPTION_APPROVAL",
-  );
-  const checkInCopy =
-    attendanceMode === "MANUAL_APPROVAL"
-      ? {
-          title: "Request desk approval",
-          body: "Scan first, then show your entry code at reception.",
-          cta: "Scan",
-        }
-      : attendanceMode === "AUTOMATIC"
-        ? {
-            title: "Check in",
-            body: "Scan the gym QR for instant entry.",
-            cta: "Open",
-          }
-        : {
-            title: "Check in",
-            body: "Scan the gym QR. The desk reviews only unusual scans.",
-            cta: "Open",
-          };
-  const planName = memberHome?.todayPlanName ?? memberHome?.activePlan?.name ?? "No plan assigned";
+  const unreadCount = memberHome?.unreadNotifications ?? 0;
+  const assignedPlan = memberHome?.todayPlanName
+    ? {
+        name: memberHome.todayPlanName,
+        type: "Tap to view",
+      }
+    : null;
   const lastCheckIn = memberHome?.recentAttendance?.[0]?.checkedInAt
     ? new Date(memberHome.recentAttendance[0].checkedInAt).toLocaleDateString("en-IN", {
         day: "numeric",
@@ -104,6 +88,9 @@ export default function Home() {
   const hasGym = Boolean(activeOrganization);
   const hasMembership = Boolean(memberHome?.activeMembership);
   const neverCheckedIn = hasMembership && (memberHome?.recentAttendance?.length ?? 0) === 0;
+  const renewalImminent =
+    hasMembership &&
+    (membershipExpired || (typeof daysLeft === "number" && daysLeft <= 7));
   const loadingHome = homeQuery.isLoading && !memberHome;
   const homeError = homeQuery.isError && !memberHome;
   const firstRunState =
@@ -130,7 +117,10 @@ export default function Home() {
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            renewalImminent ? styles.contentWithRenewalBar : null,
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -142,10 +132,11 @@ export default function Home() {
         >
           <BlurView intensity={24} tint="dark" style={styles.homeHeader}>
             <Pressable
-              onPress={() => setProfileOpen(true)}
+              onPress={() => router.push("/profile")}
               style={({ pressed }) => (pressed ? styles.pressedAvatar : null)}
               accessibilityRole="button"
-              accessibilityLabel="Open account drawer"
+              accessibilityLabel="Open profile"
+              hitSlop={12}
             >
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{initials}</Text>
@@ -175,8 +166,10 @@ export default function Home() {
                 accessibilityLabel="Open notifications"
               >
                 <Ionicons name="notifications-outline" size={21} color={colors.text} />
-                {(memberHome?.unreadNotifications ?? 0) > 0 ? (
-                  <View style={styles.unreadDot} />
+                {unreadCount > 0 ? (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+                  </View>
                 ) : null}
               </Pressable>
             </Link>
@@ -203,37 +196,31 @@ export default function Home() {
           {loadingHome ? <HomeSkeleton /> : null}
 
           {firstRunState ? (
-            <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} />
+            firstRunState !== "NEVER_CHECKED_IN" ? (
+              <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} />
+            ) : null
           ) : null}
 
           {hasMembership ? (
-            <Link href="/scan" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel="Check in at the gym">
-                <GlassCard
-                  variant={attendanceMode === "MANUAL_APPROVAL" ? "warning" : "success"}
-                  contentStyle={styles.checkInContent}
-                >
-                  <IconBubble icon="qr-code-outline" tone="lime" size={46} />
-                  <View style={styles.checkInCopy}>
-                    <Text style={styles.checkInTitle}>{checkInCopy.title}</Text>
-                    <Text numberOfLines={1} style={styles.mutedSmall}>
-                      {checkInCopy.body}
-                    </Text>
-                  </View>
-                  <View style={styles.checkInCta}>
-                    <Text style={styles.checkInCtaText}>{checkInCopy.cta}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={colors.bg} />
-                  </View>
-                </GlassCard>
-              </Pressable>
-            </Link>
+            <GlassCard variant="default" contentStyle={styles.checkInContent}>
+              <IconBubble icon="qr-code-outline" tone="lime" size={46} />
+              <View style={styles.checkInCopy}>
+                <Text style={styles.checkInTitle}>Check in</Text>
+                <Text numberOfLines={1} style={styles.mutedSmall}>
+                  Scan the gym QR at the desk
+                </Text>
+              </View>
+              <ZookButton href="/scan" size="sm" accessibilityLabel="Scan gym QR">
+                Scan
+              </ZookButton>
+            </GlassCard>
           ) : null}
 
           {hasMembership ? (
             <GlassCard
               variant={membershipExpired ? "warning" : "default"}
               contentStyle={styles.membershipContent}
-              style={membershipExpired ? null : styles.membershipHealthyCard}
+              style={membershipExpired ? styles.membershipUrgentCard : styles.membershipHealthyCard}
             >
               <View style={styles.membershipTop}>
                 <View style={styles.membershipCopy}>
@@ -264,20 +251,13 @@ export default function Home() {
                     </Text>
                   ) : null}
                 </View>
-                <Link href="/membership" asChild>
-                  <Pressable accessibilityRole="link" style={styles.membershipCta}>
-                    <Text style={styles.membershipCtaText}>
-                      {membershipExpired ? "Renew now" : "Renew"}
-                    </Text>
-                  </Pressable>
-                </Link>
               </View>
             </GlassCard>
           ) : null}
 
           {hasMembership ? <SectionHeader title="Today's Plan" /> : null}
 
-          {hasMembership ? (
+          {hasMembership && assignedPlan ? (
             <Link href="/plans" asChild>
               <Pressable accessibilityRole="link" accessibilityLabel="Open today's plan">
                 <GlassCard contentStyle={styles.planContent}>
@@ -285,12 +265,10 @@ export default function Home() {
                     <IconBubble icon="barbell-outline" tone="lime" size={44} />
                     <View style={styles.planCopy}>
                       <Text numberOfLines={1} style={styles.planTitle}>
-                        {planName}
+                        {assignedPlan.name}
                       </Text>
                       <Text numberOfLines={1} style={styles.mutedSmall}>
-                        {memberHome?.activePlan?.type
-                          ? titleCaseFromCode(memberHome.activePlan.type)
-                          : "Tap to view"}
+                        {assignedPlan.type}
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={colors.muted} />
@@ -298,6 +276,16 @@ export default function Home() {
                 </GlassCard>
               </Pressable>
             </Link>
+          ) : null}
+
+          {hasMembership && !assignedPlan ? (
+            <GlassCard variant="compact">
+              <EmptyState
+                icon="barbell-outline"
+                title="No plan assigned yet"
+                body="Your trainer will assign a workout plan once you join."
+              />
+            </GlassCard>
           ) : null}
 
           <Link href="/tracking" asChild>
@@ -326,13 +314,13 @@ export default function Home() {
             </Text>
           ) : null}
         </ScrollView>
-        {profileOpen ? (
+        {gymsOpen ? (
           <View style={styles.drawerScene}>
             <Pressable
               style={styles.drawerBackdrop}
-              onPress={() => setProfileOpen(false)}
+              onPress={() => setGymsOpen(false)}
               accessibilityRole="button"
-              accessibilityLabel="Close profile"
+              accessibilityLabel="Close gym switcher"
             />
             <View style={styles.drawerPanel}>
               <ScrollView
@@ -353,7 +341,7 @@ export default function Home() {
                     </Text>
                   </View>
                   <Pressable
-                    onPress={() => setProfileOpen(false)}
+                    onPress={() => setGymsOpen(false)}
                     accessibilityRole="button"
                     accessibilityLabel="Close"
                     style={styles.drawerClose}
@@ -404,7 +392,7 @@ export default function Home() {
                 ) : null}
                 <Pressable
                   onPress={() => {
-                    setProfileOpen(false);
+                    setGymsOpen(false);
                     router.push("/settings");
                   }}
                   accessibilityRole="button"
@@ -416,7 +404,7 @@ export default function Home() {
                 </Pressable>
                 <Pressable
                   onPress={() => {
-                    setProfileOpen(false);
+                    setGymsOpen(false);
                     router.push("/shop");
                   }}
                   accessibilityRole="button"
@@ -430,7 +418,14 @@ export default function Home() {
             </View>
           </View>
         ) : null}
-        {!profileOpen ? <BottomNav /> : null}
+        {renewalImminent ? (
+          <StickyActionBar>
+            <ZookButton href="/membership" icon="refresh-outline" fullWidth>
+              {membershipExpired ? "Renew now" : "Renew membership"}
+            </ZookButton>
+          </StickyActionBar>
+        ) : null}
+        {!gymsOpen && !renewalImminent ? <BottomNav /> : null}
       </ZookScreen>
     </>
   );
@@ -546,6 +541,9 @@ const styles = StyleSheet.create({
     paddingBottom: layout.bottomNavContentPadding,
     gap: 12,
   },
+  contentWithRenewalBar: {
+    paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
+  },
   homeHeader: {
     minHeight: 64,
     flexDirection: "row",
@@ -609,21 +607,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  unreadDot: {
+  unreadBadge: {
     position: "absolute",
-    top: 8,
-    right: 9,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.lime,
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.red,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  unreadBadgeText: {
+    color: colors.text,
+    fontSize: 9,
+    fontWeight: "900",
+    lineHeight: 12,
   },
   membershipContent: {
     padding: 16,
     gap: 10,
   },
   membershipHealthyCard: {
-    borderColor: "rgba(185,244,85,0.2)",
+    borderLeftWidth: 3,
+    borderLeftColor: colors.lime,
+    borderColor: "rgba(185,244,85,0.24)",
+    backgroundColor: "rgba(185,244,85,0.075)",
+  },
+  membershipUrgentCard: {
+    borderLeftWidth: 3,
+    borderLeftColor: colors.amber,
   },
   membershipTop: {
     minHeight: 88,

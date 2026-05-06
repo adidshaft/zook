@@ -5,7 +5,7 @@ import { zookDemoFixtures } from "@zook/core";
 import { MockMapProvider } from "@zook/core/providers";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
-import { ZookLogo } from "@/components/zook-logo";
+import { PublicNav } from "@/components/public-nav";
 import { formatInr } from "@/lib/format";
 import {
   alternatePublicLocale,
@@ -66,7 +66,9 @@ function demoGyms(query?: string, city?: string): GymResult[] {
     const plans = plansByOrgId.get(gym.id) ?? [];
     return {
       ...gym,
-      priceFromPaise: plans.length ? Math.min(...plans.map((plan) => plan.pricePaise)) : null,
+      priceFromPaise: plans.filter((plan) => plan.pricePaise > 0).length
+        ? Math.min(...plans.filter((plan) => plan.pricePaise > 0).map((plan) => plan.pricePaise))
+        : null,
       planCount: plans.length,
     };
   });
@@ -131,8 +133,10 @@ async function searchGyms(query?: string, city?: string): Promise<GymResult[]> {
       const orgPlans = plansByOrgId.get(gym.id) ?? [];
       return {
         ...gym,
-        priceFromPaise: orgPlans.length
-          ? Math.min(...orgPlans.map((plan) => plan.pricePaise))
+        priceFromPaise: orgPlans.filter((plan) => plan.pricePaise > 0).length
+          ? Math.min(
+              ...orgPlans.filter((plan) => plan.pricePaise > 0).map((plan) => plan.pricePaise),
+            )
           : null,
         planCount: orgPlans.length,
       };
@@ -160,25 +164,14 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
   const totalPages = Math.max(1, Math.ceil(gyms.length / pageSize));
 
   return (
-    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh px-5 py-5">
-      <div className="mx-auto grid max-w-7xl gap-5">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <ZookLogo />
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={localizedPath("/gyms", nextLocale, { q, city, page })}
-              className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
-            >
-              {t("languageSwitch")}
-            </Link>
-            <Link
-              href={localizedPath("/login", locale)}
-              className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
-            >
-              {t("login")}
-            </Link>
-          </div>
-        </header>
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
+      <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:px-6">
+        <PublicNav
+          loginHref={localizedPath("/login", locale)}
+          loginLabel={t("login")}
+          languageHref={localizedPath("/gyms", nextLocale, { q, city, page })}
+          languageLabel={t("languageSwitch")}
+        />
 
         <GlassCard variant="strong">
           <div className="grid gap-6 lg:grid-cols-[1fr_440px] lg:items-end">
@@ -193,7 +186,7 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
             </div>
             <form
               action="/gyms"
-              className="grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4"
+              className="grid gap-3"
             >
               {locale === "hi" ? <input type="hidden" name="lang" value="hi" /> : null}
               <label
@@ -202,32 +195,35 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
               >
                 {t("search")}
               </label>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
-                <Search size={18} className="text-white/35" />
+              <div className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/25 sm:flex-row">
+                <div className="flex min-h-12 min-w-0 flex-1 items-center gap-2 px-4">
+                  <Search size={18} className="shrink-0 text-white/35" />
                 <input
                   id="gym-search"
                   name="q"
                   defaultValue={q}
                   placeholder={t("gymNamePlaceholder")}
-                  className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35"
+                    className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35"
                 />
-              </div>
+                </div>
               <label htmlFor="gym-city" className="sr-only">
                 {t("city")}
               </label>
+                <div className="h-px bg-white/10 sm:h-auto sm:w-px" />
               <input
                 id="gym-city"
                 name="city"
                 defaultValue={city}
                 placeholder={t("city")}
-                className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
+                  className="min-h-12 bg-transparent px-4 text-sm text-white outline-none placeholder:text-white/35 sm:w-36"
               />
               <button
                 type="submit"
-                className="zook-focus rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
+                  className="zook-focus min-h-12 bg-lime-300 px-5 text-sm font-semibold text-black transition hover:bg-lime-200"
               >
                 {t("searchGyms")}
               </button>
+              </div>
             </form>
           </div>
         </GlassCard>
@@ -278,11 +274,11 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
                     <p className="mt-2 text-lg font-semibold text-white">
                       {gym.priceFromPaise !== null
                         ? `${t("startingAt")} ${formatInr(gym.priceFromPaise)}/${t("perMonth")}`
-                        : t("plansComingSoon")}
+                        : "Free to join"}
                     </p>
                     <p className="mt-1 text-xs text-white/45">
                       {gym.planCount
-                        ? `${gym.planCount} ${t("publicPlans")}`
+                        ? `${gym.planCount} ${gym.planCount === 1 ? "plan" : "plans"} available`
                         : t("publicSignupPending")}
                     </p>
                   </div>

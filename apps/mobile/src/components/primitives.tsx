@@ -31,6 +31,7 @@ import { colors, layout, palettes, radii, shadows, spacing, typography } from "@
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 export type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ButtonSize = "sm" | "md" | "lg";
 type GlassCardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
 type GlassCardGlowTone = "lime" | "amber" | "red" | "success";
 type BrandMarkSize = "sm" | "md" | "lg";
@@ -114,6 +115,36 @@ const buttonPalettes: Record<
     borderColor: "rgba(255,90,61,0.28)",
     color: colors.text,
   },
+};
+
+const buttonSizeStyles: Record<ButtonSize, ViewStyle> = {
+  sm: {
+    minHeight: 32,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 5,
+  },
+  md: {
+    minHeight: 46,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 0,
+    gap: 7,
+  },
+  lg: {
+    minHeight: 54,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    gap: 8,
+  },
+};
+
+const buttonTextSizeStyles: Record<ButtonSize, TextStyle> = {
+  sm: { fontSize: 13, lineHeight: 17 },
+  md: {},
+  lg: { fontSize: 16, lineHeight: 21 },
 };
 
 const glassCardVariants: Record<
@@ -722,12 +753,18 @@ export function SectionHeader({
   action?: ReactNode;
 }) {
   return (
+    <View style={styles.sectionGroup}>
+      {eyebrow ? <Text style={styles.sectionEyebrow}>{eyebrow}</Text> : null}
+      <SectionLabel title={title} action={action} />
+      {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+    </View>
+  );
+}
+
+export function SectionLabel({ title, action }: { title: string; action?: ReactNode }) {
+  return (
     <View style={styles.sectionHeader}>
-      <View style={styles.sectionCopy}>
-        {eyebrow ? <Text style={styles.sectionEyebrow}>{eyebrow}</Text> : null}
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
-      </View>
+      <Text style={styles.sectionTitle}>{title}</Text>
       {action ? <View>{action}</View> : null}
     </View>
   );
@@ -767,6 +804,8 @@ export function ZookButton({
   href,
   tone = "lime",
   variant,
+  size = "md",
+  fullWidth = false,
   disabled = false,
   icon,
   style,
@@ -778,6 +817,8 @@ export function ZookButton({
   href?: Href;
   tone?: ButtonTone;
   variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
   disabled?: boolean;
   icon?: IconName;
   style?: StyleProp<ViewStyle>;
@@ -786,13 +827,17 @@ export function ZookButton({
 }) {
   const resolvedVariant = variant ?? variantFromTone(tone);
   const palette = buttonPalettes[resolvedVariant];
+  const buttonSizeStyle = buttonSizeStyles[size];
+  const buttonTextSizeStyle = buttonTextSizeStyles[size];
   const staticButtonStyle = StyleSheet.flatten([
     styles.button,
+    buttonSizeStyle,
     palette.glow,
     {
       backgroundColor: palette.backgroundColor,
       borderColor: palette.borderColor,
     },
+    fullWidth ? styles.fullWidth : null,
     disabled ? styles.disabled : null,
     style,
   ]);
@@ -809,12 +854,12 @@ export function ZookButton({
           accessibilityState={{ disabled }}
           style={staticButtonStyle}
         >
-          {icon ? <Ionicons name={icon} size={17} color={palette.color} /> : null}
+          {icon ? <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={palette.color} /> : null}
           <Text
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.82}
-            style={[styles.buttonText, { color: palette.color }, textStyle]}
+            style={[styles.buttonText, buttonTextSizeStyle, { color: palette.color }, textStyle]}
           >
             {children}
           </Text>
@@ -836,22 +881,24 @@ export function ZookButton({
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.button,
+        buttonSizeStyle,
         palette.glow,
         {
           backgroundColor: palette.backgroundColor,
           borderColor: palette.borderColor,
         },
         pressed && !disabled ? styles.pressed : null,
+        fullWidth ? styles.fullWidth : null,
         disabled ? styles.disabled : null,
         style,
       ]}
     >
-      {icon ? <Ionicons name={icon} size={17} color={palette.color} /> : null}
+      {icon ? <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={palette.color} /> : null}
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.82}
-        style={[styles.buttonText, { color: palette.color }, textStyle]}
+        style={[styles.buttonText, buttonTextSizeStyle, { color: palette.color }, textStyle]}
       >
         {children}
       </Text>
@@ -1524,7 +1571,6 @@ export function ScannerFrame({
           { borderColor: palette.color },
         ]}
       />
-      <View style={[styles.scannerLine, { backgroundColor: palette.color }]} />
       <View style={styles.scannerFrameContent}>{children}</View>
     </View>
   );
@@ -2026,16 +2072,19 @@ export function BranchSelectorChip() {
 }
 
 export function EmptyState({
+  icon,
   title,
   body,
   action,
 }: {
+  icon?: IconName;
   title: string;
   body: string;
   action?: ReactNode;
 }) {
   return (
     <View style={styles.emptyState}>
+      {icon ? <IconBubble icon={icon} tone="neutral" size={42} /> : null}
       <Text style={styles.stateTitle}>{title}</Text>
       <Text style={styles.stateBody}>{body}</Text>
       {action ? <View style={styles.stateAction}>{action}</View> : null}
@@ -2248,12 +2297,12 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.md,
+    marginBottom: 2,
   },
-  sectionCopy: {
-    flex: 1,
+  sectionGroup: {
     gap: 4,
   },
   sectionEyebrow: {
@@ -2261,8 +2310,13 @@ const styles = StyleSheet.create({
     ...typography.eyebrow,
   },
   sectionTitle: {
-    color: colors.text,
-    ...typography.sectionTitle,
+    flex: 1,
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    lineHeight: 18,
   },
   sectionSubtitle: {
     color: colors.muted,
@@ -2274,17 +2328,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   button: {
-    minHeight: 46,
     borderWidth: 1,
-    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 14,
     flexDirection: "row",
-    gap: 7,
   },
   buttonText: {
     ...typography.button,
+  },
+  fullWidth: {
+    width: "100%",
   },
   pressed: {
     opacity: 0.88,
