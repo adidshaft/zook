@@ -17,6 +17,27 @@ vi.mock("./request-logger", () => ({
       mode: "mock",
       configured: true,
     },
+    push: {
+      selectedProvider: "mock",
+      activeProvider: "mock",
+      status: "ready",
+      mode: "mock",
+      configured: true,
+    },
+    ai: {
+      selectedProvider: "mock",
+      activeProvider: "mock",
+      status: "ready",
+      mode: "mock",
+      configured: true,
+    },
+    storage: {
+      selectedProvider: "mock",
+      activeProvider: "mock",
+      status: "ready",
+      mode: "mock",
+      configured: true,
+    },
   }),
 }));
 
@@ -35,5 +56,20 @@ describe("readiness payload", () => {
     expect(serialized).not.toContain("postgresql://");
     expect(serialized).not.toContain("secret");
     expect(serialized).not.toContain("db.internal");
+  });
+
+  it("returns a public status component payload", async () => {
+    const { getStatusPayload } = await import("./readiness");
+
+    const payload = await getStatusPayload();
+
+    expect(payload).toMatchObject({
+      status: "down",
+      components: {
+        web: { status: "operational" },
+        db: { status: "down" },
+        razorpay: { status: "degraded", provider: "mock" },
+      },
+    });
   });
 });

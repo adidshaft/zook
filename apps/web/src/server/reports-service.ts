@@ -9,6 +9,7 @@ export type OrgReportType =
   | "manual-cash"
   | "expiring-members"
   | "membership-sales"
+  | "invoices"
   | "referrals"
   | "shop"
   | "ai-usage"
@@ -387,6 +388,41 @@ export class ReportsService {
         createdAt: formatDate(subscription.createdAt),
       };
     });
+  }
+
+  async invoiceReport(orgId: string, filters: ReportFilters) {
+    const issueDate = between(filters.from, filters.to);
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        orgId,
+        ...(issueDate ? { issueDate } : {}),
+      },
+      orderBy: [{ issueDate: "desc" }, { issuedAt: "desc" }],
+      take: 1_000,
+    });
+    const users = await prisma.user.findMany({
+      where: { id: { in: invoices.map((invoice) => invoice.userId).filter(Boolean) as string[] } },
+    });
+    const usersById = new Map(users.map((user) => [user.id, user]));
+
+    return invoices.map((invoice) => ({
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber ?? invoice.invoiceNo ?? "",
+      issueDate: formatDate(invoice.issueDate ?? invoice.issuedAt),
+      status: invoice.invoiceStatus,
+      paymentStatus: invoice.status,
+      memberId: invoice.userId ?? "",
+      memberName: invoice.userId ? (usersById.get(invoice.userId)?.name ?? "") : "",
+      gstNumber: invoice.gstNumber ?? "",
+      gstRateBps: invoice.gstRateBps ?? "",
+      subtotalPaise: invoice.subtotalPaise || Math.max(invoice.amountPaise - invoice.taxPaise, 0),
+      gstPaise: invoice.gstPaise || invoice.taxPaise,
+      totalPaise: invoice.totalPaise || invoice.amountPaise,
+      paymentId: invoice.paymentId ?? "",
+      subscriptionId: invoice.subscriptionId ?? "",
+      shopOrderId: invoice.shopOrderId ?? "",
+      pdfAssetId: invoice.pdfAssetId ?? "",
+    }));
   }
 
   async referralReport(orgId: string, filters: ReportFilters) {

@@ -13,3 +13,6 @@ export * from "./audit-log-service";
 export * from "./platform-admin-service";
 export * from "./personal-tracking-service";
 export * from "./plan-service";
+export * from "./invoice-service";
+export * from "./trainer-commission-service";
+export * from "./class-service";

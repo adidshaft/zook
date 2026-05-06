@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { MapPin, QrCode, ShieldCheck, Smartphone, Star } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
@@ -17,16 +18,17 @@ function priceSummary(plans: Array<{ pricePaise: number }>) {
   return `Starting at ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/month`;
 }
 
-function trainerTags(value: unknown) {
+function trainerProfileDetails(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return [];
+    return { certifications: [], specialties: [] };
   }
   const record = value as Record<string, unknown>;
-  const raw = [
-    ...(Array.isArray(record.specialties) ? record.specialties : []),
-    ...(Array.isArray(record.certifications) ? record.certifications : []),
-  ];
-  return raw.filter((item): item is string => typeof item === "string").slice(0, 4);
+  const specialties = Array.isArray(record.specialties) ? record.specialties : [];
+  const certifications = Array.isArray(record.certifications) ? record.certifications : [];
+  return {
+    certifications: certifications.filter((item): item is string => typeof item === "string"),
+    specialties: specialties.filter((item): item is string => typeof item === "string"),
+  };
 }
 
 export async function generateMetadata({ params }: GymPublicPageProps): Promise<Metadata> {
@@ -83,7 +85,6 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
   }
   const { org, plans, trainers } = data;
   const minPlanPrice = Math.min(...plans.map((plan) => plan.pricePaise));
-  const defaultPlanId = plans[0]?.id;
   const hasPublicPlans = plans.length > 0;
   const gallery = org.gallery.length
     ? org.gallery
@@ -137,24 +138,28 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
         <section className="grid gap-5 lg:grid-cols-[1fr_380px]">
           <div className="glass-panel relative min-h-[560px] overflow-hidden rounded-[32px] p-6 md:p-8">
             {org.coverImageUrl ? (
-              <img
+              <Image
                 src={org.coverImageUrl}
                 alt={`${org.name} gym interior`}
-                loading="lazy"
-                decoding="async"
-                className="absolute inset-0 h-full w-full object-cover opacity-30"
+                fill
+                sizes="(min-width: 1024px) calc(100vw - 430px), 100vw"
+                className="object-cover opacity-30"
+                priority={false}
+                unoptimized
               />
             ) : null}
             <div className="absolute inset-0 bg-gradient-to-br from-black/82 via-black/62 to-black/82" />
             <div className="relative">
               <div className="flex flex-wrap items-center gap-3">
                 {org.logoUrl ? (
-                  <img
+                  <Image
                     src={org.logoUrl}
                     alt={`${org.name} logo`}
-                    loading="lazy"
-                    decoding="async"
+                    width={56}
+                    height={56}
+                    sizes="56px"
                     className="h-14 w-14 rounded-2xl border border-white/15 object-cover"
+                    unoptimized
                   />
                 ) : null}
                 <div className="flex flex-wrap gap-2">
@@ -201,20 +206,22 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
               desk pickup.
             </p>
             <div className="mt-5 rounded-[28px] border border-white/10 bg-white p-4">
-              <img
+              <Image
                 src={`/qr/${org.username}?target=join`}
                 alt={`Join ${org.name} on Zook`}
-                loading="lazy"
-                decoding="async"
+                width={640}
+                height={640}
+                sizes="(min-width: 1024px) 320px, 100vw"
                 className="aspect-square w-full rounded-[18px]"
+                unoptimized
               />
             </div>
             {hasPublicPlans ? (
               <Link
-                href={`/join/${org.username}${defaultPlanId ? `?plan=${defaultPlanId}` : ""}`}
+                href="#plans"
                 className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
               >
-                Join Now
+                View plans
               </Link>
             ) : (
               <div className="mt-6 rounded-[24px] border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/55">
@@ -240,7 +247,7 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
           </GlassCard>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-3">
+        <section id="plans" className="grid scroll-mt-5 gap-4 lg:grid-cols-3">
           {plans.length ? (
             plans.map((plan) => (
               <Link
@@ -342,13 +349,15 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
         {gallery.length ? (
           <section className="grid gap-4 md:grid-cols-3">
             {gallery.slice(0, 6).map((imageUrl) => (
-              <img
+              <Image
                 key={imageUrl}
                 src={imageUrl}
                 alt={`${org.name} facility photo`}
-                loading="lazy"
-                decoding="async"
+                width={640}
+                height={480}
+                sizes="(min-width: 768px) 33vw, 100vw"
                 className="aspect-[4/3] rounded-[28px] border border-white/10 object-cover"
+                unoptimized
               />
             ))}
           </section>
@@ -359,34 +368,49 @@ export default async function GymPublicPage({ params }: GymPublicPageProps) {
             <h2 className="text-2xl font-semibold text-white">Visible trainers</h2>
             <div className="mt-5 grid gap-3">
               {trainers.length ? (
-                trainers.map((trainer) => (
-                  <div
-                    key={trainer.userId}
-                    className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4"
-                  >
-                    {trainer.profilePhotoUrl ? (
-                      <img
-                        src={trainer.profilePhotoUrl}
-                        alt={`${trainer.name} profile photo`}
-                        loading="lazy"
-                        decoding="async"
-                        className="h-11 w-11 rounded-2xl border border-white/10 object-cover"
-                      />
-                    ) : null}
-                    <div>
-                      <p className="font-medium text-white">{trainer.name}</p>
-                      <p className="mt-1 text-sm text-white/45">
-                        {trainer.bio ?? "Trainer details will appear after the gym publishes them."}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {trainerTags(trainer.specialties).map((tag) => (
-                          <Pill key={tag}>{tag}</Pill>
-                        ))}
-                        <Pill tone="blue">Available for PT</Pill>
+                trainers.map((trainer) => {
+                  const profileDetails = trainerProfileDetails(trainer.specialties);
+                  return (
+                    <div
+                      key={trainer.userId}
+                      className="flex items-start gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4"
+                    >
+                      {trainer.profilePhotoUrl ? (
+                        <Image
+                          src={trainer.profilePhotoUrl}
+                          alt={`${trainer.name} profile photo`}
+                          width={44}
+                          height={44}
+                          sizes="44px"
+                          className="h-11 w-11 rounded-2xl border border-white/10 object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-sm font-semibold text-white/72">
+                          {trainer.name.slice(0, 1)}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium text-white">{trainer.name}</p>
+                        <p className="mt-1 text-sm text-white/45">
+                          {trainer.bio ??
+                            "Trainer details will appear after the gym publishes them."}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {profileDetails.specialties.slice(0, 3).map((specialty) => (
+                            <Pill key={specialty}>{specialty}</Pill>
+                          ))}
+                          {profileDetails.certifications.slice(0, 2).map((certification) => (
+                            <Pill key={certification} tone="amber">
+                              {certification}
+                            </Pill>
+                          ))}
+                          <Pill tone="blue">Available for PT</Pill>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <p className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/50">
                   Trainer profiles will appear after the gym publishes them.

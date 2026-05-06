@@ -20,6 +20,7 @@ const privateReadPermissionsByCategory: Partial<Record<StorageFileCategory, Perm
   profile_photo: ["MEMBERS_VIEW", "ATTENDANCE_APPROVE"],
   body_progress_photo: ["MEMBERS_VIEW"],
   privacy_export: ["PRIVACY_VIEW_AUDIT"],
+  invoice_pdf: ["PAYMENTS_VIEW", "ORG_VIEW_REPORTS"],
   org_logo: ["ORG_MANAGE_PROFILE"],
   org_cover: ["ORG_MANAGE_PROFILE"],
   org_gallery: ["ORG_MANAGE_PROFILE"]
@@ -32,6 +33,7 @@ const uploadPermissionsByCategory: Partial<Record<StorageFileCategory, Permissio
   plan_image: "PLANS_CREATE",
   ai_generated_image: "AI_GENERATE_IMAGE",
   trainer_upi_qr: "PT_RECORD",
+  invoice_pdf: "PAYMENTS_VIEW",
   org_gallery: "ORG_MANAGE_PROFILE"
 };
 
@@ -46,7 +48,8 @@ const allowedVisibilityByCategory: Record<StorageFileCategory, StorageFileVisibi
   org_gallery: ["public"],
   ai_generated_image: ["org", "public"],
   body_progress_photo: ["private"],
-  privacy_export: ["private"]
+  privacy_export: ["private"],
+  invoice_pdf: ["private", "org"]
 };
 
 const defaultVisibilityByCategory: Record<StorageFileCategory, StorageFileVisibility> = {
@@ -60,7 +63,8 @@ const defaultVisibilityByCategory: Record<StorageFileCategory, StorageFileVisibi
   org_gallery: "public",
   ai_generated_image: "org",
   body_progress_photo: "private",
-  privacy_export: "private"
+  privacy_export: "private",
+  invoice_pdf: "private"
 };
 
 export function buildFileAssetUrl(fileId: string) {

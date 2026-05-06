@@ -4,19 +4,23 @@ import { getRateLimitDiagnostics } from "./rate-limit";
 
 export function summarizeProviderDiagnostics() {
   const diagnostics = getProviderRegistryDiagnostics();
+  const summarize = (value: (typeof diagnostics)[keyof typeof diagnostics]) => ({
+    selectedProvider: value.selectedProvider,
+    activeProvider: value.activeProvider,
+    status: value.status,
+    mode: value.mode,
+    configured: value.configured,
+  });
+
   return {
-    ...Object.fromEntries(
-      Object.entries(diagnostics).map(([category, value]) => [
-        category,
-        {
-          selectedProvider: value.selectedProvider,
-          activeProvider: value.activeProvider,
-          status: value.status,
-          mode: value.mode,
-          configured: value.configured,
-        },
-      ]),
-    ),
+    ai: summarize(diagnostics.ai),
+    email: summarize(diagnostics.email),
+    map: summarize(diagnostics.map),
+    payment: summarize(diagnostics.payment),
+    push: summarize(diagnostics.push),
+    sms: summarize(diagnostics.sms),
+    storage: summarize(diagnostics.storage),
+    whatsapp: summarize(diagnostics.whatsapp),
     rateLimit: getRateLimitDiagnostics(),
   };
 }

@@ -34,3 +34,23 @@ export function canReceiveNotification(type: NotificationType, user: UserSafetyS
   }
   return true;
 }
+
+export type WhatsAppTransactionalTopic = "PAYMENT" | "ATTENDANCE" | "MEMBERSHIP";
+
+const whatsappFanoutTopics = new Set<WhatsAppTransactionalTopic>([
+  "PAYMENT",
+  "ATTENDANCE",
+  "MEMBERSHIP"
+]);
+
+export function shouldFanOutWhatsApp(input: {
+  notificationType: NotificationType;
+  topic?: string | null;
+  recipientOptedIn: boolean;
+}) {
+  return (
+    input.recipientOptedIn &&
+    input.notificationType === "TRANSACTIONAL" &&
+    Boolean(input.topic && whatsappFanoutTopics.has(input.topic as WhatsAppTransactionalTopic))
+  );
+}

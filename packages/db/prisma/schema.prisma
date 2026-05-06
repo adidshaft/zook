@@ -1158,19 +1158,34 @@ model PaymentWebhookAttempt {
 }
 
 model Invoice {
-  id          String        @id @default(cuid())
-  orgId       String?
-  userId      String?
-  paymentId   String
-  invoiceNo   String        @unique
-  amountPaise Int
-  taxPaise    Int           @default(0)
-  status      PaymentStatus
-  issuedAt    DateTime      @default(now())
-  metadata    Json?
+  id             String        @id @default(cuid())
+  orgId          String?
+  userId         String?
+  paymentId      String?
+  subscriptionId String?
+  shopOrderId    String?
+  invoiceNo      String?       @unique
+  invoiceNumber  String?       @unique
+  issueDate      DateTime      @default(now())
+  issuedAt       DateTime      @default(now())
+  gstNumber      String?
+  gstRateBps     Int?
+  subtotalPaise  Int           @default(0)
+  gstPaise       Int           @default(0)
+  totalPaise     Int           @default(0)
+  amountPaise    Int           @default(0)
+  taxPaise       Int           @default(0)
+  status         PaymentStatus @default(SUCCEEDED)
+  invoiceStatus  String        @default("issued")
+  pdfAssetId     String?
+  metadata       Json?
+  createdAt      DateTime      @default(now())
 
+  @@index([orgId, issueDate])
   @@index([orgId])
   @@index([userId])
+  @@index([subscriptionId])
+  @@index([shopOrderId])
 }
 
 model ManualPaymentAdjustment {
@@ -1466,6 +1481,73 @@ model PersonalTrainingSessionLog {
   @@index([orgId, subscriptionId])
 }
 
+model TrainerCommission {
+  id                  String   @id @default(cuid())
+  orgId               String
+  trainerId           String
+  period              DateTime
+  ptSessionCount      Int
+  planAssignmentCount Int
+  commissionBps       Int
+  totalPaise          Int
+  status              String   @default("pending")
+  payoutId            String?
+  createdAt           DateTime @default(now())
+
+  @@unique([orgId, trainerId, period])
+  @@index([orgId, status])
+  @@index([trainerId, period])
+}
+
+model TrainerPayout {
+  id            String   @id @default(cuid())
+  orgId         String
+  trainerId     String
+  totalPaise    Int
+  bankAccount   Json?
+  upiId         String?
+  mode          String   @default("upi")
+  status        String   @default("pending")
+  transactionId String?
+  failureReason String?
+  createdAt     DateTime @default(now())
+
+  @@index([orgId, status])
+  @@index([trainerId, createdAt])
+}
+
+model Class {
+  id             String   @id @default(cuid())
+  orgId          String
+  branchId       String
+  trainerId      String
+  name           String
+  description    String?
+  classType      String
+  maxCapacity    Int
+  startTime      DateTime
+  endTime        DateTime
+  recurrenceRule String?
+  status         String   @default("scheduled")
+  createdAt      DateTime @default(now())
+
+  @@index([orgId, startTime])
+  @@index([branchId, startTime])
+  @@index([trainerId, startTime])
+}
+
+model ClassEnrollment {
+  id          String    @id @default(cuid())
+  classId     String
+  memberId    String
+  status      String    @default("confirmed")
+  enrolledAt  DateTime  @default(now())
+  cancelledAt DateTime?
+
+  @@unique([classId, memberId])
+  @@index([memberId, status])
+}
+
 model PlanContent {
   id            String     @id @default(cuid())
   orgId         String
@@ -1695,6 +1777,32 @@ model PushDevice {
   updatedAt         DateTime         @updatedAt
 
   @@unique([provider, token])
+  @@index([orgId, userId])
+  @@index([userId, status])
+  @@index([status, updatedAt])
+}
+
+model WhatsAppDevice {
+  id                String    @id @default(cuid())
+  orgId             String?
+  userId            String
+  provider          String    @default("mock")
+  phone             String
+  status            String    @default("ACTIVE")
+  deviceLabel       String?
+  deviceFingerprint String?
+  locale            String?
+  timezone          String?
+  lastSeenAt        DateTime?
+  lastRegisteredAt  DateTime?
+  optedInAt         DateTime  @default(now())
+  revokedAt         DateTime?
+  failureReason     String?
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([provider, phone, userId])
   @@index([orgId, userId])
   @@index([userId, status])
   @@index([status, updatedAt])

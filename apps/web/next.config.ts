@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   typedRoutes: false,
   allowedDevOrigins: ["127.0.0.1"],
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "**" }],
+  },
   async headers() {
     return [
       {

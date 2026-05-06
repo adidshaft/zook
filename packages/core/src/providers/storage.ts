@@ -22,6 +22,7 @@ export const storageFileCategories = [
   "ai_generated_image",
   "body_progress_photo",
   "privacy_export",
+  "invoice_pdf",
 ] as const;
 
 export type StorageFileCategory = (typeof storageFileCategories)[number];
@@ -168,6 +169,13 @@ const fileRules: Record<
     defaultVisibility: "private",
     allowedVisibilities: ["private"],
     defaultExtension: "json",
+  },
+  invoice_pdf: {
+    maxSizeBytes: 10 * megabyte,
+    contentTypes: ["application/pdf"],
+    defaultVisibility: "private",
+    allowedVisibilities: ["private", "org"],
+    defaultExtension: "pdf",
   },
 };
 

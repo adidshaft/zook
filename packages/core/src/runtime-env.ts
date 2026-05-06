@@ -230,6 +230,13 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
         message: "PUSH_PROVIDER=mock is not allowed in production. Use expo or disabled.",
       });
     }
+    if (normalizedProvider(env, "WHATSAPP_PROVIDER", "disabled") === "mock") {
+      issues.push({
+        level: "error",
+        code: "PRODUCTION_MOCK_WHATSAPP_PROVIDER",
+        message: "WHATSAPP_PROVIDER=mock is not allowed in production. Use twilio or disabled.",
+      });
+    }
     if (
       normalizedProvider(env, "STORAGE_PROVIDER", "local") === "local" &&
       !/^(0|false|no|off)$/i.test(env.FILE_UPLOADS_ENABLED ?? "")
@@ -257,8 +264,11 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
   }
 
   if (appEnv === "staging") {
-    const mockProviders = ["PAYMENT_PROVIDER", "AI_PROVIDER", "PUSH_PROVIDER"].filter(
-      (key) => normalizedProvider(env, key, "mock") === "mock" && !env[key]?.trim(),
+    const mockProviders = ["PAYMENT_PROVIDER", "AI_PROVIDER", "PUSH_PROVIDER", "WHATSAPP_PROVIDER"].filter(
+      (key) => {
+        const defaultValue = key === "WHATSAPP_PROVIDER" ? "disabled" : "mock";
+        return normalizedProvider(env, key, defaultValue) === "mock" && !env[key]?.trim();
+      },
     );
     for (const key of mockProviders) {
       issues.push({

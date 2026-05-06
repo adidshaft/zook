@@ -11,12 +11,14 @@ type ApiEnvelope<T> = {
 export function JoinCheckoutButton({
   orgId,
   planId,
+  couponCode,
   referralCode,
   loginPath,
   fallbackCheckoutUrl,
 }: {
   orgId: string;
   planId: string;
+  couponCode?: string | null;
   referralCode?: string | null;
   loginPath: string;
   fallbackCheckoutUrl?: string | null;
@@ -33,6 +35,7 @@ export function JoinCheckoutButton({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           planId,
+          ...(couponCode ? { couponCode } : {}),
           ...(referralCode ? { referralCode } : {}),
         }),
       });
@@ -79,7 +82,11 @@ export function JoinCheckoutButton({
         {busy ? "Starting payment..." : "Continue to payment"}
       </button>
       {error ? (
-        <p className="rounded-[18px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
+        <p
+          role="alert"
+          aria-live="polite"
+          className="rounded-[18px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100"
+        >
           {error}
         </p>
       ) : null}

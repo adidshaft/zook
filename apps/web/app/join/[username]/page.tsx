@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { CheckCircle2, LockKeyhole } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
+import { CouponApplyForm } from "@/components/coupon-apply-form";
 import { JoinCheckoutButton } from "@/components/join-checkout-button";
 import { ZookLogo } from "@/components/zook-logo";
 import { formatInr, joinModeLabel } from "@/lib/format";
-import { getPublicGymProfileData, type PublicGymReferral } from "@/server/public-gym-read-models";
+import {
+  getPublicCouponPreview,
+  getPublicGymProfileData,
+  type PublicGymReferral,
+} from "@/server/public-gym-read-models";
 
 function discountFor(referral: PublicGymReferral | null, planPricePaise: number) {
   if (!referral || referral.status !== "active") {
@@ -19,8 +24,20 @@ function discountFor(referral: PublicGymReferral | null, planPricePaise: number)
   return 0;
 }
 
-function joinPath(username: string, planId: string, referral?: PublicGymReferral | null) {
-  return `/join/${username}?plan=${planId}${referral ? `&ref=${referral.code}` : ""}`;
+function joinPath(
+  username: string,
+  planId: string,
+  referral?: PublicGymReferral | null,
+  couponCode?: string,
+) {
+  const query = new URLSearchParams({ plan: planId });
+  if (referral) {
+    query.set("ref", referral.code);
+  }
+  if (couponCode) {
+    query.set("coupon", couponCode);
+  }
+  return `/join/${username}?${query.toString()}`;
 }
 
 function loginRedirect(path: string) {
@@ -46,15 +63,29 @@ export default async function JoinPage({
   searchParams,
 }: {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ plan?: string; ref?: string }>;
+  searchParams: Promise<{ coupon?: string; plan?: string; ref?: string }>;
 }) {
   const [{ username }, query] = await Promise.all([params, searchParams]);
   const data = await getPublicGymProfileData(username, query.ref);
   const org = data?.org;
   const selectedPlan = data?.plans.find((plan) => plan.id === query.plan) ?? data?.plans[0];
   const referral = data?.referral?.status === "active" ? data.referral : null;
-  const discountPaise = discountFor(referral, selectedPlan?.pricePaise ?? 0);
-  const finalAmount = Math.max(0, (selectedPlan?.pricePaise ?? 0) - discountPaise);
+  const couponCode = query.coupon?.trim().toUpperCase() || undefined;
+  const couponPreview =
+    org && selectedPlan && couponCode && data?.connected
+      ? await getPublicCouponPreview({
+          orgId: org.id,
+          planId: selectedPlan.id,
+          couponCode,
+          amountPaise: selectedPlan.pricePaise,
+        }).catch(() => null)
+      : null;
+  const referralDiscountPaise = discountFor(referral, selectedPlan?.pricePaise ?? 0);
+  const couponDiscountPaise = couponPreview?.discountPaise ?? 0;
+  const finalAmount = Math.max(
+    0,
+    (selectedPlan?.pricePaise ?? 0) - referralDiscountPaise - couponDiscountPaise,
+  );
   const joinMode = org?.joinMode ?? "OPEN_JOIN";
 
   if (!org || !selectedPlan) {
@@ -77,7 +108,7 @@ export default async function JoinPage({
           <Link
             href={loginRedirect(
               selectedPlan
-                ? joinPath(org.username, selectedPlan.id, referral)
+                ? joinPath(org.username, selectedPlan.id, referral, couponPreview?.code)
                 : `/g/${org.username}`,
             )}
             className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
@@ -142,19 +173,24 @@ export default async function JoinPage({
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
                   Choose plan
                 </p>
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div
+                  className="mt-3 grid gap-3 md:grid-cols-2"
+                  role="radiogroup"
+                  aria-label="Membership plan"
+                >
                   {data.plans.map((plan) => {
                     const isSelected = plan.id === selectedPlan.id;
                     return (
                       <Link
                         key={plan.id}
-                        href={joinPath(org.username, plan.id, referral)}
+                        href={joinPath(org.username, plan.id, referral, couponPreview?.code)}
                         className={`zook-focus rounded-[22px] border p-4 transition ${
                           isSelected
                             ? "border-lime-300/45 bg-lime-300/12"
                             : "border-white/10 bg-black/20 hover:bg-white/8"
                         }`}
-                        aria-current={isSelected ? "true" : undefined}
+                        role="radio"
+                        aria-checked={isSelected}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -179,38 +215,31 @@ export default async function JoinPage({
               <Readout label="Duration" value={validityLabel(selectedPlan)} />
               <Readout label="Visits" value={visitLabel(selectedPlan.visitLimit)} />
               <Readout
-                label="Referral applied"
+                label="Referral discount"
                 value={
                   referral
-                    ? `Referral ${referral.code} applied · -${formatInr(discountPaise)}`
+                    ? `Referral ${referral.code} applied · -${formatInr(referralDiscountPaise)}`
                     : "None"
                 }
               />
+              <Readout
+                label="Coupon discount"
+                value={
+                  couponPreview
+                    ? `Coupon ${couponPreview.code} applied · -${formatInr(couponDiscountPaise)}`
+                    : couponCode
+                      ? `${couponCode} could not be validated for this plan`
+                      : "None"
+                }
+              />
             </div>
-            <form className="mt-6 grid gap-2">
-              <input type="hidden" name="plan" value={selectedPlan.id} />
-              {referral ? <input type="hidden" name="ref" value={referral.code} /> : null}
-              <label
-                htmlFor="coupon-code"
-                className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35"
-              >
-                Coupon code
-              </label>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  id="coupon-code"
-                  name="coupon"
-                  placeholder="Enter coupon"
-                  className="zook-focus min-h-11 flex-1 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
-                />
-                <button
-                  type="submit"
-                  className="zook-focus rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white/72"
-                >
-                  Apply
-                </button>
-              </div>
-            </form>
+            <CouponApplyForm
+              orgId={org.id}
+              username={org.username}
+              planId={selectedPlan.id}
+              referralCode={referral?.code ?? null}
+              initialCouponCode={couponPreview?.code ?? null}
+            />
           </GlassCard>
 
           <GlassCard>
@@ -245,8 +274,11 @@ export default async function JoinPage({
               <JoinCheckoutButton
                 orgId={org.id}
                 planId={selectedPlan.id}
+                couponCode={couponPreview?.code ?? null}
                 referralCode={referral?.code ?? null}
-                loginPath={loginRedirect(joinPath(org.username, selectedPlan.id, referral))}
+                loginPath={loginRedirect(
+                  joinPath(org.username, selectedPlan.id, referral, couponPreview?.code),
+                )}
               />
             ) : (
               <>

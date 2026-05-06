@@ -17,11 +17,15 @@ import {
   canReceiveNotification,
   canAssignPlanToUser,
   canSendNotification,
+  calculateInvoiceTotals,
+  calculateTrainerCommissions,
   chooseRenewalStart,
   createPlanVersionSnapshot,
+  buildInvoiceNumber,
   consumeVisit,
   createManualPaymentAdjustment,
   createSignedQrToken,
+  decideClassEnrollment,
   decideAttendanceStatus,
   defaultAIQuotaForRole,
   encodeQrPayload,
@@ -30,8 +34,10 @@ import {
   markShopOrderPaid,
   requireManualOverrideReason,
   runAIGuardedRequest,
+  shouldFanOutWhatsApp,
   transitionPaymentSession,
   validateAttendanceScan,
+  validateClassSchedule,
   validateReferralRedemption,
   validateSignedQrToken,
 } from "../services";
@@ -208,6 +214,29 @@ describe("payments", () => {
   });
 });
 
+describe("invoices", () => {
+  it("calculates GST totals and stable invoice numbers", () => {
+    const totals = calculateInvoiceTotals({
+      defaultGstRateBps: 1800,
+      items: [{ description: "Monthly membership", unitAmountPaise: 100000, quantity: 2 }],
+    });
+
+    expect(totals).toMatchObject({
+      subtotalPaise: 200000,
+      gstPaise: 36000,
+      totalPaise: 236000,
+      gstRateBps: 1800,
+    });
+    expect(
+      buildInvoiceNumber({
+        orgCode: "iron temple",
+        issueDate: new Date("2026-05-06T00:00:00Z"),
+        sequence: 12,
+      }),
+    ).toBe("ZK-IRONTEMP-202605-00012");
+  });
+});
+
 describe("attendance", () => {
   it("signs and validates rolling QR payloads", () => {
     const payload = createSignedQrToken({
@@ -276,6 +305,20 @@ describe("permissions and notifications", () => {
         marketingOptIn: false,
         aiConsent: true,
         hasProfilePhoto: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldFanOutWhatsApp({
+        notificationType: "TRANSACTIONAL",
+        topic: "PAYMENT",
+        recipientOptedIn: true,
+      }),
+    ).toBe(true);
+    expect(
+      shouldFanOutWhatsApp({
+        notificationType: "PROMOTIONAL",
+        topic: "PAYMENT",
+        recipientOptedIn: true,
       }),
     ).toBe(false);
   });
@@ -395,6 +438,70 @@ describe("plans", () => {
       visibility: "assigned",
       content: { days: 3 },
     });
+  });
+});
+
+describe("trainer commissions", () => {
+  it("aggregates PT subscriptions and assigned plans by month", () => {
+    expect(
+      calculateTrainerCommissions({
+        orgId: "org",
+        period: new Date("2026-05-06T00:00:00Z"),
+        commissionBps: 2000,
+        planAssignmentCommissionPaise: 5000,
+        ptSubscriptions: [
+          {
+            trainerUserId: "trainer_1",
+            amountPaise: 100000,
+            createdAt: new Date("2026-05-01T00:00:00Z"),
+            status: "ACTIVE",
+          },
+          {
+            trainerUserId: "trainer_1",
+            amountPaise: 100000,
+            createdAt: new Date("2026-04-30T00:00:00Z"),
+            status: "ACTIVE",
+          },
+        ],
+        planAssignments: [
+          {
+            assignedById: "trainer_1",
+            createdAt: new Date("2026-05-05T00:00:00Z"),
+            active: true,
+          },
+        ],
+      }),
+    ).toMatchObject([
+      {
+        trainerId: "trainer_1",
+        ptSessionCount: 1,
+        planAssignmentCount: 1,
+        totalPaise: 25000,
+      },
+    ]);
+  });
+});
+
+describe("classes", () => {
+  it("validates class windows and capacity decisions", () => {
+    expect(() =>
+      validateClassSchedule({
+        startTime: new Date("2026-05-06T08:00:00Z"),
+        endTime: new Date("2026-05-06T09:00:00Z"),
+        maxCapacity: 10,
+      }),
+    ).not.toThrow();
+    expect(decideClassEnrollment({ maxCapacity: 2, confirmedEnrollmentCount: 1 })).toMatchObject({
+      status: "confirmed",
+      remainingCapacity: 0,
+    });
+    expect(
+      decideClassEnrollment({
+        maxCapacity: 2,
+        confirmedEnrollmentCount: 2,
+        allowWaitlist: true,
+      }),
+    ).toMatchObject({ status: "waitlisted" });
   });
 });
 

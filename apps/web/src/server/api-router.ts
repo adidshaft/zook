@@ -50,6 +50,9 @@ import {
   getStorageProviderDiagnostics,
   getSmsProvider,
   getSmsProviderDiagnostics,
+  getWhatsAppProvider,
+  getWhatsAppProviderDiagnostics,
+  normalizeWhatsAppPhone,
   storageFileCategories,
   verifyLocalStorageSignature,
   type StorageFileCategory,
@@ -69,6 +72,7 @@ import {
   applyCoupon,
   createSignedQrToken,
   createTrialWindow,
+  decideClassEnrollment,
   decideAttendanceStatus,
   encodeQrPayload,
   fulfillShopOrder,
@@ -76,6 +80,7 @@ import {
   PersonalTrackingService,
   requireManualOverrideReason,
   runAIGuardedRequest,
+  validateClassSchedule,
   validateAttendanceScan,
   validateReferralRedemption,
   validateSignedQrToken,
@@ -107,7 +112,7 @@ import { createRequestId, currentRequestId, runWithRequestState } from "./reques
 import { getErrorReporter } from "./error-reporter";
 import { assertSafeMutationRequest, getClientIp } from "./security";
 import { buildGymDiscoveryResults } from "./gym-discovery";
-import { getHealthPayload, getReadinessPayload } from "./readiness";
+import { getHealthPayload, getReadinessPayload, getStatusPayload } from "./readiness";
 import { logApiRequest } from "./request-logger";
 import { captureRouteError } from "./sentry";
 import {
@@ -129,6 +134,7 @@ import {
 import { applyAutopayProviderEvent, applyPaymentSessionStatus } from "./payment-runtime";
 import { deliverPushForNotification } from "./push-runtime";
 import { assertMinorConsentGranted } from "./minor-gates";
+import { getPublicCouponPreview } from "./public-gym-read-models";
 import {
   getActiveMembershipData,
   getMemberHomeData,
@@ -162,6 +168,11 @@ const subscriptionRenewSchema = z.object({
   planId: z.string().optional(),
   couponCode: z.string().trim().toUpperCase().optional(),
   referralCode: z.string().trim().toUpperCase().optional(),
+});
+
+const publicCouponValidateSchema = z.object({
+  code: z.string().trim().min(1).max(40).transform((value) => value.toUpperCase()),
+  planId: z.string(),
 });
 
 const membershipAutopaySchema = z.object({
@@ -275,6 +286,19 @@ const pushRegisterDeviceSchema = z.object({
 
 const pushUnregisterDeviceSchema = z.object({
   token: z.string().trim().min(10).optional(),
+});
+
+const whatsappRegisterDeviceSchema = z.object({
+  orgId: z.string().optional(),
+  phone: z.string().trim().min(8).max(20),
+  deviceId: z.string().trim().max(120).optional(),
+  deviceName: z.string().trim().max(120).optional(),
+  locale: z.string().trim().max(20).optional(),
+  timezone: z.string().trim().max(80).optional(),
+});
+
+const whatsappUnregisterDeviceSchema = z.object({
+  phone: z.string().trim().min(8).max(20),
 });
 
 const guardianConsentRequestSchema = z.object({
@@ -478,6 +502,18 @@ const planCompletionInputSchema = z.object({
   feedback: z.string().max(500).optional(),
 });
 
+const classInputSchema = z.object({
+  branchId: z.string(),
+  trainerId: z.string(),
+  name: z.string().trim().min(2).max(120),
+  description: z.string().trim().max(500).optional(),
+  classType: z.string().trim().min(2).max(80),
+  maxCapacity: z.number().int().positive().max(500),
+  startTime: z.string().datetime(),
+  endTime: z.string().datetime(),
+  recurrenceRule: z.string().trim().max(240).optional(),
+});
+
 const aiChatSchema = z.object({
   prompt: z.string().trim().min(2).max(2_000),
   orgId: z.string().optional(),
@@ -532,6 +568,8 @@ function isIdempotentOperation(path: string[], method: string) {
     pathMatches(path, ["payments", "mock", /.+/, "complete"]) ||
     pathMatches(path, ["attendance", "scan"]) ||
     pathMatches(path, ["orgs", /.+/, "manual-payments"]) ||
+    pathMatches(path, ["orgs", /.+/, "classes"]) ||
+    pathMatches(path, ["orgs", /.+/, "classes", /.+/, "enroll"]) ||
     pathMatches(path, ["shop", "orders"])
   );
 }
@@ -1382,8 +1420,24 @@ function getPushProviderOrThrow() {
   return getPushProvider();
 }
 
+function getWhatsAppProviderOrThrow() {
+  const diagnostics = getWhatsAppProviderDiagnostics();
+  if (
+    diagnostics.status === "misconfigured" ||
+    diagnostics.status === "unsupported" ||
+    diagnostics.status === "disabled"
+  ) {
+    throw validationError("WhatsApp alerts are not available right now.");
+  }
+  return getWhatsAppProvider();
+}
+
 function assertServerRuntimeConfig(path: string[]) {
-  if (pathMatches(path, ["health"]) || pathMatches(path, ["ready"])) {
+  if (
+    pathMatches(path, ["health"]) ||
+    pathMatches(path, ["ready"]) ||
+    pathMatches(path, ["status"])
+  ) {
     return;
   }
   const result = validateRuntimeConfig();
@@ -3200,6 +3254,32 @@ async function handleMeData(request: NextRequest, path: string[]) {
     const userId = requireAuth(await getRequestContext(request));
     return ok({ orders: await getMyShopOrders(userId) });
   }
+  if (request.method === "GET" && pathMatches(path, ["me", "invoices"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const invoices = await prisma.invoice.findMany({
+      where: { userId },
+      orderBy: [{ issueDate: "desc" }, { issuedAt: "desc" }],
+      take: 100,
+    });
+    const pdfAssetIds = invoices.map((invoice) => invoice.pdfAssetId).filter(Boolean) as string[];
+    const assets = pdfAssetIds.length
+      ? await prisma.fileAsset.findMany({
+          where: { id: { in: pdfAssetIds }, ownerUserId: userId, deletedAt: null },
+        })
+      : [];
+    const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
+    return ok({
+      invoices: invoices.map((invoice) => ({
+        ...invoice,
+        invoiceNumber: invoice.invoiceNumber ?? invoice.invoiceNo,
+        issueDate: invoice.issueDate ?? invoice.issuedAt,
+        subtotalPaise: invoice.subtotalPaise || Math.max(invoice.amountPaise - invoice.taxPaise, 0),
+        gstPaise: invoice.gstPaise || invoice.taxPaise,
+        totalPaise: invoice.totalPaise || invoice.amountPaise,
+        pdfAsset: invoice.pdfAssetId ? (assetsById.get(invoice.pdfAssetId) ?? null) : null,
+      })),
+    });
+  }
   return undefined;
 }
 
@@ -4649,6 +4729,7 @@ async function handleReports(request: NextRequest, path: string[]) {
     "revenue.csv": "revenue",
     "manual-cash.csv": "manual-cash",
     "expiring-members.csv": "expiring-members",
+    "invoices.csv": "invoices",
     "referrals.csv": "referrals",
     "shop.csv": "shop",
     "ai-usage.csv": "ai-usage",
@@ -4697,7 +4778,9 @@ async function handleReports(request: NextRequest, path: string[]) {
               : report === "manual-cash"
                 ? await reportsService.manualCashReport(orgId, filters)
                 : report === "expiring-members"
-                  ? await reportsService.membershipExpiryReport(orgId, filters)
+                ? await reportsService.membershipExpiryReport(orgId, filters)
+                : report === "invoices"
+                  ? await reportsService.invoiceReport(orgId, filters)
                   : report === "referrals"
                     ? await reportsService.referralReport(orgId, filters)
                     : report === "shop"
@@ -4764,6 +4847,13 @@ async function handleHealthReadiness(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["ready"])) {
     const readiness = await getReadinessPayload();
     return ok(readiness, { status: readiness.ready ? 200 : 503 });
+  }
+
+  if (request.method === "GET" && pathMatches(path, ["status"])) {
+    const statusPayload = await getStatusPayload();
+    return NextResponse.json(statusPayload, {
+      status: statusPayload.status === "down" ? 503 : 200,
+    });
   }
 
   return undefined;
@@ -6295,6 +6385,41 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
     });
     return ok({ policy });
   }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "coupons", "validate"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const body = publicCouponValidateSchema.parse(await readJson(request));
+    const plan = await prisma.membershipPlan.findFirst({
+      where: { id: body.planId, orgId, active: true, publicVisible: true },
+      select: { id: true, pricePaise: true },
+    });
+    if (!plan) {
+      throw notFoundError("Plan not found");
+    }
+    try {
+      const preview = await getPublicCouponPreview({
+        orgId,
+        planId: plan.id,
+        couponCode: body.code,
+        amountPaise: plan.pricePaise,
+        ...(ctx.userId ? { userId: ctx.userId } : {}),
+      });
+      if (!preview) {
+        return fail("coupon_invalid", "Coupon code is not valid for this gym.", 404);
+      }
+      return ok({
+        coupon: { code: preview.code },
+        discountPaise: preview.discountPaise,
+        finalAmountPaise: preview.finalAmountPaise,
+      });
+    } catch (error) {
+      return fail(
+        "coupon_invalid",
+        error instanceof Error ? error.message : "Coupon code is not valid for this gym.",
+        400,
+      );
+    }
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "coupons"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -7396,6 +7521,121 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       metadata: { userId: existingAssignment.userId, role: existingAssignment.role },
     });
     return ok({ revoked: true });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "classes"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireAuth(ctx);
+    assertActiveContextOrg(ctx, orgId);
+    const branchId = queryBranchId(request);
+    if (branchId) {
+      await resolveOrgBranch(orgId, branchId);
+    }
+    const from = request.nextUrl.searchParams.get("from");
+    const to = request.nextUrl.searchParams.get("to");
+    const startTime = clean({
+      ...(from ? { gte: new Date(from) } : {}),
+      ...(to ? { lte: new Date(to) } : {}),
+    });
+    const classes = await prisma.class.findMany({
+      where: clean({
+        orgId,
+        ...(branchId ? { branchId } : {}),
+        ...(Object.keys(startTime).length ? { startTime } : {}),
+      }),
+      orderBy: { startTime: "asc" },
+      take: 100,
+    });
+    const enrollments = classes.length
+      ? await prisma.classEnrollment.findMany({
+          where: { classId: { in: classes.map((entry) => entry.id) } },
+        })
+      : [];
+    return ok({
+      classes: classes.map((entry) => ({
+        ...entry,
+        enrollmentCount: enrollments.filter(
+          (enrollment) => enrollment.classId === entry.id && enrollment.status === "confirmed",
+        ).length,
+      })),
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "classes"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgAnyPermission(ctx, orgId, ["TRAINERS_MANAGE", "PLANS_CREATE"]);
+    const body = classInputSchema.parse(await readJson(request));
+    if (!ctx.permissions.includes("TRAINERS_MANAGE") && body.trainerId !== userId) {
+      throw forbiddenError("Trainers can only schedule their own classes.");
+    }
+    const [branch] = await Promise.all([
+      resolveOrgBranch(orgId, body.branchId),
+      assertOrgUser({ orgId, userId: body.trainerId, role: "TRAINER" }),
+    ]);
+    const startTime = new Date(body.startTime);
+    const endTime = new Date(body.endTime);
+    validateClassSchedule({ startTime, endTime, maxCapacity: body.maxCapacity });
+    const classRecord = await prisma.class.create({
+      data: clean({
+        orgId,
+        branchId: branch.id,
+        trainerId: body.trainerId,
+        name: body.name,
+        description: body.description,
+        classType: body.classType,
+        maxCapacity: body.maxCapacity,
+        startTime,
+        endTime,
+        recurrenceRule: body.recurrenceRule,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "class.created",
+      entityType: "class",
+      entityId: classRecord.id,
+      metadata: { trainerId: classRecord.trainerId, branchId: classRecord.branchId },
+    });
+    return ok({ class: classRecord });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "classes", /.+/, "enroll"])) {
+    const orgId = path[1]!;
+    const classId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, orgId);
+    await assertOrgUser({ orgId, userId, role: "MEMBER" });
+    const classRecord = await prisma.class.findFirst({ where: { id: classId, orgId } });
+    if (!classRecord) {
+      throw notFoundError("Class not found");
+    }
+    if (classRecord.status !== "scheduled") {
+      throw conflictError("Class is not open for enrollment.");
+    }
+    const confirmedEnrollmentCount = await prisma.classEnrollment.count({
+      where: { classId, status: "confirmed" },
+    });
+    const decision = decideClassEnrollment({
+      maxCapacity: classRecord.maxCapacity,
+      confirmedEnrollmentCount,
+      allowWaitlist: true,
+    });
+    const enrollment = await prisma.classEnrollment.upsert({
+      where: { classId_memberId: { classId, memberId: userId } },
+      update: clean({
+        status: decision.status,
+        cancelledAt: null,
+        enrolledAt: new Date(),
+      }),
+      create: {
+        classId,
+        memberId: userId,
+        status: decision.status,
+      },
+    });
+    return ok({ enrollment, remainingCapacity: decision.remainingCapacity });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "permissions"])) {
     const orgId = path[1]!;
@@ -8798,6 +9038,97 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       },
     });
     return ok({ device: updated });
+  }
+  if (request.method === "POST" && pathMatches(path, ["push", "whatsapp-register"])) {
+    const body = whatsappRegisterDeviceSchema.parse(await readJson(request));
+    const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, body.orgId);
+    await assertRateLimit(
+      "pushRegisterByActor",
+      `${body.orgId ?? "global"}:${userId}:whatsapp`,
+      "Too many WhatsApp registrations from this account.",
+    );
+    const provider = getWhatsAppProviderOrThrow();
+    const registration = await provider.registerDevice({
+      userId,
+      phone: body.phone,
+      ...(body.orgId ? { organizationId: body.orgId } : {}),
+      ...(body.deviceId ? { deviceId: body.deviceId } : {}),
+      ...(body.deviceName ? { deviceName: body.deviceName } : {}),
+      ...(body.locale ? { locale: body.locale } : {}),
+      ...(body.timezone ? { timezone: body.timezone } : {}),
+    });
+    if (registration.status === "invalid_phone" || !registration.normalizedPhone) {
+      throw validationError("WhatsApp alerts are not available for this phone number.");
+    }
+    const device = await prisma.whatsAppDevice.upsert({
+      where: {
+        provider_phone_userId: {
+          provider: provider.providerName,
+          phone: registration.normalizedPhone,
+          userId,
+        },
+      },
+      update: clean({
+        orgId: body.orgId ?? null,
+        status: "ACTIVE",
+        deviceLabel: body.deviceName,
+        deviceFingerprint: body.deviceId,
+        locale: body.locale,
+        timezone: body.timezone,
+        lastSeenAt: new Date(),
+        lastRegisteredAt: new Date(),
+        optedInAt: new Date(),
+        revokedAt: null,
+        failureReason: null,
+      }),
+      create: clean({
+        orgId: body.orgId ?? null,
+        userId,
+        provider: provider.providerName,
+        phone: registration.normalizedPhone,
+        status: "ACTIVE",
+        deviceLabel: body.deviceName,
+        deviceFingerprint: body.deviceId,
+        locale: body.locale,
+        timezone: body.timezone,
+        lastSeenAt: new Date(),
+        lastRegisteredAt: new Date(),
+      }),
+    });
+    return ok({ device });
+  }
+  if (request.method === "POST" && pathMatches(path, ["push", "whatsapp-unregister"])) {
+    const body = whatsappUnregisterDeviceSchema.parse(await readJson(request));
+    const userId = requireAuth(await getRequestContext(request));
+    const normalizedPhone = normalizeWhatsAppPhone(body.phone);
+    if (!normalizedPhone) {
+      throw validationError("Enter a valid WhatsApp phone number.");
+    }
+    const device = await prisma.whatsAppDevice.findFirst({
+      where: { userId, phone: normalizedPhone, revokedAt: null },
+    });
+    if (!device) {
+      throw notFoundError("WhatsApp device not found");
+    }
+    const diagnostics = getWhatsAppProviderDiagnostics();
+    if (
+      diagnostics.status !== "misconfigured" &&
+      diagnostics.status !== "unsupported" &&
+      diagnostics.status !== "disabled"
+    ) {
+      await getWhatsAppProvider().unregisterDevice({ phone: device.phone });
+    }
+    const updated = await prisma.whatsAppDevice.update({
+      where: { id: device.id },
+      data: {
+        status: "REVOKED",
+        revokedAt: new Date(),
+        failureReason: null,
+      },
+    });
+    return ok({ unregistered: true, device: updated });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "audit-logs"])) {
     const orgId = path[1]!;

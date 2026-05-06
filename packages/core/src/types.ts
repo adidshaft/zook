@@ -127,7 +127,15 @@ export type PlanType =
   | "RECOVERY";
 export type PlanStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 export type AIProviderType = "MOCK" | "OPENAI";
-export type ProviderCategory = "ai" | "email" | "map" | "payment" | "push" | "sms" | "storage";
+export type ProviderCategory =
+  | "ai"
+  | "email"
+  | "map"
+  | "payment"
+  | "push"
+  | "sms"
+  | "storage"
+  | "whatsapp";
 export type ProviderMode = "mock" | "test" | "live" | "local" | "disabled";
 export type ProviderDiagnosticStatus = "default" | "ready" | "misconfigured" | "unsupported" | "disabled";
 export type ProviderDiagnosticValue = string | number | boolean | null;

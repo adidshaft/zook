@@ -9,6 +9,7 @@ import {
   getSmsProvider,
   ExpoPushProvider,
   getStorageProvider,
+  getWhatsAppProvider,
   GoogleMapProvider,
   LocalStorageProvider,
   MockAIProvider,
@@ -16,6 +17,7 @@ import {
   MockMapProvider,
   MockPaymentProvider,
   MockPushProvider,
+  MockWhatsAppProvider,
   MockSmsProvider,
   OpenAIProvider,
   ProviderSetupError,
@@ -23,6 +25,7 @@ import {
   ResendEmailProvider,
   S3CompatibleStorageProvider,
   SMTPEmailProvider,
+  TwilioWhatsAppProvider,
 } from "../providers";
 
 const originalEnv = { ...process.env };
@@ -55,6 +58,10 @@ function clearProviderEnv() {
   delete process.env.EXPO_ACCESS_TOKEN;
   delete process.env.EXPO_PROJECT_ID;
   delete process.env.PUSH_ENVIRONMENT;
+  delete process.env.WHATSAPP_PROVIDER;
+  delete process.env.TWILIO_ACCOUNT_SID;
+  delete process.env.TWILIO_AUTH_TOKEN;
+  delete process.env.TWILIO_WHATSAPP_FROM;
   delete process.env.SMS_PROVIDER;
   delete process.env.SMS_WEBHOOK_URL;
   delete process.env.SMS_WEBHOOK_SECRET;
@@ -132,6 +139,11 @@ describe("provider registry", () => {
         provider: "local",
         activeProvider: "local",
       },
+      whatsapp: {
+        status: "disabled",
+        provider: "disabled",
+        activeProvider: null,
+      },
     });
   });
 
@@ -141,6 +153,7 @@ describe("provider registry", () => {
     process.env.AI_PROVIDER = "disabled";
     process.env.PUSH_PROVIDER = "disabled";
     process.env.STORAGE_PROVIDER = "disabled";
+    process.env.WHATSAPP_PROVIDER = "disabled";
 
     expect(() => getPaymentProvider()).toThrowError(ProviderSetupError);
     expect(() => getPaymentProvider()).toThrowError(/PAYMENT_PROVIDER=disabled/);
@@ -181,6 +194,14 @@ describe("provider registry", () => {
         mode: "disabled",
         configured: false,
       },
+      whatsapp: {
+        selectedProvider: "disabled",
+        activeProvider: null,
+        status: "disabled",
+        provider: "disabled",
+        mode: "disabled",
+        configured: false,
+      },
     });
   });
 
@@ -204,6 +225,10 @@ describe("provider registry", () => {
     process.env.S3_REGION = "ap-south-1";
     process.env.S3_ACCESS_KEY_ID = "akid";
     process.env.S3_SECRET_ACCESS_KEY = "secret";
+    process.env.WHATSAPP_PROVIDER = "twilio";
+    process.env.TWILIO_ACCOUNT_SID = "AC_test";
+    process.env.TWILIO_AUTH_TOKEN = "twilio-secret";
+    process.env.TWILIO_WHATSAPP_FROM = "+14155238886";
 
     expect(getAIProvider()).toBeInstanceOf(OpenAIProvider);
     expect(getEmailProvider()).toBeInstanceOf(ResendEmailProvider);
@@ -211,6 +236,7 @@ describe("provider registry", () => {
     expect(getPaymentProvider()).toBeInstanceOf(RazorpayPaymentProvider);
     expect(getPushProvider()).toBeInstanceOf(ExpoPushProvider);
     expect(getStorageProvider()).toBeInstanceOf(S3CompatibleStorageProvider);
+    expect(getWhatsAppProvider()).toBeInstanceOf(TwilioWhatsAppProvider);
 
     expect(getProviderRegistryDiagnostics()).toMatchObject({
       ai: {
@@ -258,6 +284,13 @@ describe("provider registry", () => {
         provider: "s3",
         mode: "live",
       },
+      whatsapp: {
+        status: "ready",
+        selectedProvider: "twilio",
+        activeProvider: "twilio",
+        provider: "twilio",
+        mode: "live",
+      },
     });
   });
 
@@ -281,6 +314,17 @@ describe("provider registry", () => {
     });
   });
 
+  it("supports explicit mock WhatsApp for local transactional testing", () => {
+    process.env.WHATSAPP_PROVIDER = "mock";
+
+    expect(getWhatsAppProvider()).toBeInstanceOf(MockWhatsAppProvider);
+    expect(getProviderRegistryDiagnostics().whatsapp).toMatchObject({
+      status: "ready",
+      selectedProvider: "mock",
+      activeProvider: "mock",
+    });
+  });
+
   it("throws a clear setup error when a live provider is selected without required env", () => {
     process.env.AI_PROVIDER = "openai";
     process.env.EMAIL_PROVIDER = "resend";
@@ -288,6 +332,7 @@ describe("provider registry", () => {
     process.env.PAYMENT_PROVIDER = "razorpay";
     process.env.PUSH_PROVIDER = "expo";
     process.env.STORAGE_PROVIDER = "s3";
+    process.env.WHATSAPP_PROVIDER = "twilio";
 
     expect(() => getAIProvider()).toThrowError(ProviderSetupError);
     expect(() => getAIProvider()).toThrowError(/OPENAI_API_KEY/);
@@ -312,6 +357,10 @@ describe("provider registry", () => {
     expect(() => getPushProvider()).toThrowError(ProviderSetupError);
     expect(() => getPushProvider()).toThrowError(/EXPO_PROJECT_ID/);
     expect(() => getPushProvider()).toThrowError(/PUSH_PROVIDER=mock/);
+
+    expect(() => getWhatsAppProvider()).toThrowError(ProviderSetupError);
+    expect(() => getWhatsAppProvider()).toThrowError(/TWILIO_ACCOUNT_SID/);
+    expect(() => getWhatsAppProvider()).toThrowError(/WHATSAPP_PROVIDER=disabled/);
 
     expect(getProviderRegistryDiagnostics()).toMatchObject({
       ai: {
@@ -343,6 +392,11 @@ describe("provider registry", () => {
         status: "misconfigured",
         activeProvider: null,
         missingEnv: ["S3_BUCKET", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"],
+      },
+      whatsapp: {
+        status: "misconfigured",
+        activeProvider: null,
+        missingEnv: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_WHATSAPP_FROM"],
       },
     });
   });

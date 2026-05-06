@@ -18,6 +18,11 @@ import { MockPaymentProvider, RazorpayPaymentProvider, type PaymentProvider } fr
 import { ExpoPushProvider, MockPushProvider, type PushProvider } from "./push";
 import { MockSmsProvider, WebhookSmsProvider, type SmsProvider } from "./sms";
 import { LocalStorageProvider, S3CompatibleStorageProvider, type StorageProvider } from "./storage";
+import {
+  MockWhatsAppProvider,
+  TwilioWhatsAppProvider,
+  type WhatsAppProvider,
+} from "./whatsapp";
 
 type ProviderSetupErrorKind = "misconfigured" | "unsupported" | "disabled";
 
@@ -35,6 +40,7 @@ export interface ProviderRegistryDiagnostics {
   push: ProviderDiagnostics;
   sms: ProviderDiagnostics;
   storage: ProviderDiagnostics;
+  whatsapp: ProviderDiagnostics;
 }
 
 export class ProviderSetupError extends Error {
@@ -873,6 +879,86 @@ function resolvePushProvider(): ProviderResolution<PushProvider> {
   });
 }
 
+function resolveWhatsAppProvider(): ProviderResolution<WhatsAppProvider> {
+  const selectionValue = env(process.env.WHATSAPP_PROVIDER);
+  const selectedProvider = selectionValue ?? "disabled";
+  const envState = envFlags([
+    "WHATSAPP_PROVIDER",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_WHATSAPP_FROM",
+  ]);
+
+  if (selectedProvider === "mock") {
+    return createReadyResolution({
+      category: "whatsapp",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new MockWhatsAppProvider(),
+    });
+  }
+
+  if (selectedProvider === "disabled") {
+    return createDisabledResolution({
+      category: "whatsapp",
+      selectionEnv: "WHATSAPP_PROVIDER",
+      defaultProvider: "disabled",
+      supportedProviders: ["mock", "twilio", "disabled"],
+      env: envState,
+      metadata: {
+        phase: "transactional-opt-in-foundation",
+      },
+    });
+  }
+
+  if (selectedProvider === "twilio") {
+    const accountSid = env(process.env.TWILIO_ACCOUNT_SID);
+    const authToken = env(process.env.TWILIO_AUTH_TOKEN);
+    const fromPhone = env(process.env.TWILIO_WHATSAPP_FROM);
+    const missingEnv = [
+      ...(accountSid ? [] : ["TWILIO_ACCOUNT_SID"]),
+      ...(authToken ? [] : ["TWILIO_AUTH_TOKEN"]),
+      ...(fromPhone ? [] : ["TWILIO_WHATSAPP_FROM"]),
+    ];
+
+    if (missingEnv.length > 0) {
+      return createMisconfiguredResolution({
+        category: "whatsapp",
+        selectionEnv: "WHATSAPP_PROVIDER",
+        selectedProvider,
+        defaultProvider: "disabled",
+        supportedProviders: ["mock", "twilio", "disabled"],
+        missingEnv,
+        env: envState,
+        mode: "live",
+      });
+    }
+
+    return createReadyResolution({
+      category: "whatsapp",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new TwilioWhatsAppProvider({
+        accountSid: accountSid as string,
+        authToken: authToken as string,
+        fromPhone: fromPhone as string,
+      }),
+    });
+  }
+
+  return createUnsupportedResolution({
+    category: "whatsapp",
+    selectionEnv: "WHATSAPP_PROVIDER",
+    selectedProvider,
+    defaultProvider: "disabled",
+    supportedProviders: ["mock", "twilio", "disabled"],
+    env: envState,
+    mode: "live",
+  });
+}
+
 export function getEmailProvider(): EmailProvider {
   return requireProvider(resolveEmailProvider());
 }
@@ -929,6 +1015,14 @@ export function getPushProviderDiagnostics(): ProviderDiagnostics {
   return resolvePushProvider().diagnostics;
 }
 
+export function getWhatsAppProvider(): WhatsAppProvider {
+  return requireProvider(resolveWhatsAppProvider());
+}
+
+export function getWhatsAppProviderDiagnostics(): ProviderDiagnostics {
+  return resolveWhatsAppProvider().diagnostics;
+}
+
 export function getProviderRegistryDiagnostics(): ProviderRegistryDiagnostics {
   return {
     ai: getAIProviderDiagnostics(),
@@ -938,5 +1032,6 @@ export function getProviderRegistryDiagnostics(): ProviderRegistryDiagnostics {
     push: getPushProviderDiagnostics(),
     sms: getSmsProviderDiagnostics(),
     storage: getStorageProviderDiagnostics(),
+    whatsapp: getWhatsAppProviderDiagnostics(),
   };
 }

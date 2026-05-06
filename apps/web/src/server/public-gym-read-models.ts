@@ -1,4 +1,5 @@
 import { getAppEnv, isTruthy, zookDemoFixtures } from "@zook/core";
+import { applyCoupon } from "@zook/core/services";
 import { prisma } from "@zook/db";
 
 export type PublicGymPlan = {
@@ -54,6 +55,12 @@ export type PublicGymProfileData = {
   connected: boolean;
 };
 
+export type PublicCouponPreview = {
+  code: string;
+  discountPaise: number;
+  finalAmountPaise: number;
+};
+
 export function canUsePublicDemoFallback() {
   return (
     getAppEnv() === "local" &&
@@ -71,6 +78,36 @@ function settingsRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+function couponInput(coupon: {
+  id: string;
+  orgId: string;
+  code: string;
+  type: "FIXED_AMOUNT" | "PERCENTAGE";
+  valuePaise: number | null;
+  valuePercentBps: number | null;
+  active: boolean;
+  validFrom: Date | null;
+  validUntil: Date | null;
+  maxRedemptions: number | null;
+  perUserLimit: number | null;
+  applicablePlanId: string | null;
+}) {
+  return {
+    id: coupon.id,
+    orgId: coupon.orgId,
+    code: coupon.code,
+    type: coupon.type,
+    ...(coupon.valuePaise !== null ? { valuePaise: coupon.valuePaise } : {}),
+    ...(coupon.valuePercentBps !== null ? { valuePercentBps: coupon.valuePercentBps } : {}),
+    active: coupon.active,
+    ...(coupon.validFrom ? { validFrom: coupon.validFrom } : {}),
+    ...(coupon.validUntil ? { validUntil: coupon.validUntil } : {}),
+    ...(coupon.maxRedemptions !== null ? { maxRedemptions: coupon.maxRedemptions } : {}),
+    ...(coupon.perUserLimit !== null ? { perUserLimit: coupon.perUserLimit } : {}),
+    ...(coupon.applicablePlanId ? { applicablePlanId: coupon.applicablePlanId } : {}),
+  };
 }
 
 function publicTrainerPhotoUrl(value: string | null | undefined) {
@@ -271,4 +308,44 @@ export async function getPublicGymProfileData(username: string, referralCode?: s
     }
   }
   return demoPublicGymProfile(username, referralCode);
+}
+
+export async function getPublicCouponPreview(input: {
+  orgId: string;
+  planId: string;
+  couponCode: string;
+  amountPaise: number;
+  userId?: string;
+}): Promise<PublicCouponPreview | null> {
+  const code = input.couponCode.trim().toUpperCase();
+  if (!code) {
+    return null;
+  }
+
+  const coupon = await prisma.coupon.findUnique({
+    where: { orgId_code: { orgId: input.orgId, code } },
+  });
+  if (!coupon) {
+    return null;
+  }
+
+  const [totalRedemptions, userRedemptions] = await Promise.all([
+    prisma.couponRedemption.count({ where: { orgId: input.orgId, couponId: coupon.id } }),
+    input.userId
+      ? prisma.couponRedemption.count({
+          where: { orgId: input.orgId, couponId: coupon.id, userId: input.userId },
+        })
+      : Promise.resolve(0),
+  ]);
+  const result = applyCoupon(couponInput(coupon), {
+    amountPaise: input.amountPaise,
+    planId: input.planId,
+    redemptionCount: { total: totalRedemptions, byUser: userRedemptions },
+  });
+
+  return {
+    code: coupon.code,
+    discountPaise: result.discountPaise,
+    finalAmountPaise: result.finalAmountPaise,
+  };
 }
