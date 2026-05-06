@@ -1,0 +1,51 @@
+{
+  "common": {
+    "language": "Language",
+    "english": "English",
+    "hindi": "Hindi",
+    "save": "Save",
+    "cancel": "Cancel",
+    "printReceipt": "Print receipt"
+  },
+  "nav": {
+    "today": "Today",
+    "attendance": "Attendance",
+    "payments": "Payments",
+    "shop": "Shop",
+    "reports": "Reports",
+    "members": "Members",
+    "plans": "Plans",
+    "team": "Team",
+    "notifications": "Notifications",
+    "templates": "Templates",
+    "history": "History",
+    "branches": "Branches",
+    "gymProfile": "Gym profile"
+  },
+  "dashboard": {
+    "todayDescription": "Live check-ins, members, payments, stock, and follow-ups in one owner view.",
+    "emptyOrganization": "No active gym is available yet."
+  },
+  "notifications": {
+    "composeTitle": "Send a message",
+    "templateTitle": "Saved templates",
+    "historyTitle": "Delivery history",
+    "confirmSend": "Send this message now?"
+  },
+  "payments": {
+    "recordOffline": "Record offline payment",
+    "receiptReady": "Receipt ready",
+    "settlementQueue": "Orders affecting cashflow"
+  },
+  "desk": {
+    "queue": "Queue",
+    "member": "Member",
+    "payment": "Payment",
+    "pickup": "Pickup"
+  },
+  "settings": {
+    "branches": "Branches",
+    "addBranch": "Add a branch",
+    "branchList": "Branch list"
+  }
+}

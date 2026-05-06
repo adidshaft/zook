@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { AttendanceApprovalsPanel } from "../attendance-approvals-panel";
 import { AttendanceQrPanel } from "../attendance-qr-panel";
-import { NotificationComposerPanel } from "../notification-composer-panel";
+import {
+  NotificationComposerPanel,
+  NotificationHistoryPanel,
+  NotificationTemplateManagerPanel,
+} from "../notification-composer-panel";
 import {
   DataTable,
   EmptyState,
@@ -45,6 +49,7 @@ import {
 type LoadingState = {
   error: string;
   loading: boolean;
+  reload?: () => void;
 };
 
 type PagedState = LoadingState & {
@@ -57,6 +62,14 @@ type PagedState = LoadingState & {
 function formatPaymentMode(mode: string) {
   return mode === "MOCK_ONLINE" ? "Online" : formatEnumLabel(mode);
 }
+
+type PaymentReceiptState = {
+  title: string;
+  amountPaise: number;
+  mode: string;
+  reference?: string | undefined;
+  recordedAt: string;
+};
 
 export function AttendancePanel({
   orgId,
@@ -194,12 +207,35 @@ export function NotificationsPanel({
   organization,
   summary,
   initialNotifications,
+  view = "compose",
 }: {
   orgId: string;
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
   initialNotifications: NotificationSnapshot[];
+  view?: "compose" | "templates" | "history";
 }) {
+  if (view === "templates") {
+    return <NotificationTemplateManagerPanel orgId={orgId} />;
+  }
+
+  if (view === "history") {
+    return (
+      <NotificationHistoryPanel
+        orgId={orgId}
+        initialNotifications={initialNotifications.map((notification) => ({
+          ...notification,
+          body: "",
+          pushEnabled: true,
+          createdAt:
+            typeof notification.createdAt === "string"
+              ? notification.createdAt
+              : new Date(notification.createdAt).toISOString(),
+        })) as Parameters<typeof NotificationHistoryPanel>[0]["initialNotifications"]}
+      />
+    );
+  }
+
   return (
     <div className="grid gap-4">
       <NotificationComposerPanel orgId={orgId} />
@@ -315,6 +351,7 @@ export function PaymentsPanel({
   });
   const [manualPaymentStatus, setManualPaymentStatus] = useState("");
   const [manualPaymentBusy, setManualPaymentBusy] = useState(false);
+  const [lastReceipt, setLastReceipt] = useState<PaymentReceiptState | null>(null);
 
   async function recordOfflinePayment(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -322,7 +359,7 @@ export function PaymentsPanel({
       setManualPaymentBusy(true);
       setManualPaymentStatus("");
       const amountPaise = Math.round(Number(manualPayment.amountRupees) * 100);
-      await webApiFetch(`/api/orgs/${orgId}/manual-payments`, {
+      const payload = await webApiFetch<{ payment?: PaymentRow }>(`/api/orgs/${orgId}/manual-payments`, {
         method: "POST",
         body: {
           memberUserId: manualPayment.memberUserId,
@@ -334,10 +371,48 @@ export function PaymentsPanel({
         },
       });
       setManualPaymentStatus(`Payment recorded for ${formatInr(amountPaise)}.`);
+      setLastReceipt({
+        title: "Membership payment",
+        amountPaise,
+        mode: manualPayment.mode,
+        reference: manualPayment.receiptNumber || payload.payment?.receiptNumber || undefined,
+        recordedAt: new Date().toISOString(),
+      });
       setManualPayment((current) => ({ ...current, receiptNumber: "", notes: "" }));
       paymentsState.reload?.();
     } catch (cause) {
       setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to record payment.");
+    } finally {
+      setManualPaymentBusy(false);
+    }
+  }
+
+  async function recordShopOrderPayment(order: ShopOrderRow) {
+    const reference = window.prompt("Reference number or UPI ID, if available", "") ?? "";
+    try {
+      setManualPaymentBusy(true);
+      setManualPaymentStatus("");
+      await webApiFetch(`/api/orgs/${orgId}/shop/orders/${order.id}/manual-payment`, {
+        method: "POST",
+        body: {
+          amountPaise: order.totalPaise,
+          mode: "DIRECT_UPI",
+          receiptNumber: reference || undefined,
+          notes: "Recorded from the owner payment queue.",
+        },
+      });
+      setManualPaymentStatus(`Shop payment recorded for ${formatInr(order.totalPaise)}.`);
+      setLastReceipt({
+        title: `Shop order ${order.id.slice(-8).toUpperCase()}`,
+        amountPaise: order.totalPaise,
+        mode: "DIRECT_UPI",
+        reference: reference || undefined,
+        recordedAt: new Date().toISOString(),
+      });
+      paymentsState.reload?.();
+      shopOrdersState.reload?.();
+    } catch (cause) {
+      setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to record shop payment.");
     } finally {
       setManualPaymentBusy(false);
     }
@@ -563,6 +638,27 @@ export function PaymentsPanel({
               <p className="text-sm text-white/58">{manualPaymentStatus}</p>
             ) : null}
           </form>
+          {lastReceipt ? (
+            <div className="mt-5 rounded-[22px] border border-lime-300/20 bg-lime-300/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lime-100/70">
+                Receipt ready
+              </p>
+              <p className="mt-2 text-lg font-semibold text-white">{lastReceipt.title}</p>
+              <div className="mt-3 grid gap-2 text-sm text-white/65">
+                <p>Amount: {formatInr(lastReceipt.amountPaise)}</p>
+                <p>Mode: {formatPaymentMode(lastReceipt.mode)}</p>
+                <p>Reference: {lastReceipt.reference || "Not added"}</p>
+                <p>Recorded: {formatDateTime(lastReceipt.recordedAt)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="zook-focus mt-4 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72 transition hover:bg-white/8"
+              >
+                Print receipt
+              </button>
+            </div>
+          ) : null}
         </GlassCard>
 
         <GlassCard>
@@ -621,6 +717,24 @@ export function PaymentsPanel({
                     render: (order) => (
                       <span className="font-medium text-white">{formatInr(order.totalPaise)}</span>
                     ),
+                  },
+                  {
+                    id: "actions",
+                    header: "",
+                    align: "right",
+                    render: (order) =>
+                      order.status === "PENDING_PAYMENT" && !order.paymentId ? (
+                        <button
+                          type="button"
+                          disabled={manualPaymentBusy}
+                          onClick={() => void recordShopOrderPayment(order)}
+                          className="zook-focus rounded-full border border-lime-300/40 px-3 py-1 text-xs font-semibold text-lime-100 transition hover:bg-lime-300/10 disabled:opacity-50"
+                        >
+                          Record payment
+                        </button>
+                      ) : (
+                        <span className="text-xs text-white/35">Settled</span>
+                      ),
                   },
                 ]}
                 rows={shopOrders}

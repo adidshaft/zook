@@ -1,0 +1,51 @@
+{
+  "common": {
+    "language": "भाषा",
+    "english": "अंग्रेज़ी",
+    "hindi": "हिन्दी",
+    "save": "सेव करें",
+    "cancel": "रद्द करें",
+    "printReceipt": "रसीद प्रिंट करें"
+  },
+  "nav": {
+    "today": "आज",
+    "attendance": "अटेंडेंस",
+    "payments": "पेमेंट",
+    "shop": "शॉप",
+    "reports": "रिपोर्ट",
+    "members": "मेंबर",
+    "plans": "प्लान",
+    "team": "टीम",
+    "notifications": "मैसेज",
+    "templates": "टेम्पलेट",
+    "history": "हिस्ट्री",
+    "branches": "ब्रांच",
+    "gymProfile": "जिम प्रोफाइल"
+  },
+  "dashboard": {
+    "todayDescription": "चेक-इन, मेंबर, पेमेंट, स्टॉक और फॉलो-अप एक ही owner view में.",
+    "emptyOrganization": "अभी कोई active gym available नहीं है."
+  },
+  "notifications": {
+    "composeTitle": "मैसेज भेजें",
+    "templateTitle": "सेव किए हुए टेम्पलेट",
+    "historyTitle": "डिलीवरी हिस्ट्री",
+    "confirmSend": "यह मैसेज अभी भेजें?"
+  },
+  "payments": {
+    "recordOffline": "ऑफलाइन पेमेंट रिकॉर्ड करें",
+    "receiptReady": "रसीद तैयार है",
+    "settlementQueue": "कैशफ्लो वाले ऑर्डर"
+  },
+  "desk": {
+    "queue": "क्यू",
+    "member": "मेंबर",
+    "payment": "पेमेंट",
+    "pickup": "पिकअप"
+  },
+  "settings": {
+    "branches": "ब्रांच",
+    "addBranch": "ब्रांच जोड़ें",
+    "branchList": "ब्रांच लिस्ट"
+  }
+}

@@ -9730,11 +9730,62 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         name: z.string().trim().min(2).max(80),
         type: z.enum(["TRANSACTIONAL", "OPERATIONAL", "PROMOTIONAL", "ENGAGEMENT", "PLAN", "SECURITY"]),
         title: z.string().trim().min(2).max(120),
-        body: z.string().trim().min(2).max(600),
+        body: z.string().trim().min(2).max(1000),
       })
       .parse(await readJson(request));
     const template = await prisma.notificationTemplate.create({
       data: { orgId, createdById: userId, ...body },
+    });
+    return ok({ template });
+  }
+  if (
+    request.method === "PATCH" &&
+    pathMatches(path, ["orgs", /.+/, "notifications", "templates", /.+/])
+  ) {
+    const orgId = path[1]!;
+    const templateId = path[4]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "NOTIFICATION_MANAGE_TEMPLATES");
+    const body = z
+      .object({
+        name: z.string().trim().min(2).max(80).optional(),
+        type: z
+          .enum(["TRANSACTIONAL", "OPERATIONAL", "PROMOTIONAL", "ENGAGEMENT", "PLAN", "SECURITY"])
+          .optional(),
+        title: z.string().trim().min(2).max(120).optional(),
+        body: z.string().trim().min(2).max(1000).optional(),
+        active: z.boolean().optional(),
+      })
+      .parse(await readJson(request));
+    const existing = await prisma.notificationTemplate.findFirst({
+      where: { id: templateId, orgId },
+    });
+    if (!existing) {
+      throw notFoundError("Template not found");
+    }
+    const template = await prisma.notificationTemplate.update({
+      where: { id: existing.id },
+      data: clean(body),
+    });
+    return ok({ template });
+  }
+  if (
+    request.method === "DELETE" &&
+    pathMatches(path, ["orgs", /.+/, "notifications", "templates", /.+/])
+  ) {
+    const orgId = path[1]!;
+    const templateId = path[4]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "NOTIFICATION_MANAGE_TEMPLATES");
+    const existing = await prisma.notificationTemplate.findFirst({
+      where: { id: templateId, orgId },
+    });
+    if (!existing) {
+      throw notFoundError("Template not found");
+    }
+    const template = await prisma.notificationTemplate.update({
+      where: { id: existing.id },
+      data: { active: false },
     });
     return ok({ template });
   }

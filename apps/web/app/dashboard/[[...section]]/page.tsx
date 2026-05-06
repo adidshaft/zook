@@ -59,7 +59,11 @@ export default async function DashboardPage({
       data={data}
       isPlatformAdmin={session.user.isPlatformAdmin}
       roles={session.activeOrganization?.roles ?? []}
-      user={{ name: session.user.name, email: session.user.email }}
+      user={{
+        name: session.user.name,
+        email: session.user.email,
+        preferredLocale: session.user.preferredLocale ?? null,
+      }}
     />
   );
 }

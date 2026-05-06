@@ -27,6 +27,7 @@ import {
 } from "./dashboard-primitives";
 import { GlassCard, Pill, type PillTone } from "./glass-card";
 import { DashboardOperationalPanelShell } from "./dashboard-operational-panel-shell";
+import { DashboardLocaleToggle } from "./dashboard-locale-toggle";
 import { DashboardSignOutButton } from "./dashboard-sign-out-button";
 import { ZookLogo } from "./zook-logo";
 import { ZookButtonLink } from "./zook-button";
@@ -70,12 +71,15 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     label: "Communication",
     items: [
       { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
+      { label: "Templates", href: "/dashboard/notifications/templates", icon: ClipboardList },
+      { label: "History", href: "/dashboard/notifications/history", icon: History },
       { label: "AI workout drafts", href: "/dashboard/ai", icon: Brain },
     ],
   },
   {
     label: "Settings",
     items: [
+      { label: "Branches", href: "/dashboard/branches", icon: Globe2 },
       { label: "Gym profile", href: "/dashboard/public-profile", icon: Globe2 },
       {
         label: "Audit log",
@@ -153,20 +157,20 @@ function BranchSwitcher({
     }`;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex max-w-full gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {visible.map((branch) => (
-        <Link key={branch.id} href={branchHref(branch.id)} className={linkClass(branch.id)}>
+        <Link key={branch.id} href={branchHref(branch.id)} className={`${linkClass(branch.id)} shrink-0`}>
           {branch.name}
         </Link>
       ))}
       {overflow.length > 0 ? (
-        <details className="group relative">
+        <details className="group relative shrink-0">
           <summary className="cursor-pointer list-none rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/55 transition hover:bg-white/8 hover:text-white [&::-webkit-details-marker]:hidden">
             +{overflow.length} more
           </summary>
           <div className="absolute left-0 z-20 mt-2 grid max-h-64 min-w-60 gap-2 overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950/95 p-2 shadow-2xl shadow-black/50 backdrop-blur">
             {overflow.map((branch) => (
-              <Link key={branch.id} href={branchHref(branch.id)} className={linkClass(branch.id)}>
+              <Link key={branch.id} href={branchHref(branch.id)} className={`${linkClass(branch.id)} shrink-0`}>
                 {branch.name}
               </Link>
             ))}
@@ -291,7 +295,7 @@ export function DashboardShell({
   data: DashboardData;
   isPlatformAdmin: boolean;
   roles: Role[];
-  user: { name: string; email: string };
+  user: { name: string; email: string; preferredLocale?: string | null };
 }) {
   const title = titleFromSection(section);
   const sectionKey = section?.join("/") ?? "";
@@ -369,8 +373,8 @@ export function DashboardShell({
     (data.summary.activeMembers === 0 || !selectedBranch || activeOrg.status !== "ACTIVE");
 
   return (
-    <main className="min-h-dvh px-4 py-4 lg:px-6">
-      <div className="mx-auto grid max-w-[1500px] items-start gap-4 lg:grid-cols-[300px_1fr]">
+    <main className="min-h-dvh overflow-x-hidden px-4 py-4 lg:px-6">
+      <div className="mx-auto grid max-w-[1500px] min-w-0 items-start gap-4 lg:grid-cols-[300px_1fr]">
         <aside className="sticky top-4 hidden h-fit lg:block">
           <GlassCard variant="strong" className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-4">
             <ZookLogo />
@@ -464,7 +468,7 @@ export function DashboardShell({
           </GlassCard>
         </aside>
 
-        <section className="grid content-start gap-4">
+        <section className="grid min-w-0 content-start gap-4">
           <div className="relative lg:hidden">
             <nav className="flex gap-3 overflow-x-auto rounded-[24px] border border-white/10 bg-white/5 p-2 pr-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {navGroups.map((group) => (
@@ -496,9 +500,9 @@ export function DashboardShell({
             />
           </div>
 
-          <GlassCard variant="strong" className="overflow-hidden">
+          <GlassCard variant="strong" className="min-w-0 overflow-hidden">
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-              <div>
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   {runtimeLabel ? (
                     <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
@@ -542,6 +546,7 @@ export function DashboardShell({
                     Reports
                   </ZookButtonLink>
                 ) : null}
+                <DashboardLocaleToggle locale={user.preferredLocale ?? undefined} />
                 <DashboardSignOutButton compact />
               </div>
             </div>

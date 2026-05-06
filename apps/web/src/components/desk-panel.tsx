@@ -51,6 +51,7 @@ type ShopOrder = {
   id: string;
   status: string;
   totalPaise: number;
+  paymentId?: string | null;
   pickupCode?: string | null;
   user?: { id: string; name: string; email?: string | null; phone?: string | null } | null;
   items?: Array<{
@@ -118,6 +119,12 @@ export function DeskPanel({
     notes: "",
   });
   const [verifiedOrderIds, setVerifiedOrderIds] = useState<string[]>([]);
+  const [lastReceipt, setLastReceipt] = useState<{
+    title: string;
+    amountPaise: number;
+    mode: string;
+    reference?: string | undefined;
+  } | null>(null);
 
   const pendingState = useOperationalResource<{ records: AttendanceQueueRecord[] }>({
     path: withBranch(`/api/orgs/${orgId}/attendance/live`, branch),
@@ -196,9 +203,67 @@ export function DeskPanel({
       };
       await webApiFetch(`/api/orgs/${orgId}/manual-payments`, { method: "POST", body });
       setToast(`Payment recorded. Receipt amount: ${formatInr(amountPaise)}.`);
+      setLastReceipt({
+        title: "Membership payment",
+        amountPaise,
+        mode: paymentForm.mode,
+        reference: paymentForm.receiptNumber || undefined,
+      });
       setPaymentForm((current) => ({ ...current, receiptNumber: "", notes: "" }));
     } catch (cause) {
       setToast(cause instanceof Error ? cause.message : "Unable to record payment.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function recordShopPayment(order: ShopOrder) {
+    const reference = window.prompt("Reference number or UPI ID, if available", "") ?? "";
+    try {
+      setBusyId(`pay:${order.id}`);
+      setToast("");
+      await webApiFetch(`/api/orgs/${orgId}/shop/orders/${order.id}/manual-payment`, {
+        method: "POST",
+        body: {
+          amountPaise: order.totalPaise,
+          mode: "DIRECT_UPI",
+          receiptNumber: reference || undefined,
+          notes: "Recorded at reception pickup.",
+        },
+      });
+      ordersState.reload();
+      setLastReceipt({
+        title: `Shop order ${order.id.slice(-8).toUpperCase()}`,
+        amountPaise: order.totalPaise,
+        mode: "DIRECT_UPI",
+        reference: reference || undefined,
+      });
+      setToast(`Shop payment recorded. Receipt amount: ${formatInr(order.totalPaise)}.`);
+    } catch (cause) {
+      setToast(cause instanceof Error ? cause.message : "Unable to record shop payment.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function verifyPickupCode(order: ShopOrder) {
+    const code = window.prompt("Enter the pickup code shown by the member", order.pickupCode ?? "");
+    if (!code) {
+      return;
+    }
+    try {
+      setBusyId(`verify:${order.id}`);
+      setToast("");
+      await webApiFetch(`/api/orgs/${orgId}/reception/verify-code`, {
+        method: "POST",
+        body: { code },
+      });
+      setVerifiedOrderIds((current) =>
+        current.includes(order.id) ? current : [...current, order.id],
+      );
+      setToast("Pickup code verified.");
+    } catch (cause) {
+      setToast(cause instanceof Error ? cause.message : "Unable to verify pickup code.");
     } finally {
       setBusyId("");
     }
@@ -532,6 +597,20 @@ export function DeskPanel({
                 {busyId === "payment" ? "Recording..." : "Record payment"}
               </button>
             </form>
+            {lastReceipt ? (
+              <div className="mt-5 rounded-[22px] border border-lime-300/20 bg-lime-300/10 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lime-100/70">
+                  Receipt ready
+                </p>
+                <p className="mt-2 text-lg font-semibold text-white">{lastReceipt.title}</p>
+                <p className="mt-2 text-sm text-white/65">Amount: {formatInr(lastReceipt.amountPaise)}</p>
+                <p className="mt-1 text-sm text-white/65">Mode: {formatEnumLabel(lastReceipt.mode)}</p>
+                <p className="mt-1 text-sm text-white/65">Reference: {lastReceipt.reference || "Not added"}</p>
+                <button type="button" onClick={() => window.print()} className="zook-focus mt-4 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72">
+                  Print receipt
+                </button>
+              </div>
+            ) : null}
           </GlassCard>
         ) : null}
 
@@ -564,15 +643,22 @@ export function DeskPanel({
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() =>
-                            setVerifiedOrderIds((current) =>
-                              current.includes(order.id) ? current : [...current, order.id],
-                            )
-                          }
+                          disabled={busyId === `verify:${order.id}`}
+                          onClick={() => void verifyPickupCode(order)}
                           className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/72"
                         >
                           Verify code
                         </button>
+                        {order.status === "PENDING_PAYMENT" && !order.paymentId ? (
+                          <button
+                            type="button"
+                            disabled={busyId === `pay:${order.id}`}
+                            onClick={() => void recordShopPayment(order)}
+                            className="zook-focus rounded-full border border-lime-300/40 px-4 py-2 text-sm font-semibold text-lime-100 disabled:opacity-50"
+                          >
+                            Record payment
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           disabled={busyId === order.id || (!verified && order.status !== "READY_FOR_PICKUP")}

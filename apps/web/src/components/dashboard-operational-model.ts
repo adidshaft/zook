@@ -4,11 +4,14 @@ export type DashboardMode =
   | "join-requests"
   | "attendance"
   | "notifications"
+  | "notification-templates"
+  | "notification-history"
   | "reports"
   | "shop"
   | "staff"
   | "plans"
   | "payments"
+  | "branches"
   | "audit"
   | "ai"
   | "public-profile";
@@ -323,10 +326,18 @@ export type ShopOrderRow = {
   userId: string;
   status: string;
   totalPaise: number;
+  paymentId?: string | null;
+  paymentSessionId?: string | null;
   pickupCode?: string | null;
   createdAt: string;
   fulfilledAt?: string | null;
   items: ShopOrderItemRow[];
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string | null;
+  } | null;
 };
 
 export type AIUsageRow = {
@@ -382,6 +393,12 @@ export function resolveMode(sectionKey: string): DashboardMode {
   if (sectionKey.includes("attendance")) {
     return "attendance";
   }
+  if (sectionKey.includes("notifications/templates")) {
+    return "notification-templates";
+  }
+  if (sectionKey.includes("notifications/history")) {
+    return "notification-history";
+  }
   if (sectionKey.includes("notifications")) {
     return "notifications";
   }
@@ -407,6 +424,9 @@ export function resolveMode(sectionKey: string): DashboardMode {
   }
   if (sectionKey.includes("payments") || sectionKey.includes("checkout")) {
     return "payments";
+  }
+  if (sectionKey.includes("branches")) {
+    return "branches";
   }
   if (sectionKey.includes("audit")) {
     return "audit";
