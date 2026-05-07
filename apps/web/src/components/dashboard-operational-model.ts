@@ -10,6 +10,9 @@ export type DashboardMode =
   | "shop"
   | "staff"
   | "plans"
+  | "plan-coupons"
+  | "plan-offers"
+  | "plan-referrals"
   | "payments"
   | "payment-refunds"
   | "branches"
@@ -421,12 +424,16 @@ export function resolveMode(sectionKey: string): DashboardMode {
   ) {
     return "staff";
   }
-  if (
-    sectionKey.includes("membership-plans") ||
-    sectionKey === "plans" ||
-    sectionKey.startsWith("plans/") ||
-    sectionKey.includes("/plans")
-  ) {
+  if (sectionKey === "plans/coupons" || sectionKey.startsWith("plans/coupons/")) {
+    return "plan-coupons";
+  }
+  if (sectionKey === "plans/offers" || sectionKey.startsWith("plans/offers/")) {
+    return "plan-offers";
+  }
+  if (sectionKey === "plans/referrals" || sectionKey.startsWith("plans/referrals/")) {
+    return "plan-referrals";
+  }
+  if (sectionKey.includes("membership-plans") || sectionKey === "plans") {
     return "plans";
   }
   if (sectionKey.includes("billing")) {

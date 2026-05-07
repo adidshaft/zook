@@ -64,6 +64,20 @@ jobs:
       - name: Dashboard copy guard
         run: pnpm check:dashboard-copy
 
+      - name: Dashboard dev-speak grep
+        run: |
+          if grep -RInEi '(^|[^[:alnum:]_])(posture|drilling( into)?|seed this|mvp)([^[:alnum:]_]|$)' \
+            apps/web/app/dashboard \
+            apps/web/app/desk \
+            apps/web/src/components/dashboard \
+            apps/web/src/components/dashboard-shell.tsx \
+            apps/web/src/components/desk-panel.tsx \
+            apps/web/src/components/notification-composer-panel.tsx \
+            apps/web/messages/dashboard; then
+            echo "Remove internal/dev-facing language from dashboard user surfaces."
+            exit 1
+          fi
+
       - name: Typecheck
         run: pnpm typecheck
 

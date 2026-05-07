@@ -33,6 +33,9 @@ const sectionAccessPermissions: Partial<Record<ReturnType<typeof resolveMode>, P
   shop: ["SHOP_MANAGE_PRODUCTS", "SHOP_FULFILL_ORDER"],
   staff: ["ORG_MANAGE_STAFF"],
   plans: ["MEMBERSHIP_PLAN_MANAGE"],
+  "plan-coupons": ["MEMBERSHIP_PLAN_MANAGE"],
+  "plan-offers": ["MEMBERSHIP_PLAN_MANAGE"],
+  "plan-referrals": ["REFERRALS_MANAGE"],
   payments: ["PAYMENTS_VIEW", "PAYMENTS_RECORD_OFFLINE"],
   "payment-refunds": ["PAYMENTS_REFUND"],
   branches: ["ORG_MANAGE_LOCATION"],
@@ -69,7 +72,7 @@ function canAccessDashboardSection(
   return required.some((permission) => permissions.has(permission));
 }
 
-export async function renderDashboardRoute({ section, searchParams }: DashboardRouteProps) {
+export async function loadDashboardRouteProps({ section, searchParams }: DashboardRouteProps) {
   const { branchId } = await searchParams;
   const session = await requireDashboardSession();
   if (!session.activeOrgId) {
@@ -91,18 +94,30 @@ export async function renderDashboardRoute({ section, searchParams }: DashboardR
     redirect("/dashboard");
   }
   const data = await getDashboardData(session.activeOrgId, branchId);
+  return {
+    section,
+    data,
+    isPlatformAdmin: session.user.isPlatformAdmin,
+    roles: session.activeOrganization?.roles ?? [],
+    permissions: session.activeOrganization?.permissions ?? [],
+    user: {
+      name: session.user.name,
+      email: session.user.email,
+      preferredLocale: session.user.preferredLocale ?? null,
+    },
+  };
+}
+
+export async function renderDashboardRoute(routeProps: DashboardRouteProps) {
+  const shellProps = await loadDashboardRouteProps(routeProps);
   return (
     <DashboardShell
-      section={section}
-      data={data}
-      isPlatformAdmin={session.user.isPlatformAdmin}
-      roles={session.activeOrganization?.roles ?? []}
-      permissions={session.activeOrganization?.permissions ?? []}
-      user={{
-        name: session.user.name,
-        email: session.user.email,
-        preferredLocale: session.user.preferredLocale ?? null,
-      }}
+      section={shellProps.section}
+      data={shellProps.data}
+      isPlatformAdmin={shellProps.isPlatformAdmin}
+      roles={shellProps.roles}
+      permissions={shellProps.permissions}
+      user={shellProps.user}
     />
   );
 }

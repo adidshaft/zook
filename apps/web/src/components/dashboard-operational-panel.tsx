@@ -299,19 +299,19 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
     );
   }
 
+  if (mode === "plan-coupons") {
+    return <CouponsRouteSection {...controller} />;
+  }
+
+  if (mode === "plan-offers") {
+    return <OffersRouteSection {...controller} />;
+  }
+
+  if (mode === "plan-referrals") {
+    return <ReferralsRouteSection {...controller} />;
+  }
+
   if (mode === "plans") {
-    if (sectionKey === "plans/coupons") {
-      return <CouponsRouteSection {...controller} />;
-    }
-
-    if (sectionKey === "plans/offers") {
-      return <OffersRouteSection {...controller} />;
-    }
-
-    if (sectionKey === "plans/referrals") {
-      return <ReferralsRouteSection {...controller} />;
-    }
-
     return (
       <PlansSection
         membershipPlans={membershipPlans}

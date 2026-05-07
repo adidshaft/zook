@@ -1,9 +1,9 @@
-import { renderDashboardRoute } from "../../dashboard-route";
+import { renderPlanGrowthRoute } from "../plan-growth-route";
 
 export default function PlanCouponsPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["plans", "coupons"], searchParams });
+  return renderPlanGrowthRoute({ route: "coupons", searchParams });
 }

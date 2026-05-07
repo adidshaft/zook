@@ -66,7 +66,11 @@ export function useDashboardOperationalResources({
   const membershipPlansState = useOperationalResource<{ plans: MembershipPlanRow[] }>({
     path: `/api/orgs/${orgId}/membership-plans`,
     enabled:
-      mode === "members" || mode === "join-requests" || mode === "plans" || mode === "payments",
+      mode === "members" ||
+      mode === "join-requests" ||
+      mode === "plans" ||
+      mode === "plan-offers" ||
+      mode === "payments",
   });
   const staffState = useOperationalResource<{ staff: StaffAssignmentRow[]; users: StaffUserRow[] }>(
     {
@@ -117,11 +121,15 @@ export function useDashboardOperationalResources({
   });
   const couponsState = useOperationalResource<{ coupons: CouponRow[] }>({
     path: `/api/orgs/${orgId}/coupons`,
-    enabled: mode === "overview" || mode === "payments",
+    enabled:
+      mode === "overview" ||
+      mode === "plan-coupons" ||
+      mode === "plan-referrals" ||
+      mode === "payments",
   });
   const offersState = useOperationalResource<{ offers: OfferRow[] }>({
     path: `/api/orgs/${orgId}/offers`,
-    enabled: mode === "overview" || mode === "plans" || mode === "payments",
+    enabled: mode === "overview" || mode === "plan-offers" || mode === "payments",
   });
   const branchesState = useOperationalResource<{ branches: BranchRow[] }>({
     path: `/api/orgs/${orgId}/branches`,
@@ -129,7 +137,7 @@ export function useDashboardOperationalResources({
   });
   const referralPolicyState = useOperationalResource<{ policy: ReferralPolicyRow }>({
     path: `/api/orgs/${orgId}/referral-policy`,
-    enabled: mode === "overview",
+    enabled: mode === "overview" || mode === "plan-referrals",
   });
   const referralsState = useOperationalResource<{
     referrals: ReferralCodeRow[];
@@ -137,11 +145,11 @@ export function useDashboardOperationalResources({
     coupons: CouponRow[];
   }>({
     path: `/api/orgs/${orgId}/referrals`,
-    enabled: mode === "overview",
+    enabled: mode === "overview" || mode === "plan-referrals",
   });
   const referralAnalyticsState = useOperationalResource<ReferralAnalyticsPayload>({
     path: `/api/orgs/${orgId}/referral-analytics`,
-    enabled: mode === "overview",
+    enabled: mode === "overview" || mode === "plan-referrals",
   });
   const memberDetailState = useOperationalResource<MemberDetailPayload>({
     path: selectedMemberId ? `/api/orgs/${orgId}/members/${selectedMemberId}` : undefined,
