@@ -8,6 +8,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getS3SignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getAppEnv } from "../runtime-env";
 import type { DiagnosticProvider, ProviderInstanceDiagnostics } from "../types";
 
@@ -583,5 +584,90 @@ export class S3CompatibleStorageProvider implements StorageProvider {
         Key: input.key,
       }),
     );
+  }
+}
+
+export class SupabaseStorageProvider implements StorageProvider {
+  private readonly client: SupabaseClient;
+
+  constructor(
+    private readonly options: {
+      url: string;
+      serviceRoleKey: string;
+      bucket: string;
+      publicBaseUrl?: string;
+    },
+  ) {
+    this.client = createClient(options.url, options.serviceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+
+  getDiagnostics(): ProviderInstanceDiagnostics {
+    return {
+      provider: "supabase",
+      mode: "live",
+      configured: Boolean(this.options.url && this.options.serviceRoleKey && this.options.bucket),
+      metadata: {
+        bucket: this.options.bucket,
+        hasPublicBaseUrl: Boolean(this.options.publicBaseUrl),
+      },
+    };
+  }
+
+  validateFile(input: StorageFileValidationInput) {
+    return validateStorageFile(input);
+  }
+
+  async uploadFile(input: StorageUploadInput): Promise<StorageUploadResult> {
+    const validated = this.validateFile(input);
+    const { error } = await this.client.storage.from(this.options.bucket).upload(
+      input.key,
+      toBuffer(input.body),
+      {
+        contentType: validated.contentType,
+        ...(input.cacheControl ? { cacheControl: input.cacheControl } : {}),
+        upsert: false,
+      },
+    );
+    if (error) {
+      throw new Error(`Supabase upload failed: ${error.message}`);
+    }
+    return {
+      key: input.key,
+      url:
+        validated.visibility === "public"
+          ? await this.getPublicUrl({ key: input.key })
+          : await this.getSignedUrl({ key: input.key }),
+    };
+  }
+
+  async getSignedUrl(input: { key: string; expiresInSeconds?: number }): Promise<string> {
+    const { data, error } = await this.client.storage
+      .from(this.options.bucket)
+      .createSignedUrl(input.key, input.expiresInSeconds ?? 10 * 60);
+    if (error || !data?.signedUrl) {
+      throw new Error(`Supabase signed URL failed: ${error?.message ?? "missing signed URL"}`);
+    }
+    return data.signedUrl;
+  }
+
+  async getPublicUrl(input: { key: string }): Promise<string> {
+    const encodedKey = encodeKeyPath(input.key);
+    if (this.options.publicBaseUrl) {
+      return `${this.options.publicBaseUrl.replace(/\/$/, "")}/${encodedKey}`;
+    }
+    const { data } = this.client.storage.from(this.options.bucket).getPublicUrl(input.key);
+    return data.publicUrl;
+  }
+
+  async deleteFile(input: { key: string }): Promise<void> {
+    const { error } = await this.client.storage.from(this.options.bucket).remove([input.key]);
+    if (error) {
+      throw new Error(`Supabase delete failed: ${error.message}`);
+    }
   }
 }

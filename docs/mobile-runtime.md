@@ -61,15 +61,14 @@ APP_ENV=production API_MODE=backend EXPO_PUBLIC_API_MODE=backend pnpm --filter @
 
 The public config must resolve a non-local backend URL and `offlineDemo=false`. If backend URL or runtime config is missing, the app should show a fatal configuration state instead of silently loading demo data.
 
-AI provider settings are server-only. Do not expose `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, or `OPENAI_TIMEOUT_MS` through Expo public env vars. Mobile only receives the controlled API response: a generated draft, a validation/safety block, or a provider-unavailable error.
+AI provider settings are server-only. Do not expose `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, or `OPENAI_TIMEOUT_MS` through Expo public env vars. For pilot launch, `AI_FEATURES_ENABLED=false` keeps the assistant in a coming-soon state and trainers use manual plan creation, review, assignment, and sending.
 
-Trainer AI planning is intentionally human-reviewed:
+Trainer plan publishing is intentionally human-reviewed:
 
-- Trainers can generate drafts only for assigned clients in the active organization.
-- Draft assignment requires an explicit backend review step first.
+- Trainers create launch plans manually for assigned clients in the active organization.
+- Plan assignment should follow the explicit backend review step first.
 - Members cannot generate trainer plan drafts or AI images.
-- AI safety/consent blocks are persisted as usage/audit records.
-- Live OpenAI behavior is not considered certified until tested with configured credentials in staging.
+- Live OpenAI behavior is not considered certified until tested with configured credentials and the feature flag in staging.
 
 ## Notifications And Push
 

@@ -18,10 +18,9 @@ import { FindGymsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { toWebUrl } from "@/lib/api";
 import { joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
+import { useI18n } from "@/lib/i18n";
 import { useGymSearch } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
-
-const featuredCities = ["Pune", "Bengaluru", "Mumbai", "Delhi"];
 
 function normalizeMediaUrl(value?: string | null) {
   if (!value) {
@@ -33,6 +32,7 @@ function normalizeMediaUrl(value?: string | null) {
 export default function FindGyms() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const routeParams = useLocalSearchParams<{ focus?: string; ref?: string }>();
   const referralCode = Array.isArray(routeParams.ref) ? routeParams.ref[0] : routeParams.ref;
   const [query, setQuery] = useState("");
@@ -46,6 +46,10 @@ export default function FindGyms() {
     city: debouncedCity || undefined,
   });
   const gyms = gymsQuery.data?.gyms ?? [];
+  const locationChips = [
+    { id: "device", label: t("findGyms.deviceLocation") },
+    { id: "recent", label: t("findGyms.recentSearches") },
+  ] as const;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -113,32 +117,31 @@ export default function FindGyms() {
             </GlassCard>
           ) : null}
 
-          {/* Search */}
           <GlassCard contentStyle={styles.searchContent}>
             <GlassInput
               label="Gym name or username"
               value={query}
               onChangeText={setQuery}
-              placeholder="Try Iron House or peaklab"
+              placeholder={t("findGyms.searchPlaceholder")}
             />
             <GlassInput
               label="City"
               value={city}
               onChangeText={setCity}
-              placeholder="Pune, Bengaluru, Mumbai..."
+              placeholder={t("findGyms.cityPlaceholder")}
             />
             <View style={styles.cityRow}>
-              {featuredCities.map((featuredCity) => {
-                const active = city.trim().toLowerCase() === featuredCity.toLowerCase();
+              {locationChips.map((chip) => {
+                const active = chip.id === "device" && city.trim() === "";
                 return (
                   <Pressable
-                    key={featuredCity}
-                    onPress={() => setCity(active ? "" : featuredCity)}
+                    key={chip.id}
+                    onPress={() => setCity("")}
                     accessibilityRole="button"
                     style={[styles.cityChip, active ? styles.cityChipActive : null]}
                   >
                     <Text style={[styles.cityChipText, active ? styles.cityChipTextActive : null]}>
-                      {featuredCity}
+                      {chip.label}
                     </Text>
                   </Pressable>
                 );
@@ -146,9 +149,6 @@ export default function FindGyms() {
             </View>
           </GlassCard>
 
-          {/* CODEX: map tab deferred until react-native-maps is set up. */}
-
-          {/* Results */}
           <SectionHeader
             title="Available gyms"
             subtitle={gymsQuery.isLoading ? "Searching..." : `${gyms.length} result${gyms.length !== 1 ? "s" : ""}`}

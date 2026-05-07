@@ -35,7 +35,7 @@ Last updated: 24 April 2026
 - Local OTP is `000000`.
 - Local seeded accounts:
   - `platform@zook.local`
-  - `owner@zook.local`
+  - `pilot-owner.test`
   - `admin@zook.local`
   - `reception@zook.local`
   - `trainer@zook.local`
@@ -98,7 +98,7 @@ npx uri-scheme open "zook://notifications/<notification-id>" --android
 
 ## QR Flow
 
-1. Sign in on web as `owner@zook.local`.
+1. Sign in on web as `pilot-owner.test`.
 2. Open `/dashboard/attendance/qr-display`.
 3. On mobile, open `Scan`.
 4. On simulator or emulator, paste the QR token manually.
@@ -107,7 +107,7 @@ npx uri-scheme open "zook://notifications/<notification-id>" --android
 
 ## Push And Notifications
 
-1. Sign in as `owner@zook.local` on web and send a notification, or use the trainer action below to create one.
+1. Sign in as `pilot-owner.test` on web and send a notification, or use the trainer action below to create one.
 2. On mobile, open `Profile` and enable push if the device build supports it.
 3. Confirm permission prompts, Expo token registration, and backend device registration all complete without exposing provider secrets.
 4. Open `Notifications`.

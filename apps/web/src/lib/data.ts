@@ -58,17 +58,17 @@ function getDemoDashboardData(scope: "org" | "platform") {
     staffCount: 4,
   };
   const org = {
-    id: demoOrg?.id ?? "org-aarogya-strength",
-    name: demoOrg?.name ?? "Aarogya Strength Club",
-    username: demoOrg?.username ?? "aarogya-strength",
-    city: demoOrg?.city ?? "Pune",
-    state: demoOrg?.state ?? "Maharashtra",
+    id: demoOrg?.id ?? "org-demo",
+    name: demoOrg?.name ?? "[Your gym name]",
+    username: demoOrg?.username ?? "your-gym",
+    city: demoOrg?.city ?? "[City]",
+    state: demoOrg?.state ?? "[State]",
     status: "ACTIVE",
     joinMode: demoOrg?.joinMode ?? "OPEN_JOIN",
     attendanceMode: "EXCEPTION_APPROVAL",
     trialEndAt: new Date("2026-05-17T00:00:00.000Z"),
     createdAt: new Date("2026-04-01T00:00:00.000Z"),
-    contactEmail: "owner@zook.local",
+    contactEmail: null,
     contactPhone: "+91 99887 77665",
   };
   return {
@@ -78,7 +78,7 @@ function getDemoDashboardData(scope: "org" | "platform") {
     metrics:
       scope === "org"
         ? [
-            { label: "Active Members", value: "412", delta: "Aarogya Strength Club" },
+            { label: "Active Members", value: "412", delta: "18% month over month" },
             { label: "Today's Check-ins", value: "48", delta: "3 pending approval" },
             { label: "Revenue", value: "₹82,450", delta: "Includes manual records" },
             { label: "Pending Join Requests", value: "7", delta: "Approval queue" },
@@ -99,16 +99,16 @@ function getDemoDashboardData(scope: "org" | "platform") {
     joinRequests: zookDemoFixtures.joinRequests,
     auditLogCount: zookDemoFixtures.auditLogs.length,
     branchScope: {
-      branches: [{ id: "branch-default", name: "Aarogya Koregaon Park", isDefault: true, active: true }],
+      branches: [{ id: "branch-default", name: "[Primary branch]", isDefault: true, active: true }],
       defaultBranch: {
         id: "branch-default",
-        name: "Aarogya Koregaon Park",
+        name: "[Primary branch]",
         isDefault: true,
         active: true,
       },
       selectedBranch: {
         id: "branch-default",
-        name: "Aarogya Koregaon Park",
+        name: "[Primary branch]",
         isDefault: true,
         active: true,
       },

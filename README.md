@@ -150,11 +150,12 @@ Mobile:
 - `MockPushProvider`: delivery recording.
 - `MockSmsProvider`: future OTP stub.
 - `LocalStorageProvider`: local signed URL/file metadata shape.
+- `SupabaseStorageProvider`: Supabase Storage bucket adapter with the same upload validation and signed URL contract.
 
 Optional live adapters currently available:
 
 - `EMAIL_PROVIDER=smtp|resend`
-- `STORAGE_PROVIDER=s3|r2`
+- `STORAGE_PROVIDER=supabase|s3|r2`
 - `MAP_PROVIDER=google`
 - `AI_PROVIDER=openai` or `AI_PROVIDER=disabled`
 - `PAYMENT_PROVIDER=razorpay` or `PAYMENT_PROVIDER=disabled`
@@ -169,6 +170,7 @@ Keep client apps unchanged. Add provider implementations behind the interfaces i
 - `MAP_PROVIDER=google` with `GOOGLE_MAPS_API_KEY`
 - `PAYMENT_PROVIDER=razorpay|disabled`
 - `SMS_PROVIDER=webhook|disabled` with `SMS_WEBHOOK_URL` and optional `SMS_WEBHOOK_SECRET`
+- `STORAGE_PROVIDER=supabase` with `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET`
 - `STORAGE_PROVIDER=s3` with S3/R2-compatible credentials
 - `PUSH_PROVIDER=expo|disabled`
 
@@ -215,13 +217,15 @@ If `RUN_DB_WEB_TESTS=1 pnpm test:web` is skipped or fails before the OTP field a
 
 ## Known Pilot Limitations
 
-- Razorpay is provider-ready with backend confirmation and webhook signature handling, but real test credentials and signed webhook delivery were not verified in the 2026-05-03 hardening pass.
-- Expo push is provider-bound and in-app notifications are canonical, but physical-device push delivery and deep-link tap QA are not certified yet.
-- OpenAI is server-only with structured response validation and safety/audit records, but live provider credentials and model behavior still need staging validation.
-- S3/R2-compatible object storage is implemented behind the storage boundary, but production bucket/CDN behavior is not certified yet.
+- Razorpay code paths are provider-ready with backend confirmation and webhook signature handling; live credentials and signed webhook delivery still require the checklist in `docs/launch-runbook.md`.
+- Expo push remains provider-bound and in-app notifications are canonical; physical-device push delivery and deep-link tap QA still require the checklist in `docs/launch-runbook.md`.
+- AI plan assistant is launch-gated as coming soon; trainers can manually create, review, assign, and send plans. OpenAI requires post-launch staging certification before enabling.
+- Demo seed and reset entrypoints now refuse `APP_ENV=production`.
+- Shop pickup QR now uses a real QR renderer; reception scanner QA remains a manual launch check.
+- Supabase Storage and S3/R2-compatible object storage are implemented behind the storage boundary; production bucket/CDN behavior still needs the checklist in `docs/launch-runbook.md`.
 - Multi-branch data model exists; the MVP UI is still Default-Branch-centered and shop/payments remain org-wide.
 - QR scan simulator testing still works best with the manual-token path.
-- Sentry remains a scaffold rather than a full production SDK integration.
+- Sentry SDK integration is wired for web and mobile; staging still needs a deliberate test exception and crash-free release check.
 
 ## Acceptance Checklist
 

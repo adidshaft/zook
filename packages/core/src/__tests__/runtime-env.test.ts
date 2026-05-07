@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
 import {
   RuntimeConfigError,
   getAllowedFixedOtp,
@@ -120,6 +122,24 @@ describe("runtime env guardrails", () => {
 
     expect(issues).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ code: "PRODUCTION_MEMORY_RATE_LIMIT" })]),
+    );
+  });
+
+  it("blocks demo seed entrypoints in production before touching the database", () => {
+    const root = resolve(import.meta.dirname, "../../..", "..");
+    const result = spawnSync(
+      "pnpm",
+      ["exec", "tsx", "scripts/seed-demo.ts"],
+      {
+        cwd: root,
+        env: { ...process.env, APP_ENV: "production" },
+        encoding: "utf8",
+      },
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stderr}\n${result.stdout}`).toContain(
+      "Refusing to seed demo data when APP_ENV=production",
     );
   });
 });

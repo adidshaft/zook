@@ -34,15 +34,8 @@ function initialsFor(name?: string | null) {
   );
 }
 
-function greetingForHour() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
 function formatRenewalDate(value?: string | null) {
-  if (!value) return "renewal syncing";
+  if (!value) return "Renewal date pending";
   return `Renews ${new Date(value).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
@@ -69,7 +62,6 @@ export default function Home() {
     session?.activeOrganization;
   const activeOrganization = memberHome?.activeOrganization ?? sessionOrganization;
   const memberName = session?.user.name || "Member";
-  const firstName = memberName.split(" ")[0] || "Hey";
   const initials = initialsFor(memberName);
   const profilePhotoUrl = normalizeMediaUrl(session?.user.profilePhotoUrl);
   const orgName = activeOrganization?.name ?? "Find a gym";
@@ -89,9 +81,9 @@ export default function Home() {
       .includes("EXPIRED") ||
       (typeof daysLeft === "number" && daysLeft <= 0));
   const daysLeftLabel =
-    typeof daysLeft === "number" ? `${daysLeft} days left` : "Membership syncing";
+    typeof daysLeft === "number" ? `${daysLeft} days left` : "Membership status pending";
   const remainingVisitsLabel =
-    typeof remainingVisits === "number" ? `${remainingVisits} visits remaining` : "Visits syncing";
+    typeof remainingVisits === "number" ? `${remainingVisits} visits remaining` : "Visit balance pending";
   const unreadCount = memberHome?.unreadNotifications ?? 0;
   const assignedPlan = memberHome?.todayPlanName
       ? {
@@ -177,7 +169,7 @@ export default function Home() {
                 style={styles.headerCopy}
               >
                 <Text numberOfLines={1} style={styles.greeting}>
-                  {greetingForHour()}, {firstName}
+                  {orgName}
                 </Text>
                 <View style={styles.gymLineRow}>
                   <View style={styles.gymLogo}>
@@ -192,7 +184,7 @@ export default function Home() {
                     )}
                   </View>
                   <Text numberOfLines={1} style={styles.gymLine}>
-                    {orgName}, {city}
+                    {city}
                   </Text>
                   <Ionicons name="chevron-down" size={14} color={colors.muted} />
                 </View>
@@ -257,6 +249,7 @@ export default function Home() {
                       )
                     : 0.72
                 }
+                showBillingAction={!renewalImminent}
               />
               <View style={styles.todayGrid}>
                 <Link href="/plans" asChild>
@@ -324,6 +317,7 @@ function MemberStateHero({
   planName,
   progressValue,
   renewalDate,
+  showBillingAction,
   visitLabel,
 }: {
   daysLeftLabel: string;
@@ -331,6 +325,7 @@ function MemberStateHero({
   planName: string;
   progressValue: number;
   renewalDate?: string | null;
+  showBillingAction: boolean;
   visitLabel: string;
 }) {
   const boundedProgress =
@@ -376,15 +371,17 @@ function MemberStateHero({
         <ZookButton href="/scan" icon="qr-code-outline" style={styles.heroPrimaryAction}>
           Check in
         </ZookButton>
-        <ZookButton
-          href="/membership"
-          tone="secondary"
-          icon="card-outline"
-          style={styles.heroSecondaryAction}
-          accessibilityLabel={expired ? "Renew membership" : "Open membership"}
-        >
-          {expired ? "Renew" : "Pay"}
-        </ZookButton>
+        {showBillingAction ? (
+          <ZookButton
+            href="/membership"
+            tone="secondary"
+            icon="card-outline"
+            style={styles.heroSecondaryAction}
+            accessibilityLabel={expired ? "Renew membership" : "Open membership"}
+          >
+            {expired ? "Renew" : "Pay"}
+          </ZookButton>
+        ) : null}
       </View>
     </GlassCard>
   );

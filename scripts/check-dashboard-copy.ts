@@ -82,6 +82,15 @@ function collectJsonStrings(value: unknown, file: string, hits: CopyHit[], path:
   }
 }
 
+function flattenKeys(value: unknown, prefix = ""): string[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return prefix ? [prefix] : [];
+  }
+  return Object.entries(value).flatMap(([key, item]) =>
+    flattenKeys(item, prefix ? `${prefix}.${key}` : key),
+  );
+}
+
 function collectTsxCopy(content: string, file: string) {
   const hits: CopyHit[] = [];
 
@@ -131,6 +140,23 @@ const files = execFileSync("rg", ["--files", ...scanTargets], { cwd: root, encod
 
 const bannedFailures: string[] = [];
 const hardcodedFailures: string[] = [];
+const parityFailures: string[] = [];
+
+const dashboardMessagesDir = join(root, "apps/web/messages/dashboard");
+const englishMessages = JSON.parse(readFileSync(join(dashboardMessagesDir, "en.json"), "utf8"));
+const hindiMessages = JSON.parse(readFileSync(join(dashboardMessagesDir, "hi.json"), "utf8"));
+const englishKeys = new Set(flattenKeys(englishMessages));
+const hindiKeys = new Set(flattenKeys(hindiMessages));
+for (const key of englishKeys) {
+  if (!hindiKeys.has(key)) {
+    parityFailures.push(`hi.json missing ${key}`);
+  }
+}
+for (const key of hindiKeys) {
+  if (!englishKeys.has(key)) {
+    parityFailures.push(`en.json missing ${key}`);
+  }
+}
 
 for (const file of files) {
   const content = readFileSync(join(root, file), "utf8");
@@ -152,7 +178,7 @@ for (const file of files) {
   }
 }
 
-if (bannedFailures.length || hardcodedFailures.length) {
+if (bannedFailures.length || hardcodedFailures.length || parityFailures.length) {
   if (bannedFailures.length) {
     console.error("User-facing dashboard copy contains internal wording:");
     console.error(bannedFailures.join("\n"));
@@ -160,6 +186,10 @@ if (bannedFailures.length || hardcodedFailures.length) {
   if (hardcodedFailures.length) {
     console.error("Dashboard JSX contains hardcoded English copy longer than two words:");
     console.error(hardcodedFailures.join("\n"));
+  }
+  if (parityFailures.length) {
+    console.error("Dashboard i18n catalogues are missing matching keys:");
+    console.error(parityFailures.join("\n"));
   }
   process.exit(1);
 }

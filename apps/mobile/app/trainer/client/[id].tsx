@@ -1,5 +1,4 @@
-import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
-import type { Href } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -65,11 +64,7 @@ export default function TrainerClientDetail() {
   const clientsQuery = useTrainerClients();
   const client =
     clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
-  const aiDraftHref = (
-    client ? `/trainer/client/${client.memberUserId}/ai-draft` : "/trainer?view=clients"
-  ) as Href;
-  const clientName =
-    client?.user?.name ?? (clientsQuery.isLoading ? "Loading client..." : "Client not found");
+  const clientName = client?.user?.name ?? (clientsQuery.isLoading ? "Client" : "Client not found");
   const fitnessGoal =
     client?.summary?.fitnessGoal ?? client?.profile?.fitnessGoal ?? "General fitness";
   const activePlans = client?.summary?.activePlans ?? 0;
@@ -122,9 +117,12 @@ export default function TrainerClientDetail() {
       });
       setSavedPlan({ id: result.plan.id, title: result.plan.title });
       setStatus(`${result.plan.title} saved as a draft.`);
+      showToast({ tone: "success", haptic: "success", message: "Draft saved." });
       return result.plan;
     } catch (error) {
-      setStatus(getApiErrorMessage(error));
+      const message = getApiErrorMessage(error);
+      setStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
       return null;
     } finally {
       setSavingPlan(false);
@@ -161,8 +159,11 @@ export default function TrainerClientDetail() {
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
       await queryClient.invalidateQueries({ queryKey: ["me", "notifications"] });
       setStatus(`${plan.title} assigned. ${clientName} can now see it.`);
+      showToast({ tone: "success", haptic: "success", message: "Plan assigned." });
     } catch (error) {
-      setStatus(getApiErrorMessage(error));
+      const message = getApiErrorMessage(error);
+      setStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     } finally {
       setSavingPlan(false);
     }
@@ -186,9 +187,12 @@ export default function TrainerClientDetail() {
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
       setNoteSaved(true);
       setStatus("Trainer note saved.");
+      showToast({ tone: "success", haptic: "success", message: "Trainer note saved." });
       setTimeout(() => setNoteSaved(false), 2000);
     } catch (error) {
-      setStatus(getApiErrorMessage(error));
+      const message = getApiErrorMessage(error);
+      setStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -271,15 +275,12 @@ export default function TrainerClientDetail() {
             >
               Create Plan
             </ZookButton>
-            <ZookButton
-              href={aiDraftHref}
+            <SecondaryButton
               disabled={!client}
-              tone="secondary"
               style={styles.actionHalf}
-              icon="sparkles-outline"
             >
-              Generate with AI
-            </ZookButton>
+              AI coming soon
+            </SecondaryButton>
           </View>
 
           <SegmentedControl options={tabs} value={tab} onChange={setTab} />
@@ -343,15 +344,12 @@ export default function TrainerClientDetail() {
                 >
                   Save draft
                 </ZookButton>
-                <ZookButton
-                  href={aiDraftHref}
+                <SecondaryButton
                   disabled={!client || savingPlan}
-                  tone="secondary"
                   style={styles.actionHalf}
-                  icon="sparkles-outline"
                 >
-                  Generate with AI
-                </ZookButton>
+                  AI coming soon
+                </SecondaryButton>
               </View>
               <SecondaryButton
                 onPress={() => void assignPlan()}
@@ -436,11 +434,9 @@ export default function TrainerClientDetail() {
                   </Text>
                 </View>
               </View>
-              <Link href={aiDraftHref} asChild>
-                <Pressable accessibilityRole="link">
-                  <StatusChip status="Open review" tone="amber" icon="chevron-forward" />
-                </Pressable>
-              </Link>
+              <Pressable accessibilityRole="button" onPress={() => setTab("plans")}>
+                <StatusChip status="Continue manual edits" tone="amber" icon="chevron-forward" />
+              </Pressable>
             </GlassCard>
           ) : null}
 

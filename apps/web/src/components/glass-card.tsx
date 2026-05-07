@@ -32,11 +32,12 @@ export function Pill({
   children,
   tone = "neutral",
   className,
+  ...props
 }: {
   children: React.ReactNode;
   tone?: PillTone;
   className?: string | undefined;
-}) {
+} & React.HTMLAttributes<HTMLSpanElement>) {
   const tones = {
     neutral: "border-white/10 bg-white/8 text-white/70",
     lime: "border-lime-300/45 bg-lime-300/16 text-lime-200",
@@ -46,6 +47,7 @@ export function Pill({
   };
   return (
     <span
+      {...props}
       className={clsx("rounded-full border px-3 py-1 text-xs font-medium", tones[tone], className)}
     >
       {children}

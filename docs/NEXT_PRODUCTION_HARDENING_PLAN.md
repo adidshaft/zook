@@ -22,9 +22,10 @@ Target modes:
 - `APP_ENV=local|staging|production`
 - `API_MODE=backend|offline-demo`
 - `PAYMENT_PROVIDER=mock|razorpay|disabled`
-- `AI_PROVIDER=mock|openai|disabled`
+- `AI_PROVIDER=disabled|mock|openai`
+- `AI_FEATURES_ENABLED=false`
 - `PUSH_PROVIDER=mock|expo|disabled`
-- `STORAGE_PROVIDER=local|s3|r2|disabled`
+- `STORAGE_PROVIDER=supabase|local|s3|r2|disabled`
 
 Current implementation now accepts `disabled` as a first-class payment, AI, and push provider mode. Production/staging env still needs real provider choices and staging validation before launch.
 

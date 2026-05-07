@@ -1,7 +1,13 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState } from "react";
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppState,
   type AppStateStatus,
@@ -19,20 +25,23 @@ import {
   EmptyState,
   GlassCard,
   InfoRow,
-  LoadingState,
   MobileHeader,
   Pill,
   PrimaryButton,
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { GymDetailSkeleton } from "@/components/skeletons";
 import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { gymApi } from "@/lib/domain-api";
 import { formatInr, formatLongDate, joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
-import { useGymProfile } from "@/lib/query-hooks";
+import { useGymProfile, type GymProfileData } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
+
+type PublicTrainer = NonNullable<GymProfileData["trainers"]>[number];
 
 export default function GymProfileScreen() {
   const router = useRouter();
@@ -43,11 +52,24 @@ export default function GymProfileScreen() {
   const { selectedBranchId } = useBranchSelection();
   const queryClient = useQueryClient();
   const gymQuery = useGymProfile(username ?? "");
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const statusMessageKey = useMemo(() => ["gym", username, "status-message"], [username]);
+  const statusMessageQuery = useQuery({
+    queryKey: statusMessageKey,
+    queryFn: async () => null as string | null,
+    initialData: null as string | null,
+    enabled: false,
+    staleTime: Infinity,
+  });
+  const statusMessage = statusMessageQuery.data ?? null;
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedTrainer, setSelectedTrainer] = useState<PublicTrainer | null>(null);
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const usernameRef = useRef(username);
+  const mountedRef = useRef(true);
+  const trainerSheetRef = useRef<BottomSheetModal>(null);
+  const trainerSnapPoints = useMemo(() => ["44%"], []);
 
   const gym = gymQuery.data?.org ?? null;
   const plans = gymQuery.data?.plans ?? [];
@@ -67,6 +89,37 @@ export default function GymProfileScreen() {
     profileBranches.find((branch) => branch.isDefault)?.id ??
     profileBranches[0]?.id;
 
+  function setStatusMessage(message: string | null) {
+    queryClient.setQueryData(statusMessageKey, message);
+  }
+
+  useEffect(() => {
+    usernameRef.current = username;
+  }, [username]);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const renderTrainerBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
+
+  function openTrainerSheet(trainer: PublicTrainer) {
+    setSelectedTrainer(trainer);
+    trainerSheetRef.current?.present();
+  }
+
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
       const wasAway = appStateRef.current === "inactive" || appStateRef.current === "background";
@@ -79,13 +132,15 @@ export default function GymProfileScreen() {
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
-        queryClient.invalidateQueries({ queryKey: ["gym", username] }),
+        queryClient.invalidateQueries({ queryKey: ["gym", usernameRef.current] }),
       ]).finally(() => {
-        setStatusMessage(null);
+        if (mountedRef.current) {
+          setStatusMessage(null);
+        }
       });
     });
     return () => subscription.remove();
-  }, [queryClient, username]);
+  }, [queryClient]);
 
   async function requestMembership() {
     if (!gym || !token) {
@@ -104,11 +159,12 @@ export default function GymProfileScreen() {
       setStatusMessage(
         "Membership request submitted. The gym team can now review it from their dashboard.",
       );
+      showToast({ tone: "success", haptic: "success", message: "Membership request submitted." });
       await queryClient.invalidateQueries({ queryKey: ["gym", username] });
     } catch (error) {
-      setStatusMessage(
-        error instanceof Error ? error.message : "Unable to submit membership request.",
-      );
+      const message = error instanceof Error ? error.message : "Unable to submit membership request.";
+      setStatusMessage(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     } finally {
       setBusyAction(null);
     }
@@ -137,7 +193,9 @@ export default function GymProfileScreen() {
         queryClient.invalidateQueries({ queryKey: ["gym", username] }),
       ]);
     } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : "Unable to start payment.");
+      const message = error instanceof Error ? error.message : "Unable to start payment.";
+      setStatusMessage(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     } finally {
       setBusyAction(null);
     }
@@ -218,12 +276,7 @@ export default function GymProfileScreen() {
           />
         )}
 
-        {gymQuery.isLoading ? (
-          <LoadingState
-            title="Loading gym details"
-            body="Loading gym details, plans, and your membership status."
-          />
-        ) : null}
+        {gymQuery.isLoading ? <GymDetailSkeleton /> : null}
 
         {!gymQuery.isLoading && !gym ? (
           <EmptyState
@@ -355,39 +408,46 @@ export default function GymProfileScreen() {
                 trainers
                   .filter((trainer) => trainer.visibleToMembers !== false)
                   .map((trainer) => (
-                    <GlassCard key={trainer.userId} contentStyle={styles.trainerCard}>
-                      {trainer.profilePhotoUrl ? (
-                        <Image
-                          source={{ uri: normalizeMediaUrl(trainer.profilePhotoUrl) }}
-                          style={styles.trainerImage}
-                          contentFit="cover"
-                        />
-                      ) : (
-                        <View style={styles.trainerImageFallback}>
-                          <Text style={styles.trainerImageText}>
-                            {initialsForName(trainer.name)}
+                    <Pressable
+                      key={trainer.userId}
+                      onPress={() => openTrainerSheet(trainer)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open ${trainer.name} profile`}
+                    >
+                      <GlassCard contentStyle={styles.trainerCard}>
+                        {trainer.profilePhotoUrl ? (
+                          <Image
+                            source={{ uri: normalizeMediaUrl(trainer.profilePhotoUrl) }}
+                            style={styles.trainerImage}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View style={styles.trainerImageFallback}>
+                            <Text style={styles.trainerImageText}>
+                              {initialsForName(trainer.name)}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={styles.trainerCopy}>
+                          <Text style={styles.trainerName}>{trainer.name}</Text>
+                          <Text style={styles.sectionBody} numberOfLines={2}>
+                            {trainer.bio ?? "Bio coming soon."}
                           </Text>
+                          <View style={styles.trainerSpecialties}>
+                            {normalizeSpecialties(trainer.specialties)
+                              .slice(0, 3)
+                              .map((specialty) => (
+                                <Text
+                                  key={`${trainer.userId}-${specialty}`}
+                                  style={styles.trainerSpecialty}
+                                >
+                                  {specialty}
+                                </Text>
+                              ))}
+                          </View>
                         </View>
-                      )}
-                      <View style={styles.trainerCopy}>
-                        <Text style={styles.trainerName}>{trainer.name}</Text>
-                        <Text style={styles.sectionBody} numberOfLines={2}>
-                          {trainer.bio ?? "Bio coming soon."}
-                        </Text>
-                        <View style={styles.trainerSpecialties}>
-                          {normalizeSpecialties(trainer.specialties)
-                            .slice(0, 3)
-                            .map((specialty) => (
-                              <Text
-                                key={`${trainer.userId}-${specialty}`}
-                                style={styles.trainerSpecialty}
-                              >
-                                {specialty}
-                              </Text>
-                            ))}
-                        </View>
-                      </View>
-                    </GlassCard>
+                      </GlassCard>
+                    </Pressable>
                   ))
               ) : (
                 <EmptyState
@@ -483,7 +543,26 @@ export default function GymProfileScreen() {
             ) : null}
 
             <View style={styles.planStack}>
-              {plans.map((plan) => (
+              {plans.map((plan) => {
+                const pricedPlan = plan as typeof plan & {
+                  effectivePricePaise?: number | null;
+                  badges?: string[] | null;
+                };
+                const effectivePricePaise = pricedPlan.effectivePricePaise ?? plan.pricePaise;
+                const hasReferralPrice =
+                  effectiveReferral &&
+                  effectivePricePaise !== null &&
+                  effectivePricePaise !== undefined &&
+                  plan.pricePaise !== null &&
+                  plan.pricePaise !== undefined &&
+                  effectivePricePaise < plan.pricePaise;
+                const badges = [
+                  ...(pricedPlan.badges ?? []),
+                  hasReferralPrice ? "Referral price" : null,
+                  plan.visitLimit ? `${plan.visitLimit} visits` : null,
+                ].filter((item): item is string => Boolean(item));
+
+                return (
                 <GlassCard key={plan.id} contentStyle={styles.planCard}>
                   <View style={styles.planHeader}>
                     <View style={styles.planCopy}>
@@ -491,9 +570,21 @@ export default function GymProfileScreen() {
                       <Text style={styles.planType}>
                         {titleCaseFromCode(plan.type ?? "MEMBERSHIP")}
                       </Text>
-                      <Text style={styles.planPrice}>{formatInr(plan.pricePaise)}</Text>
+                      <Text style={styles.planPrice}>{formatInr(effectivePricePaise)}</Text>
+                      {hasReferralPrice ? (
+                        <Text style={styles.planOriginalPrice}>{formatInr(plan.pricePaise)}</Text>
+                      ) : null}
                     </View>
                   </View>
+                  {badges.length ? (
+                    <View style={styles.planBadgeRow}>
+                      {badges.slice(0, 3).map((badge) => (
+                        <Text key={`${plan.id}-${badge}`} style={styles.planBadge}>
+                          {badge}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null}
                   <Text style={styles.sectionBody}>
                     {plan.description ?? "Standard membership plan."}
                   </Text>
@@ -516,7 +607,8 @@ export default function GymProfileScreen() {
                         : "Complete earlier step first"}
                   </PrimaryButton>
                 </GlassCard>
-              ))}
+                );
+              })}
             </View>
 
             {statusMessage ? (
@@ -528,6 +620,53 @@ export default function GymProfileScreen() {
         ) : null}
       </ScrollView>
       <BottomNav />
+      <BottomSheetModal
+        ref={trainerSheetRef}
+        snapPoints={trainerSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderTrainerBackdrop}
+        backgroundStyle={styles.sheetBackground}
+        handleIndicatorStyle={styles.sheetHandle}
+        onDismiss={() => setSelectedTrainer(null)}
+      >
+        <BottomSheetView style={styles.trainerSheetContent}>
+          {selectedTrainer ? (
+            <>
+              <View style={styles.trainerSheetHeader}>
+                {selectedTrainer.profilePhotoUrl ? (
+                  <Image
+                    source={{ uri: normalizeMediaUrl(selectedTrainer.profilePhotoUrl) }}
+                    style={styles.trainerSheetImage}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={styles.trainerSheetImageFallback}>
+                    <Text style={styles.trainerImageText}>
+                      {initialsForName(selectedTrainer.name)}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.trainerCopy}>
+                  <Text style={styles.trainerName}>{selectedTrainer.name}</Text>
+                  <Text style={styles.sectionBody}>
+                    {selectedTrainer.bio ?? "Bio will appear once this trainer publishes it."}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.trainerSpecialties}>
+                {normalizeSpecialties(selectedTrainer.specialties).map((specialty) => (
+                  <Text
+                    key={`${selectedTrainer.userId}-sheet-${specialty}`}
+                    style={styles.trainerSpecialty}
+                  >
+                    {specialty}
+                  </Text>
+                ))}
+              </View>
+            </>
+          ) : null}
+        </BottomSheetView>
+      </BottomSheetModal>
     </ZookScreen>
   );
 }
@@ -802,6 +941,40 @@ const styles = StyleSheet.create({
     color: colors.blue,
     ...typography.small,
   },
+  sheetBackground: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+  },
+  sheetHandle: {
+    backgroundColor: "rgba(255,255,255,0.22)",
+  },
+  trainerSheetContent: {
+    gap: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  trainerSheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  trainerSheetImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  trainerSheetImageFallback: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: "rgba(185,244,85,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   metricRow: {
     flexDirection: "row",
     gap: spacing.md,
@@ -893,6 +1066,27 @@ const styles = StyleSheet.create({
   planPrice: {
     color: colors.lime,
     ...typography.metric,
+  },
+  planOriginalPrice: {
+    color: colors.subtle,
+    textDecorationLine: "line-through",
+    ...typography.small,
+  },
+  planBadgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  planBadge: {
+    minHeight: 26,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.24)",
+    backgroundColor: "rgba(185,244,85,0.1)",
+    color: colors.lime,
+    paddingHorizontal: spacing.sm,
+    paddingTop: 5,
+    ...typography.caption,
   },
   planBenefits: {
     gap: 8,

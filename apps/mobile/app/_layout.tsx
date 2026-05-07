@@ -21,16 +21,19 @@ import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider, setAuthQueryClient, useActivePermissions, useAuth } from "@/lib/auth";
 import { OfflineBanner } from "@/components/primitives";
 import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
+import { ToastHost } from "@/components/toast-host";
 import { BranchSelectionProvider } from "@/lib/branch-selection";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
 import { setApiAuthHandlers } from "@/lib/api";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { checkRouteAccess, requiredRoleForPath, routeForRole } from "@/lib/route-guards";
+import { initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
+initMobileSentry();
 SplashScreen.preventAutoHideAsync();
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
@@ -134,12 +137,10 @@ function LayoutContent() {
   const [onboardingFlag, setOnboardingFlag] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
-    // CODEX: auth.tsx owns role/org switching but cannot call React Query hooks, so the app shell registers the client.
     return setAuthQueryClient(queryClient);
   }, [queryClient]);
 
   useEffect(() => {
-    // CODEX: api.ts cannot import Expo router or React Query safely, so the app shell registers lifecycle handlers here.
     return setApiAuthHandlers({
       onExpired: async () => {
         await clearExpiredSession();
@@ -406,6 +407,7 @@ function LayoutContent() {
           </Pressable>
         </View>
       ) : null}
+      <ToastHost />
     </>
   );
 }

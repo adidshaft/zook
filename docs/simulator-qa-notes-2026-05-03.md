@@ -102,7 +102,7 @@ Screens where this was clearly visible:
 - `http://localhost:3001/login` failed on `Send OTP` with `Cross-site mutation blocked.`
 - `http://127.0.0.1:3001/login` progressed normally and reached the owner dashboard.
 - Some live data appears shared correctly across surfaces. The owner-side revenue value of `₹1,799` and active member count of `1` matched what was previously visible in the mobile owner shell.
-- Shop inventory also appears shared correctly across web and mobile data sources. The web owner shop view showed `Shaker 8`, `Protein Shake 18`, `Water Bottle 24`, and a `₹548` ready-for-pickup order, which matched the mobile shop inventory and reception order data.
+- Shop inventory also appears shared correctly across web and mobile data sources. The web owner shop view showed `Shaker 8`, `Recovery Drink 18`, `Water Bottle 24`, and a `₹548` ready-for-pickup order, which matched the mobile shop inventory and reception order data.
 - Surface parity is still poor even when the backend is shared. The web owner dashboard exposes many more operational surfaces (`Members`, `Join Requests`, `Plans`, `Payments`, `Attendance`, `Trainers & PT`, `Plans & AI`, `Notifications`, `Shop`, `Reports`, `Staff`, `Public Profile`, `Settings`, `Audit`, `Organization`, `Inventory Ops`, `Platform admin`) than the mobile owner shell currently exposes.
 
 ## Shared Surface Notes

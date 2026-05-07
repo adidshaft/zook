@@ -17,6 +17,7 @@ import { formatRelativeDate } from "@/lib/formatting";
 import { mapNotificationPayloadToHref } from "@/lib/notification-routing";
 import { useMyNotifications } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 type InboxNotification = {
   id: string;
@@ -87,6 +88,7 @@ export default function NotificationsScreen() {
   const notificationsQuery = useMyNotifications();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [olderExpanded, setOlderExpanded] = useState(false);
   const notifications = (notificationsQuery.data?.notifications ?? []) as InboxNotification[];
   const unreadCount = notifications.filter((item) => !item.readAt).length;
   const latestLabel = notifications[0]?.notification?.createdAt
@@ -97,13 +99,37 @@ export default function NotificationsScreen() {
     if (!token || busyId) {
       return;
     }
+    const previous = queryClient.getQueryData<{ notifications: InboxNotification[] }>([
+      "me",
+      "notifications",
+    ]);
     try {
       setBusyId(id);
+      queryClient.setQueryData<{ notifications: InboxNotification[] }>(
+        ["me", "notifications"],
+        (current) => ({
+          notifications:
+            current?.notifications.map((item) =>
+              item.id === id ? { ...item, readAt: item.readAt ?? new Date().toISOString() } : item,
+            ) ?? [],
+        }),
+      );
       await notificationsApi.markRead({ id, token });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
       ]);
+      showToast({ tone: "success", haptic: "success", message: "Notification marked read." });
+    } catch (error) {
+      if (previous) {
+        queryClient.setQueryData(["me", "notifications"], previous);
+      }
+      showToast({
+        title: "Action failed",
+        message: error instanceof Error ? error.message : "Notification could not be updated.",
+        tone: "danger",
+        haptic: "error",
+      });
     } finally {
       setBusyId(null);
     }
@@ -115,15 +141,41 @@ export default function NotificationsScreen() {
     if (!unread.length) {
       return;
     }
-    await notificationsApi.markAllRead({ ids: unread.map((item) => item.id), token });
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
-      queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+    const previous = queryClient.getQueryData<{ notifications: InboxNotification[] }>([
+      "me",
+      "notifications",
     ]);
+    const now = new Date().toISOString();
+    try {
+      queryClient.setQueryData<{ notifications: InboxNotification[] }>(
+        ["me", "notifications"],
+        (current) => ({
+          notifications: current?.notifications.map((item) => ({ ...item, readAt: item.readAt ?? now })) ?? [],
+        }),
+      );
+      await notificationsApi.markAllRead({ ids: unread.map((item) => item.id), token });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
+      showToast({ tone: "success", haptic: "success", message: "All notifications marked read." });
+    } catch (error) {
+      if (previous) {
+        queryClient.setQueryData(["me", "notifications"], previous);
+      }
+      showToast({
+        title: "Action failed",
+        message: error instanceof Error ? error.message : "Notifications could not be updated.",
+        tone: "danger",
+        haptic: "error",
+      });
+    }
   }
 
   async function openNotification(item: InboxNotification) {
-    await markRead(item.id);
+    if (!item.readAt) {
+      void markRead(item.id);
+    }
     const href = mapNotificationPayloadToHref({
       notificationId: item.notification?.id ?? item.id,
       type: item.notification?.type,
@@ -248,7 +300,7 @@ export default function NotificationsScreen() {
             <View key={group.label} style={styles.dateGroup}>
               <Text style={styles.dateGroupLabel}>{group.label}</Text>
               <View style={styles.list}>
-                {group.items.map((item) => (
+                {(group.label === "Older" && !olderExpanded ? group.items.slice(0, 3) : group.items).map((item) => (
                   <NotificationRow
                     key={item.id}
                     item={item}
@@ -258,6 +310,17 @@ export default function NotificationsScreen() {
                   />
                 ))}
               </View>
+              {group.label === "Older" && group.items.length > 3 ? (
+                <Pressable
+                  onPress={() => setOlderExpanded((current) => !current)}
+                  accessibilityRole="button"
+                  style={styles.showOlderButton}
+                >
+                  <Text style={styles.showOlderText}>
+                    {olderExpanded ? "Show fewer" : `Show ${group.items.length - 3} older`}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           ))}
         </ScrollView>
@@ -297,7 +360,7 @@ function NotificationRow({
     >
       <GlassCard
         variant={highlighted ? "selected" : unread ? "default" : "compact"}
-        contentStyle={styles.notificationContent}
+        contentStyle={[styles.notificationContent, unread ? styles.notificationUnreadContent : null]}
       >
         <View style={styles.notificationRow}>
           <IconBubble icon={iconForType(type)} tone={toneForType(type)} size={40} />
@@ -420,6 +483,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
+  notificationUnreadContent: {
+    borderLeftWidth: 3,
+    borderLeftColor: colors.lime,
+  },
   notificationRow: {
     flexDirection: "row",
     gap: spacing.md,
@@ -453,5 +520,15 @@ const styles = StyleSheet.create({
     color: colors.subtle,
     ...typography.small,
     marginTop: 2,
+  },
+  showOlderButton: {
+    minHeight: 44,
+    alignSelf: "flex-start",
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm,
+  },
+  showOlderText: {
+    color: colors.lime,
+    ...typography.caption,
   },
 });

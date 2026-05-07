@@ -219,7 +219,7 @@ These are mock by design, not because the architecture is missing.
 ## Seed Accounts
 
 - `platform@zook.local`
-- `owner@zook.local`
+- `pilot-owner.test`
 - `admin@zook.local`
 - `reception@zook.local`
 - `trainer@zook.local`

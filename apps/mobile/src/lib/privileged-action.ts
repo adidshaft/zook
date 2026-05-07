@@ -3,7 +3,6 @@ import { Alert, Platform } from "react-native";
 
 function promptForOrgPin(label: string): Promise<boolean> {
   return new Promise((resolve) => {
-    // CODEX: replace with server-side org PIN
     if (Platform.OS !== "ios") {
       Alert.alert(label, "Org PIN fallback is not available on this device yet.", [
         { text: "OK", onPress: () => resolve(false) },

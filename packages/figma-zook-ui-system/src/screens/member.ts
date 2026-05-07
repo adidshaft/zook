@@ -433,12 +433,12 @@ export function memberShop(ctx: DesignContext): FrameNode {
   for (const [label, selected] of [
     ["All", true],
     ["Water", false],
-    ["Protein Shake", false],
+    ["Recovery Drink", false],
     ["Shaker", false],
     ["Towel", false],
     ["Other", false]
   ] as const) {
-    const target = label === "All" || label === "Water" || label === "Protein Shake" ? categoryRowOne : categoryRowTwo;
+    const target = label === "All" || label === "Water" || label === "Recovery Drink" ? categoryRowOne : categoryRowTwo;
     target.appendChild(chip(ctx, label, selected ? "lime" : "glass"));
   }
   categories.appendChild(categoryRowOne);
@@ -449,8 +449,8 @@ export function memberShop(ctx: DesignContext): FrameNode {
   screen.appendChild(pickup);
   const grid = stack("Product Grid", "VERTICAL", TOKENS.space.sm);
   const r1 = row("Product row 1", TOKENS.space.md);
-  r1.appendChild(productCard(ctx, "Protein Shake", "₹149", "Ready at desk", "lime"));
-  r1.appendChild(productCard(ctx, "Zook Shaker", "₹399", "Low stock", "warning"));
+  r1.appendChild(productCard(ctx, "Recovery Drink", "₹149", "Ready at desk", "lime"));
+  r1.appendChild(productCard(ctx, "Training Bottle", "₹399", "Low stock", "warning"));
   const r2 = row("Product row 2", TOKENS.space.md);
   r2.appendChild(productCard(ctx, "Gym Towel", "₹249", "In stock", "lime"));
   r2.appendChild(productCard(ctx, "Water Bottle", "₹40", "In stock", "lime"));

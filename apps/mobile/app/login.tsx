@@ -28,9 +28,7 @@ import { colors, spacing, typography } from "@/lib/theme";
 type LoginMethod = "email" | "phone";
 type BusyAction = "otp" | "apple" | "google" | null;
 
-// CODEX: Terms link required for App Store/Play Store review.
 const TERMS_URL = "https://zookfit.in/terms";
-// CODEX: Privacy link required for App Store/Play Store review.
 const PRIVACY_URL = "https://zookfit.in/privacy";
 const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const OTP_RATE_LIMIT_FALLBACK_SECONDS = 60;
@@ -306,7 +304,6 @@ export default function Login() {
       setMessage(t("auth.signedIn"));
     } catch (error) {
       if (isCanceledAuthError(error)) return;
-      // CODEX: remove 501 check once backend is implemented.
       setMessage(
         error instanceof ApiError && error.status === 501
           ? "Apple sign-in coming soon."
@@ -335,7 +332,6 @@ export default function Login() {
       await signInWithGoogle(idToken);
       setMessage(t("auth.signedIn"));
     } catch (error) {
-      // CODEX: remove 501 check once backend is implemented.
       setMessage(
         error instanceof ApiError && error.status === 501
           ? "Google sign-in coming soon."

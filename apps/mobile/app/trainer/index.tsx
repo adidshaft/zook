@@ -46,6 +46,19 @@ export default function Trainer() {
     (client) => (client.summary?.activePlans ?? 0) > 0,
   ).length;
   const plannedClients = clients.filter((client) => (client.summary?.activePlans ?? 0) > 0);
+  const recentFeedback = clients
+    .flatMap((client) =>
+      (client.summary?.recentFeedback ?? []).map((feedback) => ({
+        ...feedback,
+        clientId: client.memberUserId,
+        clientName: client.user?.name ?? "Client",
+      })),
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime(),
+    )
+    .slice(0, 3);
   const firstPlannedClientId = plannedClients[0]?.memberUserId ?? firstClientId;
   const clientsNeedingPlans = Math.max(clients.length - clientsWithPlans, 0);
   const title = view === "clients" ? "Clients" : view === "plans" ? "Plan work" : "Trainer home";
@@ -165,10 +178,27 @@ export default function Trainer() {
 
               <SectionHeader title="Recent feedback" />
               <GlassCard variant="compact" contentStyle={styles.stack}>
-                <EmptyState
-                  title="No recent feedback"
-                  body="Client notes and session feedback will appear here."
-                />
+                {recentFeedback.length ? (
+                  recentFeedback.map((feedback) => (
+                    <Pressable
+                      key={`${feedback.clientId}-${feedback.assignmentId}`}
+                      onPress={() => openClient(feedback.clientId)}
+                      accessibilityRole="button"
+                    >
+                      <ListRow
+                        title={feedback.clientName}
+                        subtitle={feedback.feedback ?? `${feedback.completionPct}% complete`}
+                        leading={<IconBubble icon="chatbubble-ellipses-outline" tone="blue" />}
+                        trailing={<StatusChip status={`${feedback.completionPct}%`} tone="lime" />}
+                      />
+                    </Pressable>
+                  ))
+                ) : (
+                  <EmptyState
+                    title="No recent feedback"
+                    body="Client notes and session feedback will appear here."
+                  />
+                )}
               </GlassCard>
             </>
           ) : null}

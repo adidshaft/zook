@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
@@ -187,6 +187,61 @@ export default function TrainerAiDraftReview() {
     return null;
   }
 
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ZookScreen>
+        <KeyboardAwareScreen
+          scrollViewProps={{
+            contentInsetAdjustmentBehavior: "never",
+            showsVerticalScrollIndicator: false,
+            contentContainerStyle: styles.content,
+          }}
+        >
+          <MobileHeader
+            title="Plan Assistant"
+            subtitle="AI plan generation is coming soon."
+            leading={
+              <Pressable
+                onPress={() =>
+                  router.canGoBack()
+                    ? router.back()
+                    : router.replace(`/trainer/client/${client?.memberUserId ?? clientId}`)
+                }
+                accessibilityRole="button"
+                accessibilityLabel="Back to client detail"
+                style={styles.iconButton}
+              >
+                <Text style={styles.backIcon}>‹</Text>
+              </Pressable>
+            }
+            chip={<StatusChip status="Coming soon" tone="neutral" />}
+          />
+
+          <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+            <IconBubble icon="sparkles-outline" tone="neutral" size={46} />
+            <View style={styles.summaryCopy}>
+              <Text style={styles.cardTitle}>AI plan assistant coming soon</Text>
+              <Text style={styles.cardBody}>
+                Create the client plan manually for launch. You can save a draft, review it, and
+                assign it from the client plan builder.
+              </Text>
+            </View>
+            <ZookButton
+              onPress={() =>
+                router.replace(`/trainer/client/${client?.memberUserId ?? clientId}?tab=plans` as Href)
+              }
+              icon="reader-outline"
+            >
+              Open manual plan builder
+            </ZookButton>
+          </GlassCard>
+        </KeyboardAwareScreen>
+        <BottomNav selectedPath="/trainer/client" role="TRAINER" />
+      </ZookScreen>
+    </>
+  );
+
   function updateDraft(patch: Partial<Draft>) {
     setDraft((current) => (current ? { ...current, ...patch } : current));
   }
@@ -306,6 +361,13 @@ export default function TrainerAiDraftReview() {
     }
   }
 
+  const visibleDraft = draft ?? {
+    title: "",
+    goal: "",
+    difficulty: "",
+    sections: [],
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -339,7 +401,7 @@ export default function TrainerAiDraftReview() {
 
           <AuditWarning>Review and edit this draft before assigning it.</AuditWarning>
 
-          {draft ? (
+          {visibleDraft ? (
             <>
               <GlassCard contentStyle={styles.summaryContent}>
                 <View style={styles.summaryHeader}>
@@ -348,11 +410,11 @@ export default function TrainerAiDraftReview() {
                     {editing ? (
                       <FormField
                         label="Title"
-                        value={draft.title}
+                        value={visibleDraft.title}
                         onChangeText={(value) => updateDraft({ title: value })}
                       />
                     ) : (
-                      <Text style={styles.cardTitle}>{draft.title}</Text>
+                      <Text style={styles.cardTitle}>{visibleDraft.title}</Text>
                     )}
                     <Text style={styles.cardBody}>Client: {client?.user?.name ?? "Client"}</Text>
                   </View>
@@ -367,19 +429,19 @@ export default function TrainerAiDraftReview() {
                   <>
                     <FormField
                       label="Goal"
-                      value={draft.goal}
+                      value={visibleDraft.goal}
                       onChangeText={(value) => updateDraft({ goal: value })}
                     />
                     <FormField
                       label="Difficulty"
-                      value={draft.difficulty}
+                      value={visibleDraft.difficulty}
                       onChangeText={(value) => updateDraft({ difficulty: value })}
                     />
                   </>
                 ) : (
                   <>
-                    <DetailRow label="Goal" value={draft.goal || "Muscle gain"} />
-                    <DetailRow label="Difficulty" value={draft.difficulty || "Medium"} />
+                    <DetailRow label="Goal" value={visibleDraft.goal || "Muscle gain"} />
+                    <DetailRow label="Difficulty" value={visibleDraft.difficulty || "Medium"} />
                   </>
                 )}
               </GlassCard>
@@ -389,8 +451,8 @@ export default function TrainerAiDraftReview() {
                   <View style={styles.reviewColumn}>
                     <Text style={styles.reviewColumnLabel}>AI suggestion</Text>
                     <Text style={styles.reviewColumnBody}>
-                      {draft.sections.length} draft{" "}
-                      {draft.sections.length === 1 ? "section" : "sections"}
+                      {visibleDraft.sections.length} draft{" "}
+                      {visibleDraft.sections.length === 1 ? "section" : "sections"}
                     </Text>
                   </View>
                   <View style={styles.reviewColumn}>
@@ -400,7 +462,7 @@ export default function TrainerAiDraftReview() {
                     </Text>
                   </View>
                 </View>
-                {draft.sections.map((section, index) =>
+                {visibleDraft.sections.map((section, index) =>
                   editing ? (
                     <View key={`${section.title}-${index}`} style={styles.stack}>
                       <FormField
@@ -599,6 +661,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+  },
+  emptyContent: {
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.xxl,
   },
   actionRow: {
     flexDirection: "row",

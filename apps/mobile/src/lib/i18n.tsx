@@ -170,6 +170,10 @@ export type TranslationKey =
   | "shop.tryAgain"
   | "shop.noProductsFound"
   | "shop.noProductsFoundBody"
+  | "findGyms.searchPlaceholder"
+  | "findGyms.cityPlaceholder"
+  | "findGyms.deviceLocation"
+  | "findGyms.recentSearches"
   | "empty.loading"
   | "empty.loadingBody"
   | "tracking.bodyTimeline"
@@ -346,6 +350,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.tryAgain": "Try again",
     "shop.noProductsFound": "No products found",
     "shop.noProductsFoundBody": "Try a different item or ask the desk for availability.",
+    "findGyms.searchPlaceholder": "Search by gym, area, or pin code",
+    "findGyms.cityPlaceholder": "Area, city, or pin code",
+    "findGyms.deviceLocation": "Use device location",
+    "findGyms.recentSearches": "Recent searches",
     "empty.loading": "Loading",
     "empty.loadingBody": "Pulling the latest details from your gym.",
     "tracking.bodyTimeline": "Photo timeline",
@@ -520,6 +528,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.tryAgain": "फिर कोशिश करें",
     "shop.noProductsFound": "कोई प्रोडक्ट नहीं मिला",
     "shop.noProductsFoundBody": "दूसरा आइटम खोजें या डेस्क से उपलब्धता पूछें.",
+    "findGyms.searchPlaceholder": "जिम, क्षेत्र या पिन कोड से खोजें",
+    "findGyms.cityPlaceholder": "क्षेत्र, शहर या पिन कोड",
+    "findGyms.deviceLocation": "डिवाइस लोकेशन इस्तेमाल करें",
+    "findGyms.recentSearches": "हाल की खोजें",
     "empty.loading": "लोड हो रहा है",
     "empty.loadingBody": "आपके जिम की ताजा जानकारी लाई जा रही है.",
     "tracking.bodyTimeline": "फोटो टाइमलाइन",

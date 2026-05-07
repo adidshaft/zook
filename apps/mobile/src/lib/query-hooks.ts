@@ -3,6 +3,8 @@ import type { AuthSessionSummary, PaymentMode } from "@zook/core";
 import { mobileApiFetch } from "./api";
 import { useAuth } from "./auth";
 import { useBranchSelection } from "./branch-selection";
+import { getMobileApiMode } from "./runtime-mode";
+import { messageFromError, showToast } from "./toast";
 import type { NotificationPreferenceRecord } from "./notification-preferences";
 
 export interface MemberHomeData {
@@ -310,6 +312,7 @@ export interface MyProfileData {
     marketingOptIn?: boolean | null;
     aiConsent?: boolean | null;
     preferredLocale?: string | null;
+    weeklyWorkoutGoal?: number | null;
   };
   profile?: {
     id: string;
@@ -1014,6 +1017,23 @@ function getMutationContext(token?: string, orgId?: string) {
   return { token, orgId };
 }
 
+function notifyMutationSuccess(message: string) {
+  showToast({ tone: "success", haptic: "success", message });
+}
+
+function notifyMutationWarning(message: string) {
+  showToast({ tone: "amber", haptic: "warning", message });
+}
+
+function notifyMutationError(error: unknown, fallback: string) {
+  showToast({
+    tone: "danger",
+    haptic: "error",
+    title: "Action failed",
+    message: messageFromError(error, fallback),
+  });
+}
+
 export function useApproveAttendance(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
@@ -1038,6 +1058,10 @@ export function useApproveAttendance(orgId?: string) {
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "attendance"] }),
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
       ]);
+      notifyMutationSuccess("Attendance approved.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Attendance could not be approved.");
     },
   });
 }
@@ -1060,6 +1084,10 @@ export function useApproveJoinRequest(orgId?: string) {
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "members"] }),
       ]);
+      notifyMutationSuccess("Join request approved.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Join request could not be approved.");
     },
   });
 }
@@ -1081,6 +1109,10 @@ export function useRejectJoinRequest(orgId?: string) {
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "join-requests"] }),
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
       ]);
+      notifyMutationWarning("Join request rejected.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Join request could not be rejected.");
     },
   });
 }
@@ -1102,6 +1134,10 @@ export function useRejectAttendance(orgId?: string) {
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "attendance"] }),
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
       ]);
+      notifyMutationWarning("Attendance rejected.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Attendance could not be rejected.");
     },
   });
 }
@@ -1129,6 +1165,10 @@ export function useManualAttendance(orgId?: string) {
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "members"] }),
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
       ]);
+      notifyMutationSuccess("Manual check-in recorded.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Manual check-in could not be recorded.");
     },
   });
 }
@@ -1169,6 +1209,10 @@ export function useRecordManualPayment(orgId?: string) {
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "members"] }),
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
       ]);
+      notifyMutationSuccess("Payment recorded.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Payment could not be recorded.");
     },
   });
 }
@@ -1212,6 +1256,10 @@ export function useFulfillShopOrder(orgId?: string) {
         queryClient.invalidateQueries({ queryKey: ["shop", "products", resolvedOrgId] }),
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "dashboard"] }),
       ]);
+      notifyMutationSuccess("Pickup order fulfilled.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Pickup order could not be fulfilled.");
     },
   });
 }
@@ -1247,6 +1295,10 @@ export function useCreateShopOrder(orgId?: string) {
         queryClient.invalidateQueries({ queryKey: ["shop", "products", resolvedOrgId] }),
         queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "shop", "orders"] }),
       ]);
+      notifyMutationSuccess("Order created.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Order could not be created.");
     },
   });
 }
@@ -1255,8 +1307,12 @@ export function useCompleteMockPayment() {
   const queryClient = useQueryClient();
   const { token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
+  const mockPaymentCompletionAvailable = getMobileApiMode() !== "backend";
   return useMutation({
     mutationFn: (input: string | { sessionId: string; branchId?: string }) => {
+      if (!mockPaymentCompletionAvailable) {
+        throw new Error("Test payment confirmation is not available in backend builds.");
+      }
       if (!token) {
         throw new Error("Authentication is required.");
       }
@@ -1279,6 +1335,10 @@ export function useCompleteMockPayment() {
         queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
         queryClient.invalidateQueries({ queryKey: ["org"] }),
       ]);
+      notifyMutationSuccess("Test payment completed.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Test payment could not be completed.");
     },
   });
 }
@@ -1325,6 +1385,10 @@ export function useCompletePlanAssignment() {
         queryClient.invalidateQueries({ queryKey: ["me", "plans", input.assignmentId] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
       ]);
+      notifyMutationSuccess("Plan progress saved.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Plan progress could not be saved.");
     },
   });
 }

@@ -2181,38 +2181,45 @@ export function Skeleton({
   height?: number | string;
   borderRadius?: number;
 }) {
-  const anim = useRef(new Animated.Value(0.3)).current;
+  const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim, {
-          toValue: 0.7,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(anim, {
-          toValue: 0.3,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]),
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 1200,
+        useNativeDriver: true,
+      }),
     ).start();
   }, [anim]);
 
+  const translateX = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-120, 360],
+  });
+
   return (
-    <Animated.View
+    <View
       style={[
         {
           width: width as ViewStyle["width"],
           height: height as ViewStyle["height"],
           borderRadius,
           backgroundColor: "rgba(255,255,255,0.1)",
-          opacity: anim,
+          overflow: "hidden",
         },
         style,
       ]}
-    />
+    >
+      <Animated.View
+        style={[
+          styles.skeletonShimmer,
+          {
+            transform: [{ translateX }, { rotate: "18deg" }],
+          },
+        ]}
+      />
+    </View>
   );
 }
 
@@ -2224,6 +2231,13 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  skeletonShimmer: {
+    position: "absolute",
+    top: -24,
+    bottom: -24,
+    width: 96,
+    backgroundColor: "rgba(255,255,255,0.16)",
   },
   ambientGlow: {
     position: "absolute",

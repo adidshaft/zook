@@ -9,7 +9,7 @@ Accounts exercised in this pass:
 - `member@zook.local`
 - `trainer@zook.local`
 - `reception@zook.local`
-- `owner@zook.local`
+- `pilot-owner.test`
 - `admin@zook.local`
 - `minor@zook.local`
 - `platform@zook.local`
@@ -130,7 +130,7 @@ Addressed in code after earlier and current audit passes:
   - **Likely fix:** None for the action itself.
 
 - **Attendance result now shows real context**
-  - **Observed:** After rescanning from the live web attendance token, the member attendance result now shows `Iron House Main`, `Monthly Unlimited`, and the duplicate message `Already checked in today.` instead of generic placeholders like `Assigned branch` / `Active membership`.
+  - **Observed:** After rescanning from the live web attendance token, the member attendance result now shows `Pilot Gym Main`, `Monthly Unlimited`, and the duplicate message `Already checked in today.` instead of generic placeholders like `Assigned branch` / `Active membership`.
   - **Likely fix:** None for this fix path; keep verifying duplicate and non-duplicate outcomes.
 
 ### Partial
@@ -300,7 +300,7 @@ Addressed in code after earlier and current audit passes:
 ### Working
 
 - **Login flow**
-  - **Observed:** `owner@zook.local` login worked.
+  - **Observed:** `pilot-owner.test` login worked.
   - **Likely fix:** None.
 
 - **Command**

@@ -189,7 +189,14 @@ export function ErrorState({
 }
 
 export function Skeleton({ className }: { className?: string | undefined }) {
-  return <div className={clsx("animate-pulse rounded-full bg-white/10", className)} />;
+  return (
+    <div
+      className={clsx(
+        "relative overflow-hidden rounded-full bg-white/10 before:absolute before:inset-y-[-40%] before:left-[-30%] before:w-1/3 before:rotate-12 before:bg-white/15 before:content-[''] before:animate-[zook-shimmer_1200ms_linear_infinite]",
+        className,
+      )}
+    />
+  );
 }
 
 export function ReadoutGrid({
@@ -222,7 +229,7 @@ export function ReadoutGrid({
             {item.value}
           </dd>
           {item.meta ? (
-            <p className="mt-1 min-w-0 break-words text-xs leading-5 text-white/45">{item.meta}</p>
+            <dd className="mt-1 min-w-0 break-words text-xs leading-5 text-white/45">{item.meta}</dd>
           ) : null}
         </div>
       ))}
@@ -254,9 +261,10 @@ export function DataTable<Row>({
   return (
     <div
       className={clsx(
-        "overflow-x-auto rounded-[24px] border border-white/10 bg-black/25",
+        "relative overflow-x-auto rounded-[24px] border border-white/10 bg-black/25 after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-10 after:bg-gradient-to-l after:from-black/65 after:to-transparent",
         className,
       )}
+      aria-label="Scrollable table"
     >
       <table className="min-w-[720px] w-full text-left text-sm">
         <thead className="bg-white/6 text-white/42">
@@ -325,7 +333,11 @@ export function StatusPill({
   className?: string | undefined;
 }) {
   return (
-    <Pill tone={tone ?? toneFromStatus(value)} {...(className ? { className } : {})}>
+    <Pill
+      tone={tone ?? toneFromStatus(value)}
+      aria-label={`Status: ${value}`}
+      {...(className ? { className } : {})}
+    >
       {value}
     </Pill>
   );
@@ -426,8 +438,18 @@ export function ToggleSwitch({
   );
 }
 
-export function TableLoader({ label = "Loading..." }: { label?: string }) {
-  return <EmptyState title={label} description="Fresh data is loading now." />;
+export function TableLoader({ label = "Rows are loading" }: { label?: string }) {
+  return (
+    <div role="status" aria-label={label} className="grid gap-2">
+      {[0, 1, 2, 3, 4].map((item) => (
+        <div key={item} className="grid grid-cols-[1.2fr_0.9fr_0.8fr] gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3 justify-self-end" />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function ConfirmDialog({

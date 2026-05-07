@@ -1,4 +1,5 @@
 import { parseApiResponse } from "@zook/core";
+import { toast } from "sonner";
 
 export async function webApiFetch<T>(
   path: string,
@@ -16,11 +17,26 @@ export async function webApiFetch<T>(
     headers.set("x-zook-intent", "mutate");
   }
 
+  const isMutation = Boolean(
+    requestInit.method && !["GET", "HEAD"].includes(requestInit.method.toUpperCase()),
+  );
+
   const response = await fetch(path, {
     ...requestInit,
     headers,
-    ...(body !== undefined ? { body: body as BodyInit | null } : {})
+    ...(body !== undefined ? { body: body as BodyInit | null } : {}),
   });
 
-  return parseApiResponse<T>(response);
+  try {
+    const payload = await parseApiResponse<T>(response);
+    if (isMutation) {
+      toast.success("Saved.");
+    }
+    return payload;
+  } catch (error) {
+    if (isMutation) {
+      toast.error(error instanceof Error ? error.message : "Action failed.");
+    }
+    throw error;
+  }
 }

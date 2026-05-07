@@ -19,7 +19,7 @@ Local OTP: `000000`
 
 ### 1. Owner Opening
 
-- sign in as `owner@zook.local`
+- sign in as `pilot-owner.test`
 - open `/dashboard`
 - show provider diagnostics and operational cards
 - show a membership plan, coupon, and report surface
@@ -28,7 +28,7 @@ Local OTP: `000000`
 
 - sign in as `member@zook.local`
 - open `Find Gyms`
-- join `Iron House Fitness`
+- join `Pilot Gym Fitness`
 - start membership checkout
 - complete mock checkout and confirm active membership
 

@@ -2,6 +2,7 @@
 
 import { useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { formatInr } from "@/lib/format";
 
 type CouponValidatePayload = {
@@ -85,14 +86,18 @@ export function CouponApplyForm({
       const normalizedCode = payload?.data?.coupon?.code ?? code;
       setValid(true);
       setCouponCode(normalizedCode);
-      setMessage(`Coupon ${normalizedCode} applied · -${formatInr(discountPaise)}`);
+      const successMessage = `Coupon ${normalizedCode} applied · -${formatInr(discountPaise)}`;
+      setMessage(successMessage);
+      toast.success(successMessage);
       router.replace(
         joinHref({ username, planId, referralCode, couponCode: normalizedCode }),
         { scroll: false },
       );
     } catch (error) {
+      const nextMessage = error instanceof Error ? error.message : "Coupon code is not valid.";
       setValid(false);
-      setMessage(error instanceof Error ? error.message : "Coupon code is not valid.");
+      setMessage(nextMessage);
+      toast.error(nextMessage);
     } finally {
       setBusy(false);
     }

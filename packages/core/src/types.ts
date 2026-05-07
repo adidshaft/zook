@@ -251,6 +251,7 @@ export interface AuthSessionUser {
   marketingOptIn: boolean;
   aiConsent: boolean;
   preferredLocale?: string;
+  weeklyWorkoutGoal?: number;
 }
 
 export interface AuthSessionSummary {

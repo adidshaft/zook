@@ -111,6 +111,7 @@ export async function resolveSessionSummaryFromToken(
       marketingOptIn: user.marketingOptIn,
       aiConsent: user.aiConsent,
       preferredLocale: user.preferredLocale,
+      weeklyWorkoutGoal: user.weeklyWorkoutGoal,
       ...(user.phone ? { phone: user.phone } : {}),
       ...(user.profilePhotoUrl ? { profilePhotoUrl: user.profilePhotoUrl } : {}),
     },

@@ -75,10 +75,7 @@ export async function loginWithOtp(page: Page, identifier: string) {
   await page.getByRole("button", { name: "Send OTP" }).click();
   const code = await getLatestOtpFromMockOrUseDevCode(page, identifier);
   await page.getByLabel("OTP").fill(code);
-  await Promise.all([
-    page.waitForURL(/\/(?:dashboard|platform)(?:$|[/?#])/, { timeout: 10_000 }),
-    page.getByRole("button", { name: "Verify and continue" }).click()
-  ]);
+  await page.waitForURL(/\/(?:dashboard|platform|gyms|me)(?:$|[/?#])/, { timeout: 10_000 });
 }
 
 export async function loginWithSessionCookie(page: Page, email: string) {

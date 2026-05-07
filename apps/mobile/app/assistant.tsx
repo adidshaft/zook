@@ -234,6 +234,66 @@ export default function AssistantScreen() {
   return (
     <ZookScreen>
       <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.lime}
+            colors={[colors.lime]}
+          />
+        }
+      >
+        <MobileHeader
+          eyebrow={isTrainer ? "Trainer plans" : "Plan assistant"}
+          title="AI plan assistant coming soon"
+          subtitle={
+            isTrainer
+              ? "Create, review, assign, and send plans manually for launch."
+              : "Your trainer-assigned plans remain available while AI support is prepared."
+          }
+          leading={
+            <Pressable
+              onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+              style={styles.iconButton}
+            >
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
+            </Pressable>
+          }
+        />
+
+        <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+          <IconBubble icon="sparkles-outline" tone="neutral" size={46} />
+          <View style={styles.emptyCopy}>
+            <Text style={styles.emptyTitle}>AI plan assistant coming soon</Text>
+            <Text style={styles.emptyBody}>
+              Manual trainer plan creation, review, assignment, and member visibility are live.
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => router.replace(isTrainer ? "/trainer" : "/plans")}
+            accessibilityRole="button"
+            accessibilityLabel={isTrainer ? "Open trainer workspace" : "Open plans"}
+            style={styles.comingSoonCta}
+          >
+            <Text style={styles.comingSoonCtaText}>
+              {isTrainer ? "Open trainer workspace" : "Open my plans"}
+            </Text>
+            <Ionicons name="arrow-forward" size={18} color={colors.ink} />
+          </Pressable>
+        </GlassCard>
+      </ScrollView>
+      <BottomNav />
+    </ZookScreen>
+  );
+
+  return (
+    <ZookScreen>
+      <ScrollView
         ref={scrollRef}
         contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}
@@ -597,5 +657,19 @@ const styles = StyleSheet.create({
     color: colors.muted,
     ...typography.body,
     textAlign: "center",
+  },
+  comingSoonCta: {
+    minHeight: 44,
+    borderRadius: 14,
+    backgroundColor: colors.lime,
+    paddingHorizontal: spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  comingSoonCtaText: {
+    color: colors.ink,
+    ...typography.bodyStrong,
   },
 });

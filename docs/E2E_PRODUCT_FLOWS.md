@@ -108,8 +108,8 @@ Manual QA checklist:
 
 - Sign in as `trainer@zook.local` on mobile.
 - Open Clients, then Client Detail for an assigned member.
-- Generate AI Draft in mock/local provider mode or configured OpenAI staging mode.
-- Edit the structured draft and save it.
+- Confirm the Plan Assistant shows the launch coming-soon state.
+- Create a manual structured plan and save it.
 - Review, assign, and confirm member notification.
 - Sign in as member, open the assigned plan, complete workout, and add feedback.
 - Return as trainer and confirm progress/report visibility.

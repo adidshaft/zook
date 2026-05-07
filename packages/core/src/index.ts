@@ -5,7 +5,6 @@ export * from "./api";
 export * from "./runtime-env";
 export * from "./test-identities";
 export * from "./logger";
-export * from "./sample-data";
 export * from "./demo-fixtures";
 export * from "./mock-services";
 export * from "./utils/branch";

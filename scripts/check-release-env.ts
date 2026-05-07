@@ -273,11 +273,61 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
     results.push(pass("Push provider", `PUSH_PROVIDER=${pushProvider} is selected.`));
   }
 
+  const errorReporter = env("ERROR_REPORTER") ?? "mock";
+  if (profile === "production" && errorReporter !== "sentry") {
+    results.push(
+      fail(
+        "Production error reporting",
+        `ERROR_REPORTER=${errorReporter} in production profile.`,
+        "Use ERROR_REPORTER=sentry with web and mobile Sentry DSNs before production deploys."
+      )
+    );
+  } else if (errorReporter === "sentry") {
+    const missingReporterEnv = [
+      "SENTRY_DSN",
+      "NEXT_PUBLIC_SENTRY_DSN",
+      "EXPO_PUBLIC_SENTRY_DSN",
+    ].filter((key) => !env(key));
+    results.push(
+      missingReporterEnv.length
+        ? (profile === "production"
+            ? fail("Sentry DSNs", `ERROR_REPORTER=sentry is missing ${missingReporterEnv.join(", ")}.`, "Set the web and mobile Sentry DSNs.")
+            : warn("Sentry DSNs", `ERROR_REPORTER=sentry is missing ${missingReporterEnv.join(", ")}.`, "Set both DSNs before staging source-map QA."))
+        : pass("Sentry DSNs", "Web and mobile Sentry DSNs are configured.")
+    );
+  } else {
+    results.push(warn("Error reporter", `ERROR_REPORTER=${errorReporter}.`, "Use ERROR_REPORTER=sentry before staging or production certification."));
+  }
+  if ((env("SENTRY_ORG") || env("SENTRY_PROJECT")) && !env("SENTRY_AUTH_TOKEN")) {
+    results.push(
+      profile === "production"
+        ? fail("Sentry source maps", "SENTRY_ORG or SENTRY_PROJECT is set without SENTRY_AUTH_TOKEN.", "Set a Sentry auth token so release source maps can upload.")
+        : warn("Sentry source maps", "SENTRY_ORG or SENTRY_PROJECT is set without SENTRY_AUTH_TOKEN.", "Set it before staging source-map verification.")
+    );
+  }
+
   const aiProvider = env("AI_PROVIDER") ?? "mock";
   if (profile === "production" && aiProvider === "mock") {
     results.push(fail("Production AI", "AI_PROVIDER=mock in production profile.", "Use AI_PROVIDER=openai or AI_PROVIDER=disabled."));
   } else if (aiProvider === "disabled") {
     results.push(warn("AI provider", "AI_PROVIDER=disabled is active.", "AI planning features must show unavailable states."));
+  }
+  if (env("AI_FEATURES_ENABLED") === "true") {
+    results.push(
+      profile === "production"
+        ? fail(
+            "AI launch gate",
+            "AI_FEATURES_ENABLED=true in production profile.",
+            "Keep AI_FEATURES_ENABLED=false until the post-launch OpenAI quota and safety certification is complete."
+          )
+        : warn(
+            "AI launch gate",
+            "AI_FEATURES_ENABLED=true.",
+            "Use this only for controlled staging certification; launch UI should still treat AI as coming soon."
+          )
+    );
+  } else {
+    results.push(pass("AI launch gate", "AI_FEATURES_ENABLED is off."));
   }
 
   const emailProvider = env("EMAIL_PROVIDER") ?? "mock";
@@ -294,7 +344,7 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
     storageProvider === "local" &&
     uploadsEnabled
   ) {
-    results.push(fail("Production storage", "STORAGE_PROVIDER=local in production profile while uploads are enabled.", "Use STORAGE_PROVIDER=s3 or r2, or set FILE_UPLOADS_ENABLED=false if uploads are intentionally disabled."));
+    results.push(fail("Production storage", "STORAGE_PROVIDER=local in production profile while uploads are enabled.", "Use STORAGE_PROVIDER=supabase, s3, or r2; or set FILE_UPLOADS_ENABLED=false if uploads are intentionally disabled."));
   } else if (storageProvider === "disabled" && uploadsEnabled) {
     results.push(warn("Storage provider", "STORAGE_PROVIDER=disabled while file uploads are enabled.", "Upload routes will return a controlled unavailable error. Set FILE_UPLOADS_ENABLED=false if uploads are intentionally off."));
   } else if (storageProvider === "local" && !env("STORAGE_LOCAL_DIR")) {
@@ -311,6 +361,16 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
         "STORAGE_PROVIDER=r2 requires S3_ENDPOINT or R2_ACCOUNT_ID.",
         "Set S3_ENDPOINT explicitly or provide R2_ACCOUNT_ID so the runtime can derive the Cloudflare R2 endpoint."
       )
+    );
+  }
+  if (storageProvider === "supabase") {
+    const missing = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_STORAGE_BUCKET"].filter(
+      (key) => !env(key)
+    );
+    results.push(
+      missing.length
+        ? fail("Supabase storage", `STORAGE_PROVIDER=supabase is missing ${missing.join(", ")}.`, "Set the Supabase project URL, service role key, and storage bucket.")
+        : pass("Supabase storage", "STORAGE_PROVIDER=supabase is configured.")
     );
   }
 

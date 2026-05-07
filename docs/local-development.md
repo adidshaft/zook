@@ -59,7 +59,7 @@ pnpm dev:mobile
 Development OTP: `000000`
 
 - `platform@zook.local`
-- `owner@zook.local`
+- `pilot-owner.test`
 - `admin@zook.local`
 - `reception@zook.local`
 - `trainer@zook.local`

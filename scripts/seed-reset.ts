@@ -3,6 +3,9 @@ import { loadLocalEnvironment, runCommand } from "./shared";
 
 async function main() {
   loadLocalEnvironment();
+  if (process.env.APP_ENV?.trim().toLowerCase() === "production") {
+    throw new Error("Refusing to reset or seed data when APP_ENV=production.");
+  }
   const dbCheck = await runDbCheck();
 
   if (dbCheck.status === "fail") {

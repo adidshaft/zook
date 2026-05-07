@@ -42,6 +42,10 @@ import {
   SubscriptionStatus,
 } from "@prisma/client";
 
+if (process.env.APP_ENV?.trim().toLowerCase() === "production") {
+  throw new Error("Refusing to run Prisma seed when APP_ENV=production.");
+}
+
 const prisma = new PrismaClient();
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");

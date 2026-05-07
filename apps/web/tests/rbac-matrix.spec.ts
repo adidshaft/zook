@@ -13,7 +13,11 @@ function requireDb() {
   }
 }
 
-async function createMatrixActor(input: { orgId: string; role: Role | "PLATFORM_ADMIN" }) {
+async function createMatrixActor(input: {
+  orgId: string;
+  role: Role | "PLATFORM_ADMIN";
+  branchId?: string;
+}) {
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const roleSlug = input.role.toLowerCase().replace(/_/g, "-");
   const user = await prisma.user.create({
@@ -28,8 +32,14 @@ async function createMatrixActor(input: { orgId: string; role: Role | "PLATFORM_
     await prisma.organizationUser.create({
       data: { orgId: input.orgId, userId: user.id },
     });
+    const assignmentData = {
+      orgId: input.orgId,
+      userId: user.id,
+      role: input.role,
+      ...(input.role === "RECEPTIONIST" ? { branchId: input.branchId ?? null } : {}),
+    };
     await prisma.organizationRoleAssignment.create({
-      data: { orgId: input.orgId, userId: user.id, role: input.role },
+      data: assignmentData,
     });
   }
 
@@ -39,9 +49,16 @@ async function createMatrixActor(input: { orgId: string; role: Role | "PLATFORM_
 test("organization routes enforce role and permission matrix", async ({ page }) => {
   requireDb();
   const org = await seedAndGetOrg({ username: "iron-house" });
+  const defaultBranch = await prisma.branch.findFirstOrThrow({
+    where: { orgId: org.id, isDefault: true },
+  });
   const ownerEmail = await createMatrixActor({ orgId: org.id, role: "OWNER" });
   const memberEmail = await createMatrixActor({ orgId: org.id, role: "MEMBER" });
-  const receptionistEmail = await createMatrixActor({ orgId: org.id, role: "RECEPTIONIST" });
+  const receptionistEmail = await createMatrixActor({
+    orgId: org.id,
+    role: "RECEPTIONIST",
+    branchId: defaultBranch.id,
+  });
   const trainerEmail = await createMatrixActor({ orgId: org.id, role: "TRAINER" });
   const platformEmail = await createMatrixActor({ orgId: org.id, role: "PLATFORM_ADMIN" });
 

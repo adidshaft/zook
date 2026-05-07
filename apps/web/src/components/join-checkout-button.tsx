@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 
 type ApiEnvelope<T> = {
   ok?: boolean;
@@ -32,7 +33,7 @@ export function JoinCheckoutButton({
     try {
       const response = await fetch(`/api/orgs/${orgId}/subscriptions`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
         body: JSON.stringify({
           planId,
           ...(couponCode ? { couponCode } : {}),
@@ -63,9 +64,12 @@ export function JoinCheckoutButton({
       if (!checkoutUrl) {
         throw new Error("Payment is not available for this plan yet.");
       }
+      toast.success("Payment started.");
       window.location.assign(checkoutUrl);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to start payment.");
+      const message = cause instanceof Error ? cause.message : "Unable to start payment.";
+      setError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }

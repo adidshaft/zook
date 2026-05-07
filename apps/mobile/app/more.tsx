@@ -40,8 +40,8 @@ const memberMoreItems: Array<{
   },
   {
     href: "/assistant",
-    title: "AI assistant",
-    subtitle: "Ask about your plan or recent progress.",
+    title: "Plan assistant",
+    subtitle: "AI is coming soon; trainer plans stay manual.",
     icon: "sparkles-outline",
   },
   {

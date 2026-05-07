@@ -23,7 +23,8 @@ type SaveKey =
   | "emergencyContactPhone"
   | "marketingOptIn"
   | "aiConsent"
-  | "preferredLocale";
+  | "preferredLocale"
+  | "weeklyWorkoutGoal";
 
 const genderOptions: Array<{ label: string; value: GenderValue }> = [
   { label: "Male", value: "male" },
@@ -96,6 +97,9 @@ export function ProfileExtraFields() {
   const [preferredLocale, setPreferredLocale] = useState<LocaleValue>(
     normalizeLocale(profileUser?.preferredLocale ?? sessionUser?.preferredLocale ?? locale),
   );
+  const [weeklyWorkoutGoal, setWeeklyWorkoutGoal] = useState(
+    profileUser?.weeklyWorkoutGoal ?? sessionUser?.weeklyWorkoutGoal ?? 5,
+  );
   const [savingKey, setSavingKey] = useState<SaveKey | null>(null);
   const [savedKey, setSavedKey] = useState<SaveKey | null>(null);
   const [error, setError] = useState("");
@@ -113,6 +117,7 @@ export function ProfileExtraFields() {
     setPreferredLocale(
       normalizeLocale(profileUser?.preferredLocale ?? sessionUser?.preferredLocale ?? locale),
     );
+    setWeeklyWorkoutGoal(profileUser?.weeklyWorkoutGoal ?? sessionUser?.weeklyWorkoutGoal ?? 5);
   }, [
     locale,
     profileUser?.aiConsent,
@@ -122,9 +127,11 @@ export function ProfileExtraFields() {
     profileUser?.gender,
     profileUser?.marketingOptIn,
     profileUser?.preferredLocale,
+    profileUser?.weeklyWorkoutGoal,
     sessionUser?.aiConsent,
     sessionUser?.marketingOptIn,
     sessionUser?.preferredLocale,
+    sessionUser?.weeklyWorkoutGoal,
   ]);
 
   useEffect(() => {
@@ -140,7 +147,6 @@ export function ProfileExtraFields() {
     setSavingKey(key);
     setError("");
     try {
-      // CODEX: assumed PATCH /me/profile accepts Sprint 2C fields as first-class user fields.
       await memberApi.updateProfile({
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
@@ -281,6 +287,39 @@ export function ProfileExtraFields() {
         />
       </View>
 
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Weekly workout goal</Text>
+        <View style={styles.stepperRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Decrease weekly workout goal"
+            disabled={weeklyWorkoutGoal <= 1 || savingKey === "weeklyWorkoutGoal"}
+            onPress={() => {
+              const nextGoal = Math.max(1, weeklyWorkoutGoal - 1);
+              setWeeklyWorkoutGoal(nextGoal);
+              void saveField("weeklyWorkoutGoal", { weeklyWorkoutGoal: nextGoal });
+            }}
+            style={styles.stepperButton}
+          >
+            <Text style={styles.stepperButtonText}>-</Text>
+          </Pressable>
+          <Text style={styles.stepperValue}>{weeklyWorkoutGoal} / week</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Increase weekly workout goal"
+            disabled={weeklyWorkoutGoal >= 14 || savingKey === "weeklyWorkoutGoal"}
+            onPress={() => {
+              const nextGoal = Math.min(14, weeklyWorkoutGoal + 1);
+              setWeeklyWorkoutGoal(nextGoal);
+              void saveField("weeklyWorkoutGoal", { weeklyWorkoutGoal: nextGoal });
+            }}
+            style={styles.stepperButton}
+          >
+            <Text style={styles.stepperButtonText}>+</Text>
+          </Pressable>
+        </View>
+      </View>
+
       {error ? (
         <Text accessibilityRole="alert" style={styles.errorText}>
           {error}
@@ -389,6 +428,31 @@ const styles = StyleSheet.create({
   errorText: {
     ...typography.body,
     color: colors.red,
+  },
+  stepperRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  stepperButton: {
+    alignItems: "center",
+    backgroundColor: colors.panel,
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  stepperButtonText: {
+    ...typography.headerTitle,
+    color: colors.text,
+  },
+  stepperValue: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    flex: 1,
+    textAlign: "center",
   },
 });
 

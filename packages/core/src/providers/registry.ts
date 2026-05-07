@@ -17,7 +17,12 @@ import { GoogleMapProvider, MockMapProvider, type MapProvider } from "./map";
 import { MockPaymentProvider, RazorpayPaymentProvider, type PaymentProvider } from "./payment";
 import { ExpoPushProvider, MockPushProvider, type PushProvider } from "./push";
 import { MockSmsProvider, WebhookSmsProvider, type SmsProvider } from "./sms";
-import { LocalStorageProvider, S3CompatibleStorageProvider, type StorageProvider } from "./storage";
+import {
+  LocalStorageProvider,
+  S3CompatibleStorageProvider,
+  SupabaseStorageProvider,
+  type StorageProvider,
+} from "./storage";
 import {
   MockWhatsAppProvider,
   TwilioWhatsAppProvider,
@@ -672,6 +677,10 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
     "S3_SECRET_ACCESS_KEY",
     "S3_PUBLIC_BASE_URL",
     "R2_ACCOUNT_ID",
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_STORAGE_BUCKET",
+    "SUPABASE_STORAGE_PUBLIC_BASE_URL",
     "STORAGE_URL_SIGNING_SECRET",
   ]);
 
@@ -690,7 +699,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
       category: "storage",
       selectionEnv: "STORAGE_PROVIDER",
       defaultProvider: "local",
-      supportedProviders: ["local", "s3", "r2", "disabled"],
+      supportedProviders: ["local", "s3", "r2", "supabase", "disabled"],
       env: envState,
     });
   }
@@ -713,7 +722,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
         selectionEnv: "STORAGE_PROVIDER",
         selectedProvider,
         defaultProvider: "local",
-        supportedProviders: ["local", "s3", "r2", "disabled"],
+        supportedProviders: ["local", "s3", "r2", "supabase", "disabled"],
         missingEnv,
         env: envState,
         mode: "live",
@@ -767,7 +776,7 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
         selectionEnv: "STORAGE_PROVIDER",
         selectedProvider,
         defaultProvider: "local",
-        supportedProviders: ["local", "s3", "r2", "disabled"],
+        supportedProviders: ["local", "s3", "r2", "supabase", "disabled"],
         missingEnv,
         env: envState,
         mode: "live",
@@ -797,12 +806,54 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
     });
   }
 
+  if (selectedProvider === "supabase") {
+    const url = env(process.env.SUPABASE_URL);
+    const serviceRoleKey = env(process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const bucket = env(process.env.SUPABASE_STORAGE_BUCKET);
+    const missingEnv = [
+      url ? null : "SUPABASE_URL",
+      serviceRoleKey ? null : "SUPABASE_SERVICE_ROLE_KEY",
+      bucket ? null : "SUPABASE_STORAGE_BUCKET",
+    ].filter(Boolean) as string[];
+
+    if (missingEnv.length) {
+      return createMisconfiguredResolution({
+        category: "storage",
+        selectionEnv: "STORAGE_PROVIDER",
+        selectedProvider,
+        defaultProvider: "local",
+        supportedProviders: ["local", "s3", "r2", "supabase", "disabled"],
+        missingEnv,
+        env: envState,
+        mode: "live",
+        metadata: {
+          hasPublicBaseUrl: Boolean(env(process.env.SUPABASE_STORAGE_PUBLIC_BASE_URL)),
+        },
+      });
+    }
+
+    return createReadyResolution({
+      category: "storage",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new SupabaseStorageProvider({
+        url: url as string,
+        serviceRoleKey: serviceRoleKey as string,
+        bucket: bucket as string,
+        ...(env(process.env.SUPABASE_STORAGE_PUBLIC_BASE_URL)
+          ? { publicBaseUrl: env(process.env.SUPABASE_STORAGE_PUBLIC_BASE_URL) as string }
+          : {}),
+      }),
+    });
+  }
+
   return createUnsupportedResolution({
     category: "storage",
     selectionEnv: "STORAGE_PROVIDER",
     selectedProvider,
     defaultProvider: "local",
-    supportedProviders: ["local", "s3", "r2", "disabled"],
+    supportedProviders: ["local", "s3", "r2", "supabase", "disabled"],
     env: envState,
     mode: "live",
   });

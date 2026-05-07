@@ -300,6 +300,22 @@ export default async function JoinPage({
                 }
               />
             </div>
+            <div className="mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-black/20">
+              <table className="w-full text-left text-sm">
+                <tbody className="divide-y divide-white/10">
+                  <BreakdownRow label={t("plan")} value={formatInr(selectedPlan.pricePaise)} />
+                  <BreakdownRow
+                    label={t("referralDiscount")}
+                    value={referral ? `-${formatInr(referralDiscountPaise)}` : t("none")}
+                  />
+                  <BreakdownRow
+                    label={t("couponDiscount")}
+                    value={couponPreview ? `-${formatInr(couponDiscountPaise)}` : t("none")}
+                  />
+                  <BreakdownRow label={t("finalAmount")} value={formatInr(finalAmount)} strong />
+                </tbody>
+              </table>
+            </div>
             <CouponApplyForm
               orgId={org.id}
               username={org.username}
@@ -337,6 +353,14 @@ export default async function JoinPage({
                 </p>
               </div>
             </div>
+            <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                {t("paymentMethod")}
+              </p>
+              <div className="mt-3 rounded-2xl border border-lime-300/35 bg-lime-300/10 px-4 py-3 text-sm font-semibold text-lime-100">
+                {t("razorpay")}
+              </div>
+            </div>
             {data.connected ? (
               <JoinCheckoutButton
                 orgId={org.id}
@@ -362,12 +386,12 @@ export default async function JoinPage({
               </>
             ) : (
               <div className="mt-6 rounded-[22px] border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
-                <p>Payment is temporarily unavailable. Please try again in a few minutes.</p>
+                <p>{t("paymentUnavailable")}</p>
                 <Link
                   href={joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale)}
                   className="zook-focus mt-4 inline-flex rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white"
                 >
-                  Retry
+                  {t("retry")}
                 </Link>
               </div>
             )}
@@ -384,5 +408,26 @@ function Readout({ label, value }: { label: string; value: string }) {
       <p className="text-xs font-semibold uppercase text-white/35">{label}</p>
       <p className="mt-2 font-medium text-white">{value}</p>
     </div>
+  );
+}
+
+function BreakdownRow({
+  label,
+  value,
+  strong = false,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}) {
+  return (
+    <tr>
+      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+        {label}
+      </th>
+      <td className={`px-4 py-3 text-right ${strong ? "font-semibold text-lime-100" : "text-white/72"}`}>
+        {value}
+      </td>
+    </tr>
   );
 }

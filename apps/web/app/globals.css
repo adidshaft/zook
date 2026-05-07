@@ -43,6 +43,15 @@ textarea {
   font-variant-numeric: tabular-nums;
 }
 
+@keyframes zook-shimmer {
+  from {
+    transform: translateX(-120%) rotate(12deg);
+  }
+  to {
+    transform: translateX(420%) rotate(12deg);
+  }
+}
+
 .zook-focus:focus-visible {
   outline: 2px solid var(--zook-lime);
   outline-offset: 3px;

@@ -60,13 +60,6 @@ type AttendanceResultHref = {
   pathname: "/attendance/[attendanceRecordId]";
   params: {
     attendanceRecordId: string;
-    status: string;
-    entryCode: string;
-    branchName: string;
-    planName: string;
-    checkedInAt: string;
-    reason: string;
-    warning: string;
   };
 };
 
@@ -131,17 +124,18 @@ export default function Scan() {
   }
 
   function attendanceResultHref(result: ScanResult, status: string): AttendanceResultHref {
+    queryClient.setQueryData(["me", "attendance", result.attendance.id], {
+      attendance: {
+        ...result.attendance,
+        status,
+        reason: scanReason(result),
+      },
+    });
+    queryClient.setQueryData(["me", "attendanceWarning", result.attendance.id], scanWarnings(result));
     return {
       pathname: "/attendance/[attendanceRecordId]",
       params: {
         attendanceRecordId: result.attendance.id,
-        status,
-        entryCode: result.attendance.entryCode ?? "",
-        branchName: result.attendance.branchName ?? "",
-        planName: result.attendance.planName ?? "",
-        checkedInAt: result.attendance.checkedInAt ?? "",
-        reason: scanReason(result),
-        warning: scanWarnings(result),
       },
     };
   }
@@ -303,7 +297,6 @@ export default function Scan() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      {/* CODEX: assumed camera-active mode maps to the Scan QR segment. */}
       {scanMode === "scan" ? <CameraActiveBottomNavHider /> : null}
       <ZookScreen>
         <KeyboardAwareScreen

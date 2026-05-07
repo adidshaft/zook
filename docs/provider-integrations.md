@@ -124,7 +124,8 @@ Operational beta map support now includes:
 
 Selector env:
 
-- `AI_PROVIDER=mock|openai|disabled`
+- `AI_PROVIDER=disabled|mock|openai`
+- `AI_FEATURES_ENABLED=false` for pilot launch; `true` only for controlled post-launch staging certification.
 
 Known envs:
 
@@ -145,7 +146,7 @@ Diagnostics may expose selected model names and boolean env presence, but never 
 
 Selector env:
 
-- `STORAGE_PROVIDER=local|s3|r2|disabled`
+- `STORAGE_PROVIDER=supabase|local|s3|r2|disabled`
 
 Known envs:
 

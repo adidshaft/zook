@@ -8,10 +8,13 @@
     "start": "node ../../scripts/run-next-web.mjs start",
     "lint": "eslint app src tests next.config.ts",
     "typecheck": "tsc --noEmit",
-    "test": "cd ../.. && vitest run apps/web/src/server/*.test.ts --passWithNoTests"
+    "test": "cd ../.. && vitest run apps/web/src/server/*.test.ts --passWithNoTests",
+    "analyze": "ANALYZE=true node ../../scripts/run-next-web.mjs build"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
+    "@next/bundle-analyzer": "^15.1.6",
+    "@sentry/nextjs": "^10.52.0",
     "@tanstack/react-query": "^5.64.2",
     "@zook/core": "workspace:*",
     "@zook/db": "workspace:*",
@@ -23,6 +26,7 @@
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "sonner": "^1.7.4",
     "zod": "^3.24.1"
   },
   "devDependencies": {

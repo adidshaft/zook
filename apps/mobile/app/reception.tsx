@@ -7,7 +7,7 @@ import {
 } from "@gorhom/bottom-sheet";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import type { PaymentMode } from "@zook/core";
 import {
   AuditWarning,
@@ -46,6 +46,7 @@ import { apiClient, receptionApi } from "@/lib/domain-api";
 import { requirePrivilegedAuth } from "@/lib/privileged-action";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+import { getStoredValue, setStoredValue } from "@/lib/storage";
 
 type DeskView = "desk" | "members" | "payments" | "orders";
 type DeskPaymentMode = Extract<
@@ -91,6 +92,10 @@ function deskReasonCopy(reason?: string | null) {
 function redactPhone(phone?: string | null) {
   if (!phone) return "No phone";
   return `****${phone.slice(-4)}`;
+}
+
+function phoneRevealStorageKey(orgId?: string | null) {
+  return `zook_revealed_reception_phones_${orgId ?? "none"}`;
 }
 
 export default function Reception() {
@@ -208,6 +213,7 @@ export default function Reception() {
     setRevealedPhones((current) => {
       const next = new Set(current);
       next.add(memberId);
+      void setStoredValue(phoneRevealStorageKey(activeOrgId), JSON.stringify(Array.from(next)));
       return next;
     });
     if (token && activeOrgId) {
@@ -221,6 +227,24 @@ export default function Reception() {
         .catch(() => undefined);
     }
   }
+
+  useEffect(() => {
+    let mounted = true;
+    void getStoredValue(phoneRevealStorageKey(activeOrgId)).then((stored) => {
+      if (!mounted || !stored) return;
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setRevealedPhones(new Set(parsed.filter((item): item is string => typeof item === "string")));
+        }
+      } catch {
+        setRevealedPhones(new Set());
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [activeOrgId]);
 
   useEffect(() => {
     setVerifyMessage("");
@@ -253,7 +277,7 @@ export default function Reception() {
       setAttendanceStatus("Check-in approved.");
       closeDecisionSheet();
     } catch (error) {
-      Alert.alert("Failed", getApiErrorMessage(error) || "Could not approve. Please try again.");
+      setAttendanceStatus(getApiErrorMessage(error) || "Could not approve. Please try again.");
     }
   }
 
@@ -266,7 +290,7 @@ export default function Reception() {
       setAttendanceStatus("Check-in rejected.");
       closeDecisionSheet();
     } catch (error) {
-      Alert.alert("Failed", getApiErrorMessage(error) || "Could not reject. Please try again.");
+      setAttendanceStatus(getApiErrorMessage(error) || "Could not reject. Please try again.");
     }
   }
 
@@ -353,7 +377,7 @@ export default function Reception() {
       });
       setPaymentStatus("Pickup fulfilled.");
     } catch (error) {
-      Alert.alert("Failed", getApiErrorMessage(error) || "Could not fulfill this order.");
+      setPaymentStatus(getApiErrorMessage(error) || "Could not fulfill this order.");
     }
   }
 
@@ -955,9 +979,19 @@ export default function Reception() {
                 key={suggestion}
                 onPress={() => setDecisionReason(suggestion)}
                 accessibilityRole="button"
-                style={styles.suggestionChip}
+                style={[
+                  styles.suggestionChip,
+                  decisionReason === suggestion ? styles.suggestionChipSelected : null,
+                ]}
               >
-                <Text style={styles.suggestionText}>{suggestion}</Text>
+                <Text
+                  style={[
+                    styles.suggestionText,
+                    decisionReason === suggestion ? styles.suggestionTextSelected : null,
+                  ]}
+                >
+                  {suggestion}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -1164,9 +1198,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     justifyContent: "center",
   },
+  suggestionChipSelected: {
+    borderColor: colors.lime,
+    backgroundColor: "rgba(185,244,85,0.14)",
+  },
   suggestionText: {
     color: colors.muted,
     ...typography.caption,
+  },
+  suggestionTextSelected: {
+    color: colors.lime,
   },
   formStack: {
     gap: spacing.md,

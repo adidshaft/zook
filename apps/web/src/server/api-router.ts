@@ -108,6 +108,7 @@ import {
   forbiddenError,
   notFoundError,
   payloadTooLargeError,
+  serviceUnavailableError,
   toErrorResponse,
   unauthorizedError,
   validationError,
@@ -124,7 +125,6 @@ import { assertSafeMutationRequest, getClientIp } from "./security";
 import { buildGymDiscoveryResults } from "./gym-discovery";
 import { getHealthPayload, getReadinessPayload, getStatusPayload } from "./readiness";
 import { logApiRequest } from "./request-logger";
-import { captureRouteError } from "./sentry";
 import {
   assertCanAccessFileAsset,
   assertCanServeLocalPublicFileAsset,
@@ -603,6 +603,7 @@ const memberWellnessProfileSchema = z.object({
   dateOfBirth: z.string().trim().optional(),
   fitnessGoal: z.string().trim().max(240).optional(),
   preferredLocale: z.enum(["en", "hi"]).optional(),
+  weeklyWorkoutGoal: z.number().int().min(1).max(14).optional(),
   weightKg: z.number().positive().max(500).optional(),
   dietPreference: z.string().trim().max(120).optional(),
   allergies: z.string().trim().max(240).optional(),
@@ -787,17 +788,18 @@ function isIdempotentOperation(path: string[], method: string) {
   if (method !== "POST") {
     return false;
   }
-  return (
-    pathMatches(path, ["payments", "checkout"]) ||
-    pathMatches(path, ["payments", "mock", /.+/, "complete"]) ||
-    pathMatches(path, ["attendance", "scan"]) ||
-    pathMatches(path, ["orgs", /.+/, "manual-payments"]) ||
-    pathMatches(path, ["orgs", /.+/, "manual-payments", "general"]) ||
-    pathMatches(path, ["orgs", /.+/, "shop", "orders", /.+/, "manual-payment"]) ||
-    pathMatches(path, ["orgs", /.+/, "classes"]) ||
-    pathMatches(path, ["orgs", /.+/, "classes", /.+/, "enroll"]) ||
-    pathMatches(path, ["shop", "orders"])
-  );
+  const idempotentPostPatterns: Array<Array<string | RegExp>> = [
+    ["payments", "checkout"],
+    ["payments", "mock", /.+/, "complete"],
+    ["attendance", "scan"],
+    ["orgs", /.+/, "manual-payments"],
+    ["orgs", /.+/, "manual-payments", "general"],
+    ["orgs", /.+/, "shop", "orders", /.+/, "manual-payment"],
+    ["orgs", /.+/, "classes"],
+    ["orgs", /.+/, "classes", /.+/, "enroll"],
+    ["shop", "orders"],
+  ];
+  return idempotentPostPatterns.some((pattern) => pathMatches(path, pattern));
 }
 
 async function withIdempotency(
@@ -964,14 +966,22 @@ async function assertBranchAccessForContext(
     where: { orgId, userId: ctx.userId, role: "RECEPTIONIST" },
     select: { branchId: true },
   });
-  if (!assignment?.branchId) {
+  let branchId = assignment?.branchId;
+  if (!branchId) {
+    const defaultBranch = await prisma.branch.findFirst({
+      where: { orgId, isDefault: true, active: true },
+      select: { id: true },
+    });
+    branchId = defaultBranch?.id;
+  }
+  if (!branchId) {
     throw forbiddenError("This desk account is not assigned to a branch.");
   }
-  if (requestedBranchId && requestedBranchId !== assignment.branchId) {
+  if (requestedBranchId && requestedBranchId !== branchId) {
     throw forbiddenError("This desk account can only open its assigned branch.");
   }
-  await resolveOrgBranch(orgId, assignment.branchId);
-  return assignment.branchId;
+  await resolveOrgBranch(orgId, branchId);
+  return branchId;
 }
 
 function queryBranchId(request: NextRequest) {
@@ -2402,6 +2412,14 @@ function currentAIProviderType(): "MOCK" | "OPENAI" {
   return getAIProviderDiagnostics().activeProvider === "openai" ? "OPENAI" : "MOCK";
 }
 
+function assertAiLaunchEnabled() {
+  if (process.env.AI_FEATURES_ENABLED !== "true") {
+    throw serviceUnavailableError("AI plan assistant is coming soon. Trainers can create, review, assign, and send plans manually.", {
+      expectedFormat: "AI_FEATURES_ENABLED=true",
+    });
+  }
+}
+
 function summarizeAIResponse(response: string | Record<string, unknown>) {
   return (typeof response === "string" ? response : JSON.stringify(response)).slice(0, 120);
 }
@@ -3777,6 +3795,7 @@ async function handleMeData(request: NextRequest, path: string[]) {
           dateOfBirth,
           fitnessGoal: body.fitnessGoal,
           preferredLocale: body.preferredLocale,
+          weeklyWorkoutGoal: body.weeklyWorkoutGoal,
         }),
       });
       const currentProfile = orgId
@@ -5602,6 +5621,11 @@ async function handleReports(request: NextRequest, path: string[]) {
 
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireAuth(ctx);
+    await assertRateLimit(
+      "reportExportByActor",
+      `${orgId}:${userId}`,
+      "Too many report exports from this account today.",
+    );
     const filters = parseReportFilters(request.nextUrl.searchParams);
     if (filters.branchId) {
       await resolveOrgBranch(orgId, filters.branchId);
@@ -5662,6 +5686,11 @@ async function handleReports(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireAuth(ctx);
+    await assertRateLimit(
+      "reportExportByActor",
+      `${orgId}:${userId}`,
+      "Too many report exports from this account today.",
+    );
     const filters = parseReportFilters(request.nextUrl.searchParams);
     if (filters.branchId) {
       await resolveOrgBranch(orgId, filters.branchId);
@@ -6053,10 +6082,10 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const body = checkoutSchema.parse(await readJson(request));
     getPaymentProviderOrThrow();
     if (body.purpose === "MEMBERSHIP" || body.purpose === "SHOP_ORDER") {
-      throw validationError("Use the membership or shop payment path for this purpose.");
+      throw validationError("Use the membership or shop checkout route for this purpose.");
     }
     if (body.metadata?.subscriptionId || body.metadata?.shopOrderId) {
-      throw validationError("Payment details are invalid for this request.");
+      throw validationError("Generic checkout cannot directly reference membership or shop records.");
     }
     if (body.userId && body.userId !== userId && !ctx.isPlatformAdmin) {
       throw forbiddenError("You cannot start this payment for another person.");
@@ -6108,6 +6137,11 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     }
     const ctx = await getRequestContext(request, session.orgId ? { orgId: session.orgId } : {});
     const userId = requireAuth(ctx);
+    await assertRateLimit(
+      "paymentSessionByActor",
+      `${userId}:${path[2]!}`,
+      "Too many payment session checks. Please wait before trying again.",
+    );
     const canReadOwnSession = Boolean(session.userId && session.userId === userId);
     const canReadOrgSession = Boolean(
       session.orgId &&
@@ -6459,7 +6493,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       currentSession.status !== "SUCCEEDED" &&
       currentSession.expiresAt.getTime() < Date.now()
     ) {
-      throw conflictError("Payment link expired. Start payment again.");
+      throw conflictError("Payment session expired. Start payment again.");
     }
     const ctx = await getRequestContext(
       request,
@@ -9268,7 +9302,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         description: body.description,
         content: body.content as Prisma.InputJsonValue,
         attachments,
-        aiGenerated: body.aiGenerated,
+        aiGenerated: false,
         visibility: body.visibility,
       }),
     });
@@ -9281,7 +9315,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
           title: body.title,
           ...clean({
             description: body.description,
-            aiGenerated: body.aiGenerated,
+            aiGenerated: false,
             visibility: body.visibility,
             attachments,
           }),
@@ -9331,7 +9365,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         description: body.description,
         content: body.content as Prisma.InputJsonValue | undefined,
         attachments,
-        aiGenerated: body.aiGenerated,
+        aiGenerated: false,
         visibility: body.visibility,
       }),
     });
@@ -9735,6 +9769,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
 
 async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["ai", "chat"])) {
+    assertAiLaunchEnabled();
     const body = aiChatSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
@@ -9812,6 +9847,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     request.method === "POST" &&
     (pathMatches(path, ["ai", "generate-plan"]) || pathMatches(path, ["ai", "generate-image"]))
   ) {
+    assertAiLaunchEnabled();
     const body = aiGenerateSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
     const userId = requireAuth(ctx);
@@ -9959,6 +9995,11 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
+    await assertRateLimit(
+      "notificationSendByActor",
+      `${orgId}:${userId}:preview`,
+      "Too many notification previews from this account.",
+    );
     const body = notificationComposerSchema.parse(await readJson(request));
     if (body.branchId) {
       await resolveOrgBranch(orgId, body.branchId);
@@ -10007,6 +10048,11 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "NOTIFICATION_CREATE_DRAFT");
+    await assertRateLimit(
+      "notificationSendByActor",
+      `${orgId}:${userId}`,
+      "Too many notification sends. Please wait before trying again.",
+    );
     const body = notificationComposerSchema.parse(await readJson(request));
     if (body.branchId) {
       await resolveOrgBranch(orgId, body.branchId);
@@ -11453,6 +11499,8 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         status: "requested",
       }),
     });
+    const retentionDays = Math.max(1, Number(process.env.ACCOUNT_DELETION_RETENTION_DAYS ?? 30));
+    const scheduledFor = new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000);
     const deletionJob = await prisma.accountDeletionJob.create({
       data: clean({
         requestId: deletionRequest.id,
@@ -11460,7 +11508,8 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         userId,
         status: "QUEUED",
         requestedById: userId,
-        scheduledFor: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        scheduledFor,
+        retentionUntil: scheduledFor,
       }),
     });
     const updatedRequest = await prisma.accountDeletionRequest.update({
@@ -11598,12 +11647,6 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
       });
     } catch (error) {
       errorReporter.captureException(error, {
-        requestId,
-        method: request.method,
-        path: `/${rawPath.join("/")}`,
-        ...(rawPath[0] === "orgs" && rawPath[1] ? { orgId: rawPath[1] } : {}),
-      });
-      captureRouteError(error, {
         requestId,
         method: request.method,
         path: `/${rawPath.join("/")}`,

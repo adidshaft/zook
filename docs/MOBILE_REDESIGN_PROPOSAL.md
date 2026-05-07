@@ -11,7 +11,7 @@
 
 The mobile app has the right shape but the wrong details. Every keyboard-bearing screen lacks `KeyboardAvoidingView` — login, scan desk-code, tracking-entry, assistant, settings, reception, trainer client, find-gyms, plans-feedback. Sticky action bars sit *behind* the bottom-nav on `tracking-entry` and `shop` cart so the primary CTA is half-hidden by the lime "scan" button. The "profile" screen is a one-line re-export of settings — tapping the home avatar drops the user into a 5-section settings form instead of a profile. There's no first-launch onboarding: blank Expo splash → instant `/login` → no value-prop, no permission priming, no privacy/terms, no tour.
 
-The login flow is OTP-only with a single auto-detect field that hardcodes `+91` for phone and offers no Apple, Google, biometric, or password option. The session token has no client-side expiry tracking and no 401 interceptor — a 30-day token silently expires and the user gets a "Membership couldn't load" error instead of being bounced to login. Push permission is never requested at first launch; only when a user toggles a switch in settings they have no reason to find. Universal links are not configured (no `associatedDomains`, no Android `intentFilters`), so `https://app.zookfit.in/join/peaklab` won't open the app.
+The login flow is OTP-only with a single auto-detect field that hardcodes `+91` for phone and offers no Apple, Google, biometric, or password option. The session token has no client-side expiry tracking and no 401 interceptor — a 30-day token silently expires and the user gets a "Membership couldn't load" error instead of being bounced to login. Push permission is never requested at first launch; only when a user toggles a switch in settings they have no reason to find. Universal links are not configured (no `associatedDomains`, no Android `intentFilters`), so `https://app.zookfit.in/join/partner-gym` won't open the app.
 
 **RBAC is broken in two directions.** Forward: the mobile app guards exactly four route prefixes (`/owner`, `/reception`, `/trainer`, `/platform`) and leaves every other route — including `/scan`, `/shop`, `/tracking*`, `/assistant` — wide open to all six roles. Backward: every privileged button (manual override, manual payment, plan publishing, AI generation) is shown unconditionally; the backend 403s and the user gets `Alert.alert("Failed", ...)` with no explanation. The mobile app never imports `@zook/core` permission helpers — it gates on the coarse role enum only, ignoring custom permission overrides.
 
@@ -550,7 +550,7 @@ const activeOrg = session.organizations.find(o => o.orgId === activeOrgId);
 const availableRoles = activeOrg?.roles ?? [];
 
 // Render role pills only for availableRoles
-// If user wants OWNER but it's not in active org, show "Switch to Pune (Iron House) to access Owner tools"
+// If user wants OWNER but it's not in active org, show "Switch to Pune (Pilot Gym) to access Owner tools"
 ```
 
 Multi-org users get a contextual hint when their desired role lives in another org.
@@ -889,7 +889,7 @@ Goal: every input-bearing screen has correct keyboard handling; sticky bars don'
 - Touch targets fixed (3.9)
 - Clipboard + minor RN fixes
 
-**DoD:** `https://app.zook.app/join/peaklab` opens the app. Tapping a "membership renewed" push lands on `/membership` with fresh data. After Razorpay checkout, user lands on `/membership` with confirmation, queries refreshed automatically. Push permission prompted at the right moment, not buried in settings.
+**DoD:** `https://app.zook.app/join/partner-gym` opens the app. Tapping a "membership renewed" push lands on `/membership` with fresh data. After Razorpay checkout, user lands on `/membership` with confirmation, queries refreshed automatically. Push permission prompted at the right moment, not buried in settings.
 
 ---
 
@@ -905,7 +905,7 @@ After all six sprints, all of these must be true:
 
 4. **Owner**: opens app at front desk → switches role to owner via profile → owner approvals view → approves a join request. Each privileged button only visible when permissions allow. Universal link `https://app.zook.app/dashboard` opens the web (mobile owners use mobile for monitoring, web for management).
 
-5. **Multi-role**: a user who's MEMBER in Iron House and TRAINER in Peak Lab — switching org auto-corrects role; switching role within org doesn't bleed cached data from previous role.
+5. **Multi-role**: a user who's MEMBER in Pilot Gym and TRAINER in Peak Lab — switching org auto-corrects role; switching role within org doesn't bleed cached data from previous role.
 
 6. **No keyboard bugs**: keyboard never covers any primary CTA on any screen. Tap-outside-keyboard dismisses. Auto-submit OTP works.
 

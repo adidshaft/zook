@@ -61,7 +61,7 @@ export function ownerCommand(ctx: DesignContext): FrameNode {
   for (const [title, subtitle] of [
     ["Receptionist recorded offline payment", "₹2,499 · Aarav Mehta"],
     ["Coach Rhea assigned Push Day", "Aarav Mehta · Plan update"],
-    ["Protein Shake stock updated", "Shop inventory · 18 left"]
+    ["Recovery Drink stock updated", "Shop inventory · 18 left"]
   ] as const) {
     const item = row(`Activity / ${title}`, TOKENS.space.sm);
     item.resize(318, 34);

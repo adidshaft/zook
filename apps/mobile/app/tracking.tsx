@@ -31,7 +31,7 @@ export default function TrackingDashboard() {
   const trackingQuery = useMyTracking();
   const bodyProgressQuery = useMyBodyProgress();
   const [refreshing, setRefreshing] = useState(false);
-  const { token } = useAuth();
+  const { session, token } = useAuth();
   const summary = trackingQuery.data?.summary;
   const recentWorkouts = (trackingQuery.data?.recentWorkouts ?? []) as Array<{
     id: string;
@@ -80,7 +80,7 @@ export default function TrackingDashboard() {
   const latestWorkout = recentWorkouts[0] ? workoutToEntry(recentWorkouts[0]) : null;
   const bodyProgressEntries = bodyProgressQuery.data?.entries ?? [];
   const weeklyCount = summary?.weeklyCount ?? 0;
-  const weeklyGoal = 5;
+  const weeklyGoal = Math.max(1, session?.user.weeklyWorkoutGoal ?? 5);
   const totalDuration = summary?.totalDuration ?? 0;
   const currentStreak = computeWorkoutStreak(recentWorkouts);
 

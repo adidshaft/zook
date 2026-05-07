@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 
 type CheckoutSessionSummary = {
@@ -45,20 +46,33 @@ export function CheckoutPanel({
             ? "Payment is pending. Membership stays inactive until confirmation."
             : "Payment failed. Membership was not activated.",
       );
+      toast.success("Test payment state updated.");
       return;
     }
-    const response = await fetch(`/api/payments/mock/${session.id}/complete`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
-      body: JSON.stringify({ status: nextStatus }),
-    });
-    const payload = await response.json();
-    setStatus(payload.ok ? payload.data.session.status : "FAILED");
-    setMessage(
-      payload.ok
-        ? "Payment confirmed. Your membership will update in Zook."
-        : payload.error.message,
-    );
+    try {
+      const response = await fetch(`/api/payments/mock/${session.id}/complete`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const payload = await response.json();
+      setStatus(payload.ok ? payload.data.session.status : "FAILED");
+      setMessage(
+        payload.ok
+          ? "Payment confirmed. Your membership will update in Zook."
+          : payload.error.message,
+      );
+      if (payload.ok) {
+        toast.success("Test payment state updated.");
+      } else {
+        toast.error(payload.error.message);
+      }
+    } catch (error) {
+      const nextMessage = error instanceof Error ? error.message : "Payment update failed.";
+      setStatus("FAILED");
+      setMessage(nextMessage);
+      toast.error(nextMessage);
+    }
   }
 
   if (!session) {
@@ -87,7 +101,7 @@ export function CheckoutPanel({
         </p>
         <p>
           <span className="text-white/38">Validity:</span>{" "}
-          {session.validityLabel ?? "Payment confirmation required"}
+          {session.validityLabel ?? "Confirmation required"}
         </p>
         <p>
           <span className="text-white/38">Activation:</span>{" "}

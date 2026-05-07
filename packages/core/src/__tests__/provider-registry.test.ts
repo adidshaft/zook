@@ -24,6 +24,7 @@ import {
   RazorpayPaymentProvider,
   ResendEmailProvider,
   S3CompatibleStorageProvider,
+  SupabaseStorageProvider,
   SMTPEmailProvider,
   TwilioWhatsAppProvider,
 } from "../providers";
@@ -75,6 +76,10 @@ function clearProviderEnv() {
   delete process.env.R2_BUCKET;
   delete process.env.R2_ACCESS_KEY_ID;
   delete process.env.R2_SECRET_ACCESS_KEY;
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  delete process.env.SUPABASE_STORAGE_BUCKET;
+  delete process.env.SUPABASE_STORAGE_PUBLIC_BASE_URL;
 }
 
 describe("provider registry", () => {
@@ -424,6 +429,25 @@ describe("provider registry", () => {
       status: "misconfigured",
       selectedProvider: "smtp",
       activeProvider: null,
+    });
+  });
+
+  it("supports Supabase Storage when selected", () => {
+    process.env.STORAGE_PROVIDER = "supabase";
+    process.env.SUPABASE_URL = "https://zook.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role";
+    process.env.SUPABASE_STORAGE_BUCKET = "zook-uploads";
+
+    expect(getStorageProvider()).toBeInstanceOf(SupabaseStorageProvider);
+    expect(getProviderRegistryDiagnostics().storage).toMatchObject({
+      status: "ready",
+      selectedProvider: "supabase",
+      activeProvider: "supabase",
+      provider: "supabase",
+      mode: "live",
+      metadata: {
+        bucket: "zook-uploads",
+      },
     });
   });
 

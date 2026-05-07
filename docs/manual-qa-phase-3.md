@@ -20,7 +20,7 @@ Development OTP: `000000`
 Seed accounts:
 
 - `platform@zook.local`
-- `owner@zook.local`
+- `pilot-owner.test`
 - `admin@zook.local`
 - `reception@zook.local`
 - `trainer@zook.local`
@@ -29,7 +29,7 @@ Seed accounts:
 
 ## Owner
 
-1. Sign in on web as `owner@zook.local`.
+1. Sign in on web as `pilot-owner.test`.
 2. Open `/dashboard`.
 3. Verify the dashboard sidebar, metrics, and route-aware operational panels render.
 4. Open `/dashboard/members` and confirm DB-backed member rows appear.

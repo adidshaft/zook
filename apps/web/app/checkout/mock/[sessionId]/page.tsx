@@ -1,5 +1,6 @@
 import { getAppEnv, isMockPaymentCompletionAllowed } from "@zook/core";
 import { Prisma, prisma } from "@zook/db";
+import { notFound } from "next/navigation";
 import { CheckoutPanel } from "@/components/checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
 
@@ -57,6 +58,9 @@ export default async function MockCheckoutPage({
   params: Promise<{ sessionId: string }>;
   searchParams: Promise<{ return_url?: string | string[] }>;
 }) {
+  if (getAppEnv() === "production") {
+    notFound();
+  }
   const { sessionId } = await params;
   const resolvedSearchParams = await searchParams;
   let session = null;
@@ -117,7 +121,7 @@ export default async function MockCheckoutPage({
   return (
     <main className="grid min-h-screen place-items-center px-5 py-16">
       <div className="fixed inset-x-0 top-0 z-20 border-b border-amber-300/30 bg-amber-300 px-4 py-3 text-center text-sm font-semibold text-black shadow-lg shadow-amber-950/20">
-        🧪 TEST MODE · No real payment. Click any outcome to simulate.
+        TEST MODE - No real payment. Click any outcome to simulate.
       </div>
       <div className="absolute left-5 top-5">
         <ZookLogo />

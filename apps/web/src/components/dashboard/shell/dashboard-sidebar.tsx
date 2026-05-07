@@ -62,6 +62,7 @@ export function DashboardSidebar({
                   <Link
                     key={href}
                     href={href}
+                    aria-current={active ? "page" : undefined}
                     className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition ${
                       active
                         ? "bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]"

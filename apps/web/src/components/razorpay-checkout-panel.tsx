@@ -65,7 +65,7 @@ export function RazorpayCheckoutPanel({
     if (!providerReference || !keyId || !amountPaise)
       return "Payment details are incomplete. Please start again from Zook.";
     if (!scriptReady) return "Preparing secure payment...";
-    if (handoffState === "opening") return "Opening Razorpay...";
+    if (handoffState === "opening") return "Redirecting to Razorpay...";
     if (handoffState === "submitted")
       return isRecurring
         ? "Autopay authorization submitted. Waiting for confirmation."
@@ -130,7 +130,14 @@ export function RazorpayCheckoutPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-lime-100/55">Secure checkout</p>
-          <p className="mt-2 text-sm text-white/70">{statusText}</p>
+          {!scriptReady && !scriptError ? (
+            <div role="status" aria-label={statusText} className="mt-3 grid gap-2">
+              <div className="h-3 w-60 animate-pulse rounded-full bg-white/15" />
+              <div className="h-3 w-40 animate-pulse rounded-full bg-white/10" />
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-white/70">{statusText}</p>
+          )}
         </div>
         <button
           type="button"

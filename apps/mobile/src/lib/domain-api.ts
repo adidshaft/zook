@@ -64,7 +64,6 @@ export const filesApi = {
     if (options.orgId) {
       formData.append("orgId", options.orgId);
     }
-    // CODEX: assumed mobileApiFetch already targets /api; current backend exposes multipart uploads at /files/upload.
     formData.append("file", options.file as unknown as Blob);
 
     return mobileApiFetch<FileUploadResponse>("/files/upload", {
@@ -133,7 +132,6 @@ export const memberApi = {
   saveProfilePhotoAsset<T = ProfilePhotoSaveResponse>(
     options: RequestOptions & { fileAssetId: string; consentToAttendanceUse?: boolean },
   ) {
-    // CODEX: assumed current API shape requires /me/profile-photo { fileAssetId } instead of /me/profile { profilePhotoAssetId }.
     return mobileApiFetch<T>("/me/profile-photo", {
       method: "PATCH",
       token: options.token,
@@ -148,7 +146,6 @@ export const memberApi = {
     });
   },
   removeProfilePhoto<T = ProfilePhotoSaveResponse>(options: RequestOptions) {
-    // CODEX: assumed removal will be accepted by the profile PATCH shape until a dedicated DELETE exists.
     return mobileApiFetch<T>("/me/profile", {
       method: "PATCH",
       token: options.token,

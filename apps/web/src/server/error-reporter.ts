@@ -1,4 +1,9 @@
 import { redactPII, zookLogger } from "@zook/core";
+import {
+  captureSentryException,
+  captureSentryMessage,
+  sentryEnvironment,
+} from "./sentry-shared";
 
 type ErrorReporterContext = {
   requestId?: string;
@@ -32,26 +37,19 @@ class MockErrorReporter implements ErrorReporter {
 }
 
 class SentryErrorReporter implements ErrorReporter {
-  constructor(
-    private readonly config: {
-      dsn: string;
-      environment: string;
-    },
-  ) {}
-
   captureException(error: unknown, context?: ErrorReporterContext) {
-    zookLogger.error("zook.sentry.scaffold", {
-      dsnConfigured: Boolean(this.config.dsn),
-      environment: this.config.environment,
+    captureSentryException(error, context ?? {});
+    zookLogger.error("zook.sentry.exception", {
+      environment: sentryEnvironment(),
       message: error instanceof Error ? error.message : "Unexpected error",
       ...redactPII(context ?? {}),
     });
   }
 
   captureMessage(message: string, context?: ErrorReporterContext) {
-    zookLogger.info("zook.sentry.scaffold", {
-      dsnConfigured: Boolean(this.config.dsn),
-      environment: this.config.environment,
+    captureSentryMessage(message, context ?? {});
+    zookLogger.info("zook.sentry.message", {
+      environment: sentryEnvironment(),
       message,
       ...redactPII(context ?? {}),
     });
@@ -60,10 +58,7 @@ class SentryErrorReporter implements ErrorReporter {
 
 export function getErrorReporter(): ErrorReporter {
   if (process.env.ERROR_REPORTER === "sentry" && process.env.SENTRY_DSN?.trim()) {
-    return new SentryErrorReporter({
-      dsn: process.env.SENTRY_DSN.trim(),
-      environment: process.env.SENTRY_ENVIRONMENT?.trim() || process.env.ENV_PROFILE || "local",
-    });
+    return new SentryErrorReporter();
   }
   return new MockErrorReporter();
 }

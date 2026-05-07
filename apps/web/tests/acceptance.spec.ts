@@ -28,6 +28,16 @@ function todayWindow() {
   return start;
 }
 
+const allWeekHours = {
+  mon: { open: "06:00", close: "22:00" },
+  tue: { open: "06:00", close: "22:00" },
+  wed: { open: "06:00", close: "22:00" },
+  thu: { open: "06:00", close: "22:00" },
+  fri: { open: "06:00", close: "22:00" },
+  sat: { open: "07:00", close: "20:00" },
+  sun: { open: "07:00", close: "20:00" },
+};
+
 test("dashboard routes redirect unauthenticated users to login", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/login/);
@@ -76,6 +86,7 @@ test("owner can edit core self-serve catalog and staff records", async ({ page }
   requireDb();
   const owner = await loginWithSessionCookie(page, "owner@zook.local");
   const org = await seedAndGetOrg({ username: "iron-house" });
+  const branch = await prisma.branch.findFirstOrThrow({ where: { orgId: org.id, isDefault: true } });
 
   const plan = await createMembershipPlan(page, org.id, {
     name: `Self Serve Plan ${Date.now()}`,
@@ -179,7 +190,7 @@ test("owner can edit core self-serve catalog and staff records", async ({ page }
   });
   const staffPayload = await expectApiOk<{ assignment: { id: string; role: string } }>(
     await page.request.patch(`/api/orgs/${org.id}/staff/${assignment.id}`, {
-      data: { role: "RECEPTIONIST" },
+      data: { role: "RECEPTIONIST", branchId: branch.id },
     }),
   );
   expect(staffPayload.data.assignment.role).toBe("RECEPTIONIST");
@@ -199,10 +210,13 @@ test("owner can manage branches and public offers", async ({ page }) => {
     await page.request.post(`/api/orgs/${org.id}/branches`, {
       data: {
         name: `Audit Branch ${Date.now()}`,
-        address: "24 Audit Street",
+        address: `24 Audit Street ${Date.now()}`,
         city: "Pune",
         state: "MH",
         pincode: "411001",
+        contactPhone: "+91 98765 43210",
+        operatingHours: allWeekHours,
+        commerceSetup: "SHARED",
         isDefault: true,
       },
     }),
@@ -767,7 +781,13 @@ test("open join checkout activates membership and shop order success stays serve
   const productsResponse = await page.request.get(`/api/orgs/${orgId}/products`);
   const productsPayload = await expectApiOk<{ products: Array<{ id: string }> }>(productsResponse);
   const productId = productsPayload.data.products[0]?.id as string | undefined;
-  expect(productId).toBeTruthy();
+  if (!productId) {
+    throw new Error("Expected at least one shop product for checkout acceptance.");
+  }
+  await prisma.product.update({
+    where: { id: productId },
+    data: { stock: { increment: 5 }, active: true },
+  });
 
   const orderResponse = await page.request.post("/api/shop/orders", {
     data: {
@@ -799,6 +819,20 @@ test("open join checkout activates membership and shop order success stays serve
     (order) => order.orgId === orgId && order.status === "READY_FOR_PICKUP" && order.pickupCode,
   );
   expect(readyOrder).toBeTruthy();
+  const orderBranch = await prisma.shopOrder.findUniqueOrThrow({
+    where: { id: String(readyOrder?.id) },
+    select: { branchId: true },
+  });
+  const receptionUser = await prisma.user.findUniqueOrThrow({
+    where: { email: "reception@zook.local" },
+    select: { id: true },
+  });
+  if (orderBranch.branchId) {
+    await prisma.organizationRoleAssignment.updateMany({
+      where: { orgId, userId: receptionUser.id, role: "RECEPTIONIST" },
+      data: { branchId: orderBranch.branchId },
+    });
+  }
 
   await loginWithSessionCookie(page, "reception@zook.local");
   const verifyPayload = await expectApiOk<{
@@ -885,6 +919,14 @@ test("receptionist approval queue updates attendance notifications and audit", a
   const org = await seedAndGetOrg({ username: "iron-house" });
   const branch = await prisma.branch.findFirstOrThrow({
     where: { orgId: org.id, isDefault: true },
+  });
+  const receptionUser = await prisma.user.findUniqueOrThrow({
+    where: { email: "reception@zook.local" },
+    select: { id: true },
+  });
+  await prisma.organizationRoleAssignment.updateMany({
+    where: { orgId: org.id, userId: receptionUser.id, role: "RECEPTIONIST" },
+    data: { branchId: branch.id },
   });
   const [approvedUser, rejectedUser] = await Promise.all([
     prisma.user.create({
@@ -1264,7 +1306,7 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
   ).toBe(true);
 });
 
-test("trainer AI draft requires assigned client, consent, review, and then assignment", async ({
+test("AI plan assistant is launch-gated while trainer manual plans remain assignable", async ({
   page,
 }) => {
   requireDb();
@@ -1272,77 +1314,54 @@ test("trainer AI draft requires assigned client, consent, review, and then assig
 
   const org = await seedAndGetOrg({ username: "iron-house" });
   const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
-  const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
   const assignment = await prisma.trainerAssignment.findFirstOrThrow({
     where: { orgId: org.id, trainerUserId: trainer.id, active: true },
   });
+  const aiLogCountBefore = await prisma.aIUsageLog.count({ where: { userId: trainer.id } });
 
-  await prisma.user.update({ where: { id: trainer.id }, data: { aiConsent: false } });
-  try {
-    const blockedConsent = await page.request.post("/api/ai/generate-plan", {
-      data: {
-        orgId: org.id,
-        targetUserId: assignment.memberUserId,
-        prompt: "Create a safe gym workout plan for strength.",
-        title: "Consent blocked draft",
-        type: "WORKOUT",
-      },
-    });
-    expect(blockedConsent.status()).toBe(400);
-    expect(await blockedConsent.text()).toContain("AI personalization consent");
-    const blockedLog = await prisma.aIUsageLog.findFirst({
-      where: { userId: trainer.id, responseSummary: { contains: "AI personalization consent" } },
-      orderBy: { createdAt: "desc" },
-    });
-    expect(blockedLog?.quotaConsumed).toBe(0);
-  } finally {
-    await prisma.user.update({ where: { id: trainer.id }, data: { aiConsent: true } });
-  }
-
-  const blockedClient = await page.request.post("/api/ai/generate-plan", {
+  const gatedDraft = await page.request.post("/api/ai/generate-plan", {
     data: {
       orgId: org.id,
-      targetUserId: owner.id,
+      targetUserId: assignment.memberUserId,
       prompt: "Create a safe gym workout plan for strength.",
-      title: "Wrong client draft",
+      title: "Launch-gated draft",
       type: "WORKOUT",
     },
   });
-  expect(blockedClient.status()).toBe(403);
-  expect(await blockedClient.text()).toContain("assigned clients");
+  expect(gatedDraft.status()).toBe(503);
+  expect(await gatedDraft.text()).toContain("coming soon");
+  expect(await prisma.aIUsageLog.count({ where: { userId: trainer.id } })).toBe(aiLogCountBefore);
 
-  const draftPayload = await expectApiOk<{
-    response: Record<string, unknown>;
-    createdPlan: { id: string; reviewed: boolean; content: { days?: unknown[] } };
+  const manualPlanPayload = await expectApiOk<{
+    plan: { id: string; reviewed: boolean; aiGenerated: boolean; content: { days?: unknown[] } };
   }>(
-    await page.request.post("/api/ai/generate-plan", {
+    await page.request.post(`/api/orgs/${org.id}/plans`, {
       data: {
-        orgId: org.id,
-        targetUserId: assignment.memberUserId,
-        prompt: "Create a safe gym workout plan for strength.",
-        title: "Playwright AI draft",
+        title: "Playwright trainer plan",
         type: "WORKOUT",
+        visibility: "assigned",
+        aiGenerated: true,
+        content: {
+          days: [
+            {
+              name: "Day 1",
+              exercises: [{ name: "Goblet squat", sets: "3", reps: "10" }],
+            },
+          ],
+        },
       },
     }),
   );
-  expect(draftPayload.data.createdPlan.reviewed).toBe(false);
-  expect(draftPayload.data.createdPlan.content.days?.length).toBeGreaterThan(0);
-
-  const assignBeforeReview = await page.request.post(
-    `/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/assign`,
-    {
-      data: { assignedToUserId: assignment.memberUserId, audience: "selected_member" },
-    },
-  );
-  expect(assignBeforeReview.status()).toBe(409);
-  expect(await assignBeforeReview.text()).toContain("reviewed before assignment");
+  expect(manualPlanPayload.data.plan.reviewed).toBe(false);
+  expect(manualPlanPayload.data.plan.aiGenerated).toBe(false);
+  expect(manualPlanPayload.data.plan.content.days?.length).toBeGreaterThan(0);
 
   await expectApiOk(
-    await page.request.post(`/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/review`),
+    await page.request.post(`/api/orgs/${org.id}/plans/${manualPlanPayload.data.plan.id}/review`),
   );
   await expectApiOk(
     await page.request.post(
-      `/api/orgs/${org.id}/plans/${draftPayload.data.createdPlan.id}/assign`,
+      `/api/orgs/${org.id}/plans/${manualPlanPayload.data.plan.id}/assign`,
       {
         data: { assignedToUserId: assignment.memberUserId, audience: "selected_member" },
       },

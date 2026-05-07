@@ -164,7 +164,7 @@ describe("coupon and referral service", () => {
       id: "ref",
       orgId: "org",
       referrerUserId: "member",
-      code: "NISHAFIT",
+      code: "DEMOFIT",
       status: "active",
       redemptionCount: 0,
     };

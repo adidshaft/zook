@@ -13,7 +13,6 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   userInterfaceStyle: "dark",
   icon: "./assets/icons/AppIcon-1024.png",
   newArchEnabled: true,
-  // CODEX: replace with designed asset.
   splash: {
     image: "./assets/splash.png",
     resizeMode: "contain",
@@ -62,6 +61,12 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   ],
   experiments: {
     typedRoutes: true
+  },
+  extra: {
+    eas: {
+      projectId: "3ac0a41f-b9fd-4d91-accf-0e46f3313539"
+    },
+    sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || ""
   }
 };
 const appVersion = baseConfig.version ?? "0.1.0";
@@ -172,6 +177,8 @@ function resolvePushEnvironment(profile: MobileReleaseProfile): MobilePushEnviro
 export default (): ExpoConfig => {
   const releaseProfile = resolveReleaseProfile();
   const apiMode = resolveApiMode();
+  const sentryOrg = process.env.SENTRY_ORG?.trim();
+  const sentryProject = process.env.SENTRY_PROJECT?.trim();
   if (apiMode === "offline-demo" && releaseProfile !== "local") {
     throw new Error(
       "Sample mode is only available for local mobile builds."
@@ -184,6 +191,20 @@ export default (): ExpoConfig => {
 
   return {
     ...baseConfig,
+    plugins:
+      sentryOrg && sentryProject
+        ? [
+            ...(baseConfig.plugins ?? []),
+            [
+              "@sentry/react-native/expo",
+              {
+                url: "https://sentry.io/",
+                organization: sentryOrg,
+                project: sentryProject
+              }
+            ]
+          ]
+        : baseConfig.plugins,
     scheme: "zook",
     version: appVersion,
     runtimeVersion: {
@@ -203,6 +224,7 @@ export default (): ExpoConfig => {
       appEnv: releaseProfile,
       apiMode,
       releaseProfile,
+      sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || "",
       appScheme: "zook",
       appVersion,
       runtimeVersion,

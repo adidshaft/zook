@@ -59,6 +59,10 @@ export function rateLimitedError(message = "Rate limited", retryAfterSeconds?: n
   );
 }
 
+export function serviceUnavailableError(message = "Service unavailable", details?: unknown) {
+  return new ApiRouteError(503, "service_unavailable", message, details);
+}
+
 export function internalError(message = "Internal error") {
   return new ApiRouteError(500, "internal_error", message);
 }

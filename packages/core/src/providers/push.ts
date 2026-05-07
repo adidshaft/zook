@@ -1,5 +1,7 @@
 import type { DiagnosticProvider, ProviderInstanceDiagnostics } from "../types";
 
+const expoPushSendBatchSize = 100;
+
 export type PushPlatform = "ios" | "android" | "web" | "unknown";
 export type PushEnvironment = "development" | "preview" | "production";
 
@@ -134,6 +136,15 @@ export class ExpoPushProvider implements PushProvider {
   }
 
   async sendBatch(input: PushSendInput[]): Promise<PushSendResult[]> {
+    const results: PushSendResult[] = [];
+    for (let start = 0; start < input.length; start += expoPushSendBatchSize) {
+      const batch = input.slice(start, start + expoPushSendBatchSize);
+      results.push(...(await this.sendBatchChunk(batch, start)));
+    }
+    return results;
+  }
+
+  private async sendBatchChunk(input: PushSendInput[], offset: number): Promise<PushSendResult[]> {
     const messages = input.map((entry) => ({
       to: entry.token,
       title: entry.title,
@@ -153,7 +164,7 @@ export class ExpoPushProvider implements PushProvider {
 
     if (!response.ok) {
       return input.map((entry, index) => ({
-        deliveryId: `expo_failed_${index + 1}`,
+        deliveryId: `expo_failed_${offset + index + 1}`,
         status: "failed",
         errorCode: String(response.status),
         errorMessage: "Expo push request failed.",
@@ -169,7 +180,7 @@ export class ExpoPushProvider implements PushProvider {
       const item = payload.data?.[index];
       const isInvalidToken = item?.details?.error === "DeviceNotRegistered";
       return {
-        deliveryId: item?.id ?? `expo_${index + 1}`,
+        deliveryId: item?.id ?? `expo_${offset + index + 1}`,
         status: isInvalidToken ? "invalid_token" : item?.status === "ok" ? "sent" : "failed",
         ...(item?.id ? { providerMessageId: item.id } : {}),
         ...(item?.details?.error ? { errorCode: item.details.error } : {}),

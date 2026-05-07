@@ -656,7 +656,6 @@ export function useActivePermissions(): Set<Permission> {
       new Set(
         permissionsForRoles(
           roles,
-          // CODEX: activeOrg.permissionOverrides is absent from older session payloads, so fall back to role-derived permissions only.
           permissionOverrides,
         ),
       ),

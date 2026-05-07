@@ -38,6 +38,7 @@ export function MobileDashboardMenu({
                   <Link
                     key={href}
                     href={href}
+                    aria-current={active ? "page" : undefined}
                     className={`zook-focus flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition ${
                       active ? "bg-lime-300 text-black" : "text-white/70 hover:bg-white/8 hover:text-white"
                     }`}

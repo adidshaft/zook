@@ -40,7 +40,7 @@ export function LoadMoreButton({
           disabled={loading}
           className="zook-focus min-h-11 rounded-full border border-white/10 px-4 text-sm font-semibold text-white/70 hover:border-lime-300/35 hover:text-lime-100 disabled:opacity-50"
         >
-          {loading ? "Loading..." : "Load more"}
+          {loading ? "Fetching more" : "Load more"}
         </button>
       ) : null}
     </div>

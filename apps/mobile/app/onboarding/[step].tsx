@@ -194,8 +194,6 @@ export function PermissionsStep() {
 }
 
 async function requestLocationPermission() {
-  // CODEX: expo-location is not installed in this app; use the platform-native Android
-  // prompt and the lightest iOS fallback until the package exists.
   if (Platform.OS === "android") {
     await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
     return;

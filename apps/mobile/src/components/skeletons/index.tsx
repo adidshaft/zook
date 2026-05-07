@@ -67,6 +67,18 @@ export function PlansSkeleton() {
   );
 }
 
+export function ExerciseListSkeleton() {
+  return (
+    <View style={styles.stack}>
+      {[0, 1, 2, 3, 4].map((item) => (
+        <GlassCard key={item} variant="compact">
+          <RowSkeleton iconSize={34} action="chip" surface={false} />
+        </GlassCard>
+      ))}
+    </View>
+  );
+}
+
 export function MembershipSkeleton() {
   return (
     <View style={styles.stack}>
@@ -187,6 +199,29 @@ export function FindGymsSkeleton() {
   );
 }
 
+export function GymDetailSkeleton() {
+  return (
+    <View style={styles.stack}>
+      <GlassCard contentStyle={styles.gymHeroSkeleton}>
+        <Skeleton width="100%" height={192} borderRadius={20} />
+        <View style={styles.row}>
+          <Skeleton width={58} height={58} borderRadius={18} />
+          <CardCopySkeleton titleWidth="58%" lineWidth="70%" />
+          <Skeleton width={84} height={28} borderRadius={14} />
+        </View>
+      </GlassCard>
+      <GlassCard variant="compact" contentStyle={styles.listCard}>
+        <RowSkeleton iconSize={34} action="chip" surface={false} />
+        <View style={styles.divider} />
+        <RowSkeleton iconSize={34} action="chip" surface={false} />
+      </GlassCard>
+      {[0, 1].map((item) => (
+        <PlanCardSkeleton key={item} />
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   stack: {
     gap: 10,
@@ -238,6 +273,9 @@ const styles = StyleSheet.create({
   },
   gymCard: {
     gap: spacing.md,
+  },
+  gymHeroSkeleton: {
+    gap: spacing.lg,
   },
   tagRow: {
     flexDirection: "row",

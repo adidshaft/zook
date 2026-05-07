@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, Mail } from "lucide-react";
 import { ApiError, parseApiResponse } from "@zook/core";
+import { toast } from "sonner";
 import { ZookButton } from "./zook-button";
 import { resolvePostLoginPath } from "@/lib/auth-destinations";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
@@ -16,7 +17,7 @@ function sanitizeOtpCode(value: string) {
 }
 
 function looksLikePhoneInput(value: string) {
-  return !value.includes("@") && /^[+\d\s().-]*$/.test(value);
+  return value.trim().length > 0 && !value.includes("@") && /^[+\d\s().-]*$/.test(value);
 }
 
 function formatIndiaPhoneInput(value: string) {
@@ -48,14 +49,19 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"identifier" | "otp">("identifier");
   const [submitting, setSubmitting] = useState<"request" | "verify" | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const identifierRef = useRef<HTMLInputElement>(null);
   const otpRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState(
     searchParams.get("redirect") === "/platform"
       ? t("signInPlatform")
       : t("signInDefault"),
   );
-  const roleLabels = [t("roleMember"), t("roleTrainer"), t("roleOwner"), t("roleReceptionist")];
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (stage === "otp") {
@@ -79,7 +85,12 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
     }
     setSubmitting("request");
     try {
-      const trimmedIdentifier = identifier.trim();
+      const trimmedIdentifier = (identifierRef.current?.value ?? identifier).trim();
+      if (!trimmedIdentifier) {
+        setMessage(t("emailOrPhone"));
+        setSubmitting(null);
+        return;
+      }
       if (looksLikePhoneInput(trimmedIdentifier)) {
         const digits = trimmedIdentifier.replace(/\D/g, "");
         if (!(digits.length === 10 || (digits.length === 12 && digits.startsWith("91")))) {
@@ -113,8 +124,11 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
       setCode("");
       setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS);
       setStage("otp");
+      toast.success(t(resend ? "freshOtpSent" : "otpSent", { identifier: trimmedIdentifier }));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t("unableSendOtp"));
+      const nextMessage = error instanceof Error ? error.message : t("unableSendOtp");
+      setMessage(nextMessage);
+      toast.error(nextMessage);
     } finally {
       setSubmitting(null);
     }
@@ -141,9 +155,12 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
       const redirect = searchParams.get("redirect");
       const safeRedirect =
         redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
+      toast.success(t("verifyContinue"));
       window.location.href = resolvePostLoginPath(payload.session, safeRedirect);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t("unableVerifyOtp"));
+      const nextMessage = error instanceof Error ? error.message : t("unableVerifyOtp");
+      setMessage(nextMessage);
+      toast.error(nextMessage);
       setSubmitting(null);
     }
   }
@@ -165,16 +182,6 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
       <p className="mt-2 text-sm leading-6 text-white/55" role="alert" aria-live="polite">
         {message}
       </p>
-      <div className="mt-4 flex flex-wrap gap-2" aria-label={t("loginRoleHint")}>
-        {roleLabels.map((role) => (
-          <span
-            key={role}
-            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/62"
-          >
-            {role}
-          </span>
-        ))}
-      </div>
       <form
         className="mt-6 grid gap-3"
         onSubmit={(event) => {
@@ -195,8 +202,17 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
           inputMode="email"
           autoComplete="username"
           placeholder="+91 98765 43210 or you@example.com"
-          value={identifier}
-          onChange={(event) => setIdentifier(formatIndiaPhoneInput(event.target.value))}
+          defaultValue={initialIdentifier}
+          ref={identifierRef}
+          required
+          disabled={!hydrated || submitting !== null}
+          onChange={(event) => {
+            const nextIdentifier = formatIndiaPhoneInput(event.target.value);
+            if (nextIdentifier !== event.target.value) {
+              event.target.value = nextIdentifier;
+            }
+            setIdentifier(nextIdentifier);
+          }}
           className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
         />
         {stage === "identifier" && looksLikePhoneInput(identifier) ? (
@@ -223,15 +239,24 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
           </>
         ) : null}
         {stage === "otp" && resendCooldown > 0 ? (
-          <p className="text-xs leading-5 text-white/45" aria-live="polite">
-            {t("resendAvailable", { seconds: resendCooldown })}
-          </p>
+          <div className="grid gap-2" aria-live="polite">
+            <p className="text-xs leading-5 text-white/45">
+              {t("resendAvailable", { seconds: resendCooldown })}
+            </p>
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-lime-300 transition-all"
+                style={{ width: `${((OTP_RESEND_COOLDOWN_SECONDS - resendCooldown) / OTP_RESEND_COOLDOWN_SECONDS) * 100}%` }}
+              />
+            </div>
+          </div>
         ) : null}
         <ZookButton
           type="submit"
           className="mt-6"
-          disabled={submitting !== null || !identifier.trim() || (stage === "otp" && !code.trim())}
+          disabled={!hydrated || submitting !== null || (stage === "otp" && !code.trim())}
           fullWidth
+          state={submitting === null ? "idle" : "loading"}
           trailingIcon={<ArrowRight size={18} />}
         >
           {submitting === "request"

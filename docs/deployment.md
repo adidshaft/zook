@@ -27,7 +27,8 @@ Zook keeps local development mock-first while making staging realistic enough fo
   - `PAYMENT_PROVIDER=mock`
   - `EMAIL_PROVIDER=mock`
   - `MAP_PROVIDER=mock`
-  - `AI_PROVIDER=mock`
+  - `AI_PROVIDER=disabled`
+  - `AI_FEATURES_ENABLED=false`
   - `PUSH_PROVIDER=mock`
   - `STORAGE_PROVIDER=local`
   - `RATE_LIMIT_PROVIDER=memory`
@@ -45,9 +46,10 @@ Zook keeps local development mock-first while making staging realistic enough fo
   - `PAYMENT_PROVIDER=razorpay` with test-mode keys, `disabled` if purchases are intentionally unavailable, or explicit `mock` for internal-only rollout
   - `EMAIL_PROVIDER=smtp|resend|mock`
   - `MAP_PROVIDER=google|mock`
-  - `AI_PROVIDER=openai|mock|disabled`
+  - `AI_PROVIDER=disabled` for pilot launch, `openai` only for controlled post-launch certification
+  - `AI_FEATURES_ENABLED=false`
   - `PUSH_PROVIDER=expo|mock|disabled`
-  - `STORAGE_PROVIDER=local|s3|r2|disabled`
+  - `STORAGE_PROVIDER=supabase|local|s3|r2|disabled`
   - `RATE_LIMIT_PROVIDER=upstash` for distributed staging, or explicit `memory` only for single-process internal pilots
 
 ### Production
@@ -115,7 +117,7 @@ set -a; source .env; set +a; pnpm --filter @zook/db exec prisma validate --schem
 6. Run `pnpm db:deploy` against the target database after a fresh backup/snapshot exists.
 7. Deploy the web/API container or hosting build.
 8. Check `/api/health`, `/api/ready`, and `/api/platform/provider-status` as a platform admin.
-9. Exercise one local/staging provider path at a time: Razorpay test checkout/webhook, Expo physical-device push, OpenAI trainer draft, and object-storage upload/download.
+9. Exercise one local/staging provider path at a time: Razorpay test checkout/webhook, Expo physical-device push, AI coming-soon/manual trainer plan flow, and object-storage upload/download.
 10. Build and install the mobile preview/production candidate only after release preflight and Expo public config checks pass.
 11. Record the exact build, commit, env, provider modes, and failed/skipped checks in `docs/PRODUCTION_READINESS_HANDOFF.md`.
 
@@ -171,8 +173,11 @@ Email:
 
 Storage:
 
-- `STORAGE_PROVIDER=local|s3|r2|disabled`
+- `STORAGE_PROVIDER=supabase|local|s3|r2|disabled`
 - `STORAGE_LOCAL_DIR`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_STORAGE_BUCKET`
 - `S3_BUCKET`
 - `S3_REGION`
 - `S3_ACCESS_KEY_ID`
@@ -183,7 +188,8 @@ Storage:
 
 AI:
 
-- `AI_PROVIDER=mock|openai|disabled`
+- `AI_PROVIDER=disabled|mock|openai`
+- `AI_FEATURES_ENABLED`
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
 - `OPENAI_IMAGE_MODEL`
@@ -199,6 +205,10 @@ Observability:
 - `ERROR_REPORTER=mock|sentry`
 - `SENTRY_DSN`
 - `SENTRY_ENVIRONMENT`
+- `SENTRY_ORG`
+- `SENTRY_PROJECT`
+- `SENTRY_AUTH_TOKEN`
+- `EXPO_PUBLIC_SENTRY_DSN`
 
 ## Database And Seeding
 

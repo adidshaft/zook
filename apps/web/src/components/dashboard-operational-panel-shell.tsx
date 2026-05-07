@@ -14,8 +14,8 @@ export const DashboardOperationalPanelShell = dynamic(
     loading: () => (
       <GlassCard>
         <SectionHeader
-          eyebrow="Loading"
-          title="Loading section"
+          eyebrow="Preparing"
+          title="Preparing section"
           description="Preparing this view."
         />
         <div className="mt-6 grid gap-3 md:grid-cols-2">

@@ -51,6 +51,8 @@ import { useI18n } from "@/lib/i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
+import { PickupQrCode } from "@/components/primitives/pickup-qr";
+import { getMobileApiMode } from "@/lib/runtime-mode";
 
 type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
 type CheckoutState = "browse" | "cart" | "checkout" | "pickup";
@@ -92,31 +94,14 @@ function checkoutUrlWithReturnUrl(url: string, sessionId: string) {
   }
 }
 
-function pickupQrCells(value: string) {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-  return Array.from({ length: 49 }, (_, index) => {
-    const finder =
-      (index < 14 && index % 7 < 2) ||
-      (index % 7 > 4 && index < 14) ||
-      (index > 34 && index % 7 < 2);
-    return finder || ((hash >> (index % 24)) + index) % 3 === 0;
-  });
-}
+const mockPaymentCompletionAvailable = getMobileApiMode() !== "backend";
 
-function PickupQr({ value }: { value: string }) {
-  return (
-    <View accessibilityLabel="Pickup QR code" style={styles.pickupQr}>
-      {pickupQrCells(value).map((filled, index) => (
-        <View
-          key={`${value}-${index}`}
-          style={[styles.pickupQrCell, filled ? styles.pickupQrCellFilled : null]}
-        />
-      ))}
-    </View>
-  );
+function pickupQrPayload(order: ShopOrderRecord) {
+  return JSON.stringify({
+    type: "shop_pickup",
+    orderId: order.id,
+    code: order.pickupCode,
+  });
 }
 
 export default function Shop() {
@@ -401,6 +386,9 @@ export default function Shop() {
       );
       return;
     }
+    if (!mockPaymentCompletionAvailable) {
+      throw new Error("Mock payment completion is not available in backend builds.");
+    }
     await completeMockPayment.mutateAsync({
       sessionId: checkoutSession.id,
       ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
@@ -485,7 +473,7 @@ export default function Shop() {
         {canShowPickupQr ? (
           <GlassCard variant="compact" contentStyle={styles.pickupQrContent}>
             <Text style={styles.pickupQrTitle}>Show this to collect your order</Text>
-            <PickupQr value={`zook://pickup/${order.id}`} />
+            <PickupQrCode value={pickupQrPayload(order)} />
             <Text style={styles.pickupQrCode}>Code: {order.pickupCode ?? t("shop.pending")}</Text>
           </GlassCard>
         ) : null}
@@ -1133,23 +1121,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.cardTitle,
     textAlign: "center",
-  },
-  pickupQr: {
-    width: 154,
-    height: 154,
-    borderRadius: 18,
-    backgroundColor: colors.text,
-    padding: 12,
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  pickupQrCell: {
-    width: 18,
-    height: 18,
-    backgroundColor: colors.text,
-  },
-  pickupQrCellFilled: {
-    backgroundColor: colors.bg,
   },
   pickupQrCode: {
     color: colors.muted,

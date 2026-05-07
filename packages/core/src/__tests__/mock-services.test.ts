@@ -56,7 +56,7 @@ describe("Zook mock service facades", () => {
     const attempt = await services.attendanceService.scanQr("zook-demo-pending");
 
     expect(attempt.status).toBe("PENDING_APPROVAL");
-    expect(attempt.entryCode).toBe("AS-7319");
+    expect(attempt.entryCode).toBe("ZK-7319");
 
     const approved = await services.receptionistService.approveAttendance(
       attempt.id,

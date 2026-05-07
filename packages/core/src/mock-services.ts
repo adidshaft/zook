@@ -79,6 +79,7 @@ function buildSession(
       isPlatformAdmin: user.email === "platform@zook.local",
       marketingOptIn: user.marketingOptIn,
       aiConsent: user.aiConsent,
+      weeklyWorkoutGoal: 5,
     },
     organizations,
     ...(activeOrganization ? { activeOrgId: activeOrganization.orgId, activeOrganization } : {}),
@@ -93,7 +94,7 @@ function statusForOutcome(outcome: DemoAttendanceOutcome) {
 }
 
 function entryCodeForOutcome(outcome: DemoAttendanceOutcome) {
-  if (outcome === "pending") return "AS-7319";
+  if (outcome === "pending") return "ZK-7319";
   if (outcome === "rejected") return "ZK-9044";
   if (outcome === "flagged") return "ZK-1180";
   return "ZK-4821";
@@ -101,7 +102,7 @@ function entryCodeForOutcome(outcome: DemoAttendanceOutcome) {
 
 export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures) {
   const state = cloneFixtures(seed);
-  let activeOrgId = state.organizations[0]?.id ?? "org-aarogya-strength";
+  let activeOrgId = state.organizations[0]?.id ?? "org-demo-unset";
   let activeRole: Role = "MEMBER";
 
   function writeAudit(input: {
@@ -295,7 +296,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           orgId: activeOrgId,
           branchId: branch.id,
           memberUserId: "user-aarav",
-          memberName: "Nisha Menon",
+          memberName: "Demo Member",
           status: statusForOutcome(outcome),
           entryCode: entryCodeForOutcome(outcome),
           checkedInAt: nowIso(),
@@ -614,7 +615,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           action: "plan.ai_draft.assigned",
           entityType: "PlanDraft",
           entityId: draft.id,
-          actorName: "Coach Rohan",
+          actorName: "Demo Coach",
           reason: "Trainer reviewed and assigned AI draft.",
         });
         return plan;
@@ -737,7 +738,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           action: "privacy.export.requested",
           entityType: "User",
           entityId: userId,
-          actorName: "Nisha Menon",
+          actorName: "Demo Member",
           reason: "Member requested data export.",
         });
         return job;
@@ -756,7 +757,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           action: "privacy.deletion.requested",
           entityType: "User",
           entityId: userId,
-          actorName: "Nisha Menon",
+          actorName: "Demo Member",
           reason: "Member requested account deletion job.",
         });
         return job;

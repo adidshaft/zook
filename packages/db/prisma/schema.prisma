@@ -424,6 +424,7 @@ model User {
   marketingOptIn   Boolean   @default(true)
   aiConsent        Boolean   @default(false)
   preferredLocale  String    @default("en")
+  weeklyWorkoutGoal Int      @default(5)
   deletedAt        DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -1015,6 +1016,7 @@ model MemberSubscription {
   updatedAt          DateTime           @updatedAt
 
   @@index([orgId, memberUserId, status])
+  @@index([orgId, status])
   @@index([orgId, planId])
   @@index([endsAt])
 }
@@ -1439,6 +1441,7 @@ model AttendanceRecord {
 
   @@unique([orgId, branchId, userId, dateKey])
   @@index([orgId, status, checkedInAt])
+  @@index([orgId, status, branchId, createdAt])
   @@index([userId, checkedInAt])
 }
 
@@ -1766,6 +1769,7 @@ model Notification {
   updatedAt   DateTime           @updatedAt
 
   @@index([orgId, status])
+  @@index([orgId, status, createdAt])
   @@index([orgId, branchId, status])
 }
 

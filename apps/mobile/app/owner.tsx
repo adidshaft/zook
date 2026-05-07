@@ -2,8 +2,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
-import { Alert, Keyboard, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Keyboard, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   BottomNav,
   BranchSelectorChip,
@@ -37,6 +37,7 @@ import {
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+import { getStoredValue, setStoredValue } from "@/lib/storage";
 
 type OwnerView = "command" | "approvals" | "revenue" | "stock" | "members";
 type Drilldown = Exclude<OwnerView, "command">;
@@ -83,6 +84,10 @@ function memberInitials(name?: string | null, email?: string | null) {
 function redactPhone(phone?: string | null) {
   if (!phone) return "No phone";
   return `****${phone.slice(-4)}`;
+}
+
+function phoneRevealStorageKey(orgId?: string | null) {
+  return `zook_revealed_owner_phones_${orgId ?? "none"}`;
 }
 
 export default function Owner() {
@@ -211,10 +216,29 @@ export default function Owner() {
     showToast({ title: "Owner approval required", tone: "amber" });
   };
 
+  useEffect(() => {
+    let mounted = true;
+    void getStoredValue(phoneRevealStorageKey(activeOrgId)).then((stored) => {
+      if (!mounted || !stored) return;
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setRevealedPhones(new Set(parsed.filter((item): item is string => typeof item === "string")));
+        }
+      } catch {
+        setRevealedPhones(new Set());
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [activeOrgId]);
+
   function revealMemberPhone(memberId: string) {
     setRevealedPhones((current) => {
       const next = new Set(current);
       next.add(memberId);
+      void setStoredValue(phoneRevealStorageKey(activeOrgId), JSON.stringify(Array.from(next)));
       return next;
     });
     if (token && activeOrgId) {
@@ -233,7 +257,7 @@ export default function Owner() {
       await approveAttendanceMutation.mutateAsync(attemptId);
       setActionStatus("Check-in approved.");
     } catch (error) {
-      Alert.alert("Failed", getApiErrorMessage(error) || "Could not approve check-in.");
+      setActionStatus(getApiErrorMessage(error) || "Could not approve check-in.");
     }
   }
 
@@ -242,7 +266,7 @@ export default function Owner() {
       await approveJoinRequestMutation.mutateAsync(joinRequestId);
       setActionStatus("Join request approved.");
     } catch (error) {
-      Alert.alert("Failed", getApiErrorMessage(error) || "Could not approve join request.");
+      setActionStatus(getApiErrorMessage(error) || "Could not approve join request.");
     }
   }
 
@@ -251,7 +275,7 @@ export default function Owner() {
       await rejectJoinRequestMutation.mutateAsync(joinRequestId);
       setActionStatus("Join request rejected.");
     } catch (error) {
-      Alert.alert("Failed", getApiErrorMessage(error) || "Could not reject join request.");
+      setActionStatus(getApiErrorMessage(error) || "Could not reject join request.");
     }
   }
 

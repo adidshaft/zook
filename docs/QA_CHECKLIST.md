@@ -71,9 +71,9 @@ APP_ENV=staging API_MODE=backend pnpm db:deploy
 - `OTP_FIXED_CODE_DEV` must not work unless `ALLOW_FIXED_OTP_IN_STAGING=true`.
 - Mock payment completion must be disabled unless `ALLOW_MOCK_PAYMENT_COMPLETION=true`.
 - Provider diagnostics should show configured, disabled, missing, or unsupported providers without secrets.
-- If testing storage, set `STORAGE_PROVIDER=s3` or `r2` with the required bucket credentials and confirm public asset URLs actually resolve from the bucket/CDN. If storage is intentionally off, set `STORAGE_PROVIDER=disabled` and `FILE_UPLOADS_ENABLED=false`.
+- If testing storage, set `STORAGE_PROVIDER=supabase`, `s3`, or `r2` with the required bucket credentials and confirm signed upload/read URLs work for private files and public asset URLs resolve where expected. If storage is intentionally off, set `STORAGE_PROVIDER=disabled` and `FILE_UPLOADS_ENABLED=false`.
 - If testing distributed rate limiting, set `RATE_LIMIT_PROVIDER=upstash`, `UPSTASH_REDIS_REST_URL`, and `UPSTASH_REDIS_REST_TOKEN`, then exhaust an OTP/payment/AI limit from two web server processes and confirm the shared counter blocks both. Diagnostics must not expose the Redis URL or token.
-- If testing OpenAI, set `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, and `OPENAI_TIMEOUT_MS`, then generate a trainer draft for an assigned client and document whether structured output, timeout behavior, and review-before-assign work end to end.
+- Keep `AI_FEATURES_ENABLED=false` for pilot launch and verify the mobile/web UI shows the coming-soon state while trainers can manually create, review, assign, and send plans. For post-launch OpenAI certification only, set `AI_PROVIDER=openai`, `AI_FEATURES_ENABLED=true`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, and `OPENAI_TIMEOUT_MS`, then document structured output, timeout behavior, and review-before-assign.
 - If testing Expo push, register a real device token from an EAS/dev-client build, send a transactional test notification, and document whether the tap opened the intended deep link.
 
 ## Production Mode

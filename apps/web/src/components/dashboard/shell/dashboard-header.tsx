@@ -33,10 +33,26 @@ export function DashboardHeader({
   user: { name: string; email: string; preferredLocale?: string | null };
   copy: DashboardCopy;
 }) {
+  const trialEndsAt = activeOrg.trialEndAt ? new Date(activeOrg.trialEndAt) : null;
+  const trialDaysLeft = trialEndsAt
+    ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const showTrialBanner =
+    trialDaysLeft !== null && trialDaysLeft >= 0 && trialDaysLeft < 7 && activeOrg.status !== "ACTIVE";
+
   return (
     <GlassCard variant="strong" className="relative z-[100] min-w-0 overflow-visible">
       <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
         <div className="min-w-0">
+          <nav aria-label="Breadcrumb" className="mb-3 text-xs text-white/45">
+            <ol className="flex flex-wrap items-center gap-2">
+              <li>{activeOrg.name}</li>
+              <li aria-hidden="true">/</li>
+              <li aria-current="page" className="text-white/72">
+                {pageTitle}
+              </li>
+            </ol>
+          </nav>
           <div className="flex flex-wrap items-center gap-2">
             {runtimeLabel ? (
               <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
@@ -60,6 +76,12 @@ export function DashboardHeader({
                 branchHref={branchHref}
                 copy={copy}
               />
+            </div>
+          ) : null}
+          {showTrialBanner ? (
+            <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/12 px-4 py-3 text-sm font-medium text-amber-50">
+              Trial ends in {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"}. Add billing
+              before launch to keep this workspace active.
             </div>
           ) : null}
         </div>

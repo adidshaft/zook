@@ -118,7 +118,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
   const minPlanPrice = paidPlans.length
     ? Math.min(...paidPlans.map((plan) => plan.pricePaise))
     : null;
-  const visiblePlans = plans.slice(0, 6);
+  const visiblePlans = plans.slice(0, 4);
   const recommendedPlanId =
     paidPlans.find((plan) => plan.durationDays && plan.durationDays <= 45)?.id ??
     paidPlans[0]?.id ??
@@ -348,9 +348,12 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
             </GlassCard>
           )}
           {plans.length > visiblePlans.length ? (
-            <p className="lg:col-span-3 text-sm text-white/45">
+            <Link
+              href={localizedPath(`/join/${org.username}`, locale)}
+              className="zook-focus lg:col-span-3 inline-flex w-fit rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/75"
+            >
               {t("seeAllPlansPrefix")} {plans.length} {t("seeAllPlansSuffix")}
-            </p>
+            </Link>
           ) : null}
         </section>
 

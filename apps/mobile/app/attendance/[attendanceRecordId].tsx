@@ -58,13 +58,6 @@ export default function AttendanceResultScreen() {
   const router = useRouter();
   const routeParams = useLocalSearchParams<{
     attendanceRecordId?: string | string[];
-    status?: string | string[];
-    entryCode?: string | string[];
-    branchName?: string | string[];
-    planName?: string | string[];
-    checkedInAt?: string | string[];
-    reason?: string | string[];
-    warning?: string | string[];
   }>();
   const { activeRole, status, token } = useAuth();
   const queryClient = useQueryClient();
@@ -83,7 +76,8 @@ export default function AttendanceResultScreen() {
     retry: false,
   });
   const recordFromApi = attendanceQuery.data?.attendance ?? null;
-  const warning = firstParam(routeParams.warning);
+  const warning =
+    queryClient.getQueryData<string>(["me", "attendanceWarning", attendanceRecordId]) ?? "";
 
   useEffect(() => {
     if (!attendanceRecordId) {

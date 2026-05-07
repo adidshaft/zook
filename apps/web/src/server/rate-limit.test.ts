@@ -43,6 +43,21 @@ describe("rate limits", () => {
     );
   });
 
+  it("limits report exports to ten per actor per day", async () => {
+    expect(defaultRateLimitRules.reportExportByActor).toMatchObject({
+      limit: 10,
+      windowMs: 24 * 60 * 60 * 1000,
+    });
+    for (let attempt = 0; attempt < defaultRateLimitRules.reportExportByActor.limit; attempt += 1) {
+      await expect(assertRateLimit("reportExportByActor", "org_1:user_1")).resolves.toBeTruthy();
+    }
+
+    await expect(assertRateLimit("reportExportByActor", "org_1:user_1")).rejects.toThrow(
+      /Too many requests/i,
+    );
+  });
+
+
   it("resets the bucket after the window passes", async () => {
     for (let attempt = 0; attempt < defaultRateLimitRules.aiRequestByUser.limit; attempt += 1) {
       await assertRateLimit("aiRequestByUser", "user_1");

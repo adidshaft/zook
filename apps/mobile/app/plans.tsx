@@ -25,7 +25,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { PlansSkeleton } from "@/components/skeletons";
+import { ExerciseListSkeleton, PlansSkeleton } from "@/components/skeletons";
 import {
   useCompletePlanAssignment,
   useMyPlans,
@@ -36,14 +36,14 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { plansApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
-type PlanFilter = "workout" | "diet" | "habits";
+type PlanFilter = "workout" | "diet";
 type PlanExercise = { name: string; sets: string; equipment: string; reps: string };
 
 const filters: Array<{ label: string; value: PlanFilter }> = [
   { label: "Workout", value: "workout" },
   { label: "Diet", value: "diet" },
-  { label: "Habits", value: "habits" },
 ];
 
 function firstParam(value?: string | string[]) {
@@ -75,7 +75,6 @@ export default function Plans() {
   const plansQuery = useMyPlans();
   const plans = plansQuery.data?.plans ?? [];
   const filteredPlans = plans.filter((assignment) => {
-    if (filter === "habits") return false;
     return planKind(assignment).includes(filter);
   });
   const selectedAssignment = filteredPlans[0] ?? plans[0] ?? null;
@@ -163,7 +162,7 @@ export default function Plans() {
 
           <SegmentedControl options={filters} value={filter} onChange={setFilter} />
 
-          <SectionHeader title={filter === "habits" ? "Habits" : "Up next this week"} />
+          <SectionHeader title="Up next this week" />
           <View style={styles.libraryGrid}>
             {plansQuery.isLoading ? (
               <View style={styles.fullWidth}>
@@ -173,13 +172,9 @@ export default function Plans() {
             {!plansQuery.isLoading && !filteredPlans.length ? (
               <GlassCard variant="compact" style={styles.emptyPlanCard}>
                 <EmptyState
-                  icon={filter === "habits" ? "flash-outline" : "clipboard-outline"}
-                  title={filter === "habits" ? "No habits yet" : "No plan assigned"}
-                  body={
-                    filter === "habits"
-                      ? "Your trainer can add sleep, water, or step goals here."
-                      : "Your trainer will create and assign a workout plan for you."
-                  }
+                  icon="clipboard-outline"
+                  title="No plan assigned"
+                  body="Your trainer will create and assign a workout plan for you."
                 />
               </GlassCard>
             ) : null}
@@ -351,10 +346,13 @@ export function PlanDetailScreen() {
         message: cleanNote,
       });
       setFeedbackStatus("Sent to coach.");
+      showToast({ tone: "success", haptic: "success", message: "Feedback sent to coach." });
       closeFeedbackSheet();
       setFeedbackNote("");
     } catch (error) {
-      setFeedbackStatus(getApiErrorMessage(error) || "Failed to send. Try again.");
+      const message = getApiErrorMessage(error) || "Failed to send. Try again.";
+      setFeedbackStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -362,17 +360,21 @@ export function PlanDetailScreen() {
     if (!selectedAssignment) {
       return;
     }
-    await completePlan.mutateAsync({
-      assignmentId: selectedAssignment.id,
-      exercises: exercises.map((exercise) => ({
-        name: exercise.name,
-        completed: completed.has(exercise.name),
-        notes: exercise.reps,
-      })),
-      feedback: feedbackNote.trim() || undefined,
-    });
-    setCompleted(new Set(exercises.map((exercise) => exercise.name)));
-    setFeedbackStatus("Workout marked complete.");
+    try {
+      await completePlan.mutateAsync({
+        assignmentId: selectedAssignment.id,
+        exercises: exercises.map((exercise) => ({
+          name: exercise.name,
+          completed: completed.has(exercise.name),
+          notes: exercise.reps,
+        })),
+        feedback: feedbackNote.trim() || undefined,
+      });
+      setCompleted(new Set(exercises.map((exercise) => exercise.name)));
+      setFeedbackStatus("Workout marked complete.");
+    } catch (error) {
+      setFeedbackStatus(getApiErrorMessage(error) || "Workout progress could not be saved.");
+    }
   }
 
   const onRefresh = async () => {
@@ -458,7 +460,7 @@ export function PlanDetailScreen() {
             <SectionHeader title="Exercises" subtitle="Assigned by your coach" />
             <View style={styles.stack}>
               {exercisesQuery.isLoading ? (
-                <PlansSkeleton />
+                <ExerciseListSkeleton />
               ) : null}
               {!exercisesQuery.isLoading && !exercises.length ? (
                 <GlassCard variant="compact">

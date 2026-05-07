@@ -2,6 +2,8 @@ import Link from "next/link";
 import clsx from "clsx";
 
 type ZookButtonTone = "lime" | "secondary" | "ghost" | "danger";
+type ZookButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ZookButtonState = "idle" | "loading" | "success";
 
 const toneClasses: Record<ZookButtonTone, string> = {
   lime: "zook-button-lime border-lime-300 bg-lime-300 text-black shadow-[var(--zook-shadow-glow-lime)] hover:bg-lime-200 active:bg-lime-300",
@@ -19,6 +21,8 @@ const baseClasses =
 type ButtonLikeProps = {
   children: React.ReactNode;
   tone?: ZookButtonTone;
+  variant?: ZookButtonVariant;
+  state?: ZookButtonState;
   size?: "sm" | "md";
   fullWidth?: boolean;
   leadingIcon?: React.ReactNode;
@@ -28,18 +32,21 @@ type ButtonLikeProps = {
 
 function buttonClasses({
   tone,
+  variant,
   size,
   fullWidth,
   className,
 }: {
-  tone: ZookButtonTone;
+  tone?: ZookButtonTone;
+  variant?: ZookButtonVariant | undefined;
   size: "sm" | "md";
   fullWidth?: boolean;
   className?: string | undefined;
 }) {
+  const resolvedTone = tone ?? (variant === "primary" ? "lime" : variant ?? "lime");
   return clsx(
     baseClasses,
-    toneClasses[tone],
+    toneClasses[resolvedTone],
     size === "sm" ? "min-h-9 px-4 py-2 text-xs" : null,
     fullWidth ? "w-full" : null,
     className,
@@ -49,6 +56,8 @@ function buttonClasses({
 export function ZookButton({
   children,
   tone = "lime",
+  variant,
+  state = "idle",
   size = "md",
   fullWidth = false,
   leadingIcon,
@@ -57,8 +66,14 @@ export function ZookButton({
   ...props
 }: ButtonLikeProps & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button {...props} className={buttonClasses({ tone, size, fullWidth, className })}>
-      {leadingIcon}
+    <button
+      {...props}
+      disabled={props.disabled || state === "loading"}
+      aria-busy={state === "loading" ? true : undefined}
+      className={buttonClasses({ tone, variant, size, fullWidth, className })}
+    >
+      {state === "loading" ? <span className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" /> : leadingIcon}
+      {state === "success" ? <span aria-hidden="true">✓</span> : null}
       {children}
       {trailingIcon}
     </button>
@@ -68,6 +83,8 @@ export function ZookButton({
 export function ZookButtonLink({
   children,
   tone = "lime",
+  variant,
+  state = "idle",
   size = "md",
   fullWidth = false,
   leadingIcon,
@@ -76,8 +93,13 @@ export function ZookButtonLink({
   ...props
 }: ButtonLikeProps & React.ComponentProps<typeof Link>) {
   return (
-    <Link {...props} className={buttonClasses({ tone, size, fullWidth, className })}>
-      {leadingIcon}
+    <Link
+      {...props}
+      aria-busy={state === "loading" ? true : undefined}
+      className={buttonClasses({ tone, variant, size, fullWidth, className })}
+    >
+      {state === "loading" ? <span className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" /> : leadingIcon}
+      {state === "success" ? <span aria-hidden="true">✓</span> : null}
       {children}
       {trailingIcon}
     </Link>

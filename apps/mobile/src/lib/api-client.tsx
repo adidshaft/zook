@@ -1,2 +1,1 @@
-// CODEX: placeholder for proposal reference; mobile API wiring currently lives in api.ts.
-
+export { mobileApiFetch as apiClient } from "./api";
