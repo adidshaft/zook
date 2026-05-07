@@ -8,6 +8,7 @@ import {
   IconBubble,
   MobileHeader,
   Pill,
+  Skeleton,
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
@@ -124,8 +125,11 @@ export default function OwnerMemberDetail() {
 
           {memberQuery.isLoading ? (
             <GlassCard variant="compact" contentStyle={styles.stateContent}>
-              <IconBubble icon="hourglass-outline" tone="amber" size={44} />
-              <Text style={styles.stateText}>Loading member...</Text>
+              <Skeleton width={44} height={44} borderRadius={22} />
+              <View style={styles.stateSkeletonCopy}>
+                <Skeleton width="72%" height={16} borderRadius={8} />
+                <Skeleton width="48%" height={12} borderRadius={6} />
+              </View>
             </GlassCard>
           ) : null}
 
@@ -204,6 +208,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+  },
+  stateSkeletonCopy: {
+    flex: 1,
+    gap: 8,
   },
   stateText: {
     color: colors.text,

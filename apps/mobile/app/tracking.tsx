@@ -11,6 +11,7 @@ import {
   IconBubble,
   MobileHeader,
   SectionHeader,
+  Skeleton,
   StickyActionBar,
   ZookButton,
   ZookScreen,
@@ -196,8 +197,11 @@ export default function TrackingDashboard() {
           <SectionHeader title="Last workout" />
           {trackingQuery.isLoading ? (
             <GlassCard variant="compact" contentStyle={styles.loadingContent}>
-              <IconBubble icon="hourglass-outline" tone="amber" size={36} />
-              <Text style={styles.loadingText}>Loading history...</Text>
+              <Skeleton width={36} height={36} borderRadius={18} />
+              <View style={styles.loadingSkeletonCopy}>
+                <Skeleton width="58%" height={16} borderRadius={8} />
+                <Skeleton width="38%" height={12} borderRadius={6} />
+              </View>
             </GlassCard>
           ) : latestWorkout ? (
             <TodaySessionPreview entry={latestWorkout} />
@@ -665,6 +669,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+  },
+  loadingSkeletonCopy: {
+    flex: 1,
+    gap: 8,
   },
   loadingText: {
     color: colors.muted,

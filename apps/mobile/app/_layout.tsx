@@ -144,6 +144,11 @@ function LayoutContent() {
       onExpired: async () => {
         await clearExpiredSession();
         queryClient.clear();
+        showToast({
+          title: "Session expired",
+          message: "Sign in again to continue.",
+          tone: "amber",
+        });
         router.replace("/login?reason=expired" as never);
       },
       onForbidden: () => {
@@ -361,6 +366,7 @@ function LayoutContent() {
         />
         <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="owner" options={{ animation: "none" }} />
+        <Stack.Screen name="dashboard" options={{ animation: "fade" }} />
         <Stack.Screen name="platform" options={{ animation: "none" }} />
         <Stack.Screen name="reception" options={{ animation: "none" }} />
         <Stack.Screen name="onboarding" options={{ animation: "fade" }} />

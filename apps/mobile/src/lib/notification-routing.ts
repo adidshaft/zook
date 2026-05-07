@@ -7,6 +7,8 @@ export interface ParsedDeepLink {
 type NotificationRouteInput = Record<string, unknown> | null | undefined;
 
 const trustedWebHosts = new Set([
+  "app.zook.app",
+  "zook.app",
   "app.zookfit.in",
   "dashboard.zookfit.in",
   "zookfit.in",

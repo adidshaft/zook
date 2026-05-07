@@ -9,6 +9,7 @@ import {
   IconBubble,
   ListRow,
   MobileHeader,
+  Skeleton,
   StatusRing,
   StatusChip,
   ZookButton,
@@ -95,6 +96,24 @@ export default function AttendanceResultScreen() {
     ]);
   }, [attendanceRecordId, queryClient]);
 
+  useEffect(() => {
+    if (activeRole !== "MEMBER" || !recordFromApi) {
+      return undefined;
+    }
+    const statusValue = recordFromApi.status;
+    if (
+      statusValue === "PENDING_APPROVAL" ||
+      statusValue === "REJECTED" ||
+      statusValue === "FLAGGED"
+    ) {
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      router.replace("/");
+    }, 2200);
+    return () => clearTimeout(timer);
+  }, [activeRole, recordFromApi, router]);
+
   if (attendanceQuery.isLoading && !recordFromApi) {
     return (
       <>
@@ -107,8 +126,9 @@ export default function AttendanceResultScreen() {
           >
             <MobileHeader title="Attendance" />
             <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
-              <IconBubble icon="hourglass-outline" tone="amber" size={48} />
-              <Text style={styles.notFoundTitle}>Loading attendance...</Text>
+              <Skeleton width={48} height={48} borderRadius={24} />
+              <Skeleton width="62%" height={22} borderRadius={11} />
+              <Skeleton width="38%" height={14} borderRadius={7} />
             </GlassCard>
           </ScrollView>
         </ZookScreen>
