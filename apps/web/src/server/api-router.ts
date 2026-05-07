@@ -181,11 +181,21 @@ const subscriptionRenewSchema = z.object({
 });
 
 const referralRedeemSchema = z.object({
-  code: z.string().trim().min(3).max(40).transform((value) => value.toUpperCase()),
+  code: z
+    .string()
+    .trim()
+    .min(3)
+    .max(40)
+    .transform((value) => value.toUpperCase()),
 });
 
 const publicCouponValidateSchema = z.object({
-  code: z.string().trim().min(1).max(40).transform((value) => value.toUpperCase()),
+  code: z
+    .string()
+    .trim()
+    .min(1)
+    .max(40)
+    .transform((value) => value.toUpperCase()),
   planId: z.string(),
 });
 
@@ -254,30 +264,32 @@ const notificationAudienceKinds = [
   "branch_members",
 ] as const;
 
-const notificationComposerSchema = notificationSchema.extend({
-  audience: z.enum(notificationAudienceKinds),
-  branchId: z.string().optional().nullable(),
-  singleUserId: z.string().optional(),
-  selectedUserIds: z.array(z.string()).default([]),
-  planId: z.string().optional(),
-  daysAhead: z.number().int().min(1).max(30).default(7),
-  templateId: z.string().optional(),
-  metadata: z.record(z.string(), z.string()).optional(),
-  excludeMinors: z.boolean().default(false),
-}).superRefine((value, ctx) => {
-  if (value.audience === "single_member" && !value.singleUserId) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose one member." });
-  }
-  if (value.audience === "selected_members" && value.selectedUserIds.length === 0) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose at least one member." });
-  }
-  if (value.audience === "membership_plan" && !value.planId) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose a plan." });
-  }
-  if (value.audience === "branch_members" && !value.branchId) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose a branch." });
-  }
-});
+const notificationComposerSchema = notificationSchema
+  .extend({
+    audience: z.enum(notificationAudienceKinds),
+    branchId: z.string().optional().nullable(),
+    singleUserId: z.string().optional(),
+    selectedUserIds: z.array(z.string()).default([]),
+    planId: z.string().optional(),
+    daysAhead: z.number().int().min(1).max(30).default(7),
+    templateId: z.string().optional(),
+    metadata: z.record(z.string(), z.string()).optional(),
+    excludeMinors: z.boolean().default(false),
+  })
+  .superRefine((value, ctx) => {
+    if (value.audience === "single_member" && !value.singleUserId) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose one member." });
+    }
+    if (value.audience === "selected_members" && value.selectedUserIds.length === 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose at least one member." });
+    }
+    if (value.audience === "membership_plan" && !value.planId) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose a plan." });
+    }
+    if (value.audience === "branch_members" && !value.branchId) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose a branch." });
+    }
+  });
 
 const staffInviteSchema = z
   .object({
@@ -771,6 +783,8 @@ function isIdempotentOperation(path: string[], method: string) {
     pathMatches(path, ["payments", "mock", /.+/, "complete"]) ||
     pathMatches(path, ["attendance", "scan"]) ||
     pathMatches(path, ["orgs", /.+/, "manual-payments"]) ||
+    pathMatches(path, ["orgs", /.+/, "manual-payments", "general"]) ||
+    pathMatches(path, ["orgs", /.+/, "shop", "orders", /.+/, "manual-payment"]) ||
     pathMatches(path, ["orgs", /.+/, "classes"]) ||
     pathMatches(path, ["orgs", /.+/, "classes", /.+/, "enroll"]) ||
     pathMatches(path, ["shop", "orders"])
@@ -1159,11 +1173,7 @@ function pageResult<T extends { id: string }>(items: T[], limit: number) {
   };
 }
 
-async function listOrganizationMembersPage(
-  orgId: string,
-  request: NextRequest,
-  branchId?: string,
-) {
+async function listOrganizationMembersPage(orgId: string, request: NextRequest, branchId?: string) {
   const { limit, cursor } = parseCursorPagination(request, 50, 100);
   const scopedUserIds = branchId
     ? (
@@ -1182,7 +1192,7 @@ async function listOrganizationMembersPage(
   });
   const page = pageResult(profiles, limit);
   const memberUserIds = page.items.map((profile) => profile.userId);
-    const [users, subscriptions, attendance, payments] = await Promise.all([
+  const [users, subscriptions, attendance, payments] = await Promise.all([
     prisma.user.findMany({ where: { id: { in: memberUserIds } } }),
     prisma.memberSubscription.findMany({
       where: { orgId, memberUserId: { in: memberUserIds } },
@@ -1207,9 +1217,7 @@ async function listOrganizationMembersPage(
         profile,
         user: user ? { ...user, email: publicUserEmail(user.email) ?? "" } : null,
         lastCheckIn: attendance.find((record) => record.userId === profile.userId) ?? null,
-        recentCheckIns: attendance
-          .filter((record) => record.userId === profile.userId)
-          .slice(0, 3),
+        recentCheckIns: attendance.filter((record) => record.userId === profile.userId).slice(0, 3),
         lastPayment: payments.find((payment) => payment.userId === profile.userId) ?? null,
         activeSubscription:
           subscriptions.find(
@@ -1446,7 +1454,9 @@ async function createFreshQaUser(identifier: { kind: "email" | "phone"; value: s
           ? `fresh+${nonce}@zook.local`
           : `fresh-phone+${nonce}@zook.local`,
       name: "Fresh QA User",
-      ...(identifier.kind === "phone" ? { phone: identifier.value, phoneVerifiedAt: new Date() } : {}),
+      ...(identifier.kind === "phone"
+        ? { phone: identifier.value, phoneVerifiedAt: new Date() }
+        : {}),
       ...(identifier.kind === "email" ? { emailVerifiedAt: new Date() } : {}),
       marketingOptIn: false,
       aiConsent: false,
@@ -1794,6 +1804,7 @@ async function startPaymentSessionCheckout(input: {
       | "MEMBERSHIP"
       | "SHOP_ORDER"
       | "PERSONAL_TRAINING"
+      | "OTHER"
       | "MANUAL_ADJUSTMENT";
     amountPaise: number;
     currency: string;
@@ -2774,13 +2785,13 @@ async function resolveNotificationPreview(input: {
       continue;
     }
     const allowed = canReceiveNotification(input.type, {
-        isMinor: user.isMinor,
-        guardianConsentGranted: !user.guardianPending,
-        marketingOptIn: preference
-          ? preference.promotional && user.marketingOptIn
-          : user.marketingOptIn,
-        aiConsent: user.aiConsent,
-        hasProfilePhoto: Boolean(user.profilePhotoUrl),
+      isMinor: user.isMinor,
+      guardianConsentGranted: !user.guardianPending,
+      marketingOptIn: preference
+        ? preference.promotional && user.marketingOptIn
+        : user.marketingOptIn,
+      aiConsent: user.aiConsent,
+      hasProfilePhoto: Boolean(user.profilePhotoUrl),
     });
     if (!allowed) {
       if (user.isMinor && (input.type === "PROMOTIONAL" || input.type === "ENGAGEMENT")) {
@@ -2846,7 +2857,10 @@ async function getNotificationBudgetSnapshot(input: {
       defaultRateLimitRules.notificationOrgOperationalDaily.limit - orgOperationalCount,
       0,
     ),
-    orgPromoRemaining: Math.max(defaultRateLimitRules.notificationOrgPromoDaily.limit - orgPromoCount, 0),
+    orgPromoRemaining: Math.max(
+      defaultRateLimitRules.notificationOrgPromoDaily.limit - orgPromoCount,
+      0,
+    ),
     senderRemaining: Math.max(defaultRateLimitRules.notificationSenderDaily.limit - senderCount, 0),
   };
 }
@@ -5036,6 +5050,72 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       const activeDefault = await tx.branch.findFirst({
         where: { orgId, isDefault: true, active: true },
       });
+      if (body.commerceSetup === "SHARED" && activeDefault) {
+        const [plans, products] = await Promise.all([
+          tx.membershipPlan.findMany({
+            where: {
+              orgId,
+              active: true,
+              OR: [{ branchId: null }, { branchId: activeDefault.id }],
+            },
+          }),
+          tx.product.findMany({
+            where: {
+              orgId,
+              active: true,
+              OR: [{ branchId: null }, { branchId: activeDefault.id }],
+            },
+          }),
+        ]);
+        if (plans.length) {
+          await tx.membershipPlan.createMany({
+            data: plans.map((plan) =>
+              clean({
+                orgId,
+                branchId: created.id,
+                name: plan.name,
+                description: plan.description,
+                type: plan.type,
+                pricePaise: plan.pricePaise,
+                currency: plan.currency,
+                gstRateBps: plan.gstRateBps,
+                joiningFeePaise: plan.joiningFeePaise,
+                durationDays: plan.durationDays,
+                visitLimit: plan.visitLimit,
+                validityDays: plan.validityDays,
+                startDate: plan.startDate,
+                endDate: plan.endDate,
+                accessDays: plan.accessDays as Prisma.InputJsonValue | undefined,
+                maxEntriesPerDay: plan.maxEntriesPerDay,
+                active: plan.active,
+                publicVisible: plan.publicVisible,
+                terms: plan.terms,
+                cancellationPolicy: plan.cancellationPolicy,
+                createdById: userId,
+              }),
+            ),
+          });
+        }
+        if (products.length) {
+          await tx.product.createMany({
+            data: products.map((product) =>
+              clean({
+                orgId,
+                branchId: created.id,
+                name: product.name,
+                description: product.description,
+                category: product.category,
+                pricePaise: product.pricePaise,
+                stock: product.stock,
+                lowStockThreshold: product.lowStockThreshold,
+                imageUrl: product.imageUrl,
+                active: product.active,
+                taxRateBps: product.taxRateBps,
+              }),
+            ),
+          });
+        }
+      }
       if (!activeDefault) {
         await tx.branch.update({
           where: { id: created.id },
@@ -5052,7 +5132,11 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       action: "branch.created",
       entityType: "branch",
       entityId: branch.id,
-      metadata: { name: branch.name, isDefault: branch.isDefault },
+      metadata: {
+        name: branch.name,
+        isDefault: branch.isDefault,
+        commerceSetup: body.commerceSetup,
+      },
     });
     return ok({ branch, warnings });
   }
@@ -5119,9 +5203,13 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           state: resolvedBody.state,
           pincode: resolvedBody.pincode,
           latitude:
-            resolvedBody.latitude != null ? new Prisma.Decimal(resolvedBody.latitude) : resolvedBody.latitude,
+            resolvedBody.latitude != null
+              ? new Prisma.Decimal(resolvedBody.latitude)
+              : resolvedBody.latitude,
           longitude:
-            resolvedBody.longitude != null ? new Prisma.Decimal(resolvedBody.longitude) : resolvedBody.longitude,
+            resolvedBody.longitude != null
+              ? new Prisma.Decimal(resolvedBody.longitude)
+              : resolvedBody.longitude,
           locationSource: resolvedBody.locationSource,
           contactPhone: resolvedBody.contactPhone,
           contactEmail: resolvedBody.contactEmail,
@@ -5512,14 +5600,14 @@ async function handleReports(request: NextRequest, path: string[]) {
               : report === "manual-cash"
                 ? await reportsService.manualCashReport(orgId, filters)
                 : report === "expiring-members"
-                ? await reportsService.membershipExpiryReport(orgId, filters)
-                : report === "invoices"
-                  ? await reportsService.invoiceReport(orgId, filters)
-                  : report === "referrals"
-                    ? await reportsService.referralReport(orgId, filters)
-                    : report === "shop"
-                      ? await reportsService.shopReport(orgId, filters)
-                      : await reportsService.aiUsageReport(orgId, filters);
+                  ? await reportsService.membershipExpiryReport(orgId, filters)
+                  : report === "invoices"
+                    ? await reportsService.invoiceReport(orgId, filters)
+                    : report === "referrals"
+                      ? await reportsService.referralReport(orgId, filters)
+                      : report === "shop"
+                        ? await reportsService.shopReport(orgId, filters)
+                        : await reportsService.aiUsageReport(orgId, filters);
 
     await writeAuditLog({
       request,
@@ -5607,9 +5695,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       plans: await prisma.membershipPlan.findMany({
         where: {
           orgId,
-          ...(branchId
-            ? { OR: [{ branchId }, { branchId: null }] }
-            : {}),
+          ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
         },
         orderBy: { createdAt: "desc" },
       }),
@@ -8574,12 +8660,19 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     return handleManualPaymentRequest(request, orgId, await readJson(request));
   }
-
-  async function handleManualPaymentRequest(
-    request: NextRequest,
-    orgId: string,
-    rawBody: unknown,
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "manual-payments", "general"])
   ) {
+    const orgId = path[1]!;
+    const payload = (await readJson(request)) as Record<string, unknown>;
+    return handleManualPaymentRequest(request, orgId, {
+      ...payload,
+      purpose: "OTHER",
+    });
+  }
+
+  async function handleManualPaymentRequest(request: NextRequest, orgId: string, rawBody: unknown) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = assertManualPaymentRecordContext(ctx, orgId);
     await assertRateLimit(
@@ -8599,7 +8692,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         throw notFoundError("Shop order not found");
       }
       await assertBranchAccessForContext(ctx, orgId, order.branchId);
-      if (order.paymentId || !["PENDING_PAYMENT", "PAID"].includes(order.status)) {
+      if (order.paymentId || order.status !== "PENDING_PAYMENT") {
         throw conflictError("This shop order cannot be paid at the desk.");
       }
       const payment = await prisma.payment.create({
@@ -8653,7 +8746,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         data: clean({
           orgId,
           branchId,
-          purpose: "MANUAL_ADJUSTMENT",
+          purpose: "OTHER",
           amountPaise: body.amountPaise,
           status: "SUCCEEDED",
           mode: body.mode,
@@ -8706,7 +8799,11 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       if (!existingSubscription) {
         throw notFoundError("Subscription not found");
       }
-      if (deskBranchId && existingSubscription.branchId && existingSubscription.branchId !== deskBranchId) {
+      if (
+        deskBranchId &&
+        existingSubscription.branchId &&
+        existingSubscription.branchId !== deskBranchId
+      ) {
         throw forbiddenError("This membership belongs to another branch.");
       }
       if (existingSubscription.status === "ACTIVE") {
@@ -8736,7 +8833,10 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         }),
       );
       payment = await prisma.payment.create({
-        data: clean({ ...basePaymentData, branchId: existingSubscription.branchId ?? deskBranchId }),
+        data: clean({
+          ...basePaymentData,
+          branchId: existingSubscription.branchId ?? deskBranchId,
+        }),
       });
       subscription = await prisma.memberSubscription.update({
         where: { id: existingSubscription.id },
@@ -8782,7 +8882,9 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
           publicVisible: plan.publicVisible,
         }),
       );
-      payment = await prisma.payment.create({ data: clean({ ...basePaymentData, branchId: branch.id }) });
+      payment = await prisma.payment.create({
+        data: clean({ ...basePaymentData, branchId: branch.id }),
+      });
       subscription = await prisma.memberSubscription.create({
         data: clean({
           orgId,
@@ -9849,18 +9951,20 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     ) {
       throw forbiddenError("You do not have permission to send this notification.");
     }
-    const preview = await resolveNotificationPreview(clean({
-      orgId,
-      senderUserId: userId,
-      audience: body.audience,
-      type: body.type,
-      selectedUserIds: body.selectedUserIds,
-      singleUserId: body.singleUserId,
-      planId: body.planId,
-      branchId: body.branchId,
-      daysAhead: body.daysAhead,
-      excludeMinors: body.excludeMinors,
-    }));
+    const preview = await resolveNotificationPreview(
+      clean({
+        orgId,
+        senderUserId: userId,
+        audience: body.audience,
+        type: body.type,
+        selectedUserIds: body.selectedUserIds,
+        singleUserId: body.singleUserId,
+        planId: body.planId,
+        branchId: body.branchId,
+        daysAhead: body.daysAhead,
+        excludeMinors: body.excludeMinors,
+      }),
+    );
     return ok({
       resolvedRecipients: preview.resolvedRecipients,
       willDeliver: preview.willDeliver,
@@ -9895,18 +9999,20 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     ) {
       throw forbiddenError("You do not have permission to send this notification.");
     }
-    const recipientUserIds = await resolveNotificationRecipients(clean({
-      orgId,
-      senderUserId: userId,
-      audience: body.audience,
-      type: body.type,
-      selectedUserIds: body.selectedUserIds,
-      singleUserId: body.singleUserId,
-      ...(body.planId ? { planId: body.planId } : {}),
-      branchId: body.branchId,
-      daysAhead: body.daysAhead,
-      excludeMinors: body.excludeMinors,
-    }));
+    const recipientUserIds = await resolveNotificationRecipients(
+      clean({
+        orgId,
+        senderUserId: userId,
+        audience: body.audience,
+        type: body.type,
+        selectedUserIds: body.selectedUserIds,
+        singleUserId: body.singleUserId,
+        ...(body.planId ? { planId: body.planId } : {}),
+        branchId: body.branchId,
+        daysAhead: body.daysAhead,
+        excludeMinors: body.excludeMinors,
+      }),
+    );
     const recipientSplit = body.scheduleAt
       ? { sendNowUserIds: recipientUserIds, scheduledUserIds: [] as string[] }
       : await splitRecipientsByDailyCap({ orgId, recipientUserIds });
@@ -10051,14 +10157,24 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       })),
     });
   }
-  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "notifications", "templates"])) {
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "notifications", "templates"])
+  ) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "NOTIFICATION_MANAGE_TEMPLATES");
     const body = z
       .object({
         name: z.string().trim().min(2).max(80),
-        type: z.enum(["TRANSACTIONAL", "OPERATIONAL", "PROMOTIONAL", "ENGAGEMENT", "PLAN", "SECURITY"]),
+        type: z.enum([
+          "TRANSACTIONAL",
+          "OPERATIONAL",
+          "PROMOTIONAL",
+          "ENGAGEMENT",
+          "PLAN",
+          "SECURITY",
+        ]),
         title: z.string().trim().min(2).max(120),
         body: z.string().trim().min(2).max(1000),
       })
@@ -10256,7 +10372,10 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     ]);
     const creatorById = new Map(creators.map((creator) => [creator.id, creator]));
     const recipientStats = recipients.reduce<
-      Map<string, { total: number; delivered: number; read: number; failed: number; scheduled: number }>
+      Map<
+        string,
+        { total: number; delivered: number; read: number; failed: number; scheduled: number }
+      >
     >((map, recipient) => {
       const current = map.get(recipient.notificationId) ?? {
         total: 0,
@@ -10275,9 +10394,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     }, new Map());
     return ok({
       notifications: notifications.map((notification) => {
-        const creator = notification.createdById
-          ? creatorById.get(notification.createdById)
-          : null;
+        const creator = notification.createdById ? creatorById.get(notification.createdById) : null;
         return {
           ...notification,
           createdByName: creator?.name ?? creator?.email ?? null,
@@ -10786,11 +10903,10 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       }),
       prisma.user.findUnique({ where: { id: userId } }),
     ]);
-    const inferredBranchId = body.branchId ?? products.find((product) => product.branchId)?.branchId;
+    const inferredBranchId =
+      body.branchId ?? products.find((product) => product.branchId)?.branchId;
     const branch = await resolveOrgBranch(body.orgId, inferredBranchId);
-    if (
-      products.some((product) => product.branchId && product.branchId !== branch.id)
-    ) {
+    if (products.some((product) => product.branchId && product.branchId !== branch.id)) {
       throw validationError("Shop products must belong to the selected branch.");
     }
     const calculation = calculateShopOrder({
@@ -10891,7 +11007,12 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const [orders, fulfilledToday] = await Promise.all([
       getOrganizationActiveShopOrders(orgId, clean({ branchId })),
       prisma.shopOrder.count({
-        where: { orgId, status: "FULFILLED", fulfilledAt: { gte: today }, ...(branchId ? { branchId } : {}) },
+        where: {
+          orgId,
+          status: "FULFILLED",
+          fulfilledAt: { gte: today },
+          ...(branchId ? { branchId } : {}),
+        },
       }),
     ]);
     return ok({ orders, summary: { fulfilledToday } });

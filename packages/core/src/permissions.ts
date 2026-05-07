@@ -10,7 +10,7 @@ export const notificationPermissions = {
   sendPlanDietNotification: "NOTIFICATION_SEND_PLAN",
   approveBroadcast: "NOTIFICATION_APPROVE_BROADCAST",
   manageTemplates: "NOTIFICATION_MANAGE_TEMPLATES",
-  viewDeliveryAnalytics: "NOTIFICATION_VIEW_ANALYTICS"
+  viewDeliveryAnalytics: "NOTIFICATION_VIEW_ANALYTICS",
 } satisfies Record<string, Permission>;
 
 const ownerPermissions: Permission[] = [
@@ -40,7 +40,7 @@ const ownerPermissions: Permission[] = [
   "SHOP_MANAGE_PRODUCTS",
   "SHOP_FULFILL_ORDER",
   ...Object.values(notificationPermissions),
-  "PRIVACY_VIEW_AUDIT"
+  "PRIVACY_VIEW_AUDIT",
 ];
 
 export const defaultRolePermissions: Record<Role, Permission[]> = {
@@ -48,7 +48,9 @@ export const defaultRolePermissions: Record<Role, Permission[]> = {
   OWNER: ownerPermissions,
   ADMIN: ownerPermissions.filter(
     (permission) =>
-      permission !== "ORG_MANAGE_BILLING" && permission !== "ORG_MANAGE_PERMISSIONS",
+      permission !== "ORG_MANAGE_BILLING" &&
+      permission !== "ORG_MANAGE_PERMISSIONS" &&
+      permission !== "PAYMENTS_REFUND",
   ),
   RECEPTIONIST: [
     "MEMBERS_VIEW",
@@ -58,7 +60,7 @@ export const defaultRolePermissions: Record<Role, Permission[]> = {
     "ATTENDANCE_MANUAL_OVERRIDE",
     "SHOP_FULFILL_ORDER",
     "NOTIFICATION_CREATE_DRAFT",
-    "NOTIFICATION_SEND_OPERATIONAL"
+    "NOTIFICATION_SEND_OPERATIONAL",
   ],
   TRAINER: [
     "MEMBERS_VIEW",
@@ -70,9 +72,9 @@ export const defaultRolePermissions: Record<Role, Permission[]> = {
     "AI_GENERATE_IMAGE",
     "NOTIFICATION_CREATE_DRAFT",
     "NOTIFICATION_SEND_ASSIGNED",
-    "NOTIFICATION_SEND_PLAN"
+    "NOTIFICATION_SEND_PLAN",
   ],
-  MEMBER: ["AI_USE_TEXT"]
+  MEMBER: ["AI_USE_TEXT"],
 };
 
 export function permissionsForRoles(roles: Role[], overrides: Permission[] = []): Permission[] {

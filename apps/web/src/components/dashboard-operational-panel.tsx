@@ -14,6 +14,11 @@ import { MembersSection } from "./dashboard/sections/members-section";
 import { StaffSection } from "./dashboard/sections/staff-section";
 import { OverviewOperationalSection } from "./dashboard/sections/overview-operational-section";
 import {
+  BillingSection,
+  RefundsSection,
+  SettingsSection,
+} from "./dashboard/sections/utility-sections";
+import {
   CouponsRouteSection,
   OffersRouteSection,
   ReferralsRouteSection,
@@ -371,6 +376,18 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
         permissions={permissions}
       />
     );
+  }
+
+  if (mode === "payment-refunds") {
+    return <RefundsSection payments={payments} />;
+  }
+
+  if (mode === "billing") {
+    return <BillingSection organization={organization} summary={summary} />;
+  }
+
+  if (mode === "settings") {
+    return <SettingsSection organization={organization} />;
   }
 
   if (mode === "reports") {

@@ -5,5 +5,5 @@ export default function BillingPage({
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["payments", "billing"], searchParams });
+  return renderDashboardRoute({ section: ["billing"], searchParams });
 }

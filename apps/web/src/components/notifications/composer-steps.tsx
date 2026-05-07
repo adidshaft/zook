@@ -328,6 +328,12 @@ export function ReviewStep({
         <Pill tone="amber">{preview?.blockedByOptOut ?? 0} opted out</Pill>
         <Pill tone="neutral">{preview?.blockedByMinor ?? 0} minors skipped</Pill>
       </div>
+      {preview?.blockedByOptOut ? (
+        <p className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+          {preview.blockedByOptOut} of {preview.resolvedRecipients} members have opted out and will
+          not receive this.
+        </p>
+      ) : null}
       <div className="grid gap-3 md:grid-cols-4">
         <Pill tone="blue">{preview?.budget?.senderRemaining ?? 0} sender left</Pill>
         <Pill tone="lime">{preview?.budget?.orgAllRemaining ?? 0} gym left</Pill>
@@ -339,6 +345,12 @@ export function ReviewStep({
 }
 
 export function ComposerDeliveryHistory({ notifications }: { notifications: NotificationRow[] }) {
+  function readPercent(notification: NotificationRow) {
+    const stats = notification.recipientStats;
+    if (!stats?.delivered) return 0;
+    return Math.round((stats.read / stats.delivered) * 100);
+  }
+
   return (
     <div className="mt-5 grid gap-3">
       {notifications.length ? (
@@ -362,7 +374,8 @@ export function ComposerDeliveryHistory({ notifications }: { notifications: Noti
               {notification.createdByName ? `Sent by ${notification.createdByName} · ` : ""}
               {notification.recipientStats?.total ?? 0} recipients ·{" "}
               {notification.recipientStats?.delivered ?? 0} delivered ·{" "}
-              {notification.recipientStats?.read ?? 0} read
+              {notification.recipientStats?.read ?? 0} read ({readPercent(notification)}%) ·{" "}
+              {notification.recipientStats?.failed ?? 0} failed
               {notification.recipientStats?.scheduled
                 ? ` · ${notification.recipientStats.scheduled} scheduled`
                 : ""}

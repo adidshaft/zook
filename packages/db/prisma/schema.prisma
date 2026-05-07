@@ -136,6 +136,7 @@ enum PaymentPurpose {
   MEMBERSHIP
   SHOP_ORDER
   PERSONAL_TRAINING
+  OTHER
   MANUAL_ADJUSTMENT
 }
 
@@ -448,22 +449,22 @@ model UserSession {
 }
 
 model OtpChallenge {
-  id          String    @id @default(cuid())
-  email       String
-  identifier  String
-  channel     String    @default("email")
-  phone       String?
-  codeHash    String
-  purpose     String    @default("login")
-  attempts    Int       @default(0)
-  maxAttempts Int       @default(5)
-  resendCount Int       @default(0)
-  ipFailureCount Int     @default(0)
-  lockedUntil DateTime?
-  ipAddress   String?
-  consumedAt  DateTime?
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
+  id             String    @id @default(cuid())
+  email          String
+  identifier     String
+  channel        String    @default("email")
+  phone          String?
+  codeHash       String
+  purpose        String    @default("login")
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(5)
+  resendCount    Int       @default(0)
+  ipFailureCount Int       @default(0)
+  lockedUntil    DateTime?
+  ipAddress      String?
+  consumedAt     DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
 
   @@index([email, purpose])
   @@index([identifier, purpose])

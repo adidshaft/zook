@@ -5,5 +5,5 @@ export default function SettingsPage({
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["public-profile"], searchParams });
+  return renderDashboardRoute({ section: ["settings"], searchParams });
 }

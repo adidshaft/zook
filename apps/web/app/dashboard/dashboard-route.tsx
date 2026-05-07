@@ -34,9 +34,12 @@ const sectionAccessPermissions: Partial<Record<ReturnType<typeof resolveMode>, P
   staff: ["ORG_MANAGE_STAFF"],
   plans: ["MEMBERSHIP_PLAN_MANAGE"],
   payments: ["PAYMENTS_VIEW", "PAYMENTS_RECORD_OFFLINE"],
+  "payment-refunds": ["PAYMENTS_REFUND"],
   branches: ["ORG_MANAGE_LOCATION"],
   audit: ["PRIVACY_VIEW_AUDIT"],
   ai: ["AI_MANAGE_SETTINGS", "AI_USE_TEXT"],
+  billing: ["ORG_MANAGE_BILLING"],
+  settings: ["ORG_MANAGE_PROFILE", "NOTIFICATION_MANAGE_TEMPLATES", "ATTENDANCE_QR_DISPLAY"],
   "public-profile": ["ORG_MANAGE_PROFILE"],
 };
 

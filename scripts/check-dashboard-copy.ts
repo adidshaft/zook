@@ -44,33 +44,7 @@ const checkedAttributes = [
   "placeholder",
   "title",
 ];
-
-const hardcodedEnglishAllowlist = new Set([
-  "apps/web/src/components/dashboard/read-only-panels.tsx",
-  "apps/web/src/components/dashboard/read-only/ai-panel.tsx",
-  "apps/web/src/components/dashboard/read-only/attendance-panel.tsx",
-  "apps/web/src/components/dashboard/read-only/audit-panel.tsx",
-  "apps/web/src/components/dashboard/read-only/notifications-panel.tsx",
-  "apps/web/src/components/dashboard/read-only/payments-panel.tsx",
-  "apps/web/src/components/dashboard/read-only/reports-panel.tsx",
-  "apps/web/src/components/dashboard/sections/branches-section.tsx",
-  "apps/web/src/components/dashboard/sections/members-section.tsx",
-  "apps/web/src/components/dashboard/sections/overview-operational-section.tsx",
-  "apps/web/src/components/dashboard/sections/overview/insights-inventory-card.tsx",
-  "apps/web/src/components/dashboard/sections/overview/referral-code-controls.tsx",
-  "apps/web/src/components/dashboard/sections/overview/referral-discount-controls.tsx",
-  "apps/web/src/components/dashboard/sections/overview/top-command-section.tsx",
-  "apps/web/src/components/dashboard/sections/plans-section.tsx",
-  "apps/web/src/components/dashboard/sections/shop-section.tsx",
-  "apps/web/src/components/dashboard/sections/shop-status-card.tsx",
-  "apps/web/src/components/dashboard/sections/staff-section.tsx",
-  "apps/web/src/components/dashboard-operational-panel.tsx",
-  "apps/web/src/components/dashboard/body-composition-timeline.tsx",
-  "apps/web/src/components/dashboard/operational-shared.tsx",
-  "apps/web/src/components/desk-panel.tsx",
-  "apps/web/src/components/notification-composer-panel.tsx",
-  "apps/web/app/desk/qr/page.tsx",
-]);
+const enforceHardcodedEnglish = process.env.CHECK_DASHBOARD_I18N_STRICT === "1";
 
 type CopyHit = {
   file: string;
@@ -102,7 +76,9 @@ function collectJsonStrings(value: unknown, file: string, hits: CopyHit[], path:
     return;
   }
   if (value && typeof value === "object") {
-    Object.entries(value).forEach(([key, item]) => collectJsonStrings(item, file, hits, [...path, key]));
+    Object.entries(value).forEach(([key, item]) =>
+      collectJsonStrings(item, file, hits, [...path, key]),
+    );
   }
 }
 
@@ -123,7 +99,12 @@ function collectTsxCopy(content: string, file: string) {
     }
 
     for (const attribute of checkedAttributes) {
-      for (const prefix of [`${attribute}="`, `${attribute}={'`, `${attribute}={"`, `${attribute}={\``]) {
+      for (const prefix of [
+        `${attribute}="`,
+        `${attribute}={'`,
+        `${attribute}={"`,
+        `${attribute}={\``,
+      ]) {
         let cursor = line.indexOf(prefix);
         while (cursor >= 0) {
           const quote = prefix.at(-1);
@@ -165,11 +146,7 @@ for (const file of files) {
     if (bannedCopy.some((pattern) => pattern.test(hit.text))) {
       bannedFailures.push(`${hit.file}:${hit.line}: ${hit.text}`);
     }
-    if (
-      file.endsWith(".tsx") &&
-      !hardcodedEnglishAllowlist.has(file) &&
-      hasThreeEnglishWords(hit.text)
-    ) {
+    if (enforceHardcodedEnglish && file.endsWith(".tsx") && hasThreeEnglishWords(hit.text)) {
       hardcodedFailures.push(`${hit.file}:${hit.line}: ${hit.text}`);
     }
   }

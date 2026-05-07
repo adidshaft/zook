@@ -1,12 +1,15 @@
 import {
   Bell,
+  Bot,
   ClipboardList,
   Dumbbell,
   FileText,
   Globe2,
   History,
+  Receipt,
   QrCode,
   ReceiptText,
+  Settings,
   Shield,
   Store,
   Users,
@@ -34,11 +37,25 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         permissions: ["PAYMENTS_VIEW"],
       },
       {
+        key: "refunds",
+        label: "Refunds",
+        href: "/dashboard/payments/refunds",
+        icon: Receipt,
+        permissions: ["PAYMENTS_REFUND"],
+      },
+      {
         key: "shop",
         label: "Shop",
-        href: "/dashboard/shop/products",
+        href: "/dashboard/shop",
         icon: Store,
         permissions: ["SHOP_MANAGE_PRODUCTS"],
+      },
+      {
+        key: "shopOrders",
+        label: "Shop orders",
+        href: "/dashboard/shop/orders",
+        icon: Store,
+        permissions: ["SHOP_FULFILL_ORDER"],
       },
       {
         key: "reports",
@@ -46,6 +63,13 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         href: "/dashboard/reports",
         icon: FileText,
         permissions: ["ORG_VIEW_REPORTS"],
+      },
+      {
+        key: "billing",
+        label: "Billing",
+        href: "/dashboard/billing",
+        icon: ReceiptText,
+        permissions: ["ORG_MANAGE_BILLING"],
       },
     ],
   },
@@ -67,6 +91,27 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         permissions: ["MEMBERSHIP_PLAN_MANAGE"],
       },
       {
+        key: "coupons",
+        label: "Coupons",
+        href: "/dashboard/plans/coupons",
+        icon: ClipboardList,
+        permissions: ["MEMBERSHIP_PLAN_MANAGE"],
+      },
+      {
+        key: "offers",
+        label: "Offers",
+        href: "/dashboard/plans/offers",
+        icon: ClipboardList,
+        permissions: ["MEMBERSHIP_PLAN_MANAGE"],
+      },
+      {
+        key: "referrals",
+        label: "Referrals",
+        href: "/dashboard/plans/referrals",
+        icon: ClipboardList,
+        permissions: ["REFERRALS_MANAGE"],
+      },
+      {
         key: "team",
         label: "Team",
         href: "/dashboard/staff",
@@ -83,6 +128,20 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         label: "Messages",
         href: "/dashboard/notifications",
         icon: Bell,
+        permissions: ["NOTIFICATION_CREATE_DRAFT"],
+      },
+      {
+        key: "templates",
+        label: "Templates",
+        href: "/dashboard/notifications/templates",
+        icon: Bell,
+        permissions: ["NOTIFICATION_MANAGE_TEMPLATES"],
+      },
+      {
+        key: "history",
+        label: "History",
+        href: "/dashboard/notifications/history",
+        icon: History,
         permissions: ["NOTIFICATION_CREATE_DRAFT"],
       },
     ],
@@ -112,6 +171,20 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         shortLabel: "Activity",
         permissions: ["PRIVACY_VIEW_AUDIT"],
       },
+      {
+        key: "ai",
+        label: "AI",
+        href: "/dashboard/ai",
+        icon: Bot,
+        permissions: ["ORG_VIEW_REPORTS", "AI_MANAGE_SETTINGS"],
+      },
+      {
+        key: "settings",
+        label: "Settings",
+        href: "/dashboard/settings",
+        icon: Settings,
+        permissions: ["ORG_MANAGE_PROFILE"],
+      },
     ],
   },
 ];
@@ -122,8 +195,7 @@ export function filterNavGroups(groups: typeof navGroups, permissions: Set<Permi
       ...group,
       items: group.items.filter(
         (item) =>
-          !item.permissions ||
-          item.permissions.some((permission) => permissions.has(permission)),
+          !item.permissions || item.permissions.some((permission) => permissions.has(permission)),
       ),
     }))
     .filter((group) => group.items.length > 0);

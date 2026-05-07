@@ -74,6 +74,11 @@ export function NotificationHistoryPanel({
       recipient.deliveryStatus === "failed" ||
       (!recipient.deliveredAt && recipient.deliveryStatus !== "scheduled"),
   ).length;
+  function readPercent(notification: NotificationRow) {
+    const stats = notification.recipientStats;
+    if (!stats?.delivered) return 0;
+    return Math.round((stats.read / stats.delivered) * 100);
+  }
 
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
@@ -116,7 +121,8 @@ export function NotificationHistoryPanel({
                     {notification.createdByName ? `Sent by ${notification.createdByName} · ` : ""}
                     {notification.recipientStats?.total ?? 0} recipients ·{" "}
                     {notification.recipientStats?.delivered ?? 0} delivered ·{" "}
-                    {notification.recipientStats?.read ?? 0} read
+                    {notification.recipientStats?.read ?? 0} read ({readPercent(notification)}%) ·{" "}
+                    {notification.recipientStats?.failed ?? 0} failed
                     {notification.recipientStats?.scheduled
                       ? ` · ${notification.recipientStats.scheduled} scheduled`
                       : ""}

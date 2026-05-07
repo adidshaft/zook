@@ -92,7 +92,9 @@ export function DeskPanel({
     (order) => order.status === "PENDING_PAYMENT" && !order.paymentId,
   );
   const pickupOrders = activeOrders.filter(
-    (order) => order.status === "READY_FOR_PICKUP" || (order.status === "PENDING_PAYMENT" && !order.paymentId),
+    (order) =>
+      order.status === "READY_FOR_PICKUP" ||
+      (order.status === "PENDING_PAYMENT" && !order.paymentId),
   );
   const activePlans = (plansState.data?.plans ?? []).filter((plan) => plan.active);
 
@@ -168,8 +170,7 @@ export function DeskPanel({
       subscriptionId:
         purpose === "MEMBERSHIP" ? defaults.subscriptionId || current.subscriptionId : "",
       shopOrderId: "",
-      amountRupees:
-        purpose === "SHOP_ORDER" ? "" : defaults.amountRupees || current.amountRupees,
+      amountRupees: purpose === "SHOP_ORDER" ? "" : defaults.amountRupees || current.amountRupees,
     }));
   }
 
@@ -213,7 +214,9 @@ export function DeskPanel({
   }
 
   function skipPickupCode(orderId: string) {
-    setSkippedCodeOrderIds((current) => (current.includes(orderId) ? current : [...current, orderId]));
+    setSkippedCodeOrderIds((current) =>
+      current.includes(orderId) ? current : [...current, orderId],
+    );
   }
 
   async function overrideMemberEntry(member: MemberRow) {
@@ -251,7 +254,8 @@ export function DeskPanel({
           type: "TRANSACTIONAL",
           title: copy.deskMessageTitle,
           body,
-          audience: { kind: "single_member", userId: member.user.id },
+          audience: "single_member",
+          singleUserId: member.user.id,
           pushEnabled: true,
         },
       });
@@ -304,7 +308,9 @@ export function DeskPanel({
       const path =
         paymentForm.purpose === "SHOP_ORDER" && paymentForm.shopOrderId
           ? `/api/orgs/${orgId}/shop/orders/${paymentForm.shopOrderId}/manual-payment`
-          : `/api/orgs/${orgId}/manual-payments`;
+          : paymentForm.purpose === "OTHER"
+            ? `/api/orgs/${orgId}/manual-payments/general`
+            : `/api/orgs/${orgId}/manual-payments`;
       await webApiFetch(path, { method: "POST", body });
       if (paymentForm.purpose === "SHOP_ORDER") {
         ordersState.reload();

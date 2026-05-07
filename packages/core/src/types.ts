@@ -4,7 +4,7 @@ export const roles = [
   "ADMIN",
   "RECEPTIONIST",
   "TRAINER",
-  "MEMBER"
+  "MEMBER",
 ] as const;
 export type Role = (typeof roles)[number];
 
@@ -51,7 +51,7 @@ export const permissions = [
   "PRIVACY_VIEW_AUDIT",
   "PLATFORM_MANAGE_ORGS",
   "PLATFORM_VIEW_AI_USAGE",
-  "PLATFORM_MANAGE_SETTINGS"
+  "PLATFORM_MANAGE_SETTINGS",
 ] as const;
 export type Permission = (typeof permissions)[number];
 
@@ -86,12 +86,19 @@ export type PaymentStatus =
   | "REFUNDED"
   | "PARTIALLY_REFUNDED"
   | "DISPUTED";
-export type PaymentMode = "MOCK_ONLINE" | "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER";
+export type PaymentMode =
+  | "MOCK_ONLINE"
+  | "CASH"
+  | "DIRECT_UPI"
+  | "BANK_TRANSFER"
+  | "CARD"
+  | "OTHER";
 export type PaymentPurpose =
   | "SAAS_BILLING"
   | "MEMBERSHIP"
   | "SHOP_ORDER"
   | "PERSONAL_TRAINING"
+  | "OTHER"
   | "MANUAL_ADJUSTMENT";
 export type PaymentMandateStatus =
   | "CREATED"
@@ -115,7 +122,13 @@ export type NotificationType =
   | "ENGAGEMENT"
   | "PLAN"
   | "SECURITY";
-export type NotificationStatus = "DRAFT" | "SCHEDULED" | "SENT" | "CANCELLED" | "FAILED" | "NEEDS_APPROVAL";
+export type NotificationStatus =
+  | "DRAFT"
+  | "SCHEDULED"
+  | "SENT"
+  | "CANCELLED"
+  | "FAILED"
+  | "NEEDS_APPROVAL";
 export type PlanType =
   | "WORKOUT"
   | "DIET"
@@ -137,7 +150,12 @@ export type ProviderCategory =
   | "storage"
   | "whatsapp";
 export type ProviderMode = "mock" | "test" | "live" | "local" | "disabled";
-export type ProviderDiagnosticStatus = "default" | "ready" | "misconfigured" | "unsupported" | "disabled";
+export type ProviderDiagnosticStatus =
+  | "default"
+  | "ready"
+  | "misconfigured"
+  | "unsupported"
+  | "disabled";
 export type ProviderDiagnosticValue = string | number | boolean | null;
 export type ProviderDiagnosticMetadata = Record<string, ProviderDiagnosticValue>;
 
@@ -161,9 +179,26 @@ export interface DiagnosticProvider {
   getDiagnostics(): ProviderInstanceDiagnostics;
 }
 
-export type AIRequestType = "CHAT" | "STRUCTURED_PLAN" | "IMAGE" | "SCOPE_CLASSIFICATION" | "SAFETY_CLASSIFICATION";
-export type ProductCategory = "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
-export type OrderStatus = "PENDING_PAYMENT" | "PAID" | "READY_FOR_PICKUP" | "FULFILLED" | "CANCELLED" | "REFUNDED";
+export type AIRequestType =
+  | "CHAT"
+  | "STRUCTURED_PLAN"
+  | "IMAGE"
+  | "SCOPE_CLASSIFICATION"
+  | "SAFETY_CLASSIFICATION";
+export type ProductCategory =
+  | "WATER"
+  | "PROTEIN_SHAKE"
+  | "SHAKER"
+  | "TOWEL"
+  | "SUPPLEMENT"
+  | "OTHER";
+export type OrderStatus =
+  | "PENDING_PAYMENT"
+  | "PAID"
+  | "READY_FOR_PICKUP"
+  | "FULFILLED"
+  | "CANCELLED"
+  | "REFUNDED";
 export type ConsentType =
   | "TERMS"
   | "PRIVACY_POLICY"

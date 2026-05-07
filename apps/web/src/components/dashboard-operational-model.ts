@@ -11,9 +11,12 @@ export type DashboardMode =
   | "staff"
   | "plans"
   | "payments"
+  | "payment-refunds"
   | "branches"
   | "audit"
   | "ai"
+  | "billing"
+  | "settings"
   | "public-profile";
 
 export type MembershipPlanType = "DURATION" | "VISIT_PACK" | "DATE_RANGE" | "HYBRID" | "TRIAL";
@@ -384,8 +387,11 @@ export type ProductSnapshot = {
 };
 
 export function resolveMode(sectionKey: string): DashboardMode {
-  if (sectionKey.includes("public-profile") || sectionKey === "org" || sectionKey === "settings") {
+  if (sectionKey.includes("public-profile") || sectionKey === "org") {
     return "public-profile";
+  }
+  if (sectionKey === "settings") {
+    return "settings";
   }
   if (sectionKey.includes("join-requests")) {
     return "join-requests";
@@ -422,6 +428,12 @@ export function resolveMode(sectionKey: string): DashboardMode {
     sectionKey.includes("/plans")
   ) {
     return "plans";
+  }
+  if (sectionKey.includes("billing")) {
+    return "billing";
+  }
+  if (sectionKey.includes("payments/refunds")) {
+    return "payment-refunds";
   }
   if (sectionKey.includes("payments") || sectionKey.includes("checkout")) {
     return "payments";
