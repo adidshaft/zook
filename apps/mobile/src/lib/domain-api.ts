@@ -19,6 +19,8 @@ type VerifyOtpResult = {
   session?: AuthSessionSummary;
 };
 
+type SsoCallbackResult = VerifyOtpResult;
+
 export type MobileUploadFile = {
   uri: string;
   name: string;
@@ -85,6 +87,18 @@ export const authClient = {
     return mobileApiFetch<VerifyOtpResult>("/auth/verify-otp", {
       method: "POST",
       body: { identifier, code },
+    });
+  },
+  signInWithApple(identityToken: string) {
+    return mobileApiFetch<SsoCallbackResult>("/auth/apple/callback", {
+      method: "POST",
+      body: { identityToken },
+    });
+  },
+  signInWithGoogle(idToken: string) {
+    return mobileApiFetch<SsoCallbackResult>("/auth/google/callback", {
+      method: "POST",
+      body: { idToken },
     });
   },
   me(options: RequestOptions = {}) {

@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
-import { parseApiResponse } from "@zook/core";
+import { ApiError, parseApiResponse } from "@zook/core";
 import { demoMobileApiFetch } from "./demo-api";
 import {
   getMobileApiMode,
@@ -11,6 +11,21 @@ import {
 
 type MobileReleaseProfile = "local" | "staging" | "production";
 type MobilePushEnvironment = "development" | "preview" | "production";
+type ApiAuthHandlers = {
+  onExpired?: () => Promise<void> | void;
+  onForbidden?: () => Promise<void> | void;
+};
+
+let apiAuthHandlers: ApiAuthHandlers = {};
+
+export function setApiAuthHandlers(handlers: ApiAuthHandlers) {
+  apiAuthHandlers = handlers;
+  return () => {
+    if (apiAuthHandlers === handlers) {
+      apiAuthHandlers = {};
+    }
+  };
+}
 
 function normalizePath(path: string) {
   return path.startsWith("/") ? path : `/${path}`;
@@ -34,6 +49,19 @@ function ensureConfiguredUrl(configured: string | undefined, label: "API" | "web
     );
   }
   return value.replace(/\/$/, "");
+}
+
+function attachResponseRetryAfter(error: unknown, response: Response) {
+  if (!(error instanceof ApiError)) {
+    return error;
+  }
+  const retryAfterSeconds = response.headers.get("retry-after");
+  if (!retryAfterSeconds) {
+    return error;
+  }
+  const details = typeof error.details === "object" && error.details !== null ? error.details : {};
+  error.details = { ...details, retryAfterSeconds };
+  return error;
 }
 
 export function getMobileReleaseProfile(): MobileReleaseProfile {
@@ -140,8 +168,20 @@ export async function mobileApiFetch<T>(
       signal: requestInit.signal ?? controller.signal,
       ...(body !== undefined ? { body: body as BodyInit | null } : {}),
     });
-    return parseApiResponse<T>(response);
+    try {
+      return await parseApiResponse<T>(response);
+    } catch (error) {
+      throw attachResponseRetryAfter(error, response);
+    }
   } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      await apiAuthHandlers.onExpired?.();
+      throw error;
+    }
+    if (error instanceof ApiError && error.status === 403) {
+      await apiAuthHandlers.onForbidden?.();
+      throw error;
+    }
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error("Request timed out. Try again in a moment.");
     }

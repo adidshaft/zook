@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
@@ -16,13 +16,16 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { OfflineBanner } from "@/components/primitives";
 import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
 import { BranchSelectionProvider } from "@/lib/branch-selection";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
+import { setApiAuthHandlers } from "@/lib/api";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -102,14 +105,53 @@ function redirectAllowedForSession(
 }
 
 function LayoutContent() {
-  const { defaultRoute, hasActiveRole, hasAnyRole, logout, session, status } = useAuth();
+  const {
+    clearExpiredSession,
+    defaultRoute,
+    hasActiveRole,
+    hasAnyRole,
+    logout,
+    offlineBanner,
+    proactiveLogin,
+    session,
+    status,
+  } = useAuth();
   const { t } = useI18n();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const runtimeConfigError = getMobileRuntimeConfigError();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
   const [onboardingFlag, setOnboardingFlag] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    // CODEX: api.ts cannot import Expo router or React Query safely, so the app shell registers lifecycle handlers here.
+    return setApiAuthHandlers({
+      onExpired: async () => {
+        await clearExpiredSession();
+        queryClient.clear();
+        router.replace("/login?reason=expired" as never);
+      },
+      onForbidden: () => {
+        showToast({ title: "Permission denied", message: "You don't have permission for that action.", tone: "amber" });
+        if (router.canGoBack()) {
+          router.back();
+        }
+      },
+    });
+  }, [clearExpiredSession, queryClient, router]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !proactiveLogin) {
+      return;
+    }
+    const params = new URLSearchParams({ reason: "proactive" });
+    if (proactiveLogin.identifier) {
+      params.set("prefill", proactiveLogin.identifier);
+    }
+    router.replace(`/login?${params.toString()}` as never);
+  }, [proactiveLogin, router, status]);
 
   useEffect(() => {
     let mounted = true;
@@ -162,6 +204,10 @@ function LayoutContent() {
 
     if (isOnboardingRoute) {
       router.replace(defaultRoute as never);
+      return;
+    }
+
+    if (pathname === "/login" && firstParam(searchParams.reason) === "proactive") {
       return;
     }
 
@@ -237,6 +283,7 @@ function LayoutContent() {
   return (
     <>
       <StatusBar style="light" />
+      {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
       <Stack
         screenOptions={{
           headerShown: false,

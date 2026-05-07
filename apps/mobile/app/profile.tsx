@@ -96,8 +96,10 @@ export default function ProfileScreen() {
   const {
     activeOrgId,
     activeRole,
+    biometricEnabled,
     logout,
     session,
+    setBiometricEnabled,
     setActiveOrgId,
     setActiveRole,
     token,
@@ -267,6 +269,14 @@ export default function ProfileScreen() {
         },
       },
     ]);
+  }
+
+  function toggleBiometricUnlock() {
+    void setBiometricEnabled(!biometricEnabled).then((enabled) => {
+      if (!enabled && !biometricEnabled) {
+        Alert.alert("Biometric unlock", "Set up Face ID or device biometrics to enable this.");
+      }
+    });
   }
 
   return (
@@ -451,6 +461,14 @@ export default function ProfileScreen() {
                 style={styles.quickButton}
               >
                 Switch gym
+              </ZookButton>
+              <ZookButton
+                tone="secondary"
+                icon={biometricEnabled ? "lock-closed-outline" : "lock-open-outline"}
+                onPress={toggleBiometricUnlock}
+                style={styles.quickButton}
+              >
+                Biometric {biometricEnabled ? "on" : "off"}
               </ZookButton>
               <ZookButton
                 href="/settings"

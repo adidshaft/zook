@@ -10,14 +10,21 @@ import {
   useRef,
   useState,
 } from "react";
+import * as LocalAuthentication from "expo-local-authentication";
+import { Alert, AppState } from "react-native";
 import { authClient } from "./domain-api";
 import { DEMO_AUTH_TOKEN, getOfflineDemoRoleOverride, isOfflineDemoMode } from "./demo-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const SESSION_STORAGE_KEY = "zook_session";
+const SESSION_EXPIRES_AT_STORAGE_KEY = "zook_session_expires_at";
+const BIOMETRIC_ENABLED_STORAGE_KEY = "zook_biometric_enabled";
+const BIOMETRIC_PROMPTED_STORAGE_KEY = "zook_biometric_prompted";
 const ACTIVE_ORG_STORAGE_KEY = "zook_active_org";
 const ACTIVE_ROLE_STORAGE_KEY = "zook_active_role";
 const OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY = "zook_offline_demo_logged_out";
+const SESSION_FALLBACK_MS = 30 * 24 * 60 * 60 * 1000;
+const SESSION_PROACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000;
 type LogoutCleanup = () => Promise<void> | void;
 
 function sanitizeOtpCode(value: string) {
@@ -40,12 +47,20 @@ interface AuthContextValue {
   activeOrgId?: string;
   activeRole?: Role;
   defaultRoute: string;
+  offlineMode: boolean;
+  offlineBanner?: string;
+  proactiveLogin?: { identifier?: string; triggeredAt: number };
+  biometricEnabled: boolean;
   requestOtp: (identifier: string) => Promise<RequestOtpResult>;
+  signInWithApple: (identityToken: string) => Promise<void>;
+  signInWithGoogle: (idToken: string) => Promise<void>;
   verifyOtp: (identifier: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  clearExpiredSession: () => Promise<void>;
   setActiveOrgId: (orgId: string) => Promise<void>;
   setActiveRole: (role: Role) => Promise<void>;
+  setBiometricEnabled: (enabled: boolean) => Promise<boolean>;
   hasAnyRole: (...roles: Role[]) => boolean;
   hasActiveRole: (...roles: Role[]) => boolean;
   registerLogoutCleanup: (cleanup: LogoutCleanup) => () => void;
@@ -84,6 +99,51 @@ function sessionDefaultRoute(role?: Role) {
   return "/";
 }
 
+function fallbackSessionExpiresAt() {
+  return new Date(Date.now() + SESSION_FALLBACK_MS).toISOString();
+}
+
+function normalizeSessionExpiresAt(value?: string | null) {
+  const expiresAt = value ? new Date(value).getTime() : Number.NaN;
+  if (Number.isFinite(expiresAt) && expiresAt > Date.now()) {
+    return new Date(expiresAt).toISOString();
+  }
+  return fallbackSessionExpiresAt();
+}
+
+async function biometricAvailable() {
+  if (isOfflineDemoMode()) return false;
+  const [hasHardware, enrolled] = await Promise.all([
+    LocalAuthentication.hasHardwareAsync(),
+    LocalAuthentication.isEnrolledAsync(),
+  ]);
+  return hasHardware && enrolled;
+}
+
+async function authenticateBiometric() {
+  if (!(await biometricAvailable())) {
+    return false;
+  }
+  const result = await LocalAuthentication.authenticateAsync({
+    promptMessage: "Unlock Zook",
+    cancelLabel: "Use OTP",
+    disableDeviceFallback: false,
+  });
+  return result.success;
+}
+
+export async function getBiometricUnlockEnabled() {
+  return (await getStoredValue(BIOMETRIC_ENABLED_STORAGE_KEY)) === "1";
+}
+
+export async function setStoredBiometricUnlockEnabled(enabled: boolean) {
+  if (enabled && !(await biometricAvailable())) {
+    return false;
+  }
+  await setStoredValue(BIOMETRIC_ENABLED_STORAGE_KEY, enabled ? "1" : "0");
+  return true;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthContextValue["status"]>("loading");
   const [token, setToken] = useState<string | undefined>();
@@ -91,6 +151,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activeOrgId, setActiveOrgIdState] = useState<string | undefined>();
   const [activeRole, setActiveRoleState] = useState<Role | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [offlineBanner, setOfflineBanner] = useState<string | undefined>();
+  const [biometricEnabled, setBiometricEnabledState] = useState(false);
+  const [proactiveLogin, setProactiveLogin] = useState<
+    { identifier?: string; triggeredAt: number } | undefined
+  >();
   const logoutCleanupsRef = useRef(new Set<LogoutCleanup>());
 
   const hydrate = useCallback(
@@ -122,6 +188,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActiveOrgIdState(resolvedOrgId);
       setActiveRoleState(resolvedRole);
       setStatus("authenticated");
+      setOfflineMode(false);
+      setOfflineBanner(undefined);
+      setProactiveLogin(undefined);
       setError(undefined);
     },
     [],
@@ -130,6 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback(async () => {
     await Promise.all([
       deleteStoredValue(SESSION_STORAGE_KEY),
+      deleteStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY),
       deleteStoredValue(ACTIVE_ORG_STORAGE_KEY),
       deleteStoredValue(ACTIVE_ROLE_STORAGE_KEY),
     ]);
@@ -138,10 +208,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setActiveOrgIdState(undefined);
     setActiveRoleState(undefined);
     setStatus("unauthenticated");
+    setOfflineMode(false);
+    setOfflineBanner(undefined);
   }, []);
+
+  const clearExpiredSession = useCallback(async () => {
+    await clearSession();
+    setError("Your session expired. Sign in again to continue.");
+  }, [clearSession]);
+
+  const maybePromptForBiometric = useCallback(async () => {
+    if ((await getStoredValue(BIOMETRIC_PROMPTED_STORAGE_KEY)) === "1") {
+      return;
+    }
+    if (!(await biometricAvailable())) {
+      return;
+    }
+    await setStoredValue(BIOMETRIC_PROMPTED_STORAGE_KEY, "1");
+    Alert.alert("Unlock Zook faster?", "Use Face ID or your device biometrics next time.", [
+      { text: "Not now", style: "cancel" },
+      {
+        text: "Enable",
+        onPress: () => {
+          void setStoredBiometricUnlockEnabled(true).then((enabled) => {
+            setBiometricEnabledState(enabled);
+          });
+        },
+      },
+    ]);
+  }, []);
+
+  const checkProactiveExpiry = useCallback(async () => {
+    if (status !== "authenticated" || !token) {
+      return;
+    }
+    const storedExpiresAt = await getStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY);
+    const expiresAt = storedExpiresAt ? new Date(storedExpiresAt).getTime() : Number.NaN;
+    if (!Number.isFinite(expiresAt)) {
+      return;
+    }
+    if (Date.now() >= expiresAt - SESSION_PROACTIVE_WINDOW_MS) {
+      setProactiveLogin({
+        identifier: session?.user.email ?? session?.user.phone ?? undefined,
+        triggeredAt: Date.now(),
+      });
+    }
+  }, [session?.user.email, session?.user.phone, status, token]);
 
   const refresh = useCallback(async () => {
     setStatus("loading");
+    setOfflineMode(false);
+    setOfflineBanner(undefined);
     if (isOfflineDemoMode()) {
       const [storedOrgId, storedRole, demoLoggedOut] = await Promise.all([
         getStoredValue(ACTIVE_ORG_STORAGE_KEY),
@@ -162,6 +279,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getOfflineDemoRoleOverride() ?? (storedRole as Role | null) ?? undefined,
       );
       return;
+    }
+
+    const storedBiometricEnabled = (await getStoredValue(BIOMETRIC_ENABLED_STORAGE_KEY)) === "1";
+    setBiometricEnabledState(storedBiometricEnabled);
+    if (storedBiometricEnabled) {
+      const unlocked = await authenticateBiometric();
+      if (!unlocked) {
+        setStatus("unauthenticated");
+        setToken(undefined);
+        setSession(undefined);
+        return;
+      }
     }
 
     const [storedToken, storedOrgId, storedRole] = await Promise.all([
@@ -185,14 +314,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         storedOrgId ?? undefined,
         (storedRole as Role | null) ?? undefined,
       );
-    } catch {
-      await clearSession();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        await clearSession();
+        return;
+      }
+      setToken(storedToken);
+      setSession(undefined);
+      setActiveOrgIdState(storedOrgId ?? undefined);
+      setActiveRoleState((storedRole as Role | null) ?? undefined);
+      setStatus("authenticated");
+      setOfflineMode(true);
+      setOfflineBanner("Couldn't reach server - working offline");
     }
   }, [clearSession, hydrate]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    void checkProactiveExpiry();
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void checkProactiveExpiry();
+      }
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, [checkProactiveExpiry]);
 
   const requestOtp = useCallback(async (identifier: string) => {
     const result = await authClient.requestOtp(identifier);
@@ -204,11 +355,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (identifier: string, code: string) => {
       const normalizedCode = sanitizeOtpCode(code);
       const result = await authClient.verifyOtp(identifier, normalizedCode);
+      const expiresAt = normalizeSessionExpiresAt(result.expiresAt);
       await deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY);
-      await setStoredValue(SESSION_STORAGE_KEY, result.token);
+      await Promise.all([
+        setStoredValue(SESSION_STORAGE_KEY, result.token),
+        setStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY, expiresAt),
+      ]);
       await hydrate(result.token, activeOrgId, activeRole);
+      await maybePromptForBiometric();
     },
-    [activeOrgId, activeRole, hydrate],
+    [activeOrgId, activeRole, hydrate, maybePromptForBiometric],
+  );
+
+  const completeTokenSignIn = useCallback(
+    async (tokenValue: string, expiresAtValue?: string | null) => {
+      const expiresAt = normalizeSessionExpiresAt(expiresAtValue);
+      await deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY);
+      await Promise.all([
+        setStoredValue(SESSION_STORAGE_KEY, tokenValue),
+        setStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY, expiresAt),
+      ]);
+      await hydrate(tokenValue, activeOrgId, activeRole);
+      await maybePromptForBiometric();
+    },
+    [activeOrgId, activeRole, hydrate, maybePromptForBiometric],
+  );
+
+  const signInWithApple = useCallback(
+    async (identityToken: string) => {
+      const result = await authClient.signInWithApple(identityToken);
+      await completeTokenSignIn(result.token, result.expiresAt);
+    },
+    [completeTokenSignIn],
+  );
+
+  const signInWithGoogle = useCallback(
+    async (idToken: string) => {
+      const result = await authClient.signInWithGoogle(idToken);
+      await completeTokenSignIn(result.token, result.expiresAt);
+    },
+    [completeTokenSignIn],
   );
 
   const registerLogoutCleanup = useCallback((cleanup: LogoutCleanup) => {
@@ -256,6 +442,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setActiveRoleState(role);
   }, []);
 
+  const setBiometricEnabled = useCallback(async (enabled: boolean) => {
+    const stored = await setStoredBiometricUnlockEnabled(enabled);
+    setBiometricEnabledState(stored && enabled);
+    return stored;
+  }, []);
+
   const hasAnyRole = useCallback(
     (...roles: Role[]) =>
       Boolean(
@@ -279,12 +471,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activeOrgId,
       activeRole,
       defaultRoute: sessionDefaultRoute(activeRole ?? sessionDefaultRole(session)),
+      offlineMode,
+      offlineBanner,
+      proactiveLogin,
+      biometricEnabled,
       requestOtp,
+      signInWithApple,
+      signInWithGoogle,
       verifyOtp,
       logout,
       refresh,
+      clearExpiredSession,
       setActiveOrgId,
       setActiveRole,
+      setBiometricEnabled,
       hasAnyRole,
       hasActiveRole,
       registerLogoutCleanup,
@@ -293,16 +493,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [
       activeOrgId,
       activeRole,
+      biometricEnabled,
+      clearExpiredSession,
       error,
       hasActiveRole,
       hasAnyRole,
       logout,
+      offlineBanner,
+      offlineMode,
+      proactiveLogin,
       refresh,
       registerLogoutCleanup,
       requestOtp,
       session,
       setActiveOrgId,
       setActiveRole,
+      setBiometricEnabled,
+      signInWithApple,
+      signInWithGoogle,
       status,
       token,
       verifyOtp,
