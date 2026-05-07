@@ -1,12 +1,9 @@
-import DashboardPage from "../../[[...section]]/page";
+import { renderDashboardRoute } from "../../dashboard-route";
 
 export default function NotificationHistoryPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return DashboardPage({
-    params: Promise.resolve({ section: ["notifications", "history"] }),
-    searchParams,
-  });
+  return renderDashboardRoute({ section: ["notifications", "history"], searchParams });
 }

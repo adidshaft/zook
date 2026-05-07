@@ -1,12 +1,9 @@
-import DashboardPage from "../[[...section]]/page";
+import { renderDashboardRoute } from "../dashboard-route";
 
 export default function ShopPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return DashboardPage({
-    params: Promise.resolve({ section: ["shop"] }),
-    searchParams,
-  });
+  return renderDashboardRoute({ section: ["shop"], searchParams });
 }

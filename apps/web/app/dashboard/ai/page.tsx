@@ -1,12 +1,5 @@
-import DashboardPage from "../[[...section]]/page";
+import { renderDashboardRoute } from "../dashboard-route";
 
-export default function AiPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ branchId?: string }>;
-}) {
-  return DashboardPage({
-    params: Promise.resolve({ section: ["ai"] }),
-    searchParams,
-  });
+export default function AiPage({ searchParams }: { searchParams: Promise<{ branchId?: string }> }) {
+  return renderDashboardRoute({ section: ["ai"], searchParams });
 }

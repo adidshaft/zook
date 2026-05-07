@@ -1,12 +1,9 @@
-import DashboardPage from "../[[...section]]/page";
+import { renderDashboardRoute } from "../dashboard-route";
 
 export default function ProfilePage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return DashboardPage({
-    params: Promise.resolve({ section: ["public-profile"] }),
-    searchParams,
-  });
+  return renderDashboardRoute({ section: ["public-profile"], searchParams });
 }

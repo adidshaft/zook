@@ -13,6 +13,11 @@ import { ShopSection } from "./dashboard/sections/shop-section";
 import { MembersSection } from "./dashboard/sections/members-section";
 import { StaffSection } from "./dashboard/sections/staff-section";
 import { OverviewOperationalSection } from "./dashboard/sections/overview-operational-section";
+import {
+  CouponsRouteSection,
+  OffersRouteSection,
+  ReferralsRouteSection,
+} from "./dashboard/sections/plan-growth-sections";
 import { PlansSection } from "./dashboard/sections/plans-section";
 import { GymProfileSetupPanel } from "./gym-profile-setup-panel";
 import {
@@ -21,8 +26,10 @@ import {
 } from "./dashboard/operational/use-dashboard-operational-controller";
 
 export function DashboardOperationalPanel(props: DashboardOperationalPanelProps) {
+  const controller = useDashboardOperationalController(props);
   const {
     orgId,
+    sectionKey,
     organization,
     summary,
     branchScope,
@@ -158,7 +165,7 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
     updateOffer,
     createReferral,
     updateReferral,
-  } = useDashboardOperationalController(props);
+  } = controller;
 
   if (mode === "public-profile") {
     return <GymProfileSetupPanel orgId={orgId} />;
@@ -227,6 +234,7 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
   if (mode === "shop") {
     return (
       <ShopSection
+        view={sectionKey === "shop/orders" ? "orders" : "products"}
         orgId={orgId}
         summary={summary}
         branchScope={branchScope}
@@ -287,6 +295,18 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
   }
 
   if (mode === "plans") {
+    if (sectionKey === "plans/coupons") {
+      return <CouponsRouteSection {...controller} />;
+    }
+
+    if (sectionKey === "plans/offers") {
+      return <OffersRouteSection {...controller} />;
+    }
+
+    if (sectionKey === "plans/referrals") {
+      return <ReferralsRouteSection {...controller} />;
+    }
+
     return (
       <PlansSection
         membershipPlans={membershipPlans}

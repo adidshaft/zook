@@ -1,12 +1,9 @@
-import DashboardPage from "../../[[...section]]/page";
+import { renderDashboardRoute } from "../../dashboard-route";
 
 export default function PlanReferralsPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return DashboardPage({
-    params: Promise.resolve({ section: ["plans", "referrals"] }),
-    searchParams,
-  });
+  return renderDashboardRoute({ section: ["plans", "referrals"], searchParams });
 }

@@ -1,12 +1,9 @@
-import DashboardPage from "../../[[...section]]/page";
+import { renderDashboardRoute } from "../../dashboard-route";
 
 export default function NotificationTemplatesPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return DashboardPage({
-    params: Promise.resolve({ section: ["notifications", "templates"] }),
-    searchParams,
-  });
+  return renderDashboardRoute({ section: ["notifications", "templates"], searchParams });
 }

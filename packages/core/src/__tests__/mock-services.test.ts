@@ -24,19 +24,31 @@ describe("Zook mock service facades", () => {
 
   it("keeps membership activation behind mock payment confirmation", async () => {
     const services = createZookMockServices();
-    const membership = await services.membershipService.getCurrentMembership("user-aarav", "org-iron-temple");
+    const membership = await services.membershipService.getCurrentMembership(
+      "user-aarav",
+      "org-aarogya-strength",
+    );
     expect(membership?.status).toBe("ACTIVE");
 
     if (membership) {
       membership.status = "PENDING_PAYMENT";
     }
 
-    const checkout = await services.membershipService.createCheckoutSession("plan-hybrid-pro", "RHEA250");
+    const checkout = await services.membershipService.createCheckoutSession(
+      "plan-hybrid-pro",
+      "RHEA250",
+    );
     expect(checkout.status).toBe("CREATED");
-    expect((await services.membershipService.getCurrentMembership("user-aarav", "org-iron-temple"))?.status).toBe("PENDING_PAYMENT");
+    expect(
+      (await services.membershipService.getCurrentMembership("user-aarav", "org-aarogya-strength"))
+        ?.status,
+    ).toBe("PENDING_PAYMENT");
 
     await services.paymentService.confirmMockPayment(checkout.id);
-    expect((await services.membershipService.getCurrentMembership("user-aarav", "org-iron-temple"))?.status).toBe("ACTIVE");
+    expect(
+      (await services.membershipService.getCurrentMembership("user-aarav", "org-aarogya-strength"))
+        ?.status,
+    ).toBe("ACTIVE");
   });
 
   it("creates pending attendance and writes audit when reception approves it", async () => {
@@ -44,9 +56,12 @@ describe("Zook mock service facades", () => {
     const attempt = await services.attendanceService.scanQr("zook-demo-pending");
 
     expect(attempt.status).toBe("PENDING_APPROVAL");
-    expect(attempt.entryCode).toBe("ZK-7319");
+    expect(attempt.entryCode).toBe("AS-7319");
 
-    const approved = await services.receptionistService.approveAttendance(attempt.id, "Desk approved after identity match");
+    const approved = await services.receptionistService.approveAttendance(
+      attempt.id,
+      "Desk approved after identity match",
+    );
     expect(approved.status).toBe("APPROVED");
     expect(services.state.auditLogs[0]?.action).toBe("attendance.approved");
   });

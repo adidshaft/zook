@@ -418,6 +418,7 @@ export function resolveMode(sectionKey: string): DashboardMode {
   if (
     sectionKey.includes("membership-plans") ||
     sectionKey === "plans" ||
+    sectionKey.startsWith("plans/") ||
     sectionKey.includes("/plans")
   ) {
     return "plans";
