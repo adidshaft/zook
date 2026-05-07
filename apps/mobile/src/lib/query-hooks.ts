@@ -1017,11 +1017,18 @@ export function useApproveAttendance(orgId?: string) {
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useMutation({
-    mutationFn: (recordId: string) => {
+    mutationFn: (input: string | { recordId: string; reason?: string }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
+      const recordId = typeof input === "string" ? input : input.recordId;
+      const reason = typeof input === "string" ? undefined : input.reason;
       return mobileApiFetch<{ record: ReceptionQueueRecord }>(
         `/orgs/${ctx.orgId}/attendance/${recordId}/approve`,
-        { method: "POST", token: ctx.token, orgId: ctx.orgId },
+        {
+          method: "POST",
+          token: ctx.token,
+          orgId: ctx.orgId,
+          ...(reason ? { body: { reason } } : {}),
+        },
       );
     },
     onSuccess: async () => {

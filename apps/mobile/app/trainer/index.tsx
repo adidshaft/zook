@@ -13,6 +13,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
@@ -136,10 +137,7 @@ export default function Trainer() {
               <SectionHeader title="Clients" />
               <View style={styles.stack}>
                 {clientsQuery.isLoading ? (
-                  <GlassCard variant="compact" contentStyle={styles.attentionHeader}>
-                    <IconBubble icon="hourglass-outline" tone="amber" />
-                    <Text style={styles.cardTitle}>Loading clients...</Text>
-                  </GlassCard>
+                  <TrainerClientsSkeleton />
                 ) : clients.length ? (
                   clients.map((client) => {
                     const activePlanCount = client.summary?.activePlans ?? 0;
@@ -183,10 +181,7 @@ export default function Trainer() {
               />
               <View style={styles.stack}>
                 {clientsQuery.isLoading ? (
-                  <GlassCard variant="compact" contentStyle={styles.attentionHeader}>
-                    <IconBubble icon="hourglass-outline" tone="amber" />
-                    <Text style={styles.cardTitle}>Loading plan work...</Text>
-                  </GlassCard>
+                  <TrainerClientsSkeleton />
                 ) : plannedClients.length ? (
                   plannedClients.map((client) => (
                     <GlassCard

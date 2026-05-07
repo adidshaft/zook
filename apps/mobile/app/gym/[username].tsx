@@ -1,10 +1,13 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
   AppState,
   type AppStateStatus,
   Linking,
+  Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -32,6 +35,7 @@ import { useGymProfile } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function GymProfileScreen() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ username: string; ref?: string }>();
   const username = Array.isArray(params.username) ? params.username[0] : params.username;
   const referralCode = Array.isArray(params.ref) ? params.ref[0] : params.ref;
@@ -41,6 +45,7 @@ export default function GymProfileScreen() {
   const gymQuery = useGymProfile(username ?? "");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
@@ -146,6 +151,19 @@ export default function GymProfileScreen() {
     (!needsApproval || Boolean(viewerState?.approvedJoinRequest)) &&
     Boolean(planId);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["gym", username] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <ZookScreen>
       <ScrollView
@@ -153,12 +171,30 @@ export default function GymProfileScreen() {
         contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.lime}
+            colors={[colors.lime]}
+          />
+        }
       >
         {gym ? (
           <MobileHeader
             eyebrow="Gym profile"
             title={gym.name}
             subtitle={`${gym.city}, ${gym.state}`}
+            leading={
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={21} color={colors.text} />
+              </Pressable>
+            }
             trailing={
               <Pill tone={toneForJoinMode(gym.joinMode)}>{joinModeLabel(gym.joinMode)}</Pill>
             }
@@ -168,6 +204,17 @@ export default function GymProfileScreen() {
             eyebrow="Gym profile"
             title="Membership profile"
             subtitle="We’ll load plan details, join rules, and referral support for this gym."
+            leading={
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={21} color={colors.text} />
+              </Pressable>
+            }
+            showProfileShortcut={false}
           />
         )}
 
@@ -611,6 +658,16 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     gap: 16,
     paddingBottom: layout.bottomNavContentPadding,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
   },
   heroCard: {
     gap: 16,

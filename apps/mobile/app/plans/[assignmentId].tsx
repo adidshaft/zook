@@ -1,2 +1,1 @@
-// CODEX: placeholder for Sprint 5 plan detail route.
-
+export { PlanDetailScreen as default } from "../plans";

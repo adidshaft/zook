@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import type { ReactNode } from "react";
@@ -8,7 +8,9 @@ import {
   type AppStateStatus,
   Linking,
   Pressable,
+  RefreshControl,
   ScrollView,
+  type ScrollViewProps,
   StyleSheet,
   Text,
   View,
@@ -103,10 +105,15 @@ function PickupQr({ value }: { value: string }) {
 
 export default function Shop() {
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   const { t } = useI18n();
   const params = useLocalSearchParams<{
     orderId?: string | string[];
+    sessionId?: string | string[];
+    provider?: string | string[];
+    checkoutUrl?: string | string[];
+    totalPaise?: string | string[];
     focus?: string | string[];
   }>();
   const { activeOrgId, session } = useAuth();
@@ -115,8 +122,8 @@ export default function Shop() {
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [cartHydrated, setCartHydrated] = useState(false);
-  const [checkoutState, setCheckoutState] = useState<CheckoutState>("browse");
   const [order, setOrder] = useState<ShopOrderRecord | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [checkoutSession, setCheckoutSession] = useState<{
     id: string;
     provider?: string;
@@ -128,6 +135,13 @@ export default function Shop() {
   const completeMockPayment = useCompleteMockPayment();
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const checkoutState: CheckoutState = pathname.startsWith("/shop/pickup/")
+    ? "pickup"
+    : pathname === "/shop/checkout"
+      ? "checkout"
+      : pathname === "/shop/cart"
+        ? "cart"
+        : "browse";
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
   const cartStorageKey = `zook_shop_cart_${activeOrgId ?? activeOrganization?.orgId ?? "default"}`;
   const products = productsQuery.data?.products ?? [];
@@ -150,6 +164,11 @@ export default function Shop() {
   );
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const storedItemCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
+  const urlOrderId = firstParam(params.orderId);
+  const urlSessionId = firstParam(params.sessionId);
+  const urlProvider = firstParam(params.provider);
+  const urlCheckoutUrl = firstParam(params.checkoutUrl);
+  const urlTotalPaise = Number(firstParam(params.totalPaise) ?? 0);
 
   useEffect(() => {
     let cancelled = false;
@@ -209,18 +228,40 @@ export default function Shop() {
   }, [cartHydrated, products]);
 
   useEffect(() => {
-    const requestedOrderId = firstParam(params.orderId);
-    if (!requestedOrderId) {
+    if (!urlOrderId) {
       return;
     }
     const matchedOrder = ordersQuery.data?.orders.find(
-      (candidate) => candidate.id === requestedOrderId,
+      (candidate) => candidate.id === urlOrderId,
     );
     if (matchedOrder) {
       setOrder(matchedOrder);
-      setCheckoutState("pickup");
+      return;
     }
-  }, [ordersQuery.data?.orders, params.orderId]);
+    if (checkoutState === "checkout" && !order) {
+      setOrder({
+        id: urlOrderId,
+        status: "PENDING_PAYMENT",
+        pickupCode: null,
+        totalPaise: Number.isFinite(urlTotalPaise) ? urlTotalPaise : totalPaise,
+        items: cartItems.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          unitPaise: item.product.pricePaise,
+          product: item.product,
+        })),
+      } as ShopOrderRecord);
+    }
+  }, [cartItems, checkoutState, order, ordersQuery.data?.orders, totalPaise, urlOrderId, urlTotalPaise]);
+
+  useEffect(() => {
+    if (!urlSessionId) return;
+    setCheckoutSession({
+      id: urlSessionId,
+      ...(urlProvider ? { provider: urlProvider } : {}),
+      ...(urlCheckoutUrl ? { checkoutUrl: urlCheckoutUrl } : {}),
+    });
+  }, [urlCheckoutUrl, urlProvider, urlSessionId]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
@@ -237,7 +278,7 @@ export default function Shop() {
         if (refreshedOrder && refreshedOrder.status !== "PENDING_PAYMENT") {
           setOrder(refreshedOrder);
           setCart({});
-          setCheckoutState("pickup");
+          router.replace(`/shop/pickup/${refreshedOrder.id}` as never);
           void Promise.all([
             queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
             queryClient.invalidateQueries({ queryKey: ["org"] }),
@@ -246,7 +287,7 @@ export default function Shop() {
       });
     });
     return () => subscription.remove();
-  }, [order, ordersQuery, queryClient]);
+  }, [order, ordersQuery, queryClient, router]);
 
   function addToCart(productId: string) {
     const product = products.find((candidate) => candidate.id === productId);
@@ -288,7 +329,16 @@ export default function Shop() {
       provider: result.session.provider,
       ...(result.checkoutUrl ? { checkoutUrl: result.checkoutUrl } : {}),
     });
-    setCheckoutState("checkout");
+    router.push({
+      pathname: "/shop/checkout",
+      params: {
+        orderId: result.order.id,
+        sessionId: result.session.id,
+        ...(result.session.provider ? { provider: result.session.provider } : {}),
+        ...(result.checkoutUrl ? { checkoutUrl: result.checkoutUrl } : {}),
+        totalPaise: String(result.order.totalPaise),
+      },
+    } as never);
   }
 
   async function continuePayment() {
@@ -311,8 +361,40 @@ export default function Shop() {
     setOrder(paidOrder ?? { ...order, status: "READY_FOR_PICKUP" });
     setCart({});
     void deleteStoredValue(cartStorageKey);
-    setCheckoutState("pickup");
+    router.replace(`/shop/pickup/${(paidOrder ?? order).id}` as never);
   }
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const refreshControl = (
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      tintColor={colors.lime}
+      colors={[colors.lime]}
+    />
+  );
+
+  const headerBackButton = (
+    <Pressable
+      onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+      accessibilityRole="button"
+      accessibilityLabel="Back"
+      style={styles.iconButton}
+    >
+      <Ionicons name="chevron-back" size={21} color={colors.text} />
+    </Pressable>
+  );
 
   if (checkoutState === "pickup" && order) {
     const canContinuePayment = order.status === "PENDING_PAYMENT" && Boolean(checkoutSession);
@@ -320,6 +402,7 @@ export default function Shop() {
     return (
       <ShopShell
         selectedPath="/shop"
+        refreshControl={refreshControl}
         stickyAction={
           canContinuePayment ? (
           <ZookButton
@@ -335,6 +418,7 @@ export default function Shop() {
         <MobileHeader
           title={t("shop.readyForPickup")}
           subtitle={t("shop.readyForPickupSubtitle")}
+          leading={headerBackButton}
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
@@ -375,7 +459,6 @@ export default function Shop() {
         <ZookButton
           onPress={() => {
             setOrder(null);
-            setCheckoutState("browse");
             router.replace("/shop" as never);
           }}
           icon="bag-outline"
@@ -388,10 +471,23 @@ export default function Shop() {
 
   if (checkoutState === "checkout" && order) {
     return (
-      <ShopShell selectedPath="/shop">
+      <ShopShell
+        selectedPath="/shop"
+        refreshControl={refreshControl}
+        stickyAction={
+          <ZookButton
+            onPress={() => void continuePayment()}
+            disabled={!checkoutSession || completeMockPayment.isPending}
+            icon="card-outline"
+          >
+            {completeMockPayment.isPending ? t("shop.confirming") : t("shop.continuePayment")}
+          </ZookButton>
+        }
+      >
         <MobileHeader
           title={t("shop.payment")}
           subtitle={t("shop.paymentSubtitle")}
+          leading={headerBackButton}
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
@@ -424,9 +520,10 @@ export default function Shop() {
     return (
       <ShopShell
         selectedPath="/shop"
+        refreshControl={refreshControl}
         stickyAction={
           <View style={styles.actionRow}>
-            <SecondaryButton onPress={() => setCheckoutState("browse")} style={styles.actionHalf}>
+            <SecondaryButton onPress={() => router.replace("/shop" as never)} style={styles.actionHalf}>
               {t("shop.back")}
             </SecondaryButton>
             <ZookButton
@@ -443,6 +540,7 @@ export default function Shop() {
           eyebrow={t("shop.cart")}
           title={t("shop.reviewOrder")}
           subtitle={t("shop.reviewOrderSubtitle")}
+          leading={headerBackButton}
           chip={
             <View style={styles.headerChipStack}>
               <BranchSelectorChip />
@@ -508,7 +606,7 @@ export default function Shop() {
   const miniCart =
     itemCount > 0 ? (
       <Pressable
-        onPress={() => setCheckoutState("cart")}
+        onPress={() => router.push("/shop/cart" as never)}
         style={styles.miniCart}
         accessibilityRole="button"
         accessibilityLabel={t("shop.openMiniCart")}
@@ -521,7 +619,11 @@ export default function Shop() {
     ) : null;
 
   return (
-    <ShopShell selectedPath="/shop" floatingAction={miniCart}>
+    <ShopShell
+      selectedPath="/shop"
+      floatingAction={miniCart}
+      refreshControl={refreshControl}
+    >
       <MobileHeader
         title={t("shop.deskPickup")}
         subtitle={activeOrganization?.name ?? t("shop.activeGym")}
@@ -529,7 +631,7 @@ export default function Shop() {
         showProfileShortcut={false}
         trailing={
           <Pressable
-            onPress={() => setCheckoutState("cart")}
+            onPress={() => router.push("/shop/cart" as never)}
             accessibilityRole="button"
             accessibilityLabel={t("shop.openCart")}
             style={styles.cartIcon}
@@ -664,11 +766,13 @@ function ShopShell({
   selectedPath,
   floatingAction,
   stickyAction,
+  refreshControl,
 }: {
   children: ReactNode;
   selectedPath: string;
   floatingAction?: ReactNode;
   stickyAction?: ReactNode;
+  refreshControl?: ScrollViewProps["refreshControl"];
 }) {
   const insets = useSafeAreaInsets();
   const contentPaddingBottom = useBottomScrollPadding({
@@ -686,6 +790,7 @@ function ShopShell({
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: { paddingBottom: contentPaddingBottom },
+            refreshControl,
           }}
         >
           <View style={styles.content}>{children}</View>
@@ -716,6 +821,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
     paddingTop: 14,
     gap: 12,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
   },
   cartIcon: {
     width: 48,

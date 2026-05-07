@@ -1,5 +1,11 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import type { PaymentMode } from "@zook/core";
 import {
@@ -19,6 +25,7 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { ReceptionQueueSkeleton, TrainerClientsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { formatDateTime, formatInr } from "@/lib/formatting";
 import {
@@ -31,6 +38,7 @@ import {
   useReceptionQueue,
   useRecordManualPayment,
   useRejectAttendance,
+  type ReceptionQueueRecord,
 } from "@/lib/query-hooks";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { apiClient, receptionApi } from "@/lib/domain-api";
@@ -93,6 +101,9 @@ export default function Reception() {
   const canRecordOfflinePayment = useHasPermission("PAYMENTS_RECORD_OFFLINE");
   const view = normalizeView(params.view);
   const [reason, setReason] = useState("");
+  const [decisionReason, setDecisionReason] = useState("");
+  const [selectedDecisionAttempt, setSelectedDecisionAttempt] =
+    useState<ReceptionQueueRecord | null>(null);
   const [verifyCode, setVerifyCode] = useState("");
   const [verifyMessage, setVerifyMessage] = useState("");
   const [memberSearch, setMemberSearch] = useState("");
@@ -114,6 +125,7 @@ export default function Reception() {
   const manualAttendanceMutation = useManualAttendance();
   const recordPaymentMutation = useRecordManualPayment();
   const fulfillOrderMutation = useFulfillShopOrder();
+  const decisionSheetRef = useRef<BottomSheetModal>(null);
   const approvalQueue = queueQuery.data?.records ?? [];
   const pendingCount = approvalQueue.filter(
     (attempt) => attempt.status === "PENDING_APPROVAL",
@@ -160,6 +172,35 @@ export default function Reception() {
     showToast({ title: "Authentication required to perform this action." });
   };
 
+  const renderDecisionBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
+
+  function openDecisionSheet(attempt: ReceptionQueueRecord) {
+    setSelectedDecisionAttempt(attempt);
+    setDecisionReason(
+      attempt.rejectionReason ??
+        deskReasonCopy(
+          Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null,
+        ),
+    );
+    decisionSheetRef.current?.present();
+  }
+
+  function closeDecisionSheet() {
+    decisionSheetRef.current?.dismiss();
+    setSelectedDecisionAttempt(null);
+    setDecisionReason("");
+  }
+
   function revealMemberPhone(memberId: string) {
     setRevealedPhones((current) => {
       const next = new Set(current);
@@ -187,22 +228,27 @@ export default function Reception() {
     setVerifyMessage("");
   }
 
-  async function approveAttendance(attemptId: string) {
+  async function approveAttendance(attemptId: string, approvalReason: string) {
     try {
-      await approveAttendanceMutation.mutateAsync(attemptId);
+      await approveAttendanceMutation.mutateAsync({
+        recordId: attemptId,
+        reason: approvalReason || "Reception approved scan after review",
+      });
       setAttendanceStatus("Check-in approved.");
+      closeDecisionSheet();
     } catch (error) {
       Alert.alert("Failed", getApiErrorMessage(error) || "Could not approve. Please try again.");
     }
   }
 
-  async function rejectAttendance(attemptId: string) {
+  async function rejectAttendance(attemptId: string, rejectionReason: string) {
     try {
       await rejectAttendanceMutation.mutateAsync({
         recordId: attemptId,
-        reason: reason || "Reception rejected scan after review",
+        reason: rejectionReason || "Reception rejected scan after review",
       });
       setAttendanceStatus("Check-in rejected.");
+      closeDecisionSheet();
     } catch (error) {
       Alert.alert("Failed", getApiErrorMessage(error) || "Could not reject. Please try again.");
     }
@@ -448,7 +494,9 @@ export default function Reception() {
               action={<Pill tone="amber">{pendingCount} pending</Pill>}
             />
             <View style={styles.stack}>
-              {approvalQueue.length ? (
+              {queueQuery.isLoading ? (
+                <ReceptionQueueSkeleton />
+              ) : approvalQueue.length ? (
                 approvalQueue.map((attempt, index) => (
                   <GlassCard
                     key={attempt.id}
@@ -494,34 +542,12 @@ export default function Reception() {
                           </Text>
                         ))}
                     </View>
-                    {index === 0 ? (
-                      <View style={styles.formStack}>
-                        <FormField
-                          label="Decision reason"
-                          value={reason}
-                          onChangeText={setReason}
-                          multiline
-                        />
-                        <View style={styles.suggestionRow}>
-                          {reasonSuggestions.map((suggestion) => (
-                            <Pressable
-                              key={suggestion}
-                              onPress={() => setReason(suggestion)}
-                              accessibilityRole="button"
-                              style={styles.suggestionChip}
-                            >
-                              <Text style={styles.suggestionText}>{suggestion}</Text>
-                            </Pressable>
-                          ))}
-                        </View>
-                      </View>
-                    ) : null}
                     <View style={styles.actionRow}>
                       <PrimaryButton
                         icon="checkmark-circle-outline"
                         disabled={!canApproveAttendance || approveAttendanceMutation.isPending}
                         onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}
-                        onPress={() => approveAttendance(attempt.id)}
+                        onPress={() => openDecisionSheet(attempt)}
                         style={styles.actionHalf}
                       >
                         Approve
@@ -530,7 +556,7 @@ export default function Reception() {
                         icon="close-circle-outline"
                         disabled={!canApproveAttendance || rejectAttendanceMutation.isPending}
                         onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}
-                        onPress={() => rejectAttendance(attempt.id)}
+                        onPress={() => openDecisionSheet(attempt)}
                         style={styles.actionHalf}
                       >
                         Reject
@@ -560,6 +586,7 @@ export default function Reception() {
               placeholder="Search member by name, email, phone, member ID"
             />
             <View style={styles.stack}>
+              {membersQuery.isLoading ? <TrainerClientsSkeleton /> : null}
               {!membersQuery.isLoading && !filteredMembers.length ? (
                 <GlassCard variant="compact" padding={14}>
                   <EmptyState title="No members found" body="Try a different name or email." />
@@ -858,6 +885,86 @@ export default function Reception() {
           </>
         ) : null}
       </KeyboardAwareScreen>
+      <BottomSheetModal
+        ref={decisionSheetRef}
+        snapPoints={["48%"]}
+        enablePanDownToClose
+        backdropComponent={renderDecisionBackdrop}
+        backgroundStyle={styles.sheetBackground}
+        handleIndicatorStyle={styles.sheetHandle}
+        onDismiss={() => {
+          setSelectedDecisionAttempt(null);
+          setDecisionReason("");
+        }}
+      >
+        <BottomSheetView style={styles.decisionSheetContent}>
+          <View style={styles.sheetHeader}>
+            <View style={styles.sheetTitleCopy}>
+              <Text style={styles.sheetEyebrow}>Decision reason</Text>
+              <Text style={styles.sheetTitle}>
+                {selectedDecisionAttempt?.user?.name ??
+                  selectedDecisionAttempt?.user?.email ??
+                  "Member check-in"}
+              </Text>
+              <Text style={styles.cardBody}>
+                Add the desk note before approving or rejecting this scan.
+              </Text>
+            </View>
+            <Pressable
+              onPress={closeDecisionSheet}
+              accessibilityRole="button"
+              accessibilityLabel="Close decision sheet"
+              style={styles.sheetCloseButton}
+            >
+              <Text style={styles.sheetCloseText}>Close</Text>
+            </Pressable>
+          </View>
+          <FormField
+            label="Decision reason"
+            value={decisionReason}
+            onChangeText={setDecisionReason}
+            multiline
+          />
+          <View style={styles.suggestionRow}>
+            {reasonSuggestions.map((suggestion) => (
+              <Pressable
+                key={suggestion}
+                onPress={() => setDecisionReason(suggestion)}
+                accessibilityRole="button"
+                style={styles.suggestionChip}
+              >
+                <Text style={styles.suggestionText}>{suggestion}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.actionRow}>
+            <PrimaryButton
+              icon="checkmark-circle-outline"
+              disabled={!selectedDecisionAttempt || approveAttendanceMutation.isPending}
+              onPress={() => {
+                if (selectedDecisionAttempt) {
+                  void approveAttendance(selectedDecisionAttempt.id, decisionReason);
+                }
+              }}
+              style={styles.actionHalf}
+            >
+              {approveAttendanceMutation.isPending ? "Approving..." : "Approve"}
+            </PrimaryButton>
+            <SecondaryButton
+              icon="close-circle-outline"
+              disabled={!selectedDecisionAttempt || rejectAttendanceMutation.isPending}
+              onPress={() => {
+                if (selectedDecisionAttempt) {
+                  void rejectAttendance(selectedDecisionAttempt.id, decisionReason);
+                }
+              }}
+              style={styles.actionHalf}
+            >
+              {rejectAttendanceMutation.isPending ? "Rejecting..." : "Reject"}
+            </SecondaryButton>
+          </View>
+        </BottomSheetView>
+      </BottomSheetModal>
       <BottomNav role="RECEPTIONIST" activeTab={view === "desk" ? undefined : view} />
     </ZookScreen>
   );
@@ -1117,6 +1224,49 @@ const styles = StyleSheet.create({
   },
   revealPhoneText: {
     color: colors.lime,
+    ...typography.caption,
+  },
+  sheetBackground: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+  },
+  sheetHandle: {
+    backgroundColor: "rgba(255,255,255,0.22)",
+  },
+  decisionSheetContent: {
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.md,
+  },
+  sheetTitleCopy: {
+    flex: 1,
+    gap: 5,
+  },
+  sheetEyebrow: {
+    color: colors.lime,
+    ...typography.eyebrow,
+  },
+  sheetTitle: {
+    color: colors.text,
+    ...typography.headerTitle,
+  },
+  sheetCloseButton: {
+    minHeight: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetCloseText: {
+    color: colors.muted,
     ...typography.caption,
   },
 });

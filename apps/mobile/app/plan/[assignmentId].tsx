@@ -1,4 +1,4 @@
-import { Redirect, useLocalSearchParams } from "expo-router";
+import { Redirect, useLocalSearchParams, type Href } from "expo-router";
 
 export default function PlanAliasScreen() {
   const params = useLocalSearchParams<{
@@ -18,18 +18,13 @@ export default function PlanAliasScreen() {
   const orgId = Array.isArray(params.orgId) ? params.orgId[0] : params.orgId;
   const focus = Array.isArray(params.focus) ? params.focus[0] : params.focus;
 
-  return (
-    <Redirect
-      href={{
-        pathname: "/plans",
-        params: {
-          ...(assignmentId ? { assignmentId } : {}),
-          ...(planId ? { planId } : {}),
-          ...(notificationId ? { notificationId } : {}),
-          ...(orgId ? { orgId } : {}),
-          focus: focus ?? "plan",
-        },
-      }}
-    />
-  );
+  const query = new URLSearchParams({
+    ...(planId ? { planId } : {}),
+    ...(notificationId ? { notificationId } : {}),
+    ...(orgId ? { orgId } : {}),
+    focus: focus ?? "plan",
+  }).toString();
+  const target = `/plans/${encodeURIComponent(assignmentId ?? planId ?? "")}${query ? `?${query}` : ""}`;
+
+  return <Redirect href={target as Href} />;
 }

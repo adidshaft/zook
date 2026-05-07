@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Keyboard, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   BottomNav,
   BranchSelectorChip,
@@ -18,6 +19,7 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { OwnerDashboardSkeleton, TrainerClientsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { apiClient } from "@/lib/domain-api";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
@@ -85,12 +87,14 @@ function redactPhone(phone?: string | null) {
 
 export default function Owner() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { activeOrgId, activeRole, token } = useAuth();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const view = normalizeView(params.view);
   const [memberSearch, setMemberSearch] = useState("");
   const [memberFilter, setMemberFilter] = useState<MemberFilter>("all");
   const [actionStatus, setActionStatus] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const [revealedPhones, setRevealedPhones] = useState<Set<string>>(() => new Set());
   const shellRole = activeRole === "ADMIN" ? "ADMIN" : "OWNER";
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
@@ -263,6 +267,17 @@ export default function Owner() {
     await Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
   }
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({
+        queryKey: activeOrgId ? ["org", activeOrgId] : ["org"],
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <ZookScreen>
       <KeyboardAwareScreen
@@ -270,6 +285,14 @@ export default function Owner() {
           contentInsetAdjustmentBehavior: "never",
           showsVerticalScrollIndicator: false,
           contentContainerStyle: styles.content,
+          refreshControl: (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.lime}
+              colors={[colors.lime]}
+            />
+          ),
         }}
       >
         <View style={styles.headerRow}>
@@ -303,7 +326,9 @@ export default function Owner() {
           </Pressable>
         </View>
 
-        {view === "command" ? (
+        {view === "command" && dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
+
+        {view === "command" && !dashboardQuery.isLoading ? (
           <>
             <View style={styles.metricGrid}>
               <Pressable
@@ -400,6 +425,21 @@ export default function Owner() {
               onChangeText={setMemberSearch}
               placeholder="Search by name or email"
               leading={<Ionicons name="search-outline" size={17} color={colors.muted} />}
+              trailing={
+                memberSearch ? (
+                  <Pressable
+                    onPress={() => {
+                      setMemberSearch("");
+                      Keyboard.dismiss();
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear member search"
+                    style={styles.clearSearchButton}
+                  >
+                    <Ionicons name="close" size={16} color={colors.muted} />
+                  </Pressable>
+                ) : null
+              }
             />
             <View style={styles.filterRow}>
               {[
@@ -430,10 +470,7 @@ export default function Owner() {
             <SectionHeader title="Members" subtitle={`${filteredMembers.length} members`} />
             <View style={styles.membersStack}>
               {membersQuery.isLoading ? (
-                <GlassCard variant="compact" contentStyle={styles.membersStateContent}>
-                  <IconBubble icon="hourglass-outline" tone="amber" size={40} />
-                  <Text style={styles.membersStateText}>Loading members...</Text>
-                </GlassCard>
+                <TrainerClientsSkeleton />
               ) : null}
 
               {!membersQuery.isLoading && !filteredMembers.length ? (
@@ -798,6 +835,14 @@ const styles = StyleSheet.create({
   },
   utilityTextActive: {
     color: colors.lime,
+  },
+  clearSearchButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.06)",
   },
   title: {
     color: colors.text,

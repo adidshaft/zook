@@ -1,7 +1,8 @@
-import { Link, Stack, useLocalSearchParams } from "expo-router";
+import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useDeferredValue, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
   BottomNav,
@@ -13,6 +14,7 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { FindGymsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { toWebUrl } from "@/lib/api";
 import { joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
@@ -29,10 +31,13 @@ function normalizeMediaUrl(value?: string | null) {
 }
 
 export default function FindGyms() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const routeParams = useLocalSearchParams<{ focus?: string; ref?: string }>();
   const referralCode = Array.isArray(routeParams.ref) ? routeParams.ref[0] : routeParams.ref;
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const deferredQuery = useDeferredValue(query.trim());
   const deferredCity = useDeferredValue(city.trim());
   const gymsQuery = useGymSearch({
@@ -40,6 +45,15 @@ export default function FindGyms() {
     city: deferredCity || undefined,
   });
   const gyms = gymsQuery.data?.gyms ?? [];
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["gyms"] });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <>
@@ -50,12 +64,31 @@ export default function FindGyms() {
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
+            refreshControl: (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.lime}
+                colors={[colors.lime]}
+              />
+            ),
           }}
         >
           <MobileHeader
             eyebrow="Discovery"
             title="Find your gym"
             subtitle="Browse public gyms and apply referral codes"
+            leading={
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={21} color={colors.text} />
+              </Pressable>
+            }
+            showProfileShortcut={false}
           />
 
           {referralCode ? (
@@ -131,10 +164,7 @@ export default function FindGyms() {
           />
 
           {gymsQuery.isLoading ? (
-            <GlassCard variant="compact" contentStyle={styles.loadingContent}>
-              <IconBubble icon="hourglass-outline" tone="amber" size={36} />
-              <Text style={styles.loadingText}>Searching public gyms...</Text>
-            </GlassCard>
+            <FindGymsSkeleton />
           ) : null}
 
           {!gymsQuery.isLoading && !gyms.length ? (
@@ -236,6 +266,16 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     gap: 14,
     paddingBottom: layout.bottomNavContentPadding,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
   },
   referralContent: {
     flexDirection: "row",

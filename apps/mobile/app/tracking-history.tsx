@@ -1,7 +1,8 @@
 import { Stack, useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { TrackingWindow } from "@zook/core";
 import {
   BottomNav,
@@ -11,6 +12,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { TrackingHistorySkeleton } from "@/components/skeletons";
 import {
   TrackingSectionHeader,
   WorkoutHistorySummary,
@@ -30,7 +32,9 @@ const windowLabels: Record<TrackingWindow, string> = {
 
 export default function TrackingHistory() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [selectedWindow, setSelectedWindow] = useState<TrackingWindow>("WEEKLY");
+  const [refreshing, setRefreshing] = useState(false);
   const workoutsQuery = useMyTrackingWorkouts();
   const workouts = (workoutsQuery.data?.workouts ?? []) as Array<{
     id: string;
@@ -55,6 +59,15 @@ export default function TrackingHistory() {
     [workouts, selectedWindow],
   );
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["me", "tracking", "workouts"] });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -63,13 +76,21 @@ export default function TrackingHistory() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.lime}
+              colors={[colors.lime]}
+            />
+          }
         >
           <MobileHeader
             title="History"
             subtitle={`${series.entries.length} session${series.entries.length !== 1 ? "s" : ""} logged`}
             leading={
               <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace("/tracking")}
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
                 style={styles.iconButton}
@@ -114,10 +135,7 @@ export default function TrackingHistory() {
           <TrackingSectionHeader title="Logged sessions" />
           <View style={styles.logList}>
             {workoutsQuery.isLoading ? (
-              <GlassCard variant="compact" contentStyle={styles.loadingContent}>
-                <IconBubble icon="hourglass-outline" tone="amber" size={36} />
-                <Text style={styles.loadingText}>Loading history...</Text>
-              </GlassCard>
+              <TrackingHistorySkeleton />
             ) : null}
             {!workoutsQuery.isLoading && series.entries.length === 0 ? (
               <GlassCard variant="compact" contentStyle={styles.emptyContent}>

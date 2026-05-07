@@ -1,6 +1,8 @@
-import { Link, Stack } from "expo-router";
+import { Link, Stack, useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { WorkoutLogEntry } from "@zook/core";
 import {
@@ -23,8 +25,11 @@ import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 export default function TrackingDashboard() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const trackingQuery = useMyTracking();
   const bodyProgressQuery = useMyBodyProgress();
+  const [refreshing, setRefreshing] = useState(false);
   const { token } = useAuth();
   const summary = trackingQuery.data?.summary;
   const recentWorkouts = (trackingQuery.data?.recentWorkouts ?? []) as Array<{
@@ -78,6 +83,18 @@ export default function TrackingDashboard() {
   const totalDuration = summary?.totalDuration ?? 0;
   const currentStreak = computeWorkoutStreak(recentWorkouts);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "tracking", "summary"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "tracking", "body-progress"] }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -86,8 +103,30 @@ export default function TrackingDashboard() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.lime}
+              colors={[colors.lime]}
+            />
+          }
         >
-          <MobileHeader title="Tracking" subtitle="Workouts, progress, and goals" />
+          <MobileHeader
+            title="Tracking"
+            subtitle="Workouts, progress, and goals"
+            leading={
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={21} color={colors.text} />
+              </Pressable>
+            }
+            showProfileShortcut={false}
+          />
 
           {/* Weekly summary hero */}
           <GlassCard variant="success" contentStyle={styles.heroContent}>
@@ -409,6 +448,16 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     gap: 12,
     paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
   },
   heroContent: {
     gap: spacing.md,

@@ -10,6 +10,7 @@ import {
   MobileHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { NotificationsSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/lib/auth";
 import { notificationsApi } from "@/lib/domain-api";
 import { formatRelativeDate } from "@/lib/formatting";
@@ -146,8 +147,11 @@ export default function NotificationsScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ["me", "notifications"] });
-    setRefreshing(false);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["me", "notifications"] });
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const dateGroups = groupByDate(notifications);
@@ -176,6 +180,16 @@ export default function NotificationsScreen() {
                 : latestLabel
                   ? `All caught up · latest ${latestLabel}`
                   : "All caught up"
+            }
+            leading={
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={21} color={colors.text} />
+              </Pressable>
             }
             trailing={
               unreadCount > 0 ? (
@@ -206,10 +220,7 @@ export default function NotificationsScreen() {
           ) : null}
 
           {notificationsQuery.isLoading ? (
-            <GlassCard variant="compact" contentStyle={styles.loadingContent}>
-              <IconBubble icon="hourglass-outline" tone="amber" size={36} />
-              <Text style={styles.loadingText}>Loading notifications...</Text>
-            </GlassCard>
+            <NotificationsSkeleton />
           ) : null}
 
           {!notificationsQuery.isLoading && !notifications.length ? (
@@ -314,6 +325,16 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     gap: 14,
     paddingBottom: layout.bottomNavContentPadding,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
   },
   markAllButton: {
     minWidth: 44,

@@ -38,14 +38,24 @@ const tabs: Array<{ label: string; value: ClientTab }> = [
   { label: "Notes", value: "notes" },
 ];
 
+function firstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function isClientTab(value: string | undefined): value is ClientTab {
+  return value === "summary" || value === "plans" || value === "progress" || value === "notes";
+}
+
 export default function TrainerClientDetail() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; tab?: string | string[] }>();
+  const { id } = params;
   const clientId = id ?? "";
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const canPublishAssignedPlan = useHasPermission("PLANS_PUBLISH_ASSIGNED");
-  const [tab, setTab] = useState<ClientTab>("summary");
+  const tabParam = firstParam(params.tab);
+  const tab: ClientTab = isClientTab(tabParam) ? tabParam : "summary";
   const [status, setStatus] = useState("");
   const [planTitle, setPlanTitle] = useState("");
   const [savingPlan, setSavingPlan] = useState(false);
@@ -67,6 +77,9 @@ export default function TrainerClientDetail() {
   const recentWorkouts = client?.summary?.recentWorkouts ?? [];
   const showOwnerApprovalRequired = () => {
     showToast({ title: "Owner approval required", tone: "amber" });
+  };
+  const setTab = (nextTab: ClientTab) => {
+    router.setParams({ tab: nextTab });
   };
 
   useEffect(() => {

@@ -5,6 +5,8 @@ import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,
@@ -312,7 +314,10 @@ function LayoutContent() {
         <Stack.Screen name="membership" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="find-gyms" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="assistant" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen
+          name="tracking-entry"
+          options={{ presentation: "modal", animation: "slide_from_bottom" }}
+        />
         <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="owner" options={{ animation: "none" }} />
         <Stack.Screen name="platform" options={{ animation: "none" }} />
@@ -328,7 +333,7 @@ function LayoutContent() {
         <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen
           name="attendance/[attendanceRecordId]"
-          options={{ animation: "slide_from_bottom" }}
+          options={{ presentation: "modal", animation: "slide_from_bottom" }}
         />
         <Stack.Screen name="owner/member/[id]" options={{ animation: "slide_from_right" }} />
       </Stack>
@@ -379,23 +384,30 @@ export default function Layout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <BranchSelectionProvider>
-            <BottomNavVisibilityProvider>
-              <PushNotificationsProvider>
-                <LayoutContent />
-              </PushNotificationsProvider>
-            </BottomNavVisibilityProvider>
-          </BranchSelectionProvider>
-        </AuthProvider>
-      </I18nProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={styles.gestureRoot}>
+      <QueryClientProvider client={queryClient}>
+        <BottomSheetModalProvider>
+          <I18nProvider>
+            <AuthProvider>
+              <BranchSelectionProvider>
+                <BottomNavVisibilityProvider>
+                  <PushNotificationsProvider>
+                    <LayoutContent />
+                  </PushNotificationsProvider>
+                </BottomNavVisibilityProvider>
+              </BranchSelectionProvider>
+            </AuthProvider>
+          </I18nProvider>
+        </BottomSheetModalProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  gestureRoot: {
+    flex: 1,
+  },
   loading: {
     flex: 1,
     backgroundColor: colors.bg,

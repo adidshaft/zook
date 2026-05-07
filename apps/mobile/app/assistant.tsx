@@ -1,10 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
+import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Keyboard,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -55,6 +57,7 @@ function starterMessage(isTrainer: boolean): ChatMessage {
 }
 
 export default function AssistantScreen() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
   const composerTranslateY = useRef(new Animated.Value(0)).current;
@@ -72,6 +75,7 @@ export default function AssistantScreen() {
   const [attachSummary, setAttachSummary] = useState(false);
   const [loading, setLoading] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const plansCount = plansQuery.data?.plans?.length ?? 0;
   const firstClient = trainerClientsQuery.data?.clients?.[0];
@@ -194,6 +198,19 @@ export default function AssistantScreen() {
     void deleteStoredValue(storageKey);
   }
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "plans"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const suggestedPrompts = isTrainer ? trainerPrompts : memberPrompts;
   const composerBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + spacing.lg;
 
@@ -221,6 +238,14 @@ export default function AssistantScreen() {
         contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.lime}
+            colors={[colors.lime]}
+          />
+        }
       >
         <MobileHeader
           eyebrow={isTrainer ? "Trainer assistant" : "Plan assistant"}
@@ -229,8 +254,18 @@ export default function AssistantScreen() {
             ? "Attach client summaries, import notes, draft plans."
             : "Ask in any language — answers are tied to your profile."}
           leading={
+            <Pressable
+              onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+              style={styles.iconButton}
+            >
+              <Ionicons name="chevron-back" size={21} color={colors.text} />
+            </Pressable>
+          }
+          chip={
             <View style={styles.aiMark}>
-              <Ionicons name="sparkles" size={22} color={colors.bg} />
+              <Ionicons name="sparkles" size={18} color={colors.bg} />
             </View>
           }
           showProfileShortcut={false}
@@ -372,12 +407,22 @@ const styles = StyleSheet.create({
     paddingBottom: layout.bottomNavContentPadding + 92,
   },
   aiMark: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.lime,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
   },
   controlsRow: {
     flexDirection: "row",

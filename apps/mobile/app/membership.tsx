@@ -1,13 +1,20 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetScrollView,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppState,
   type AppStateStatus,
   Linking,
-  Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,6 +31,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { MembershipSkeleton, PlansSkeleton } from "@/components/skeletons";
 import { toWebUrl } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
@@ -140,6 +148,7 @@ function isAutopayLive(autopay?: AutopayRecord | null) {
 }
 
 export default function MembershipScreen() {
+  const router = useRouter();
   const routeParams = useLocalSearchParams<{
     focus?: string;
     notificationId?: string;
@@ -181,6 +190,7 @@ export default function MembershipScreen() {
   const [renewing, setRenewing] = useState(false);
   const [autopayStatus, setAutopayStatus] = useState("");
   const [autopayBusy, setAutopayBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const selectedPlan = useMemo(
@@ -312,6 +322,21 @@ export default function MembershipScreen() {
     }
   }
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+        gymUsername
+          ? queryClient.invalidateQueries({ queryKey: ["gym", gymUsername] })
+          : Promise.resolve(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -320,6 +345,14 @@ export default function MembershipScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.lime}
+              colors={[colors.lime]}
+            />
+          }
         >
           <MobileHeader
             eyebrow="Membership"
@@ -329,6 +362,17 @@ export default function MembershipScreen() {
                 ? `${activeCount} active · ${expiringSoonCount} expiring soon · ${memberships.length} total`
                 : "No active plans"
             }
+            leading={
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={21} color={colors.text} />
+              </Pressable>
+            }
+            showProfileShortcut={false}
           />
 
           {routeParams.focus === "membership" ? (
@@ -346,10 +390,7 @@ export default function MembershipScreen() {
           ) : null}
 
           {membershipsQuery.isLoading ? (
-            <GlassCard variant="compact" contentStyle={styles.loadingContent}>
-              <IconBubble icon="hourglass-outline" tone="amber" size={36} />
-              <Text style={styles.loadingText}>Loading memberships...</Text>
-            </GlassCard>
+            <MembershipSkeleton />
           ) : null}
 
           {!membershipsQuery.isLoading && !memberships.length ? (
@@ -599,114 +640,126 @@ function RenewalSheet({
   status: string;
 }) {
   const insets = useSafeAreaInsets();
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ["74%"], []);
   const plans = availablePlans.length
     ? availablePlans
     : currentPlan?.id
       ? [currentPlan as PublicPlanSummary]
       : [];
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
+
+  useEffect(() => {
+    if (open) {
+      sheetRef.current?.present();
+      return;
+    }
+    sheetRef.current?.dismiss();
+  }, [open]);
 
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.sheetBackdrop}>
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={onClose}
-          accessibilityLabel="Close renewal sheet"
-        />
-        <View
-          style={[
-            styles.sheet,
-            {
-              maxHeight: "88%",
-              paddingBottom: Math.max(insets.bottom + spacing.md, spacing.lg),
-            },
-          ]}
-        >
-          <View style={styles.sheetGrabber} />
-          <View style={styles.sheetHeader}>
-            <View style={styles.sheetTitleCopy}>
-              <Text style={styles.sheetEyebrow}>Renew membership</Text>
-              <Text style={styles.sheetTitle}>
-                {selectedPlan?.name ?? currentPlan?.name ?? "Current plan"}
-              </Text>
-              <Text style={styles.sheetBody}>
-                Continue at {gymName} with the same plan or choose another available option.
-              </Text>
-            </View>
-            <Pressable
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={18} color={colors.text} />
-            </Pressable>
+    <BottomSheetModal
+      ref={sheetRef}
+      snapPoints={snapPoints}
+      enablePanDownToClose
+      backdropComponent={renderBackdrop}
+      backgroundStyle={styles.sheetBackground}
+      handleIndicatorStyle={styles.sheetHandle}
+      bottomInset={insets.bottom}
+      onDismiss={onClose}
+    >
+      <BottomSheetView style={styles.sheet}>
+        <View style={styles.sheetHeader}>
+          <View style={styles.sheetTitleCopy}>
+            <Text style={styles.sheetEyebrow}>Renew membership</Text>
+            <Text style={styles.sheetTitle}>
+              {selectedPlan?.name ?? currentPlan?.name ?? "Current plan"}
+            </Text>
+            <Text style={styles.sheetBody}>
+              Continue at {gymName} with the same plan or choose another available option.
+            </Text>
           </View>
-
-          <ScrollView
-            style={styles.planSelectorScroll}
-            contentContainerStyle={styles.planSelector}
-            showsVerticalScrollIndicator={false}
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            style={styles.closeButton}
           >
-            {loadingPlans ? <Text style={styles.loadingText}>Loading plan options...</Text> : null}
-            {!loadingPlans && !plans.length ? (
-              <Text style={styles.emptyBody}>
-                No alternate plans are published yet. Same-plan renewal will be requested.
-              </Text>
-            ) : null}
-            {plans.map((plan) => {
-              const selected = selectedPlanId === plan.id;
-              return (
-                <Pressable
-                  key={plan.id}
-                  onPress={() => setSelectedPlanId(plan.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Select ${plan.name}`}
-                  style={[styles.planOption, selected ? styles.planOptionSelected : null]}
-                >
-                  <View style={styles.planOptionCopy}>
-                    <Text style={styles.planOptionTitle}>{plan.name}</Text>
-                    <Text style={styles.planOptionMeta}>
-                      {titleCaseFromCode(plan.type ?? "MEMBERSHIP")} · {formatInr(plan.pricePaise)}
-                    </Text>
-                  </View>
-                  {selected ? (
-                    <Ionicons name="checkmark-circle" size={20} color={colors.lime} />
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {selectedPlan ? (
-            <GlassCard variant="compact" contentStyle={styles.renewalSummary}>
-              <Text style={styles.summaryTitle}>Renewal summary</Text>
-              <Text style={styles.summaryBody}>
-                {selectedPlan.durationDays
-                  ? `${selectedPlan.durationDays} days`
-                  : "Gym-defined validity"}
-                {selectedPlan.visitLimit ? ` · ${selectedPlan.visitLimit} visits` : ""}
-              </Text>
-            </GlassCard>
-          ) : null}
-
-          {status ? <Text style={styles.statusMessage}>{status}</Text> : null}
-          <View style={styles.sheetActions}>
-            <ZookButton tone="secondary" onPress={onClose} style={styles.actionHalf}>
-              Cancel
-            </ZookButton>
-            <ZookButton
-              onPress={onRenew}
-              disabled={renewing}
-              icon="refresh-outline"
-              style={styles.actionHalf}
-            >
-              {renewing ? "Starting..." : "Pay securely"}
-            </ZookButton>
-          </View>
+            <Ionicons name="close" size={18} color={colors.text} />
+          </Pressable>
         </View>
-      </View>
-    </Modal>
+
+        <BottomSheetScrollView
+          style={styles.planSelectorScroll}
+          contentContainerStyle={styles.planSelector}
+          showsVerticalScrollIndicator={false}
+        >
+          {loadingPlans ? <PlansSkeleton /> : null}
+          {!loadingPlans && !plans.length ? (
+            <Text style={styles.emptyBody}>
+              No alternate plans are published yet. Same-plan renewal will be requested.
+            </Text>
+          ) : null}
+          {plans.map((plan) => {
+            const selected = selectedPlanId === plan.id;
+            return (
+              <Pressable
+                key={plan.id}
+                onPress={() => setSelectedPlanId(plan.id)}
+                accessibilityRole="button"
+                accessibilityLabel={`Select ${plan.name}`}
+                style={[styles.planOption, selected ? styles.planOptionSelected : null]}
+              >
+                <View style={styles.planOptionCopy}>
+                  <Text style={styles.planOptionTitle}>{plan.name}</Text>
+                  <Text style={styles.planOptionMeta}>
+                    {titleCaseFromCode(plan.type ?? "MEMBERSHIP")} · {formatInr(plan.pricePaise)}
+                  </Text>
+                </View>
+                {selected ? (
+                  <Ionicons name="checkmark-circle" size={20} color={colors.lime} />
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </BottomSheetScrollView>
+
+        {selectedPlan ? (
+          <GlassCard variant="compact" contentStyle={styles.renewalSummary}>
+            <Text style={styles.summaryTitle}>Renewal summary</Text>
+            <Text style={styles.summaryBody}>
+              {selectedPlan.durationDays ? `${selectedPlan.durationDays} days` : "Gym-defined validity"}
+              {selectedPlan.visitLimit ? ` · ${selectedPlan.visitLimit} visits` : ""}
+            </Text>
+          </GlassCard>
+        ) : null}
+
+        {status ? <Text style={styles.statusMessage}>{status}</Text> : null}
+        <View style={styles.sheetActions}>
+          <ZookButton tone="secondary" onPress={onClose} style={styles.actionHalf}>
+            Cancel
+          </ZookButton>
+          <ZookButton
+            onPress={onRenew}
+            disabled={renewing}
+            icon="refresh-outline"
+            style={styles.actionHalf}
+          >
+            {renewing ? "Starting..." : "Pay securely"}
+          </ZookButton>
+        </View>
+      </BottomSheetView>
+    </BottomSheetModal>
   );
 }
 
@@ -718,6 +771,16 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     gap: 14,
     paddingBottom: layout.bottomNavContentPadding,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
   },
   calloutContent: {
     flexDirection: "row",
@@ -910,29 +973,20 @@ const styles = StyleSheet.create({
     color: colors.muted,
     ...typography.small,
   },
-  sheetBackdrop: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(2,6,23,0.72)",
+  sheetBackground: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+  },
+  sheetHandle: {
+    backgroundColor: "rgba(255,255,255,0.22)",
   },
   sheet: {
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
     padding: spacing.lg,
     gap: spacing.md,
-  },
-  sheetGrabber: {
-    width: 42,
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    alignSelf: "center",
   },
   sheetHeader: {
     flexDirection: "row",
