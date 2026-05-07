@@ -4,10 +4,9 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useContext, useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
-  Animated,
   Keyboard,
   Pressable,
   ScrollView,
@@ -21,6 +20,14 @@ import {
   View,
   type ViewStyle,
 } from "react-native";
+import Reanimated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 import { useAuth } from "@/lib/auth";
@@ -39,6 +46,13 @@ type GlassCardVariant = "default" | "compact" | "selected" | "success" | "warnin
 type GlassCardGlowTone = "lime" | "amber" | "red" | "success";
 type BrandMarkSize = "sm" | "md" | "lg";
 type IconName = keyof typeof Ionicons.glyphMap;
+export type ChipGroupOption<T extends string> = {
+  value: T;
+  label: string;
+  description?: string;
+  icon?: IconName;
+  tone?: PillTone;
+};
 
 // Metro resolves static image requires at build time.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -816,6 +830,8 @@ export function ZookButton({
   textStyle,
   accessibilityLabel,
   onLongPress,
+  busy = false,
+  busyLabel,
 }: {
   children: ReactNode;
   onPress?: PressHandler;
@@ -830,11 +846,15 @@ export function ZookButton({
   textStyle?: StyleProp<TextStyle>;
   accessibilityLabel?: string;
   onLongPress?: PressHandler;
+  busy?: boolean;
+  busyLabel?: string;
 }) {
   const resolvedVariant = variant ?? variantFromTone(tone);
   const palette = buttonPalettes[resolvedVariant];
   const buttonSizeStyle = buttonSizeStyles[size];
   const buttonTextSizeStyle = buttonTextSizeStyles[size];
+  const isDisabled = disabled || busy;
+  const contentLabel = busy && busyLabel ? busyLabel : children;
   const staticButtonStyle = StyleSheet.flatten([
     styles.button,
     buttonSizeStyle,
@@ -844,11 +864,11 @@ export function ZookButton({
       borderColor: palette.borderColor,
     },
     fullWidth ? styles.fullWidth : null,
-    disabled ? styles.disabled : null,
+    isDisabled ? styles.disabled : null,
     style,
   ]);
 
-  if (href && !disabled) {
+  if (href && !isDisabled) {
     return (
       <Link href={href} asChild>
         <Pressable
@@ -858,10 +878,12 @@ export function ZookButton({
           accessibilityLabel={
             accessibilityLabel ?? (typeof children === "string" ? children : undefined)
           }
-          accessibilityState={{ disabled }}
+          accessibilityState={{ disabled: isDisabled, busy }}
           style={staticButtonStyle}
         >
-          {icon ? (
+          {busy ? (
+            <ActivityIndicator size="small" color={palette.color} />
+          ) : icon ? (
             <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={palette.color} />
           ) : null}
           <Text
@@ -870,7 +892,7 @@ export function ZookButton({
             minimumFontScale={0.82}
             style={[styles.buttonText, buttonTextSizeStyle, { color: palette.color }, textStyle]}
           >
-            {children}
+            {contentLabel}
           </Text>
         </Pressable>
       </Link>
@@ -880,14 +902,14 @@ export function ZookButton({
   const button = (
     <Pressable
       onPress={() => {
-        if (!disabled) pressWithHaptics(onPress);
+        if (!isDisabled) pressWithHaptics(onPress);
       }}
       onLongPress={() => pressWithHaptics(onLongPress)}
       accessibilityRole="button"
       accessibilityLabel={
         accessibilityLabel ?? (typeof children === "string" ? children : undefined)
       }
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled: isDisabled, busy }}
       style={({ pressed }) => [
         styles.button,
         buttonSizeStyle,
@@ -896,20 +918,24 @@ export function ZookButton({
           backgroundColor: palette.backgroundColor,
           borderColor: palette.borderColor,
         },
-        pressed && !disabled ? styles.pressed : null,
+        pressed && !isDisabled ? styles.pressed : null,
         fullWidth ? styles.fullWidth : null,
-        disabled ? styles.disabled : null,
+        isDisabled ? styles.disabled : null,
         style,
       ]}
     >
-      {icon ? <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={palette.color} /> : null}
+      {busy ? (
+        <ActivityIndicator size="small" color={palette.color} />
+      ) : icon ? (
+        <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={palette.color} />
+      ) : null}
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.82}
         style={[styles.buttonText, buttonTextSizeStyle, { color: palette.color }, textStyle]}
       >
-        {children}
+        {contentLabel}
       </Text>
     </Pressable>
   );
@@ -1212,7 +1238,7 @@ export function TextField({
             setFocused(false);
             props.onBlur?.(event);
           }}
-          placeholderTextColor={colors.subtle}
+          placeholderTextColor="rgba(255,255,255,0.55)"
           style={[styles.input, props.multiline ? styles.inputMultiline : null, inputStyle]}
         />
         {trailing}
@@ -1469,6 +1495,70 @@ export function SegmentedControl<T extends string>({
             >
               {option.label}
             </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+export function ChipGroup<T extends string>({
+  accessibilityLabel,
+  disabled = false,
+  options,
+  value,
+  onChange,
+}: {
+  accessibilityLabel: string;
+  disabled?: boolean;
+  options: Array<ChipGroupOption<T>>;
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <View accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel} style={styles.chipGroup}>
+      {options.map((option) => {
+        const selected = option.value === value;
+        const palette = tonePalettes[option.tone ?? (selected ? "lime" : "neutral")];
+        return (
+          <Pressable
+            key={option.value}
+            accessibilityRole="radio"
+            accessibilityLabel={option.label}
+            accessibilityState={{ selected, disabled }}
+            disabled={disabled}
+            onPress={() => {
+              if (option.value !== value) {
+                void Haptics.selectionAsync();
+                onChange(option.value);
+              }
+            }}
+            style={({ pressed }) => [
+              styles.chipGroupOption,
+              {
+                borderColor: selected ? palette.borderColor : colors.border,
+                backgroundColor: selected ? palette.backgroundColor : "rgba(255,255,255,0.035)",
+              },
+              selected ? styles.chipGroupOptionSelected : null,
+              disabled ? styles.chipGroupOptionDisabled : null,
+              pressed && !disabled ? styles.pressed : null,
+            ]}
+          >
+            {option.icon ? <Ionicons name={option.icon} size={16} color={palette.color} /> : null}
+            <View style={styles.chipGroupCopy}>
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={[styles.chipGroupLabel, selected ? { color: palette.color } : null]}
+              >
+                {option.label}
+              </Text>
+              {option.description ? (
+                <Text numberOfLines={2} ellipsizeMode="tail" style={styles.chipGroupDescription}>
+                  {option.description}
+                </Text>
+              ) : null}
+            </View>
           </Pressable>
         );
       })}
@@ -2171,6 +2261,36 @@ export function ErrorState({
   );
 }
 
+export function QueryErrorState({
+  error,
+  onRetry,
+  title = "Could not load this section",
+  retryLabel = "Retry",
+}: {
+  error?: unknown;
+  onRetry?: () => void;
+  title?: string;
+  retryLabel?: string;
+}) {
+  const message =
+    error instanceof Error && error.message.trim()
+      ? error.message
+      : "Pull to refresh or try again in a moment.";
+  return (
+    <ErrorState
+      title={title}
+      body={message}
+      action={
+        onRetry ? (
+          <ZookButton tone="secondary" icon="refresh-outline" onPress={onRetry}>
+            {retryLabel}
+          </ZookButton>
+        ) : undefined
+      }
+    />
+  );
+}
+
 export function Skeleton({
   style,
   width,
@@ -2182,22 +2302,22 @@ export function Skeleton({
   height?: number | string;
   borderRadius?: number;
 }) {
-  const anim = useRef(new Animated.Value(0)).current;
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    Animated.loop(
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 1200,
-        useNativeDriver: true,
-      }),
-    ).start();
-  }, [anim]);
+    progress.value = withRepeat(
+      withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      false,
+    );
+  }, [progress]);
 
-  const translateX = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-120, 360],
-  });
+  const shimmerStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: interpolate(progress.value, [0, 1], [-120, 360]) },
+      { rotate: "18deg" },
+    ],
+  }));
 
   return (
     <View
@@ -2212,12 +2332,10 @@ export function Skeleton({
         style,
       ]}
     >
-      <Animated.View
+      <Reanimated.View
         style={[
           styles.skeletonShimmer,
-          {
-            transform: [{ translateX }, { rotate: "18deg" }],
-          },
+          shimmerStyle,
         ]}
       />
     </View>
@@ -2227,6 +2345,11 @@ export function Skeleton({
 export function LoadingSkeleton(props: Parameters<typeof Skeleton>[0]) {
   return <Skeleton {...props} />;
 }
+
+export { DatePickerField } from "@/components/primitives/date-picker-field";
+export { NetworkBanner } from "@/components/primitives/network-banner";
+export { OtpInput } from "@/components/primitives/otp-input";
+export type { OtpInputHandle } from "@/components/primitives/otp-input";
 
 const styles = StyleSheet.create({
   screen: {
@@ -2418,7 +2541,41 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.46,
+  },
+  chipGroup: {
+    gap: spacing.sm,
+  },
+  chipGroupOption: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: radii.input,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  chipGroupOptionSelected: {
+    shadowColor: colors.lime,
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  chipGroupOptionDisabled: {
+    opacity: 0.55,
+  },
+  chipGroupCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  chipGroupLabel: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  chipGroupDescription: {
+    color: colors.muted,
+    ...typography.caption,
   },
   metricTile: {
     flex: 1,

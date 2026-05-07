@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as AppleAuthentication from "expo-apple-authentication";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
@@ -12,12 +12,19 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
 import PhoneInput from "react-native-phone-number-input";
-import { BrandMark, GlassCard, GlassInput, ZookButton, ZookScreen } from "@/components/primitives";
+import {
+  BrandMark,
+  GlassCard,
+  GlassInput,
+  OtpInput,
+  type OtpInputHandle,
+  ZookButton,
+  ZookScreen,
+} from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { getMobileReleaseProfile } from "@/lib/api";
@@ -114,11 +121,12 @@ export default function Login() {
   const { width } = useWindowDimensions();
   const heroFontSize = Math.min(54, width * 0.13);
   const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
-  const otpInputRef = useRef<TextInput>(null);
+  const otpInputRef = useRef<OtpInputHandle>(null);
   const phoneInputRef = useRef<PhoneInput>(null);
   const verifyingRef = useRef(false);
   const [method, setMethod] = useState<LoginMethod>("email");
   const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [formattedPhone, setFormattedPhone] = useState("");
   const [code, setCode] = useState("");
@@ -138,7 +146,8 @@ export default function Login() {
     }
     if (prefill.includes("@")) {
       setMethod("email");
-      setEmail(prefill.trim().toLowerCase());
+    setEmail(prefill.trim().toLowerCase());
+    setEmailTouched(false);
       return;
     }
     setMethod("phone");
@@ -207,8 +216,11 @@ export default function Login() {
     setMethod(nextMethod);
     setStage("identifier");
     setMessage("");
+    setEmailTouched(false);
     resetOtpState();
   }
+
+  const emailInvalid = emailTouched && email.trim().length > 0 && !/^\S+@\S+\.\S+$/.test(email.trim());
 
   function handleOtpError(error: unknown) {
     if (isAccountLockedError(error)) {
@@ -403,19 +415,35 @@ export default function Login() {
               </View>
 
               {method === "email" ? (
-                <GlassInput
-                  label="Email"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  placeholder="email@example.com"
-                  editable={!busy}
-                />
+                <>
+                  <GlassInput
+                    label="Email"
+                    value={email}
+                    onChangeText={(value) => {
+                      setEmail(value);
+                      if (message === "Enter a valid email address.") setMessage("");
+                    }}
+                    onBlur={() => setEmailTouched(true)}
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    returnKeyType="next"
+                    placeholder="email@example.com"
+                    editable={!busy}
+                  />
+                  {emailInvalid ? (
+                    <Text style={styles.inlineError}>Enter a valid email address.</Text>
+                  ) : null}
+                </>
               ) : (
                 <View style={styles.phoneGroup}>
                   <Text style={styles.inputLabel}>Mobile number</Text>
+                  <View style={styles.phoneHintRow}>
+                    <View style={styles.countryChip}>
+                      <Text style={styles.countryChipText}>+91</Text>
+                    </View>
+                    <Text style={styles.phoneHintText}>{t("auth.phoneHint")}</Text>
+                  </View>
                   <PhoneInput
                     ref={phoneInputRef}
                     defaultCode="IN"
@@ -435,17 +463,22 @@ export default function Login() {
                     textInputProps={{
                       autoComplete: "tel",
                       keyboardType: "phone-pad",
-                      placeholderTextColor: colors.subtle,
+                      placeholderTextColor: "rgba(255,255,255,0.55)",
+                      returnKeyType: "next",
                     }}
                   />
                 </View>
               )}
             </>
           ) : (
-            <OtpCodeInput
+            <OtpInput
               ref={otpInputRef}
-              code={code}
+              value={code}
               onChange={handleOtpChange}
+              onComplete={(nextCode) => {
+                Keyboard.dismiss();
+                void submitOtp(nextCode);
+              }}
               disabled={busy || accountLocked || rateLimitCooldown > 0}
               label={t("auth.otpLabel")}
               accessibilityLabel={t("auth.otpAccessibility")}
@@ -455,13 +488,10 @@ export default function Login() {
           <ZookButton
             onPress={handleContinue}
             disabled={busy || accountLocked || rateLimitCooldown > 0}
+            busy={busyAction === "otp"}
+            busyLabel={t("auth.working")}
           >
-            {busyAction === "otp" ? (
-              <View style={styles.busyRow}>
-                <ActivityIndicator size="small" color={colors.bg} />
-                <Text style={styles.busyText}>{t("auth.working")}</Text>
-              </View>
-            ) : stage === "identifier" ? (
+            {stage === "identifier" ? (
               "Send OTP"
             ) : (
               t("auth.verifyAndSignIn")
@@ -558,6 +588,7 @@ function MethodTab({
   return (
     <Pressable
       accessibilityRole="tab"
+      accessibilityLabel={label}
       accessibilityState={{ selected: active }}
       onPress={onPress}
       style={[styles.tabButton, active ? styles.tabButtonActive : null]}
@@ -583,6 +614,7 @@ function SsoButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
@@ -600,55 +632,6 @@ function SsoButton({
     </Pressable>
   );
 }
-
-const OtpCodeInput = forwardRef<
-  TextInput,
-  {
-    accessibilityLabel: string;
-    code: string;
-    disabled?: boolean;
-    label: string;
-    onChange: (value: string) => void;
-  }
->(function OtpCodeInput({ accessibilityLabel, code, onChange, disabled = false, label }, ref) {
-  return (
-    <View style={styles.otpGroup}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        onPress={() => {
-          if (!disabled && typeof ref !== "function") {
-            ref?.current?.focus();
-          }
-        }}
-        style={styles.otpCells}
-      >
-        {Array.from({ length: 6 }).map((_, index) => {
-          const digit = code[index] ?? "";
-          const active = index === Math.min(code.length, 5);
-          return (
-            <View key={index} style={[styles.otpCell, active ? styles.otpCellActive : null]}>
-              <Text style={styles.otpCellText}>{digit}</Text>
-            </View>
-          );
-        })}
-      </Pressable>
-      <TextInput
-        ref={ref}
-        value={code}
-        onChangeText={onChange}
-        autoComplete="one-time-code"
-        keyboardType="number-pad"
-        maxLength={6}
-        editable={!disabled}
-        caretHidden
-        textContentType="oneTimeCode"
-        style={styles.hiddenOtpInput}
-      />
-    </View>
-  );
-});
 
 const styles = StyleSheet.create({
   content: {
@@ -740,6 +723,33 @@ const styles = StyleSheet.create({
   phoneGroup: {
     gap: spacing.sm,
   },
+  inlineError: {
+    marginTop: -spacing.sm,
+    color: colors.red,
+    ...typography.caption,
+  },
+  phoneHintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  countryChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.accentPanel,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  countryChipText: {
+    color: colors.lime,
+    ...typography.caption,
+  },
+  phoneHintText: {
+    flex: 1,
+    color: colors.muted,
+    ...typography.caption,
+  },
   phoneContainer: {
     width: "100%",
     minHeight: 58,
@@ -768,41 +778,6 @@ const styles = StyleSheet.create({
   },
   phoneCountryButton: {
     backgroundColor: "transparent",
-  },
-  otpGroup: {
-    gap: spacing.sm,
-  },
-  otpCells: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  otpCell: {
-    flex: 1,
-    minHeight: 54,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  otpCellActive: {
-    borderColor: colors.limeBorder,
-    backgroundColor: colors.accentPanel,
-  },
-  otpCellText: {
-    minHeight: 24,
-    color: colors.text,
-    fontSize: 20,
-    lineHeight: 24,
-    fontFamily: "Inter_600SemiBold",
-    fontVariant: ["tabular-nums"],
-  },
-  hiddenOtpInput: {
-    position: "absolute",
-    width: 1,
-    height: 1,
-    opacity: 0,
   },
   otpActions: {
     flexDirection: "row",

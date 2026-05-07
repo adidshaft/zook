@@ -15,6 +15,11 @@ export type TranslationKey =
   | "app.loadingSession"
   | "app.configErrorTitle"
   | "app.configErrorBody"
+  | "common.cancel"
+  | "common.datePicker"
+  | "common.dismiss"
+  | "common.done"
+  | "network.offline"
   | "nav.home"
   | "nav.plans"
   | "nav.checkIn"
@@ -197,6 +202,11 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "app.loadingSession": "Restoring your Zook session...",
     "app.configErrorTitle": "Zook can't open in this build.",
     "app.configErrorBody": "Please update the app or contact support if this keeps happening.",
+    "common.cancel": "Cancel",
+    "common.datePicker": "Date picker",
+    "common.dismiss": "Dismiss",
+    "common.done": "Done",
+    "network.offline": "Working offline. Data may be stale.",
     "nav.home": "Home",
     "nav.plans": "Plans",
     "nav.checkIn": "Check in",
@@ -378,6 +388,11 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "app.loadingSession": "आपका Zook सेशन वापस लाया जा रहा है...",
     "app.configErrorTitle": "इस बिल्ड में Zook नहीं खुल सकता.",
     "app.configErrorBody": "कृपया ऐप अपडेट करें या समस्या बनी रहे तो सपोर्ट से संपर्क करें.",
+    "common.cancel": "रद्द करें",
+    "common.datePicker": "तारीख चुनें",
+    "common.dismiss": "बंद करें",
+    "common.done": "हो गया",
+    "network.offline": "आप ऑफलाइन हैं. डेटा पुराना हो सकता है.",
     "nav.home": "होम",
     "nav.plans": "प्लान",
     "nav.checkIn": "चेक इन",
@@ -680,4 +695,8 @@ export function useI18n() {
     t: (key: TranslationKey, values?: TranslationValues) =>
       interpolate(translations.en[key] ?? key, values),
   };
+}
+
+export function useT() {
+  return useI18n().t;
 }

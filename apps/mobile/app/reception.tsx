@@ -8,6 +8,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import Reanimated from "react-native-reanimated";
 import type { PaymentMode } from "@zook/core";
 import {
   AuditWarning,
@@ -43,6 +44,7 @@ import {
 } from "@/lib/query-hooks";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { apiClient, receptionApi } from "@/lib/domain-api";
+import { useScalePulse, useShake } from "@/lib/motion";
 import { requirePrivilegedAuth } from "@/lib/privileged-action";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -824,7 +826,9 @@ export default function Reception() {
                   label="Amount received"
                   value={amount}
                   onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
+                  placeholder="₹0"
+                  returnKeyType="next"
                   required
                   error={amountInvalid ? "Enter an amount greater than 0." : undefined}
                 />
@@ -1057,7 +1061,7 @@ export default function Reception() {
           </View>
         </BottomSheetView>
       </BottomSheetModal>
-      <BottomNav role="RECEPTIONIST" activeTab={view === "desk" ? undefined : view} />
+      <BottomNav role="RECEPTIONIST" />
     </ZookScreen>
   );
 }
@@ -1065,19 +1069,27 @@ export default function Reception() {
 function VerificationResult({ message }: { message: string }) {
   const success =
     /verified|match/i.test(message) && !/not valid|no active|not ready/i.test(message);
+  const { animatedStyle: pulseStyle, pulse } = useScalePulse();
+  const { animatedStyle: shakeStyle, shake } = useShake();
+  useEffect(() => {
+    if (success) pulse();
+    else shake();
+  }, [pulse, shake, success]);
   return (
-    <GlassCard
-      variant={success ? "success" : "warning"}
-      padding={12}
-      contentStyle={styles.verificationResult}
-    >
-      <IconBubble
-        icon={success ? "checkmark-circle-outline" : "alert-circle-outline"}
-        tone={success ? "lime" : "amber"}
-        size={34}
-      />
-      <Text style={styles.verificationText}>{message}</Text>
-    </GlassCard>
+    <Reanimated.View style={success ? pulseStyle : shakeStyle}>
+      <GlassCard
+        variant={success ? "success" : "warning"}
+        padding={12}
+        contentStyle={styles.verificationResult}
+      >
+        <IconBubble
+          icon={success ? "checkmark-circle-outline" : "alert-circle-outline"}
+          tone={success ? "lime" : "amber"}
+          size={34}
+        />
+        <Text style={styles.verificationText}>{message}</Text>
+      </GlassCard>
+    </Reanimated.View>
   );
 }
 

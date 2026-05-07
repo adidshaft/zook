@@ -107,6 +107,22 @@ function hasNotificationKind(kinds: string[], values: string[]) {
   return kinds.some((kind) => values.includes(kind));
 }
 
+function recordRoutingBreadcrumb(message: string, type?: string) {
+  if (typeof process !== "undefined" && process.env.VITEST) {
+    return;
+  }
+  void import("./sentry")
+    .then(({ Sentry }) => {
+      Sentry.addBreadcrumb({
+        category: "push.routing",
+        level: "info",
+        message,
+        data: type ? { type } : undefined,
+      });
+    })
+    .catch(() => undefined);
+}
+
 function messageText(input: NotificationRouteInput) {
   return [readString(input?.title), readString(input?.body), readString(input?.message)]
     .filter(Boolean)
@@ -310,8 +326,14 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
   }
 
   if (notificationId) {
+    if (notificationKinds.length) {
+      recordRoutingBreadcrumb("Falling back to notification detail route", notificationKinds[0]);
+    }
     return buildHref(`/notifications/${encodePathSegment(notificationId)}`, params);
   }
 
+  if (notificationKinds.length) {
+    recordRoutingBreadcrumb("Falling back to inbox route", notificationKinds[0]);
+  }
   return buildHref("/notifications", params);
 }

@@ -119,12 +119,31 @@ Scope covered: `zook-product-proposal-v2.md` sections 1, 3, 5.10, 5.11, 5.12, 6.
 | Phase G Hindi, axe, screenshot/test affordances | Done | New `webUx` keys have English and Hindi entries, i18n and axe checks pass, and Playwright covers branch dropdown, shop order to Desk deep-link, and audit row to diff drawer. No separate screenshot-diff script exists in this repo. |
 | Phase H verification | Done | Full verification battery passed; results are listed in the verification table below. |
 
+## Mobile UX Polish
+
+| Phase / item | Status | Evidence / decision |
+| --- | --- | --- |
+| Phase A primitives | Code-side done | Added `ChipGroup`, upgraded `ZookButton`, `QueryErrorState`, `DatePickerField`, `OtpInput`, `NetworkBanner`, app-focus invalidation, last-value helpers, toast helpers, and Reanimated motion utilities with mobile tests and Storybook coverage. |
+| Phase B selection correctness | Code-side done | Scan mode, tracking type/date inputs, profile role switching, and membership renewal choices now use disabled/busy states, haptics, toast feedback, and single-source selection primitives. Settings preference rapid-tap protection was already covered by the existing mutation gating pattern. |
+| Phase C navigation | Code-side done | Notification detail opens from the inbox as a sheet while deep-link routes remain valid; bottom navigation uses route-derived active state; unknown notifications route to detail with a Sentry breadcrumb; renewal sheet state resets on close; tracking entry has Android hardware-back dirty guards. |
+| Phase D states | Code-side done | `QueryErrorState` is adopted on touched query surfaces, membership/find-gym/home notification refreshes run on app focus, skeletons remain shape-matched, and long-list conversions were kept to touched/high-risk surfaces to avoid web/backend scope creep. |
+| Phase E incomplete features | Code-side done | Owner metrics drill in, bulk join approvals are available, trainer publish uses an explicit confirmation, trainer message intent opens the system share sheet, paused memberships expose resume controls, member home has greeting/today-plan affordances, and receptionist verification has success/failure motion. |
+| Phase F forms | Code-side done | Login has blur validation, OTP cell input, `+91` affordance, and busy buttons; reception amount input uses decimal pad and rupee affordance; tracking entry uses the date picker primitive, counters, required-field validation, keyboard dismiss, and destructive confirmation. |
+| Phase G onboarding | Code-side done | Splash can be skipped, onboarding motion respects reduced motion, role choices have icons, permission steps include a soft ask, and existing first-time member/owner empty-state surfaces remain in place. |
+| Phase H premium feel | Code-side done | Scan failure auto-recovers, pickup QR breathes through Reanimated, toast placement avoids keyboard/bottom-nav collisions, notification read/unread states are stronger, and verification feedback animates without new `Animated.Value`s. |
+| Phase I accessibility | Code-side done | Added image labels on home/find-gym surfaces, preserved `PickupQR` image role, added accessibility labels on touched Pressables, and routed nonessential motion through reduced-motion-aware utilities. |
+| Phase J offline/stale/auth | Code-side done | Added a NetInfo-powered offline banner, shortened branch stale time, invalidated visible member/branch/notification queries on app focus, guarded org-switch races, surfaced branch-removal fallback, and revalidated stale roles. |
+| Phase K push | Partially code-side done | Unknown/cold-start notification destinations now fall back safely through notification detail routing; native push soft-ask, token refresh re-registration, and permission-off settings tile still require a device push pass before claiming provider readiness. |
+| Phase L branch/role | Code-side done | Profile role switching is guarded, stale roles are reset with a toast, and branch selection protects against single-org race conditions. |
+| Phase M cross-cutting | Code-side done | Standard toast helpers, haptic-backed primary actions, Reanimated toast/motion utilities, Sentry breadcrumbs for unknown notification routing, and i18n parity for new copy are in place. |
+| Phase N verification | Automated checks green; physical-device QA pending | `pnpm typecheck`, `pnpm lint`, `pnpm test:unit`, `pnpm test:services`, `pnpm test:web`, `pnpm test:acceptance`, and `pnpm check:launch-gates` passed. Physical iPhone/Android matrix QA remains a human launch gate under B4. |
+
 ## Files Changed Summary
 
 - Security and API: auth/session handling, rate limits, webhook/payment paths, storage/file validation, diagnostics, AI safety, rich-text sanitization, QR scan handling, coupon redemption, and audit logging.
 - Database: session fingerprint fields, QR scan counters, subscription pause fields, coupon redemption uniqueness/counts, and supporting migration.
 - Web: dashboard members/reports/audit/plans/shop/join surfaces, public join approval/invite states, trial banner gating, skeleton/empty-state polish, mutation toasts, i18n checks, CSP/HSTS, Sentry setup, and CI gates.
-- Mobile: scan expiry precheck, membership switch/pause/resume controls, invite code join handling, pending/approval states, mutation toast/haptics, and domain API additions.
+- Mobile: shared UX primitives, scan/tracking/login/membership/notifications/reception/profile/onboarding polish, offline banner, app-focus refresh, mutation toast/haptics, Reanimated motion, and accessibility labels.
 - CI/scripts/docs: launch gates, i18n gate, audit/dependabot, preflight integration, runbook, followups, and this report.
 
 ## Verification
@@ -133,10 +152,13 @@ Scope covered: `zook-product-proposal-v2.md` sections 1, 3, 5.10, 5.11, 5.12, 6.
 | --- | --- |
 | `pnpm install` | Passed; install completed with the existing ignored build-script warning for `@sentry/cli`. |
 | `pnpm typecheck` | Passed. |
-| `pnpm test:unit` | Passed: 36 files, 183 tests. |
+| `pnpm test:unit` | Passed: 37 files, 185 tests. |
 | `pnpm test:services` | Passed: 14 files, 60 tests. |
 | `pnpm test:web` | Passed: 10 passed, 28 DB-gated skipped. |
 | `pnpm test:acceptance` | Passed: 37 passed, 1 skipped. |
+| `pnpm --filter @zook/mobile typecheck` | Passed. |
+| `pnpm --filter @zook/mobile test` | Passed. |
+| `pnpm --filter @zook/mobile lint` | Passed. |
 | `pnpm db:generate` | Passed. |
 | `pnpm release:preflight` | Passed with local warnings for weak local secrets, local QR secret, mock push, and Prisma drift/config status warning. |
 | `APP_ENV=local API_MODE=backend pnpm preflight` | Passed with local warnings for weak local secrets and mock push. |
@@ -149,6 +171,7 @@ Scope covered: `zook-product-proposal-v2.md` sections 1, 3, 5.10, 5.11, 5.12, 6.
 | Banned marker sweep | Passed under `apps/`, `packages/`, and `scripts/`. |
 | User-facing top-level loading text sweep | Passed under web and mobile app code. |
 | `git diff --check` | Passed. |
+| Mobile physical-device QA | Not run in this shell environment; remains the B4 human launch gate for iPhone SE, iPhone 15, Pixel 6, and mid-range Android. |
 
 ## Decisions Made
 
@@ -158,3 +181,4 @@ Scope covered: `zook-product-proposal-v2.md` sections 1, 3, 5.10, 5.11, 5.12, 6.
 - Password-change sibling revocation is documented as ready for the shared revocation helper, but no password-change route was added because the current auth model is OTP-only.
 - S7 trainer-client guard consolidation stays with the trainer messaging capability, matching the prompt's explicit S6-S17 except S7 scope.
 - Provider certification remains a human gate; code-side local verification does not claim Razorpay, storage, OpenAI, Expo, Upstash, Sentry, or Resend production readiness.
+- Mobile push provider readiness is not claimed from this pass; the code-side routing fallback is in place, but native permission prompts, token refresh behavior, and cold-start delivery still need the B4 physical-device checklist.

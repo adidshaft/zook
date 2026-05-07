@@ -1,13 +1,21 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
   GlassCard,
   IconBubble,
   MobileHeader,
+  QueryErrorState,
   ZookScreen,
 } from "@/components/primitives";
 import { NotificationsSkeleton } from "@/components/skeletons";
@@ -19,6 +27,7 @@ import { mapNotificationPayloadToHref } from "@/lib/notification-routing";
 import { useMyNotifications } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+import { useAppFocusInvalidation } from "@/lib/app-focus";
 
 type InboxNotification = {
   id: string;
@@ -86,8 +95,12 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { token } = useAuth();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const notificationsQuery = useMyNotifications();
+  useAppFocusInvalidation([["me", "notifications"], ["me", "home"]]);
+  const detailSheetRef = useRef<BottomSheetModal>(null);
+  const detailSnapPoints = useMemo(() => ["46%"], []);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [olderExpanded, setOlderExpanded] = useState(false);
@@ -96,6 +109,16 @@ export default function NotificationsScreen() {
   const latestLabel = notifications[0]?.notification?.createdAt
     ? formatRelativeDate(notifications[0].notification.createdAt)
     : null;
+  const focusedNotification = notifications.find(
+    (item) =>
+      item.id === routeParams.notificationId || item.notification?.id === routeParams.notificationId,
+  );
+  const renderDetailBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} pressBehavior="close" />
+    ),
+    [],
+  );
 
   async function markRead(id: string) {
     if (!token || busyId) {
@@ -193,7 +216,12 @@ export default function NotificationsScreen() {
     });
     if (!href.startsWith("/notifications")) {
       router.push(href as never);
+      return;
     }
+    router.push({
+      pathname: "/notifications/[id]",
+      params: { id: item.notification?.id ?? item.id },
+    } as never);
   }
 
   useEffect(() => {
@@ -216,6 +244,12 @@ export default function NotificationsScreen() {
       void markRead(matchingUnread.id);
     }
   }, [notifications, routeParams.notificationId]);
+
+  useEffect(() => {
+    if (focusedNotification) {
+      detailSheetRef.current?.present();
+    }
+  }, [focusedNotification]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -295,7 +329,11 @@ export default function NotificationsScreen() {
             <NotificationsSkeleton />
           ) : null}
 
-          {!notificationsQuery.isLoading && !notifications.length ? (
+          {notificationsQuery.isError ? (
+            <QueryErrorState error={notificationsQuery.error} onRetry={() => void notificationsQuery.refetch()} />
+          ) : null}
+
+          {!notificationsQuery.isLoading && !notificationsQuery.isError && !notifications.length ? (
             <GlassCard variant="compact" contentStyle={styles.emptyContent}>
               <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
@@ -327,6 +365,7 @@ export default function NotificationsScreen() {
                 <Pressable
                   onPress={() => setOlderExpanded((current) => !current)}
                   accessibilityRole="button"
+                  accessibilityLabel={olderExpanded ? "Show fewer older notifications" : "Show older notifications"}
                   style={styles.showOlderButton}
                 >
                   <Text style={styles.showOlderText}>
@@ -337,6 +376,38 @@ export default function NotificationsScreen() {
             </View>
           ))}
         </ScrollView>
+        <BottomSheetModal
+          ref={detailSheetRef}
+          snapPoints={detailSnapPoints}
+          enablePanDownToClose
+          backdropComponent={renderDetailBackdrop}
+          backgroundStyle={styles.sheetBackground}
+          handleIndicatorStyle={styles.sheetHandle}
+          bottomInset={insets.bottom}
+        >
+          <BottomSheetView style={styles.detailSheet}>
+            <View style={styles.detailHeader}>
+              <IconBubble
+                icon={iconForType(focusedNotification?.notification?.type)}
+                tone={toneForType(focusedNotification?.notification?.type)}
+                size={44}
+              />
+              <View style={styles.detailCopy}>
+                <Text style={styles.detailTitle}>
+                  {focusedNotification?.notification?.title ?? "Notification"}
+                </Text>
+                <Text style={styles.detailTime}>
+                  {focusedNotification?.notification?.createdAt
+                    ? formatRelativeDate(focusedNotification.notification.createdAt)
+                    : ""}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.detailBody}>
+              {focusedNotification?.notification?.body ?? "No details available."}
+            </Text>
+          </BottomSheetView>
+        </BottomSheetModal>
         <BottomNav />
       </ZookScreen>
     </>
@@ -369,11 +440,12 @@ function NotificationRow({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={notification?.title ?? "Notification"}
+      accessibilityState={{ busy }}
       style={({ pressed }) => [pressed ? styles.pressed : null]}
     >
       <GlassCard
         variant={highlighted ? "selected" : unread ? "default" : "compact"}
-        contentStyle={[styles.notificationContent, unread ? styles.notificationUnreadContent : null]}
+        contentStyle={[styles.notificationContent, unread ? styles.notificationUnreadContent : styles.notificationReadContent]}
       >
         <View style={styles.notificationRow}>
           <IconBubble icon={iconForType(type)} tone={toneForType(type)} size={40} />
@@ -500,6 +572,9 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: colors.lime,
   },
+  notificationReadContent: {
+    opacity: 0.78,
+  },
   notificationRow: {
     flexDirection: "row",
     gap: spacing.md,
@@ -543,5 +618,40 @@ const styles = StyleSheet.create({
   showOlderText: {
     color: colors.lime,
     ...typography.caption,
+  },
+  sheetBackground: {
+    backgroundColor: colors.panel,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sheetHandle: {
+    backgroundColor: "rgba(255,255,255,0.24)",
+  },
+  detailSheet: {
+    gap: spacing.lg,
+    padding: spacing.lg,
+  },
+  detailHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  detailCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  detailTitle: {
+    color: colors.text,
+    ...typography.headerTitle,
+  },
+  detailTime: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  detailBody: {
+    color: colors.text,
+    ...typography.body,
   },
 });

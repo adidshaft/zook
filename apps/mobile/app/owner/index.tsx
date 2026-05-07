@@ -305,6 +305,13 @@ export default function Owner() {
     }
   }
 
+  async function approveAllJoinRequests() {
+    for (const request of joinRequests) {
+      if (approveJoinRequestMutation.isPending) break;
+      await approveJoinRequest(request.id);
+    }
+  }
+
   async function rejectJoinRequest(joinRequestId: string) {
     try {
       await rejectJoinRequestMutation.mutateAsync(joinRequestId);
@@ -652,7 +659,21 @@ export default function Owner() {
               </GlassCard>
             ) : null}
 
-            <SectionHeader title="Request list" subtitle="Pending join decisions" />
+            <SectionHeader
+              title="Request list"
+              subtitle="Pending join decisions"
+              action={
+                joinRequests.length ? (
+                  <PrimaryButton
+                    size="sm"
+                    disabled={approveJoinRequestMutation.isPending}
+                    onPress={() => void approveAllJoinRequests()}
+                  >
+                    Approve all
+                  </PrimaryButton>
+                ) : undefined
+              }
+            />
             <View style={styles.stack}>
               {joinRequests.length ? (
                 joinRequests.map((request) => (

@@ -15,9 +15,11 @@ import {
   Inter_900Black,
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 import { AuthProvider, setAuthQueryClient, useActivePermissions, useAuth } from "@/lib/auth";
-import { OfflineBanner } from "@/components/primitives";
+import { NetworkBanner, OfflineBanner } from "@/components/primitives";
 import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
 import { ToastHost } from "@/components/toast-host";
 import { BranchSelectionProvider } from "@/lib/branch-selection";
@@ -338,6 +340,7 @@ function LayoutContent() {
   return (
     <>
       <StatusBar style="light" />
+      <NetworkBanner />
       {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
       <Stack
         screenOptions={{
@@ -439,21 +442,23 @@ export default function Layout() {
 
   return (
     <SafeAreaProvider>
-      <View style={styles.gestureRoot}>
-        <QueryClientProvider client={queryClient}>
-          <I18nProvider>
-            <AuthProvider>
-              <BranchSelectionProvider>
-                <BottomNavVisibilityProvider>
-                  <PushNotificationsProvider>
-                    <LayoutContent />
-                  </PushNotificationsProvider>
-                </BottomNavVisibilityProvider>
-              </BranchSelectionProvider>
-            </AuthProvider>
-          </I18nProvider>
-        </QueryClientProvider>
-      </View>
+      <GestureHandlerRootView style={styles.gestureRoot}>
+        <BottomSheetModalProvider>
+          <QueryClientProvider client={queryClient}>
+            <I18nProvider>
+              <AuthProvider>
+                <BranchSelectionProvider>
+                  <BottomNavVisibilityProvider>
+                    <PushNotificationsProvider>
+                      <LayoutContent />
+                    </PushNotificationsProvider>
+                  </BottomNavVisibilityProvider>
+                </BranchSelectionProvider>
+              </AuthProvider>
+            </I18nProvider>
+          </QueryClientProvider>
+        </BottomSheetModalProvider>
+      </GestureHandlerRootView>
     </SafeAreaProvider>
   );
 }

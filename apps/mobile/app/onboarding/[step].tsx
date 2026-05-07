@@ -51,10 +51,15 @@ const permissionRows = [
 ] as const;
 
 const roleOptions = [
-  { label: "Join a gym", body: "Find nearby gyms and start as a member.", action: "member" },
-  { label: "I run a gym", body: "Open the gym setup flow on the web.", action: "owner" },
-  { label: "I'm a trainer", body: "Tell Zook to remember trainer interest.", action: "trainer" },
-  { label: "I work the front desk", body: "Tell Zook to remember front desk interest.", action: "front_desk" },
+  { label: "Join a gym", body: "Find nearby gyms and start as a member.", action: "member", icon: "walk-outline" },
+  { label: "I run a gym", body: "Open the gym setup flow on the web.", action: "owner", icon: "business-outline" },
+  { label: "I'm a trainer", body: "Remember trainer interest for coach tools.", action: "trainer", icon: "barbell-outline" },
+  {
+    label: "I work the front desk",
+    body: "Remember desk interest for reception tools.",
+    action: "front_desk",
+    icon: "desktop-outline",
+  },
 ] as const;
 
 export default function OnboardingStep() {
@@ -179,14 +184,17 @@ export function PermissionsStep() {
 
       <View style={styles.footer}>
         <ZookButton onPress={continueToLogin} disabled={busy}>
-          {busy ? (
-            <View style={styles.busyRow}>
-              <ActivityIndicator color={colors.bg} />
-              <Text style={styles.busyText}>Opening prompts</Text>
-            </View>
-          ) : (
-            "Continue"
-          )}
+          {busy ? "Opening prompts" : "Continue"}
+        </ZookButton>
+        <ZookButton
+          tone="secondary"
+          onPress={async () => {
+            await setStoredValue(ONBOARDING_STORAGE_KEY, INTRO_COMPLETE);
+            router.replace("/login" as never);
+          }}
+          disabled={busy}
+        >
+          Not now
         </ZookButton>
       </View>
     </View>
@@ -250,6 +258,9 @@ export function RoleQuestionStep() {
             accessibilityRole="button"
             accessibilityLabel={option.label}
           >
+            <View style={styles.roleIcon}>
+              <Ionicons name={option.icon} size={22} color={colors.lime} />
+            </View>
             <View style={styles.roleOptionCopy}>
               <Text style={styles.roleLabel}>{option.label}</Text>
               <Text style={styles.roleBody}>{option.body}</Text>
@@ -394,6 +405,14 @@ const styles = StyleSheet.create({
   roleOptionCopy: {
     flex: 1,
     gap: 4,
+  },
+  roleIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.accentPanel,
   },
   roleLabel: {
     color: colors.text,

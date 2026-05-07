@@ -1,11 +1,12 @@
-import { useRouter, Stack } from "expo-router";
+import { useFocusEffect, useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
-import { StyleSheet, Text, View, Platform, Pressable } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { useCallback, useMemo, useState } from "react";
+import { Alert, BackHandler, Keyboard, StyleSheet, Text, View, Pressable } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BottomNav,
+  ChipGroup,
+  DatePickerField,
   GlassCard,
   GlassInput,
   IconBubble,
@@ -20,6 +21,7 @@ import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { useAuth, getApiErrorMessage } from "@/lib/auth";
 import { memberApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { notifyError, notifySaved } from "@/lib/toast";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 
 const workoutTypes = [
@@ -66,13 +68,45 @@ export default function TrackingEntry() {
   const [workoutType, setWorkoutType] = useState("strength");
   const [startedAt, setStartedAt] = useState(defaultStartedAt());
   const [endedAt, setEndedAt] = useState(defaultEndedAt());
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [exercises, setExercises] = useState<ExerciseEntry[]>([emptyExercise()]);
   const scrollPaddingBottom = useBottomScrollPadding({ hasStickyAction: true });
+  const dirty = useMemo(
+    () =>
+      title.trim().length > 0 ||
+      notes.trim().length > 0 ||
+      exercises.some((exercise) => Object.values(exercise).some((value) => value.trim().length > 0)),
+    [exercises, notes, title],
+  );
+
+  const confirmDiscard = useCallback(() => {
+    if (!dirty || saving) {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/tracking");
+      }
+      return true;
+    }
+    Alert.alert("Discard workout?", "Unsaved exercise details will be lost.", [
+      { text: "Keep editing", style: "cancel" },
+      {
+        text: "Discard",
+        style: "destructive",
+        onPress: () => (router.canGoBack() ? router.back() : router.replace("/tracking")),
+      },
+    ]);
+    return true;
+  }, [dirty, router, saving]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener("hardwareBackPress", confirmDiscard);
+      return () => subscription.remove();
+    }, [confirmDiscard]),
+  );
 
   function updateExercise(index: number, field: keyof ExerciseEntry, value: string) {
     setExercises((current) =>
@@ -87,9 +121,19 @@ export default function TrackingEntry() {
   }
 
   function deleteExercise(index: number) {
-    setExercises((current) =>
-      current.length <= 1 ? [emptyExercise()] : current.filter((_, itemIndex) => itemIndex !== index),
-    );
+    Alert.alert("Delete exercise?", "This can't be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () =>
+          setExercises((current) =>
+            current.length <= 1
+              ? [emptyExercise()]
+              : current.filter((_, itemIndex) => itemIndex !== index),
+          ),
+      },
+    ]);
   }
 
   async function saveWorkout() {
@@ -101,13 +145,16 @@ export default function TrackingEntry() {
     );
     if (!hasValidExercise) {
       setMessage("Add at least one exercise with a name and sets greater than 0.");
+      notifyError(new Error("Add at least one exercise with a name and sets greater than 0."));
       return;
     }
     if (endedAt <= startedAt) {
       setMessage("End time must be after start time.");
+      notifyError(new Error("End time must be after start time."));
       return;
     }
     setSaving(true);
+    Keyboard.dismiss();
     try {
       await memberApi.createTrackingWorkout({
         token,
@@ -136,10 +183,11 @@ export default function TrackingEntry() {
         queryClient.invalidateQueries({ queryKey: ["me", "tracking", "summary"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "tracking", "workouts"] }),
       ]);
-      setMessage("Workout saved.");
+      notifySaved("Workout saved.");
       router.replace("/tracking");
     } catch (error) {
       setMessage(getApiErrorMessage(error));
+      notifyError(error, "Workout could not be saved.");
     } finally {
       setSaving(false);
     }
@@ -163,7 +211,7 @@ export default function TrackingEntry() {
             subtitle={`${durationMinutes} min · ${exercises.length} exercises`}
             leading={
               <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace("/tracking")}
+                onPress={confirmDiscard}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
                 style={styles.iconButton}
@@ -176,29 +224,13 @@ export default function TrackingEntry() {
 
           {/* Workout type picker */}
           <SectionHeader title="Workout type" />
-          <View style={styles.typeGrid}>
-            {workoutTypes.map((type) => {
-              const active = workoutType === type.value;
-              return (
-                <Pressable
-                  key={type.value}
-                  onPress={() => setWorkoutType(type.value)}
-                  accessibilityRole="button"
-                  accessibilityLabel={type.label}
-                  style={[styles.typeChip, active ? styles.typeChipActive : null]}
-                >
-                  <Ionicons
-                    name={type.icon}
-                    size={18}
-                    color={active ? colors.bg : colors.muted}
-                  />
-                  <Text style={[styles.typeChipText, active ? styles.typeChipTextActive : null]}>
-                    {type.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <ChipGroup
+            accessibilityLabel="Workout type"
+            disabled={saving}
+            options={workoutTypes}
+            value={workoutType}
+            onChange={setWorkoutType}
+          />
 
           {/* Workout details */}
           <GlassCard contentStyle={styles.formContent}>
@@ -207,73 +239,22 @@ export default function TrackingEntry() {
               value={title}
               onChangeText={setTitle}
               placeholder="e.g. Upper body, Leg day"
+              returnKeyType="next"
             />
 
             <View style={styles.dateRow}>
-              <View style={styles.dateField}>
-                <Text style={styles.fieldLabel}>Start</Text>
-                {Platform.OS === "ios" ? (
-                  <DateTimePicker
-                    value={startedAt}
-                    mode="datetime"
-                    display="default"
-                    themeVariant="dark"
-                    onChange={(_, date) => {
-                      if (date) setStartedAt(date);
-                    }}
-                  />
-                ) : (
-                  <>
-                    <Pressable style={styles.dateButton} onPress={() => setShowStartPicker(true)}>
-                      <Ionicons name="time-outline" size={16} color={colors.muted} />
-                      <Text style={styles.dateValue}>{startedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
-                    </Pressable>
-                    {showStartPicker ? (
-                      <DateTimePicker
-                        value={startedAt}
-                        mode="datetime"
-                        display="default"
-                        onChange={(_, date) => {
-                          setShowStartPicker(false);
-                          if (date) setStartedAt(date);
-                        }}
-                      />
-                    ) : null}
-                  </>
-                )}
-              </View>
-              <View style={styles.dateField}>
-                <Text style={styles.fieldLabel}>End</Text>
-                {Platform.OS === "ios" ? (
-                  <DateTimePicker
-                    value={endedAt}
-                    mode="datetime"
-                    display="default"
-                    themeVariant="dark"
-                    onChange={(_, date) => {
-                      if (date) setEndedAt(date);
-                    }}
-                  />
-                ) : (
-                  <>
-                    <Pressable style={styles.dateButton} onPress={() => setShowEndPicker(true)}>
-                      <Ionicons name="time-outline" size={16} color={colors.muted} />
-                      <Text style={styles.dateValue}>{endedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
-                    </Pressable>
-                    {showEndPicker ? (
-                      <DateTimePicker
-                        value={endedAt}
-                        mode="datetime"
-                        display="default"
-                        onChange={(_, date) => {
-                          setShowEndPicker(false);
-                          if (date) setEndedAt(date);
-                        }}
-                      />
-                    ) : null}
-                  </>
-                )}
-              </View>
+              <DatePickerField
+                accessibilityLabel="Workout start date"
+                label="Start"
+                value={startedAt}
+                onChange={setStartedAt}
+              />
+              <DatePickerField
+                accessibilityLabel="Workout end date"
+                label="End"
+                value={endedAt}
+                onChange={setEndedAt}
+              />
             </View>
 
             <GlassInput
@@ -282,6 +263,7 @@ export default function TrackingEntry() {
               onChangeText={setNotes}
               multiline
               placeholder="How did it feel? Any injuries?"
+              returnKeyType="done"
             />
           </GlassCard>
 
@@ -310,9 +292,14 @@ export default function TrackingEntry() {
                     label={`Exercise ${index + 1}`}
                     value={exercise.exerciseName}
                     onChangeText={(value) => updateExercise(index, "exerciseName", value)}
+                    maxLength={64}
                     placeholder="Exercise name"
+                    returnKeyType="next"
                     style={styles.exerciseNameInput}
                   />
+                  {exercise.exerciseName.length > 50 ? (
+                    <Text style={styles.counter}>{exercise.exerciseName.length}/64</Text>
+                  ) : null}
                   <Pressable
                     onPress={() => deleteExercise(index)}
                     accessibilityRole="button"
@@ -332,6 +319,7 @@ export default function TrackingEntry() {
                     }
                     keyboardType="number-pad"
                     placeholder="3"
+                    returnKeyType="next"
                     style={styles.metricInput}
                   />
                   <GlassInput
@@ -340,6 +328,7 @@ export default function TrackingEntry() {
                     onChangeText={(value) => updateExercise(index, "reps", value.replace(/\D/g, ""))}
                     keyboardType="number-pad"
                     placeholder="8"
+                    returnKeyType="next"
                     style={styles.metricInput}
                   />
                   <GlassInput
@@ -350,6 +339,7 @@ export default function TrackingEntry() {
                     }
                     keyboardType="decimal-pad"
                     placeholder="0"
+                    returnKeyType="done"
                     style={styles.metricInput}
                   />
                 </View>
@@ -366,6 +356,8 @@ export default function TrackingEntry() {
           <ZookButton
             onPress={() => void saveWorkout()}
             disabled={saving}
+            busy={saving}
+            busyLabel="Saving"
             icon="checkmark-circle-outline"
           >
             {saving ? "Saving..." : "Save workout"}
@@ -469,6 +461,10 @@ const styles = StyleSheet.create({
   },
   exerciseNameInput: {
     flex: 1,
+  },
+  counter: {
+    color: colors.muted,
+    ...typography.caption,
   },
   deleteButton: {
     width: 32,

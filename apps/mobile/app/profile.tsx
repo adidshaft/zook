@@ -1,7 +1,7 @@
 import type { Role } from "@zook/core";
 import { resolvePlanName } from "@zook/ui";
 import { Stack, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ProfileExtraFields } from "@/components/profile/profile-extra-fields";
@@ -111,6 +111,7 @@ export default function ProfileScreen() {
   const plansQuery = useMyPlans();
   const { selectedBranch } = useBranchSelection();
   const [refreshing, setRefreshing] = useState(false);
+  const [roleBusy, setRoleBusy] = useState<Role | null>(null);
 
   const activeOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
@@ -125,6 +126,13 @@ export default function ProfileScreen() {
       session?.user.profilePhotoUrl,
   );
   const roles = activeOrganization?.roles ?? [];
+  useEffect(() => {
+    if (!activeRole || !roles.length || roles.includes(activeRole)) {
+      return;
+    }
+    const fallback = roles[0];
+    void setActiveRole(fallback).catch(() => undefined);
+  }, [activeRole, roles, setActiveRole]);
   const rolesInOtherGyms = useMemo(() => {
     const activeRoles = new Set(roles);
     return (session?.organizations ?? [])
@@ -212,6 +220,7 @@ export default function ProfileScreen() {
       {
         text: "Switch",
         onPress: () => {
+          setRoleBusy(role);
           void setActiveRole(role)
             .then(() => router.replace(routeForRole(role)))
             .catch((error) => {
@@ -219,7 +228,8 @@ export default function ProfileScreen() {
                 "Role unavailable",
                 error instanceof Error ? error.message : "That role is not available here.",
               );
-            });
+            })
+            .finally(() => setRoleBusy(null));
         },
       },
     ]);
@@ -383,9 +393,22 @@ export default function ProfileScreen() {
               <View style={styles.roleRow}>
                 {roles.length ? (
                   roles.map((role) => (
-                    <Pill key={role} tone={role === activeRole ? "lime" : "neutral"}>
-                      {titleCaseRole(role)}
-                    </Pill>
+                    <Pressable
+                      key={role}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use Zook as ${titleCaseRole(role)}`}
+                      accessibilityState={{
+                        selected: role === activeRole,
+                        disabled: Boolean(roleBusy),
+                        busy: roleBusy === role,
+                      }}
+                      disabled={Boolean(roleBusy)}
+                      onPress={() => confirmRoleSwitch(role)}
+                    >
+                      <Pill tone={role === activeRole ? "lime" : "neutral"}>
+                        {roleBusy === role ? "Switching..." : titleCaseRole(role)}
+                      </Pill>
+                    </Pressable>
                   ))
                 ) : (
                   <Pill>No role assigned</Pill>

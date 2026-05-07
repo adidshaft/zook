@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { mobileApiFetch } from "./api";
 import { useAuth } from "./auth";
 import { getStoredValue, setStoredValue } from "./storage";
+import { showToast } from "./toast";
 
 type BranchRecord = {
   id: string;
@@ -55,12 +56,15 @@ export function BranchSelectionProvider({ children }: { children: ReactNode }) {
       Boolean(token) &&
       Boolean(activeOrgId) &&
       Boolean(activeOrganization?.username),
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
   });
 
   const branches = branchesQuery.data ?? [];
-  const selectedBranch =
-    branches.find((branch) => branch.id === storedBranchId) ?? defaultBranch(branches);
+  const storedBranch =
+    hydratedOrgId === activeOrgId
+      ? branches.find((branch) => branch.id === storedBranchId)
+      : undefined;
+  const selectedBranch = storedBranch ?? defaultBranch(branches);
   const selectedBranchId = selectedBranch?.id;
 
   useEffect(() => {
@@ -89,10 +93,17 @@ export function BranchSelectionProvider({ children }: { children: ReactNode }) {
     }
     const nextBranch = selectedBranch;
     if (nextBranch && storedBranchId !== nextBranch.id) {
+      if (storedBranchId && branches.length && !storedBranch) {
+        showToast({
+          tone: "amber",
+          haptic: "warning",
+          message: `Your branch was removed - switched to ${nextBranch.name}.`,
+        });
+      }
       setStoredBranchId(nextBranch.id);
       void setStoredValue(storageKey(activeOrgId), nextBranch.id);
     }
-  }, [activeOrgId, branches.length, hydratedOrgId, selectedBranch, storedBranchId]);
+  }, [activeOrgId, branches.length, hydratedOrgId, selectedBranch, storedBranch, storedBranchId]);
 
   const selectBranch = useCallback(
     async (branchId: string) => {

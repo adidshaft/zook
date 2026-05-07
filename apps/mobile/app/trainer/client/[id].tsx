@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import {
   AuditWarning,
   BottomNav,
@@ -196,6 +196,13 @@ export default function TrainerClientDetail() {
     }
   }
 
+  async function messageClient() {
+    await Share.share({
+      message: `Hi ${clientName}, checking in from Zook about your training plan.`,
+      title: `Message ${clientName}`,
+    });
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -277,9 +284,11 @@ export default function TrainerClientDetail() {
             </ZookButton>
             <SecondaryButton
               disabled={!client}
+              onPress={() => void messageClient()}
+              icon="chatbubble-ellipses-outline"
               style={styles.actionHalf}
             >
-              AI coming soon
+              Message
             </SecondaryButton>
           </View>
 
@@ -352,11 +361,16 @@ export default function TrainerClientDetail() {
                 </SecondaryButton>
               </View>
               <SecondaryButton
-                onPress={() => void assignPlan()}
+                onPress={() =>
+                  Alert.alert(`Publish to ${clientName}?`, "The member will see this plan immediately.", [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Publish", onPress: () => void assignPlan() },
+                  ])
+                }
                 disabled={!canPublishAssignedPlan || savingPlan}
                 onLongPress={!canPublishAssignedPlan ? showOwnerApprovalRequired : undefined}
               >
-                Assign to client
+                Publish to {clientName}
               </SecondaryButton>
             </GlassCard>
           ) : null}

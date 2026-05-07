@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppState,
   type AppStateStatus,
+  ActivityIndicator,
   Linking,
   Pressable,
   RefreshControl,
@@ -35,6 +36,7 @@ import {
 import { MembershipSkeleton, PlansSkeleton } from "@/components/skeletons";
 import { toWebUrl } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { useAppFocusInvalidation } from "@/lib/app-focus";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { memberApi, paymentsApi } from "@/lib/domain-api";
 import { formatDateTime, formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
@@ -213,6 +215,7 @@ export default function MembershipScreen() {
   const [checkingCheckoutStatus, setCheckingCheckoutStatus] = useState(false);
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  useAppFocusInvalidation([["me", "memberships"], ["me", "membership"], ["me", "home"]]);
   const selectedPlan = useMemo(
     () => availablePlans.find((plan) => plan.id === selectedPlanId) ?? renewalTarget?.plan ?? null,
     [availablePlans, renewalTarget?.plan, selectedPlanId],
@@ -257,6 +260,13 @@ export default function MembershipScreen() {
     setRenewalTarget(subscription);
     setRenewalStatus("");
     setRenewalOpen(true);
+  }
+
+  function closeRenewal() {
+    setRenewalOpen(false);
+    setSelectedPlanId(undefined);
+    setRenewalTarget(null);
+    setRenewalStatus("");
   }
 
   async function renewMembership() {
@@ -737,7 +747,7 @@ export default function MembershipScreen() {
           currentPlan={renewalTarget?.plan ?? null}
           gymName={renewalTarget?.organization?.name ?? activeOrganization?.name ?? "your gym"}
           loadingPlans={gymQuery.isLoading}
-          onClose={() => setRenewalOpen(false)}
+          onClose={closeRenewal}
           onRenew={() => void renewMembership()}
           onSwitch={() => void switchMembershipNow()}
           open={renewalOpen}
@@ -857,9 +867,13 @@ function RenewalSheet({
             return (
               <Pressable
                 key={plan.id}
-                onPress={() => setSelectedPlanId(plan.id)}
+                onPress={() => {
+                  if (!renewing) setSelectedPlanId(plan.id);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={`Select ${plan.name}`}
+                accessibilityState={{ selected, disabled: renewing, busy: selected && renewing }}
+                disabled={renewing}
                 style={[styles.planOption, selected ? styles.planOptionSelected : null]}
               >
                 <View style={styles.planOptionCopy}>
@@ -868,7 +882,9 @@ function RenewalSheet({
                     {titleCaseFromCode(plan.type ?? "MEMBERSHIP")} · {formatInr(plan.pricePaise)}
                   </Text>
                 </View>
-                {selected ? (
+                {selected && renewing ? (
+                  <ActivityIndicator size="small" color={colors.lime} />
+                ) : selected ? (
                   <Ionicons name="checkmark-circle" size={20} color={colors.lime} />
                 ) : null}
               </Pressable>
@@ -898,6 +914,8 @@ function RenewalSheet({
               tone="secondary"
               onPress={onSwitch}
               disabled={renewing}
+              busy={renewing}
+              busyLabel="Updating"
               icon="swap-horizontal-outline"
               style={styles.actionHalf}
             >
@@ -907,6 +925,8 @@ function RenewalSheet({
           <ZookButton
             onPress={onRenew}
             disabled={renewing}
+            busy={renewing}
+            busyLabel="Starting"
             icon="refresh-outline"
             style={styles.actionHalf}
           >

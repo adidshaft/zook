@@ -11,6 +11,7 @@ import {
   MobileHeader,
   Pill,
   GlassInput,
+  QueryErrorState,
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
@@ -147,6 +148,7 @@ export default function FindGyms() {
                     key={chip.id}
                     onPress={() => setCity("")}
                     accessibilityRole="button"
+                    accessibilityLabel={chip.label}
                     style={[styles.cityChip, active ? styles.cityChipActive : null]}
                   >
                     <Text style={[styles.cityChipText, active ? styles.cityChipTextActive : null]}>
@@ -171,7 +173,11 @@ export default function FindGyms() {
             <FindGymsSkeleton />
           ) : null}
 
-          {!gymsQuery.isLoading && !gyms.length ? (
+          {gymsQuery.isError ? (
+            <QueryErrorState error={gymsQuery.error} onRetry={() => void gymsQuery.refetch()} />
+          ) : null}
+
+          {!gymsQuery.isLoading && !gymsQuery.isError && !gyms.length ? (
             <GlassCard variant="compact" contentStyle={styles.emptyContent}>
               <IconBubble icon="search-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
@@ -194,7 +200,11 @@ export default function FindGyms() {
                 }}
                 asChild
               >
-                <Pressable accessibilityRole="link" style={({ pressed }) => [pressed ? styles.pressed : null]}>
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel={`Open ${gym.name}`}
+                  style={({ pressed }) => [pressed ? styles.pressed : null]}
+                >
                   <GlassCard contentStyle={styles.gymContent}>
                     <View style={styles.gymHeader}>
                       {gym.coverImageUrl ? (
@@ -202,6 +212,7 @@ export default function FindGyms() {
                           source={{ uri: normalizeMediaUrl(gym.coverImageUrl) }}
                           style={styles.gymThumbnail}
                           contentFit="cover"
+                          accessibilityLabel={`${gym.name} cover photo`}
                         />
                       ) : (
                         <View style={styles.gymThumbnailFallback}>

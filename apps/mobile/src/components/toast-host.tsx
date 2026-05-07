@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { Keyboard, StyleSheet, Text, View } from "react-native";
+import Reanimated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, shadows, spacing, typography } from "@/lib/theme";
 import { subscribeToast, type ToastPayload, type ToastTone } from "@/lib/toast";
@@ -26,9 +31,14 @@ const toneStyles: Record<ToastTone, { borderColor: string; backgroundColor: stri
 export function ToastHost() {
   const insets = useSafeAreaInsets();
   const [toast, setToast] = useState<ToastPayload | null>(null);
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(-16)).current;
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(16);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   useEffect(() => {
     return subscribeToast((payload) => {
@@ -36,43 +46,26 @@ export function ToastHost() {
         clearTimeout(timeoutRef.current);
       }
       setToast(payload);
-      opacity.setValue(0);
-      translateY.setValue(-16);
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      opacity.value = 0;
+      translateY.value = 16;
+      opacity.value = withTiming(1, { duration: 180 });
+      translateY.value = withTiming(0, { duration: 180 });
       timeoutRef.current = setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 220,
-            useNativeDriver: true,
-          }),
-          Animated.timing(translateY, {
-            toValue: -12,
-            duration: 220,
-            useNativeDriver: true,
-          }),
-        ]).start(({ finished }) => {
-          if (finished) {
-            setToast(null);
-          }
-        });
+        opacity.value = withTiming(0, { duration: 220 });
+        translateY.value = withTiming(12, { duration: 220 });
+        timeoutRef.current = setTimeout(() => setToast(null), 240);
       }, 3200);
     });
   }, [opacity, translateY]);
 
   useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0));
     return () => {
+      showSub.remove();
+      hideSub.remove();
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -89,24 +82,21 @@ export function ToastHost() {
       style={[
         styles.host,
         {
-          paddingTop: insets.top + spacing.sm,
+          paddingBottom: Math.max(insets.bottom + 88, keyboardHeight + spacing.lg),
         },
       ]}
     >
-      <Animated.View
+      <Reanimated.View
         accessibilityRole="alert"
         style={[
           styles.toast,
           toneStyles[toast.tone],
-          {
-            opacity,
-            transform: [{ translateY }],
-          },
+          toastStyle,
         ]}
       >
         <Text style={styles.title}>{toast.title}</Text>
         {toast.message ? <Text style={styles.message}>{toast.message}</Text> : null}
-      </Animated.View>
+      </Reanimated.View>
     </View>
   );
 }
@@ -115,7 +105,7 @@ const styles = StyleSheet.create({
   host: {
     position: "absolute",
     zIndex: 1000,
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
     alignItems: "center",

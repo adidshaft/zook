@@ -3,7 +3,7 @@ import type { Href } from "expo-router";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { resolvePlanName } from "@zook/ui";
@@ -19,6 +19,7 @@ import {
 } from "@/components/primitives";
 import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useAppFocusInvalidation } from "@/lib/app-focus";
 import { useMemberHome } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
@@ -56,12 +57,20 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const { activeOrgId, session } = useAuth();
   const homeQuery = useMemberHome();
+  useAppFocusInvalidation([["me", "home"], ["me", "membership"], ["me", "notifications"]]);
   const memberHome = homeQuery.data;
   const sessionOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization;
   const activeOrganization = memberHome?.activeOrganization ?? sessionOrganization;
   const memberName = session?.user.name || "Member";
+  const firstName = memberName.trim().split(/\s+/)[0] || "Member";
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return `Good morning, ${firstName}`;
+    if (hour < 17) return `Good afternoon, ${firstName}`;
+    return `Good evening, ${firstName}`;
+  }, [firstName]);
   const initials = initialsFor(memberName);
   const profilePhotoUrl = normalizeMediaUrl(session?.user.profilePhotoUrl);
   const orgName = activeOrganization?.name ?? "Find a gym";
@@ -156,6 +165,7 @@ export default function Home() {
                     source={{ uri: profilePhotoUrl }}
                     style={styles.avatarImage}
                     contentFit="cover"
+                    accessibilityLabel="Your profile photo"
                   />
                 ) : (
                   <Text style={styles.avatarText}>{initials}</Text>
@@ -169,7 +179,7 @@ export default function Home() {
                 style={styles.headerCopy}
               >
                 <Text numberOfLines={1} style={styles.greeting}>
-                  {orgName}
+                  {greeting}
                 </Text>
                 <View style={styles.gymLineRow}>
                   <View style={styles.gymLogo}>
@@ -178,6 +188,7 @@ export default function Home() {
                         source={{ uri: gymLogoUrl }}
                         style={styles.gymLogoImage}
                         contentFit="cover"
+                        accessibilityLabel={`${orgName} gym logo`}
                       />
                     ) : (
                       <Text style={styles.gymLogoText}>{initialsFor(orgName)}</Text>

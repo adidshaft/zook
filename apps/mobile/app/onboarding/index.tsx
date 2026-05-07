@@ -1,65 +1,68 @@
 import { useRouter } from "expo-router";
-import { useEffect, useRef } from "react";
-import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { useEffect } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Reanimated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BrandMark } from "@/components/primitives";
+import { useReduceMotion } from "@/lib/motion";
 import { colors } from "@/lib/theme";
 
 export default function OnboardingSplash() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const wordmarkOpacity = useRef(new Animated.Value(0)).current;
-  const wordmarkScale = useRef(new Animated.Value(0.96)).current;
-  const markOpacity = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReduceMotion();
+  const wordmarkOpacity = useSharedValue(reduceMotion ? 1 : 0);
+  const wordmarkScale = useSharedValue(reduceMotion ? 1 : 0.96);
+  const markOpacity = useSharedValue(reduceMotion ? 1 : 0);
+  const wordmarkStyle = useAnimatedStyle(() => ({
+    opacity: wordmarkOpacity.value,
+    transform: [{ scale: wordmarkScale.value }],
+  }));
+  const markStyle = useAnimatedStyle(() => ({ opacity: markOpacity.value }));
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(wordmarkOpacity, {
-          toValue: 1,
-          duration: 720,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(wordmarkScale, {
-          toValue: 1,
-          duration: 720,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.timing(markOpacity, {
-        toValue: 1,
-        duration: 520,
+    if (!reduceMotion) {
+      wordmarkOpacity.value = withTiming(1, {
+        duration: 720,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
+      });
+      wordmarkScale.value = withTiming(1, {
+        duration: 720,
+        easing: Easing.out(Easing.cubic),
+      });
+      markOpacity.value = withDelay(
+        720,
+        withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) }),
+      );
+    }
 
     const timer = setTimeout(() => {
       router.push("/onboarding/value-props" as never);
-    }, 2000);
+    }, reduceMotion ? 650 : 2000);
 
     return () => clearTimeout(timer);
-  }, [markOpacity, router, wordmarkOpacity, wordmarkScale]);
+  }, [markOpacity, reduceMotion, router, wordmarkOpacity, wordmarkScale]);
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Skip intro"
+      onPress={() => router.push("/onboarding/value-props" as never)}
+      style={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}
+    >
       <View style={styles.center}>
-        <Animated.View
-          style={[
-            styles.wordmark,
-            {
-              opacity: wordmarkOpacity,
-              transform: [{ scale: wordmarkScale }],
-            },
-          ]}
-        >
+        <Reanimated.View style={[styles.wordmark, wordmarkStyle]}>
           <BrandMark size="lg" />
           <Text style={styles.wordmarkText}>Zook</Text>
-        </Animated.View>
-        <Animated.View style={[styles.scanMark, { opacity: markOpacity }]}>
+        </Reanimated.View>
+        <Reanimated.View style={[styles.scanMark, markStyle]}>
           <View style={styles.scanCorners}>
             <View style={[styles.corner, styles.cornerTopLeft]} />
             <View style={[styles.corner, styles.cornerTopRight]} />
@@ -67,9 +70,10 @@ export default function OnboardingSplash() {
             <View style={[styles.corner, styles.cornerBottomRight]} />
           </View>
           <Text style={styles.scanText}>scan to enter</Text>
-        </Animated.View>
+        </Reanimated.View>
       </View>
-    </View>
+      <Text style={styles.skipText}>Tap to skip</Text>
+    </Pressable>
   );
 }
 
@@ -129,15 +133,20 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
   },
   cornerBottomRight: {
-    right: 0,
     bottom: 0,
-    borderRightWidth: 2,
+    right: 0,
     borderBottomWidth: 2,
+    borderRightWidth: 2,
   },
   scanText: {
     color: colors.muted,
     fontFamily: "Inter_600SemiBold",
-    fontSize: 12,
-    textTransform: "uppercase",
+    fontSize: 13,
+    letterSpacing: 0,
+  },
+  skipText: {
+    color: colors.muted,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "center",
   },
 });

@@ -21,11 +21,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
+  ChipGroup,
   GlassCard,
   IconBubble,
   MobileHeader,
   ScannerFrame,
-  SegmentedControl,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -66,9 +66,9 @@ type AttendanceResultHref = {
 
 const PUSH_PROMPTED_STORAGE_KEY = "zook_push_prompted";
 
-const scanModeOptions: Array<{ label: string; value: ScanMode }> = [
-  { label: "Scan QR", value: "scan" },
-  { label: "Enter code", value: "code" },
+const scanModeOptions: Array<{ label: string; value: ScanMode; icon: "qr-code-outline" | "keypad-outline" }> = [
+  { label: "Scan QR", value: "scan", icon: "qr-code-outline" },
+  { label: "Enter code", value: "code", icon: "keypad-outline" },
 ];
 
 function CameraActiveBottomNavHider() {
@@ -85,6 +85,7 @@ export default function Scan() {
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>("scan");
+  const [modeLocked, setModeLocked] = useState(false);
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [code, setCode] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -101,6 +102,17 @@ export default function Scan() {
       void requestPermission();
     }
   }, [permission, requestPermission]);
+
+  useEffect(() => {
+    if (scanMode !== "scan" || scanState !== "failed" || !errorMessage) {
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      completedRef.current = false;
+      setScanState("idle");
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [errorMessage, scanMode, scanState]);
 
   function scanReason(result: ScanResult) {
     if (Array.isArray(result.suspiciousFlags) && result.suspiciousFlags.length) {
@@ -296,6 +308,13 @@ export default function Scan() {
     void completeScan(cleanCode);
   }
 
+  function handleModeChange(nextMode: ScanMode) {
+    if (modeLocked || busy || nextMode === scanMode) return;
+    setModeLocked(true);
+    setScanMode(nextMode);
+    setTimeout(() => setModeLocked(false), 200);
+  }
+
   function resetScan() {
     completedRef.current = false;
     setBusy(false);
@@ -325,7 +344,13 @@ export default function Scan() {
             showProfileShortcut={false}
           />
 
-          <SegmentedControl options={scanModeOptions} value={scanMode} onChange={setScanMode} />
+          <ChipGroup
+            accessibilityLabel="Check-in method"
+            disabled={busy || modeLocked}
+            options={scanModeOptions}
+            value={scanMode}
+            onChange={handleModeChange}
+          />
 
           {cameraBlocked ? (
             <GlassCard variant="danger" contentStyle={styles.blockedPermissionContent}>
@@ -417,7 +442,7 @@ export default function Scan() {
                   onChangeText={setCode}
                   autoCapitalize="characters"
                   placeholder="Desk code"
-                  placeholderTextColor={colors.subtle}
+                  placeholderTextColor="rgba(255,255,255,0.55)"
                   style={styles.codeInput}
                   returnKeyType="done"
                   onSubmitEditing={submitCode}
