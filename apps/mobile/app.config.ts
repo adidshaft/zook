@@ -13,6 +13,12 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   userInterfaceStyle: "dark",
   icon: "./assets/icons/AppIcon-1024.png",
   newArchEnabled: true,
+  // CODEX: replace with designed asset.
+  splash: {
+    image: "./assets/splash.png",
+    resizeMode: "contain",
+    backgroundColor: "#070908"
+  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.zook.app",
@@ -30,7 +36,13 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   plugins: [
     "expo-router",
     "expo-font",
-    "expo-notifications",
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/notification-icon.png",
+        color: "#B9F455"
+      }
+    ],
     "expo-secure-store",
     [
       "expo-camera",
@@ -48,14 +60,14 @@ const runtimeVersion = appVersion;
 
 const apiBaseUrlByProfile: Record<MobileReleaseProfile, string> = {
   local: "http://localhost:3000/api",
-  staging: "https://staging.zook.app/api",
-  production: "https://zook.app/api"
+  staging: "https://dashboard.zookfit.in/api",
+  production: "https://dashboard.zookfit.in/api"
 };
 
 const webUrlByProfile: Record<MobileReleaseProfile, string> = {
   local: "http://localhost:3000",
-  staging: "https://staging.zook.app",
-  production: "https://zook.app"
+  staging: "https://app.zookfit.in",
+  production: "https://app.zookfit.in"
 };
 
 function normalizeProfile(value?: string | null): MobileReleaseProfile | undefined {

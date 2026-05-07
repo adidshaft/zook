@@ -53,6 +53,7 @@ export default function GymProfileScreen() {
       ? [gym.coverImageUrl]
       : [];
   const coverImageUrl = normalizeMediaUrl(gym?.coverImageUrl);
+  const logoUrl = normalizeMediaUrl(gym?.logoUrl);
   const viewerState = gymQuery.data?.viewerState;
   const effectiveReferral = referralCode ?? gymQuery.data?.referral?.code ?? undefined;
   const profileBranches = gymQuery.data?.branches ?? [];
@@ -188,21 +189,34 @@ export default function GymProfileScreen() {
         {gym ? (
           <>
             <GlassCard contentStyle={styles.heroCard}>
-              <View style={styles.coverPlaceholder}>
-                {gym.coverImageUrl ? (
-                  <Image
-                    source={{ uri: coverImageUrl }}
-                    style={[StyleSheet.absoluteFill, { opacity: 0.6 }]}
-                    contentFit="cover"
-                  />
-                ) : null}
-                <View style={styles.coverGlow} />
-                <Text style={styles.coverEyebrow}>{gym.tagline ?? gym.name}</Text>
-                <Text style={styles.coverTitle}>{plans.length} plans available</Text>
-                <Text style={styles.coverBody}>{gym.address ?? `${gym.city}, ${gym.state}`}</Text>
-                {gym.openingHoursSummary ? (
-                  <Text style={styles.coverBody}>{gym.openingHoursSummary}</Text>
-                ) : null}
+              <View style={styles.coverShell}>
+                <View style={styles.coverPlaceholder}>
+                  {gym.coverImageUrl ? (
+                    <Image
+                      source={{ uri: coverImageUrl }}
+                      style={[StyleSheet.absoluteFill, { opacity: 0.6 }]}
+                      contentFit="cover"
+                    />
+                  ) : null}
+                  <View style={styles.coverGlow} />
+                  <Text style={styles.coverEyebrow}>{gym.tagline ?? gym.name}</Text>
+                  <Text style={styles.coverTitle}>{plans.length} plans available</Text>
+                  <Text style={styles.coverBody}>{gym.address ?? `${gym.city}, ${gym.state}`}</Text>
+                  {gym.openingHoursSummary ? (
+                    <Text style={styles.coverBody}>{gym.openingHoursSummary}</Text>
+                  ) : null}
+                </View>
+                <View style={styles.gymLogoOverlay}>
+                  {logoUrl ? (
+                    <Image
+                      source={{ uri: logoUrl }}
+                      style={styles.gymLogoImage}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <Text style={styles.gymLogoFallbackText}>{initialsForName(gym.name)}</Text>
+                  )}
+                </View>
               </View>
 
               {gym.gymType || (gym.amenities ?? []).length ? (
@@ -601,6 +615,10 @@ const styles = StyleSheet.create({
   heroCard: {
     gap: 16,
   },
+  coverShell: {
+    position: "relative",
+    marginBottom: 24,
+  },
   coverPlaceholder: {
     minHeight: 196,
     borderRadius: 22,
@@ -610,6 +628,28 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     overflow: "hidden",
     gap: 10,
+  },
+  gymLogoOverlay: {
+    position: "absolute",
+    bottom: -24,
+    left: 16,
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "rgba(7,9,8,0.92)",
+    backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  gymLogoImage: {
+    width: "100%",
+    height: "100%",
+  },
+  gymLogoFallbackText: {
+    color: colors.bg,
+    ...typography.headerTitle,
   },
   coverGlow: {
     position: "absolute",

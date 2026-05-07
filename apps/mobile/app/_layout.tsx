@@ -21,9 +21,13 @@ import { BranchSelectionProvider } from "@/lib/branch-selection";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
+import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout } from "@/lib/theme";
 
 SplashScreen.preventAutoHideAsync();
+
+const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
+const ONBOARDING_COMPLETED = "true";
 
 function encodeRedirectTarget(
   pathname: string,
@@ -98,23 +102,66 @@ function redirectAllowedForSession(
 }
 
 function LayoutContent() {
-  const { defaultRoute, hasActiveRole, hasAnyRole, logout, status } = useAuth();
+  const { defaultRoute, hasActiveRole, hasAnyRole, logout, session, status } = useAuth();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const runtimeConfigError = getMobileRuntimeConfigError();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
+  const [onboardingFlag, setOnboardingFlag] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
-    if (status === "loading") {
+    let mounted = true;
+    void getStoredValue(ONBOARDING_STORAGE_KEY).then((stored) => {
+      if (mounted) {
+        setOnboardingFlag(stored);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [pathname, status]);
+
+  useEffect(() => {
+    if (status === "loading" || onboardingFlag === undefined) {
       return;
     }
+    const isOnboardingRoute = pathname.startsWith("/onboarding");
+
     if (status === "unauthenticated") {
+      if (onboardingFlag === null) {
+        if (!isOnboardingRoute) {
+          router.replace("/onboarding" as never);
+        }
+        return;
+      }
+      if (isOnboardingRoute) {
+        router.replace("/login" as never);
+        return;
+      }
       if (pathname !== "/login") {
         const redirect = encodeRedirectTarget(pathname, searchParams);
         router.replace(`/login?redirect=${encodeURIComponent(redirect)}` as never);
       }
+      return;
+    }
+
+    if ((session?.organizations.length ?? 0) === 0) {
+      if (onboardingFlag !== ONBOARDING_COMPLETED && pathname !== "/onboarding/role-question") {
+        router.replace("/onboarding/role-question" as never);
+      }
+      return;
+    }
+
+    if (onboardingFlag !== ONBOARDING_COMPLETED) {
+      void setStoredValue(ONBOARDING_STORAGE_KEY, ONBOARDING_COMPLETED).then(() => {
+        setOnboardingFlag(ONBOARDING_COMPLETED);
+      });
+    }
+
+    if (isOnboardingRoute) {
+      router.replace(defaultRoute as never);
       return;
     }
 
@@ -157,7 +204,17 @@ function LayoutContent() {
     ) {
       router.replace(defaultRoute as never);
     }
-  }, [defaultRoute, hasActiveRole, hasAnyRole, pathname, router, searchParams, status]);
+  }, [
+    defaultRoute,
+    hasActiveRole,
+    hasAnyRole,
+    onboardingFlag,
+    pathname,
+    router,
+    searchParams,
+    session?.organizations.length,
+    status,
+  ]);
 
   if (runtimeConfigError) {
     return (
@@ -204,6 +261,8 @@ function LayoutContent() {
         <Stack.Screen name="owner" options={{ animation: "none" }} />
         <Stack.Screen name="platform" options={{ animation: "none" }} />
         <Stack.Screen name="reception" options={{ animation: "none" }} />
+        <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
+        <Stack.Screen name="login" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="trainer/index" options={{ animation: "none" }} />
         <Stack.Screen name="trainer/client/[id]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen

@@ -19,8 +19,59 @@ type VerifyOtpResult = {
   session?: AuthSessionSummary;
 };
 
+export type MobileUploadFile = {
+  uri: string;
+  name: string;
+  type: string;
+};
+
+export type FileAsset = {
+  id: string;
+  url?: string | null;
+  originalName?: string | null;
+  mimeType?: string | null;
+  sizeBytes?: number | null;
+  category?: string | null;
+};
+
+export type FileUploadResponse = {
+  file?: FileAsset | null;
+  deliveryUrl?: string | null;
+  signedUrl?: string | null;
+};
+
+export type ProfilePhotoSaveResponse = {
+  user?: {
+    profilePhotoUrl?: string | null;
+  } | null;
+  profile?: {
+    profilePhotoUrl?: string | null;
+  } | null;
+  file?: FileAsset | null;
+};
+
 export const apiClient = {
   request: mobileApiFetch,
+};
+
+export const filesApi = {
+  uploadProfilePhoto(options: RequestOptions & { file: MobileUploadFile; visibility?: "private" | "org" }) {
+    const formData = new FormData();
+    formData.append("category", "profile_photo");
+    formData.append("visibility", options.visibility ?? "private");
+    if (options.orgId) {
+      formData.append("orgId", options.orgId);
+    }
+    // CODEX: assumed mobileApiFetch already targets /api; current backend exposes multipart uploads at /files/upload.
+    formData.append("file", options.file as unknown as Blob);
+
+    return mobileApiFetch<FileUploadResponse>("/files/upload", {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: formData,
+    });
+  },
 };
 
 export const authClient = {
@@ -63,6 +114,36 @@ export const memberApi = {
       token: options.token,
       ...(options.orgId ? { orgId: options.orgId } : {}),
       body: options.body,
+    });
+  },
+  saveProfilePhotoAsset<T = ProfilePhotoSaveResponse>(
+    options: RequestOptions & { fileAssetId: string; consentToAttendanceUse?: boolean },
+  ) {
+    // CODEX: assumed current API shape requires /me/profile-photo { fileAssetId } instead of /me/profile { profilePhotoAssetId }.
+    return mobileApiFetch<T>("/me/profile-photo", {
+      method: "PATCH",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: {
+        fileAssetId: options.fileAssetId,
+        ...(options.orgId ? { orgId: options.orgId } : {}),
+        ...(options.consentToAttendanceUse !== undefined
+          ? { consentToAttendanceUse: options.consentToAttendanceUse }
+          : {}),
+      },
+    });
+  },
+  removeProfilePhoto<T = ProfilePhotoSaveResponse>(options: RequestOptions) {
+    // CODEX: assumed removal will be accepted by the profile PATCH shape until a dedicated DELETE exists.
+    return mobileApiFetch<T>("/me/profile", {
+      method: "PATCH",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: {
+        ...(options.orgId ? { orgId: options.orgId } : {}),
+        profilePhotoAssetId: null,
+        profilePhotoUrl: null,
+      },
     });
   },
   requestContactOtp<T = { challengeId: string; expiresAt: string; devOtp?: string }>(

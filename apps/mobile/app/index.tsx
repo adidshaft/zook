@@ -1,6 +1,7 @@
 import { Link, Stack, useRouter } from "expo-router";
 import type { Href } from "expo-router";
 import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -16,6 +17,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useMemberHome } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
@@ -47,6 +49,14 @@ function formatRenewalDate(value?: string | null) {
   })}`;
 }
 
+function normalizeMediaUrl(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return /^https?:\/\//i.test(trimmed) ? trimmed : toWebUrl(trimmed);
+}
+
 export default function Home() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -62,6 +72,7 @@ export default function Home() {
   const memberName = session?.user.name || "Member";
   const firstName = memberName.split(" ")[0] || "Hey";
   const initials = initialsFor(memberName);
+  const profilePhotoUrl = normalizeMediaUrl(session?.user.profilePhotoUrl);
   const orgName = activeOrganization?.name ?? "Find a gym";
   const city = activeOrganization?.city ?? "Nearby";
   const gymHref = sessionOrganization?.username
@@ -147,7 +158,15 @@ export default function Home() {
               hitSlop={12}
             >
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initials}</Text>
+                {profilePhotoUrl ? (
+                  <Image
+                    source={{ uri: profilePhotoUrl }}
+                    style={styles.avatarImage}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Text style={styles.avatarText}>{initials}</Text>
+                )}
               </View>
             </Pressable>
             <Link href={gymHref} asChild>
@@ -319,6 +338,9 @@ export default function Home() {
                   <View style={styles.drawerGymList}>
                     {enrolledGyms.map((gym) => {
                       const selected = gym.orgId === activeOrgId;
+                      const gymLogoUrl = normalizeMediaUrl(
+                        (gym as { logoUrl?: string | null }).logoUrl,
+                      );
                       return (
                         <Pressable
                           key={`${gym.name}-${gym.city}`}
@@ -328,7 +350,15 @@ export default function Home() {
                           style={[styles.drawerGymRow, selected ? styles.drawerGymRowActive : null]}
                         >
                           <View style={styles.drawerGymLogo}>
-                            <Text style={styles.drawerGymLogoText}>{initialsFor(gym.name)}</Text>
+                            {gymLogoUrl ? (
+                              <Image
+                                source={{ uri: gymLogoUrl }}
+                                style={styles.drawerGymLogoImage}
+                                contentFit="cover"
+                              />
+                            ) : (
+                              <Text style={styles.drawerGymLogoText}>{initialsFor(gym.name)}</Text>
+                            )}
                           </View>
                           <View style={styles.drawerGymCopy}>
                             <Text numberOfLines={1} style={styles.drawerGymName}>
@@ -598,6 +628,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(185,244,85,0.13)",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
   },
   pressedAvatar: {
     opacity: 0.82,
@@ -1014,6 +1049,11 @@ const styles = StyleSheet.create({
     borderColor: colors.limeBorder,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  drawerGymLogoImage: {
+    width: "100%",
+    height: "100%",
   },
   drawerGymLogoText: {
     color: colors.lime,

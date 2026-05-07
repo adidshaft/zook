@@ -1630,6 +1630,8 @@ export function CollapsibleSection({
   eyebrow,
   subtitle,
   count,
+  open: controlledOpen,
+  onOpenChange,
   defaultOpen = true,
   children,
 }: {
@@ -1637,14 +1639,26 @@ export function CollapsibleSection({
   eyebrow?: string;
   subtitle?: string;
   count?: number | string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   defaultOpen?: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const open = controlledOpen ?? uncontrolledOpen;
+
+  function toggleOpen() {
+    const nextOpen = !open;
+    if (controlledOpen === undefined) {
+      setUncontrolledOpen(nextOpen);
+    }
+    onOpenChange?.(nextOpen);
+  }
+
   return (
     <GlassCard contentStyle={styles.collapsibleContent}>
       <Pressable
-        onPress={() => pressWithHaptics(() => setOpen((value) => !value))}
+        onPress={() => pressWithHaptics(toggleOpen)}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         style={({ pressed }) => [styles.collapsibleHeader, pressed ? styles.pressed : null]}

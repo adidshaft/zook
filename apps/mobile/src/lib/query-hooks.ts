@@ -301,8 +301,13 @@ export interface MyProfileData {
     name: string;
     phone?: string | null;
     dateOfBirth?: string | null;
+    gender?: string | null;
+    emergencyContact?: { name?: string | null; phone?: string | null } | null;
     fitnessGoal?: string | null;
     profilePhotoUrl?: string | null;
+    marketingOptIn?: boolean | null;
+    aiConsent?: boolean | null;
+    preferredLocale?: string | null;
   };
   profile?: {
     id: string;
