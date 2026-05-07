@@ -294,6 +294,17 @@ describe("provider registry", () => {
     });
   });
 
+  it("uses Resend's free test sender when local .env keeps a .local from address", () => {
+    process.env.EMAIL_PROVIDER = "resend";
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.EMAIL_FROM = "Zook <noreply@zook.local>";
+
+    expect(getEmailProvider()).toBeInstanceOf(ResendEmailProvider);
+    expect(getProviderRegistryDiagnostics().email.metadata).toMatchObject({
+      fromEmail: "Zook <onboarding@resend.dev>",
+    });
+  });
+
   it("supports smtp when fully configured", () => {
     process.env.EMAIL_PROVIDER = "smtp";
     process.env.SMTP_HOST = "smtp.example.com";
@@ -436,6 +447,8 @@ describe("provider registry", () => {
     expect(diagnostics.email.env.RESEND_API_KEY).toBe(true);
     expect(diagnostics.map.env.GOOGLE_MAPS_API_KEY).toBe(true);
     expect(diagnostics.ai.metadata).toMatchObject({ model: "gpt-safe" });
-    expect(diagnostics.email.metadata).toMatchObject({ fromEmail: "Zook <noreply@zook.app>" });
+    expect(diagnostics.email.metadata).toMatchObject({
+      fromEmail: "Zook <onboarding@resend.dev>",
+    });
   });
 });

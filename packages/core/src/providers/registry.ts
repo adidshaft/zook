@@ -88,6 +88,14 @@ function env(value: string | undefined) {
   return value?.trim() || undefined;
 }
 
+function resolveResendFromEmail() {
+  const configuredFromEmail = env(process.env.EMAIL_FROM);
+  if (!configuredFromEmail || /@(?:[^<>\s]+\.)?zook\.local[>\s]*$/i.test(configuredFromEmail)) {
+    return "Zook <onboarding@resend.dev>";
+  }
+  return configuredFromEmail;
+}
+
 function envFlags(names: readonly string[]): Record<string, boolean> {
   return Object.fromEntries(
     names.map((name) => [name, env(process.env[name]) !== undefined]),
@@ -317,10 +325,7 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
       selectedProvider,
       selectionValue,
       env: envState,
-      provider: new ResendEmailProvider(
-        apiKey,
-        env(process.env.EMAIL_FROM) ?? "Zook <noreply@zook.app>",
-      ),
+      provider: new ResendEmailProvider(apiKey, resolveResendFromEmail()),
     });
   }
 
