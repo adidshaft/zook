@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -205,8 +205,13 @@ function normalizeOriginalName(originalName?: string) {
   if (!source) {
     return "upload";
   }
+  if (/[\0/\\]/.test(source) || source.split(/[\\/]/).some((segment) => segment === "..")) {
+    throw new Error("Unsafe file name.");
+  }
+  if (source.includes("..")) {
+    throw new Error("Unsafe file name.");
+  }
   const safe = source
-    .replace(/[/\\]+/g, "-")
     .replace(/\.+/g, ".")
     .replace(/[^a-zA-Z0-9._ -]/g, "-")
     .replace(/\s+/g, "-")
@@ -391,13 +396,14 @@ export function verifyLocalStorageSignature(input: {
   if (Number.isNaN(input.expiresAt) || input.expiresAt <= Date.now()) {
     return false;
   }
-  return (
-    createLocalStorageSignature({
-      key: input.key,
-      expiresAt: input.expiresAt,
-      ...(input.secret ? { secret: input.secret } : {}),
-    }) === input.signature
-  );
+  const expected = createLocalStorageSignature({
+    key: input.key,
+    expiresAt: input.expiresAt,
+    ...(input.secret ? { secret: input.secret } : {}),
+  });
+  const expectedBytes = Buffer.from(expected);
+  const signatureBytes = Buffer.from(input.signature);
+  return expectedBytes.length === signatureBytes.length && timingSafeEqual(expectedBytes, signatureBytes);
 }
 
 export function buildLocalStorageSignedUrl(input: {
@@ -405,7 +411,8 @@ export function buildLocalStorageSignedUrl(input: {
   expiresInSeconds?: number;
   secret?: string;
 }) {
-  const expiresAt = Date.now() + (input.expiresInSeconds ?? 10 * 60) * 1000;
+  const expiresInSeconds = Math.min(input.expiresInSeconds ?? 5 * 60, 5 * 60);
+  const expiresAt = Date.now() + expiresInSeconds * 1000;
   const signature = createLocalStorageSignature({
     key: input.key,
     expiresAt,

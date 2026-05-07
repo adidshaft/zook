@@ -1,10 +1,14 @@
 "use client";
 
+import Link from "next/link";
+import { useState } from "react";
 import { CsvExportButton, ErrorNotice } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
+import { ManagedOn } from "../../ui";
 import type { ShopOrderRow } from "../../dashboard-operational-model";
 import { formatEnumLabel, formatInr } from "@/lib/format";
+import { ShopOrderPaymentControl } from "../read-only/shop-order-payment-control";
 
 const copy = {
   title: "Pickup and fulfillment queue",
@@ -28,6 +32,7 @@ export function ShopOrdersSection({
     loading: boolean;
   };
 }) {
+  const [status, setStatus] = useState("");
   return (
     <GlassCard>
       <SectionHeader
@@ -37,6 +42,14 @@ export function ShopOrdersSection({
         badge={<Pill tone={readyOrders.length ? "amber" : "lime"}>{readyOrders.length} ready</Pill>}
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/shop.csv`} />}
       />
+      <ManagedOn surface="desk" className="mt-4">
+        Ready pickup orders are handed over in Desk after identity verification.
+      </ManagedOn>
+      {status ? (
+        <p className="mt-3 rounded-2xl border border-lime-300/20 bg-lime-300/8 px-4 py-3 text-sm text-lime-100">
+          {status}
+        </p>
+      ) : null}
       <div className="mt-5">
         {shopOrdersState.error ? (
           <ErrorNotice message={shopOrdersState.error} />
@@ -72,6 +85,30 @@ export function ShopOrdersSection({
                 render: (order) => (
                   <span className="font-medium text-white">{formatInr(order.totalPaise)}</span>
                 ),
+              },
+              {
+                id: "action",
+                header: "Action",
+                align: "right",
+                render: (order) =>
+                  order.status === "READY_FOR_PICKUP" ? (
+                    <Link
+                      href={`/desk?tab=pickup&orderId=${encodeURIComponent(order.id)}`}
+                      className="zook-focus rounded-full border border-lime-300/35 px-3 py-1 text-xs font-semibold text-lime-100 transition hover:bg-lime-300/10"
+                    >
+                      Open in Desk
+                    </Link>
+                  ) : order.status === "PENDING_PAYMENT" && !order.paymentId ? (
+                    <ShopOrderPaymentControl
+                      orgId={orgId}
+                      order={order}
+                      onRecorded={() => {
+                        setStatus(`Payment recorded for order ${order.id.slice(-8).toUpperCase()}.`);
+                      }}
+                    />
+                  ) : (
+                    <span className="text-xs text-white/35">No action</span>
+                  ),
               },
             ]}
             rows={shopOrders}

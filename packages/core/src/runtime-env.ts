@@ -135,6 +135,37 @@ export function getAllowedFixedOtp(env: NodeJS.ProcessEnv = process.env) {
   return fixedOtp && isFixedOtpAllowed(env) ? fixedOtp : undefined;
 }
 
+function isStrongSecret(value: string) {
+  const trimmed = value.trim();
+  if (trimmed.length < 32) {
+    return false;
+  }
+  if (/^(dev|test|local|secret|password|changeme|zook)[-_]?(secret|password)?$/i.test(trimmed)) {
+    return false;
+  }
+  return new Set(trimmed).size >= 12;
+}
+
+export function getQrSigningSecret(env: NodeJS.ProcessEnv = process.env) {
+  const secret = env.ZOOK_QR_SECRET?.trim();
+  if (secret && isStrongSecret(secret)) {
+    return secret;
+  }
+
+  const appEnv = getAppEnv(env);
+  if (appEnv === "local" && secret) {
+    return secret;
+  }
+
+  throw new RuntimeConfigError([
+    {
+      level: "error",
+      code: "ZOOK_QR_SECRET_REQUIRED",
+      message: "ZOOK_QR_SECRET must be a strong 32+ character secret outside local environments.",
+    },
+  ]);
+}
+
 export function canReturnDevOtp(env: NodeJS.ProcessEnv = process.env) {
   if (env.NODE_ENV === "test") {
     return true;
@@ -192,6 +223,22 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
       code: "OFFLINE_DEMO_NON_LOCAL",
       message: "Sample mode is only available in local builds.",
     });
+  }
+
+  if (appEnv !== "local") {
+    try {
+      getQrSigningSecret(env);
+    } catch (error) {
+      if (error instanceof RuntimeConfigError) {
+        issues.push(...error.issues);
+      } else {
+        issues.push({
+          level: "error",
+          code: "ZOOK_QR_SECRET_REQUIRED",
+          message: "ZOOK_QR_SECRET must be configured outside local environments.",
+        });
+      }
+    }
   }
 
   if (appEnv === "production") {

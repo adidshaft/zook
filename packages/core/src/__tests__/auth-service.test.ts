@@ -112,6 +112,7 @@ describe("auth service", () => {
   afterEach(() => {
     vi.useRealTimers();
     delete process.env.OTP_FIXED_CODE_DEV;
+    delete process.env.APP_ENV;
   });
 
   it("request otp creates a challenge and sends email", async () => {
@@ -162,6 +163,24 @@ describe("auth service", () => {
     });
     expect(session.token).toBeTruthy();
     expect(repo.sessions).toHaveLength(1);
+  });
+
+  it("rejects a leaked fixed otp in production before creating a session", async () => {
+    process.env.APP_ENV = "production";
+    process.env.OTP_FIXED_CODE_DEV = "000000";
+    const service = new AuthService(repo, emailProvider, () => new Date());
+    await service.requestOtp(email);
+
+    await expect(
+      service.verifyOtp({
+        identifier: email,
+        code: "000000",
+        userId: "user_1",
+        ipAddress: "203.0.113.10",
+        userAgent: "vitest",
+      }),
+    ).rejects.toThrow("Fixed OTP is disabled in production");
+    expect(repo.sessions).toHaveLength(0);
   });
 
   it("invalid otp fails and increments attempts", async () => {

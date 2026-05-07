@@ -213,6 +213,41 @@ export const memberApi = {
       ...(options.branchId ? { branchId: options.branchId } : {}),
     });
   },
+  switchMembership<T = { subscription?: unknown; proration?: unknown }>(
+    options: RequestOptions & { subscriptionId: string; planId: string },
+  ) {
+    return mobileApiFetch<T>(`/me/memberships/${options.subscriptionId}/switch`, {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      ...(options.branchId ? { branchId: options.branchId } : {}),
+      body: { planId: options.planId },
+    });
+  },
+  pauseMembership<T = { subscription?: unknown; pauseDaysRequested?: number }>(
+    options: RequestOptions & { subscriptionId: string; resumesAt: string; reason?: string },
+  ) {
+    return mobileApiFetch<T>(`/me/memberships/${options.subscriptionId}/pause`, {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      ...(options.branchId ? { branchId: options.branchId } : {}),
+      body: {
+        resumesAt: options.resumesAt,
+        ...(options.reason ? { reason: options.reason } : {}),
+      },
+    });
+  },
+  resumeMembership<T = { subscription?: unknown }>(
+    options: RequestOptions & { subscriptionId: string },
+  ) {
+    return mobileApiFetch<T>(`/me/memberships/${options.subscriptionId}/resume`, {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      ...(options.branchId ? { branchId: options.branchId } : {}),
+    });
+  },
   createTrackingWorkout(options: RequestOptions & { body: Record<string, unknown> }) {
     return mobileApiFetch("/me/tracking/workouts", {
       method: "POST",

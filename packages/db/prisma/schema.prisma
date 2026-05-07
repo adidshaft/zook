@@ -407,27 +407,27 @@ enum HabitFrequency {
 }
 
 model User {
-  id               String    @id @default(cuid())
-  email            String    @unique
-  emailVerifiedAt  DateTime?
-  name             String
-  phone            String?
-  phoneVerifiedAt  DateTime?
-  dateOfBirth      DateTime?
-  profilePhotoUrl  String?
-  gender           String?
-  fitnessGoal      String?
-  emergencyContact Json?
-  isMinor          Boolean   @default(false)
-  guardianPending  Boolean   @default(false)
-  isPlatformAdmin  Boolean   @default(false)
-  marketingOptIn   Boolean   @default(true)
-  aiConsent        Boolean   @default(false)
-  preferredLocale  String    @default("en")
-  weeklyWorkoutGoal Int      @default(5)
-  deletedAt        DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  email             String    @unique
+  emailVerifiedAt   DateTime?
+  name              String
+  phone             String?
+  phoneVerifiedAt   DateTime?
+  dateOfBirth       DateTime?
+  profilePhotoUrl   String?
+  gender            String?
+  fitnessGoal       String?
+  emergencyContact  Json?
+  isMinor           Boolean   @default(false)
+  guardianPending   Boolean   @default(false)
+  isPlatformAdmin   Boolean   @default(false)
+  marketingOptIn    Boolean   @default(true)
+  aiConsent         Boolean   @default(false)
+  preferredLocale   String    @default("en")
+  weeklyWorkoutGoal Int       @default(5)
+  deletedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([email])
   @@index([phone])
@@ -435,17 +435,21 @@ model User {
 }
 
 model UserSession {
-  id          String    @id @default(cuid())
-  userId      String
-  tokenHash   String    @unique
-  userAgent   String?
-  ipAddress   String?
-  deviceLabel String?
-  revokedAt   DateTime?
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
+  id                    String    @id @default(cuid())
+  userId                String
+  tokenHash             String    @unique
+  userAgent             String?
+  ipAddress             String?
+  deviceLabel           String?
+  deviceFingerprintHash String?
+  newDeviceNotifiedAt   DateTime?
+  lastSeenAt            DateTime?
+  revokedAt             DateTime?
+  expiresAt             DateTime
+  createdAt             DateTime  @default(now())
 
   @@index([userId])
+  @@index([userId, deviceFingerprintHash])
   @@index([expiresAt])
 }
 
@@ -1010,6 +1014,8 @@ model MemberSubscription {
   referralCodeId     String?
   activatedById      String?
   pausedAt           DateTime?
+  resumesAt          DateTime?
+  pauseDaysUsed      Int                @default(0)
   cancelledAt        DateTime?
   notes              String?
   createdAt          DateTime           @default(now())
@@ -1271,6 +1277,7 @@ model Coupon {
   validFrom        DateTime?
   validUntil       DateTime?
   maxRedemptions   Int?
+  redemptionCount  Int        @default(0)
   perUserLimit     Int?
   applicablePlanId String?
   createdById      String
@@ -1291,6 +1298,7 @@ model CouponRedemption {
   discountPaise    Int
   createdAt        DateTime @default(now())
 
+  @@unique([paymentSessionId, couponId, userId])
   @@index([orgId, couponId])
   @@index([orgId, userId])
 }
@@ -1406,15 +1414,17 @@ model Offer {
 }
 
 model AttendanceQrToken {
-  id          String    @id @default(cuid())
-  orgId       String
-  branchId    String
-  nonce       String    @unique
-  issuedAt    DateTime  @default(now())
-  expiresAt   DateTime
-  usedAt      DateTime?
-  signature   String
-  createdById String?
+  id            String    @id @default(cuid())
+  orgId         String
+  branchId      String
+  nonce         String    @unique
+  issuedAt      DateTime  @default(now())
+  expiresAt     DateTime
+  usedAt        DateTime?
+  scanCount     Int       @default(0)
+  lastScannedAt DateTime?
+  signature     String
+  createdById   String?
 
   @@index([orgId, branchId, expiresAt])
 }

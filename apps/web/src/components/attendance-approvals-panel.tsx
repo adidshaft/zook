@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { GlassCard, Pill } from "./glass-card";
+import { HelpHint } from "./ui";
 import { webApiFetch } from "@/lib/api-client";
 
 type AttendanceQueueRecord = {
@@ -14,6 +15,14 @@ type AttendanceQueueRecord = {
   profile?: { profilePhotoUrl?: string | null } | null;
   plan?: { name?: string | null } | null;
   subscription?: { endsAt?: string | null; remainingVisits?: number | null } | null;
+};
+
+const flagDescriptions: Record<string, string> = {
+  EXPIRED_MEMBERSHIP: "Membership ended before this scan.",
+  EARLY_CHECKIN: "Member scanned earlier than the allowed entry window.",
+  OUT_OF_BRANCH: "Scan happened at a branch outside the membership scope.",
+  STALE_TOKEN: "QR token was older than the allowed scan window.",
+  RAPID_REPEAT: "Multiple scans happened too close together.",
 };
 
 export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
@@ -101,9 +110,12 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
                 {(record.suspiciousFlags ?? []).length ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {(record.suspiciousFlags ?? []).map((flag) => (
-                      <Pill key={flag} tone="amber">
-                        {flag}
-                      </Pill>
+                      <span key={flag} className="inline-flex items-center gap-1">
+                        <Pill tone="amber">{flag}</Pill>
+                        <HelpHint label={flag} title={flag} size="xs">
+                          {flagDescriptions[flag] ?? "This scan needs manual review."}
+                        </HelpHint>
+                      </span>
                     ))}
                   </div>
                 ) : null}

@@ -17,6 +17,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { Image } from "expo-image";
@@ -64,6 +65,7 @@ export default function GymProfileScreen() {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState<PublicTrainer | null>(null);
+  const [inviteCode, setInviteCode] = useState(referralCode ?? "");
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const usernameRef = useRef(username);
@@ -118,6 +120,14 @@ export default function GymProfileScreen() {
   function openTrainerSheet(trainer: PublicTrainer) {
     setSelectedTrainer(trainer);
     trainerSheetRef.current?.present();
+  }
+
+  function applyInviteCode() {
+    const normalized = inviteCode.trim().toUpperCase();
+    if (!username || !normalized) {
+      return;
+    }
+    router.replace({ pathname: "/gym/[username]", params: { username, ref: normalized } });
   }
 
   useEffect(() => {
@@ -530,6 +540,17 @@ export default function GymProfileScreen() {
                 <Text style={styles.sectionBody}>
                   Open this gym from a referral link or ask the gym team for a code to continue.
                 </Text>
+                <View style={styles.inviteCodeRow}>
+                  <TextInput
+                    value={inviteCode}
+                    onChangeText={setInviteCode}
+                    autoCapitalize="characters"
+                    placeholder="Invite code"
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.inviteCodeInput}
+                  />
+                  <PrimaryButton onPress={applyInviteCode}>Apply</PrimaryButton>
+                </View>
               </GlassCard>
             ) : null}
 
@@ -1031,6 +1052,19 @@ const styles = StyleSheet.create({
   },
   ctaCard: {
     gap: 12,
+  },
+  inviteCodeRow: {
+    gap: spacing.sm,
+  },
+  inviteCodeInput: {
+    minHeight: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(0,0,0,0.22)",
+    color: colors.text,
+    paddingHorizontal: spacing.md,
+    ...typography.body,
   },
   sectionTitle: {
     color: colors.text,

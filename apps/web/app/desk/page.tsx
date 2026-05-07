@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@zook/db";
-import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
 import { DeskPanel } from "@/components/desk-panel";
-import { GlassCard, Pill } from "@/components/glass-card";
 import { getDashboardData } from "@/lib/data";
 import { hasCoachAccess, hasDeskAccess, hasOwnerDashboardAccess } from "@/lib/auth-destinations";
 import { requireDashboardSession } from "@/lib/server-auth";
@@ -13,29 +10,31 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function DeskPage() {
+export default async function DeskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; orderId?: string; branchId?: string }>;
+}) {
+  const resolvedSearch = await searchParams;
   const session = await requireDashboardSession();
   if (session.user.isPlatformAdmin || hasOwnerDashboardAccess(session)) {
+    if (!session.activeOrgId) {
+      redirect("/dashboard");
+    }
+    const data = await getDashboardData(session.activeOrgId, resolvedSearch.branchId);
+    const organization = data.orgs[0];
+    if (!organization) {
+      redirect("/gyms");
+    }
     return (
-      <main className="grid min-h-dvh place-items-center px-5 py-8">
-        <GlassCard variant="strong" className="w-full max-w-xl">
-          <Pill tone="blue">Admin access</Pill>
-          <h1 className="mt-5 text-3xl font-semibold text-white">Dashboard</h1>
-          <p className="mt-3 text-sm leading-6 text-white/58">
-            The desk is scoped to reception work. Your account has owner or admin access, so the
-            full dashboard is the right place for your tools.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/dashboard"
-              className="zook-focus rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
-            >
-              Dashboard
-            </Link>
-            <DashboardSignOutButton compact />
-          </div>
-        </GlassCard>
-      </main>
+      <DeskPanel
+        orgId={organization.id}
+        orgName={organization.name}
+        branch={data.branchScope.selectedBranch}
+        locale={session.user.preferredLocale ?? "en"}
+        initialTab={resolvedSearch.tab === "pickup" ? "pickup" : undefined}
+        initialOrderId={resolvedSearch.orderId}
+      />
     );
   }
   if (hasCoachAccess(session) && !hasDeskAccess(session)) {
@@ -70,6 +69,8 @@ export default async function DeskPage() {
       orgName={organization.name}
       branch={data.branchScope.selectedBranch}
       locale={session.user.preferredLocale ?? "en"}
+      initialTab={resolvedSearch.tab === "pickup" ? "pickup" : undefined}
+      initialOrderId={resolvedSearch.orderId}
     />
   );
 }

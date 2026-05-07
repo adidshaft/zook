@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Linking, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Linking, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import {
   AuditWarning,
   BottomNav,
@@ -81,6 +81,27 @@ export default function Settings() {
       open: openSection === section,
       onOpenChange: (open: boolean) => setOpenSection(open ? section : null),
     };
+  }
+
+  function confirmSignOut() {
+    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: () => {
+          void logout();
+        },
+      },
+    ]);
+  }
+
+  async function changeLocalePreference(nextPreference: LocalePreference) {
+    await setLocalePreference(nextPreference);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me", "profile"] }),
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] }),
+    ]);
   }
 
   async function updatePreference(
@@ -173,7 +194,7 @@ export default function Settings() {
             showProfileShortcut={false}
           />
 
-          <PrimaryButton onPress={() => void logout()} tone="danger">
+          <PrimaryButton onPress={confirmSignOut} tone="danger">
             {t("settings.logout")}
           </PrimaryButton>
 
@@ -221,7 +242,7 @@ export default function Settings() {
                   return (
                     <Pressable
                       key={option.value}
-                      onPress={() => void setLocalePreference(option.value)}
+                      onPress={() => void changeLocalePreference(option.value)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                       style={[styles.languageButton, selected ? styles.languageButtonActive : null]}

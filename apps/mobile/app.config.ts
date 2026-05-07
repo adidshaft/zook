@@ -178,7 +178,7 @@ export default (): ExpoConfig => {
   const releaseProfile = resolveReleaseProfile();
   const apiMode = resolveApiMode();
   const sentryOrg = process.env.SENTRY_ORG?.trim();
-  const sentryProject = process.env.SENTRY_PROJECT?.trim();
+  const sentryProject = (process.env.SENTRY_MOBILE_PROJECT ?? process.env.SENTRY_PROJECT)?.trim();
   if (apiMode === "offline-demo" && releaseProfile !== "local") {
     throw new Error(
       "Sample mode is only available for local mobile builds."

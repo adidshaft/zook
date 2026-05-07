@@ -3,7 +3,6 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
 import { ApiError } from "@zook/core";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import {
   ActivityIndicator,
   Keyboard,
@@ -34,6 +33,22 @@ const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const OTP_RATE_LIMIT_FALLBACK_SECONDS = 60;
 
 let googleSignInConfigured = false;
+let googleSignInModule:
+  | typeof import("@react-native-google-signin/google-signin")
+  | null
+  | undefined;
+
+async function getGoogleSigninModule() {
+  if (googleSignInModule !== undefined) {
+    return googleSignInModule;
+  }
+  try {
+    googleSignInModule = await import("@react-native-google-signin/google-signin");
+  } catch {
+    googleSignInModule = null;
+  }
+  return googleSignInModule;
+}
 
 function sanitizeOtpCode(value: string) {
   return value
@@ -74,9 +89,13 @@ function isAccountLockedError(error: unknown) {
   return error instanceof ApiError && (error.status === 423 || error.code === "account_locked");
 }
 
-function configureGoogleSignIn() {
+async function configureGoogleSignIn() {
   if (googleSignInConfigured) return;
-  GoogleSignin.configure({
+  const module = await getGoogleSigninModule();
+  if (!module) {
+    throw new Error("Google sign-in is not available in Expo Go.");
+  }
+  module.GoogleSignin.configure({
     scopes: ["email", "profile"],
     webClientId:
       (Constants.expoConfig?.extra?.googleWebClientId as string | undefined) ??
@@ -318,13 +337,19 @@ export default function Login() {
     setBusyAction("google");
     setMessage("");
     try {
-      configureGoogleSignIn();
-      if (Platform.OS === "android") {
-        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      await configureGoogleSignIn();
+      const module = await getGoogleSigninModule();
+      if (!module) {
+        setMessage("Google sign-in is not available in Expo Go.");
+        return;
       }
-      const response = await GoogleSignin.signIn();
+      if (Platform.OS === "android") {
+        await module.GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      }
+      const response = await module.GoogleSignin.signIn();
       if (response.type !== "success") return;
-      const idToken = response.data.idToken ?? (await GoogleSignin.getTokens()).idToken;
+      const idToken =
+        response.data.idToken ?? (await module.GoogleSignin.getTokens()).idToken;
       if (!idToken) {
         setMessage("Google did not return an ID token. Try again.");
         return;

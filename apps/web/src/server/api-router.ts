@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
+import { fileTypeFromBuffer } from "file-type";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import sanitizeHtml from "sanitize-html";
 import { z } from "zod";
 import {
   bodyProgressEntrySchema,
@@ -21,6 +23,8 @@ import {
   verifyOtpSchema,
   isInternalPhoneEmail,
   getAllowedFixedOtp,
+  getAppEnv,
+  getQrSigningSecret,
   isMockPaymentCompletionAllowed,
   isQaDemoIdentifier,
   isQaFreshIdentifier,
@@ -152,7 +156,6 @@ import {
   getOrganizationActiveShopOrders,
   getOrganizationAttendanceToday,
   getOrganizationDashboardData,
-  getOrganizationMembers,
   getOrganizationPendingAttendance,
   getOrganizationRecentPayments,
   extractPlanExercises,
@@ -201,6 +204,16 @@ const publicCouponValidateSchema = z.object({
 
 const membershipAutopaySchema = z.object({
   planId: z.string().optional(),
+});
+
+const subscriptionSwitchSchema = z.object({
+  planId: z.string(),
+  effectiveAt: z.string().datetime().optional(),
+});
+
+const subscriptionPauseSchema = z.object({
+  resumesAt: z.string().datetime(),
+  reason: z.string().trim().max(240).optional(),
 });
 
 const completeMockPaymentSchema = z.object({
@@ -583,7 +596,95 @@ const planContentUpdateSchema = planContentInputSchema
   .partial()
   .refine((value) => Object.keys(value).length > 0, "Provide at least one plan field to update.");
 
+const aiStructuredPlanContentSchema = z.object({
+  title: z.string().trim().min(2).max(120),
+  type: z
+    .enum([
+      "WORKOUT",
+      "DIET",
+      "EXERCISE_ROUTINE",
+      "TRANSFORMATION_PROGRAM",
+      "TRAINER_NOTE",
+      "GYM_ADVISORY",
+      "MACHINE_GUIDE",
+      "RECOVERY",
+    ])
+    .default("WORKOUT"),
+  days: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(80),
+        exercises: z
+          .array(
+            z.object({
+              name: z.string().trim().min(1).max(120),
+              sets: z.string().trim().max(40).optional(),
+              reps: z.string().trim().max(40).optional(),
+              equipment: z.string().trim().max(80).optional(),
+              notes: z.string().trim().max(240).optional(),
+            }),
+          )
+          .min(1),
+      }),
+    )
+    .min(1),
+  goal: z.string().trim().max(240).optional(),
+  notes: z.string().trim().max(1000).optional(),
+});
+
 const uploadCategorySchema = z.enum(storageFileCategories);
+
+const richTextSanitizeOptions: sanitizeHtml.IOptions = {
+  allowedTags: [
+    "b",
+    "strong",
+    "i",
+    "em",
+    "u",
+    "s",
+    "p",
+    "br",
+    "ul",
+    "ol",
+    "li",
+    "blockquote",
+    "code",
+    "pre",
+    "a",
+  ],
+  allowedAttributes: {
+    a: ["href", "target", "rel"],
+  },
+  allowedSchemes: ["http", "https", "mailto"],
+  transformTags: {
+    a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer" }),
+  },
+};
+
+function sanitizeRichText(value: string | undefined) {
+  if (value === undefined) {
+    return undefined;
+  }
+  return sanitizeHtml(value, richTextSanitizeOptions).trim();
+}
+
+function sanitizeJsonRichText(value: unknown): unknown {
+  if (typeof value === "string") {
+    return sanitizeRichText(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => sanitizeJsonRichText(entry));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+        key,
+        sanitizeJsonRichText(entry),
+      ]),
+    );
+  }
+  return value;
+}
 
 const profilePhotoAssetSchema = z.object({
   fileAssetId: z.string(),
@@ -771,6 +872,36 @@ function clean<T extends Record<string, unknown>>(input: T): any {
 
 function sha256(value: string) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function isHttpsRequest(request: NextRequest) {
+  return (
+    request.nextUrl.protocol === "https:" ||
+    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase() === "https"
+  );
+}
+
+function shouldUseSecureSessionCookie(request: NextRequest) {
+  const appEnv = getAppEnv();
+  if (appEnv !== "local" && !isHttpsRequest(request)) {
+    throw serviceUnavailableError("HTTPS is required for session cookies outside local environments.");
+  }
+  return appEnv !== "local" || isHttpsRequest(request);
+}
+
+async function revokeActiveSessionsForUsers(userIds: string[]) {
+  const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)));
+  if (!uniqueUserIds.length) {
+    return;
+  }
+  await prisma.userSession.updateMany({
+    where: {
+      userId: { in: uniqueUserIds },
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    data: { revokedAt: new Date() },
+  });
 }
 
 function responseBodyForStorage(text: string): Prisma.InputJsonValue {
@@ -1090,7 +1221,7 @@ async function resolveFileUrl(
   if (!signed && asset.visibility === "public") {
     return storageProvider.getPublicUrl({ key: asset.storageKey });
   }
-  return storageProvider.getSignedUrl({ key: asset.storageKey, expiresInSeconds: 10 * 60 });
+  return storageProvider.getSignedUrl({ key: asset.storageKey, expiresInSeconds: 5 * 60 });
 }
 
 function assertFileStorageProviderMatches(
@@ -1118,11 +1249,14 @@ async function parseFileUploadRequest(request: NextRequest) {
 
   const visibility = resolveFileVisibility(category, rawVisibility);
   const storageProvider = getStorageProviderOrThrow();
+  const fileBytes = new Uint8Array(await file.arrayBuffer());
+  const declaredContentType = file.type || "application/octet-stream";
+  const contentType = await detectUploadContentType(fileBytes, declaredContentType);
   let validated;
   try {
     validated = storageProvider.validateFile({
       category,
-      contentType: file.type || "application/octet-stream",
+      contentType,
       sizeBytes: file.size,
       originalName: file.name,
       visibility,
@@ -1133,7 +1267,7 @@ async function parseFileUploadRequest(request: NextRequest) {
         category,
         maxSizeBytes: storageProvider.validateFile({
           category,
-          contentType: file.type || "application/octet-stream",
+          contentType,
           sizeBytes: 1,
           originalName: file.name,
           visibility,
@@ -1144,12 +1278,34 @@ async function parseFileUploadRequest(request: NextRequest) {
   }
 
   return {
-    file,
+    fileBytes,
     category,
     visibility,
     orgId: rawOrgId || undefined,
     validated,
   };
+}
+
+async function detectUploadContentType(fileBytes: Uint8Array, declaredContentType: string) {
+  const declared = declaredContentType.trim().toLowerCase();
+  const detected = await fileTypeFromBuffer(fileBytes);
+  if (detected?.mime) {
+    const detectedMime = detected.mime.toLowerCase();
+    if (declared !== "application/octet-stream" && declared !== detectedMime) {
+      throw validationError("Uploaded file content does not match its declared type.");
+    }
+    return detectedMime;
+  }
+
+  const prefix = Buffer.from(fileBytes.slice(0, 512)).toString("utf8").trimStart();
+  if (declared === "image/svg+xml" && /^<(\?xml\b[^>]*>\s*)?<svg[\s>]/i.test(prefix)) {
+    return declared;
+  }
+  if (declared === "application/json" && /^[{[]/.test(prefix)) {
+    JSON.parse(Buffer.from(fileBytes).toString("utf8"));
+    return declared;
+  }
+  throw validationError("Uploaded file content does not match an allowed file type.");
 }
 
 function startOfDay(date = new Date()) {
@@ -1724,6 +1880,80 @@ function getEmailProviderOrThrow() {
     throw validationError("Email sign-in is not available right now.");
   }
   return getEmailProvider();
+}
+
+async function fanoutPlanPublished(input: {
+  request: NextRequest;
+  orgId: string;
+  actorUserId: string;
+  plan: { id: string; title: string };
+}) {
+  const assignments = await prisma.planAssignment.findMany({
+    where: {
+      orgId: input.orgId,
+      planId: input.plan.id,
+      active: true,
+      assignedToUserId: { not: null },
+    },
+    select: { assignedToUserId: true },
+  });
+  const userIds = [...new Set(assignments.map((assignment) => assignment.assignedToUserId).filter(Boolean) as string[])];
+  if (!userIds.length) {
+    return { notified: 0, emailed: 0 };
+  }
+
+  await createDirectNotification({
+    orgId: input.orgId,
+    createdById: input.actorUserId,
+    type: "PLAN",
+    title: `Plan published: ${input.plan.title}`,
+    body: "Your trainer has published a plan for you.",
+    audience: "assigned_members",
+    userIds,
+    pushEnabled: true,
+    metadata: { planId: input.plan.id } as Prisma.InputJsonValue,
+  });
+
+  let emailed = 0;
+  if (getEmailProviderDiagnostics().activeProvider) {
+    const [organization, users, profiles] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: input.orgId }, select: { name: true } }),
+      prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true } }),
+      prisma.memberProfile.findMany({
+        where: { orgId: input.orgId, userId: { in: userIds }, marketingOptIn: true },
+        select: { userId: true },
+      }),
+    ]);
+    const optedInUserIds = new Set(profiles.map((profile) => profile.userId));
+    const provider = getEmailProvider();
+    for (const user of users) {
+      const email = publicUserEmail(user.email);
+      if (!email || !optedInUserIds.has(user.id)) {
+        continue;
+      }
+      try {
+        await provider.sendNotificationEmail({
+          to: email,
+          title: `Plan published: ${input.plan.title}`,
+          body: "Your trainer has published a plan for you in Zook.",
+          ...(organization?.name ? { organizationName: organization.name } : {}),
+          variant: "generic",
+        });
+        emailed += 1;
+      } catch (error) {
+        await writeAuditLog({
+          request: input.request,
+          orgId: input.orgId,
+          actorUserId: input.actorUserId,
+          action: "plan.publish_email_failed",
+          entityType: "plan_content",
+          entityId: input.plan.id,
+          metadata: { userId: user.id, error: error instanceof Error ? error.message : "unknown" },
+        });
+      }
+    }
+  }
+  return { notified: userIds.length, emailed };
 }
 
 function getSmsProviderOrThrow() {
@@ -3247,17 +3477,14 @@ async function resolveValidatedCoupon(input: {
     return { coupon: null, finalAmountPaise: input.amountPaise, discountPaise: 0 };
   }
 
-  const [totalRedemptions, userRedemptions] = await Promise.all([
-    prisma.couponRedemption.count({ where: { orgId: input.orgId, couponId: coupon.id } }),
-    prisma.couponRedemption.count({
-      where: { orgId: input.orgId, couponId: coupon.id, userId: input.userId },
-    }),
-  ]);
+  const userRedemptions = await prisma.couponRedemption.count({
+    where: { orgId: input.orgId, couponId: coupon.id, userId: input.userId },
+  });
 
   const result = applyCoupon(toCouponInput(coupon), {
     amountPaise: input.amountPaise,
     planId: input.planId,
-    redemptionCount: { total: totalRedemptions, byUser: userRedemptions },
+    redemptionCount: { total: coupon.redemptionCount, byUser: userRedemptions },
   });
 
   return { coupon, ...result };
@@ -3458,12 +3685,86 @@ class PrismaAuthRepo {
     expiresAt: Date;
     userAgent?: string;
     ipAddress?: string;
+    deviceFingerprintHash?: string;
   }) {
-    await prisma.userSession.create({ data: input });
+    const existingSessions = await prisma.userSession.findMany({
+      where: {
+        userId: input.userId,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      select: { id: true, deviceFingerprintHash: true },
+      take: 50,
+    });
+    const isNewDevice = Boolean(
+      input.deviceFingerprintHash &&
+        existingSessions.length > 0 &&
+        !existingSessions.some(
+          (session) => session.deviceFingerprintHash === input.deviceFingerprintHash,
+        ),
+    );
+    const session = await prisma.userSession.create({
+      data: {
+        ...input,
+        ...(isNewDevice ? { newDeviceNotifiedAt: new Date() } : {}),
+        lastSeenAt: new Date(),
+      },
+    });
+    if (!isNewDevice) {
+      return;
+    }
+    const notification = await prisma.notification.create({
+      data: {
+        createdById: input.userId,
+        type: "SECURITY",
+        status: "SENT",
+        title: "New device signed in",
+        body: "A new device signed in to your Zook account. If this was not you, sign out and contact support.",
+        audience: "selected",
+        sentAt: new Date(),
+        metadata: clean({
+          sessionId: session.id,
+          deviceFingerprintHash: input.deviceFingerprintHash,
+        }) as Prisma.InputJsonValue,
+      },
+    });
+    await prisma.notificationRecipient.create({
+      data: {
+        notificationId: notification.id,
+        userId: input.userId,
+        deliveryStatus: "in_app",
+        deliveredAt: new Date(),
+      },
+    });
   }
 
   async revokeSession(tokenHash: string) {
     await prisma.userSession.updateMany({ where: { tokenHash }, data: { revokedAt: new Date() } });
+  }
+
+  async recordSecurityEvent(input: {
+    action: string;
+    userId?: string;
+    identifier?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    metadata?: Record<string, unknown>;
+  }) {
+    await prisma.auditLog.create({
+      data: clean({
+        actorUserId: input.userId,
+        action: input.action,
+        entityType: "auth",
+        entityId: input.userId,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+        riskLevel: "HIGH",
+        metadata: clean({
+          identifierHash: input.identifier ? sha256(input.identifier) : undefined,
+          ...(input.metadata ?? {}),
+        }) as Prisma.InputJsonValue,
+      }),
+    });
   }
 }
 
@@ -3521,7 +3822,7 @@ async function handleAuth(request: NextRequest, path: string[]) {
         code: body.code,
         userId: user.id,
         userAgent: request.headers.get("user-agent") ?? undefined,
-        ipAddress: request.headers.get("x-forwarded-for") ?? undefined,
+        ipAddress,
       }),
     );
     await markUserIdentifierVerified(user.id, body.identifier);
@@ -3535,7 +3836,7 @@ async function handleAuth(request: NextRequest, path: string[]) {
     response.cookies.set(sessionCookieName, session.token, {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: shouldUseSecureSessionCookie(request),
       expires: session.expiresAt,
       path: "/",
     });
@@ -3804,9 +4105,13 @@ async function handleMeData(request: NextRequest, path: string[]) {
       const existingNotes = parseMemberProfileNotes(currentProfile?.notes);
       const nextNotes = {
         ...existingNotes,
-        ...(body.dietPreference !== undefined ? { dietPreference: body.dietPreference } : {}),
-        ...(body.allergies !== undefined ? { allergies: body.allergies } : {}),
-        ...(body.summaryNote !== undefined ? { summaryNote: body.summaryNote } : {}),
+        ...(body.dietPreference !== undefined
+          ? { dietPreference: sanitizeRichText(body.dietPreference) }
+          : {}),
+        ...(body.allergies !== undefined ? { allergies: sanitizeRichText(body.allergies) } : {}),
+        ...(body.summaryNote !== undefined
+          ? { summaryNote: sanitizeRichText(body.summaryNote) }
+          : {}),
       };
       const updatedProfile = orgId
         ? await tx.memberProfile.upsert({
@@ -4377,7 +4682,7 @@ async function handleFiles(request: NextRequest, path: string[]) {
       ...(upload.orgId ? { orgId: upload.orgId } : {}),
     });
 
-    const fileBytes = new Uint8Array(await upload.file.arrayBuffer());
+    const fileBytes = upload.fileBytes;
     const checksum = createHash("sha256").update(fileBytes).digest("hex");
     const storageKey = buildStorageKey({
       category: upload.category,
@@ -4456,6 +4761,15 @@ async function handleFiles(request: NextRequest, path: string[]) {
     const asset = await findFileAssetOrThrow(path[1]!);
     const ctx = await getRequestContext(request, asset.orgId ? { orgId: asset.orgId } : {});
     assertCanAccessFileAsset(asset, ctx);
+    await writeAuditLog({
+      request,
+      ...(asset.orgId ? { orgId: asset.orgId } : {}),
+      ...(ctx.userId ? { actorUserId: ctx.userId } : {}),
+      action: "file.signed_url_issued",
+      entityType: "file_asset",
+      entityId: asset.id,
+      metadata: { category: asset.category, visibility: asset.visibility },
+    });
     return ok({
       file: asset,
       url: await resolveFileUrl(asset, true),
@@ -4465,6 +4779,15 @@ async function handleFiles(request: NextRequest, path: string[]) {
     const asset = await findFileAssetOrThrow(path[1]!);
     const ctx = await getRequestContext(request, asset.orgId ? { orgId: asset.orgId } : {});
     assertCanAccessFileAsset(asset, ctx);
+    await writeAuditLog({
+      request,
+      ...(asset.orgId ? { orgId: asset.orgId } : {}),
+      ...(ctx.userId ? { actorUserId: ctx.userId } : {}),
+      action: "file.read",
+      entityType: "file_asset",
+      entityId: asset.id,
+      metadata: { category: asset.category, visibility: asset.visibility },
+    });
     return redirectTo(await resolveFileUrl(asset));
   }
   if (request.method === "DELETE" && pathMatches(path, ["files", /.+/])) {
@@ -5334,26 +5657,28 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
-    requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
-    const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
-    if (request.nextUrl.searchParams.has("limit") || request.nextUrl.searchParams.has("cursor")) {
-      return ok(await listOrganizationMembersPage(orgId, request, branchId));
-    }
-    const members = await getOrganizationMembers(orgId);
-    if (!branchId) {
-      return ok({ members });
-    }
-    const branchMemberIds = new Set(
-      (
-        await prisma.memberSubscription.findMany({
-          where: { orgId, branchId },
-          select: { memberUserId: true },
-          distinct: ["memberUserId"],
-        })
-      ).map((subscription) => subscription.memberUserId),
+    const userId = requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    await assertRateLimit(
+      "memberListByActor",
+      `${orgId}:${userId}`,
+      "Too many member list requests. Please wait before trying again.",
     );
+    const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
+    const page = await listOrganizationMembersPage(orgId, request, branchId);
+    if (page.members.length >= 75 || page.nextCursor) {
+      await writeAuditLog({
+        request,
+        orgId,
+        actorUserId: userId,
+        action: "member.list.large_read",
+        entityType: "member_profile",
+        metadata: { count: page.members.length, hasMore: Boolean(page.nextCursor), branchId },
+      });
+    }
     return ok({
-      members: members.filter((member) => branchMemberIds.has(member.user?.id ?? "")),
+      members: page.members,
+      nextCursor: page.nextCursor,
+      limit: page.limit,
     });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members", /.+/])) {
@@ -5741,6 +6066,172 @@ async function handleHealthReadiness(request: NextRequest, path: string[]) {
 }
 
 async function handleMembershipPayments(request: NextRequest, path: string[]) {
+  async function pauseCapDaysForOrg(orgId: string) {
+    const setting = await prisma.organizationSetting.findUnique({ where: { orgId } });
+    const values =
+      setting?.keyValues && typeof setting.keyValues === "object" && !Array.isArray(setting.keyValues)
+        ? (setting.keyValues as Record<string, unknown>)
+        : {};
+    const configured =
+      Number(values.membershipPauseCapDaysPerYear ?? values.pauseCapDaysPerYear ?? 30);
+    return Number.isFinite(configured) && configured >= 0 ? Math.floor(configured) : 30;
+  }
+
+  function wholeDaysBetween(start: Date, end: Date) {
+    return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
+  }
+
+  function addDays(start: Date, days: number) {
+    return new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
+  }
+
+  async function switchSubscriptionPlan(input: {
+    request: NextRequest;
+    actorUserId: string;
+    subscription: Prisma.MemberSubscriptionGetPayload<object>;
+    planId: string;
+    effectiveAt?: Date;
+  }) {
+    const subscription = input.subscription;
+    if (subscription.status !== "ACTIVE" && subscription.status !== "PAUSED") {
+      throw validationError("Only active or paused memberships can be switched.");
+    }
+    const newPlan = await prisma.membershipPlan.findFirst({
+      where: { id: input.planId, orgId: subscription.orgId, active: true },
+    });
+    if (!newPlan) {
+      throw notFoundError("Membership plan not found");
+    }
+    if (newPlan.branchId && newPlan.branchId !== subscription.branchId) {
+      throw forbiddenError("This plan belongs to another branch.");
+    }
+    const effectiveAt = input.effectiveAt ?? new Date();
+    const window = computeSubscriptionWindow(toMembershipPlanInput(newPlan));
+    const planDurationDays =
+      window.endsAt && window.startsAt ? wholeDaysBetween(window.startsAt, window.endsAt) : 0;
+    const unusedDays =
+      subscription.endsAt && subscription.endsAt > effectiveAt
+        ? wholeDaysBetween(effectiveAt, subscription.endsAt)
+        : 0;
+    const endsAt = planDurationDays > 0 ? addDays(effectiveAt, planDurationDays + unusedDays) : window.endsAt;
+    const remainingVisits =
+      newPlan.visitLimit !== null
+        ? newPlan.visitLimit + Math.max(subscription.remainingVisits ?? 0, 0)
+        : subscription.remainingVisits;
+    const updated = await prisma.memberSubscription.update({
+      where: { id: subscription.id },
+      data: clean({
+        planId: newPlan.id,
+        branchId: subscription.branchId,
+        status: "ACTIVE",
+        startsAt: effectiveAt,
+        endsAt,
+        remainingVisits,
+        pausedAt: null,
+        resumesAt: null,
+        notes: [
+          subscription.notes,
+          `switch:${subscription.planId}->${newPlan.id};unused_days_credit:${unusedDays}`,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      }),
+    });
+    await writeAuditLog({
+      request: input.request,
+      orgId: subscription.orgId,
+      actorUserId: input.actorUserId,
+      action: "membership.plan_switched",
+      entityType: "member_subscription",
+      entityId: subscription.id,
+      metadata: {
+        previousPlanId: subscription.planId,
+        nextPlanId: newPlan.id,
+        unusedDaysCredit: unusedDays,
+        prorationPolicy: "credit_unused_days_at_new_plan_rate",
+      },
+    });
+    return { subscription: updated, proration: { unusedDaysCredit: unusedDays } };
+  }
+
+  async function pauseSubscription(input: {
+    request: NextRequest;
+    actorUserId: string;
+    subscription: Prisma.MemberSubscriptionGetPayload<object>;
+    resumesAt: Date;
+    reason?: string;
+  }) {
+    const subscription = input.subscription;
+    if (subscription.status !== "ACTIVE") {
+      throw validationError("Only active memberships can be paused.");
+    }
+    const now = new Date();
+    if (input.resumesAt <= now) {
+      throw validationError("Resume date must be in the future.");
+    }
+    const requestedDays = wholeDaysBetween(now, input.resumesAt);
+    const capDays = await pauseCapDaysForOrg(subscription.orgId);
+    if (subscription.pauseDaysUsed + requestedDays > capDays) {
+      throw validationError(`Membership pause limit is ${capDays} days per year.`);
+    }
+    const updated = await prisma.memberSubscription.update({
+      where: { id: subscription.id },
+      data: clean({
+        status: "PAUSED",
+        pausedAt: now,
+        resumesAt: input.resumesAt,
+        notes: input.reason
+          ? [subscription.notes, `pause_reason:${sanitizeRichText(input.reason)}`]
+              .filter(Boolean)
+              .join("\n")
+          : subscription.notes,
+      }),
+    });
+    await writeAuditLog({
+      request: input.request,
+      orgId: subscription.orgId,
+      actorUserId: input.actorUserId,
+      action: "membership.paused",
+      entityType: "member_subscription",
+      entityId: subscription.id,
+      metadata: { resumesAt: input.resumesAt, requestedDays, capDays },
+    });
+    return { subscription: updated, pauseDaysRequested: requestedDays, capDays };
+  }
+
+  async function resumeSubscription(input: {
+    request: NextRequest;
+    actorUserId: string;
+    subscription: Prisma.MemberSubscriptionGetPayload<object>;
+  }) {
+    const subscription = input.subscription;
+    if (subscription.status !== "PAUSED" || !subscription.pausedAt) {
+      throw validationError("Only paused memberships can be resumed.");
+    }
+    const now = new Date();
+    const pausedDays = wholeDaysBetween(subscription.pausedAt, now);
+    const updated = await prisma.memberSubscription.update({
+      where: { id: subscription.id },
+      data: {
+        status: "ACTIVE",
+        pausedAt: null,
+        resumesAt: null,
+        pauseDaysUsed: { increment: pausedDays },
+        ...(subscription.endsAt ? { endsAt: addDays(subscription.endsAt, pausedDays) } : {}),
+      },
+    });
+    await writeAuditLog({
+      request: input.request,
+      orgId: subscription.orgId,
+      actorUserId: input.actorUserId,
+      action: "membership.resumed",
+      entityType: "member_subscription",
+      entityId: subscription.id,
+      metadata: { pausedDays, pauseClockExcluded: true },
+    });
+    return { subscription: updated, pausedDaysApplied: pausedDays };
+  }
+
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "membership-plans"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -5771,7 +6262,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         orgId,
         branchId: branch.id,
         name: body.name,
-        description: body.description,
+        description: sanitizeRichText(body.description),
         type: body.type,
         pricePaise: body.pricePaise,
         durationDays: body.durationDays,
@@ -5809,7 +6300,7 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       where: { id: existingPlan.id },
       data: clean({
         name: body.name,
-        description: body.description,
+        description: sanitizeRichText(body.description),
         type: body.type,
         pricePaise: body.pricePaise,
         durationDays: body.durationDays,
@@ -6180,54 +6671,62 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       verification.providerEventId ??
       `invalid:${rawPayloadHash.slice(0, 24)}`;
 
-    let event = await prisma.paymentEvent.findUnique({
-      where: {
-        provider_providerEventId: {
+    let event;
+    try {
+      event = await prisma.paymentEvent.create({
+        data: clean({
           provider: "razorpay",
           providerEventId,
-        },
-      },
-    });
-
-    event = event
-      ? await prisma.paymentEvent.update({
-          where: { id: event.id },
-          data: clean({
-            status: verification.valid ? "VERIFIED" : "FAILED",
-            eventType: parsed?.eventType ?? event.eventType,
-            eventVersion: parsed?.eventVersion ?? event.eventVersion ?? undefined,
-            payload: (parsed?.rawPayload ??
-              (rawBody ? JSON.parse(rawBody) : {})) as Prisma.InputJsonValue,
-            headers: headers as Prisma.InputJsonValue,
-            rawPayloadHash,
-            sourceIpAddress: getClientIp(request),
-            signature,
-            signatureVerified: verification.valid,
-            signatureVerifiedAt: verification.valid ? new Date() : undefined,
-            lastAttemptAt: new Date(),
-            attemptCount: { increment: 1 },
-            processingError: verification.valid ? null : verification.reason,
-          }),
-        })
-      : await prisma.paymentEvent.create({
-          data: clean({
+          eventType: parsed?.eventType ?? "payment.unknown",
+          eventVersion: parsed?.eventVersion,
+          status: verification.valid ? "VERIFIED" : "FAILED",
+          payload: (parsed?.rawPayload ?? responseBodyForStorage(rawBody)) as Prisma.InputJsonValue,
+          headers: headers as Prisma.InputJsonValue,
+          rawPayloadHash,
+          sourceIpAddress: getClientIp(request),
+          signature,
+          signatureVerified: verification.valid,
+          signatureVerifiedAt: verification.valid ? new Date() : undefined,
+          attemptCount: 1,
+          lastAttemptAt: new Date(),
+          processingError: verification.valid ? null : verification.reason,
+        }),
+      });
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+        throw error;
+      }
+      const existing = await prisma.paymentEvent.update({
+        where: {
+          provider_providerEventId: {
             provider: "razorpay",
             providerEventId,
-            eventType: parsed?.eventType ?? "payment.unknown",
-            eventVersion: parsed?.eventVersion,
-            status: verification.valid ? "VERIFIED" : "FAILED",
-            payload: (parsed?.rawPayload ??
-              (rawBody ? JSON.parse(rawBody) : {})) as Prisma.InputJsonValue,
-            headers: headers as Prisma.InputJsonValue,
-            rawPayloadHash,
-            sourceIpAddress: getClientIp(request),
-            signature,
-            signatureVerified: verification.valid,
-            signatureVerifiedAt: verification.valid ? new Date() : undefined,
-            attemptCount: 1,
-            processingError: verification.valid ? null : verification.reason,
-          }),
-        });
+          },
+        },
+        data: {
+          lastAttemptAt: new Date(),
+          attemptCount: { increment: 1 },
+        },
+      });
+      const replayAttempt = await prisma.paymentWebhookAttempt.create({
+        data: {
+          paymentEventId: existing.id,
+          attemptNo: existing.attemptCount,
+          processor: "api.payments.webhooks.razorpay",
+          status: "SUCCEEDED",
+          httpStatusCode: 200,
+          durationMs: Date.now() - startedAt,
+          completedAt: new Date(),
+          result: { duplicate: true } as Prisma.InputJsonValue,
+        },
+      });
+      return ok({
+        received: true,
+        duplicate: true,
+        providerEventId,
+        attemptNo: replayAttempt.attemptNo,
+      });
+    }
 
     const attempt = await prisma.paymentWebhookAttempt.create({
       data: {
@@ -7055,6 +7554,142 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       session: updatedSession,
     });
   }
+  if (
+    request.method === "POST" &&
+    (pathMatches(path, ["me", "subscriptions", /.+/, "switch"]) ||
+      pathMatches(path, ["me", "memberships", /.+/, "switch"]))
+  ) {
+    const subscriptionId = path[2]!;
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const body = subscriptionSwitchSchema.parse(await readJson(request));
+    await assertRateLimit(
+      "paymentSessionByActor",
+      `switch:${subscriptionId}:${userId}`,
+      "Too many membership switch attempts.",
+    );
+    const subscription = await prisma.memberSubscription.findFirst({
+      where: { id: subscriptionId, memberUserId: userId },
+    });
+    if (!subscription) {
+      throw notFoundError("Membership not found");
+    }
+    assertActiveContextOrg(ctx, subscription.orgId);
+    const result = await switchSubscriptionPlan({
+      request,
+      actorUserId: userId,
+      subscription,
+      planId: body.planId,
+      ...(body.effectiveAt ? { effectiveAt: new Date(body.effectiveAt) } : {}),
+    });
+    return ok(result);
+  }
+  if (
+    request.method === "POST" &&
+    (pathMatches(path, ["me", "subscriptions", /.+/, "pause"]) ||
+      pathMatches(path, ["me", "memberships", /.+/, "pause"]))
+  ) {
+    const subscriptionId = path[2]!;
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const body = subscriptionPauseSchema.parse(await readJson(request));
+    const subscription = await prisma.memberSubscription.findFirst({
+      where: { id: subscriptionId, memberUserId: userId },
+    });
+    if (!subscription) {
+      throw notFoundError("Membership not found");
+    }
+    assertActiveContextOrg(ctx, subscription.orgId);
+    return ok(
+      await pauseSubscription({
+        request,
+        actorUserId: userId,
+        subscription,
+        resumesAt: new Date(body.resumesAt),
+        ...(body.reason ? { reason: body.reason } : {}),
+      }),
+    );
+  }
+  if (
+    request.method === "POST" &&
+    (pathMatches(path, ["me", "subscriptions", /.+/, "resume"]) ||
+      pathMatches(path, ["me", "memberships", /.+/, "resume"]))
+  ) {
+    const subscriptionId = path[2]!;
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const subscription = await prisma.memberSubscription.findFirst({
+      where: { id: subscriptionId, memberUserId: userId },
+    });
+    if (!subscription) {
+      throw notFoundError("Membership not found");
+    }
+    assertActiveContextOrg(ctx, subscription.orgId);
+    return ok(await resumeSubscription({ request, actorUserId: userId, subscription }));
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "subscriptions", /.+/, "switch"])
+  ) {
+    const orgId = path[1]!;
+    const subscriptionId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_SUBSCRIPTION_MANAGE");
+    const body = subscriptionSwitchSchema.parse(await readJson(request));
+    const subscription = await prisma.memberSubscription.findFirst({ where: { id: subscriptionId, orgId } });
+    if (!subscription) {
+      throw notFoundError("Membership not found");
+    }
+    await assertBranchAccessForContext(ctx, orgId, subscription.branchId);
+    return ok(
+      await switchSubscriptionPlan({
+        request,
+        actorUserId: userId,
+        subscription,
+        planId: body.planId,
+        ...(body.effectiveAt ? { effectiveAt: new Date(body.effectiveAt) } : {}),
+      }),
+    );
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "subscriptions", /.+/, "pause"])
+  ) {
+    const orgId = path[1]!;
+    const subscriptionId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_SUBSCRIPTION_MANAGE");
+    const body = subscriptionPauseSchema.parse(await readJson(request));
+    const subscription = await prisma.memberSubscription.findFirst({ where: { id: subscriptionId, orgId } });
+    if (!subscription) {
+      throw notFoundError("Membership not found");
+    }
+    await assertBranchAccessForContext(ctx, orgId, subscription.branchId);
+    return ok(
+      await pauseSubscription({
+        request,
+        actorUserId: userId,
+        subscription,
+        resumesAt: new Date(body.resumesAt),
+        ...(body.reason ? { reason: body.reason } : {}),
+      }),
+    );
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "subscriptions", /.+/, "resume"])
+  ) {
+    const orgId = path[1]!;
+    const subscriptionId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_SUBSCRIPTION_MANAGE");
+    const subscription = await prisma.memberSubscription.findFirst({ where: { id: subscriptionId, orgId } });
+    if (!subscription) {
+      throw notFoundError("Membership not found");
+    }
+    await assertBranchAccessForContext(ctx, orgId, subscription.branchId);
+    return ok(await resumeSubscription({ request, actorUserId: userId, subscription }));
+  }
   if (request.method === "DELETE" && pathMatches(path, ["me", "memberships", /.+/, "autopay"])) {
     const subscriptionId = path[2]!;
     const ctx = await getRequestContext(request);
@@ -7736,7 +8371,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const payload = createSignedQrToken({
       orgId,
       branchId: branch.id,
-      secret: process.env.ZOOK_QR_SECRET ?? "dev-secret",
+      secret: getQrSigningSecret(),
     });
     await prisma.attendanceQrToken.create({
       data: {
@@ -7832,9 +8467,14 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const now = new Date();
     const decoded = validateSignedQrToken({
       encoded: body.qrPayload,
-      secret: process.env.ZOOK_QR_SECRET ?? "dev-secret",
+      secret: getQrSigningSecret(),
       now,
     });
+    await assertRateLimit(
+      "qrScanByToken",
+      decoded.nonce,
+      "This QR code has been scanned too many times. Ask reception to refresh it.",
+    );
     const qrToken = await prisma.attendanceQrToken.findUnique({ where: { nonce: decoded.nonce } });
     if (
       !qrToken ||
@@ -7845,7 +8485,15 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     ) {
       throw validationError("QR token is invalid or expired.");
     }
-    const [org, memberProfile, scanUser, subscription, duplicate, branch] = await Promise.all([
+    const scanReservation = await prisma.attendanceQrToken.updateMany({
+      where: { nonce: decoded.nonce, scanCount: { lt: 200 } },
+      data: { scanCount: { increment: 1 }, lastScannedAt: now },
+    });
+    if (scanReservation.count !== 1) {
+      throw validationError("This QR code has expired due to scan volume. Ask reception to refresh it.");
+    }
+    const [org, memberProfile, scanUser, subscription, expiredSubscription, duplicate, branch] =
+      await Promise.all([
       prisma.organization.findUnique({ where: { id: decoded.orgId } }),
       prisma.memberProfile.findUnique({
         where: { orgId_userId: { orgId: decoded.orgId, userId } },
@@ -7853,6 +8501,10 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       prisma.user.findUnique({ where: { id: userId } }),
       prisma.memberSubscription.findFirst({
         where: { orgId: decoded.orgId, memberUserId: userId, status: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.memberSubscription.findFirst({
+        where: { orgId: decoded.orgId, memberUserId: userId, status: "EXPIRED" },
         orderBy: { createdAt: "desc" },
       }),
       prisma.attendanceRecord.findUnique({
@@ -7891,6 +8543,13 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       });
     }
     if (!org || !subscription) {
+      if (expiredSubscription) {
+        return fail(
+          "MEMBERSHIP_EXPIRED",
+          "Membership expired. Renew before checking in.",
+          400,
+        );
+      }
       return fail("NO_ACTIVE_MEMBERSHIP", "No active membership", 400);
     }
     if (!branch) {
@@ -8407,6 +9066,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       entityId: invite.id,
       metadata: { role: invite.role },
     });
+    await revokeActiveSessionsForUsers([userId]);
     return ok({ assignment });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "staff"])) {
@@ -8527,6 +9187,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         role: assignment.role,
       },
     });
+    await revokeActiveSessionsForUsers([assignment.userId]);
     return ok({ assignment });
   }
   if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "staff", /.+/])) {
@@ -8553,6 +9214,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       entityId: existingAssignment.id,
       metadata: { userId: existingAssignment.userId, role: existingAssignment.role },
     });
+    await revokeActiveSessionsForUsers([existingAssignment.userId]);
     return ok({ revoked: true });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "classes"])) {
@@ -8705,6 +9367,11 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       entityId: permission.id,
       metadata: body,
     });
+    const affectedAssignments = await prisma.organizationRoleAssignment.findMany({
+      where: { orgId, role: body.role },
+      select: { userId: true },
+    });
+    await revokeActiveSessionsForUsers(affectedAssignments.map((assignment) => assignment.userId));
     return ok({ permission });
   }
   if (
@@ -9051,7 +9718,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     });
     const nextNotes = {
       ...parseMemberProfileNotes(currentProfile?.notes),
-      trainerNote: body.note.trim() || undefined,
+      trainerNote: sanitizeRichText(body.note.trim()) || undefined,
     };
     const profile = await prisma.memberProfile.upsert({
       where: { orgId_userId: { orgId, userId: clientId } },
@@ -9200,7 +9867,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         orgId,
         trainerUserId,
         name: body.name,
-        description: body.description,
+        description: sanitizeRichText(body.description),
         sessionCount: body.sessionCount,
         durationDays: body.durationDays,
         pricePaise: body.pricePaise,
@@ -9251,7 +9918,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         amountPaise: body.amountPaise,
         paymentMode: body.paymentMode,
         proofAssetId: proofAsset?.id,
-        notes: body.notes,
+        notes: sanitizeRichText(body.notes),
         recordedById: userId,
       }),
     });
@@ -9285,6 +9952,8 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       "plan_image",
       "ai_generated_image",
     ]);
+    const sanitizedDescription = sanitizeRichText(body.description);
+    const sanitizedContent = sanitizeJsonRichText(body.content) as Prisma.InputJsonValue;
     const attachments = imageAsset
       ? ({
           coverImage: {
@@ -9299,8 +9968,8 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         creatorUserId: userId,
         type: body.type as never,
         title: body.title,
-        description: body.description,
-        content: body.content as Prisma.InputJsonValue,
+        description: sanitizedDescription,
+        content: sanitizedContent,
         attachments,
         aiGenerated: false,
         visibility: body.visibility,
@@ -9314,12 +9983,12 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         content: createPlanVersionSnapshot({
           title: body.title,
           ...clean({
-            description: body.description,
+            description: sanitizedDescription,
             aiGenerated: false,
             visibility: body.visibility,
             attachments,
           }),
-          content: body.content,
+          content: sanitizedContent,
         }) as Prisma.InputJsonValue,
         createdById: userId,
       },
@@ -9357,13 +10026,18 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
           },
         } as Prisma.InputJsonValue)
       : undefined;
+    const sanitizedDescription = sanitizeRichText(body.description);
+    const sanitizedContent =
+      body.content === undefined
+        ? undefined
+        : (sanitizeJsonRichText(body.content) as Prisma.InputJsonValue);
     const plan = await prisma.planContent.update({
       where: { id: existingPlan.id },
       data: clean({
         title: body.title,
         type: body.type as never,
-        description: body.description,
-        content: body.content as Prisma.InputJsonValue | undefined,
+        description: sanitizedDescription,
+        content: sanitizedContent,
         attachments,
         aiGenerated: false,
         visibility: body.visibility,
@@ -9441,6 +10115,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       where: { id: existingPlan.id },
       data: { status: "PUBLISHED", reviewed: true, reviewedById: userId },
     });
+    const fanout = await fanoutPlanPublished({ request, orgId, actorUserId: userId, plan });
     await writeAuditLog({
       request,
       orgId,
@@ -9448,6 +10123,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
       action: "plan.published",
       entityType: "plan_content",
       entityId: plan.id,
+      metadata: fanout,
     });
     return ok({ plan });
   }
@@ -9841,6 +10517,20 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         safetyFlags: result.safetyFlags,
       }),
     });
+    await writeAuditLog({
+      request,
+      ...(body.orgId ? { orgId: body.orgId } : {}),
+      actorUserId: userId,
+      action: "ai.request.completed",
+      entityType: "ai_conversation",
+      entityId: conversation.id,
+      metadata: {
+        requestType: "CHAT",
+        prompt: body.prompt,
+        completion: result.response,
+        safetyFlags: result.safetyFlags,
+      },
+    });
     return ok({ ...result, conversationId: conversation.id });
   }
   if (
@@ -9923,7 +10613,9 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     if (requestType === "STRUCTURED_PLAN" && body.orgId && body.persistDraft) {
       const planType = body.type ?? "WORKOUT";
       const title = body.title ?? `${planType === "DIET" ? "Nutrition" : "Workout"} draft`;
-      const content = normalizedStructuredPlanContent(result.response);
+      const content = aiStructuredPlanContentSchema.parse(
+        sanitizeJsonRichText(normalizedStructuredPlanContent(result.response)),
+      );
       createdPlan = await prisma.planContent.create({
         data: {
           orgId: body.orgId,
@@ -9946,7 +10638,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
             description: "Assisted draft. Review before publishing.",
             aiGenerated: true,
             visibility: "assigned",
-            content,
+            content: content as Record<string, unknown>,
           }) as Prisma.InputJsonValue,
           createdById: userId,
         },
@@ -9976,6 +10668,20 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         createdPlanId: createdPlan?.id,
         safetyFlags: result.safetyFlags,
       }),
+    });
+    await writeAuditLog({
+      request,
+      orgId: body.orgId,
+      actorUserId: userId,
+      action: "ai.request.completed",
+      entityType: createdPlan ? "plan_content" : "ai_request",
+      ...(createdPlan?.id ? { entityId: createdPlan.id } : {}),
+      metadata: {
+        requestType,
+        prompt: body.prompt,
+        completion: result.response,
+        safetyFlags: result.safetyFlags,
+      },
     });
     return ok({ ...result, ...(createdPlan ? { createdPlan } : {}) });
   }
@@ -10879,7 +11585,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       data: clean({
         branchId: branch?.id,
         name: body.name,
-        description: body.description,
+        description: sanitizeRichText(body.description),
         category: body.category,
         pricePaise: body.pricePaise,
         stock: body.stock,
@@ -11573,11 +12279,31 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
   if (request.method === "GET" && pathMatches(path, ["platform", "provider-status"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
+    const registry = getProviderRegistryDiagnostics();
+    const coarseProviders = Object.fromEntries(
+      Object.entries(registry).map(([name, value]) => {
+        const record = value as { status?: unknown; configured?: unknown; activeProvider?: unknown };
+        return [
+          name,
+          {
+            status: typeof record.status === "string" ? record.status : "unknown",
+            configured: Boolean(record.configured),
+            active: Boolean(record.activeProvider),
+          },
+        ];
+      }),
+    );
     return ok({
       providers: {
-        ...getProviderRegistryDiagnostics(),
-        rateLimit: getRateLimitDiagnostics(),
-        cache: getServerCacheDiagnostics(),
+        ...coarseProviders,
+        rateLimit: {
+          status: getRateLimitDiagnostics().status,
+          configured: getRateLimitDiagnostics().configured,
+        },
+        cache: {
+          status: getServerCacheDiagnostics().status,
+          configured: getServerCacheDiagnostics().configured,
+        },
       },
     });
   }

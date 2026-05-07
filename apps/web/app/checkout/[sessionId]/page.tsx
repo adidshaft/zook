@@ -209,6 +209,12 @@ export default async function HostedCheckoutPage({
           >
             Return to Zook
           </Link>
+          <Link
+            href={session.purpose === "MEMBERSHIP" ? "/me" : "/dashboard/shop/orders"}
+            className="zook-focus inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-3 text-sm text-white/70 transition hover:bg-white/8"
+          >
+            {session.purpose === "MEMBERSHIP" ? "View subscription" : "View order"}
+          </Link>
         </div>
       </div>
     </main>

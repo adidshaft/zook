@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { webApiFetch } from "@/lib/api-client";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
@@ -128,9 +129,16 @@ export function NotificationHistoryPanel({
                       : ""}
                   </p>
                 </div>
-                <Pill tone={notification.status === "SENT" ? "lime" : "amber"}>
-                  {formatEnumLabel(notification.status)}
-                </Pill>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Pill tone={notification.status === "SENT" ? "lime" : "amber"}>
+                    {formatEnumLabel(notification.status)}
+                  </Pill>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-lime-100">
+                    View recipients
+                    <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span className="sr-only">Open recipients</span>
+                  </span>
+                </div>
               </div>
             </button>
           ))}

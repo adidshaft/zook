@@ -521,26 +521,66 @@ export async function applyPaymentSessionStatus(input: {
           });
         }
         if (metadata.couponId) {
-          const existingCouponRedemption = await prisma.couponRedemption.findFirst({
+          const existingCouponRedemption = await prisma.couponRedemption.findUnique({
             where: {
-              paymentSessionId: session.id,
-              couponId: metadata.couponId,
-              userId: session.userId,
+              paymentSessionId_couponId_userId: {
+                paymentSessionId: session.id,
+                couponId: metadata.couponId,
+                userId: session.userId,
+              },
             },
           });
           if (!existingCouponRedemption) {
-            await prisma.couponRedemption.create({
-              data: {
-                orgId: planSub.orgId,
-                couponId: metadata.couponId,
-                userId: session.userId,
-                subscriptionId: planSub.id,
-                paymentSessionId: session.id,
-                discountPaise:
-                  metadata.couponDiscountPaise ??
-                  Math.max(plan.pricePaise - session.amountPaise, 0),
-              },
+            const coupon = await prisma.coupon.findFirst({
+              where: { id: metadata.couponId, orgId: planSub.orgId },
             });
+            if (!coupon) {
+              throw new Error("Coupon not found");
+            }
+            if (coupon.perUserLimit !== null) {
+              const userRedemptions = await prisma.couponRedemption.count({
+                where: { orgId: planSub.orgId, couponId: coupon.id, userId: session.userId },
+              });
+              if (userRedemptions >= coupon.perUserLimit) {
+                throw new Error("Coupon per-user limit reached");
+              }
+            }
+            const reservation = await prisma.coupon.updateMany({
+              where: {
+                id: coupon.id,
+                orgId: planSub.orgId,
+                active: true,
+                OR: [{ validFrom: null }, { validFrom: { lte: new Date() } }],
+                AND: [
+                  { OR: [{ validUntil: null }, { validUntil: { gt: new Date() } }] },
+                  { OR: [{ maxRedemptions: null }, { redemptionCount: { lt: coupon.maxRedemptions ?? 0 } }] },
+                ],
+              },
+              data: { redemptionCount: { increment: 1 } },
+            });
+            if (reservation.count !== 1) {
+              throw new Error("Coupon has reached its redemption limit");
+            }
+            try {
+              await prisma.couponRedemption.create({
+                data: {
+                  orgId: planSub.orgId,
+                  couponId: metadata.couponId,
+                  userId: session.userId,
+                  subscriptionId: planSub.id,
+                  paymentSessionId: session.id,
+                  discountPaise:
+                    metadata.couponDiscountPaise ??
+                    Math.max(plan.pricePaise - session.amountPaise, 0),
+                },
+              });
+            } catch (error) {
+              await prisma.coupon.update({
+                where: { id: coupon.id },
+                data: { redemptionCount: { decrement: 1 } },
+              });
+              throw error;
+            }
           }
         }
         if (metadata.referralCodeId) {

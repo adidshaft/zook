@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -39,6 +40,7 @@ import { memberApi, paymentsApi } from "@/lib/domain-api";
 import { formatDateTime, formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { useGymProfile, useMyMemberships, type PublicPlanSummary } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 type MembershipRecord = {
   id: string;
@@ -204,6 +206,8 @@ export default function MembershipScreen() {
   const [renewing, setRenewing] = useState(false);
   const [autopayStatus, setAutopayStatus] = useState("");
   const [autopayBusy, setAutopayBusy] = useState(false);
+  const [membershipActionStatus, setMembershipActionStatus] = useState("");
+  const [membershipActionBusy, setMembershipActionBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [waitingCheckoutSessionId, setWaitingCheckoutSessionId] = useState<string | null>(null);
   const [checkingCheckoutStatus, setCheckingCheckoutStatus] = useState(false);
@@ -350,6 +354,78 @@ export default function MembershipScreen() {
       setAutopayStatus(getApiErrorMessage(error));
     } finally {
       setAutopayBusy(false);
+    }
+  }
+
+  async function switchMembershipNow() {
+    if (!token || !renewalTarget || !selectedPlanId) return;
+    setMembershipActionBusy(true);
+    setRenewalStatus("");
+    try {
+      await memberApi.switchMembership({
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        subscriptionId: renewalTarget.id,
+        planId: selectedPlanId,
+      });
+      setRenewalStatus("Plan switched.");
+      showToast({ tone: "success", haptic: "success", message: "Plan switched." });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
+      setRenewalOpen(false);
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      setRenewalStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+    } finally {
+      setMembershipActionBusy(false);
+    }
+  }
+
+  async function pauseOrResumeMembership(subscription: MembershipRecord) {
+    if (!token) return;
+    setMembershipActionBusy(true);
+    setMembershipActionStatus("");
+    try {
+      if (subscription.status === "PAUSED") {
+        await memberApi.resumeMembership({
+          token,
+          ...(activeOrgId ? { orgId: activeOrgId } : {}),
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+          subscriptionId: subscription.id,
+        });
+        setMembershipActionStatus("Membership resumed.");
+        showToast({ tone: "success", haptic: "success", message: "Membership resumed." });
+      } else {
+        await memberApi.pauseMembership({
+          token,
+          ...(activeOrgId ? { orgId: activeOrgId } : {}),
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+          subscriptionId: subscription.id,
+          resumesAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          reason: "Member requested a short pause from mobile.",
+        });
+        setMembershipActionStatus("Membership paused for 7 days.");
+        showToast({
+          tone: "success",
+          haptic: "success",
+          message: "Membership paused for 7 days.",
+        });
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      setMembershipActionStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+    } finally {
+      setMembershipActionBusy(false);
     }
   }
 
@@ -523,6 +599,20 @@ export default function MembershipScreen() {
                 <ZookButton onPress={() => openRenewal(latestSubscription)} icon="refresh-outline">
                   Renew or change plan
                 </ZookButton>
+                <ZookButton
+                  tone="secondary"
+                  disabled={
+                    membershipActionBusy ||
+                    (latestSubscription.status !== "ACTIVE" && latestSubscription.status !== "PAUSED")
+                  }
+                  onPress={() => void pauseOrResumeMembership(latestSubscription)}
+                  icon={latestSubscription.status === "PAUSED" ? "play-circle-outline" : "pause-circle-outline"}
+                >
+                  {latestSubscription.status === "PAUSED" ? "Resume membership" : "Pause 7 days"}
+                </ZookButton>
+                {membershipActionStatus ? (
+                  <Text style={styles.statusMessage}>{membershipActionStatus}</Text>
+                ) : null}
               </GlassCard>
 
               <GlassCard variant="compact" contentStyle={styles.autopayContent}>
@@ -649,8 +739,9 @@ export default function MembershipScreen() {
           loadingPlans={gymQuery.isLoading}
           onClose={() => setRenewalOpen(false)}
           onRenew={() => void renewMembership()}
+          onSwitch={() => void switchMembershipNow()}
           open={renewalOpen}
-          renewing={renewing}
+          renewing={renewing || membershipActionBusy}
           selectedPlan={selectedPlan}
           selectedPlanId={selectedPlanId}
           setSelectedPlanId={setSelectedPlanId}
@@ -668,6 +759,7 @@ function RenewalSheet({
   loadingPlans,
   onClose,
   onRenew,
+  onSwitch,
   open,
   renewing,
   selectedPlan,
@@ -681,6 +773,7 @@ function RenewalSheet({
   loadingPlans: boolean;
   onClose: () => void;
   onRenew: () => void;
+  onSwitch: () => void;
   open: boolean;
   renewing: boolean;
   selectedPlan: PublicPlanSummary | MembershipRecord["plan"] | null;
@@ -800,6 +893,17 @@ function RenewalSheet({
           <ZookButton tone="secondary" onPress={onClose} style={styles.actionHalf}>
             Cancel
           </ZookButton>
+          {selectedPlanId && selectedPlanId !== currentPlan?.id ? (
+            <ZookButton
+              tone="secondary"
+              onPress={onSwitch}
+              disabled={renewing}
+              icon="swap-horizontal-outline"
+              style={styles.actionHalf}
+            >
+              {renewing ? "Updating..." : "Switch now"}
+            </ZookButton>
+          ) : null}
           <ZookButton
             onPress={onRenew}
             disabled={renewing}
@@ -1138,9 +1242,11 @@ const styles = StyleSheet.create({
   },
   sheetActions: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   actionHalf: {
     flex: 1,
+    minWidth: 130,
   },
 });

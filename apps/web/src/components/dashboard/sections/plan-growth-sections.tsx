@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorNotice } from "../operational-shared";
+import Link from "next/link";
 import { formatCompactNumber } from "@/lib/format";
 import { Pill } from "../../glass-card";
 import { ReadoutGrid, Section, StatusPill, Toggle, TextInput, Select } from "../primitives";
@@ -215,6 +216,29 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                       value={item.code.status}
                       tone={item.code.status === "active" ? "lime" : "amber"}
                     />
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => window.alert(`Referral tree for ${item.code.code}`)}
+                        className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
+                      >
+                        View tree
+                      </button>
+                      <button
+                        type="button"
+                        disabled={props.formBusy === `referral:${item.code.id}`}
+                        onClick={() => void props.updateReferral(item.code, "paused")}
+                        className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65 disabled:opacity-50"
+                      >
+                        Pause code
+                      </button>
+                      <Link
+                        href={`/dashboard/notifications?audience=single_member&userId=${encodeURIComponent(item.code.referrerUserId ?? "")}`}
+                        className="zook-focus rounded-full border border-lime-300/30 px-3 py-1 text-xs text-lime-100"
+                      >
+                        Notify
+                      </Link>
+                    </div>
                   </div>
                 ))
               ) : (

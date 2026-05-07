@@ -3,9 +3,15 @@ import { toast } from "sonner";
 
 export async function webApiFetch<T>(
   path: string,
-  init: Omit<RequestInit, "body"> & { body?: unknown } = {},
+  init: Omit<RequestInit, "body"> & {
+    body?: unknown;
+    feedback?: {
+      success?: string | false;
+      error?: string | false;
+    };
+  } = {},
 ): Promise<T> {
-  const { body: rawBody, ...requestInit } = init;
+  const { body: rawBody, feedback, ...requestInit } = init;
   const headers = new Headers(requestInit.headers);
   let body = rawBody;
 
@@ -29,13 +35,16 @@ export async function webApiFetch<T>(
 
   try {
     const payload = await parseApiResponse<T>(response);
-    if (isMutation) {
-      toast.success("Saved.");
+    if (isMutation && feedback?.success !== false) {
+      toast.success(feedback?.success ?? "Saved.");
     }
     return payload;
   } catch (error) {
-    if (isMutation) {
-      toast.error(error instanceof Error ? error.message : "Action failed.");
+    if (isMutation && feedback?.error !== false) {
+      toast.error(
+        feedback?.error ??
+          (error instanceof Error ? error.message : "Action failed."),
+      );
     }
     throw error;
   }

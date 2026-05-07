@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { BodyCompositionTimeline } from "../body-composition-timeline";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
+import { ManagedOn, SearchableSelect } from "../../ui";
 import {
   formatPlanShape,
   type JoinRequestRow,
@@ -14,6 +16,7 @@ import {
   type OrganizationSnapshot,
 } from "../../dashboard-operational-model";
 import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
+import { webApiFetch } from "@/lib/api-client";
 
 type MembersState = {
   error: string;
@@ -62,6 +65,80 @@ export function MembersSection({
   membershipPlansState: ResourceState<{ plans: MembershipPlanRow[] }>;
   planNamesById: Map<string, string>;
 }) {
+  const [subscriptionBusy, setSubscriptionBusy] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState("");
+  const [switchPlanId, setSwitchPlanId] = useState("");
+  const [pauseReason, setPauseReason] = useState("");
+  const [selectedBulkMemberIds, setSelectedBulkMemberIds] = useState<string[]>([]);
+  const selectedSubscription = memberDetailState.data?.member.subscriptions[0] ?? null;
+  const selectedBulkMembers = members.filter((member) =>
+    selectedBulkMemberIds.includes(member.user?.id ?? ""),
+  );
+
+  function toggleBulkMember(userId: string | undefined) {
+    if (!userId) return;
+    setSelectedBulkMemberIds((current) =>
+      current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId],
+    );
+  }
+
+  function exportSelectedMembers() {
+    const rows = selectedBulkMembers.map((member) => [
+      member.user?.name ?? "Member",
+      member.user?.email ?? "",
+      member.user?.phone ?? "",
+      member.activeSubscription?.status ?? "",
+    ]);
+    const csv = [
+      ["Name", "Email", "Phone", "Subscription"].join(","),
+      ...rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")),
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "selected-members.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function updateSubscription(action: "switch" | "pause" | "resume") {
+    if (!selectedSubscription) return;
+    setSubscriptionBusy(action);
+    setSubscriptionStatus("");
+    try {
+      await webApiFetch(`/api/orgs/${orgId}/subscriptions/${selectedSubscription.id}/${action}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...(action === "switch" ? { planId: switchPlanId } : {}),
+          ...(action === "pause"
+            ? {
+                resumesAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                reason: pauseReason || undefined,
+              }
+            : {}),
+        }),
+        feedback: {
+          success:
+            action === "switch"
+              ? "Membership plan switched."
+              : action === "pause"
+                ? "Membership paused."
+                : "Membership resumed.",
+          error: "Unable to update membership.",
+        },
+      });
+      setSubscriptionStatus("Membership updated. Refreshing the member record.");
+      window.location.reload();
+    } catch (error) {
+      setSubscriptionStatus(
+        error instanceof Error ? error.message : "Unable to update membership.",
+      );
+    } finally {
+      setSubscriptionBusy(null);
+    }
+  }
+
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -78,7 +155,14 @@ export function MembersSection({
               {memberDetailState.error ? (
                 <ErrorNotice message={memberDetailState.error} />
               ) : memberDetailState.loading || !memberDetailState.data ? (
-                <p className="text-sm text-white/55">Loading member detail...</p>
+                <div className="grid gap-3 lg:grid-cols-4" aria-label="Member detail is refreshing">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-20 rounded-[18px] border border-white/10 bg-white/6"
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="grid gap-4 lg:grid-cols-4">
                   <div>
@@ -102,6 +186,61 @@ export function MembersSection({
                         ? formatEnumLabel(memberDetailState.data.member.subscriptions[0].status)
                         : "No subscription"}
                     </p>
+                    {selectedSubscription ? (
+                      <div className="mt-3 grid gap-2">
+                        <SearchableSelect
+                          label="Switch membership plan"
+                          placeholder="Choose plan"
+                          searchPlaceholder="Search plans"
+                          value={switchPlanId}
+                          onChange={setSwitchPlanId}
+                          options={membershipPlans
+                            .filter((plan) => plan.active)
+                            .map((plan) => ({
+                              value: plan.id,
+                              label: plan.name,
+                              description: formatInr(plan.pricePaise),
+                            }))}
+                        />
+                        <textarea
+                          value={pauseReason}
+                          onChange={(event) => setPauseReason(event.target.value)}
+                          maxLength={180}
+                          placeholder="Pause reason"
+                          className="zook-focus min-h-16 rounded-2xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder:text-white/35"
+                        />
+                        <p className="text-[11px] text-white/40">{pauseReason.length}/180</p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={!switchPlanId || Boolean(subscriptionBusy)}
+                            onClick={() => void updateSubscription("switch")}
+                            className="zook-focus rounded-full bg-lime-300 px-3 py-1 text-xs font-semibold text-black disabled:opacity-50"
+                          >
+                            Switch
+                          </button>
+                          <button
+                            type="button"
+                            disabled={Boolean(subscriptionBusy) || selectedSubscription.status !== "ACTIVE"}
+                            onClick={() => void updateSubscription("pause")}
+                            className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 disabled:opacity-50"
+                          >
+                            Pause 7d
+                          </button>
+                          <button
+                            type="button"
+                            disabled={Boolean(subscriptionBusy) || selectedSubscription.status !== "PAUSED"}
+                            onClick={() => void updateSubscription("resume")}
+                            className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 disabled:opacity-50"
+                          >
+                            Resume
+                          </button>
+                        </div>
+                        {subscriptionStatus ? (
+                          <p className="text-xs text-white/50">{subscriptionStatus}</p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-[0.18em] text-white/35">Activity</p>
@@ -111,6 +250,9 @@ export function MembersSection({
                     <p className="mt-1 text-xs text-white/45">
                       {memberDetailState.data.member.workouts.length} trainer-visible workouts
                     </p>
+                    <ManagedOn surface="member-mobile" className="mt-3">
+                      Members log workouts, body, and habits in the mobile app.
+                    </ManagedOn>
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-[0.18em] text-white/35">Payments</p>
@@ -143,6 +285,19 @@ export function MembersSection({
               <>
                 <DataTable
                   columns={[
+                    {
+                      id: "select",
+                      header: "Select",
+                      render: (row) => (
+                        <input
+                          type="checkbox"
+                          checked={Boolean(row.user?.id && selectedBulkMemberIds.includes(row.user.id))}
+                          onChange={() => toggleBulkMember(row.user?.id)}
+                          aria-label={`Select ${row.user?.name ?? "member"}`}
+                          className="zook-focus h-4 w-4 rounded border-white/20 bg-black/40 accent-lime-300"
+                        />
+                      ),
+                    },
                     {
                       id: "member",
                       header: "Member",
@@ -226,6 +381,29 @@ export function MembersSection({
                     />
                   }
                 />
+                {selectedBulkMemberIds.length ? (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-lime-200/15 bg-lime-200/8 px-4 py-3">
+                    <p className="text-sm text-white/70">
+                      {selectedBulkMemberIds.length} selected
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={exportSelectedMembers}
+                        className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
+                      >
+                        Export selected
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBulkMemberIds([])}
+                        className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
                 <LoadMoreButton
                   count={members.length}
                   hasMore={membersState.hasMore}
@@ -275,7 +453,7 @@ export function MembersSection({
                         {request.referralCode ? ` · Referral ${request.referralCode}` : ""}
                       </p>
                       <p className="mt-2 text-sm text-white/60">
-                        {request.message ?? "No intake note was added by the member."}
+                        {request.message ?? "No intake note. Consider WhatsApp-ing the member before approving."}
                       </p>
                     </div>
                     <div className="flex gap-2">

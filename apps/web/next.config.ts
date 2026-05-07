@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload"
+          },
+          {
             key: "Permissions-Policy",
             value: "camera=(self), geolocation=(self), microphone=(), payment=(), browsing-topics=()"
           }
@@ -31,9 +35,10 @@ const nextConfig: NextConfig = {
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === "true" });
+const sentryProject = process.env.SENTRY_WEB_PROJECT?.trim() || process.env.SENTRY_PROJECT?.trim();
 const sentryBuildOptions = {
   ...(process.env.SENTRY_ORG ? { org: process.env.SENTRY_ORG } : {}),
-  ...(process.env.SENTRY_PROJECT ? { project: process.env.SENTRY_PROJECT } : {}),
+  ...(sentryProject ? { project: sentryProject } : {}),
   ...(process.env.SENTRY_AUTH_TOKEN ? { authToken: process.env.SENTRY_AUTH_TOKEN } : {}),
   silent: true,
   widenClientFileUpload: true,

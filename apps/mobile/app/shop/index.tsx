@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams, usePathname, useRouter } from "expo-router
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppState,
   type AppStateStatus,
@@ -36,6 +36,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 import { formatInr } from "@/lib/formatting";
 import {
   useCompleteMockPayment,
@@ -44,12 +45,13 @@ import {
   useShopProducts,
   type ShopOrderRecord,
 } from "@/lib/query-hooks";
-import { useAuth } from "@/lib/auth";
+import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n } from "@/lib/i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { PickupQrCode } from "@/components/primitives/pickup-qr";
 import { getMobileApiMode } from "@/lib/runtime-mode";
@@ -138,6 +140,7 @@ export default function Shop() {
   const completeMockPayment = useCompleteMockPayment();
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const cartHydrationRetryRef = useRef(0);
   const checkoutState: CheckoutState = pathname.startsWith("/shop/pickup/")
     ? "pickup"
     : pathname === "/shop/checkout"
@@ -186,11 +189,15 @@ export default function Shop() {
   useEffect(() => {
     let cancelled = false;
     setCartHydrated(false);
-    void getStoredValue(cartStorageKey)
-      .then((storedCart) => {
+    cartHydrationRetryRef.current = 0;
+
+    const hydrateCart = async () => {
+      try {
+        const storedCart = await getStoredValue(cartStorageKey);
         if (cancelled) return;
         if (!storedCart) {
           setCart({});
+          setCartHydrated(true);
           return;
         }
         const parsed = JSON.parse(storedCart) as Record<string, unknown>;
@@ -200,13 +207,30 @@ export default function Shop() {
             .filter(([, quantity]) => Number.isInteger(quantity) && quantity > 0),
         );
         setCart(nextCart);
-      })
-      .catch(() => {
-        if (!cancelled) setCart({});
-      })
-      .finally(() => {
-        if (!cancelled) setCartHydrated(true);
-      });
+        setCartHydrated(true);
+      } catch {
+        if (cancelled) return;
+        if (cartHydrationRetryRef.current < 2) {
+          cartHydrationRetryRef.current += 1;
+          setTimeout(() => {
+            if (!cancelled) {
+              void hydrateCart();
+            }
+          }, 250 * cartHydrationRetryRef.current);
+          return;
+        }
+        setCart({});
+        setCartHydrated(true);
+        showToast({
+          title: "Cart reset",
+          message: "We could not restore your saved cart.",
+          tone: "amber",
+          haptic: "warning",
+        });
+      }
+    };
+
+    void hydrateCart();
     return () => {
       cancelled = true;
     };
@@ -342,34 +366,44 @@ export default function Shop() {
   }
 
   async function createCheckout() {
-    const result = await createOrder.mutateAsync({
-      items: cartItems.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
-      ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
-    });
-    setOrder({
-      ...result.order,
-      items: cartItems.map((item) => ({
-        productId: item.product.id,
-        quantity: item.quantity,
-        unitPaise: item.product.pricePaise,
-        product: item.product,
-      })),
-    });
-    setCheckoutSession({
-      id: result.session.id,
-      provider: result.session.provider,
-      ...(result.checkoutUrl ? { checkoutUrl: result.checkoutUrl } : {}),
-    });
-    router.push({
-      pathname: "/shop/checkout",
-      params: {
-        orderId: result.order.id,
-        sessionId: result.session.id,
-        ...(result.session.provider ? { provider: result.session.provider } : {}),
+    try {
+      const result = await createOrder.mutateAsync({
+        items: cartItems.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+      });
+      setOrder({
+        ...result.order,
+        items: cartItems.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          unitPaise: item.product.pricePaise,
+          product: item.product,
+        })),
+      });
+      setCheckoutSession({
+        id: result.session.id,
+        provider: result.session.provider,
         ...(result.checkoutUrl ? { checkoutUrl: result.checkoutUrl } : {}),
-        totalPaise: String(result.order.totalPaise),
-      },
-    } as never);
+      });
+      showToast({ tone: "success", haptic: "success", message: "Checkout ready." });
+      router.push({
+        pathname: "/shop/checkout",
+        params: {
+          orderId: result.order.id,
+          sessionId: result.session.id,
+          ...(result.session.provider ? { provider: result.session.provider } : {}),
+          ...(result.checkoutUrl ? { checkoutUrl: result.checkoutUrl } : {}),
+          totalPaise: String(result.order.totalPaise),
+        },
+      } as never);
+    } catch (error) {
+      showToast({
+        title: "Action failed",
+        message: getApiErrorMessage(error) || "Could not create checkout.",
+        tone: "danger",
+        haptic: "error",
+      });
+    }
   }
 
   async function continuePayment() {
@@ -389,16 +423,26 @@ export default function Shop() {
     if (!mockPaymentCompletionAvailable) {
       throw new Error("Mock payment completion is not available in backend builds.");
     }
-    await completeMockPayment.mutateAsync({
-      sessionId: checkoutSession.id,
-      ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
-    });
-    const refreshed = await ordersQuery.refetch();
-    const paidOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
-    setOrder(paidOrder ?? { ...order, status: "READY_FOR_PICKUP" });
-    setCart({});
-    void deleteStoredValue(cartStorageKey);
-    router.replace(`/shop/pickup/${(paidOrder ?? order).id}` as never);
+    try {
+      await completeMockPayment.mutateAsync({
+        sessionId: checkoutSession.id,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+      });
+      const refreshed = await ordersQuery.refetch();
+      const paidOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
+      setOrder(paidOrder ?? { ...order, status: "READY_FOR_PICKUP" });
+      setCart({});
+      void deleteStoredValue(cartStorageKey);
+      showToast({ tone: "success", haptic: "success", message: "Payment confirmed." });
+      router.replace(`/shop/pickup/${(paidOrder ?? order).id}` as never);
+    } catch (error) {
+      showToast({
+        title: "Action failed",
+        message: getApiErrorMessage(error) || "Payment could not be completed.",
+        tone: "danger",
+        haptic: "error",
+      });
+    }
   }
 
   const onRefresh = async () => {
@@ -851,10 +895,12 @@ function ShopShell({
   refreshControl?: ScrollViewProps["refreshControl"];
 }) {
   const insets = useSafeAreaInsets();
+  const { visible: bottomNavVisible } = useContext(BottomNavVisibilityContext);
   const contentPaddingBottom = useBottomScrollPadding({
     hasStickyAction: Boolean(floatingAction || stickyAction),
   });
-  const floatingBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + 18;
+  const floatingBottom =
+    (bottomNavVisible ? layout.bottomNavHeight : 0) + Math.max(insets.bottom, 12) + 18;
 
   return (
     <>

@@ -3,7 +3,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { Keyboard, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Keyboard,
+  Linking,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import {
   BottomNav,
   BranchSelectorChip,
@@ -216,10 +225,28 @@ export default function Owner() {
     showToast({ title: "Owner approval required", tone: "amber" });
   };
 
+  function confirmSignOut() {
+    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: () => {
+          void logout();
+        },
+      },
+    ]);
+  }
+
   useEffect(() => {
     let mounted = true;
+    setRevealedPhones(new Set());
     void getStoredValue(phoneRevealStorageKey(activeOrgId)).then((stored) => {
-      if (!mounted || !stored) return;
+      if (!mounted) return;
+      if (!stored) {
+        setRevealedPhones(new Set());
+        return;
+      }
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
@@ -255,27 +282,39 @@ export default function Owner() {
   async function approveAttendance(attemptId: string) {
     try {
       await approveAttendanceMutation.mutateAsync(attemptId);
-      setActionStatus("Check-in approved.");
+      const message = "Check-in approved.";
+      setActionStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
-      setActionStatus(getApiErrorMessage(error) || "Could not approve check-in.");
+      const message = getApiErrorMessage(error) || "Could not approve check-in.";
+      setActionStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
   async function approveJoinRequest(joinRequestId: string) {
     try {
       await approveJoinRequestMutation.mutateAsync(joinRequestId);
-      setActionStatus("Join request approved.");
+      const message = "Join request approved.";
+      setActionStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
-      setActionStatus(getApiErrorMessage(error) || "Could not approve join request.");
+      const message = getApiErrorMessage(error) || "Could not approve join request.";
+      setActionStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
   async function rejectJoinRequest(joinRequestId: string) {
     try {
       await rejectJoinRequestMutation.mutateAsync(joinRequestId);
-      setActionStatus("Join request rejected.");
+      const message = "Join request rejected.";
+      setActionStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
-      setActionStatus(getApiErrorMessage(error) || "Could not reject join request.");
+      const message = getApiErrorMessage(error) || "Could not reject join request.";
+      setActionStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -358,7 +397,7 @@ export default function Owner() {
             </Text>
           </Pressable>
           <Pressable
-            onPress={() => void logout()}
+            onPress={confirmSignOut}
             accessibilityRole="button"
             accessibilityLabel="Sign out"
             style={[styles.utilityPill, styles.signOutPill]}

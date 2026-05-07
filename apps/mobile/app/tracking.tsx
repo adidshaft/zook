@@ -80,7 +80,7 @@ export default function TrackingDashboard() {
   const latestWorkout = recentWorkouts[0] ? workoutToEntry(recentWorkouts[0]) : null;
   const bodyProgressEntries = bodyProgressQuery.data?.entries ?? [];
   const weeklyCount = summary?.weeklyCount ?? 0;
-  const weeklyGoal = Math.max(1, session?.user.weeklyWorkoutGoal ?? 5);
+  const weeklyGoal = coerceWeeklyWorkoutGoal(session?.user.weeklyWorkoutGoal);
   const totalDuration = summary?.totalDuration ?? 0;
   const currentStreak = computeWorkoutStreak(recentWorkouts);
 
@@ -226,6 +226,14 @@ export default function TrackingDashboard() {
       </ZookScreen>
     </>
   );
+}
+
+function coerceWeeklyWorkoutGoal(value: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed)) {
+    return 5;
+  }
+  return Math.min(Math.max(Math.round(parsed), 1), 14);
 }
 
 function computeWorkoutStreak(

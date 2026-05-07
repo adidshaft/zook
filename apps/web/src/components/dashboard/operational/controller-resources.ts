@@ -48,11 +48,16 @@ export function useDashboardOperationalResources({
   summary: OrganizationSummary;
   branchScope: BranchScopeSnapshot;
 }) {
+  const branchParam = branchScope.selectedBranch?.id
+    ? `branchId=${encodeURIComponent(branchScope.selectedBranch.id)}`
+    : "";
+  const withBranch = (path: string) =>
+    branchParam ? `${path}${path.includes("?") ? "&" : "?"}${branchParam}` : path;
   const membersState = usePagedOperationalResource<
     { members: MemberRow[]; nextCursor?: string | null; limit: number },
     MemberRow
   >({
-    path: `/api/orgs/${orgId}/members?limit=50`,
+    path: withBranch(`/api/orgs/${orgId}/members?limit=50`),
     enabled: mode === "members",
     itemKey: "members",
   });
@@ -64,7 +69,7 @@ export function useDashboardOperationalResources({
       : {}),
   });
   const membershipPlansState = useOperationalResource<{ plans: MembershipPlanRow[] }>({
-    path: `/api/orgs/${orgId}/membership-plans`,
+    path: withBranch(`/api/orgs/${orgId}/membership-plans`),
     enabled:
       mode === "members" ||
       mode === "join-requests" ||
@@ -83,18 +88,18 @@ export function useDashboardOperationalResources({
     enabled: mode === "staff" || mode === "plans" || mode === "ai",
   });
   const productsState = useOperationalResource<{ products: ProductRow[] }>({
-    path: `/api/orgs/${orgId}/products`,
+    path: withBranch(`/api/orgs/${orgId}/products`),
     enabled: mode === "shop" || mode === "payments",
   });
   const shopOrdersState = useOperationalResource<{ orders: ShopOrderRow[] }>({
-    path: `/api/orgs/${orgId}/shop/orders`,
+    path: withBranch(`/api/orgs/${orgId}/shop/orders`),
     enabled: mode === "shop" || mode === "payments",
   });
   const paymentsState = usePagedOperationalResource<
     { payments: PaymentRow[]; nextCursor?: string | null; limit: number },
     PaymentRow
   >({
-    path: `/api/orgs/${orgId}/payments?limit=50`,
+    path: withBranch(`/api/orgs/${orgId}/payments?limit=50`),
     enabled: mode === "payments",
     itemKey: "payments",
   });
@@ -102,7 +107,7 @@ export function useDashboardOperationalResources({
     { attendance: AttendanceRecordRow[]; nextCursor?: string | null; limit: number },
     AttendanceRecordRow
   >({
-    path: `/api/orgs/${orgId}/attendance?limit=50`,
+    path: withBranch(`/api/orgs/${orgId}/attendance?limit=50`),
     enabled: mode === "attendance",
     itemKey: "attendance",
   });

@@ -27,6 +27,7 @@ import { aiApi } from "@/lib/domain-api";
 import { useMyPlans, useMyProfile, useTrainerClients } from "@/lib/query-hooks";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 type ChatMessage = {
   id: string;
@@ -110,6 +111,13 @@ export default function AssistantScreen() {
           }
         } catch {
           setMessages([starterMessage(isTrainer)]);
+          void deleteStoredValue(storageKey);
+          showToast({
+            title: "Assistant reset",
+            message: "Saved messages were unreadable.",
+            tone: "amber",
+            haptic: "warning",
+          });
         }
       } else {
         setMessages([starterMessage(isTrainer)]);
@@ -122,7 +130,14 @@ export default function AssistantScreen() {
     if (!hydratedRef.current || !messages.length) {
       return;
     }
-    void setStoredValue(storageKey, JSON.stringify(messages.slice(-50)));
+    void setStoredValue(storageKey, JSON.stringify(messages.slice(-50))).catch(() => {
+      showToast({
+        title: "Assistant not saved",
+        message: "New messages may not be restored next time.",
+        tone: "amber",
+        haptic: "warning",
+      });
+    });
   }, [messages, storageKey]);
 
   useEffect(() => {

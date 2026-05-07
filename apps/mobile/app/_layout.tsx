@@ -5,9 +5,7 @@ import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,
   Inter_400Regular,
@@ -34,7 +32,6 @@ import { colors, layout } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 initMobileSentry();
-SplashScreen.preventAutoHideAsync();
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
 const ONBOARDING_COMPLETED = "true";
@@ -372,7 +369,7 @@ function LayoutContent() {
         <Stack.Screen name="reception" options={{ animation: "none" }} />
         <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
         <Stack.Screen name="login" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="trainer/index" options={{ animation: "none" }} />
+        <Stack.Screen name="trainer" options={{ animation: "none" }} />
         <Stack.Screen name="trainer/client/[id]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen
           name="trainer/client/[id]/ai-draft"
@@ -423,8 +420,16 @@ export default function Layout() {
   });
 
   useEffect(() => {
+    void SplashScreen.preventAutoHideAsync().catch(() => {
+      // Expo Go can reject duplicate splash lifecycle calls during fast refresh.
+    });
+  }, []);
+
+  useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      void SplashScreen.hideAsync().catch(() => {
+        // Ignore splash cleanup races during local development.
+      });
     }
   }, [fontsLoaded]);
 
@@ -433,9 +438,9 @@ export default function Layout() {
   }
 
   return (
-    <GestureHandlerRootView style={styles.gestureRoot}>
-      <QueryClientProvider client={queryClient}>
-        <BottomSheetModalProvider>
+    <SafeAreaProvider>
+      <View style={styles.gestureRoot}>
+        <QueryClientProvider client={queryClient}>
           <I18nProvider>
             <AuthProvider>
               <BranchSelectionProvider>
@@ -447,9 +452,9 @@ export default function Layout() {
               </BranchSelectionProvider>
             </AuthProvider>
           </I18nProvider>
-        </BottomSheetModalProvider>
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+        </QueryClientProvider>
+      </View>
+    </SafeAreaProvider>
   );
 }
 

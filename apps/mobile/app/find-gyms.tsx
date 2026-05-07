@@ -29,12 +29,21 @@ function normalizeMediaUrl(value?: string | null) {
   return /^https?:\/\//i.test(value) ? value : toWebUrl(value);
 }
 
+function sanitizeReferralCode(value?: string | string[]) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const cleaned = raw
+    ?.replace(/[\u202a-\u202e\u2066-\u2069\r\n\t]/gi, "")
+    .replace(/[^\w-]/g, "")
+    .slice(0, 32);
+  return cleaned || undefined;
+}
+
 export default function FindGyms() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { t } = useI18n();
   const routeParams = useLocalSearchParams<{ focus?: string; ref?: string }>();
-  const referralCode = Array.isArray(routeParams.ref) ? routeParams.ref[0] : routeParams.ref;
+  const referralCode = sanitizeReferralCode(routeParams.ref);
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState({ query: "", city: "" });
@@ -151,7 +160,11 @@ export default function FindGyms() {
 
           <SectionHeader
             title="Available gyms"
-            subtitle={gymsQuery.isLoading ? "Searching..." : `${gyms.length} result${gyms.length !== 1 ? "s" : ""}`}
+            subtitle={
+              gymsQuery.isFetching && !gyms.length
+                ? "Searching..."
+                : `${gyms.length} result${gyms.length !== 1 ? "s" : ""}`
+            }
           />
 
           {gymsQuery.isLoading ? (

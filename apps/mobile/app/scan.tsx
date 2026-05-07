@@ -35,6 +35,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { attendanceApi } from "@/lib/domain-api";
 import { usePushNotifications } from "@/lib/push-notifications";
+import { useMemberHome } from "@/lib/query-hooks";
 import { getMobileAppEnv } from "@/lib/runtime-mode";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
@@ -79,6 +80,7 @@ export default function Scan() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const memberHomeQuery = useMemberHome();
   const { permissionState, requestEnablePush } = usePushNotifications();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
@@ -195,6 +197,16 @@ export default function Scan() {
       if (!token) {
         throw new Error("Sign in again before scanning.");
       }
+      const activeMembership = memberHomeQuery.data?.activeMembership;
+      const membershipExpired =
+        Boolean(activeMembership) &&
+        (String(activeMembership?.status ?? "")
+          .toUpperCase()
+          .includes("EXPIRED") ||
+          (typeof activeMembership?.daysLeft === "number" && activeMembership.daysLeft <= 0));
+      if (membershipExpired) {
+        throw new Error("Membership expired. Renew before checking in.");
+      }
       const result = await attendanceApi.scan<ScanResult>({
         token,
         body: { qrPayload: payload },
@@ -267,6 +279,7 @@ export default function Scan() {
 
   function handleBarcode({ data }: BarcodeScanningResult) {
     if (!data || data.trim() === "") {
+      completedRef.current = false;
       setErrorMessage("Could not read QR code. Try again.");
       setScanState("failed");
       return;

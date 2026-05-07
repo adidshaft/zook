@@ -1,7 +1,7 @@
 import { Link, Stack } from "expo-router";
 import type { Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   BottomNav,
   GlassCard,
@@ -61,6 +61,18 @@ const memberMoreItems: Array<{
 export default function More() {
   const { logout, session } = useAuth();
   const userName = session?.user.name ?? "Member";
+  const confirmSignOut = () => {
+    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: () => {
+          void logout();
+        },
+      },
+    ]);
+  };
 
   return (
     <>
@@ -84,7 +96,7 @@ export default function More() {
               </Text>
             </View>
             <ZookButton
-              onPress={() => void logout()}
+              onPress={confirmSignOut}
               tone="secondary"
               size="sm"
               accessibilityLabel="Sign out"

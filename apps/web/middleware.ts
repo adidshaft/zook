@@ -2,6 +2,17 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const sessionCookieName = "zook_session";
 
+function originFromEnv(value: string | undefined) {
+  if (!value?.trim()) {
+    return undefined;
+  }
+  try {
+    return new URL(value).origin;
+  } catch {
+    return undefined;
+  }
+}
+
 function buildContentSecurityPolicy(nonce: string) {
   const scriptSources = [
     "'self'",
@@ -13,6 +24,28 @@ function buildContentSecurityPolicy(nonce: string) {
   if (process.env.NODE_ENV === "development") {
     scriptSources.push("'unsafe-eval'");
   }
+  const connectSources = new Set([
+    "'self'",
+    "https://checkout.razorpay.com",
+    "https://api.razorpay.com",
+    "https://*.ingest.sentry.io",
+    "https://*.sentry.io",
+  ]);
+  for (const origin of [
+    originFromEnv(process.env.NEXT_PUBLIC_APP_URL),
+    originFromEnv(process.env.NEXT_PUBLIC_WEB_URL),
+    originFromEnv(process.env.NEXT_PUBLIC_SENTRY_DSN),
+  ]) {
+    if (origin) {
+      connectSources.add(origin);
+    }
+  }
+  if (process.env.NODE_ENV === "development") {
+    connectSources.add("http://localhost:*");
+    connectSources.add("http://127.0.0.1:*");
+    connectSources.add("ws://localhost:*");
+    connectSources.add("ws://127.0.0.1:*");
+  }
 
   return [
     "default-src 'self'",
@@ -23,7 +56,7 @@ function buildContentSecurityPolicy(nonce: string) {
     `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https:",
-    "connect-src 'self' https: ws: wss:",
+    `connect-src ${Array.from(connectSources).join(" ")}`,
     "frame-src 'self' https:",
     "object-src 'none'",
   ].join("; ");

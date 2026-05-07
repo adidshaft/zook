@@ -371,9 +371,25 @@ export function PlanDetailScreen() {
         feedback: feedbackNote.trim() || undefined,
       });
       setCompleted(new Set(exercises.map((exercise) => exercise.name)));
-      setFeedbackStatus("Workout marked complete.");
+      const message = "Workout marked complete.";
+      setFeedbackStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
-      setFeedbackStatus(getApiErrorMessage(error) || "Workout progress could not be saved.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "plans"] }),
+        selectedAssignment?.id
+          ? queryClient.invalidateQueries({ queryKey: ["me", "plans", selectedAssignment.id] })
+          : Promise.resolve(),
+        selectedAssignment?.id
+          ? queryClient.invalidateQueries({
+              queryKey: ["me", "plans", selectedAssignment.id, "exercises"],
+            })
+          : Promise.resolve(),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
+      const message = getApiErrorMessage(error) || "Workout progress could not be saved.";
+      setFeedbackStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -552,6 +568,7 @@ export function PlanDetailScreen() {
             <TextInput
               value={feedbackNote}
               onChangeText={setFeedbackNote}
+              maxLength={280}
               placeholder="Add a short note"
               placeholderTextColor={colors.muted}
               style={styles.feedbackInput}

@@ -89,7 +89,8 @@ describe("deliverPushForNotification", () => {
           status: "FAILED",
           attemptCount: 1,
           failureCode: "provider_disabled",
-          failureReason: "Push alerts are not available right now."
+          failureReason: "Push alerts are not available right now.",
+          payload: { notificationId: "notification_1", type: "TRANSACTIONAL" }
         })
       ]
     });
@@ -123,9 +124,15 @@ describe("deliverPushForNotification", () => {
           provider: "expo",
           status: "FAILED",
           failureCode: "provider_exception",
-          failureReason: "Push alert could not be sent."
+          failureReason: "Push alert could not be sent.",
+          payload: { notificationId: "notification_1", type: "PLAN" }
         })
       ]
     });
+    expect(mocks.getPushProvider.mock.results[0]?.value.sendBatch).toHaveBeenCalledWith([
+      expect.objectContaining({
+        data: { notificationId: "notification_1", type: "PLAN" }
+      })
+    ]);
   });
 });

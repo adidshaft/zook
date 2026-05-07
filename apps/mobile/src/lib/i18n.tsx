@@ -36,6 +36,10 @@ export type TranslationKey =
   | "nav.approvals"
   | "nav.revenue"
   | "nav.stock"
+  | "notifications.today"
+  | "notifications.yesterday"
+  | "notifications.earlierThisWeek"
+  | "notifications.older"
   | "auth.heroEyebrow"
   | "auth.heroBody"
   | "auth.signIn"
@@ -214,6 +218,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.approvals": "Approvals",
     "nav.revenue": "Revenue",
     "nav.stock": "Stock",
+    "notifications.today": "Today",
+    "notifications.yesterday": "Yesterday",
+    "notifications.earlierThisWeek": "Earlier this week",
+    "notifications.older": "Older",
     "auth.heroEyebrow": "Fitness Operating System",
     "auth.heroBody": "Your gym, your membership, your rhythm. Sign in to get started.",
     "auth.signIn": "Sign in",
@@ -391,6 +399,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.approvals": "मंजूरी",
     "nav.revenue": "रेवेन्यू",
     "nav.stock": "स्टॉक",
+    "notifications.today": "आज",
+    "notifications.yesterday": "कल",
+    "notifications.earlierThisWeek": "इस हफ्ते पहले",
+    "notifications.older": "पुराने",
     "auth.heroEyebrow": "फिटनेस ऑपरेटिंग सिस्टम",
     "auth.heroBody": "आपका जिम, आपकी मेंबरशिप, आपकी लय. शुरू करने के लिए साइन इन करें.",
     "auth.signIn": "साइन इन",

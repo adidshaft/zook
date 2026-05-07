@@ -64,17 +64,29 @@ describe("storage provider", () => {
     ).toMatchObject({ extension: "json", contentType: "application/json" });
   });
 
-  it("builds upload keys without trusting the original file basename", () => {
+  it("rejects unsafe original filenames before building keys", () => {
+    expect(() =>
+      buildStorageKey({
+        category: "product_image",
+        orgId: "Org 123",
+        fileId: "file_abc",
+        originalName: "../unsafe name.png",
+        now: new Date("2026-04-24T00:00:00.000Z")
+      })
+    ).toThrow(/Unsafe file name/);
+  });
+
+  it("builds upload keys from safe metadata without trusting the original basename", () => {
     const key = buildStorageKey({
       category: "product_image",
       orgId: "Org 123",
       fileId: "file_abc",
-      originalName: "../unsafe name.png",
+      originalName: "safe name.png",
       now: new Date("2026-04-24T00:00:00.000Z")
     });
 
     expect(key).toBe("org-123/product_image/file-abc-1776988800000.png");
-    expect(key).not.toContain("unsafe");
+    expect(key).not.toContain("safe");
   });
 
   it("validates public organization gallery assets", () => {
@@ -121,6 +133,7 @@ describe("storage provider", () => {
 
     expect(file.contentType).toBe("image/png");
     expect(Array.from(file.body)).toEqual([1, 2, 3, 4]);
+    expect(Number(url.searchParams.get("expires")) - Date.now()).toBeLessThanOrEqual(5 * 60_000);
     expect(
       verifyLocalStorageSignature({
         key,
@@ -129,5 +142,16 @@ describe("storage provider", () => {
         secret: "test-storage-secret"
       })
     ).toBe(true);
+  });
+
+  it("rejects signed urls with malformed signatures without throwing", () => {
+    expect(
+      verifyLocalStorageSignature({
+        key: "org/profile_photo/file.png",
+        expiresAt: Date.now() + 60_000,
+        signature: "short",
+        secret: "test-storage-secret"
+      })
+    ).toBe(false);
   });
 });

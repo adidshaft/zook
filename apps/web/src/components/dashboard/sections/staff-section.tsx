@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { ErrorNotice } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
+import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
 import type {
   BranchRow,
   CoachPlanRow,
@@ -115,7 +116,13 @@ export function StaffSection({
         <div className="mb-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="font-medium text-white">Invite staff</p>
+              <p className="inline-flex items-center gap-2 font-medium text-white">
+                Invite staff
+                <HelpHint label="Invite email" title="Invite email">
+                  We email a magic link. The recipient signs in with OTP and joins this org with
+                  the role you pick.
+                </HelpHint>
+              </p>
               <p className="mt-1 text-xs text-white/45">Invites a new team member.</p>
             </div>
             <Pill tone="lime">Invite</Pill>
@@ -130,48 +137,35 @@ export function StaffSection({
               type="email"
               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
             />
-            <select
+            <SearchableSelect
+              label="Role"
               value={staffInvite.role}
-              onChange={(event) =>
+              onChange={(role) =>
                 setStaffInvite((current) => ({
                   ...current,
-                  role: event.target.value as StaffRole,
-                  branchId: event.target.value === "RECEPTIONIST" ? current.branchId : "",
+                  role: role as StaffRole,
+                  branchId: role === "RECEPTIONIST" ? current.branchId : "",
                 }))
               }
-              className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-            >
-              <option value="TRAINER" className="bg-black">
-                Trainer
-              </option>
-              <option value="RECEPTIONIST" className="bg-black">
-                Receptionist
-              </option>
-              <option value="ADMIN" className="bg-black">
-                Admin
-              </option>
-            </select>
+              options={[
+                { value: "TRAINER", label: "Trainer" },
+                { value: "RECEPTIONIST", label: "Receptionist" },
+                { value: "ADMIN", label: "Admin" },
+              ]}
+            />
           </div>
           {staffInvite.role === "RECEPTIONIST" ? (
-            <select
+            <SearchableSelect
+              label="Assign branch"
+              placeholder="Assign branch"
               value={staffInvite.branchId}
-              onChange={(event) =>
-                setStaffInvite((current) => ({ ...current, branchId: event.target.value }))
+              onChange={(branchId) =>
+                setStaffInvite((current) => ({ ...current, branchId }))
               }
-              className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-              required
-            >
-              <option value="" className="bg-black">
-                Assign branch
-              </option>
-              {branches
+              options={branches
                 .filter((branch) => branch.active !== false)
-                .map((branch) => (
-                  <option key={branch.id} value={branch.id} className="bg-black">
-                    {branch.name}
-                  </option>
-                ))}
-            </select>
+                .map((branch) => ({ value: branch.id, label: branch.name }))}
+            />
           ) : null}
           <button
             onClick={() => void inviteStaff()}
@@ -189,6 +183,9 @@ export function StaffSection({
           description="Your team and their roles."
           badge={<Pill tone="blue">{staffAssignments.length} assignments</Pill>}
         />
+        <ManagedOn surface="trainer-mobile" className="mt-4">
+          Created in Trainer app.
+        </ManagedOn>
         <div className="mt-5">
           {staffState.error ? (
             <ErrorNotice message={staffState.error} />

@@ -298,11 +298,14 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
   } else {
     results.push(warn("Error reporter", `ERROR_REPORTER=${errorReporter}.`, "Use ERROR_REPORTER=sentry before staging or production certification."));
   }
-  if ((env("SENTRY_ORG") || env("SENTRY_PROJECT")) && !env("SENTRY_AUTH_TOKEN")) {
+  const sentryProjectsConfigured = Boolean(
+    env("SENTRY_PROJECT") || env("SENTRY_WEB_PROJECT") || env("SENTRY_MOBILE_PROJECT")
+  );
+  if ((env("SENTRY_ORG") || sentryProjectsConfigured) && !env("SENTRY_AUTH_TOKEN")) {
     results.push(
       profile === "production"
-        ? fail("Sentry source maps", "SENTRY_ORG or SENTRY_PROJECT is set without SENTRY_AUTH_TOKEN.", "Set a Sentry auth token so release source maps can upload.")
-        : warn("Sentry source maps", "SENTRY_ORG or SENTRY_PROJECT is set without SENTRY_AUTH_TOKEN.", "Set it before staging source-map verification.")
+        ? fail("Sentry source maps", "Sentry project env is set without SENTRY_AUTH_TOKEN.", "Set a Sentry auth token so release source maps can upload.")
+        : warn("Sentry source maps", "Sentry project env is set without SENTRY_AUTH_TOKEN.", "Set it before staging source-map verification.")
     );
   }
 

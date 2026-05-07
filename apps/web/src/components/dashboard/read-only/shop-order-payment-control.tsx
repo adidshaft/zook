@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { formatEnumLabel, formatInr } from "@/lib/format";
+import { formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
 import type { ShopOrderRow } from "../../dashboard-operational-model";
 import { PaymentProofUpload } from "../../payment-proof-upload";
-import { modeOptions, type PaymentReceiptState } from "./payments-utils";
+import { formatPaymentMode, modeOptions, type PaymentReceiptState } from "./payments-utils";
 
 export function ShopOrderPaymentControl({
   orgId,
@@ -70,7 +70,7 @@ export function ShopOrderPaymentControl({
         onClick={() => setOpen(true)}
         className="zook-focus rounded-full border border-lime-300/40 px-3 py-1 text-xs font-semibold text-lime-100 transition hover:bg-lime-300/10 disabled:opacity-50"
       >
-        Record payment
+        Record payment · Mode: {formatPaymentMode(form.mode)}
       </button>
     );
   }
@@ -94,7 +94,7 @@ export function ShopOrderPaymentControl({
       >
         {modeOptions.map((mode) => (
           <option key={mode} value={mode} className="bg-black">
-            {mode === "DIRECT_UPI" ? "UPI" : formatEnumLabel(mode)}
+            {formatPaymentMode(mode)}
           </option>
         ))}
       </select>

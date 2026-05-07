@@ -58,11 +58,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate database client
+        run: pnpm db:generate
+
       - name: Lint
         run: pnpm lint
 
       - name: Dashboard copy guard
         run: pnpm check:dashboard-copy
+
+      - name: Launch gates
+        run: pnpm check:launch-gates
 
       - name: Dashboard dev-speak grep
         run: |
@@ -84,8 +90,23 @@ jobs:
       - name: Unit tests
         run: pnpm test:unit
 
+      - name: Dependency audit
+        run: pnpm audit --audit-level high
+
       - name: Service tests
         run: pnpm test:services
 
       - name: DB-backed web tests
         run: pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web
+
+      - name: Acceptance tests
+        run: pnpm test:acceptance
+
+      - name: Release preflight
+        run: pnpm release:preflight
+
+      - name: Local backend preflight
+        run: APP_ENV=local API_MODE=backend pnpm preflight
+
+      - name: Environment checks
+        run: pnpm env:check

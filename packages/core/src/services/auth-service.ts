@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 import type { EmailProvider } from "../providers/email";
 import type { SmsProvider } from "../providers/sms";
-import { getAllowedFixedOtp } from "../runtime-env";
+import { getAllowedFixedOtp, getAppEnv } from "../runtime-env";
 import { normalizeLoginIdentifier, type LoginIdentifier } from "../validators";
 
 export interface OtpChallengeRecord {
@@ -42,8 +42,17 @@ export interface AuthRepository {
     expiresAt: Date;
     userAgent?: string;
     ipAddress?: string;
+    deviceFingerprintHash?: string;
   }): Promise<void>;
   revokeSession(tokenHash: string): Promise<void>;
+  recordSecurityEvent?(input: {
+    action: string;
+    userId?: string;
+    identifier?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<void>;
 }
 
 export class AuthService {
@@ -60,6 +69,10 @@ export class AuthService {
 
   static createToken(): string {
     return randomBytes(32).toString("base64url");
+  }
+
+  static createDeviceFingerprint(input: { userAgent?: string; ipAddress?: string }): string {
+    return AuthService.hash(`${input.userAgent ?? "unknown-user-agent"}:${input.ipAddress ?? "unknown-ip"}`);
   }
 
   private createOtpCode(): string {
@@ -157,6 +170,8 @@ export class AuthService {
     identifier: LoginIdentifier | string;
     code: string;
     purpose?: string;
+    ipAddress?: string;
+    userAgent?: string;
   }) {
     const identifier =
       typeof input.identifier === "string"
@@ -188,6 +203,13 @@ export class AuthService {
         failureCount,
         ...(lockedUntil ? { lockedUntil } : {}),
       });
+      await this.repo.recordSecurityEvent?.({
+        action: "auth.otp_failed",
+        identifier: identifier.value,
+        ...(input.ipAddress ?? challenge.ipAddress ? { ipAddress: input.ipAddress ?? challenge.ipAddress } : {}),
+        ...(input.userAgent ? { userAgent: input.userAgent } : {}),
+        metadata: { failureCount, locked: Boolean(lockedUntil) },
+      });
       if (failureCount >= 5) {
         await this.sendSuspiciousActivityNotice(identifier);
       }
@@ -212,6 +234,19 @@ export class AuthService {
     userAgent?: string;
     ipAddress?: string;
   }): Promise<{ token: string; expiresAt: Date }> {
+    const fixedOtp = process.env.OTP_FIXED_CODE_DEV?.trim();
+    if (fixedOtp && getAppEnv() === "production" && input.code === fixedOtp) {
+      await this.repo.recordSecurityEvent?.({
+        action: "auth.fixed_otp_rejected",
+        userId: input.userId,
+        identifier:
+          typeof input.identifier === "string" ? input.identifier : input.identifier.value,
+        ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
+        ...(input.userAgent ? { userAgent: input.userAgent } : {}),
+        metadata: { reason: "fixed_otp_presented_in_production" },
+      });
+      throw new Error("Fixed OTP is disabled in production");
+    }
     await this.consumeChallenge(input);
     const token = AuthService.createToken();
     const expiresAt = new Date(this.now().getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -219,6 +254,7 @@ export class AuthService {
       userId: input.userId,
       tokenHash: AuthService.hash(token),
       expiresAt,
+      deviceFingerprintHash: AuthService.createDeviceFingerprint(input),
       ...(input.userAgent ? { userAgent: input.userAgent } : {}),
       ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
     });

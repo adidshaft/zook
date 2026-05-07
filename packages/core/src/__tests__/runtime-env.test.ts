@@ -6,6 +6,7 @@ import {
   getAllowedFixedOtp,
   getApiMode,
   getAppEnv,
+  getQrSigningSecret,
   isMockPaymentCompletionAllowed,
   validateRuntimeConfig,
 } from "../runtime-env";
@@ -56,6 +57,48 @@ describe("runtime env guardrails", () => {
         ALLOW_FIXED_OTP_IN_STAGING: "true",
       } as NodeJS.ProcessEnv),
     ).toBe("000000");
+  });
+
+  it("allows explicitly configured weak QR secrets only in local environments", () => {
+    expect(
+      getQrSigningSecret({
+        APP_ENV: "local",
+        ZOOK_QR_SECRET: "dev-secret",
+      } as NodeJS.ProcessEnv),
+    ).toBe("dev-secret");
+  });
+
+  it("rejects missing or weak QR secrets outside local", () => {
+    expect(() => getQrSigningSecret({ APP_ENV: "production" } as NodeJS.ProcessEnv)).toThrow(
+      RuntimeConfigError,
+    );
+    expect(() =>
+      getQrSigningSecret({
+        APP_ENV: "staging",
+        ZOOK_QR_SECRET: "dev-secret",
+      } as NodeJS.ProcessEnv),
+    ).toThrow(RuntimeConfigError);
+    expect(
+      validateRuntimeConfig({
+        APP_ENV: "production",
+        API_MODE: "backend",
+        PAYMENT_PROVIDER: "disabled",
+        AI_PROVIDER: "disabled",
+        PUSH_PROVIDER: "disabled",
+        STORAGE_PROVIDER: "disabled",
+        FILE_UPLOADS_ENABLED: "false",
+        RATE_LIMIT_PROVIDER: "upstash",
+      } as NodeJS.ProcessEnv).issues,
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ code: "ZOOK_QR_SECRET_REQUIRED" })]));
+  });
+
+  it("accepts a strong QR secret outside local", () => {
+    expect(
+      getQrSigningSecret({
+        APP_ENV: "production",
+        ZOOK_QR_SECRET: "qr_9vMLuR4hYb83dX2Wz7PaNk6TsFqC1EeA",
+      } as NodeJS.ProcessEnv),
+    ).toBe("qr_9vMLuR4hYb83dX2Wz7PaNk6TsFqC1EeA");
   });
 
   it("allows mock payment completion only in safe modes", () => {
@@ -118,6 +161,7 @@ describe("runtime env guardrails", () => {
       STORAGE_PROVIDER: "disabled",
       FILE_UPLOADS_ENABLED: "false",
       RATE_LIMIT_PROVIDER: "upstash",
+      ZOOK_QR_SECRET: "qr_9vMLuR4hYb83dX2Wz7PaNk6TsFqC1EeA",
     } as NodeJS.ProcessEnv).issues;
 
     expect(issues).not.toEqual(

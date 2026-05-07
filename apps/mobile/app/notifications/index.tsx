@@ -14,6 +14,7 @@ import { NotificationsSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/lib/auth";
 import { notificationsApi } from "@/lib/domain-api";
 import { formatRelativeDate } from "@/lib/formatting";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { mapNotificationPayloadToHref } from "@/lib/notification-routing";
 import { useMyNotifications } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
@@ -58,21 +59,21 @@ function groupByDate(items: InboxNotification[]) {
   startOfYesterday.setDate(startOfYesterday.getDate() - 1);
   const startOfWeek = new Date(startOfToday);
   startOfWeek.setDate(startOfWeek.getDate() - 6);
-  const buckets = new Map(
-    ["Today", "Yesterday", "Earlier this week", "Older"].map((label) => [
-      label,
-      [] as InboxNotification[],
-    ]),
-  );
+  const buckets = new Map<TranslationKey, InboxNotification[]>([
+    ["notifications.today", []],
+    ["notifications.yesterday", []],
+    ["notifications.earlierThisWeek", []],
+    ["notifications.older", []],
+  ]);
 
   for (const item of items) {
     const createdAt = item.notification?.createdAt
       ? new Date(item.notification.createdAt)
       : new Date(0);
-    if (createdAt >= startOfToday) buckets.get("Today")?.push(item);
-    else if (createdAt >= startOfYesterday) buckets.get("Yesterday")?.push(item);
-    else if (createdAt >= startOfWeek) buckets.get("Earlier this week")?.push(item);
-    else buckets.get("Older")?.push(item);
+    if (createdAt >= startOfToday) buckets.get("notifications.today")?.push(item);
+    else if (createdAt >= startOfYesterday) buckets.get("notifications.yesterday")?.push(item);
+    else if (createdAt >= startOfWeek) buckets.get("notifications.earlierThisWeek")?.push(item);
+    else buckets.get("notifications.older")?.push(item);
   }
 
   return Array.from(buckets.entries())
@@ -84,6 +85,7 @@ export default function NotificationsScreen() {
   const routeParams = useLocalSearchParams<{ focus?: string; notificationId?: string }>();
   const router = useRouter();
   const { token } = useAuth();
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const notificationsQuery = useMyNotifications();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -124,6 +126,10 @@ export default function NotificationsScreen() {
       if (previous) {
         queryClient.setQueryData(["me", "notifications"], previous);
       }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
       showToast({
         title: "Action failed",
         message: error instanceof Error ? error.message : "Notification could not be updated.",
@@ -163,6 +169,10 @@ export default function NotificationsScreen() {
       if (previous) {
         queryClient.setQueryData(["me", "notifications"], previous);
       }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
       showToast({
         title: "Action failed",
         message: error instanceof Error ? error.message : "Notifications could not be updated.",
@@ -298,19 +308,22 @@ export default function NotificationsScreen() {
           {/* Grouped notifications */}
           {dateGroups.map((group) => (
             <View key={group.label} style={styles.dateGroup}>
-              <Text style={styles.dateGroupLabel}>{group.label}</Text>
+              <Text style={styles.dateGroupLabel}>{t(group.label)}</Text>
               <View style={styles.list}>
-                {(group.label === "Older" && !olderExpanded ? group.items.slice(0, 3) : group.items).map((item) => (
-                  <NotificationRow
-                    key={item.id}
-                    item={item}
-                    busy={busyId === item.id}
-                    highlighted={item.notification?.id === routeParams.notificationId}
-                    onPress={() => void openNotification(item)}
-                  />
-                ))}
+                {(group.label === "notifications.older" && !olderExpanded
+                  ? group.items.slice(0, 3)
+                  : group.items
+                ).map((item) => (
+                    <NotificationRow
+                      key={item.id}
+                      item={item}
+                      busy={busyId === item.id}
+                      highlighted={item.notification?.id === routeParams.notificationId}
+                      onPress={() => void openNotification(item)}
+                    />
+                  ))}
               </View>
-              {group.label === "Older" && group.items.length > 3 ? (
+              {group.label === "notifications.older" && group.items.length > 3 ? (
                 <Pressable
                   onPress={() => setOlderExpanded((current) => !current)}
                   accessibilityRole="button"

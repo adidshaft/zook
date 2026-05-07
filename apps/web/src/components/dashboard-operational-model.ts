@@ -368,6 +368,8 @@ export type AuditLogRow = {
   entityId?: string | null;
   actorUserId?: string | null;
   requestId?: string | null;
+  before?: unknown;
+  after?: unknown;
   metadata?: unknown;
   createdAt: string;
 };

@@ -118,5 +118,19 @@
     "branches": "Branches",
     "addBranch": "Add a branch",
     "branchList": "Branch list"
+  },
+  "webUx": {
+    "branchSwitcher": {
+      "label": "Select branch",
+      "placeholder": "Select branch",
+      "search": "Search branches",
+      "empty": "No branch found"
+    },
+    "auditNotes": {
+      "radioCardGroup": "Visible to dashboard operators; permission follows the host form; no audit log.",
+      "helpHint": "Visible beside dashboard fields and cards; permission follows the host view; no audit log.",
+      "managedOn": "Visible on read-only operational blocks; permission follows the host view; no audit log.",
+      "searchableSelect": "Visible on branch, member, plan, and role pickers; permission follows the host form; no audit log."
+    }
   }
 }

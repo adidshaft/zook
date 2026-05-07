@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
+import { RadioCardGroup, SearchableSelect } from "../ui";
 import { Pill } from "../glass-card";
 import {
   memberLabel,
@@ -31,27 +32,18 @@ export function MessageTypeStep({
   onSelect: (type: NotificationType) => void;
 }) {
   return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {messageTypes.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          disabled={!typePermissions.get(option.value)}
-          onClick={() => onSelect(option.value)}
-          className={`zook-focus rounded-[22px] border p-4 text-left transition ${
-            type === option.value
-              ? "border-lime-300 bg-lime-300/12"
-              : "border-white/10 bg-black/20 hover:bg-white/6"
-          } disabled:cursor-not-allowed disabled:opacity-40`}
-        >
-          <p className="font-medium text-white">{option.label}</p>
-          <p className="mt-1 text-sm text-white/45">{option.detail}</p>
-          {!typePermissions.get(option.value) ? (
-            <p className="mt-2 text-xs text-amber-100/80">Not available for your role</p>
-          ) : null}
-        </button>
-      ))}
-    </div>
+    <RadioCardGroup
+      name="notification-type"
+      label="Notification type"
+      value={type}
+      onChange={(nextType) => onSelect(nextType)}
+      options={messageTypes.map((option) => ({
+        value: option.value,
+        label: option.label,
+        description: option.detail,
+        disabled: !typePermissions.get(option.value),
+      }))}
+    />
   );
 }
 
@@ -90,95 +82,67 @@ export function AudienceStep({
   onSelectedUsersChange: (userIds: string[]) => void;
   onSingleUserChange: (userId: string) => void;
 }) {
+  const memberOptions = members.map((member) => ({
+    value: member.userId,
+    label: memberLabel(member),
+    description: member.profile?.phone ?? undefined,
+  }));
+
   return (
     <div className="grid gap-3">
-      <div className="grid gap-3 md:grid-cols-2">
-        {availableAudiences.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            disabled={!option.allowed}
-            onClick={() => onAudienceChange(option.value)}
-            className={`zook-focus rounded-[22px] border px-4 py-3 text-left text-sm transition ${
-              audience === option.value
-                ? "border-lime-300 bg-lime-300/12 text-white"
-                : "border-white/10 bg-black/20 text-white/65 hover:bg-white/6"
-            } disabled:cursor-not-allowed disabled:opacity-40`}
-          >
-            {option.label}
-            {!option.allowed ? (
-              <span className="mt-1 block text-xs text-amber-100/80">
-                Not available for your role
-              </span>
-            ) : null}
-          </button>
-        ))}
-      </div>
+      <RadioCardGroup
+        name="notification-audience"
+        label="Notification audience"
+        value={audience}
+        onChange={(nextAudience) => onAudienceChange(nextAudience)}
+        options={availableAudiences.map((option) => ({
+          value: option.value,
+          label: option.label,
+          description: option.allowed ? undefined : "Not available for your role",
+          disabled: !option.allowed,
+        }))}
+      />
       {audience === "branch_members" ? (
-        <select
+        <SearchableSelect
+          label="Choose branch"
+          placeholder="Choose branch"
+          searchPlaceholder="Search branches"
+          options={branches.map((branch) => ({ value: branch.id, label: branch.name }))}
           value={branchId}
-          onChange={(event) => onBranchChange(event.target.value)}
-          className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-        >
-          <option value="" className="bg-black">
-            Choose branch
-          </option>
-          {branches.map((branch) => (
-            <option key={branch.id} value={branch.id} className="bg-black">
-              {branch.name}
-            </option>
-          ))}
-        </select>
+          onChange={onBranchChange}
+        />
       ) : null}
       {audience === "membership_plan" ? (
-        <select
+        <SearchableSelect
+          label="Choose plan"
+          placeholder="Choose plan"
+          searchPlaceholder="Search plans"
+          options={plans.map((plan) => ({ value: plan.id, label: plan.name }))}
           value={planId}
-          onChange={(event) => onPlanChange(event.target.value)}
-          className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-        >
-          <option value="" className="bg-black">
-            Choose plan
-          </option>
-          {plans.map((plan) => (
-            <option key={plan.id} value={plan.id} className="bg-black">
-              {plan.name}
-            </option>
-          ))}
-        </select>
+          onChange={onPlanChange}
+        />
       ) : null}
       {audience === "single_member" ? (
-        <select
+        <SearchableSelect
+          label="Choose member"
+          placeholder="Choose member"
+          searchPlaceholder="Search members"
+          options={memberOptions}
           value={singleUserId}
-          onChange={(event) => onSingleUserChange(event.target.value)}
-          className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-        >
-          <option value="" className="bg-black">
-            Choose member
-          </option>
-          {members.map((member) => (
-            <option key={member.userId} value={member.userId} className="bg-black">
-              {memberLabel(member)}
-            </option>
-          ))}
-        </select>
+          onChange={onSingleUserChange}
+        />
       ) : null}
       {audience === "selected_members" ? (
-        <select
+        <SearchableSelect
+          label="Choose members"
+          placeholder="Choose members"
+          searchPlaceholder="Search members"
+          emptyLabel="No members match"
           multiple
-          value={selectedUserIds}
-          onChange={(event) =>
-            onSelectedUsersChange(
-              Array.from(event.target.selectedOptions).map((option) => option.value),
-            )
-          }
-          className="zook-focus min-h-40 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-        >
-          {members.map((member) => (
-            <option key={member.userId} value={member.userId}>
-              {memberLabel(member)}
-            </option>
-          ))}
-        </select>
+          values={selectedUserIds}
+          options={memberOptions}
+          onValuesChange={onSelectedUsersChange}
+        />
       ) : null}
       {audience === "expiring_soon" ? (
         <label className="grid gap-2 text-sm text-white/55">
@@ -237,6 +201,12 @@ export function MessageDraftStep({
   onTemplateNameChange: (templateName: string) => void;
   onTitleChange: (title: string) => void;
 }) {
+  const hasDraft = title.trim().length > 0 || body.trim().length > 0;
+  const scheduleError =
+    scheduleAt && new Date(scheduleAt).getTime() <= Date.now()
+      ? "Schedule must be in the future. Leave blank to send now."
+      : "";
+
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap gap-2">
@@ -244,7 +214,15 @@ export function MessageDraftStep({
           <button
             key={template.id}
             type="button"
-            onClick={() => onApplyTemplate(template)}
+            onClick={() => {
+              if (
+                hasDraft &&
+                !window.confirm("Apply template? This replaces your current draft.")
+              ) {
+                return;
+              }
+              onApplyTemplate(template);
+            }}
             className="zook-focus rounded-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/70 transition hover:bg-white/8"
           >
             {template.name}
@@ -280,9 +258,13 @@ export function MessageDraftStep({
           type="datetime-local"
           value={scheduleAt}
           onChange={(event) => onScheduleAtChange(event.target.value)}
+          aria-invalid={Boolean(scheduleError)}
           className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
         />
       </div>
+      <p className={scheduleError ? "text-xs text-red-200" : "text-xs text-white/42"}>
+        {scheduleError || "Schedule must be in the future. Leave blank to send now."}
+      </p>
       {canManageTemplates ? (
         <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70">
           <input

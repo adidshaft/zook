@@ -134,6 +134,68 @@ function hasPtAvailability(value: unknown) {
   return false;
 }
 
+function dateStamp(value?: Date | null) {
+  return value?.getTime() ?? 0;
+}
+
+async function publicGymCacheKey(username: string, referralCode?: string) {
+  const normalizedReferralCode = referralCode?.trim().toUpperCase() || "";
+  const org = await prisma.organization.findUnique({
+    where: { username },
+    select: { id: true, updatedAt: true, visibility: true },
+  });
+
+  if (!org || org.visibility === "HIDDEN") {
+    return null;
+  }
+
+  const [plansVersion, settings, trainerRolesVersion, trainerProfilesVersion, referral] =
+    await Promise.all([
+      prisma.membershipPlan.aggregate({
+        where: { orgId: org.id, active: true, publicVisible: true },
+        _count: { _all: true },
+        _max: { updatedAt: true },
+      }),
+      prisma.organizationSetting.findUnique({
+        where: { orgId: org.id },
+        select: { updatedAt: true },
+      }),
+      prisma.organizationRoleAssignment.aggregate({
+        where: { orgId: org.id, role: "TRAINER" },
+        _count: { _all: true },
+        _max: { createdAt: true },
+      }),
+      prisma.trainerProfile.aggregate({
+        where: { orgId: org.id },
+        _count: { _all: true },
+        _max: { updatedAt: true },
+      }),
+      normalizedReferralCode
+        ? prisma.referralCode.findUnique({
+            where: { code: normalizedReferralCode },
+            select: { orgId: true, updatedAt: true, couponId: true },
+          })
+        : Promise.resolve(null),
+    ]);
+
+  return [
+    "public-gym",
+    username,
+    normalizedReferralCode,
+    org.id,
+    dateStamp(org.updatedAt),
+    plansVersion._count._all,
+    dateStamp(plansVersion._max.updatedAt),
+    dateStamp(settings?.updatedAt),
+    trainerRolesVersion._count._all,
+    dateStamp(trainerRolesVersion._max.createdAt),
+    trainerProfilesVersion._count._all,
+    dateStamp(trainerProfilesVersion._max.updatedAt),
+    referral?.orgId === org.id ? dateStamp(referral.updatedAt) : 0,
+    referral?.orgId === org.id ? (referral.couponId ?? "") : "",
+  ].join(":");
+}
+
 function durationHandle(plan: { type: string; durationDays: number | null }) {
   if (plan.type === "TRIAL") return "trial";
   if (!plan.durationDays) return "visit-pack";
@@ -353,23 +415,22 @@ async function publicGymProfileFromDb(
 }
 
 export async function getPublicGymProfileData(username: string, referralCode?: string) {
-  return cachedJson(
-    `public-gym:${username}:${referralCode ?? ""}`,
-    60,
-    async () => {
-      try {
-        const data = await publicGymProfileFromDb(username, referralCode);
-        if (data || !canUsePublicDemoFallback()) {
-          return data;
-        }
-      } catch (error) {
-        if (!canUsePublicDemoFallback()) {
-          throw error;
-        }
-      }
-      return demoPublicGymProfile(username, referralCode);
-    },
-  );
+  try {
+    const cacheKey = await publicGymCacheKey(username, referralCode);
+    if (cacheKey) {
+      return cachedJson(cacheKey, 60, () => publicGymProfileFromDb(username, referralCode));
+    }
+
+    const data = await publicGymProfileFromDb(username, referralCode);
+    if (data || !canUsePublicDemoFallback()) {
+      return data;
+    }
+  } catch (error) {
+    if (!canUsePublicDemoFallback()) {
+      throw error;
+    }
+  }
+  return demoPublicGymProfile(username, referralCode);
 }
 
 export async function getPublicCouponPreview(input: {

@@ -48,7 +48,11 @@ export function Pill({
   return (
     <span
       {...props}
-      className={clsx("rounded-full border px-3 py-1 text-xs font-medium", tones[tone], className)}
+      className={clsx(
+        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium",
+        tones[tone],
+        className,
+      )}
     >
       {children}
     </span>

@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { formatInr } from "@/lib/format";
 import type { CouponKind, MembershipPlanRow, OfferRow } from "../../../dashboard-operational-model";
+import { HelpHint } from "../../../ui";
 import { Select, TextInput } from "../../primitives";
 import type { OfferFormState } from "./types";
 
@@ -37,7 +38,12 @@ export function OfferControls({
 }: OfferControlsProps) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-      <p className="font-medium text-white">Public offers</p>
+      <p className="inline-flex items-center gap-2 font-medium text-white">
+        Public offers
+        <HelpHint label="Discount value" title="Discount value">
+          Percentage uses basis points internally. Switch to fixed amount to enter rupees.
+        </HelpHint>
+      </p>
       <div className="mt-3 grid gap-3">
         <TextInput
           label="Offer name"
@@ -71,7 +77,7 @@ export function OfferControls({
                 discountValue: event.target.value,
               }))
             }
-            placeholder={offerForm.discountType === "PERCENTAGE" ? "Bps" : "Rupees"}
+            placeholder={offerForm.discountType === "PERCENTAGE" ? "% off" : "Rs off"}
             inputMode="numeric"
           />
         </div>

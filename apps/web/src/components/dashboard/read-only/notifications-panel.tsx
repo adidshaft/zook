@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   NotificationComposerPanel,
   NotificationHistoryPanel,
@@ -14,6 +15,7 @@ import type {
   OrganizationSummary,
 } from "../../dashboard-operational-model";
 import type { Permission, Role } from "@zook/core";
+import { HelpHint } from "../../ui";
 
 export function NotificationsPanel({
   orgId,
@@ -61,11 +63,24 @@ export function NotificationsPanel({
           <SectionHeader
             eyebrow="Message limits"
             title="Delivery status"
-            description="Operational messages should stay crisp, permission-safe, and relevant to the floor or membership journey."
+            description={
+              <span className="inline-flex items-center gap-2">
+                Operational messages should stay crisp, permission-safe, and relevant.
+                <HelpHint label="Delivery status" title="Delivery status">
+                  Queued messages are throttled by provider limits and auto-retry every five
+                  minutes. Open History to resend manually.
+                </HelpHint>
+              </span>
+            }
             badge={
+              <Link
+                href="/dashboard/notifications/history?status=QUEUED"
+                className="zook-focus rounded-full"
+              >
               <Pill tone={summary.notificationQueueCount > 0 ? "amber" : "lime"}>
                 {summary.notificationQueueCount} queued
               </Pill>
+              </Link>
             }
           />
           <ReadoutGrid
@@ -104,12 +119,21 @@ export function NotificationsPanel({
             eyebrow="Recent Messages"
             title="Current message mix"
             description="A quick read on the most recent notifications coming out of this organization."
+            action={
+              <Link
+                href="/dashboard/notifications/history"
+                className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/8"
+              >
+                Open history →
+              </Link>
+            }
           />
           <div className="mt-5 grid gap-3">
             {initialNotifications.length ? (
               initialNotifications.slice(0, 4).map((notification) => (
-                <div
+                <Link
                   key={notification.id}
+                  href="/dashboard/notifications/history"
                   className="rounded-[22px] border border-white/10 bg-black/20 p-4"
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -122,7 +146,10 @@ export function NotificationsPanel({
                     {" · "}
                     {formatDateTime(notification.createdAt)}
                   </p>
-                </div>
+                  <span className="mt-3 inline-flex text-xs font-semibold text-lime-100">
+                    Open history →
+                  </span>
+                </Link>
               ))
             ) : (
               <EmptyState

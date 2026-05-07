@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { formatInr } from "@/lib/format";
 import type { CouponKind, CouponRow } from "../../../dashboard-operational-model";
+import { HelpHint } from "../../../ui";
 import { Select, TextInput } from "../../primitives";
 import type { CouponFormState } from "./types";
 
@@ -35,7 +36,12 @@ export function CouponControls({
 }: CouponControlsProps) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-      <p className="font-medium text-white">Coupons</p>
+      <p className="inline-flex items-center gap-2 font-medium text-white">
+        Coupons
+        <HelpHint label="Discount value" title="Discount value">
+          Percentage uses basis points internally. Switch to fixed amount to enter rupees.
+        </HelpHint>
+      </p>
       <div className="mt-3 grid gap-3">
         <div className="grid gap-3 md:grid-cols-[1fr_150px]">
           <TextInput
@@ -71,7 +77,7 @@ export function CouponControls({
             onChange={(event) =>
               setCouponForm((current) => ({ ...current, value: event.target.value }))
             }
-            placeholder={couponForm.type === "PERCENTAGE" ? "Bps, e.g. 1000" : "Rupees"}
+            placeholder={couponForm.type === "PERCENTAGE" ? "% off" : "Rs off"}
             inputMode="numeric"
           />
           <TextInput

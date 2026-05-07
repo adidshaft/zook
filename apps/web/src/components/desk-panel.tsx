@@ -33,14 +33,18 @@ export function DeskPanel({
   orgName,
   branch,
   locale,
+  initialTab,
+  initialOrderId,
 }: {
   orgId: string;
   orgName: string;
   branch: BranchSummary | null;
   locale?: string | null;
+  initialTab?: TabKey | undefined;
+  initialOrderId?: string | undefined;
 }) {
   const copy = deskTranslations[locale === "hi" ? "hi" : "en"];
-  const [activeTab, setActiveTab] = useState<TabKey>("queue");
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab ?? "queue");
   const [busyId, setBusyId] = useState("");
   const [toast, setToast] = useState("");
   const [memberQuery, setMemberQuery] = useState("");
@@ -485,6 +489,7 @@ export function DeskPanel({
             onSkipCode={skipPickupCode}
             onJumpToShopPayment={jumpToShopPayment}
             onFulfillOrder={(orderId) => void fulfillOrder(orderId)}
+            highlightedOrderId={initialOrderId}
           />
         ) : null}
       </section>

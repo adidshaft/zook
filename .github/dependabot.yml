@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:30"
+      timezone: Asia/Kolkata
+    groups:
+      web-runtime:
+        patterns:
+          - next
+          - react
+          - react-dom
+          - "@sentry/*"
+      expo-mobile:
+        patterns:
+          - expo
+          - "expo-*"
+          - "react-native*"
+      prisma:
+        patterns:
+          - "@prisma/*"
+          - prisma
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Asia/Kolkata

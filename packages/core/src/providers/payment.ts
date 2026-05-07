@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { DiagnosticProvider, PaymentPurpose, PaymentStatus, ProviderInstanceDiagnostics } from "../types";
 
 export interface CheckoutSessionInput {
@@ -379,7 +379,9 @@ export class RazorpayPaymentProvider implements PaymentProvider {
       return { valid: false, reason: "Missing x-razorpay-signature header." };
     }
     const expected = createHmac("sha256", this.config.webhookSecret).update(rawBody).digest("hex");
-    if (expected !== signature) {
+    const expectedBytes = Buffer.from(expected);
+    const signatureBytes = Buffer.from(signature);
+    if (expectedBytes.length !== signatureBytes.length || !timingSafeEqual(expectedBytes, signatureBytes)) {
       return { valid: false, reason: "Signature mismatch." };
     }
 

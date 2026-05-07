@@ -37,8 +37,7 @@ export function DashboardHeader({
   const trialDaysLeft = trialEndsAt
     ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
-  const showTrialBanner =
-    trialDaysLeft !== null && trialDaysLeft >= 0 && trialDaysLeft < 7 && activeOrg.status !== "ACTIVE";
+  const showTrialBanner = trialDaysLeft !== null && trialDaysLeft >= 0 && trialDaysLeft < 7;
 
   return (
     <GlassCard variant="strong" className="relative z-[100] min-w-0 overflow-visible">

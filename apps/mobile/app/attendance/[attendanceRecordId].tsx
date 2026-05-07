@@ -75,6 +75,7 @@ export default function AttendanceResultScreen() {
       Boolean(attendanceRecordId),
     retry: false,
   });
+  const { refetch: refetchAttendance } = attendanceQuery;
   const recordFromApi = attendanceQuery.data?.attendance ?? null;
   const warning =
     queryClient.getQueryData<string>(["me", "attendanceWarning", attendanceRecordId]) ?? "";
@@ -83,12 +84,21 @@ export default function AttendanceResultScreen() {
     if (!attendanceRecordId) {
       return;
     }
-    void Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
-      queryClient.invalidateQueries({ queryKey: ["me", "attendance", attendanceRecordId] }),
-      queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
-    ]);
-  }, [attendanceRecordId, queryClient]);
+    let cancelled = false;
+    void (async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "attendance", attendanceRecordId] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
+      if (!cancelled) {
+        await refetchAttendance();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [attendanceRecordId, queryClient, refetchAttendance]);
 
   useEffect(() => {
     if (activeRole !== "MEMBER" || !recordFromApi) {
@@ -104,7 +114,7 @@ export default function AttendanceResultScreen() {
     }
     const timer = setTimeout(() => {
       router.replace("/");
-    }, 2200);
+    }, 5000);
     return () => clearTimeout(timer);
   }, [activeRole, recordFromApi, router]);
 

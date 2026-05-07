@@ -1,21 +1,80 @@
+"use client";
+
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import {
+  Bell,
+  Bot,
+  ClipboardList,
+  Dumbbell,
+  FileText,
+  Globe2,
+  History,
+  Menu,
+  QrCode,
+  Receipt,
+  ReceiptText,
+  Settings,
+  Shield,
+  Store,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import { useRef } from "react";
 import { DashboardSignOutButton } from "../../dashboard-sign-out-button";
 import { translatedGroupLabel, translatedNavLabel } from "./copy";
-import { filterNavGroups, isActiveNav } from "./nav";
+import { isActiveNav } from "./nav";
 import type { DashboardCopy } from "./types";
+
+export type MobileNavGroup = {
+  key: keyof DashboardCopy["navGroups"];
+  items: Array<{ key: string; label: string; href: string; shortLabel?: string | undefined }>;
+};
+
+const mobileNavIcons: Record<string, LucideIcon> = {
+  today: Dumbbell,
+  attendance: QrCode,
+  payments: ReceiptText,
+  refunds: Receipt,
+  shop: Store,
+  shopOrders: Store,
+  reports: FileText,
+  billing: ReceiptText,
+  members: Users,
+  plans: ClipboardList,
+  coupons: ClipboardList,
+  offers: ClipboardList,
+  referrals: ClipboardList,
+  team: Shield,
+  messages: Bell,
+  templates: Bell,
+  history: History,
+  branches: Globe2,
+  gymProfile: Globe2,
+  activity: History,
+  ai: Bot,
+  settings: Settings,
+};
 
 export function MobileDashboardMenu({
   visibleNavGroups,
   sectionKey,
   copy,
 }: {
-  visibleNavGroups: ReturnType<typeof filterNavGroups>;
+  visibleNavGroups: MobileNavGroup[];
   sectionKey: string;
   copy: DashboardCopy;
 }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
   return (
-    <details className="group relative z-[100] lg:hidden">
+    <details
+      ref={detailsRef}
+      className="group relative z-[100] lg:hidden"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && detailsRef.current?.open) {
+          detailsRef.current.open = false;
+        }
+      }}
+    >
       <summary className="zook-focus flex min-h-12 cursor-pointer list-none items-center justify-between rounded-[24px] border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white transition hover:bg-white/8 [&::-webkit-details-marker]:hidden">
         <span className="inline-flex items-center gap-2">
           <Menu size={18} />
@@ -32,7 +91,8 @@ export function MobileDashboardMenu({
                 {translatedGroupLabel(copy, group.key)}
               </p>
               {group.items.map((item) => {
-                const { href, icon: Icon } = item;
+                const { href } = item;
+                const Icon = mobileNavIcons[item.key] ?? Globe2;
                 const active = isActiveNav(href, sectionKey);
                 return (
                   <Link

@@ -2,11 +2,11 @@ import type { NotificationType } from "@zook/core";
 import { getPushProvider, getPushProviderDiagnostics } from "@zook/core/providers";
 import { prisma, type Prisma } from "@zook/db";
 
-function notificationData(metadata: Prisma.JsonValue | null | undefined, fallback: Record<string, unknown>) {
-  if (!metadata || Array.isArray(metadata) || typeof metadata !== "object") {
-    return fallback;
-  }
-  return { ...fallback, ...metadata };
+function notificationData(notification: { id: string; type: NotificationType }) {
+  return {
+    notificationId: notification.id,
+    type: notification.type,
+  };
 }
 
 function mapPushDeliveryStatus(status: "queued" | "sent" | "failed" | "invalid_token") {
@@ -90,10 +90,7 @@ export async function deliverPushForNotification(input: {
         attemptCount: 1,
         failureCode: diagnostics.status === "disabled" ? "provider_disabled" : "provider_unavailable",
         failureReason: "Push alerts are not available right now.",
-        payload: notificationData(input.notification.metadata, {
-          notificationId: input.notification.id,
-          type: input.notification.type
-        }) as Prisma.InputJsonValue,
+        payload: notificationData(input.notification) as Prisma.InputJsonValue,
         createdAt: new Date(),
         updatedAt: new Date()
       }))
@@ -107,11 +104,7 @@ export async function deliverPushForNotification(input: {
     token: device.token,
     title: input.notification.title,
     body: input.notification.body,
-    data: notificationData(input.notification.metadata, {
-      notificationId: input.notification.id,
-      type: input.notification.type,
-      ...(input.orgId ? { orgId: input.orgId } : {})
-    })
+    data: notificationData(input.notification)
   }));
 
   let results;

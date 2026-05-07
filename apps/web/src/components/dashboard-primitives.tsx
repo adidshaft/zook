@@ -1,5 +1,7 @@
 import clsx from "clsx";
+import { AlertTriangle, Check, Circle, X } from "lucide-react";
 import { GlassCard, Pill, type PillTone } from "./glass-card";
+import { HelpHint } from "./ui";
 
 export function toneFromStatus(value: string | null | undefined): PillTone {
   const normalized = value?.toLowerCase() ?? "";
@@ -82,6 +84,11 @@ export function SectionHeader({
         ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">{title}</h2>
+          {description ? (
+            <HelpHint label={title} title={title}>
+              {description}
+            </HelpHint>
+          ) : null}
           {badge}
         </div>
         {description ? (
@@ -332,12 +339,22 @@ export function StatusPill({
   tone?: PillTone;
   className?: string | undefined;
 }) {
+  const resolvedTone = tone ?? toneFromStatus(value);
+  const Icon =
+    resolvedTone === "lime"
+      ? Check
+      : resolvedTone === "amber"
+        ? AlertTriangle
+        : resolvedTone === "red"
+          ? X
+          : Circle;
   return (
     <Pill
-      tone={tone ?? toneFromStatus(value)}
+      tone={resolvedTone}
       aria-label={`Status: ${value}`}
       {...(className ? { className } : {})}
     >
+      <Icon className="h-3 w-3" aria-hidden="true" />
       {value}
     </Pill>
   );

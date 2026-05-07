@@ -1314,6 +1314,7 @@ export function ProductCard({
     <GlassCard
       style={[styles.productCard, style]}
       contentStyle={[styles.productContent, compact ? styles.productContentCompact : null]}
+      disabled={disabled}
     >
       <View style={[styles.productVisual, compact ? styles.productVisualCompact : null]}>
         {imageUrl ? (

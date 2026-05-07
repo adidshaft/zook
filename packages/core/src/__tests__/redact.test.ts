@@ -23,4 +23,25 @@ describe("redactPII", () => {
       rows: [{ otpCode: "[REDACTED]", amount: 5000 }],
     });
   });
+
+  it("redacts expanded PII key names and string values inside arrays", () => {
+    expect(
+      redactPII({
+        user_phone: "+91 98765 43210",
+        contact_email: "member@example.com",
+        events: ["email member@example.com", { guardianAddress: "221B Baker Street" }],
+      }),
+    ).toEqual({
+      user_phone: "[REDACTED]",
+      contact_email: "[REDACTED]",
+      events: ["email [REDACTED_EMAIL]", { guardianAddress: "[REDACTED]" }],
+    });
+  });
+
+  it("handles circular arrays without recursing forever", () => {
+    const rows: unknown[] = [];
+    rows.push(rows);
+
+    expect(redactPII({ rows })).toEqual({ rows: ["[Circular]"] });
+  });
 });

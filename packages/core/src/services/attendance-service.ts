@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { AttendanceMode, AttendanceStatus, MemberSubscription, MembershipPlan, OrganizationStatus } from "../types";
 import { evaluateSubscription } from "./membership-service";
 
@@ -62,7 +62,9 @@ export function validateSignedQrToken(input: { encoded: string; secret: string; 
   }
   const unsigned = `${payload.orgId}.${payload.branchId}.${payload.timestamp}.${payload.nonce}.${payload.expiry}`;
   const signature = createHmac("sha256", input.secret).update(unsigned).digest("base64url");
-  if (signature !== payload.signature) {
+  const expected = Buffer.from(signature);
+  const received = Buffer.from(payload.signature ?? "");
+  if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
     throw new Error("QR token invalid signature");
   }
   return payload;

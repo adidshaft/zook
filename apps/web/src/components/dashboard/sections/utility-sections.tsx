@@ -2,6 +2,7 @@
 
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { GlassCard, Pill } from "../../glass-card";
+import { HelpHint, ManagedOn } from "../../ui";
 import type {
   OrganizationSnapshot,
   OrganizationSummary,
@@ -105,7 +106,16 @@ export function RefundsSection({ payments }: { payments: PaymentRow[] }) {
                 {formatInr(payment.amountPaise)} · {formatEnumLabel(payment.mode)}
               </p>
             </div>
-            <Pill tone="blue">{copy.refundUnavailable}</Pill>
+            <span className="inline-flex items-center gap-2">
+              <Pill tone="blue">Provider gated</Pill>
+              <HelpHint
+                label="Refund access"
+                title="Refund access"
+                href="/docs/refunds-runbook#provider-refunds"
+              >
+                Refunds are available after the live payment provider enables refund capability.
+              </HelpHint>
+            </span>
           </div>
         ))}
       </div>
@@ -144,6 +154,25 @@ export function SettingsSection({ organization }: { organization: OrganizationSn
             <div key={label} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-white/35">{label}</p>
               <p className="mt-2 font-medium text-white">{value}</p>
+            </div>
+          ))}
+        </div>
+      </GlassCard>
+      <GlassCard className="xl:col-span-3">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Companion app</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/52">
+              Mobile handles workouts, body progress, habits, scan, and owner-on-the-go workflows.
+            </p>
+          </div>
+          <ManagedOn surface="member-mobile">Scan the app-store QR from the pilot kit.</ManagedOn>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          {["Workouts", "Body progress", "Habits", "QR scan"].map((feature) => (
+            <div key={feature} className="rounded-[20px] border border-white/10 bg-black/20 p-4">
+              <p className="text-sm font-medium text-white">{feature}</p>
+              <p className="mt-1 text-xs text-white/42">Available in the mobile app.</p>
             </div>
           ))}
         </div>

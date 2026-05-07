@@ -71,6 +71,7 @@ export function createPlansProductsActions({
       await webApiFetch(`/api/orgs/${orgId}/membership-plans`, {
         method: "POST",
         body: payloadForPlanForm(state.planForm),
+        feedback: { success: "Membership plan created." },
       });
       state.setPlanForm(state.emptyPlanForm);
       resources.membershipPlansState.reload();
@@ -118,6 +119,14 @@ export function createPlansProductsActions({
       await webApiFetch(`/api/orgs/${orgId}/membership-plans/${planId}`, {
         method: "PATCH",
         body: patch ?? payloadForPlanForm(state.planEditForm),
+        feedback: {
+          success:
+            patch?.active === false
+              ? "Membership plan archived."
+              : patch?.active === true
+                ? "Membership plan restored."
+                : "Membership plan updated.",
+        },
       });
       state.setEditingPlanId(null);
       resources.membershipPlansState.reload();
@@ -143,7 +152,10 @@ export function createPlansProductsActions({
       state.setFormBusy(`plan:${planId}:delete`);
       state.setFormError("");
       state.setFormStatus("");
-      await webApiFetch(`/api/orgs/${orgId}/membership-plans/${planId}`, { method: "DELETE" });
+      await webApiFetch(`/api/orgs/${orgId}/membership-plans/${planId}`, {
+        method: "DELETE",
+        feedback: { success: "Membership plan deleted." },
+      });
       resources.membershipPlansState.reload();
       state.setFormStatus("Membership plan deleted.");
     } catch (cause) {
@@ -163,6 +175,7 @@ export function createPlansProductsActions({
       await webApiFetch(`/api/orgs/${orgId}/products`, {
         method: "POST",
         body: payloadForProductForm(state.productForm),
+        feedback: { success: "Shop product created." },
       });
       state.setProductForm(state.emptyProductForm);
       resources.productsState.reload();
@@ -201,6 +214,14 @@ export function createPlansProductsActions({
       await webApiFetch(`/api/orgs/${orgId}/products/${productId}`, {
         method: "PATCH",
         body: patch ?? payloadForProductForm(state.productEditForm),
+        feedback: {
+          success:
+            patch?.active === false
+              ? "Shop product archived."
+              : patch?.active === true
+                ? "Shop product restored."
+                : "Shop product updated.",
+        },
       });
       state.setEditingProductId(null);
       resources.productsState.reload();
@@ -224,6 +245,7 @@ export function createPlansProductsActions({
           delta: Number(state.stockAdjustment.delta),
           reason: state.stockAdjustment.reason || "Manual stock adjustment",
         },
+        feedback: { success: "Stock adjusted." },
       });
       state.setStockAdjustment({ productId, delta: "", reason: "Manual stock count" });
       resources.productsState.reload();
@@ -247,7 +269,10 @@ export function createPlansProductsActions({
       state.setFormBusy(`product:${productId}:delete`);
       state.setFormError("");
       state.setFormStatus("");
-      await webApiFetch(`/api/orgs/${orgId}/products/${productId}`, { method: "DELETE" });
+      await webApiFetch(`/api/orgs/${orgId}/products/${productId}`, {
+        method: "DELETE",
+        feedback: { success: "Shop product deleted." },
+      });
       resources.productsState.reload();
       state.setFormStatus("Shop product deleted.");
     } catch (cause) {

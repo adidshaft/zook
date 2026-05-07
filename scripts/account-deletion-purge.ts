@@ -1,10 +1,10 @@
-import { createHash } from "node:crypto";
-import { PrismaClient } from "@prisma/client";
+import { createHash, randomUUID } from "node:crypto";
+import { PrismaClient } from "../packages/db/src/index";
 
 const prisma = new PrismaClient();
 
 function anonymizedEmail(userId: string) {
-  return `deleted-${createHash("sha256").update(userId).digest("hex").slice(0, 20)}@deleted.zook.local`;
+  return `deleted-${randomUUID()}@deleted.zook.local`;
 }
 
 async function main() {
@@ -21,6 +21,10 @@ async function main() {
   for (const job of jobs) {
     try {
       await prisma.$transaction(async (tx) => {
+        const user = await tx.user.findUnique({
+          where: { id: job.userId },
+          select: { email: true },
+        });
         await tx.accountDeletionJob.update({
           where: { id: job.id },
           data: { status: "RUNNING", startedAt: now },
@@ -58,6 +62,21 @@ async function main() {
         await tx.accountDeletionJob.update({
           where: { id: job.id },
           data: { status: "SUCCEEDED", completedAt: now, anonymizedAt: now },
+        });
+        await tx.auditLog.create({
+          data: {
+            actorUserId: job.userId,
+            action: "privacy.account_deleted",
+            entityType: "user",
+            entityId: job.userId,
+            riskLevel: "HIGH",
+            metadata: {
+              previousEmailHash: user?.email
+                ? createHash("sha256").update(user.email.toLowerCase()).digest("hex")
+                : null,
+              accountDeletionRequestId: job.requestId,
+            },
+          },
         });
       });
     } catch (error) {

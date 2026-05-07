@@ -1,6 +1,6 @@
 import enMessages from "../../../../messages/dashboard/en.json";
 import hiMessages from "../../../../messages/dashboard/hi.json";
-import type { DashboardCopy, DashboardMessages, NavItem } from "./types";
+import type { DashboardCopy, DashboardMessages } from "./types";
 
 export const dashboardMessages = {
   en: enMessages,
@@ -22,6 +22,6 @@ export function translatedGroupLabel(
   return copy.navGroups[key];
 }
 
-export function translatedNavLabel(copy: DashboardCopy, item: NavItem) {
+export function translatedNavLabel(copy: DashboardCopy, item: { key: string; label: string }) {
   return copy.nav[item.key as keyof typeof copy.nav] ?? item.label;
 }

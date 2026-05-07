@@ -4,6 +4,7 @@ import { resolvePlanName } from "@zook/ui";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { CouponApplyForm } from "@/components/coupon-apply-form";
 import { JoinCheckoutButton } from "@/components/join-checkout-button";
+import { InviteCodeForm, JoinRequestButton } from "@/components/join-request-controls";
 import { PublicNav } from "@/components/public-nav";
 import { formatInr } from "@/lib/format";
 import {
@@ -160,17 +161,27 @@ export default async function JoinPage({
           <Pill tone="amber">{t("approvalRequired")}</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-white">{t("approvalRequired")}</h1>
           <p className="mt-3 text-sm leading-6 text-white/55">{t("approvalCopy")}</p>
-          <Link
-            href={loginRedirect(
+          <JoinRequestButton
+            orgId={org.id}
+            planId={selectedPlan.id}
+            referralCode={referral?.code}
+            loginPath={loginRedirect(
               selectedPlan
                 ? joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale)
                 : localizedPath(`/g/${org.username}`, locale),
               locale,
             )}
-            className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
-          >
-            {t("signInRequestAccess")}
-          </Link>
+            labels={{
+              submit: t("requestAccess"),
+              submitting: t("requestingAccess"),
+              success: t("joinRequestSubmitted"),
+              defaultError: t("joinRequestError"),
+            }}
+          />
+          <div className="mt-4 rounded-[18px] border border-amber-200/20 bg-amber-200/10 px-4 py-3">
+            <p className="text-sm font-medium text-amber-100">{t("pendingApprovalTitle")}</p>
+            <p className="mt-1 text-sm leading-6 text-white/55">{t("pendingApprovalCopy")}</p>
+          </div>
           <Link
             href={localizedPath(`/g/${org.username}`, locale)}
             className="zook-focus ml-3 mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70"
@@ -198,6 +209,16 @@ export default async function JoinPage({
           <Pill tone="red">{joinModeLabelForLocale(joinMode, locale)}</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-white">{t("inviteRequired")}</h1>
           <p className="mt-3 text-sm leading-6 text-white/55">{t("inviteCopy")}</p>
+          <InviteCodeForm
+            actionPath={`/join/${org.username}`}
+            planHandle={selectedPlan.handle}
+            locale={locale}
+            labels={{
+              label: t("inviteCodeLabel"),
+              placeholder: t("inviteCodePlaceholder"),
+              submit: t("applyInviteCode"),
+            }}
+          />
           <Link
             href={localizedPath(`/g/${org.username}`, locale)}
             className="zook-focus mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70"

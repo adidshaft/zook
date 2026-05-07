@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { ErrorNotice } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
+import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
 import {
   formatPlanShape,
   type CoachPlanRow,
@@ -80,7 +81,6 @@ export function PlansSection({
   editingPlanId,
   setEditingPlanId,
   formError,
-  formStatus,
   formBusy,
   createMembershipPlan,
   startPlanEdit,
@@ -118,22 +118,37 @@ export function PlansSection({
               title="Use 60 characters or fewer and avoid raw numeric IDs."
               className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
             />
-            <select
+            <SearchableSelect
+              label="Plan shape"
               value={planForm.type}
-              onChange={(event) =>
+              onChange={(type) =>
                 setPlanForm((current) => ({
                   ...current,
-                  type: event.target.value as MembershipPlanType,
+                  type: type as MembershipPlanType,
                 }))
               }
-              className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-            >
-              {membershipPlanTypes.map((type) => (
-                <option key={type} value={type} className="bg-black">
-                  {formatEnumLabel(type)}
-                </option>
-              ))}
-            </select>
+              options={membershipPlanTypes.map((type) => ({
+                value: type,
+                label: formatEnumLabel(type),
+                description:
+                  type === "HYBRID"
+                    ? "Days or visits, whichever comes first."
+                    : type === "DURATION"
+                      ? "Days only."
+                      : type === "VISIT_PACK"
+                        ? "Visits only, no expiry."
+                        : type === "DATE_RANGE"
+                          ? "Fixed window."
+                          : "Free intro period.",
+              }))}
+            />
+            <p className="md:col-span-2 inline-flex items-center gap-2 text-xs text-white/45">
+              Plan shape controls expiry, visits, and public join copy.
+              <HelpHint label="Plan shape" title="Plan shape">
+                Hybrid uses days or visits, whichever comes first. Duration is days only. Visit pack
+                is visits only. Date range is a fixed window. Trial is a free intro period.
+              </HelpHint>
+            </p>
             <input
               value={planForm.priceRupees}
               onChange={(event) =>
@@ -189,7 +204,6 @@ export function PlansSection({
             {formBusy === "plan" ? "Creating..." : "Create plan"}
           </button>
           {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
-          {formStatus ? <p className="text-sm text-lime-100">{formStatus}</p> : null}
         </div>
         <div className="mt-5">
           {membershipPlansState.error ? (
@@ -301,22 +315,20 @@ export function PlansSection({
                   title="Use 60 characters or fewer and avoid raw numeric IDs."
                   className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                 />
-                <select
+                <SearchableSelect
+                  label="Plan shape"
                   value={planEditForm.type}
-                  onChange={(event) =>
+                  onChange={(type) =>
                     setPlanEditForm((current) => ({
                       ...current,
-                      type: event.target.value as MembershipPlanType,
+                      type: type as MembershipPlanType,
                     }))
                   }
-                  className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                >
-                  {membershipPlanTypes.map((type) => (
-                    <option key={type} value={type} className="bg-black">
-                      {formatEnumLabel(type)}
-                    </option>
-                  ))}
-                </select>
+                  options={membershipPlanTypes.map((type) => ({
+                    value: type,
+                    label: formatEnumLabel(type),
+                  }))}
+                />
                 <input
                   value={planEditForm.priceRupees}
                   onChange={(event) =>
@@ -396,6 +408,9 @@ export function PlansSection({
             </Pill>
           }
         />
+        <ManagedOn surface="trainer-mobile" className="mt-4">
+          Plans are created and published by trainers in the Trainer app.
+        </ManagedOn>
         <div className="mt-5">
           {coachPlansState.error ? (
             <ErrorNotice message={coachPlansState.error} />

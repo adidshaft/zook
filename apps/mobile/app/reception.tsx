@@ -7,7 +7,7 @@ import {
 } from "@gorhom/bottom-sheet";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import type { PaymentMode } from "@zook/core";
 import {
   AuditWarning,
@@ -180,6 +180,19 @@ export default function Reception() {
     showToast({ title: "Authentication required to perform this action." });
   };
 
+  function confirmSignOut() {
+    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: () => {
+          void logout();
+        },
+      },
+    ]);
+  }
+
   const renderDecisionBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop
@@ -230,8 +243,13 @@ export default function Reception() {
 
   useEffect(() => {
     let mounted = true;
+    setRevealedPhones(new Set());
     void getStoredValue(phoneRevealStorageKey(activeOrgId)).then((stored) => {
-      if (!mounted || !stored) return;
+      if (!mounted) return;
+      if (!stored) {
+        setRevealedPhones(new Set());
+        return;
+      }
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
@@ -274,10 +292,14 @@ export default function Reception() {
         recordId: attemptId,
         reason: approvalReason || "Reception approved scan after review",
       });
-      setAttendanceStatus("Check-in approved.");
+      const message = "Check-in approved.";
+      setAttendanceStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
       closeDecisionSheet();
     } catch (error) {
-      setAttendanceStatus(getApiErrorMessage(error) || "Could not approve. Please try again.");
+      const message = getApiErrorMessage(error) || "Could not approve. Please try again.";
+      setAttendanceStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -287,10 +309,14 @@ export default function Reception() {
         recordId: attemptId,
         reason: rejectionReason || "Reception rejected scan after review",
       });
-      setAttendanceStatus("Check-in rejected.");
+      const message = "Check-in rejected.";
+      setAttendanceStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
       closeDecisionSheet();
     } catch (error) {
-      setAttendanceStatus(getApiErrorMessage(error) || "Could not reject. Please try again.");
+      const message = getApiErrorMessage(error) || "Could not reject. Please try again.";
+      setAttendanceStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -351,16 +377,17 @@ export default function Reception() {
         ...(referenceId ? { receiptNumber: referenceId } : {}),
         notes: [paymentReason, paymentNote].filter(Boolean).join(" · "),
       });
-      setPaymentStatus(
-        `Recorded ${formatInr(payment.payment.amountPaise)} by ${payment.payment.mode.replace(/_/g, " ")}.`,
-      );
+      const message = `Recorded ${formatInr(payment.payment.amountPaise)} by ${payment.payment.mode.replace(/_/g, " ")}.`;
+      setPaymentStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
       const message = getApiErrorMessage(error);
-      setPaymentStatus(
+      const statusMessage =
         /already active/i.test(message)
           ? "This membership is already active. Choose a pending subscription or create a new manual activation."
-          : message,
-      );
+          : message;
+      setPaymentStatus(statusMessage);
+      showToast({ title: "Action failed", message: statusMessage, tone: "danger", haptic: "error" });
     }
   }
 
@@ -375,9 +402,13 @@ export default function Reception() {
         skipCode: true,
         skipReason: "Reception manually fulfilled pickup after local re-auth.",
       });
-      setPaymentStatus("Pickup fulfilled.");
+      const message = "Pickup fulfilled.";
+      setPaymentStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
-      setPaymentStatus(getApiErrorMessage(error) || "Could not fulfill this order.");
+      const message = getApiErrorMessage(error) || "Could not fulfill this order.";
+      setPaymentStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -392,14 +423,17 @@ export default function Reception() {
     }
     try {
       await manualAttendanceMutation.mutateAsync({ memberUserId: member.id, reason });
-      setAttendanceStatus("Manual attendance recorded.");
+      const message = "Manual attendance recorded.";
+      setAttendanceStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
       const message = getApiErrorMessage(error);
-      setAttendanceStatus(
+      const statusMessage =
         /already has an attendance record/i.test(message)
           ? "This member is already checked in today."
-          : message,
-      );
+          : message;
+      setAttendanceStatus(statusMessage);
+      showToast({ title: "Action failed", message: statusMessage, tone: "danger", haptic: "error" });
     }
   }
 
@@ -449,7 +483,7 @@ export default function Reception() {
             <Text style={styles.utilityText}>Settings</Text>
           </Pressable>
           <Pressable
-            onPress={() => void logout()}
+            onPress={confirmSignOut}
             accessibilityRole="button"
             accessibilityLabel="Sign out"
             style={[styles.utilityPill, styles.signOutPill]}

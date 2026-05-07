@@ -1,5 +1,7 @@
 "use client";
 
+import { HelpHint, RadioCardGroup } from "../../ui";
+
 type BranchDayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 type BranchDayHours = { closed: true } | { open: string; close: string };
 type BranchHoursValue = Partial<Record<BranchDayKey, BranchDayHours>>;
@@ -127,6 +129,15 @@ export function BranchHoursEditor({
   compact?: boolean;
 }) {
   const hours = parseBranchHoursText(value);
+  const normalizedHours = serializeBranchHours(hours);
+  const activePreset =
+    (["standard", "early", "always"] as const).find(
+      (preset) => serializeBranchHours(branchHoursPreset(preset)) === normalizedHours,
+    ) ?? "custom";
+  const allClosed = branchDayLabels.every((day) => {
+    const dayHours = hours[day.key];
+    return dayHours && "closed" in dayHours;
+  });
 
   function updateDay(dayKey: BranchDayKey, next: BranchDayHours) {
     onChange(serializeBranchHours({ ...hours, [dayKey]: next }));
@@ -157,7 +168,12 @@ export function BranchHoursEditor({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-white">Working hours</p>
-          <p className="mt-1 text-xs text-white/45">{formatBranchHoursSummary(hours)}</p>
+          <p className="mt-1 inline-flex items-center gap-2 text-xs text-white/45">
+            {formatBranchHoursSummary(hours)}
+            <HelpHint label="Working hours" title="Working hours" size="xs">
+              Changes save with the parent Branch form. Click Save branch to persist.
+            </HelpHint>
+          </p>
         </div>
         <button
           type="button"
@@ -167,22 +183,24 @@ export function BranchHoursEditor({
           Copy Mon
         </button>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {[
-          ["standard", "6 AM - 10 PM"],
-          ["early", "5 AM - 10 PM"],
-          ["always", "Open all day"],
-        ].map(([preset, label]) => (
-          <button
-            key={preset}
-            type="button"
-            onClick={() => applyPreset(preset as BranchHoursPreset)}
-            className="zook-focus rounded-full border border-white/10 px-3 py-2 text-xs text-white/70 transition hover:bg-white/8"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <RadioCardGroup
+        name="branch-hours-preset"
+        label="Working hours preset"
+        value={activePreset === "custom" ? "standard" : activePreset}
+        columns={3}
+        className="mt-3"
+        onChange={(preset) => applyPreset(preset as BranchHoursPreset)}
+        options={[
+          { value: "standard", label: "6 AM - 10 PM" },
+          { value: "early", label: "5 AM - 10 PM" },
+          { value: "always", label: "Open all day" },
+        ]}
+      />
+      {allClosed ? (
+        <p className="mt-3 rounded-2xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm text-amber-50">
+          This branch will appear closed on the public page.
+        </p>
+      ) : null}
       <div className="mt-4 grid gap-2">
         {branchDayLabels.map((day) => {
           const dayHours = hours[day.key] ?? { open: "06:00", close: "22:00" };

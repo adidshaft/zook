@@ -44,6 +44,15 @@ export function DashboardShell({
     ...group,
     items: group.items.filter((item) => item.key !== "branches" || hasMultipleBranches),
   })).filter((group) => group.items.length > 0);
+  const mobileNavGroups = visibleNavGroups.map((group) => ({
+    key: group.key,
+    items: group.items.map(({ key, label, href, shortLabel }) => ({
+      key,
+      label,
+      href,
+      shortLabel,
+    })),
+  }));
   const canShowQr = activePermissions.has("ATTENDANCE_QR_DISPLAY");
   const canViewReports = activePermissions.has("ORG_VIEW_REPORTS");
   const runtimeLabel = data.connected
@@ -97,7 +106,7 @@ export function DashboardShell({
 
         <section className="grid min-w-0 content-start gap-4">
           <MobileDashboardMenu
-            visibleNavGroups={visibleNavGroups}
+            visibleNavGroups={mobileNavGroups}
             sectionKey={sectionKey}
             copy={copy}
           />

@@ -368,9 +368,15 @@ function MemberStateHero({
         />
       </View>
       <View style={styles.heroActions}>
-        <ZookButton href="/scan" icon="qr-code-outline" style={styles.heroPrimaryAction}>
-          Check in
-        </ZookButton>
+        {expired ? (
+          <ZookButton href="/membership" icon="refresh-outline" style={styles.heroPrimaryAction}>
+            Renew
+          </ZookButton>
+        ) : (
+          <ZookButton href="/scan" icon="qr-code-outline" style={styles.heroPrimaryAction}>
+            Check in
+          </ZookButton>
+        )}
         {showBillingAction ? (
           <ZookButton
             href="/membership"

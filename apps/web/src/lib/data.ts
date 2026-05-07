@@ -78,18 +78,18 @@ function getDemoDashboardData(scope: "org" | "platform") {
     metrics:
       scope === "org"
         ? [
-            { label: "Active Members", value: "412", delta: "18% month over month" },
-            { label: "Today's Check-ins", value: "48", delta: "3 pending approval" },
-            { label: "Revenue", value: "₹82,450", delta: "Includes manual records" },
-            { label: "Pending Join Requests", value: "7", delta: "Approval queue" },
-            { label: "Low Stock", value: "2", delta: "Protein bar and shaker" },
-            { label: "Assistant drafts", value: "18", delta: "Trainer drafts this month" },
+            { label: "Active Members", value: "412", delta: null },
+            { label: "Today's Check-ins", value: "48", delta: null },
+            { label: "Revenue", value: "₹82,450", delta: null },
+            { label: "Pending Join Requests", value: "7", delta: null },
+            { label: "Low Stock", value: "2", delta: null },
+            { label: "Assistant drafts", value: "18", delta: null },
           ]
         : [
-            { label: "Organizations", value: "1", delta: "Sample data" },
-            { label: "Active orgs", value: "1", delta: "0 suspended" },
-            { label: "Service status", value: "5", delta: "Ready" },
-            { label: "Safety reviews", value: "0", delta: "No open reviews" },
+            { label: "Organizations", value: "1", delta: null },
+            { label: "Active orgs", value: "1", delta: null },
+            { label: "Service status", value: "5", delta: null },
+            { label: "Safety reviews", value: "0", delta: null },
           ],
     orgs: [org],
     products: demoProducts,
@@ -198,22 +198,22 @@ export async function getDashboardData(orgId?: string, branchId?: string) {
 export async function getEmptyDashboardData(orgId?: string) {
   const zeroMetrics = orgId
     ? [
-        { label: "Today attendance", value: "0", delta: "-" },
-        { label: "Active members", value: "0", delta: "-" },
-        { label: "Expiring soon", value: "0", delta: "-" },
-        { label: "Cash collected", value: "₹0", delta: "-" },
-        { label: "Revenue", value: "₹0", delta: "-" },
-        { label: "Low stock", value: "0", delta: "-" },
-        { label: "Notification queue", value: "0", delta: "-" },
-        { label: "Assistant drafts", value: "0", delta: "-" },
-        { label: "Trial days", value: "0", delta: "-" },
+        { label: "Today attendance", value: "0", delta: "—" },
+        { label: "Active members", value: "0", delta: "—" },
+        { label: "Expiring soon", value: "0", delta: "—" },
+        { label: "Cash collected", value: "₹0", delta: "—" },
+        { label: "Revenue", value: "₹0", delta: "—" },
+        { label: "Low stock", value: "0", delta: "—" },
+        { label: "Notification queue", value: "0", delta: "—" },
+        { label: "Assistant drafts", value: "0", delta: "—" },
+        { label: "Trial days", value: "0", delta: "—" },
       ]
     : [
-        { label: "Organizations", value: "0", delta: "-" },
-        { label: "Trial gyms", value: "0", delta: "-" },
-        { label: "Suspended", value: "0", delta: "-" },
-        { label: "Assistant drafts", value: "0", delta: "-" },
-        { label: "Safety reviews", value: "0", delta: "-" },
+        { label: "Organizations", value: "0", delta: "—" },
+        { label: "Trial gyms", value: "0", delta: "—" },
+        { label: "Suspended", value: "0", delta: "—" },
+        { label: "Assistant drafts", value: "0", delta: "—" },
+        { label: "Safety reviews", value: "0", delta: "—" },
       ];
   return {
     scope: orgId ? ("org" as const) : ("platform" as const),

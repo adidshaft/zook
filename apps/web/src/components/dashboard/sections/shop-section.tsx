@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { ErrorNotice } from "../operational-shared";
 import { EmptyState, SectionHeader } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
+import { HelpHint } from "../../ui";
 import { ShopOrdersSection } from "./shop-orders-section";
 import { ShopStatusCard } from "./shop-status-card";
 import type {
@@ -108,7 +109,6 @@ export function ShopSection({
   stockAdjustment,
   setStockAdjustment,
   formError,
-  formStatus,
   formBusy,
   createProduct,
   startProductEdit,
@@ -146,7 +146,13 @@ export function ShopSection({
             <div className="mt-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-medium text-white">Add shop product</p>
+                  <p className="inline-flex items-center gap-2 font-medium text-white">
+                    Add shop product
+                    <HelpHint label="Stock thresholds" title="Stock thresholds">
+                      Low-stock alerts fire below the threshold. Out-of-stock auto-hides the SKU on
+                      member shop.
+                    </HelpHint>
+                  </p>
                   <p className="mt-1 text-xs text-white/45">Adds a new product to your shop.</p>
                 </div>
                 <Pill tone="blue">Create</Pill>
@@ -225,7 +231,6 @@ export function ShopSection({
                 {formBusy === "product" ? "Creating..." : "Add product"}
               </button>
               {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
-              {formStatus ? <p className="text-sm text-lime-100">{formStatus}</p> : null}
             </div>
             <div className="mt-5 grid gap-3">
               {productsState.error ? (

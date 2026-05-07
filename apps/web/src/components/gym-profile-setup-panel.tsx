@@ -151,6 +151,20 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
   const qrUrl = payload ? `${payload.links.qr}&download=0` : "";
   const qrDownloadUrl = payload ? `${payload.links.qr}&download=1` : "";
   const previewGallery = useMemo(() => textToList(form?.galleryText ?? ""), [form?.galleryText]);
+  const savedForm = useMemo(() => (payload ? formFromPayload(payload) : null), [payload]);
+  const hasUnsavedChanges = Boolean(
+    form && savedForm && JSON.stringify(form) !== JSON.stringify(savedForm),
+  );
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   function update<K extends keyof ProfileForm>(key: K, value: ProfileForm[K]) {
     setForm((current) => (current ? { ...current, [key]: value } : current));
@@ -216,9 +230,12 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             title="Gym profile and join links"
             description="Owners set up the public gym profile here. The member app stays light: members can find the gym, scan the join QR, or open the public link."
             badge={
-              <Pill tone={form.visibility === "PUBLIC" ? "lime" : "amber"}>
-                {formatEnumLabel(form.visibility)}
-              </Pill>
+              <div className="flex flex-wrap gap-2">
+                <Pill tone={form.visibility === "PUBLIC" ? "lime" : "amber"}>
+                  {formatEnumLabel(form.visibility)}
+                </Pill>
+                {hasUnsavedChanges ? <Pill tone="amber">Unsaved changes</Pill> : null}
+              </div>
             }
           />
           <div className="flex flex-wrap gap-2">

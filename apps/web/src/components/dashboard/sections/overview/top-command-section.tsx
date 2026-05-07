@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ErrorNotice } from "../../operational-shared";
 import { ReadoutGrid, SectionHeader, StatusPill } from "../../../dashboard-primitives";
 import { GlassCard, Pill } from "../../../glass-card";
+import { HelpHint, RadioCardGroup } from "../../../ui";
 import { BranchHoursEditor } from "../branch-hours-editor";
 import { formatCompactNumber, formatDate, formatDaysRemaining, formatEnumLabel, formatInr } from "@/lib/format";
 import type { OverviewOperationalSectionProps } from "./types";
@@ -50,8 +51,36 @@ export function TopCommandSection({
   updateBranch,
   deactivateBranch,
 }: TopCommandSectionProps) {
+  const trialUrgent =
+    organization.status === "TRIAL" &&
+    summary.trialDaysRemaining !== null &&
+    summary.trialDaysRemaining !== undefined &&
+    summary.trialDaysRemaining <= 3;
+  const missingManagerCount = branches.filter((branch) => !branch.managerId).length;
+
   return (
     <>
+{trialUrgent ? (
+  <GlassCard className="border-amber-300/28 bg-amber-300/10">
+    <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+      <div>
+        <p className="text-sm font-semibold text-amber-50">
+          Trial ends in {summary.trialDaysRemaining}{" "}
+          {summary.trialDaysRemaining === 1 ? "day" : "days"}.
+        </p>
+        <p className="mt-1 text-sm text-amber-50/70">
+          Add billing before pilot traffic so the owner dashboard stays active.
+        </p>
+      </div>
+      <Link
+        href="/dashboard/billing"
+        className="zook-focus inline-flex rounded-full bg-amber-200 px-4 py-2 text-sm font-semibold text-black"
+      >
+        Upgrade now
+      </Link>
+    </div>
+  </GlassCard>
+) : null}
 <GlassCard>
   <SectionHeader
     eyebrow="Today"
@@ -125,6 +154,11 @@ export function TopCommandSection({
           <p className="font-medium text-white">{item.label}</p>
           <Pill tone={item.tone}>{item.detail}</Pill>
         </div>
+        {item.href.includes("attendance") ? (
+          <span className="mt-3 inline-flex rounded-full bg-lime-300 px-3 py-1 text-xs font-semibold text-black">
+            Review now
+          </span>
+        ) : null}
       </Link>
     ))}
   </div>
@@ -136,9 +170,19 @@ export function TopCommandSection({
     title="Location control"
     description="You have one branch by default. Add another branch when this gym expands."
     badge={
-      <Pill tone={branches.length > 1 ? "blue" : "neutral"}>
-        {branches.length || 1} branches
-      </Pill>
+      <span className="flex flex-wrap items-center gap-2">
+        <Pill tone={branches.length > 1 ? "blue" : "neutral"}>
+          {branches.length || 1} branches
+        </Pill>
+        {missingManagerCount ? (
+          <a
+            href="#branch-manager-picker"
+            className="zook-focus rounded-full border border-amber-300/28 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-50"
+          >
+            {missingManagerCount} need manager
+          </a>
+        ) : null}
+      </span>
     }
   />
   <div className="mt-5 grid gap-3">
@@ -217,7 +261,15 @@ export function TopCommandSection({
         placeholder="WhatsApp number"
         className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
       />
-      <select
+      <label id="branch-manager-picker" className="grid gap-2 text-sm text-white/62">
+        <span className="flex items-center gap-2">
+          Branch manager
+          <HelpHint label="Branch manager" title="Branch manager">
+            Optional but recommended. Manager receives owner-level alerts for this branch and is the
+            default contact on the public page.
+          </HelpHint>
+        </span>
+        <select
         value={branchForm.managerId}
         onChange={(event) =>
           setBranchForm((current) => ({ ...current, managerId: event.target.value }))
@@ -238,7 +290,8 @@ export function TopCommandSection({
                 "Team member"}
             </option>
           ))}
-      </select>
+        </select>
+      </label>
       <input
         value={branchForm.amenitiesText}
         onChange={(event) =>
@@ -252,29 +305,37 @@ export function TopCommandSection({
         onChange={(hoursText) => setBranchForm((current) => ({ ...current, hoursText }))}
         compact
       />
-      <div className="grid gap-2 md:col-span-2 md:grid-cols-2">
-        {[
-          ["SHARED", "Use current plans and products"],
-          ["CUSTOM", "Set separate pricing later"],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() =>
-              setBranchForm((current) => ({
-                ...current,
-                commerceSetup: value as "SHARED" | "CUSTOM",
-              }))
-            }
-            className={`zook-focus rounded-2xl border px-4 py-3 text-left text-sm transition ${
-              branchForm.commerceSetup === value
-                ? "border-lime-300 bg-lime-300/12 text-lime-50"
-                : "border-white/10 bg-black/20 text-white/65 hover:bg-white/8"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="grid gap-2 md:col-span-2">
+        <span className="flex items-center gap-2 text-sm text-white/62">
+          Commerce setup
+          <HelpHint label="Commerce setup" title="Commerce setup">
+            Shared sells the org catalogue. Custom lets this branch use its own pricing and SKUs
+            before members are attached.
+          </HelpHint>
+        </span>
+        <RadioCardGroup
+          name="branch-commerce-setup"
+          label="Commerce setup"
+          value={branchForm.commerceSetup ?? "SHARED"}
+          onChange={(value) =>
+            setBranchForm((current) => ({
+              ...current,
+              commerceSetup: value as "SHARED" | "CUSTOM",
+            }))
+          }
+          options={[
+            {
+              value: "SHARED",
+              label: "Use current plans and products",
+              description: "Branch sells the org plan and shop catalogue.",
+            },
+            {
+              value: "CUSTOM",
+              label: "Set separate pricing later",
+              description: "Branch can use its own pricing and SKUs before launch.",
+            },
+          ]}
+        />
       </div>
     </div>
     {branches.length === 0 && !branchesState.loading ? (

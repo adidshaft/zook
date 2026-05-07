@@ -232,10 +232,10 @@ async function main() {
 
   const aarogyaStrength = await prisma.organization.create({
     data: {
-      name: "Aarogya Strength Club",
-      username: "aarogya-strength",
+      name: "Iron House Fitness",
+      username: "iron-house",
       contactPhone: "+91 98765 43210",
-      contactEmail: "hello@aarogyastrength.example",
+      contactEmail: "hello@ironhouse.example",
       address: "Lane 7, Koregaon Park",
       city: "Pune",
       state: "Maharashtra",
@@ -256,10 +256,10 @@ async function main() {
 
   const indiranagarPerformance = await prisma.organization.create({
     data: {
-      name: "Indiranagar Performance Studio",
-      username: "indiranagar-performance",
+      name: "Peak Lab Performance",
+      username: "peaklab",
       contactPhone: "+91 99887 76655",
-      contactEmail: "join@indiranagarperformance.example",
+      contactEmail: "join@peaklab.example",
       address: "12th Main Road, Indiranagar",
       city: "Bengaluru",
       state: "Karnataka",
@@ -280,7 +280,7 @@ async function main() {
   const aarogyaBranch = await prisma.branch.create({
     data: {
       orgId: aarogyaStrength.id,
-      name: "Aarogya Koregaon Park",
+      name: "Iron House Koregaon Park",
       address: aarogyaStrength.address,
       city: aarogyaStrength.city,
       state: aarogyaStrength.state,
@@ -295,7 +295,7 @@ async function main() {
   const indiranagarBranch = await prisma.branch.create({
     data: {
       orgId: indiranagarPerformance.id,
-      name: "Indiranagar 12th Main",
+      name: "Peak Lab 12th Main",
       address: indiranagarPerformance.address,
       city: indiranagarPerformance.city,
       state: indiranagarPerformance.state,
@@ -1777,8 +1777,8 @@ async function main() {
     member: member.email,
     minor: minor.email,
     otp: "000000",
-    aarogyaStrength: "aarogya-strength",
-    indiranagarPerformance: "indiranagar-performance",
+    ironHouse: "iron-house",
+    peakLab: "peaklab",
   });
 }
 

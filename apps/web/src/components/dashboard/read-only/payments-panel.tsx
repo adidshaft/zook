@@ -4,6 +4,7 @@ import { useState } from "react";
 import type * as React from "react";
 import { DataTable, EmptyState, ReadoutGrid, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
+import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
 import { formatCompactNumber, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
 import type {
   MembershipPlanRow,
@@ -57,6 +58,47 @@ export function PaymentsPanel({
   const [manualPaymentStatus, setManualPaymentStatus] = useState("");
   const [manualPaymentBusy, setManualPaymentBusy] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<PaymentReceiptState | null>(null);
+  const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const filteredShopOrders = shopOrders.filter((order) =>
+    orderStatusFilter === "ALL" ? true : order.status === orderStatusFilter,
+  );
+  const selectedReadyOrders = filteredShopOrders.filter(
+    (order) => selectedOrderIds.includes(order.id) && order.status === "READY_FOR_PICKUP",
+  );
+
+  function toggleOrder(orderId: string) {
+    setSelectedOrderIds((current) =>
+      current.includes(orderId) ? current.filter((id) => id !== orderId) : [...current, orderId],
+    );
+  }
+
+  async function bulkFulfillReadyOrders() {
+    try {
+      setBulkBusy(true);
+      setManualPaymentStatus("");
+      await Promise.all(
+        selectedReadyOrders.map((order) =>
+          webApiFetch(`/api/orgs/${orgId}/shop/orders/${order.id}/fulfill`, {
+            method: "POST",
+            body: {
+              pickupCodeSkipped: true,
+              skipReason: "Bulk settled from owner payment queue after desk verification.",
+            },
+            feedback: { success: false, error: "Unable to settle selected orders." },
+          }),
+        ),
+      );
+      setManualPaymentStatus(`${selectedReadyOrders.length} ready orders settled.`);
+      setSelectedOrderIds([]);
+      shopOrdersState.reload?.();
+    } catch (cause) {
+      setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to settle orders.");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   async function recordOfflinePayment(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,6 +108,7 @@ export function PaymentsPanel({
       const amountPaise = Math.round(Number(manualPayment.amountRupees) * 100);
       const payload = await webApiFetch<{ payment?: PaymentRow }>(`/api/orgs/${orgId}/manual-payments`, {
         method: "POST",
+        feedback: { success: "Payment recorded.", error: "Unable to record payment." },
         body: {
           memberUserId: manualPayment.memberUserId,
           planId: manualPayment.planId,
@@ -210,50 +253,54 @@ export function PaymentsPanel({
           <SectionHeader
             eyebrow="Record offline payment"
             title="Collected at the desk"
-            description="Use this for cash, UPI, card, or bank transfer membership payments."
+            description={
+              <span className="inline-flex items-center gap-2">
+                Use this for cash, UPI, card, or bank transfer membership payments.
+                <HelpHint label="Payment mode" title="Payment mode">
+                  UPI is a direct bank transfer via PhonePe or GPay. Cash and Card are recorded for
+                  reconciliation. Bank Transfer may settle in one to two days.
+                </HelpHint>
+              </span>
+            }
           />
           <form className="mt-5 grid gap-3" onSubmit={(event) => void recordOfflinePayment(event)}>
-            <select
+            <SearchableSelect
+              label="Choose member"
+              placeholder="Choose member"
+              searchPlaceholder="Search members"
               value={manualPayment.memberUserId}
-              onChange={(event) =>
-                setManualPayment((current) => ({ ...current, memberUserId: event.target.value }))
+              onChange={(memberUserId) =>
+                setManualPayment((current) => ({ ...current, memberUserId }))
               }
-              className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white"
-              required
-            >
-              <option value="" className="bg-black">
-                Choose member
-              </option>
-              {members.map((member) => (
-                <option key={member.profile.id} value={member.user?.id ?? ""} className="bg-black">
-                  {member.user?.name ?? member.user?.email ?? "Member"}
-                </option>
-              ))}
-            </select>
-            <select
+              options={members
+                .filter((member) => member.user?.id)
+                .map((member) => ({
+                  value: member.user!.id,
+                  label: member.user?.name ?? member.user?.email ?? "Member",
+                  description: member.user?.phone ?? member.user?.email ?? undefined,
+                }))}
+            />
+            <SearchableSelect
+              label="Choose plan"
+              placeholder="Choose plan"
+              searchPlaceholder="Search plans"
               value={manualPayment.planId}
-              onChange={(event) => {
-                const plan = membershipPlans.find((candidate) => candidate.id === event.target.value);
+              onChange={(planId) => {
+                const plan = membershipPlans.find((candidate) => candidate.id === planId);
                 setManualPayment((current) => ({
                   ...current,
-                  planId: event.target.value,
+                  planId,
                   amountRupees: plan ? String(plan.pricePaise / 100) : current.amountRupees,
                 }));
               }}
-              className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white"
-              required
-            >
-              <option value="" className="bg-black">
-                Choose plan
-              </option>
-              {membershipPlans
+              options={membershipPlans
                 .filter((plan) => plan.active)
-                .map((plan) => (
-                  <option key={plan.id} value={plan.id} className="bg-black">
-                    {plan.name} - {formatInr(plan.pricePaise)}
-                  </option>
-                ))}
-            </select>
+                .map((plan) => ({
+                  value: plan.id,
+                  label: plan.name,
+                  description: formatInr(plan.pricePaise),
+                }))}
+            />
             <div className="grid gap-3 md:grid-cols-2">
               <input
                 value={manualPayment.amountRupees}
@@ -274,7 +321,7 @@ export function PaymentsPanel({
               >
                 {modeOptions.map((mode) => (
                   <option key={mode} value={mode} className="bg-black">
-                    {mode === "DIRECT_UPI" ? "UPI" : formatEnumLabel(mode)}
+                    {formatPaymentMode(mode)}
                   </option>
                 ))}
               </select>
@@ -349,6 +396,9 @@ export function PaymentsPanel({
             }
             action={<CsvExportButton href={`/api/orgs/${orgId}/reports/shop.csv`} />}
           />
+          <ManagedOn surface="desk" className="mt-4">
+            Pickup is completed in Desk after identity verification.
+          </ManagedOn>
           <div className="mt-5">
             {shopOrdersState.error ? (
               <ErrorNotice message={shopOrdersState.error} />
@@ -358,8 +408,52 @@ export function PaymentsPanel({
                 description="Pulling live shop order payment states."
               />
             ) : (
+              <>
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                {([
+                  ["ALL", "All"],
+                  ["PENDING_PAYMENT", "Pending Payment"],
+                  ["READY_FOR_PICKUP", "Ready for Pickup"],
+                  ["FULFILLED", "Settled"],
+                ] as Array<[string, string]>).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setOrderStatusFilter(value)}
+                    className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                      orderStatusFilter === value
+                        ? "border-lime-300/45 bg-lime-300/12 text-lime-100"
+                        : "border-white/10 text-white/55 hover:bg-white/8"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={!selectedReadyOrders.length || bulkBusy}
+                  onClick={() => void bulkFulfillReadyOrders()}
+                  className="zook-focus ml-auto rounded-full bg-lime-300 px-4 py-2 text-xs font-semibold text-black disabled:opacity-50"
+                >
+                  {bulkBusy ? "Settling..." : `Settle ${selectedReadyOrders.length || ""}`.trim()}
+                </button>
+              </div>
               <DataTable
                 columns={[
+                  {
+                    id: "select",
+                    header: "Select",
+                    render: (order) => (
+                      <input
+                        type="checkbox"
+                        checked={selectedOrderIds.includes(order.id)}
+                        onChange={() => toggleOrder(order.id)}
+                        disabled={order.status !== "READY_FOR_PICKUP"}
+                        aria-label={`Select order ${order.id.slice(-8).toUpperCase()}`}
+                        className="zook-focus h-4 w-4 rounded border-white/20 bg-black/40 accent-lime-300 disabled:opacity-40"
+                      />
+                    ),
+                  },
                   {
                     id: "order",
                     header: "Order",
@@ -385,6 +479,16 @@ export function PaymentsPanel({
                     align: "right",
                     render: (order) =>
                       order.items.reduce((sum, item) => sum + item.quantity, 0).toString(),
+                  },
+                  {
+                    id: "notes",
+                    header: "Notes",
+                    render: (order) =>
+                      order.status === "READY_FOR_PICKUP"
+                        ? "Ready for desk handover"
+                        : order.status === "PENDING_PAYMENT"
+                          ? "Payment still needed"
+                          : "No desk note",
                   },
                   {
                     id: "amount",
@@ -419,7 +523,7 @@ export function PaymentsPanel({
                       ),
                   },
                 ]}
-                rows={shopOrders}
+                rows={filteredShopOrders}
                 rowKey={(order) => order.id}
                 empty={
                   <EmptyState
@@ -428,6 +532,7 @@ export function PaymentsPanel({
                   />
                 }
               />
+              </>
             )}
           </div>
         </GlassCard>
