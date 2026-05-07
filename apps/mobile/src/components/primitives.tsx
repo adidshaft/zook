@@ -815,6 +815,7 @@ export function ZookButton({
   style,
   textStyle,
   accessibilityLabel,
+  onLongPress,
 }: {
   children: ReactNode;
   onPress?: PressHandler;
@@ -828,6 +829,7 @@ export function ZookButton({
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   accessibilityLabel?: string;
+  onLongPress?: PressHandler;
 }) {
   const resolvedVariant = variant ?? variantFromTone(tone);
   const palette = buttonPalettes[resolvedVariant];
@@ -851,6 +853,7 @@ export function ZookButton({
       <Link href={href} asChild>
         <Pressable
           onPressIn={() => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+          onLongPress={() => pressWithHaptics(onLongPress)}
           accessibilityRole="link"
           accessibilityLabel={
             accessibilityLabel ?? (typeof children === "string" ? children : undefined)
@@ -858,7 +861,9 @@ export function ZookButton({
           accessibilityState={{ disabled }}
           style={staticButtonStyle}
         >
-          {icon ? <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={palette.color} /> : null}
+          {icon ? (
+            <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={palette.color} />
+          ) : null}
           <Text
             numberOfLines={1}
             adjustsFontSizeToFit
@@ -877,7 +882,7 @@ export function ZookButton({
       onPress={() => {
         if (!disabled) pressWithHaptics(onPress);
       }}
-      disabled={disabled}
+      onLongPress={() => pressWithHaptics(onLongPress)}
       accessibilityRole="button"
       accessibilityLabel={
         accessibilityLabel ?? (typeof children === "string" ? children : undefined)

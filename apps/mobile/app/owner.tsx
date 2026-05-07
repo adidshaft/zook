@@ -19,7 +19,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { isOfflineDemoMode } from "@/lib/demo-mode";
+import { apiClient } from "@/lib/domain-api";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
 import {
   useApproveAttendance,
@@ -32,8 +32,9 @@ import {
   useOwnerDashboard,
   useRejectJoinRequest,
 } from "@/lib/query-hooks";
-import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 type OwnerView = "command" | "approvals" | "revenue" | "stock" | "members";
 type Drilldown = Exclude<OwnerView, "command">;
@@ -43,10 +44,6 @@ function normalizeView(value: string | string[] | undefined): OwnerView {
   const raw = Array.isArray(value) ? value[0] : value;
   if (raw === "approvals" || raw === "revenue" || raw === "stock" || raw === "members") return raw;
   return "command";
-}
-
-function offlineDemoViewOverride() {
-  return __DEV__ && isOfflineDemoMode() ? process.env.EXPO_PUBLIC_OFFLINE_DEMO_VIEW : undefined;
 }
 
 function cleanReviewReason(reason?: string | null) {
@@ -81,15 +78,22 @@ function memberInitials(name?: string | null, email?: string | null) {
     .join("");
 }
 
+function redactPhone(phone?: string | null) {
+  if (!phone) return "No phone";
+  return `****${phone.slice(-4)}`;
+}
+
 export default function Owner() {
   const router = useRouter();
-  const { activeRole } = useAuth();
+  const { activeOrgId, activeRole, token } = useAuth();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
-  const view = normalizeView(params.view ?? offlineDemoViewOverride());
+  const view = normalizeView(params.view);
   const [memberSearch, setMemberSearch] = useState("");
   const [memberFilter, setMemberFilter] = useState<MemberFilter>("all");
   const [actionStatus, setActionStatus] = useState("");
+  const [revealedPhones, setRevealedPhones] = useState<Set<string>>(() => new Set());
   const shellRole = activeRole === "ADMIN" ? "ADMIN" : "OWNER";
+  const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const dashboardQuery = useOwnerDashboard();
   const membersQuery = useOrgMembers();
   const joinRequestsQuery = useOrgJoinRequests();
@@ -139,7 +143,8 @@ export default function Owner() {
     const filterMatch =
       memberFilter === "all" ||
       (memberFilter === "active" && status === "active") ||
-      (memberFilter === "expired" && (status === "expired" || (daysLeft !== null && daysLeft <= 0))) ||
+      (memberFilter === "expired" &&
+        (status === "expired" || (daysLeft !== null && daysLeft <= 0))) ||
       (memberFilter === "expiring" &&
         status === "active" &&
         daysLeft !== null &&
@@ -198,6 +203,27 @@ export default function Owner() {
     icon: "checkmark-done-outline" | "card-outline" | "cube-outline" | "time-outline";
     target: Drilldown;
   }>;
+  const showOwnerApprovalRequired = () => {
+    showToast({ title: "Owner approval required", tone: "amber" });
+  };
+
+  function revealMemberPhone(memberId: string) {
+    setRevealedPhones((current) => {
+      const next = new Set(current);
+      next.add(memberId);
+      return next;
+    });
+    if (token && activeOrgId) {
+      void apiClient
+        .request("/audit-logs", {
+          method: "POST",
+          token,
+          orgId: activeOrgId,
+          body: { action: "MEMBER_PHONE_REVEALED", targetId: memberId },
+        })
+        .catch(() => undefined);
+    }
+  }
   async function approveAttendance(attemptId: string) {
     try {
       await approveAttendanceMutation.mutateAsync(attemptId);
@@ -249,7 +275,8 @@ export default function Owner() {
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
             <Text numberOfLines={1} style={styles.headerMeta}>
-              {dashboard?.organization?.name ?? "Active gym"} · {shellRole === "ADMIN" ? "Admin" : "Owner"}
+              {dashboard?.organization?.name ?? "Active gym"} ·{" "}
+              {shellRole === "ADMIN" ? "Admin" : "Owner"}
             </Text>
             <Text style={styles.title}>{titleForView(view)}</Text>
           </View>
@@ -420,6 +447,8 @@ export default function Owner() {
                 ? filteredMembers.map((member) => {
                     const name = member.user?.name ?? "Member";
                     const email = member.user?.email ?? "No email";
+                    const phone = member.user?.phone ?? null;
+                    const phoneRevealed = revealedPhones.has(member.profile.userId);
                     const photoUrl = member.user?.profilePhotoUrl ?? member.profile.profilePhotoUrl;
                     const goal = member.user?.fitnessGoal ?? member.profile.fitnessGoal;
                     return (
@@ -452,6 +481,21 @@ export default function Owner() {
                           <Text numberOfLines={1} style={styles.memberEmail}>
                             {goal ? `${email} · ${goal}` : email}
                           </Text>
+                          <View style={styles.memberPhoneRow}>
+                            <Text numberOfLines={1} style={styles.memberPhoneText}>
+                              {phoneRevealed ? (phone ?? "No phone") : redactPhone(phone)}
+                            </Text>
+                            {phone && !phoneRevealed ? (
+                              <Pressable
+                                onPress={() => revealMemberPhone(member.profile.userId)}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Reveal phone for ${name}`}
+                                style={styles.revealPhoneButton}
+                              >
+                                <Text style={styles.revealPhoneText}>Reveal</Text>
+                              </Pressable>
+                            ) : null}
+                          </View>
                         </View>
                         <Ionicons name="chevron-forward" size={17} color={colors.muted} />
                       </GlassCard>
@@ -551,7 +595,8 @@ export default function Owner() {
                     />
                     <PrimaryButton
                       onPress={() => void approveAttendance(attempt.id)}
-                      disabled={approveAttendanceMutation.isPending}
+                      disabled={!canApproveAttendance || approveAttendanceMutation.isPending}
+                      onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}
                       icon="checkmark-outline"
                     >
                       Approve Check-in
@@ -602,7 +647,9 @@ export default function Owner() {
                         tone={payment.status === "SUCCEEDED" ? "lime" : "amber"}
                       />
                     }
-                    trailing={<Text style={styles.rowAmount}>{formatInr(payment.amountPaise)}</Text>}
+                    trailing={
+                      <Text style={styles.rowAmount}>{formatInr(payment.amountPaise)}</Text>
+                    }
                   />
                 ))
               ) : (
@@ -664,10 +711,7 @@ export default function Owner() {
                   />
                 ))
               ) : (
-                <EmptyState
-                  title="All products in stock"
-                  body="No items below threshold."
-                />
+                <EmptyState title="All products in stock" body="No items below threshold." />
               )}
             </GlassCard>
             <SectionHeader title="Orders ready for pickup" />
@@ -883,6 +927,28 @@ const styles = StyleSheet.create({
   memberEmail: {
     color: colors.muted,
     ...typography.small,
+  },
+  memberPhoneRow: {
+    minHeight: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  memberPhoneText: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  revealPhoneButton: {
+    minHeight: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 8,
+    justifyContent: "center",
+  },
+  revealPhoneText: {
+    color: colors.lime,
+    ...typography.caption,
   },
   statusText: {
     color: colors.lime,

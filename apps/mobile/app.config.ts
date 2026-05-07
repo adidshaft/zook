@@ -126,16 +126,8 @@ function normalizeApiMode(value?: string | null): MobileApiMode | undefined {
   }
 }
 
-function legacyOfflineDemoRequested() {
-  return (
-    process.env.EXPO_PUBLIC_OFFLINE_DEMO === "true" ||
-    process.env.EXPO_PUBLIC_DEMO_MODE === "true" ||
-    process.env.MOBILE_OFFLINE_DEMO === "true"
-  );
-}
-
 function resolveApiMode(): MobileApiMode {
-  const candidates = ["API_MODE", "EXPO_PUBLIC_API_MODE", "MOBILE_API_MODE"] as const;
+  const candidates = ["EXPO_PUBLIC_API_MODE"] as const;
   for (const key of candidates) {
     const value = process.env[key]?.trim();
     if (!value) {
@@ -147,7 +139,7 @@ function resolveApiMode(): MobileApiMode {
     }
     return normalized;
   }
-  return legacyOfflineDemoRequested() ? "offline-demo" : "backend";
+  return "backend";
 }
 
 function resolveUrl(

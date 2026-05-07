@@ -27,6 +27,7 @@ import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { attendanceApi } from "@/lib/domain-api";
+import { getMobileAppEnv } from "@/lib/runtime-mode";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type ScanResult = {
@@ -384,7 +385,7 @@ export default function Scan() {
             </GlassCard>
           ) : null}
 
-          {__DEV__ ? (
+          {__DEV__ && getMobileAppEnv() === "local" ? (
             <Pressable
               onPress={() => void completeDevScan()}
               accessibilityRole="button"

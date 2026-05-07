@@ -19,10 +19,11 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { plansApi, trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 type ClientTab = "summary" | "plans" | "progress" | "notes";
 
@@ -43,6 +44,7 @@ export default function TrainerClientDetail() {
   const clientId = id ?? "";
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const canPublishAssignedPlan = useHasPermission("PLANS_PUBLISH_ASSIGNED");
   const [tab, setTab] = useState<ClientTab>("summary");
   const [status, setStatus] = useState("");
   const [planTitle, setPlanTitle] = useState("");
@@ -63,6 +65,9 @@ export default function TrainerClientDetail() {
   const activePlans = client?.summary?.activePlans ?? 0;
   const recentFeedback = client?.summary?.recentFeedback ?? [];
   const recentWorkouts = client?.summary?.recentWorkouts ?? [];
+  const showOwnerApprovalRequired = () => {
+    showToast({ title: "Owner approval required", tone: "amber" });
+  };
 
   useEffect(() => {
     setNoteText(client?.summary?.trainerNote ?? "");
@@ -335,7 +340,11 @@ export default function TrainerClientDetail() {
                   Generate with AI
                 </ZookButton>
               </View>
-              <SecondaryButton onPress={() => void assignPlan()} disabled={savingPlan}>
+              <SecondaryButton
+                onPress={() => void assignPlan()}
+                disabled={!canPublishAssignedPlan || savingPlan}
+                onLongPress={!canPublishAssignedPlan ? showOwnerApprovalRequired : undefined}
+              >
                 Assign to client
               </SecondaryButton>
             </GlassCard>

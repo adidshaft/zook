@@ -36,19 +36,6 @@ function normalizeApiMode(value?: string | null): MobileApiMode | undefined {
   }
 }
 
-function truthy(value?: string | null) {
-  return /^(1|true|yes|on)$/i.test(value ?? "");
-}
-
-function legacyOfflineDemoRequested() {
-  return (
-    Constants.expoConfig?.extra?.offlineDemo === true ||
-    truthy(process.env.EXPO_PUBLIC_OFFLINE_DEMO) ||
-    truthy(process.env.EXPO_PUBLIC_DEMO_MODE) ||
-    truthy(process.env.MOBILE_OFFLINE_DEMO)
-  );
-}
-
 function resolveAppEnv() {
   const candidates: Array<[string, string | undefined]> = [
     ["APP_ENV", process.env.APP_ENV],
@@ -76,8 +63,6 @@ function resolveAppEnv() {
 
 function resolveApiMode() {
   const candidates: Array<[string, string | undefined]> = [
-    ["API_MODE", process.env.API_MODE],
-    ["EXPO_CONFIG_API_MODE", Constants.expoConfig?.extra?.apiMode as string | undefined],
     ["EXPO_PUBLIC_API_MODE", process.env.EXPO_PUBLIC_API_MODE],
   ];
   for (const [, value] of candidates) {
@@ -94,7 +79,7 @@ function resolveApiMode() {
     }
     return { apiMode: normalized };
   }
-  return { apiMode: legacyOfflineDemoRequested() ? "offline-demo" as const : "backend" as const };
+  return { apiMode: "backend" as const };
 }
 
 export function getMobileAppEnv(): MobileAppEnv {

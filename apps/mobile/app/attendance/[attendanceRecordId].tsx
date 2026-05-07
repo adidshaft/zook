@@ -67,25 +67,63 @@ export default function AttendanceResultScreen() {
   const attendanceQuery = useMyAttendance();
   const records = (attendanceQuery.data?.attendance ?? []) as AttendanceRecord[];
   const attendanceRecordId = firstParam(routeParams.attendanceRecordId);
-  const routeStatus = firstParam(routeParams.status);
-  const recordFromApi = records.find((record) => record.id === attendanceRecordId);
-  const record: AttendanceRecord = {
-    id: attendanceRecordId ?? "attendance-result",
-    status: routeStatus ?? "APPROVED",
-    checkedInAt: firstParam(routeParams.checkedInAt) ?? null,
-    ...recordFromApi,
-    ...(routeStatus ? { status: routeStatus } : {}),
-    ...(firstParam(routeParams.entryCode) ? { entryCode: firstParam(routeParams.entryCode) } : {}),
-    ...(firstParam(routeParams.branchName)
-      ? { branchName: firstParam(routeParams.branchName) }
-      : {}),
-    ...(firstParam(routeParams.planName) ? { planName: firstParam(routeParams.planName) } : {}),
-    ...(firstParam(routeParams.checkedInAt)
-      ? { checkedInAt: firstParam(routeParams.checkedInAt) }
-      : {}),
-    ...(firstParam(routeParams.reason) ? { reason: firstParam(routeParams.reason) } : {}),
-  };
+  // CODEX: useMyAttendance is the only real record source on this screen; URL params are not trusted for attendance details (§6.6).
+  const recordFromApi = records.find((record) => record.id === attendanceRecordId) ?? null;
+  const recordIdMismatch = Boolean(
+    attendanceRecordId && recordFromApi && recordFromApi.id !== attendanceRecordId,
+  );
   const warning = firstParam(routeParams.warning);
+
+  if (attendanceQuery.isLoading && !recordFromApi) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ZookScreen>
+          <ScrollView
+            contentInsetAdjustmentBehavior="never"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[styles.content, styles.contentWithoutNav]}
+          >
+            <MobileHeader title="Attendance" />
+            <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
+              <IconBubble icon="hourglass-outline" tone="amber" size={48} />
+              <Text style={styles.notFoundTitle}>Loading attendance...</Text>
+            </GlassCard>
+          </ScrollView>
+        </ZookScreen>
+      </>
+    );
+  }
+
+  if (!attendanceRecordId || !recordFromApi || recordIdMismatch) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ZookScreen>
+          <ScrollView
+            contentInsetAdjustmentBehavior="never"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[styles.content, styles.contentWithoutNav]}
+          >
+            <MobileHeader title="Attendance" />
+            <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
+              <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
+              <Text style={styles.notFoundTitle}>Record not found in your history</Text>
+              <ZookButton
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+                tone="secondary"
+                icon="chevron-back"
+              >
+                Back
+              </ZookButton>
+            </GlassCard>
+          </ScrollView>
+        </ZookScreen>
+      </>
+    );
+  }
+
+  const record = recordFromApi;
 
   const pending = record.status === "PENDING_APPROVAL";
   const blocked = record.status === "REJECTED" || record.status === "FLAGGED";
@@ -304,6 +342,18 @@ const styles = StyleSheet.create({
   },
   contentWithoutNav: {
     paddingBottom: 40,
+  },
+  notFoundContent: {
+    minHeight: 160,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 18,
+    gap: spacing.md,
+  },
+  notFoundTitle: {
+    color: colors.text,
+    ...typography.h3,
+    textAlign: "center",
   },
   iconButton: {
     width: 40,

@@ -124,11 +124,21 @@ export default function ProfileScreen() {
       profile?.profile?.profilePhotoUrl ??
       session?.user.profilePhotoUrl,
   );
-  const roles = activeOrganization?.roles?.length
-    ? activeOrganization.roles
-    : activeRole
-      ? [activeRole]
-      : [];
+  const roles = activeOrganization?.roles ?? [];
+  const rolesInOtherGyms = useMemo(() => {
+    const activeRoles = new Set(roles);
+    return (session?.organizations ?? [])
+      .filter((organization) => organization.orgId !== activeOrgId)
+      .flatMap((organization) =>
+        organization.roles
+          .filter((role) => !activeRoles.has(role))
+          .map((role) => ({
+            orgId: organization.orgId,
+            orgName: organization.name,
+            role,
+          })),
+      );
+  }, [activeOrgId, roles, session?.organizations]);
   const membership =
     activeMembershipQuery.data?.membership ?? homeQuery.data?.activeMembership ?? null;
   const membershipPlan =
@@ -202,14 +212,45 @@ export default function ProfileScreen() {
       {
         text: "Switch",
         onPress: () => {
-          void setActiveRole(role).then(() => router.replace(routeForRole(role)));
+          void setActiveRole(role)
+            .then(() => router.replace(routeForRole(role)))
+            .catch((error) => {
+              Alert.alert(
+                "Role unavailable",
+                error instanceof Error ? error.message : "That role is not available here.",
+              );
+            });
         },
       },
     ]);
   }
 
+  function confirmOtherGymRoleSwitch(input: { orgId: string; orgName: string; role: Role }) {
+    Alert.alert(
+      `${titleCaseRole(input.role)} is in another gym`,
+      `Switch gyms before opening ${titleCaseRole(input.role)} tools.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: `Switch to ${input.orgName} to access ${titleCaseRole(input.role)} tools`,
+          onPress: () => {
+            void setActiveOrgId(input.orgId)
+              .then(() => setActiveRole(input.role))
+              .then(() => router.replace(routeForRole(input.role)))
+              .catch((error) => {
+                Alert.alert(
+                  "Switch failed",
+                  error instanceof Error ? error.message : "Could not switch gyms right now.",
+                );
+              });
+          },
+        },
+      ],
+    );
+  }
+
   function showRoleSwitcher() {
-    if (!roles.length) {
+    if (!roles.length && !rolesInOtherGyms.length) {
       Alert.alert("No roles yet", "This account does not have another role in the active gym.");
       return;
     }
@@ -220,6 +261,10 @@ export default function ProfileScreen() {
         ...roles.map((role) => ({
           text: role === activeRole ? `${titleCaseRole(role)} (active)` : titleCaseRole(role),
           onPress: () => confirmRoleSwitch(role),
+        })),
+        ...rolesInOtherGyms.map((option) => ({
+          text: `${titleCaseRole(option.role)} at ${option.orgName}`,
+          onPress: () => confirmOtherGymRoleSwitch(option),
         })),
         { text: "Cancel", style: "cancel" as const },
       ],

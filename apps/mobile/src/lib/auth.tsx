@@ -1,5 +1,11 @@
-import type { AuthSessionSummary, Role } from "@zook/core";
-import { ApiError } from "@zook/core";
+import {
+  ApiError,
+  permissionsForRoles,
+  type AuthSessionSummary,
+  type Permission,
+  type Role,
+} from "@zook/core";
+import type { QueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -13,7 +19,7 @@ import {
 import * as LocalAuthentication from "expo-local-authentication";
 import { Alert, AppState } from "react-native";
 import { authClient } from "./domain-api";
-import { DEMO_AUTH_TOKEN, getOfflineDemoRoleOverride, isOfflineDemoMode } from "./demo-mode";
+import { DEMO_AUTH_TOKEN, isOfflineDemoMode } from "./demo-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const SESSION_STORAGE_KEY = "zook_session";
@@ -25,7 +31,18 @@ const ACTIVE_ROLE_STORAGE_KEY = "zook_active_role";
 const OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY = "zook_offline_demo_logged_out";
 const SESSION_FALLBACK_MS = 30 * 24 * 60 * 60 * 1000;
 const SESSION_PROACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000;
+const ORG_ROLE_PRIORITY: Role[] = ["OWNER", "ADMIN", "RECEPTIONIST", "TRAINER", "MEMBER"];
 type LogoutCleanup = () => Promise<void> | void;
+let authQueryClient: QueryClient | undefined;
+
+export function setAuthQueryClient(queryClient: QueryClient) {
+  authQueryClient = queryClient;
+  return () => {
+    if (authQueryClient === queryClient) {
+      authQueryClient = undefined;
+    }
+  };
+}
 
 function sanitizeOtpCode(value: string) {
   return value
@@ -81,6 +98,25 @@ function sessionDefaultRole(session?: AuthSessionSummary): Role | undefined {
   if (roles.has("ADMIN")) return "ADMIN";
   if (roles.has("PLATFORM_ADMIN")) return "PLATFORM_ADMIN";
   return undefined;
+}
+
+function defaultRoleForOrg(roles: Role[]): Role | undefined {
+  return ORG_ROLE_PRIORITY.find((role) => roles.includes(role)) ?? roles[0];
+}
+
+async function invalidateRoleScopedQueries() {
+  if (!authQueryClient) {
+    return;
+  }
+  await Promise.all([
+    authQueryClient.invalidateQueries({ queryKey: ["org"] }),
+    authQueryClient.invalidateQueries({ queryKey: ["me"] }),
+    authQueryClient.invalidateQueries({ queryKey: ["auth", "me"] }),
+  ]);
+}
+
+async function invalidateAllQueries() {
+  await authQueryClient?.invalidateQueries();
 }
 
 function sessionDefaultRoute(role?: Role) {
@@ -158,6 +194,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     { identifier?: string; triggeredAt: number } | undefined
   >();
   const logoutCleanupsRef = useRef(new Set<LogoutCleanup>());
+  const tokenRef = useRef<string | undefined>(undefined);
+  const sessionRef = useRef<AuthSessionSummary | undefined>(undefined);
+  const activeOrgIdRef = useRef<string | undefined>(undefined);
+  const activeRoleRef = useRef<Role | undefined>(undefined);
 
   const hydrate = useCallback(
     async (tokenValue: string, preferredOrgId?: string, preferredRole?: Role) => {
@@ -183,6 +223,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (resolvedRole) {
         await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, resolvedRole);
       }
+      tokenRef.current = tokenValue;
+      sessionRef.current = currentSession;
+      activeOrgIdRef.current = resolvedOrgId;
+      activeRoleRef.current = resolvedRole;
       setToken(tokenValue);
       setSession(currentSession);
       setActiveOrgIdState(resolvedOrgId);
@@ -207,6 +251,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(undefined);
     setActiveOrgIdState(undefined);
     setActiveRoleState(undefined);
+    tokenRef.current = undefined;
+    sessionRef.current = undefined;
+    activeOrgIdRef.current = undefined;
+    activeRoleRef.current = undefined;
     setStatus("unauthenticated");
     setOfflineMode(false);
     setOfflineBanner(undefined);
@@ -270,13 +318,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(undefined);
         setActiveOrgIdState(undefined);
         setActiveRoleState(undefined);
+        tokenRef.current = undefined;
+        sessionRef.current = undefined;
+        activeOrgIdRef.current = undefined;
+        activeRoleRef.current = undefined;
         setStatus("unauthenticated");
         return;
       }
       await hydrate(
         DEMO_AUTH_TOKEN,
         storedOrgId ?? undefined,
-        getOfflineDemoRoleOverride() ?? (storedRole as Role | null) ?? undefined,
+        (storedRole as Role | null) ?? undefined,
       );
       return;
     }
@@ -289,6 +341,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus("unauthenticated");
         setToken(undefined);
         setSession(undefined);
+        tokenRef.current = undefined;
+        sessionRef.current = undefined;
         return;
       }
     }
@@ -305,6 +359,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(undefined);
       setActiveOrgIdState(storedOrgId ?? undefined);
       setActiveRoleState((storedRole as Role | null) ?? undefined);
+      tokenRef.current = undefined;
+      sessionRef.current = undefined;
+      activeOrgIdRef.current = storedOrgId ?? undefined;
+      activeRoleRef.current = (storedRole as Role | null) ?? undefined;
       return;
     }
 
@@ -323,6 +381,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(undefined);
       setActiveOrgIdState(storedOrgId ?? undefined);
       setActiveRoleState((storedRole as Role | null) ?? undefined);
+      tokenRef.current = storedToken;
+      sessionRef.current = undefined;
+      activeOrgIdRef.current = storedOrgId ?? undefined;
+      activeRoleRef.current = (storedRole as Role | null) ?? undefined;
       setStatus("authenticated");
       setOfflineMode(true);
       setOfflineBanner("Couldn't reach server - working offline");
@@ -424,23 +486,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await clearSession();
       }
     }
-  }, [clearSession, hydrate, token]);
+  }, [clearSession, token]);
 
   const setActiveOrgId = useCallback(
     async (orgId: string) => {
-      if (!token) {
+      const tokenValue = tokenRef.current;
+      const currentSession = sessionRef.current;
+      const targetOrg = currentSession?.organizations.find(
+        (organization) => organization.orgId === orgId,
+      );
+      if (!tokenValue) {
         return;
       }
-      await setStoredValue(ACTIVE_ORG_STORAGE_KEY, orgId);
-      await hydrate(token, orgId, activeRole);
+      if (!targetOrg) {
+        throw new Error("Organization not available for this account");
+      }
+      const currentRole = activeRoleRef.current;
+      const correctedRole =
+        currentRole && targetOrg.roles.includes(currentRole)
+          ? currentRole
+          : defaultRoleForOrg(targetOrg.roles);
+      await Promise.all([
+        setStoredValue(ACTIVE_ORG_STORAGE_KEY, orgId),
+        correctedRole
+          ? setStoredValue(ACTIVE_ROLE_STORAGE_KEY, correctedRole)
+          : deleteStoredValue(ACTIVE_ROLE_STORAGE_KEY),
+      ]);
+      activeOrgIdRef.current = orgId;
+      activeRoleRef.current = correctedRole;
+      setActiveOrgIdState(orgId);
+      setActiveRoleState(correctedRole);
+      await hydrate(tokenValue, orgId, correctedRole);
+      await invalidateAllQueries();
     },
-    [activeRole, hydrate, token],
+    [hydrate],
   );
 
-  const setActiveRole = useCallback(async (role: Role) => {
-    await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, role);
-    setActiveRoleState(role);
-  }, []);
+  const setActiveRole = useCallback(
+    async (role: Role) => {
+      const tokenValue = tokenRef.current;
+      const currentSession = sessionRef.current;
+      const currentOrgId =
+        activeOrgIdRef.current ??
+        currentSession?.activeOrgId ??
+        currentSession?.activeOrganization?.orgId;
+      const activeOrg = currentSession?.organizations.find(
+        (organization) => organization.orgId === currentOrgId,
+      );
+      if (!tokenValue) {
+        return;
+      }
+      if (!activeOrg?.roles.includes(role)) {
+        throw new Error("Role not available in active org");
+      }
+      await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, role);
+      activeRoleRef.current = role;
+      setActiveRoleState(role);
+      await hydrate(tokenValue, currentOrgId, role);
+      await invalidateRoleScopedQueries();
+    },
+    [hydrate],
+  );
 
   const setBiometricEnabled = useCallback(async (enabled: boolean) => {
     const stored = await setStoredBiometricUnlockEnabled(enabled);
@@ -526,6 +632,39 @@ export function useAuth() {
     throw new Error("useAuth must be used inside AuthProvider");
   }
   return context;
+}
+
+export function useActivePermissions(): Set<Permission> {
+  const { activeOrgId, session } = useAuth();
+  const activeOrg = useMemo(() => {
+    return (
+      session?.activeOrganization ??
+      session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
+      session?.organizations[0]
+    );
+  }, [activeOrgId, session?.activeOrganization, session?.organizations]);
+  const roles = activeOrg?.roles ?? [];
+  const permissionOverrides =
+    activeOrg && "permissionOverrides" in activeOrg
+      ? ((activeOrg as { permissionOverrides?: Permission[] }).permissionOverrides ?? [])
+      : [];
+
+  return useMemo(
+    () =>
+      new Set(
+        permissionsForRoles(
+          roles,
+          // CODEX: activeOrg.permissionOverrides is absent from older session payloads, so fall back to role-derived permissions only.
+          permissionOverrides,
+        ),
+      ),
+    [permissionOverrides, roles],
+  );
+}
+
+export function useHasPermission(permission: Permission): boolean {
+  const permissions = useActivePermissions();
+  return permissions.has(permission);
 }
 
 export function getApiErrorMessage(error: unknown) {

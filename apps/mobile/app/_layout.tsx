@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import type { Role } from "@zook/core";
 import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
@@ -15,7 +16,7 @@ import {
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
 
-import { AuthProvider, useAuth } from "@/lib/auth";
+import { AuthProvider, setAuthQueryClient, useActivePermissions, useAuth } from "@/lib/auth";
 import { OfflineBanner } from "@/components/primitives";
 import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
 import { BranchSelectionProvider } from "@/lib/branch-selection";
@@ -23,6 +24,7 @@ import { I18nProvider, useI18n } from "@/lib/i18n";
 import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
 import { setApiAuthHandlers } from "@/lib/api";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
+import { checkRouteAccess, requiredRoleForPath, routeForRole } from "@/lib/route-guards";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -75,37 +77,28 @@ function safeRedirectTarget(value?: string | string[]) {
 function redirectAllowedForSession(
   target: string | null,
   helpers: {
-    hasActiveRole: (...roles: ("PLATFORM_ADMIN" | "OWNER" | "ADMIN" | "RECEPTIONIST" | "TRAINER")[]) => boolean;
-    hasAnyRole: (...roles: ("OWNER" | "ADMIN" | "RECEPTIONIST" | "TRAINER")[]) => boolean;
+    hasAnyRole: (...roles: Role[]) => boolean;
   },
 ) {
   if (!target) return null;
   if (target.startsWith("/platform")) {
-    return helpers.hasActiveRole("PLATFORM_ADMIN") ? target : null;
+    return helpers.hasAnyRole("PLATFORM_ADMIN") ? target : null;
   }
   if (target.startsWith("/owner")) {
-    return helpers.hasAnyRole("OWNER", "ADMIN") &&
-      helpers.hasActiveRole("OWNER", "ADMIN")
-      ? target
-      : null;
+    return helpers.hasAnyRole("OWNER", "ADMIN") ? target : null;
   }
   if (target.startsWith("/reception")) {
-    return helpers.hasAnyRole("RECEPTIONIST", "OWNER", "ADMIN") &&
-      helpers.hasActiveRole("RECEPTIONIST", "OWNER", "ADMIN")
-      ? target
-      : null;
+    return helpers.hasAnyRole("RECEPTIONIST", "OWNER", "ADMIN") ? target : null;
   }
   if (target.startsWith("/trainer")) {
-    return helpers.hasAnyRole("TRAINER", "OWNER", "ADMIN") &&
-      helpers.hasActiveRole("TRAINER", "OWNER", "ADMIN")
-      ? target
-      : null;
+    return helpers.hasAnyRole("TRAINER", "OWNER", "ADMIN") ? target : null;
   }
   return target;
 }
 
 function LayoutContent() {
   const {
+    activeRole,
     clearExpiredSession,
     defaultRoute,
     hasActiveRole,
@@ -114,6 +107,7 @@ function LayoutContent() {
     offlineBanner,
     proactiveLogin,
     session,
+    setActiveRole,
     status,
   } = useAuth();
   const { t } = useI18n();
@@ -122,8 +116,14 @@ function LayoutContent() {
   const runtimeConfigError = getMobileRuntimeConfigError();
   const pathname = usePathname();
   const router = useRouter();
+  const activePermissions = useActivePermissions();
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
   const [onboardingFlag, setOnboardingFlag] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    // CODEX: auth.tsx owns role/org switching but cannot call React Query hooks, so the app shell registers the client.
+    return setAuthQueryClient(queryClient);
+  }, [queryClient]);
 
   useEffect(() => {
     // CODEX: api.ts cannot import Expo router or React Query safely, so the app shell registers lifecycle handlers here.
@@ -213,8 +213,12 @@ function LayoutContent() {
 
     if (pathname === "/login") {
       const validatedRedirect = redirectAllowedForSession(safeRedirectTarget(searchParams.redirect), {
-        hasActiveRole,
-        hasAnyRole,
+        hasAnyRole: (...roles) =>
+          roles.some((role) =>
+            role === "PLATFORM_ADMIN"
+              ? Boolean(session?.user.isPlatformAdmin || hasAnyRole("PLATFORM_ADMIN"))
+              : hasAnyRole(role),
+          ),
       });
       router.replace((validatedRedirect ?? defaultRoute) as never);
       return;
@@ -225,32 +229,35 @@ function LayoutContent() {
       return;
     }
 
-    if (pathname.startsWith("/platform") && !hasActiveRole("PLATFORM_ADMIN")) {
-      router.replace(defaultRoute as never);
+    const required = requiredRoleForPath(pathname);
+    const hasRequiredRole =
+      required === "PLATFORM_ADMIN"
+        ? Boolean(session?.user.isPlatformAdmin || hasAnyRole("PLATFORM_ADMIN"))
+        : Boolean(required && hasAnyRole(required));
+    if (required && !hasRequiredRole) {
+      router.replace(routeForRole(activeRole ?? "MEMBER") as never);
       return;
     }
-    if (
-      pathname.startsWith("/owner") &&
-      (!hasAnyRole("OWNER", "ADMIN") || !hasActiveRole("OWNER", "ADMIN"))
-    ) {
-      router.replace(defaultRoute as never);
+
+    if (required && !hasActiveRole(required)) {
+      void setActiveRole(required).then(() => {
+        showToast({ title: `Switched to ${required} view` });
+      });
       return;
     }
-    if (
-      pathname.startsWith("/reception") &&
-      (!hasAnyRole("RECEPTIONIST", "OWNER", "ADMIN") ||
-        !hasActiveRole("RECEPTIONIST", "OWNER", "ADMIN"))
-    ) {
-      router.replace(defaultRoute as never);
+
+    const canAccessRoute = checkRouteAccess(
+      pathname,
+      activePermissions,
+      Boolean(session?.user.isPlatformAdmin),
+    );
+    if (!canAccessRoute) {
+      router.replace(routeForRole(activeRole ?? "MEMBER") as never);
       return;
-    }
-    if (
-      pathname.startsWith("/trainer") &&
-      (!hasAnyRole("TRAINER", "OWNER", "ADMIN") || !hasActiveRole("TRAINER", "OWNER", "ADMIN"))
-    ) {
-      router.replace(defaultRoute as never);
     }
   }, [
+    activeRole,
+    activePermissions,
     defaultRoute,
     hasActiveRole,
     hasAnyRole,
@@ -259,6 +266,8 @@ function LayoutContent() {
     router,
     searchParams,
     session?.organizations.length,
+    session?.user.isPlatformAdmin,
+    setActiveRole,
     status,
   ]);
 

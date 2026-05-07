@@ -32,9 +32,11 @@ import {
   useRecordManualPayment,
   useRejectAttendance,
 } from "@/lib/query-hooks";
-import { getApiErrorMessage, useAuth } from "@/lib/auth";
-import { receptionApi } from "@/lib/domain-api";
+import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
+import { apiClient, receptionApi } from "@/lib/domain-api";
+import { requirePrivilegedAuth } from "@/lib/privileged-action";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 type DeskView = "desk" | "members" | "payments" | "orders";
 type DeskPaymentMode = Extract<
@@ -77,10 +79,18 @@ function deskReasonCopy(reason?: string | null) {
   return reason.replace("Attendance approval mode is enabled.", "Desk approval is required.");
 }
 
+function redactPhone(phone?: string | null) {
+  if (!phone) return "No phone";
+  return `****${phone.slice(-4)}`;
+}
+
 export default function Reception() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const router = useRouter();
   const { activeOrgId, logout, session, token } = useAuth();
+  const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
+  const canRecordManualAttendance = useHasPermission("ATTENDANCE_MANUAL_OVERRIDE");
+  const canRecordOfflinePayment = useHasPermission("PAYMENTS_RECORD_OFFLINE");
   const view = normalizeView(params.view);
   const [reason, setReason] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
@@ -94,6 +104,7 @@ export default function Reception() {
   const [paymentStatus, setPaymentStatus] = useState("");
   const [attendanceStatus, setAttendanceStatus] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [revealedPhones, setRevealedPhones] = useState<Set<string>>(() => new Set());
   const queueQuery = useReceptionQueue();
   const todayAttendanceQuery = useOrgAttendanceToday();
   const membersQuery = useOrgMembers();
@@ -142,6 +153,30 @@ export default function Reception() {
   const canVerifyCode = Boolean(verifyCode.trim() && token && activeOrgId);
   const amountInvalid =
     amount.trim().length > 0 && (!Number.isFinite(amountPaise) || amountPaise <= 0);
+  const showOwnerApprovalRequired = () => {
+    showToast({ title: "Owner approval required", tone: "amber" });
+  };
+  const showAuthenticationRequired = () => {
+    showToast({ title: "Authentication required to perform this action." });
+  };
+
+  function revealMemberPhone(memberId: string) {
+    setRevealedPhones((current) => {
+      const next = new Set(current);
+      next.add(memberId);
+      return next;
+    });
+    if (token && activeOrgId) {
+      void apiClient
+        .request("/audit-logs", {
+          method: "POST",
+          token,
+          orgId: activeOrgId,
+          body: { action: "MEMBER_PHONE_REVEALED", targetId: memberId },
+        })
+        .catch(() => undefined);
+    }
+  }
 
   useEffect(() => {
     setVerifyMessage("");
@@ -217,6 +252,10 @@ export default function Reception() {
   async function recordPayment() {
     if (!member?.id || !membership?.id) return;
     setPaymentStatus("");
+    if (!(await requirePrivilegedAuth("Record manual payment"))) {
+      showAuthenticationRequired();
+      return;
+    }
     try {
       const payment = await recordPaymentMutation.mutateAsync({
         memberUserId: member.id,
@@ -240,8 +279,16 @@ export default function Reception() {
   }
 
   async function fulfillOrder(orderId: string) {
+    if (!(await requirePrivilegedAuth("Fulfill pickup without code"))) {
+      showAuthenticationRequired();
+      return;
+    }
     try {
-      await fulfillOrderMutation.mutateAsync(orderId);
+      await fulfillOrderMutation.mutateAsync({
+        orderId,
+        skipCode: true,
+        skipReason: "Reception manually fulfilled pickup after local re-auth.",
+      });
       setPaymentStatus("Pickup fulfilled.");
     } catch (error) {
       Alert.alert("Failed", getApiErrorMessage(error) || "Could not fulfill this order.");
@@ -253,6 +300,10 @@ export default function Reception() {
       return;
     }
     setAttendanceStatus("");
+    if (!(await requirePrivilegedAuth("Record manual attendance"))) {
+      showAuthenticationRequired();
+      return;
+    }
     try {
       await manualAttendanceMutation.mutateAsync({ memberUserId: member.id, reason });
       setAttendanceStatus("Manual attendance recorded.");
@@ -468,7 +519,8 @@ export default function Reception() {
                     <View style={styles.actionRow}>
                       <PrimaryButton
                         icon="checkmark-circle-outline"
-                        disabled={approveAttendanceMutation.isPending}
+                        disabled={!canApproveAttendance || approveAttendanceMutation.isPending}
+                        onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}
                         onPress={() => approveAttendance(attempt.id)}
                         style={styles.actionHalf}
                       >
@@ -476,7 +528,8 @@ export default function Reception() {
                       </PrimaryButton>
                       <SecondaryButton
                         icon="close-circle-outline"
-                        disabled={rejectAttendanceMutation.isPending}
+                        disabled={!canApproveAttendance || rejectAttendanceMutation.isPending}
+                        onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}
                         onPress={() => rejectAttendance(attempt.id)}
                         style={styles.actionHalf}
                       >
@@ -496,7 +549,6 @@ export default function Reception() {
                 </GlassCard>
               )}
             </View>
-
           </>
         ) : null}
 
@@ -515,6 +567,8 @@ export default function Reception() {
               ) : null}
               {filteredMembers.slice(0, 4).map((user) => {
                 const selected = user.profile.userId === selectedMemberRecord?.profile.userId;
+                const phone = user.user?.phone ?? null;
+                const phoneRevealed = revealedPhones.has(user.profile.userId);
                 return (
                   <GlassCard
                     key={user.profile.userId}
@@ -525,7 +579,7 @@ export default function Reception() {
                   >
                     <ListRow
                       title={user.user?.name ?? "Member"}
-                      subtitle={`${user.user?.email ?? "No email"} · ${user.user?.phone ?? "No phone"}`}
+                      subtitle={user.user?.email ?? "No email"}
                       leading={
                         <IconBubble
                           icon="person-outline"
@@ -547,6 +601,21 @@ export default function Reception() {
                         </Text>
                       }
                     />
+                    <View style={styles.memberPhoneRow}>
+                      <Text numberOfLines={1} style={styles.memberPhoneText}>
+                        {phoneRevealed ? (phone ?? "No phone") : redactPhone(phone)}
+                      </Text>
+                      {phone && !phoneRevealed ? (
+                        <Pressable
+                          onPress={() => revealMemberPhone(user.profile.userId)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Reveal phone for ${user.user?.name ?? "member"}`}
+                          style={styles.revealPhoneButton}
+                        >
+                          <Text style={styles.revealPhoneText}>Reveal</Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
                   </GlassCard>
                 );
               })}
@@ -579,13 +648,14 @@ export default function Reception() {
                   </Text>
                 }
               />
-              <AuditWarning>
-                Add a reason so the gym has a clear record.
-              </AuditWarning>
+              <AuditWarning>Add a reason so the gym has a clear record.</AuditWarning>
               <FormField label="Attendance note" value={reason} onChangeText={setReason} />
               <PrimaryButton
                 icon="create-outline"
-                disabled={!member?.id || manualAttendanceMutation.isPending}
+                disabled={
+                  !canRecordManualAttendance || !member?.id || manualAttendanceMutation.isPending
+                }
+                onLongPress={!canRecordManualAttendance ? showOwnerApprovalRequired : undefined}
                 onPress={recordManualAttendance}
               >
                 {manualAttendanceMutation.isPending ? "Recording..." : "Record Attendance"}
@@ -677,7 +747,10 @@ export default function Reception() {
               />
               <PrimaryButton
                 icon="shield-checkmark-outline"
-                disabled={!canRecordPayment || recordPaymentMutation.isPending}
+                disabled={
+                  !canRecordOfflinePayment || !canRecordPayment || recordPaymentMutation.isPending
+                }
+                onLongPress={!canRecordOfflinePayment ? showOwnerApprovalRequired : undefined}
                 onPress={recordPayment}
               >
                 Record Payment
@@ -728,10 +801,7 @@ export default function Reception() {
               </PrimaryButton>
               {verifyMessage ? <VerificationResult message={verifyMessage} /> : null}
             </GlassCard>
-            <SectionHeader
-              title="Fulfillment Queue"
-              subtitle="Paid orders ready at the desk."
-            />
+            <SectionHeader title="Fulfillment Queue" subtitle="Paid orders ready at the desk." />
             <View style={styles.stack}>
               {readyOrders.length ? (
                 readyOrders.map((order) => (
@@ -794,7 +864,8 @@ export default function Reception() {
 }
 
 function VerificationResult({ message }: { message: string }) {
-  const success = /verified|match/i.test(message) && !/not valid|no active|not ready/i.test(message);
+  const success =
+    /verified|match/i.test(message) && !/not valid|no active|not ready/i.test(message);
   return (
     <GlassCard
       variant={success ? "success" : "warning"}
@@ -1024,5 +1095,28 @@ const styles = StyleSheet.create({
   },
   rowStateGood: {
     color: colors.lime,
+  },
+  memberPhoneRow: {
+    minHeight: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingLeft: 52,
+  },
+  memberPhoneText: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  revealPhoneButton: {
+    minHeight: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 8,
+    justifyContent: "center",
+  },
+  revealPhoneText: {
+    color: colors.lime,
+    ...typography.caption,
   },
 });

@@ -1169,11 +1169,31 @@ export function useFulfillShopOrder(orgId?: string) {
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useMutation({
-    mutationFn: (orderId: string) => {
+    mutationFn: (
+      input:
+        | string
+        | {
+            orderId: string;
+            skipCode?: boolean;
+            skipReason?: string;
+          },
+    ) => {
+      const orderId = typeof input === "string" ? input : input.orderId;
       const ctx = getMutationContext(token, resolvedOrgId);
       return mobileApiFetch<{ order: ShopOrderRecord }>(
         `/orgs/${ctx.orgId}/shop/orders/${orderId}/fulfill`,
-        { method: "POST", token: ctx.token, orgId: ctx.orgId },
+        {
+          method: "POST",
+          token: ctx.token,
+          orgId: ctx.orgId,
+          body:
+            typeof input === "string"
+              ? undefined
+              : {
+                  pickupCodeSkipped: Boolean(input.skipCode),
+                  ...(input.skipReason ? { skipReason: input.skipReason } : {}),
+                },
+        },
       );
     },
     onSuccess: async () => {
