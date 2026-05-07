@@ -243,6 +243,15 @@ const attendanceRejectSchema = z.object({
   reason: z.string().trim().min(2).max(200),
 });
 
+const attendanceDetailParamsSchema = z.object({
+  id: z.string().trim().min(1),
+});
+
+const orgMemberDetailParamsSchema = z.object({
+  orgId: z.string().trim().min(1),
+  memberUserId: z.string().trim().min(1),
+});
+
 const receptionCodeVerifySchema = z.object({
   code: z.string().trim().min(3).max(40),
 });
@@ -3871,6 +3880,18 @@ async function handleMeData(request: NextRequest, path: string[]) {
     });
     return ok({ user: serializeUserForClient(user), profile, file: asset });
   }
+  if (request.method === "GET" && pathMatches(path, ["me", "attendance", /.+/])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const { id } = attendanceDetailParamsSchema.parse({ id: path[2] });
+    const record = await prisma.attendanceRecord.findFirst({
+      where: { id, userId },
+    });
+    if (!record) {
+      throw notFoundError("Attendance record not found");
+    }
+    const [attendance] = await enrichAttendanceRecords([record]);
+    return ok({ attendance });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "attendance"])) {
     const userId = requireAuth(await getRequestContext(request));
     const records = await prisma.attendanceRecord.findMany({
@@ -5317,8 +5338,10 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members", /.+/])) {
-    const orgId = path[1]!;
-    const memberUserId = path[3]!;
+    const { orgId, memberUserId } = orgMemberDetailParamsSchema.parse({
+      orgId: path[1],
+      memberUserId: path[3],
+    });
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
     const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
@@ -5373,12 +5396,19 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     });
     return ok({
       member: {
-        user,
+        user: user ? { ...user, email: publicUserEmail(user.email) ?? "" } : null,
         profile,
         subscriptions: subscriptions.map((subscription) => ({
           ...subscription,
           plan: plans.find((plan) => plan.id === subscription.planId) ?? null,
         })),
+        activeSubscription:
+          subscriptions.find((subscription) => subscription.status === "ACTIVE") ??
+          subscriptions[0] ??
+          null,
+        lastCheckIn: attendance[0] ?? null,
+        recentCheckIns: attendance.slice(0, 3),
+        lastPayment: payments[0] ?? null,
         payments,
         attendance,
         bodyProgress,

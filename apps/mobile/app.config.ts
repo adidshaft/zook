@@ -22,10 +22,19 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.zook.app",
+    associatedDomains: ["applinks:app.zook.app", "applinks:zook.app"],
     icon: "./assets/icons/AppIcon-1024.png"
   },
   android: {
     package: "com.zook.app",
+    intentFilters: [
+      {
+        action: "VIEW",
+        data: [{ scheme: "https", host: "app.zook.app" }],
+        category: ["BROWSABLE", "DEFAULT"],
+        autoVerify: true
+      }
+    ],
     adaptiveIcon: {
       foregroundImage: "./assets/icons/ic_launcher_foreground.png",
       backgroundImage: "./assets/icons/ic_launcher_background.png",

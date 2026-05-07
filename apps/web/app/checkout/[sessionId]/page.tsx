@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@zook/db";
+import { Prisma, prisma } from "@zook/db";
 import { CheckoutStatusEffect } from "@/components/checkout-status-effect";
 import { RazorpayCheckoutPanel } from "@/components/razorpay-checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
@@ -20,17 +20,70 @@ function readCheckoutData(metadata: unknown) {
   return providerCheckoutData as Record<string, unknown>;
 }
 
+function readMetadataObject(metadata: unknown) {
+  if (!metadata || Array.isArray(metadata) || typeof metadata !== "object") {
+    return {};
+  }
+  return metadata as Record<string, unknown>;
+}
+
+function firstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function safePaymentReturnUrl(value?: string) {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    if (
+      parsed.protocol !== "zook:" ||
+      parsed.hostname !== "payments" ||
+      parsed.pathname !== "/return" ||
+      !parsed.searchParams.get("session")
+    ) {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 function paymentPartnerLabel(provider: string) {
   return provider.toLowerCase() === "mock" ? "Zook payments" : formatEnumLabel(provider);
 }
 
 export default async function HostedCheckoutPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ sessionId: string }>;
+  searchParams: Promise<{ return_url?: string | string[] }>;
 }) {
   const { sessionId } = await params;
-  const session = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
+  const resolvedSearchParams = await searchParams;
+  let session = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
+  const requestedReturnUrl = safePaymentReturnUrl(firstParam(resolvedSearchParams.return_url));
+  if (session && requestedReturnUrl) {
+    const metadata = readMetadataObject(session.metadata);
+    if (metadata.return_url !== requestedReturnUrl) {
+      session = await prisma.paymentSession.update({
+        where: { id: session.id },
+        data: {
+          metadata: {
+            ...metadata,
+            return_url: requestedReturnUrl,
+          } as Prisma.InputJsonValue,
+        },
+      });
+    }
+  }
+  const metadataReturnUrl = safePaymentReturnUrl(
+    typeof readMetadataObject(session?.metadata).return_url === "string"
+      ? (readMetadataObject(session?.metadata).return_url as string)
+      : undefined,
+  );
+  const returnUrl = requestedReturnUrl ?? metadataReturnUrl;
   const checkoutData = session ? readCheckoutData(session.metadata) : null;
   const expiresInMs = session ? new Date(session.expiresAt).getTime() - Date.now() : 0;
   const showExpiryWarning = expiresInMs > 0 && expiresInMs < 5 * 60 * 1000;
@@ -64,7 +117,7 @@ export default async function HostedCheckoutPage({
       <div className="glass-panel w-full max-w-2xl rounded-[28px] p-8">
         <CheckoutStatusEffect
           status={session.status}
-          redirectPath={session.purpose === "MEMBERSHIP" ? "/dashboard" : "/login"}
+          redirectPath={returnUrl ?? (session.purpose === "MEMBERSHIP" ? "/dashboard" : "/login")}
         />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -139,6 +192,7 @@ export default async function HostedCheckoutPage({
             checkoutData={checkoutData}
             sessionId={session.id}
             description={`${formatEnumLabel(session.purpose)} payment`}
+            {...(returnUrl ? { returnUrl } : {})}
           />
         ) : null}
 
@@ -150,7 +204,7 @@ export default async function HostedCheckoutPage({
             Refresh status
           </Link>
           <Link
-            href="/login"
+            href={returnUrl ?? "/login"}
             className="zook-focus inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-3 text-sm text-white/70 transition hover:bg-white/8"
           >
             Return to Zook

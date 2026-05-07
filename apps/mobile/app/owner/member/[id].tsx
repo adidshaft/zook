@@ -16,6 +16,17 @@ import { formatLongDate } from "@/lib/formatting";
 import type { OrgMemberRecord } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
+type OrgMemberDetailResponse = {
+  member: OrgMemberRecord & {
+    subscriptions?: Array<{
+      id?: string;
+      status?: string;
+      endsAt?: string | null;
+      remainingVisits?: number | null;
+    }>;
+  };
+};
+
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -73,12 +84,14 @@ export default function OwnerMemberDetail() {
   const memberQuery = useQuery({
     queryKey: ["org", resolvedOrgId, "members", id],
     queryFn: () =>
-      ownerApi.members<{ members: OrgMemberRecord[] }>({
+      ownerApi.member<OrgMemberDetailResponse>({
         token,
         orgId: resolvedOrgId,
+        memberUserId: id!,
       }),
     enabled: Boolean(token) && Boolean(resolvedOrgId) && Boolean(id),
-    select: (data) => data.members.find((m) => m.profile.userId === id) ?? null,
+    select: (data) => data.member,
+    retry: false,
   });
   const member = memberQuery.data;
   const name = member?.user?.name ?? "Member";

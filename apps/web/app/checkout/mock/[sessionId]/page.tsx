@@ -1,5 +1,5 @@
 import { getAppEnv, isMockPaymentCompletionAllowed } from "@zook/core";
-import { prisma } from "@zook/db";
+import { Prisma, prisma } from "@zook/db";
 import { CheckoutPanel } from "@/components/checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
 
@@ -9,6 +9,35 @@ function getMetadataString(metadata: unknown, key: string) {
   }
   const value = (metadata as Record<string, unknown>)[key];
   return typeof value === "string" ? value : null;
+}
+
+function getMetadataObject(metadata: unknown) {
+  if (!metadata || Array.isArray(metadata) || typeof metadata !== "object") {
+    return {};
+  }
+  return metadata as Record<string, unknown>;
+}
+
+function firstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function safePaymentReturnUrl(value?: string) {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    if (
+      parsed.protocol !== "zook:" ||
+      parsed.hostname !== "payments" ||
+      parsed.pathname !== "/return" ||
+      !parsed.searchParams.get("session")
+    ) {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
 }
 
 function planValidityLabel(plan: { durationDays: number | null; visitLimit: number | null }) {
@@ -23,10 +52,13 @@ function planValidityLabel(plan: { durationDays: number | null; visitLimit: numb
 
 export default async function MockCheckoutPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ sessionId: string }>;
+  searchParams: Promise<{ return_url?: string | string[] }>;
 }) {
   const { sessionId } = await params;
+  const resolvedSearchParams = await searchParams;
   let session = null;
   try {
     session = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
@@ -37,7 +69,26 @@ export default async function MockCheckoutPage({
   if (!session && (isMockPaymentCompletionAllowed() || canRenderLocalDemo)) {
     session = { id: "demo", amountPaise: 224900, purpose: "MEMBERSHIP", status: "CREATED" };
   }
+  const requestedReturnUrl = safePaymentReturnUrl(firstParam(resolvedSearchParams.return_url));
+  if (session && "metadata" in session && requestedReturnUrl) {
+    const metadata = getMetadataObject(session.metadata);
+    if (metadata.return_url !== requestedReturnUrl) {
+      session = await prisma.paymentSession.update({
+        where: { id: session.id },
+        data: {
+          metadata: {
+            ...metadata,
+            return_url: requestedReturnUrl,
+          } as Prisma.InputJsonValue,
+        },
+      });
+    }
+  }
   const sessionMetadata = session && "metadata" in session ? session.metadata : null;
+  const metadataReturnUrl = safePaymentReturnUrl(
+    getMetadataString(sessionMetadata, "return_url") ?? undefined,
+  );
+  const returnUrl = requestedReturnUrl ?? metadataReturnUrl;
   const subscriptionId = getMetadataString(sessionMetadata, "subscriptionId");
   const subscription = subscriptionId
     ? await prisma.memberSubscription.findUnique({
@@ -71,7 +122,7 @@ export default async function MockCheckoutPage({
       <div className="absolute left-5 top-5">
         <ZookLogo />
       </div>
-      <CheckoutPanel session={sessionSummary} />
+      <CheckoutPanel session={sessionSummary} {...(returnUrl ? { returnUrl } : {})} />
     </main>
   );
 }

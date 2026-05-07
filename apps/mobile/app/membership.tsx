@@ -125,6 +125,20 @@ function checkoutUrl(url?: string | null) {
   return /^https?:\/\//i.test(url) ? url : toWebUrl(url);
 }
 
+function checkoutUrlWithReturnUrl(url?: string | null, sessionId?: string | null) {
+  const resolvedUrl = checkoutUrl(url);
+  if (!resolvedUrl || !sessionId) return resolvedUrl;
+  const returnUrl = `zook://payments/return?session=${encodeURIComponent(sessionId)}`;
+  try {
+    const parsed = new URL(resolvedUrl);
+    parsed.searchParams.set("return_url", returnUrl);
+    return parsed.toString();
+  } catch {
+    const separator = resolvedUrl.includes("?") ? "&" : "?";
+    return `${resolvedUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`;
+  }
+}
+
 function subscriptionStatusRank(status?: string | null) {
   if (status === "ACTIVE") return 0;
   if (status === "PENDING_PAYMENT" || status === "PENDING") return 1;
@@ -191,6 +205,8 @@ export default function MembershipScreen() {
   const [autopayStatus, setAutopayStatus] = useState("");
   const [autopayBusy, setAutopayBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [waitingCheckoutSessionId, setWaitingCheckoutSessionId] = useState<string | null>(null);
+  const [checkingCheckoutStatus, setCheckingCheckoutStatus] = useState(false);
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const selectedPlan = useMemo(
@@ -203,6 +219,23 @@ export default function MembershipScreen() {
     setSelectedPlanId(planIdFor(renewalTarget) ?? availablePlans[0]?.id);
   }, [availablePlans, renewalTarget]);
 
+  const refreshMembershipAfterCheckout = useCallback(async () => {
+    setCheckingCheckoutStatus(true);
+    setRenewalStatus("Checking payment status...");
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "membership"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
+      setWaitingCheckoutSessionId(null);
+      setRenewalOpen(false);
+      setRenewalStatus("");
+    } finally {
+      setCheckingCheckoutStatus(false);
+    }
+  }, [queryClient]);
+
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
       const wasAway = appStateRef.current === "inactive" || appStateRef.current === "background";
@@ -211,17 +244,10 @@ export default function MembershipScreen() {
         return;
       }
       refreshAfterCheckoutRef.current = false;
-      setRenewalStatus("Refreshing membership status...");
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
-        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
-      ]).finally(() => {
-        setRenewalOpen(false);
-        setRenewalStatus("");
-      });
+      void refreshMembershipAfterCheckout();
     });
     return () => subscription.remove();
-  }, [queryClient]);
+  }, [refreshMembershipAfterCheckout]);
 
   function openRenewal(subscription: MembershipRecord) {
     setRenewalTarget(subscription);
@@ -256,13 +282,14 @@ export default function MembershipScreen() {
         setRenewalOpen(false);
         return;
       }
-      const url = checkoutUrl(result.checkoutUrl);
-      setRenewalStatus(url ? "Renewal payment started." : "Renewal request sent.");
+      const url = checkoutUrlWithReturnUrl(result.checkoutUrl, result.session?.id ?? token);
+      setRenewalStatus(url ? "Continuing in your browser." : "Renewal request sent.");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
       ]);
       if (url) {
+        setWaitingCheckoutSessionId(result.session?.id ?? token);
         refreshAfterCheckoutRef.current = true;
         await Linking.openURL(url);
       }
@@ -285,14 +312,18 @@ export default function MembershipScreen() {
         subscriptionId: subscription.id,
         ...(planIdFor(subscription) ? { planId: planIdFor(subscription) } : {}),
       });
-      const url = checkoutUrl(result.checkoutUrl ?? result.mandate?.checkoutUrl);
+      const url = checkoutUrlWithReturnUrl(
+        result.checkoutUrl ?? result.mandate?.checkoutUrl,
+        result.session?.id ?? token,
+      );
       if (!url) {
         setAutopayStatus("Autopay is active.");
         await queryClient.invalidateQueries({ queryKey: ["me", "memberships"] });
         return;
       }
-      setAutopayStatus("Autopay authorization created.");
+      setAutopayStatus("Continuing in your browser.");
       await queryClient.invalidateQueries({ queryKey: ["me", "memberships"] });
+      setWaitingCheckoutSessionId(result.session?.id ?? token);
       refreshAfterCheckoutRef.current = true;
       await Linking.openURL(url);
     } catch (error) {
@@ -364,7 +395,7 @@ export default function MembershipScreen() {
             }
             leading={
               <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
                 style={styles.iconButton}
@@ -389,9 +420,27 @@ export default function MembershipScreen() {
             </GlassCard>
           ) : null}
 
-          {membershipsQuery.isLoading ? (
-            <MembershipSkeleton />
+          {waitingCheckoutSessionId ? (
+            <GlassCard variant="compact" contentStyle={styles.browserReturnContent}>
+              <IconBubble icon="open-outline" tone="amber" size={36} />
+              <View style={styles.browserReturnCopy}>
+                <Text style={styles.browserReturnTitle}>Continuing in your browser</Text>
+                <Text style={styles.browserReturnBody}>
+                  Return when done. We will refresh your membership as soon as you come back.
+                </Text>
+              </View>
+              <ZookButton
+                tone="secondary"
+                disabled={checkingCheckoutStatus}
+                onPress={() => void refreshMembershipAfterCheckout()}
+                icon="refresh-outline"
+              >
+                {checkingCheckoutStatus ? "Checking..." : "Check status"}
+              </ZookButton>
+            </GlassCard>
           ) : null}
+
+          {membershipsQuery.isLoading ? <MembershipSkeleton /> : null}
 
           {!membershipsQuery.isLoading && !memberships.length ? (
             <GlassCard variant="compact" contentStyle={styles.emptyContent}>
@@ -738,7 +787,9 @@ function RenewalSheet({
           <GlassCard variant="compact" contentStyle={styles.renewalSummary}>
             <Text style={styles.summaryTitle}>Renewal summary</Text>
             <Text style={styles.summaryBody}>
-              {selectedPlan.durationDays ? `${selectedPlan.durationDays} days` : "Gym-defined validity"}
+              {selectedPlan.durationDays
+                ? `${selectedPlan.durationDays} days`
+                : "Gym-defined validity"}
               {selectedPlan.visitLimit ? ` · ${selectedPlan.visitLimit} visits` : ""}
             </Text>
           </GlassCard>
@@ -805,6 +856,25 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   loadingText: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  browserReturnContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    flexWrap: "wrap",
+  },
+  browserReturnCopy: {
+    flex: 1,
+    minWidth: 190,
+    gap: 4,
+  },
+  browserReturnTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  browserReturnBody: {
     color: colors.muted,
     ...typography.body,
   },

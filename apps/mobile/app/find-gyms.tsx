@@ -1,7 +1,7 @@
 import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { useDeferredValue, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
@@ -37,14 +37,24 @@ export default function FindGyms() {
   const referralCode = Array.isArray(routeParams.ref) ? routeParams.ref[0] : routeParams.ref;
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState({ query: "", city: "" });
   const [refreshing, setRefreshing] = useState(false);
-  const deferredQuery = useDeferredValue(query.trim());
-  const deferredCity = useDeferredValue(city.trim());
+  const debouncedQuery = debouncedSearch.query.trim();
+  const debouncedCity = debouncedSearch.city.trim();
   const gymsQuery = useGymSearch({
-    query: deferredQuery || undefined,
-    city: deferredCity || undefined,
+    query: debouncedQuery || undefined,
+    city: debouncedCity || undefined,
   });
   const gyms = gymsQuery.data?.gyms ?? [];
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch({ query: query.trim(), city: city.trim() });
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [city, query]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -136,26 +146,7 @@ export default function FindGyms() {
             </View>
           </GlassCard>
 
-          {/* Map placeholder */}
-          <GlassCard variant="compact" contentStyle={styles.mapContent}>
-            <View style={styles.mapGlow} />
-            <Text style={styles.mapEyebrow}>MAP</Text>
-            <Text style={styles.mapTitle}>Nearby gyms</Text>
-            <Text style={styles.mapBody}>
-              {gyms.length
-                ? `${gyms.length} gym${gyms.length !== 1 ? "s" : ""} found in ${deferredCity || "all cities"}`
-                : "Search to see results on the map."}
-            </Text>
-            {gyms.length > 0 ? (
-              <View style={styles.mapMarkers}>
-                {gyms.slice(0, 4).map((gym) => (
-                  <View key={gym.username} style={styles.markerBubble}>
-                    <Text style={styles.markerText}>{gym.name}</Text>
-                  </View>
-                ))}
-              </View>
-            ) : null}
-          </GlassCard>
+          {/* CODEX: map tab deferred until react-native-maps is set up. */}
 
           {/* Results */}
           <SectionHeader
@@ -324,50 +315,6 @@ const styles = StyleSheet.create({
   },
   cityChipTextActive: {
     color: colors.lime,
-  },
-  mapContent: {
-    gap: 8,
-    position: "relative",
-    overflow: "hidden",
-  },
-  mapGlow: {
-    position: "absolute",
-    right: -24,
-    top: -40,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: "rgba(125,211,252,0.06)",
-  },
-  mapEyebrow: {
-    color: colors.blue,
-    ...typography.eyebrow,
-  },
-  mapTitle: {
-    color: colors.text,
-    ...typography.headerTitle,
-  },
-  mapBody: {
-    color: colors.muted,
-    ...typography.body,
-  },
-  mapMarkers: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 4,
-  },
-  markerBubble: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.18)",
-    backgroundColor: "rgba(185,244,85,0.06)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  markerText: {
-    color: colors.lime,
-    ...typography.small,
   },
   loadingContent: {
     flexDirection: "row",

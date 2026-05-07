@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams, usePathname, useRouter } from "expo-router
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppState,
   type AppStateStatus,
@@ -79,6 +79,19 @@ function checkoutUrl(url: string) {
   return /^https?:\/\//i.test(url) ? url : toWebUrl(url);
 }
 
+function checkoutUrlWithReturnUrl(url: string, sessionId: string) {
+  const resolvedUrl = checkoutUrl(url);
+  const returnUrl = `zook://payments/return?session=${encodeURIComponent(sessionId)}`;
+  try {
+    const parsed = new URL(resolvedUrl);
+    parsed.searchParams.set("return_url", returnUrl);
+    return parsed.toString();
+  } catch {
+    const separator = resolvedUrl.includes("?") ? "&" : "?";
+    return `${resolvedUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`;
+  }
+}
+
 function pickupQrCells(value: string) {
   let hash = 0;
   for (let index = 0; index < value.length; index += 1) {
@@ -97,7 +110,10 @@ function PickupQr({ value }: { value: string }) {
   return (
     <View accessibilityLabel="Pickup QR code" style={styles.pickupQr}>
       {pickupQrCells(value).map((filled, index) => (
-        <View key={`${value}-${index}`} style={[styles.pickupQrCell, filled ? styles.pickupQrCellFilled : null]} />
+        <View
+          key={`${value}-${index}`}
+          style={[styles.pickupQrCell, filled ? styles.pickupQrCellFilled : null]}
+        />
       ))}
     </View>
   );
@@ -129,6 +145,8 @@ export default function Shop() {
     provider?: string;
     checkoutUrl?: string;
   } | null>(null);
+  const [waitingCheckoutSessionId, setWaitingCheckoutSessionId] = useState<string | null>(null);
+  const [checkingCheckoutStatus, setCheckingCheckoutStatus] = useState(false);
   const productsQuery = useShopProducts();
   const ordersQuery = useMyShopOrders();
   const createOrder = useCreateShopOrder();
@@ -169,6 +187,16 @@ export default function Shop() {
   const urlProvider = firstParam(params.provider);
   const urlCheckoutUrl = firstParam(params.checkoutUrl);
   const urlTotalPaise = Number(firstParam(params.totalPaise) ?? 0);
+
+  useEffect(() => {
+    if (!urlOrderId || checkoutState !== "pickup") {
+      return;
+    }
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
+      queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
+    ]);
+  }, [checkoutState, queryClient, urlOrderId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -231,9 +259,7 @@ export default function Shop() {
     if (!urlOrderId) {
       return;
     }
-    const matchedOrder = ordersQuery.data?.orders.find(
-      (candidate) => candidate.id === urlOrderId,
-    );
+    const matchedOrder = ordersQuery.data?.orders.find((candidate) => candidate.id === urlOrderId);
     if (matchedOrder) {
       setOrder(matchedOrder);
       return;
@@ -252,7 +278,15 @@ export default function Shop() {
         })),
       } as ShopOrderRecord);
     }
-  }, [cartItems, checkoutState, order, ordersQuery.data?.orders, totalPaise, urlOrderId, urlTotalPaise]);
+  }, [
+    cartItems,
+    checkoutState,
+    order,
+    ordersQuery.data?.orders,
+    totalPaise,
+    urlOrderId,
+    urlTotalPaise,
+  ]);
 
   useEffect(() => {
     if (!urlSessionId) return;
@@ -263,6 +297,31 @@ export default function Shop() {
     });
   }, [urlCheckoutUrl, urlProvider, urlSessionId]);
 
+  const refreshShopCheckoutStatus = useCallback(async () => {
+    if (!order) return;
+    setCheckingCheckoutStatus(true);
+    try {
+      const refreshed = await ordersQuery.refetch();
+      const refreshedOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
+      if (refreshedOrder && refreshedOrder.status !== "PENDING_PAYMENT") {
+        setOrder(refreshedOrder);
+        setCart({});
+        setWaitingCheckoutSessionId(null);
+        void deleteStoredValue(cartStorageKey);
+        router.replace(`/shop/pickup/${refreshedOrder.id}` as never);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
+          queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["org"] }),
+        ]);
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] });
+    } finally {
+      setCheckingCheckoutStatus(false);
+    }
+  }, [cartStorageKey, order, ordersQuery, queryClient, router]);
+
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
       const wasAway = appStateRef.current === "inactive" || appStateRef.current === "background";
@@ -271,23 +330,10 @@ export default function Shop() {
         return;
       }
       refreshAfterCheckoutRef.current = false;
-      void ordersQuery.refetch().then((refreshed) => {
-        const refreshedOrder = refreshed.data?.orders.find(
-          (candidate) => candidate.id === order.id,
-        );
-        if (refreshedOrder && refreshedOrder.status !== "PENDING_PAYMENT") {
-          setOrder(refreshedOrder);
-          setCart({});
-          router.replace(`/shop/pickup/${refreshedOrder.id}` as never);
-          void Promise.all([
-            queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
-            queryClient.invalidateQueries({ queryKey: ["org"] }),
-          ]);
-        }
-      });
+      void refreshShopCheckoutStatus();
     });
     return () => subscription.remove();
-  }, [order, ordersQuery, queryClient, router]);
+  }, [order, refreshShopCheckoutStatus]);
 
   function addToCart(productId: string) {
     const product = products.find((candidate) => candidate.id === productId);
@@ -349,7 +395,10 @@ export default function Shop() {
       checkoutSession.checkoutUrl
     ) {
       refreshAfterCheckoutRef.current = true;
-      await Linking.openURL(checkoutUrl(checkoutSession.checkoutUrl));
+      setWaitingCheckoutSessionId(checkoutSession.id);
+      await Linking.openURL(
+        checkoutUrlWithReturnUrl(checkoutSession.checkoutUrl, checkoutSession.id),
+      );
       return;
     }
     await completeMockPayment.mutateAsync({
@@ -387,7 +436,7 @@ export default function Shop() {
 
   const headerBackButton = (
     <Pressable
-      onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+      onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
       accessibilityRole="button"
       accessibilityLabel="Back"
       style={styles.iconButton}
@@ -405,13 +454,13 @@ export default function Shop() {
         refreshControl={refreshControl}
         stickyAction={
           canContinuePayment ? (
-          <ZookButton
-            onPress={() => void continuePayment()}
-            disabled={completeMockPayment.isPending}
-            icon="card-outline"
-          >
-            {completeMockPayment.isPending ? t("shop.confirming") : t("shop.continuePayment")}
-          </ZookButton>
+            <ZookButton
+              onPress={() => void continuePayment()}
+              disabled={completeMockPayment.isPending}
+              icon="card-outline"
+            >
+              {completeMockPayment.isPending ? t("shop.confirming") : t("shop.continuePayment")}
+            </ZookButton>
           ) : null
         }
       >
@@ -422,6 +471,12 @@ export default function Shop() {
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
+        {waitingCheckoutSessionId ? (
+          <BrowserReturnCard
+            checking={checkingCheckoutStatus}
+            onCheckStatus={() => void refreshShopCheckoutStatus()}
+          />
+        ) : null}
         <GlassCard variant="success" contentStyle={styles.pickupContent}>
           <Text style={styles.pickupLabel}>{t("shop.pickupCode")}</Text>
           <Text style={styles.pickupCode}>{order.pickupCode ?? t("shop.pending")}</Text>
@@ -491,6 +546,12 @@ export default function Shop() {
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
+        {waitingCheckoutSessionId ? (
+          <BrowserReturnCard
+            checking={checkingCheckoutStatus}
+            onCheckStatus={() => void refreshShopCheckoutStatus()}
+          />
+        ) : null}
         <GlassCard contentStyle={styles.checkoutContent}>
           <ListRow
             title={t("shop.paySecurely")}
@@ -523,7 +584,10 @@ export default function Shop() {
         refreshControl={refreshControl}
         stickyAction={
           <View style={styles.actionRow}>
-            <SecondaryButton onPress={() => router.replace("/shop" as never)} style={styles.actionHalf}>
+            <SecondaryButton
+              onPress={() => router.replace("/shop" as never)}
+              style={styles.actionHalf}
+            >
               {t("shop.back")}
             </SecondaryButton>
             <ZookButton
@@ -619,11 +683,7 @@ export default function Shop() {
     ) : null;
 
   return (
-    <ShopShell
-      selectedPath="/shop"
-      floatingAction={miniCart}
-      refreshControl={refreshControl}
-    >
+    <ShopShell selectedPath="/shop" floatingAction={miniCart} refreshControl={refreshControl}>
       <MobileHeader
         title={t("shop.deskPickup")}
         subtitle={activeOrganization?.name ?? t("shop.activeGym")}
@@ -738,6 +798,34 @@ export default function Shop() {
   );
 }
 
+function BrowserReturnCard({
+  checking,
+  onCheckStatus,
+}: {
+  checking: boolean;
+  onCheckStatus: () => void;
+}) {
+  return (
+    <GlassCard variant="compact" contentStyle={styles.browserReturnContent}>
+      <Ionicons name="open-outline" size={22} color={colors.amber} />
+      <View style={styles.browserReturnCopy}>
+        <Text style={styles.browserReturnTitle}>Continuing in your browser</Text>
+        <Text style={styles.browserReturnBody}>
+          Return when done. We will refresh your order as soon as you come back.
+        </Text>
+      </View>
+      <ZookButton
+        tone="secondary"
+        disabled={checking}
+        onPress={onCheckStatus}
+        icon="refresh-outline"
+      >
+        {checking ? "Checking..." : "Check status"}
+      </ZookButton>
+    </GlassCard>
+  );
+}
+
 function ShopSkeleton() {
   return (
     <View style={styles.productGrid}>
@@ -845,6 +933,25 @@ const styles = StyleSheet.create({
   headerChipStack: {
     alignSelf: "flex-start",
     gap: 6,
+  },
+  browserReturnContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    flexWrap: "wrap",
+  },
+  browserReturnCopy: {
+    flex: 1,
+    minWidth: 190,
+    gap: 4,
+  },
+  browserReturnTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  browserReturnBody: {
+    color: colors.muted,
+    ...typography.body,
   },
   cartBadge: {
     position: "absolute",

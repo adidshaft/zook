@@ -227,6 +227,11 @@ export const memberApi = {
 };
 
 export const attendanceApi = {
+  detail<T = unknown>(options: RequestOptions & { attendanceRecordId: string }) {
+    return mobileApiFetch<T>(`/me/attendance/${options.attendanceRecordId}`, {
+      token: options.token,
+    });
+  },
   scan<T = unknown>(options: RequestOptions & { body: Record<string, unknown> }) {
     return mobileApiFetch<T>("/attendance/scan", {
       method: "POST",
@@ -481,6 +486,12 @@ export const ownerApi = {
   },
   members<T = unknown>(options: RequestOptions) {
     return mobileApiFetch<T>(`/orgs/${options.orgId}/members`, {
+      token: options.token,
+      orgId: options.orgId,
+    });
+  },
+  member<T = unknown>(options: RequestOptions & { memberUserId: string }) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/members/${options.memberUserId}`, {
       token: options.token,
       orgId: options.orgId,
     });

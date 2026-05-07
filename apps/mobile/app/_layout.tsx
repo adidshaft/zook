@@ -4,7 +4,7 @@ import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -98,6 +98,17 @@ function redirectAllowedForSession(
   return target;
 }
 
+function isPaymentReturnDeepLink(url: string) {
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.protocol === "zook:" && parsed.hostname === "payments" && parsed.pathname === "/return"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function LayoutContent() {
   const {
     activeRole,
@@ -136,13 +147,40 @@ function LayoutContent() {
         router.replace("/login?reason=expired" as never);
       },
       onForbidden: () => {
-        showToast({ title: "Permission denied", message: "You don't have permission for that action.", tone: "amber" });
+        showToast({
+          title: "Permission denied",
+          message: "You don't have permission for that action.",
+          tone: "amber",
+        });
         if (router.canGoBack()) {
           router.back();
         }
       },
     });
   }, [clearExpiredSession, queryClient, router]);
+
+  useEffect(() => {
+    const handleUrl = (url: string | null) => {
+      if (!url || !isPaymentReturnDeepLink(url)) {
+        return;
+      }
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "membership"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
+        queryClient.invalidateQueries({ queryKey: ["org"] }),
+      ]).finally(() => {
+        showToast({ title: "Payment status refreshed" });
+        router.replace("/membership?focus=membership" as never);
+      });
+    };
+
+    const subscription = Linking.addEventListener("url", (event) => handleUrl(event.url));
+    void Linking.getInitialURL().then(handleUrl);
+    return () => subscription.remove();
+  }, [queryClient, router]);
 
   useEffect(() => {
     if (status !== "authenticated" || !proactiveLogin) {
@@ -214,14 +252,17 @@ function LayoutContent() {
     }
 
     if (pathname === "/login") {
-      const validatedRedirect = redirectAllowedForSession(safeRedirectTarget(searchParams.redirect), {
-        hasAnyRole: (...roles) =>
-          roles.some((role) =>
-            role === "PLATFORM_ADMIN"
-              ? Boolean(session?.user.isPlatformAdmin || hasAnyRole("PLATFORM_ADMIN"))
-              : hasAnyRole(role),
-          ),
-      });
+      const validatedRedirect = redirectAllowedForSession(
+        safeRedirectTarget(searchParams.redirect),
+        {
+          hasAnyRole: (...roles) =>
+            roles.some((role) =>
+              role === "PLATFORM_ADMIN"
+                ? Boolean(session?.user.isPlatformAdmin || hasAnyRole("PLATFORM_ADMIN"))
+                : hasAnyRole(role),
+            ),
+        },
+      );
       router.replace((validatedRedirect ?? defaultRoute) as never);
       return;
     }

@@ -241,9 +241,23 @@ export function PlanDetailScreen() {
   const coachName = selectedAssignment?.assignedById ? "Assigned by coach" : "Your coach";
   const completedCount = exercises.filter((exercise) => completed.has(exercise.name)).length;
   const progress = completedCount / Math.max(exercises.length, 1);
+  const requestedAssignmentId = firstParam(params.assignmentId);
 
   useEffect(() => {
-    const requestedAssignmentId = firstParam(params.assignmentId);
+    if (!requestedAssignmentId) {
+      return;
+    }
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me", "plans"] }),
+      queryClient.invalidateQueries({ queryKey: ["me", "plans", requestedAssignmentId] }),
+      queryClient.invalidateQueries({
+        queryKey: ["me", "plans", requestedAssignmentId, "exercises"],
+      }),
+      queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+    ]);
+  }, [queryClient, requestedAssignmentId]);
+
+  useEffect(() => {
     if (requestedAssignmentId) {
       setSelectedAssignmentId(requestedAssignmentId);
       return;
@@ -259,7 +273,7 @@ export function PlanDetailScreen() {
         setSelectedAssignmentId(matchedPlan.id);
       }
     }
-  }, [params.assignmentId, params.planId, plans]);
+  }, [params.planId, plans, requestedAssignmentId]);
 
   useEffect(() => {
     if (!selectedAssignmentId && plans[0]) {

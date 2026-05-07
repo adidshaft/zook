@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 
@@ -14,9 +14,25 @@ type CheckoutSessionSummary = {
   activationLabel?: string | null;
 };
 
-export function CheckoutPanel({ session }: { session: CheckoutSessionSummary | null }) {
+export function CheckoutPanel({
+  session,
+  returnUrl,
+}: {
+  session: CheckoutSessionSummary | null;
+  returnUrl?: string;
+}) {
   const [status, setStatus] = useState(session?.status ?? "MISSING");
   const [message, setMessage] = useState("Choose an outcome to simulate this payment session.");
+
+  useEffect(() => {
+    if (status !== "SUCCEEDED" || !returnUrl) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      window.location.assign(returnUrl);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [returnUrl, status]);
 
   async function complete(nextStatus: "SUCCEEDED" | "FAILED" | "PENDING") {
     if (!session) return;
@@ -103,7 +119,7 @@ export function CheckoutPanel({ session }: { session: CheckoutSessionSummary | n
       </div>
       {status === "SUCCEEDED" ? (
         <a
-          href="zook://"
+          href={returnUrl ?? "zook://"}
           className="zook-focus mt-5 inline-flex w-full items-center justify-center rounded-full border border-lime-300/40 bg-lime-300/10 px-5 py-3 text-sm font-semibold text-lime-100 transition hover:bg-lime-300/16"
         >
           Open in Zook app

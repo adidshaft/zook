@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "com.zook.app",
+        "paths": ["/join/*", "/plans/*", "/shop/*", "/dashboard"]
+      }
+    ]
+  }
+}

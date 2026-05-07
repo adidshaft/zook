@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mapNotificationPayloadToHref, parseDeepLinkUrl } from "./notification-routing";
 
 function parseHref(href: string) {
-  const parsed = new URL(href, "https://zook.app");
+  const parsed = new URL(href, "https://app.zookfit.in");
   return {
     path: parsed.pathname,
     params: Object.fromEntries(parsed.searchParams.entries()),
@@ -22,7 +22,7 @@ describe("parseDeepLinkUrl", () => {
 
   it("accepts trusted web deep links", () => {
     expect(
-      parseDeepLinkUrl("https://staging.zook.app/plan/assign_1?notificationId=notif_1")?.href,
+      parseDeepLinkUrl("https://app.zookfit.in/plan/assign_1?notificationId=notif_1")?.href,
     ).toBe("/plan/assign_1?notificationId=notif_1");
   });
 
@@ -41,13 +41,8 @@ describe("mapNotificationPayloadToHref", () => {
       }),
     );
 
-    expect(mapped.path).toBe("/shop");
-    expect(mapped.params).toEqual({
-      orderId: "order_1",
-      focus: "shop-order",
-      notificationId: "notif_1",
-      orgId: "org_1",
-    });
+    expect(mapped.path).toBe("/shop/pickup/order_1");
+    expect(mapped.params).toEqual({});
   });
 
   it("routes membership notifications to the membership screen", () => {
@@ -86,9 +81,8 @@ describe("mapNotificationPayloadToHref", () => {
       mapNotificationPayloadToHref({ assignmentId: "assign_1", notificationId: "notif_3" }),
     );
 
-    expect(mapped.path).toBe("/plans");
+    expect(mapped.path).toBe("/plans/assign_1");
     expect(mapped.params).toEqual({
-      assignmentId: "assign_1",
       focus: "plan",
       notificationId: "notif_3",
     });
@@ -113,5 +107,55 @@ describe("mapNotificationPayloadToHref", () => {
 
     expect(mapped.path).toBe("/notifications/notif_5");
     expect(mapped.params).toEqual({});
+  });
+
+  it("routes Sprint 6D notification types to exact destinations", () => {
+    expect(
+      mapNotificationPayloadToHref({
+        type: "TRANSACTIONAL_MEMBERSHIP_RENEWED",
+        subscriptionId: "sub_1",
+        notificationId: "notif_membership",
+      }),
+    ).toBe("/membership");
+    expect(
+      mapNotificationPayloadToHref({
+        type: "TRANSACTIONAL_ATTENDANCE_APPROVED",
+        attendanceRecordId: "att_1",
+        notificationId: "notif_attendance",
+      }),
+    ).toBe("/attendance/att_1");
+    expect(
+      mapNotificationPayloadToHref({
+        type: "TRANSACTIONAL_ORDER_READY",
+        orderId: "order_1",
+        notificationId: "notif_order",
+      }),
+    ).toBe("/shop/pickup/order_1");
+    expect(
+      mapNotificationPayloadToHref({
+        type: "OPERATIONAL_GYM_CLOSURE",
+        notificationId: "notif_ops",
+      }),
+    ).toBe("/notifications/notif_ops");
+    expect(
+      mapNotificationPayloadToHref({
+        type: "PROMOTIONAL",
+        notificationId: "notif_promo",
+      }),
+    ).toBe("/notifications/notif_promo");
+    expect(
+      mapNotificationPayloadToHref({
+        type: "PLAN_ASSIGNED",
+        assignmentId: "assign_1",
+        notificationId: "notif_plan",
+      }),
+    ).toBe("/plans/assign_1");
+    expect(
+      mapNotificationPayloadToHref({
+        type: "ENGAGEMENT_WORKOUT_REMINDER",
+        templateId: "template_1",
+        notificationId: "notif_workout",
+      }),
+    ).toBe("/tracking-entry?prefill=template_1");
   });
 });

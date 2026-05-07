@@ -135,6 +135,16 @@ export default function NotificationsScreen() {
   }
 
   useEffect(() => {
+    if (!routeParams.notificationId) {
+      return;
+    }
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
+      queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+    ]);
+  }, [queryClient, routeParams.notificationId]);
+
+  useEffect(() => {
     const matchingUnread = notifications.find(
       (item) =>
         (item.id === routeParams.notificationId || item.notification?.id === routeParams.notificationId) &&

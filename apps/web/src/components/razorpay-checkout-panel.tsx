@@ -36,10 +36,12 @@ export function RazorpayCheckoutPanel({
   checkoutData,
   sessionId,
   description,
+  returnUrl: returnUrlOverride,
 }: {
   checkoutData: RazorpayCheckoutData;
   sessionId: string;
   description: string;
+  returnUrl?: string;
 }) {
   const [scriptReady, setScriptReady] = useState(false);
   const [scriptError, setScriptError] = useState("");
@@ -53,7 +55,7 @@ export function RazorpayCheckoutPanel({
   const amountPaise = asNumber(checkoutData.amountPaise);
   const currency = asString(checkoutData.currency) ?? "INR";
   const themeColor = asString(checkoutData.themeColor) ?? "#b9f455";
-  const returnUrl = asString(checkoutData.returnUrl);
+  const returnUrl = returnUrlOverride ?? asString(checkoutData.returnUrl);
   const providerReference = subscriptionId ?? orderId;
   const isRecurring = Boolean(subscriptionId);
 

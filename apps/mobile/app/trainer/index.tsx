@@ -33,7 +33,7 @@ function normalizeTrainerView(value: string | string[] | undefined): TrainerView
 export default function Trainer() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const router = useRouter();
-  const { session } = useAuth();
+  const { logout, session } = useAuth();
   const view = normalizeTrainerView(params.view);
   const clientsQuery = useTrainerClients();
   const clients = clientsQuery.data?.clients ?? [];
@@ -66,6 +66,26 @@ export default function Trainer() {
             title={title}
             subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
             chip={<StatusChip status="Trainer" tone="neutral" />}
+            trailing={
+              <View style={styles.headerActions}>
+                <Pressable
+                  onPress={() => router.push("/profile")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open profile"
+                  style={styles.iconButton}
+                >
+                  <IconBubble icon="person-circle-outline" tone="blue" size={30} />
+                </Pressable>
+                <Pressable
+                  onPress={() => void logout()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign out"
+                  style={[styles.iconButton, styles.signOutButton]}
+                >
+                  <IconBubble icon="log-out-outline" tone="red" size={30} />
+                </Pressable>
+              </View>
+            }
           />
 
           {view === "home" ? (
@@ -232,6 +252,25 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     gap: 10,
     paddingBottom: layout.bottomNavContentPadding + 32,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  iconButton: {
+    minWidth: 44,
+    minHeight: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  signOutButton: {
+    borderColor: "rgba(255,90,61,0.28)",
+    backgroundColor: "rgba(255,90,61,0.08)",
   },
   priorityClientCard: {
     gap: spacing.md,

@@ -387,6 +387,13 @@ export async function demoMobileApiFetch<T>(
     } as T;
   }
   if (pathname === "/me/attendance") return { attendance: zookDemoFixtures.attendanceAttempts } as T;
+  if (pathname.match(/^\/me\/attendance\/[^/]+$/)) {
+    const attendanceRecordId = pathname.split("/").at(-1);
+    const attendance =
+      zookDemoFixtures.attendanceAttempts.find((record) => record.id === attendanceRecordId) ??
+      zookDemoFixtures.attendanceAttempts[0];
+    return { attendance } as T;
+  }
   if (pathname === "/attendance/scan") {
     const attempt = zookDemoFixtures.attendanceAttempts.find((record) => record.status === "APPROVED") ?? zookDemoFixtures.attendanceAttempts[0];
     return {
@@ -493,6 +500,12 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname.endsWith("/members")) {
     return { members: demoMembers() } as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/members\/[^/]+$/)) {
+    const memberUserId = pathname.split("/").at(-1);
+    const member = demoMembers().find((candidate) => candidate.profile.userId === memberUserId);
+    return { member: member ?? demoMembers()[0] } as T;
   }
 
   if (pathname.endsWith("/attendance/live") || pathname.endsWith("/attendance/pending")) {

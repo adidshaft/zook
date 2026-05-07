@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { mobileApiFetch } from "./api";
 import { getStoredValue, setStoredValue } from "./storage";
 
 const LOCALE_STORAGE_KEY = "zook_mobile_locale";
+const SESSION_STORAGE_KEY = "zook_session";
+const localeListeners = new Set<(preference: LocalePreference) => void>();
 
 export type AppLocale = "en" | "hi";
 export type LocalePreference = "system" | AppLocale;
@@ -552,6 +555,30 @@ function normalizePreference(value?: string | null): LocalePreference {
   return value === "hi" || value === "en" || value === "system" ? value : "system";
 }
 
+async function patchProfileLocale(preference: LocalePreference) {
+  if (preference === "system") {
+    return;
+  }
+  const token = await getStoredValue(SESSION_STORAGE_KEY);
+  if (!token) {
+    return;
+  }
+  await mobileApiFetch("/me/profile", {
+    method: "PATCH",
+    token,
+    body: { preferredLocale: preference },
+  });
+}
+
+export async function applySessionLocalePreference(value?: string | null) {
+  const nextPreference = normalizePreference(value);
+  if (nextPreference === "system") {
+    return;
+  }
+  await setStoredValue(LOCALE_STORAGE_KEY, nextPreference);
+  localeListeners.forEach((listener) => listener(nextPreference));
+}
+
 function interpolate(template: string, values?: TranslationValues) {
   if (!values) {
     return template;
@@ -569,6 +596,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    const syncFromSession = (nextPreference: LocalePreference) => {
+      if (!cancelled) {
+        setPreference(nextPreference);
+      }
+    };
+    localeListeners.add(syncFromSession);
     void getStoredValue(LOCALE_STORAGE_KEY)
       .then((storedPreference) => {
         if (!cancelled) {
@@ -582,12 +615,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       });
     return () => {
       cancelled = true;
+      localeListeners.delete(syncFromSession);
     };
   }, []);
 
   const setLocalePreference = useCallback(async (nextPreference: LocalePreference) => {
     setPreference(nextPreference);
     await setStoredValue(LOCALE_STORAGE_KEY, nextPreference);
+    void patchProfileLocale(nextPreference);
   }, []);
 
   const t = useCallback(

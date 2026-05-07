@@ -228,16 +228,36 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
     }
   }, [pushToken, queryClient]);
 
-  const ensureAndroidChannel = useCallback(async () => {
+  const ensureAndroidChannels = useCallback(async () => {
     if (Platform.OS !== "android") {
       return;
     }
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "Default",
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#B9F455",
-    });
+    await Promise.all([
+      Notifications.setNotificationChannelAsync("payments", {
+        name: "Payments",
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#B9F455",
+      }),
+      Notifications.setNotificationChannelAsync("ops", {
+        name: "Operations",
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#B9F455",
+      }),
+      Notifications.setNotificationChannelAsync("reminders", {
+        name: "Reminders",
+        importance: Notifications.AndroidImportance.DEFAULT,
+      }),
+      Notifications.setNotificationChannelAsync("marketing", {
+        name: "Marketing",
+        importance: Notifications.AndroidImportance.LOW,
+      }),
+      Notifications.setNotificationChannelAsync("default", {
+        name: "Default",
+        importance: Notifications.AndroidImportance.DEFAULT,
+      }),
+    ]);
   }, []);
 
   const registerExpoPushToken = useCallback(
@@ -327,7 +347,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       }
 
       try {
-        await ensureAndroidChannel();
+        await ensureAndroidChannels();
         const nextToken = await Notifications.getExpoPushTokenAsync({
           projectId,
           ...(Platform.OS === "ios"
@@ -341,8 +361,12 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
         return false;
       }
     },
-    [ensureAndroidChannel, registerExpoPushToken],
+    [ensureAndroidChannels, registerExpoPushToken],
   );
+
+  useEffect(() => {
+    void ensureAndroidChannels();
+  }, [ensureAndroidChannels]);
 
   const requestEnablePush = useCallback(async () => {
     const registered = await ensureRegistered({ promptForPermission: true });

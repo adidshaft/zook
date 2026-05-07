@@ -7,9 +7,10 @@ export interface ParsedDeepLink {
 type NotificationRouteInput = Record<string, unknown> | null | undefined;
 
 const trustedWebHosts = new Set([
-  "zook.app",
-  "www.zook.app",
-  "staging.zook.app",
+  "app.zookfit.in",
+  "dashboard.zookfit.in",
+  "zookfit.in",
+  "www.zookfit.in",
   "localhost",
   "127.0.0.1",
 ]);
@@ -61,7 +62,7 @@ function parseInternalUrl(url: string): ParsedDeepLink | null {
     return null;
   }
   if (directPath.startsWith("/")) {
-    const parsed = new URL(directPath, "https://zook.app");
+    const parsed = new URL(directPath, "https://app.zookfit.in");
     const path = normalizePath(parsed.pathname);
     const params = searchParamsToRecord(parsed.searchParams);
     return { path, params, href: buildHref(path, params) };
@@ -85,6 +86,23 @@ function pickFirstString(input: NotificationRouteInput, keys: string[]) {
     }
   }
   return undefined;
+}
+
+function notificationKind(input: NotificationRouteInput) {
+  return [
+    readString(input?.type),
+    readString(input?.notificationType),
+    readString(input?.subtype),
+    readString(input?.eventType),
+    readString(input?.kind),
+    readString(input?.category),
+  ]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.toUpperCase());
+}
+
+function hasNotificationKind(kinds: string[], values: string[]) {
+  return kinds.some((kind) => values.includes(kind));
 }
 
 function messageText(input: NotificationRouteInput) {
@@ -154,22 +172,66 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
   const subscriptionId = pickFirstString(input, ["subscriptionId", "membershipId"]);
   const joinRequestId = pickFirstString(input, ["joinRequestId"]);
   const attendanceRecordId = pickFirstString(input, ["attendanceRecordId"]);
-  const notificationType = readString(input?.type)?.toUpperCase();
+  const templateId = pickFirstString(input, ["templateId", "workoutTemplateId"]);
+  const notificationKinds = notificationKind(input);
+  const notificationType = notificationKinds[0];
   const targetType = readString(input?.targetType)?.toLowerCase();
   const targetId = readString(input?.targetId);
+  const notificationId = readString(input?.notificationId);
+
+  if (
+    hasNotificationKind(notificationKinds, ["TRANSACTIONAL_MEMBERSHIP_RENEWED"]) ||
+    (notificationType === "TRANSACTIONAL" && /\bmembership\b.*\brenew/.test(messageText(input)))
+  ) {
+    return "/membership";
+  }
+
+  if (
+    attendanceRecordId &&
+    (hasNotificationKind(notificationKinds, ["TRANSACTIONAL_ATTENDANCE_APPROVED"]) ||
+      (notificationType === "TRANSACTIONAL" && /\battendance\b.*\bapproved\b/.test(messageText(input))))
+  ) {
+    return `/attendance/${encodePathSegment(attendanceRecordId)}`;
+  }
+
+  if (
+    orderId &&
+    (hasNotificationKind(notificationKinds, ["TRANSACTIONAL_ORDER_READY"]) ||
+      (notificationType === "TRANSACTIONAL" && /\border\b.*\bready\b/.test(messageText(input))))
+  ) {
+    return `/shop/pickup/${encodePathSegment(orderId)}`;
+  }
+
+  if (
+    notificationId &&
+    (hasNotificationKind(notificationKinds, ["OPERATIONAL_GYM_CLOSURE", "PROMOTIONAL"]) ||
+      notificationType === "PROMOTIONAL" ||
+      (notificationType === "OPERATIONAL" && /\bclosure\b|\bclosed\b/.test(messageText(input))))
+  ) {
+    return `/notifications/${encodePathSegment(notificationId)}`;
+  }
+
+  if (
+    assignmentId &&
+    (hasNotificationKind(notificationKinds, ["PLAN_ASSIGNED"]) || notificationType === "PLAN")
+  ) {
+    return `/plans/${encodePathSegment(assignmentId)}`;
+  }
+
+  if (
+    templateId &&
+    (hasNotificationKind(notificationKinds, ["ENGAGEMENT_WORKOUT_REMINDER"]) ||
+      (notificationType === "ENGAGEMENT" && /\bworkout\b.*\breminder\b/.test(messageText(input))))
+  ) {
+    return buildHref("/tracking-entry", { prefill: templateId });
+  }
 
   if (targetType && targetId) {
     if (targetType === "plan") {
-      return buildHref(
-        "/plans",
-        maybeAttachNotificationId({ ...params, assignmentId: targetId, focus: "plan" }, input),
-      );
+      return `/plans/${encodePathSegment(targetId)}`;
     }
     if (targetType === "order") {
-      return buildHref(
-        "/shop",
-        maybeAttachNotificationId({ ...params, orderId: targetId, focus: "pickup" }, input),
-      );
+      return `/shop/pickup/${encodePathSegment(targetId)}`;
     }
     if (targetType === "membership") {
       return buildHref(
@@ -186,10 +248,7 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
   }
 
   if (orderId) {
-    return buildHref(
-      "/shop",
-      maybeAttachNotificationId({ ...params, orderId, focus: "shop-order" }, input),
-    );
+    return `/shop/pickup/${encodePathSegment(orderId)}`;
   }
 
   if (subscriptionId || joinRequestId || messageText(input).includes("membership")) {
@@ -208,18 +267,15 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
   }
 
   if (assignmentId) {
-    return buildHref(
-      "/plans",
-      maybeAttachNotificationId(
-        {
-          ...params,
-          assignmentId,
-          ...(planId ? { planId } : {}),
-          focus: hasPtContext(input) ? "pt-update" : "plan",
-        },
-        input,
-      ),
+    const detailParams = maybeAttachNotificationId(
+      {
+        ...params,
+        ...(planId ? { planId } : {}),
+        focus: hasPtContext(input) ? "pt-update" : "plan",
+      },
+      input,
     );
+    return buildHref(`/plans/${encodePathSegment(assignmentId)}`, detailParams);
   }
 
   if (planId || notificationType === "PLAN") {
@@ -251,7 +307,6 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
     return buildHref("/plans", maybeAttachNotificationId({ ...params, focus: "pt-update" }, input));
   }
 
-  const notificationId = readString(input?.notificationId);
   if (notificationId) {
     return buildHref(`/notifications/${encodePathSegment(notificationId)}`, params);
   }

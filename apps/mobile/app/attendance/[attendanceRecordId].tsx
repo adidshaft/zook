@@ -1,6 +1,8 @@
 import { Link, Stack, type Href, useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BottomNav,
   GlassCard,
@@ -15,7 +17,7 @@ import {
 } from "@/components/primitives";
 import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { useAuth } from "@/lib/auth";
-import { useMyAttendance } from "@/lib/query-hooks";
+import { attendanceApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type AttendanceRecord = {
@@ -63,16 +65,35 @@ export default function AttendanceResultScreen() {
     reason?: string | string[];
     warning?: string | string[];
   }>();
-  const { activeRole } = useAuth();
-  const attendanceQuery = useMyAttendance();
-  const records = (attendanceQuery.data?.attendance ?? []) as AttendanceRecord[];
+  const { activeRole, status, token } = useAuth();
+  const queryClient = useQueryClient();
   const attendanceRecordId = firstParam(routeParams.attendanceRecordId);
-  // CODEX: useMyAttendance is the only real record source on this screen; URL params are not trusted for attendance details (§6.6).
-  const recordFromApi = records.find((record) => record.id === attendanceRecordId) ?? null;
-  const recordIdMismatch = Boolean(
-    attendanceRecordId && recordFromApi && recordFromApi.id !== attendanceRecordId,
-  );
+  const attendanceQuery = useQuery({
+    queryKey: ["me", "attendance", attendanceRecordId],
+    queryFn: () =>
+      attendanceApi.detail<{ attendance: AttendanceRecord }>({
+        token,
+        attendanceRecordId: attendanceRecordId!,
+      }),
+    enabled:
+      status === "authenticated" &&
+      Boolean(token) &&
+      Boolean(attendanceRecordId),
+    retry: false,
+  });
+  const recordFromApi = attendanceQuery.data?.attendance ?? null;
   const warning = firstParam(routeParams.warning);
+
+  useEffect(() => {
+    if (!attendanceRecordId) {
+      return;
+    }
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
+      queryClient.invalidateQueries({ queryKey: ["me", "attendance", attendanceRecordId] }),
+      queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+    ]);
+  }, [attendanceRecordId, queryClient]);
 
   if (attendanceQuery.isLoading && !recordFromApi) {
     return (
@@ -95,7 +116,7 @@ export default function AttendanceResultScreen() {
     );
   }
 
-  if (!attendanceRecordId || !recordFromApi || recordIdMismatch) {
+  if (!attendanceRecordId || !recordFromApi) {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
@@ -137,10 +158,6 @@ export default function AttendanceResultScreen() {
   const planName = record.planName ?? "Active membership";
   const planTarget: Href =
     activeRole === "TRAINER" ? "/trainer?view=plans" : "/plans?view=detail";
-  const isFirstCheckIn =
-    approved &&
-    Boolean(recordFromApi) &&
-    records.filter((candidate) => candidate.status === "APPROVED").length <= 1;
 
   return (
     <>
@@ -184,18 +201,6 @@ export default function AttendanceResultScreen() {
                   : (record.reason ?? "Entry approved for your gym")}
             </Text>
           </View>
-
-          {isFirstCheckIn ? (
-            <GlassCard variant="selected" contentStyle={styles.firstCheckInContent}>
-              <IconBubble icon="sparkles-outline" tone="lime" size={42} />
-              <View style={styles.firstCheckInCopy}>
-                <Text style={styles.firstCheckInTitle}>First check-in!</Text>
-                <Text style={styles.firstCheckInBody}>
-                  You're officially part of the gym. Keep the streak going.
-                </Text>
-              </View>
-            </GlassCard>
-          ) : null}
 
           {approved && warning ? (
             <GlassCard contentStyle={styles.warningContent}>
@@ -380,24 +385,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     ...typography.body,
     textAlign: "center",
-  },
-  firstCheckInContent: {
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  firstCheckInCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  firstCheckInTitle: {
-    color: colors.text,
-    ...typography.h3,
-  },
-  firstCheckInBody: {
-    color: colors.muted,
-    ...typography.small,
   },
   pendingCodeContent: {
     alignItems: "center",

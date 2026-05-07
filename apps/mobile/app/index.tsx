@@ -61,8 +61,7 @@ export default function Home() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const [gymsOpen, setGymsOpen] = useState(false);
-  const { activeOrgId, session, setActiveOrgId } = useAuth();
+  const { activeOrgId, session } = useAuth();
   const homeQuery = useMemberHome();
   const memberHome = homeQuery.data;
   const sessionOrganization =
@@ -103,7 +102,6 @@ export default function Home() {
         month: "short",
       })
     : "None";
-  const enrolledGyms = session?.organizations ?? [];
   const hasGym = Boolean(activeOrganization);
   const hasMembership = Boolean(memberHome?.activeMembership);
   const neverCheckedIn = hasMembership && (memberHome?.recentAttendance?.length ?? 0) === 0;
@@ -293,121 +291,6 @@ export default function Home() {
             </>
           ) : null}
         </ScrollView>
-        {gymsOpen ? (
-          <View style={styles.drawerScene}>
-            <Pressable
-              style={styles.drawerBackdrop}
-              onPress={() => setGymsOpen(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Close gym switcher"
-            />
-            <View style={styles.drawerPanel}>
-              <ScrollView
-                style={styles.drawerScroll}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.drawerContent}
-              >
-                <View style={styles.drawerHeader}>
-                  <View style={styles.drawerAvatar}>
-                    <Text style={styles.drawerAvatarText}>{initials}</Text>
-                  </View>
-                  <View style={styles.drawerHeaderCopy}>
-                    <Text numberOfLines={1} style={styles.drawerName}>
-                      {memberName}
-                    </Text>
-                    <Text numberOfLines={1} style={styles.drawerMuted}>
-                      {session?.user.email ?? session?.user.phone ?? ""}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => setGymsOpen(false)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Close"
-                    style={styles.drawerClose}
-                  >
-                    <Ionicons name="close" size={18} color={colors.text} />
-                  </Pressable>
-                </View>
-
-                <DrawerToggle
-                  title="Enrolled Gyms"
-                  open={gymsOpen}
-                  onPress={() => setGymsOpen((current) => !current)}
-                />
-                {gymsOpen ? (
-                  <View style={styles.drawerGymList}>
-                    {enrolledGyms.map((gym) => {
-                      const selected = gym.orgId === activeOrgId;
-                      const gymLogoUrl = normalizeMediaUrl(
-                        (gym as { logoUrl?: string | null }).logoUrl,
-                      );
-                      return (
-                        <Pressable
-                          key={`${gym.name}-${gym.city}`}
-                          onPress={() => void setActiveOrgId(gym.orgId)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Switch to ${gym.name}`}
-                          style={[styles.drawerGymRow, selected ? styles.drawerGymRowActive : null]}
-                        >
-                          <View style={styles.drawerGymLogo}>
-                            {gymLogoUrl ? (
-                              <Image
-                                source={{ uri: gymLogoUrl }}
-                                style={styles.drawerGymLogoImage}
-                                contentFit="cover"
-                              />
-                            ) : (
-                              <Text style={styles.drawerGymLogoText}>{initialsFor(gym.name)}</Text>
-                            )}
-                          </View>
-                          <View style={styles.drawerGymCopy}>
-                            <Text numberOfLines={1} style={styles.drawerGymName}>
-                              {gym.name}
-                            </Text>
-                            <Text numberOfLines={1} style={styles.drawerMuted}>
-                              {gym.city}, {gym.state}
-                            </Text>
-                          </View>
-                          <Text
-                            style={
-                              selected ? styles.drawerGymActiveText : styles.drawerGymSwitchText
-                            }
-                          >
-                            {selected ? "Active" : "Switch"}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                ) : null}
-                <Pressable
-                  onPress={() => {
-                    setGymsOpen(false);
-                    router.push("/settings");
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Open settings"
-                  style={styles.drawerSettings}
-                >
-                  <Ionicons name="settings-outline" size={18} color={colors.lime} />
-                  <Text style={styles.drawerSettingsText}>Settings</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setGymsOpen(false);
-                    router.push("/shop");
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Open shop"
-                  style={styles.drawerSettings}
-                >
-                  <Ionicons name="storefront-outline" size={18} color={colors.lime} />
-                  <Text style={styles.drawerSettingsText}>Shop</Text>
-                </Pressable>
-              </ScrollView>
-            </View>
-          </View>
-        ) : null}
         {renewalImminent ? (
           <StickyActionBar>
             <ZookButton href="/membership" icon="refresh-outline" fullWidth>
@@ -415,7 +298,7 @@ export default function Home() {
             </ZookButton>
           </StickyActionBar>
         ) : null}
-        {!gymsOpen && !renewalImminent ? <BottomNav /> : null}
+        {!renewalImminent ? <BottomNav /> : null}
       </ZookScreen>
     </>
   );
@@ -568,32 +451,6 @@ function FirstRunCard({
   );
 }
 
-function DrawerToggle({
-  title,
-  subtitle,
-  open,
-  onPress,
-}: {
-  title: string;
-  subtitle?: string;
-  open: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={styles.drawerToggle}>
-      <View style={styles.drawerToggleCopy}>
-        <Text style={styles.drawerToggleTitle}>{title}</Text>
-        {subtitle ? (
-          <Text numberOfLines={1} style={styles.drawerMuted}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-      <Ionicons name={open ? "chevron-up" : "chevron-down"} size={18} color={colors.muted} />
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   content: {
     width: "100%",
@@ -665,9 +522,9 @@ const styles = StyleSheet.create({
     ...typography.small,
   },
   iconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.panel,
@@ -927,167 +784,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   trackTitle: {
-    color: colors.text,
-    ...typography.bodyStrong,
-  },
-  drawerScene: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 140,
-    elevation: 140,
-    flexDirection: "row",
-    backgroundColor: "rgba(0,0,0,0.26)",
-  },
-  drawerBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  drawerPanel: {
-    width: "84%",
-    maxWidth: 336,
-    height: "100%",
-    borderTopRightRadius: 28,
-    borderBottomRightRadius: 28,
-    borderRightWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-    backgroundColor: "rgba(8,11,9,0.98)",
-    overflow: "hidden",
-  },
-  drawerScroll: {
-    zIndex: 1,
-  },
-  drawerContent: {
-    paddingTop: 54,
-    paddingHorizontal: 16,
-    paddingBottom: 26,
-    gap: 12,
-  },
-  drawerHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingBottom: 8,
-  },
-  drawerAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: colors.lime,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  drawerAvatarText: {
-    color: colors.bg,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  drawerHeaderCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  drawerName: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  drawerMuted: {
-    color: colors.muted,
-    ...typography.small,
-  },
-  drawerClose: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  drawerToggle: {
-    minHeight: 58,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  drawerToggleCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  drawerToggleTitle: {
-    color: colors.text,
-    ...typography.cardTitle,
-  },
-  drawerGymList: {
-    gap: 8,
-  },
-  drawerGymRow: {
-    minHeight: 62,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(185,244,85,0.08)",
-    padding: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  drawerGymRowActive: {
-    borderColor: colors.limeBorder,
-    backgroundColor: "rgba(185,244,85,0.12)",
-  },
-  drawerGymLogo: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
-    backgroundColor: "rgba(185,244,85,0.14)",
-    borderWidth: 1,
-    borderColor: colors.limeBorder,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  drawerGymLogoImage: {
-    width: "100%",
-    height: "100%",
-  },
-  drawerGymLogoText: {
-    color: colors.lime,
-    fontSize: 12,
-    fontWeight: "900",
-  },
-  drawerGymCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  drawerGymName: {
-    color: colors.text,
-    ...typography.bodyStrong,
-  },
-  drawerGymActiveText: {
-    color: colors.lime,
-    ...typography.caption,
-  },
-  drawerGymSwitchText: {
-    color: colors.muted,
-    ...typography.caption,
-  },
-  drawerSettings: {
-    minHeight: 48,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(7,9,8,0.72)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  drawerSettingsText: {
     color: colors.text,
     ...typography.bodyStrong,
   },

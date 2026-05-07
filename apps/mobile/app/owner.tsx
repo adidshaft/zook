@@ -88,7 +88,7 @@ function redactPhone(phone?: string | null) {
 export default function Owner() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeOrgId, activeRole, token } = useAuth();
+  const { activeOrgId, activeRole, logout, token } = useAuth();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const view = normalizeView(params.view);
   const [memberSearch, setMemberSearch] = useState("");
@@ -308,6 +308,15 @@ export default function Owner() {
         <View style={styles.utilityRow}>
           <BranchSelectorChip />
           <Pressable
+            onPress={() => router.push("/profile")}
+            accessibilityRole="button"
+            accessibilityLabel="Open profile"
+            style={styles.utilityPill}
+          >
+            <Ionicons name="person-circle-outline" size={16} color={colors.muted} />
+            <Text style={styles.utilityText}>Profile</Text>
+          </Pressable>
+          <Pressable
             onPress={() => router.replace(view === "members" ? "/owner" : "/owner?view=members")}
             accessibilityRole="button"
             accessibilityLabel={view === "members" ? "Back to command" : "Open members"}
@@ -323,6 +332,15 @@ export default function Owner() {
             >
               {view === "members" ? "Back to command" : "Members"}
             </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => void logout()}
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+            style={[styles.utilityPill, styles.signOutPill]}
+          >
+            <Ionicons name="log-out-outline" size={16} color={colors.red} />
+            <Text style={[styles.utilityText, styles.signOutText]}>Sign out</Text>
           </Pressable>
         </View>
 
@@ -829,12 +847,19 @@ const styles = StyleSheet.create({
     borderColor: "rgba(185,244,85,0.34)",
     backgroundColor: "rgba(185,244,85,0.14)",
   },
+  signOutPill: {
+    borderColor: "rgba(255,90,61,0.28)",
+    backgroundColor: "rgba(255,90,61,0.08)",
+  },
   utilityText: {
     color: colors.muted,
     ...typography.caption,
   },
   utilityTextActive: {
     color: colors.lime,
+  },
+  signOutText: {
+    color: colors.red,
   },
   clearSearchButton: {
     width: 34,

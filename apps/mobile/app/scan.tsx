@@ -1,10 +1,17 @@
 import { Stack, useRouter } from "expo-router";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
-import { useEffect, useRef, useState } from "react";
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Linking,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -27,7 +34,9 @@ import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { attendanceApi } from "@/lib/domain-api";
+import { usePushNotifications } from "@/lib/push-notifications";
 import { getMobileAppEnv } from "@/lib/runtime-mode";
+import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type ScanResult = {
@@ -47,6 +56,21 @@ type ScanResult = {
 };
 type ScanState = "idle" | "checking" | "accepted" | "failed";
 type ScanMode = "scan" | "code";
+type AttendanceResultHref = {
+  pathname: "/attendance/[attendanceRecordId]";
+  params: {
+    attendanceRecordId: string;
+    status: string;
+    entryCode: string;
+    branchName: string;
+    planName: string;
+    checkedInAt: string;
+    reason: string;
+    warning: string;
+  };
+};
+
+const PUSH_PROMPTED_STORAGE_KEY = "zook_push_prompted";
 
 const scanModeOptions: Array<{ label: string; value: ScanMode }> = [
   { label: "Scan QR", value: "scan" },
@@ -62,13 +86,20 @@ export default function Scan() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const { permissionState, requestEnablePush } = usePushNotifications();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>("scan");
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [code, setCode] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [pendingPushPromptHref, setPendingPushPromptHref] = useState<AttendanceResultHref | null>(
+    null,
+  );
   const completedRef = useRef(false);
+  const pushPromptClosingRef = useRef(false);
+  const pushPromptSheetRef = useRef<BottomSheetModal>(null);
+  const pushPromptSnapPoints = useMemo(() => ["36%"], []);
 
   useEffect(() => {
     if (!permission) {
@@ -99,6 +130,65 @@ export default function Scan() {
       .join(" ");
   }
 
+  function attendanceResultHref(result: ScanResult, status: string): AttendanceResultHref {
+    return {
+      pathname: "/attendance/[attendanceRecordId]",
+      params: {
+        attendanceRecordId: result.attendance.id,
+        status,
+        entryCode: result.attendance.entryCode ?? "",
+        branchName: result.attendance.branchName ?? "",
+        planName: result.attendance.planName ?? "",
+        checkedInAt: result.attendance.checkedInAt ?? "",
+        reason: scanReason(result),
+        warning: scanWarnings(result),
+      },
+    };
+  }
+
+  function navigateToAttendance(href: AttendanceResultHref) {
+    router.push(href as never);
+  }
+
+  async function maybeShowPushPrompt(href: AttendanceResultHref) {
+    if (Platform.OS === "web" || permissionState === "granted") {
+      return false;
+    }
+    const prompted = await getStoredValue(PUSH_PROMPTED_STORAGE_KEY);
+    if (prompted) {
+      return false;
+    }
+    await setStoredValue(PUSH_PROMPTED_STORAGE_KEY, "1");
+    setPendingPushPromptHref(href);
+    setTimeout(() => pushPromptSheetRef.current?.present(), 0);
+    return true;
+  }
+
+  async function closePushPrompt(enable: boolean) {
+    const href = pendingPushPromptHref;
+    pushPromptClosingRef.current = true;
+    setPendingPushPromptHref(null);
+    pushPromptSheetRef.current?.dismiss();
+    if (enable) {
+      await requestEnablePush();
+    }
+    if (href) {
+      navigateToAttendance(href);
+    }
+  }
+
+  const renderPushPromptBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
+
   async function completeScan(payload: string) {
     if (completedRef.current) {
       return;
@@ -125,19 +215,11 @@ export default function Scan() {
       );
       void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
-      router.push({
-        pathname: "/attendance/[attendanceRecordId]",
-        params: {
-          attendanceRecordId: result.attendance.id,
-          status,
-          entryCode: result.attendance.entryCode ?? "",
-          branchName: result.attendance.branchName ?? "",
-          planName: result.attendance.planName ?? "",
-          checkedInAt: result.attendance.checkedInAt ?? "",
-          reason: scanReason(result),
-          warning: scanWarnings(result),
-        },
-      });
+      const nextHref = attendanceResultHref(result, status);
+      if (!failed && await maybeShowPushPrompt(nextHref)) {
+        return;
+      }
+      navigateToAttendance(nextHref);
     } catch (error) {
       completedRef.current = false;
       setScanState("failed");
@@ -178,19 +260,7 @@ export default function Scan() {
       );
       void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
-      router.push({
-        pathname: "/attendance/[attendanceRecordId]",
-        params: {
-          attendanceRecordId: result.attendance.id,
-          status,
-          entryCode: result.attendance.entryCode ?? "",
-          branchName: result.attendance.branchName ?? "",
-          planName: result.attendance.planName ?? "",
-          checkedInAt: result.attendance.checkedInAt ?? "",
-          reason: scanReason(result),
-          warning: scanWarnings(result),
-        },
-      });
+      navigateToAttendance(attendanceResultHref(result, status));
     } catch (error) {
       completedRef.current = false;
       setScanState("failed");
@@ -398,6 +468,53 @@ export default function Scan() {
         </KeyboardAwareScreen>
         <BottomNav />
       </ZookScreen>
+      <BottomSheetModal
+        ref={pushPromptSheetRef}
+        snapPoints={pushPromptSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderPushPromptBackdrop}
+        backgroundStyle={styles.sheetBackground}
+        handleIndicatorStyle={styles.sheetHandle}
+        onDismiss={() => {
+          if (pushPromptClosingRef.current) {
+            pushPromptClosingRef.current = false;
+            return;
+          }
+          if (pendingPushPromptHref) {
+            const href = pendingPushPromptHref;
+            setPendingPushPromptHref(null);
+            navigateToAttendance(href);
+          }
+        }}
+      >
+        <BottomSheetView style={styles.pushPromptSheet}>
+          <View style={styles.pushPromptHeader}>
+            <IconBubble icon="barbell-outline" tone="lime" size={42} />
+            <View style={styles.pushPromptCopy}>
+              <Text style={styles.pushPromptTitle}>Get plan alerts</Text>
+              <Text style={styles.pushPromptBody}>
+                Get notified when your trainer publishes a new plan.
+              </Text>
+            </View>
+          </View>
+          <View style={styles.pushPromptActions}>
+            <ZookButton
+              onPress={() => void closePushPrompt(true)}
+              icon="notifications-outline"
+              style={styles.pushPromptAction}
+            >
+              Enable
+            </ZookButton>
+            <ZookButton
+              onPress={() => void closePushPrompt(false)}
+              tone="secondary"
+              style={styles.pushPromptAction}
+            >
+              Not now
+            </ZookButton>
+          </View>
+        </BottomSheetView>
+      </BottomSheetModal>
     </>
   );
 }
@@ -590,5 +707,44 @@ const styles = StyleSheet.create({
     color: colors.muted,
     textDecorationLine: "underline",
     ...typography.caption,
+  },
+  sheetBackground: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+  },
+  sheetHandle: {
+    backgroundColor: "rgba(255,255,255,0.22)",
+  },
+  pushPromptSheet: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  pushPromptHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  pushPromptCopy: {
+    flex: 1,
+    gap: 5,
+  },
+  pushPromptTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  pushPromptBody: {
+    color: colors.muted,
+    ...typography.body,
+  },
+  pushPromptActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  pushPromptAction: {
+    flex: 1,
   },
 });

@@ -1386,6 +1386,7 @@ export function ProductCard({
             accessibilityRole="button"
             accessibilityLabel={`Add ${name}`}
             accessibilityState={{ disabled: !canIncrement }}
+            hitSlop={compact ? { top: 6, bottom: 6, left: 0, right: 0 } : undefined}
             style={[
               styles.productAdd,
               compact ? styles.productAddCompact : null,
@@ -2646,7 +2647,7 @@ const styles = StyleSheet.create({
   },
   productAddCompact: {
     minWidth: 62,
-    height: 32,
+    minHeight: 44,
   },
   productAddDisabled: {
     borderColor: colors.border,

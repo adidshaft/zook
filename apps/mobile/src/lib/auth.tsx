@@ -20,6 +20,7 @@ import * as LocalAuthentication from "expo-local-authentication";
 import { Alert, AppState } from "react-native";
 import { authClient } from "./domain-api";
 import { DEMO_AUTH_TOKEN, isOfflineDemoMode } from "./demo-mode";
+import { applySessionLocalePreference } from "./i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const SESSION_STORAGE_KEY = "zook_session";
@@ -236,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setOfflineBanner(undefined);
       setProactiveLogin(undefined);
       setError(undefined);
+      await applySessionLocalePreference(currentSession.user.preferredLocale);
     },
     [],
   );
