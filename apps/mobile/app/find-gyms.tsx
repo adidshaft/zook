@@ -1,7 +1,7 @@
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useDeferredValue, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
   BottomNav,
@@ -13,6 +13,7 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { toWebUrl } from "@/lib/api";
 import { joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
 import { useGymSearch } from "@/lib/query-hooks";
@@ -44,10 +45,12 @@ export default function FindGyms() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+        <KeyboardAwareScreen
+          scrollViewProps={{
+            contentInsetAdjustmentBehavior: "never",
+            showsVerticalScrollIndicator: false,
+            contentContainerStyle: styles.content,
+          }}
         >
           <MobileHeader
             eyebrow="Discovery"
@@ -211,7 +214,7 @@ export default function FindGyms() {
               </Link>
             ))}
           </View>
-        </ScrollView>
+        </KeyboardAwareScreen>
         <BottomNav />
       </ZookScreen>
     </>

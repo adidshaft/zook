@@ -2,7 +2,7 @@ import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import type { Href } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   AuditWarning,
   BottomNav,
@@ -18,6 +18,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { plansApi, trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/query-hooks";
@@ -177,10 +178,12 @@ export default function TrainerClientDetail() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+        <KeyboardAwareScreen
+          scrollViewProps={{
+            contentInsetAdjustmentBehavior: "never",
+            showsVerticalScrollIndicator: false,
+            contentContainerStyle: styles.content,
+          }}
         >
           <MobileHeader
             title={clientName}
@@ -424,7 +427,7 @@ export default function TrainerClientDetail() {
               <Text style={styles.statusText}>{status}</Text>
             </GlassCard>
           ) : null}
-        </ScrollView>
+        </KeyboardAwareScreen>
         <BottomNav selectedPath="/trainer/client" role="TRAINER" />
       </ZookScreen>
     </>

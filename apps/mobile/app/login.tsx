@@ -2,17 +2,16 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  KeyboardAvoidingView,
+  Keyboard,
   LayoutAnimation,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { BrandMark, GlassCard, GlassInput, ZookButton, ZookScreen } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { getMobileReleaseProfile } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -129,35 +128,31 @@ export default function Login() {
 
   return (
     <ZookScreen ambient={false}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
+      <KeyboardAwareScreen
+        scrollViewProps={{
+          contentInsetAdjustmentBehavior: "never",
+          contentContainerStyle: styles.content,
+        }}
       >
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.heroSection}>
-            <View style={styles.heroGlow} />
-            <Text style={styles.heroEyebrow}>{t("auth.heroEyebrow")}</Text>
-            <View style={styles.logoRow}>
-              <BrandMark size="lg" />
-              <Text style={[styles.heroTitle, { fontSize: heroFontSize }]}>Zook</Text>
-            </View>
-            <Text style={styles.heroBody}>{t("auth.heroBody")}</Text>
+        <View style={styles.heroSection}>
+          <View style={styles.heroGlow} />
+          <Text style={styles.heroEyebrow}>{t("auth.heroEyebrow")}</Text>
+          <View style={styles.logoRow}>
+            <BrandMark size="lg" />
+            <Text style={[styles.heroTitle, { fontSize: heroFontSize }]}>Zook</Text>
           </View>
+          <Text style={styles.heroBody}>{t("auth.heroBody")}</Text>
+        </View>
 
-          <GlassCard contentStyle={styles.formContent}>
-            <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>
-                {stage === "identifier" ? t("auth.signIn") : t("auth.verifyCode")}
-              </Text>
-              <Text style={styles.formSubtitle}>
-                {stage === "identifier" ? t("auth.identifierSubtitle") : t("auth.otpSubtitle")}
-              </Text>
-            </View>
+        <GlassCard contentStyle={styles.formContent}>
+          <View style={styles.formHeader}>
+            <Text style={styles.formTitle}>
+              {stage === "identifier" ? t("auth.signIn") : t("auth.verifyCode")}
+            </Text>
+            <Text style={styles.formSubtitle}>
+              {stage === "identifier" ? t("auth.identifierSubtitle") : t("auth.otpSubtitle")}
+            </Text>
+          </View>
 
             {stage === "identifier" ? (
               <GlassInput
@@ -211,6 +206,7 @@ export default function Login() {
                 </ZookButton>
                 <ZookButton
                   onPress={() => {
+                    Keyboard.dismiss();
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setStage("identifier");
                     setCode("");
@@ -225,19 +221,18 @@ export default function Login() {
                 </ZookButton>
               </View>
             ) : null}
-          </GlassCard>
+        </GlassCard>
 
-          {/* Local test OTP banner — only visible in __DEV__ */}
-          {devOtp ? (
-            <View style={styles.devBanner}>
-              <Text style={styles.devBannerLabel}>{t("auth.testCode")}</Text>
-              <Text style={styles.devBannerCode}>{devOtp}</Text>
-            </View>
-          ) : null}
+        {/* Local test OTP banner - only visible in __DEV__ */}
+        {devOtp ? (
+          <View style={styles.devBanner}>
+            <Text style={styles.devBannerLabel}>{t("auth.testCode")}</Text>
+            <Text style={styles.devBannerCode}>{devOtp}</Text>
+          </View>
+        ) : null}
 
-          {message && !devOtp ? <Text style={styles.messageText}>{message}</Text> : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {message && !devOtp ? <Text style={styles.messageText}>{message}</Text> : null}
+      </KeyboardAwareScreen>
     </ZookScreen>
   );
 }
@@ -292,9 +287,6 @@ const OtpCodeInput = forwardRef<
 });
 
 const styles = StyleSheet.create({
-  keyboardAvoidingView: {
-    flex: 1,
-  },
   content: {
     padding: 20,
     paddingTop: 48,

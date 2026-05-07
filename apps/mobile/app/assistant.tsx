@@ -1,7 +1,16 @@
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Animated,
+  Keyboard,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -48,6 +57,7 @@ function starterMessage(isTrainer: boolean): ChatMessage {
 export default function AssistantScreen() {
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
+  const composerTranslateY = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
   const { activeOrgId, activeRole, hasAnyRole, token } = useAuth();
   const profileQuery = useMyProfile();
@@ -110,6 +120,28 @@ export default function AssistantScreen() {
     }
     void setStoredValue(storageKey, JSON.stringify(messages.slice(-50)));
   }, [messages, storageKey]);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardWillShow", (event) => {
+      const lift = Math.max(0, event.endCoordinates.height - insets.bottom);
+      Animated.timing(composerTranslateY, {
+        toValue: -lift,
+        duration: event.duration ?? 250,
+        useNativeDriver: true,
+      }).start();
+    });
+    const hideSubscription = Keyboard.addListener("keyboardWillHide", (event) => {
+      Animated.timing(composerTranslateY, {
+        toValue: 0,
+        duration: event.duration ?? 250,
+        useNativeDriver: true,
+      }).start();
+    });
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [composerTranslateY, insets.bottom]);
 
   async function copyMessage(message: ChatMessage) {
     if (message.role !== "assistant") {
@@ -286,7 +318,12 @@ export default function AssistantScreen() {
         </View>
 
       </ScrollView>
-      <View style={[styles.stickyComposer, { bottom: composerBottom }]}>
+      <Animated.View
+        style={[
+          styles.stickyComposer,
+          { bottom: composerBottom, transform: [{ translateY: composerTranslateY }] },
+        ]}
+      >
         <GlassCard contentStyle={styles.composerContent}>
           <TextInput
             value={draft}
@@ -319,7 +356,7 @@ export default function AssistantScreen() {
             </Pressable>
           </View>
         </GlassCard>
-      </View>
+      </Animated.View>
       <BottomNav />
     </ZookScreen>
   );

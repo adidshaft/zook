@@ -1,7 +1,7 @@
 import { useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View, Platform, Pressable } from "react-native";
+import { StyleSheet, Text, View, Platform, Pressable } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,9 +15,12 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { useAuth, getApiErrorMessage } from "@/lib/auth";
 import { memberApi } from "@/lib/domain-api";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 
 const workoutTypes = [
   { label: "Strength", value: "strength", icon: "barbell-outline" as const },
@@ -55,6 +58,7 @@ function emptyExercise(): ExerciseEntry {
 }
 
 export default function TrackingEntry() {
+  useHideBottomNav();
   const { activeOrgId, token } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -68,6 +72,7 @@ export default function TrackingEntry() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [exercises, setExercises] = useState<ExerciseEntry[]>([emptyExercise()]);
+  const scrollPaddingBottom = useBottomScrollPadding({ hasStickyAction: true });
 
   function updateExercise(index: number, field: keyof ExerciseEntry, value: string) {
     setExercises((current) =>
@@ -146,10 +151,12 @@ export default function TrackingEntry() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+        <KeyboardAwareScreen
+          scrollViewProps={{
+            contentInsetAdjustmentBehavior: "never",
+            showsVerticalScrollIndicator: false,
+            contentContainerStyle: [styles.content, { paddingBottom: scrollPaddingBottom }],
+          }}
         >
           <MobileHeader
             title="Log workout"
@@ -354,7 +361,7 @@ export default function TrackingEntry() {
             <Text style={styles.statusMessage}>{message}</Text>
           ) : null}
 
-        </ScrollView>
+        </KeyboardAwareScreen>
         <StickyActionBar>
           <ZookButton
             onPress={() => void saveWorkout()}
@@ -377,7 +384,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
   },
   iconButton: {
     width: 44,

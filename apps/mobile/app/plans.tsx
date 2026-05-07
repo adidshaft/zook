@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { resolvePlanName } from "@zook/ui";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   BottomNav,
   EmptyState,
@@ -17,6 +17,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import {
   useCompletePlanAssignment,
   useMyPlans,
@@ -201,10 +202,12 @@ export default function Plans() {
       <>
         <Stack.Screen options={{ headerShown: false }} />
         <ZookScreen>
-          <ScrollView
-            contentInsetAdjustmentBehavior="never"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.content}
+          <KeyboardAwareScreen
+            scrollViewProps={{
+              contentInsetAdjustmentBehavior: "never",
+              showsVerticalScrollIndicator: false,
+              contentContainerStyle: styles.content,
+            }}
           >
             <View style={styles.detailHeader}>
               <Pressable
@@ -321,7 +324,7 @@ export default function Plans() {
                 />
               ))}
             </View>
-          </ScrollView>
+          </KeyboardAwareScreen>
           <StickyActionBar>
             <View style={styles.stickyActionRow}>
               <ZookButton
@@ -351,10 +354,12 @@ export default function Plans() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+        <KeyboardAwareScreen
+          scrollViewProps={{
+            contentInsetAdjustmentBehavior: "never",
+            showsVerticalScrollIndicator: false,
+            contentContainerStyle: styles.content,
+          }}
         >
           <MobileHeader
             title="Plans & training"
@@ -457,7 +462,7 @@ export default function Plans() {
               </Pressable>
             ))}
           </View>
-        </ScrollView>
+        </KeyboardAwareScreen>
         <BottomNav selectedPath="/plans" />
       </ZookScreen>
     </>

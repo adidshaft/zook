@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   AuditWarning,
   BottomNav,
@@ -16,6 +16,8 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { plansApi, trainerApi } from "@/lib/domain-api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
@@ -107,6 +109,7 @@ function exercisesFromSections(sections: Array<{ title: string; body: string }>)
 }
 
 export default function TrainerAiDraftReview() {
+  useHideBottomNav();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const clientId = id || "user-aarav";
@@ -292,10 +295,12 @@ export default function TrainerAiDraftReview() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+        <KeyboardAwareScreen
+          scrollViewProps={{
+            contentInsetAdjustmentBehavior: "never",
+            showsVerticalScrollIndicator: false,
+            contentContainerStyle: styles.content,
+          }}
         >
           <MobileHeader
             title="Draft Review"
@@ -488,7 +493,7 @@ export default function TrainerAiDraftReview() {
               <Text style={styles.statusText}>{status}</Text>
             </GlassCard>
           ) : null}
-        </ScrollView>
+        </KeyboardAwareScreen>
         <BottomNav selectedPath="/trainer/client" role="TRAINER" />
       </ZookScreen>
     </>

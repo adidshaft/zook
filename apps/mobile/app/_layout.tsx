@@ -16,6 +16,7 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
 import { BranchSelectionProvider } from "@/lib/branch-selection";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
@@ -64,6 +65,38 @@ function safeRedirectTarget(value?: string | string[]) {
   return target;
 }
 
+function redirectAllowedForSession(
+  target: string | null,
+  helpers: {
+    hasActiveRole: (...roles: ("PLATFORM_ADMIN" | "OWNER" | "ADMIN" | "RECEPTIONIST" | "TRAINER")[]) => boolean;
+    hasAnyRole: (...roles: ("OWNER" | "ADMIN" | "RECEPTIONIST" | "TRAINER")[]) => boolean;
+  },
+) {
+  if (!target) return null;
+  if (target.startsWith("/platform")) {
+    return helpers.hasActiveRole("PLATFORM_ADMIN") ? target : null;
+  }
+  if (target.startsWith("/owner")) {
+    return helpers.hasAnyRole("OWNER", "ADMIN") &&
+      helpers.hasActiveRole("OWNER", "ADMIN")
+      ? target
+      : null;
+  }
+  if (target.startsWith("/reception")) {
+    return helpers.hasAnyRole("RECEPTIONIST", "OWNER", "ADMIN") &&
+      helpers.hasActiveRole("RECEPTIONIST", "OWNER", "ADMIN")
+      ? target
+      : null;
+  }
+  if (target.startsWith("/trainer")) {
+    return helpers.hasAnyRole("TRAINER", "OWNER", "ADMIN") &&
+      helpers.hasActiveRole("TRAINER", "OWNER", "ADMIN")
+      ? target
+      : null;
+  }
+  return target;
+}
+
 function LayoutContent() {
   const { defaultRoute, hasActiveRole, hasAnyRole, logout, status } = useAuth();
   const { t } = useI18n();
@@ -86,7 +119,11 @@ function LayoutContent() {
     }
 
     if (pathname === "/login") {
-      router.replace((safeRedirectTarget(searchParams.redirect) ?? defaultRoute) as never);
+      const validatedRedirect = redirectAllowedForSession(safeRedirectTarget(searchParams.redirect), {
+        hasActiveRole,
+        hasAnyRole,
+      });
+      router.replace((validatedRedirect ?? defaultRoute) as never);
       return;
     }
 
@@ -231,9 +268,11 @@ export default function Layout() {
       <I18nProvider>
         <AuthProvider>
           <BranchSelectionProvider>
-            <PushNotificationsProvider>
-              <LayoutContent />
-            </PushNotificationsProvider>
+            <BottomNavVisibilityProvider>
+              <PushNotificationsProvider>
+                <LayoutContent />
+              </PushNotificationsProvider>
+            </BottomNavVisibilityProvider>
           </BranchSelectionProvider>
         </AuthProvider>
       </I18nProvider>

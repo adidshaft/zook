@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import {
   BottomNav,
   BranchSelectorChip,
@@ -18,6 +18,7 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
 import {
@@ -238,10 +239,12 @@ export default function Owner() {
 
   return (
     <ZookScreen>
-      <ScrollView
-        contentInsetAdjustmentBehavior="never"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+      <KeyboardAwareScreen
+        scrollViewProps={{
+          contentInsetAdjustmentBehavior: "never",
+          showsVerticalScrollIndicator: false,
+          contentContainerStyle: styles.content,
+        }}
       >
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
@@ -689,7 +692,7 @@ export default function Owner() {
           </>
         ) : null}
         {actionStatus ? <Text style={styles.statusText}>{actionStatus}</Text> : null}
-      </ScrollView>
+      </KeyboardAwareScreen>
       <BottomNav
         role={shellRole}
         activeView={view === "command" ? undefined : view}

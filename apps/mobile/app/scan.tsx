@@ -6,7 +6,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Linking,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -23,6 +22,8 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { attendanceApi } from "@/lib/domain-api";
@@ -50,6 +51,11 @@ const scanModeOptions: Array<{ label: string; value: ScanMode }> = [
   { label: "Scan QR", value: "scan" },
   { label: "Enter code", value: "code" },
 ];
+
+function CameraActiveBottomNavHider() {
+  useHideBottomNav();
+  return null;
+}
 
 export default function Scan() {
   const router = useRouter();
@@ -226,11 +232,15 @@ export default function Scan() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+      {/* CODEX: assumed camera-active mode maps to the Scan QR segment. */}
+      {scanMode === "scan" ? <CameraActiveBottomNavHider /> : null}
       <ZookScreen>
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+        <KeyboardAwareScreen
+          scrollViewProps={{
+            contentInsetAdjustmentBehavior: "never",
+            showsVerticalScrollIndicator: false,
+            contentContainerStyle: styles.content,
+          }}
         >
           <MobileHeader
             title="Check in"
@@ -384,7 +394,7 @@ export default function Scan() {
               <Text style={styles.devLinkText}>Use sample data</Text>
             </Pressable>
           ) : null}
-        </ScrollView>
+        </KeyboardAwareScreen>
         <BottomNav />
       </ZookScreen>
     </>

@@ -33,6 +33,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { formatInr } from "@/lib/formatting";
 import {
   useCompleteMockPayment,
@@ -47,6 +48,7 @@ import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n } from "@/lib/i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 
 type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
 type CheckoutState = "browse" | "cart" | "checkout" | "pickup";
@@ -669,24 +671,25 @@ function ShopShell({
   stickyAction?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
-  const contentPaddingBottom =
-    layout.bottomNavContentPadding +
-    (floatingAction ? layout.stickyActionHeight : 0) +
-    (stickyAction ? layout.stickyActionHeight : 0);
+  const contentPaddingBottom = useBottomScrollPadding({
+    hasStickyAction: Boolean(floatingAction || stickyAction),
+  });
   const floatingBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + 18;
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
-        <ScrollView
-          style={styles.scroller}
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
+        <KeyboardAwareScreen
+          scrollViewProps={{
+            style: styles.scroller,
+            contentInsetAdjustmentBehavior: "never",
+            showsVerticalScrollIndicator: false,
+            contentContainerStyle: { paddingBottom: contentPaddingBottom },
+          }}
         >
           <View style={styles.content}>{children}</View>
-        </ScrollView>
+        </KeyboardAwareScreen>
         {floatingAction ? (
           <View
             pointerEvents="box-none"

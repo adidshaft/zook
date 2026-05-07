@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import type { PaymentMode } from "@zook/core";
 import {
   AuditWarning,
@@ -19,6 +19,7 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { formatDateTime, formatInr } from "@/lib/formatting";
 import {
   useApproveAttendance,
@@ -267,10 +268,12 @@ export default function Reception() {
 
   return (
     <ZookScreen>
-      <ScrollView
-        contentInsetAdjustmentBehavior="never"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+      <KeyboardAwareScreen
+        scrollViewProps={{
+          contentInsetAdjustmentBehavior: "never",
+          showsVerticalScrollIndicator: false,
+          contentContainerStyle: styles.content,
+        }}
       >
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
@@ -784,7 +787,7 @@ export default function Reception() {
             </View>
           </>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScreen>
       <BottomNav role="RECEPTIONIST" activeTab={view === "desk" ? undefined : view} />
     </ZookScreen>
   );

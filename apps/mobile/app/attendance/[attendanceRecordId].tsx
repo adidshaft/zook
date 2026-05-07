@@ -13,6 +13,7 @@ import {
   ZookChip,
   ZookScreen,
 } from "@/components/primitives";
+import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { useAuth } from "@/lib/auth";
 import { useMyAttendance } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
@@ -50,6 +51,7 @@ function titleCaseStatus(status?: string | null) {
 const legacyDefaultBranchName = ["Default", "Branch"].join(" ");
 
 export default function AttendanceResultScreen() {
+  useHideBottomNav();
   const router = useRouter();
   const routeParams = useLocalSearchParams<{
     attendanceRecordId?: string | string[];

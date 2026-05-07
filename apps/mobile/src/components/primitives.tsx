@@ -4,10 +4,11 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,6 +29,7 @@ import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/query-hooks";
 import { isOfflineDemoMode } from "@/lib/runtime-mode";
 import { colors, layout, palettes, radii, shadows, spacing, typography } from "@/lib/theme";
+import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 export type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
@@ -1600,7 +1602,7 @@ export function SwipeActionRow({
 }
 
 export function StickyActionBar({
-  bottomOffset = 0,
+  bottomOffset = layout.bottomNavHeight + spacing.md,
   children,
 }: {
   bottomOffset?: number;
@@ -1894,6 +1896,7 @@ export function BottomNav({
   activeView?: string;
   activeTab?: string;
 }) {
+  const { visible, setVisible } = useContext(BottomNavVisibilityContext);
   const { t } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
@@ -1915,6 +1918,20 @@ export function BottomNav({
   const activePath = selectedPath ?? pathname;
   const insets = useSafeAreaInsets();
   const bottom = Math.max(insets.bottom, 12);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => setVisible(false));
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => setVisible(true));
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [setVisible]);
+
+  if (!visible) {
+    return null;
+  }
 
   const navItems = resolvedTabs.map((tab) => {
     const translatedLabel = translatedNavLabel(tab.label, t);

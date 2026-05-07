@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Linking,
   Pressable,
-  ScrollView,
   Share,
   StyleSheet,
   Switch,
@@ -26,6 +25,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { toWebUrl } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { memberApi, notificationsApi, privacyApi } from "@/lib/domain-api";
@@ -314,11 +314,13 @@ export default function Settings() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
-        <ScrollView
-          style={styles.scroller}
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+        <KeyboardAwareScreen
+          scrollViewProps={{
+            style: styles.scroller,
+            contentInsetAdjustmentBehavior: "never",
+            showsVerticalScrollIndicator: false,
+            contentContainerStyle: styles.content,
+          }}
         >
           <MobileHeader
             title={t("settings.profileTitle")}
@@ -657,7 +659,7 @@ export default function Settings() {
           <PrimaryButton onPress={() => void logout()} tone="danger">
             {t("settings.logout")}
           </PrimaryButton>
-        </ScrollView>
+        </KeyboardAwareScreen>
         <BottomNav />
       </ZookScreen>
     </>
