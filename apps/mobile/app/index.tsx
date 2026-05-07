@@ -74,6 +74,9 @@ export default function Home() {
   const profilePhotoUrl = normalizeMediaUrl(session?.user.profilePhotoUrl);
   const orgName = activeOrganization?.name ?? "Find a gym";
   const city = activeOrganization?.city ?? "Nearby";
+  const gymLogoUrl = normalizeMediaUrl(
+    activeOrganization && "logoUrl" in activeOrganization ? activeOrganization.logoUrl : null,
+  );
   const gymHref = sessionOrganization?.username
     ? (`/gym/${sessionOrganization.username}` as Href)
     : ("/find-gyms" as Href);
@@ -177,6 +180,17 @@ export default function Home() {
                   {greetingForHour()}, {firstName}
                 </Text>
                 <View style={styles.gymLineRow}>
+                  <View style={styles.gymLogo}>
+                    {gymLogoUrl ? (
+                      <Image
+                        source={{ uri: gymLogoUrl }}
+                        style={styles.gymLogoImage}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <Text style={styles.gymLogoText}>{initialsFor(orgName)}</Text>
+                    )}
+                  </View>
                   <Text numberOfLines={1} style={styles.gymLine}>
                     {orgName}, {city}
                   </Text>
@@ -514,7 +528,28 @@ const styles = StyleSheet.create({
     minHeight: 18,
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: 5,
+  },
+  gymLogo: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  gymLogoImage: {
+    width: "100%",
+    height: "100%",
+  },
+  gymLogoText: {
+    color: colors.muted,
+    fontSize: 7,
+    lineHeight: 9,
+    fontFamily: "Inter_700Bold",
   },
   gymLine: {
     flexShrink: 1,

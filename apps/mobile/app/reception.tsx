@@ -5,8 +5,9 @@ import {
   BottomSheetView,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import type { PaymentMode } from "@zook/core";
 import {
   AuditWarning,
@@ -95,6 +96,7 @@ function redactPhone(phone?: string | null) {
 export default function Reception() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { activeOrgId, logout, session, token } = useAuth();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const canRecordManualAttendance = useHasPermission("ATTENDANCE_MANUAL_OVERRIDE");
@@ -114,6 +116,7 @@ export default function Reception() {
   const [paymentReason, setPaymentReason] = useState("Desk collected payment");
   const [paymentStatus, setPaymentStatus] = useState("");
   const [attendanceStatus, setAttendanceStatus] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [revealedPhones, setRevealedPhones] = useState<Set<string>>(() => new Set());
   const queueQuery = useReceptionQueue();
@@ -222,6 +225,19 @@ export default function Reception() {
   useEffect(() => {
     setVerifyMessage("");
   }, [view]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "attendance"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "members"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "shop", "orders"] }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [activeOrgId, queryClient]);
 
   function handleVerifyCodeChange(value: string) {
     setVerifyCode(value.toUpperCase());
@@ -370,6 +386,14 @@ export default function Reception() {
           contentInsetAdjustmentBehavior: "never",
           showsVerticalScrollIndicator: false,
           contentContainerStyle: styles.content,
+          refreshControl: (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.lime}
+              colors={[colors.lime]}
+            />
+          ),
         }}
       >
         <View style={styles.headerRow}>

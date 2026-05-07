@@ -12,6 +12,8 @@ export interface MemberHomeData {
     status: string;
     city?: string | null;
     state?: string | null;
+    username?: string | null;
+    logoUrl?: string | null;
     attendanceMode?: "AUTOMATIC" | "EXCEPTION_APPROVAL" | "MANUAL_APPROVAL" | string | null;
   } | null;
   activeMembership: {

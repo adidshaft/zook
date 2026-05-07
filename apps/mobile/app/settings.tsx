@@ -1,5 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
+import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Linking, Pressable, StyleSheet, Switch, Text, View } from "react-native";
@@ -70,6 +71,7 @@ export default function Settings() {
   const [openSection, setOpenSection] = useState<SettingsSection | null>("notifications");
   const [preferenceStatus, setPreferenceStatus] = useState("");
   const [privacyStatus, setPrivacyStatus] = useState("");
+  const [clipboardStatus, setClipboardStatus] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const latestExport = privacyQuery.data?.exportRequests?.[0] ?? null;
   const latestDeletion = privacyQuery.data?.deletionRequests?.[0] ?? null;
@@ -132,6 +134,15 @@ export default function Settings() {
     } finally {
       setBusy(null);
     }
+  }
+
+  async function copyInviteLink() {
+    const url = activeOrganization?.username
+      ? `https://app.zookfit.in/join/${activeOrganization.username}`
+      : "https://app.zookfit.in";
+    await Clipboard.setStringAsync(url);
+    setClipboardStatus(t("settings.copied"));
+    setTimeout(() => setClipboardStatus(""), 2000);
   }
 
   return (
@@ -310,6 +321,22 @@ export default function Settings() {
                 tone="lime"
               />
               <ListRow
+                title={t("settings.shareFriend")}
+                subtitle={clipboardStatus || "Copy a Zook join link to your clipboard"}
+                icon="share-outline"
+                tone="amber"
+                trailing={
+                  <Pressable
+                    onPress={() => void copyInviteLink()}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("settings.copy")}
+                    style={styles.copyButton}
+                  >
+                    <Text style={styles.copyButtonText}>{t("settings.copy")}</Text>
+                  </Pressable>
+                }
+              />
+              <ListRow
                 title={t("settings.signedInGym")}
                 subtitle={
                   activeOrganization
@@ -434,6 +461,20 @@ const styles = StyleSheet.create({
   },
   languageButtonTextActive: {
     color: colors.lime,
+  },
+  copyButton: {
+    minHeight: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.12)",
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  copyButtonText: {
+    color: colors.lime,
+    ...typography.caption,
   },
   preferenceRow: {
     minHeight: 58,

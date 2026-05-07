@@ -1,5 +1,7 @@
 import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   BottomNav,
   EmptyState,
@@ -33,7 +35,9 @@ function normalizeTrainerView(value: string | string[] | undefined): TrainerView
 export default function Trainer() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const router = useRouter();
-  const { logout, session } = useAuth();
+  const queryClient = useQueryClient();
+  const { activeOrgId, logout, session } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
   const view = normalizeTrainerView(params.view);
   const clientsQuery = useTrainerClients();
   const clients = clientsQuery.data?.clients ?? [];
@@ -52,6 +56,15 @@ export default function Trainer() {
     }
   }
 
+  async function onRefresh() {
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -60,6 +73,14 @@ export default function Trainer() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.lime}
+              colors={[colors.lime]}
+            />
+          }
         >
           <MobileHeader
             eyebrow="Trainer mode"
