@@ -14,7 +14,7 @@ export function UserMenu({
   showSwitchOrganization: boolean;
 }) {
   return (
-    <details className="group relative">
+    <details className="group relative z-[110]">
       <summary
         className="zook-focus flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 text-sm text-white/72 transition hover:bg-white/8 hover:text-white [&::-webkit-details-marker]:hidden"
         aria-label={copy.common.account}
@@ -25,7 +25,7 @@ export function UserMenu({
           {user.preferredLocale === "hi" ? copy.common.hindi : copy.common.english}
         </span>
       </summary>
-      <div className="absolute right-0 z-30 mt-2 w-[min(92vw,22rem)] rounded-[24px] border border-white/10 bg-zinc-950/95 p-3 shadow-2xl shadow-black/50 backdrop-blur">
+      <div className="absolute right-0 z-[120] mt-2 w-[min(92vw,22rem)] rounded-[24px] border border-white/10 bg-zinc-950/95 p-3 shadow-2xl shadow-black/50 backdrop-blur">
         <div className="rounded-2xl bg-white/[0.04] p-3">
           <p className="truncate text-sm font-medium text-white">{user.name}</p>
           <p className="mt-1 truncate text-xs text-white/45">{user.email}</p>

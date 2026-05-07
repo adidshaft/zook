@@ -48,18 +48,18 @@ export function BranchSwitcher({
     }`;
 
   return (
-    <div className="flex max-w-full gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex max-w-full flex-wrap gap-2 pb-1">
       {visible.map((branch) => (
         <Link key={branch.id} href={branchHref(branch.id)} className={`${linkClass(branch.id)} shrink-0`}>
           {branch.name}
         </Link>
       ))}
       {overflow.length > 0 ? (
-        <details className="group relative shrink-0">
+        <details className="group relative z-[110] shrink-0">
           <summary className="cursor-pointer list-none rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/55 transition hover:bg-white/8 hover:text-white [&::-webkit-details-marker]:hidden">
             +{overflow.length} {copy.common.moreBranches}
           </summary>
-          <div className="absolute left-0 z-20 mt-2 grid max-h-64 min-w-60 gap-2 overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950/95 p-2 shadow-2xl shadow-black/50 backdrop-blur">
+          <div className="absolute left-0 z-[120] mt-2 grid max-h-64 min-w-60 gap-2 overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950/95 p-2 shadow-2xl shadow-black/50 backdrop-blur">
             {overflow.map((branch) => (
               <Link key={branch.id} href={branchHref(branch.id)} className={`${linkClass(branch.id)} shrink-0`}>
                 {branch.name}

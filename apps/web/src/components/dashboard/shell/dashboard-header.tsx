@@ -34,7 +34,7 @@ export function DashboardHeader({
   copy: DashboardCopy;
 }) {
   return (
-    <GlassCard variant="strong" className="min-w-0 overflow-hidden">
+    <GlassCard variant="strong" className="relative z-[100] min-w-0 overflow-visible">
       <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
