@@ -9,11 +9,11 @@ export const routePermissions: Record<string, Permission | null> = {
   "/platform": null,
 };
 
-const routeRoles: Record<string, Role> = {
-  "/owner": "OWNER",
-  "/reception": "RECEPTIONIST",
-  "/trainer": "TRAINER",
-  "/platform": "PLATFORM_ADMIN",
+const routeRoles: Record<string, Role[]> = {
+  "/owner": ["OWNER", "ADMIN"],
+  "/reception": ["RECEPTIONIST", "OWNER", "ADMIN"],
+  "/trainer": ["TRAINER", "OWNER", "ADMIN"],
+  "/platform": ["PLATFORM_ADMIN"],
 };
 
 function routeMatches(pathname: string, route: string) {
@@ -31,9 +31,13 @@ export function permissionForPath(pathname: string): Permission | null | undefin
   return route ? routePermissions[route] : undefined;
 }
 
-export function requiredRoleForPath(pathname: string): Role | null {
+export function requiredRolesForPath(pathname: string): Role[] | null {
   const route = longestMatchingRoute(pathname, routeRoles);
   return route ? routeRoles[route] : null;
+}
+
+export function requiredRoleForPath(pathname: string): Role | null {
+  return requiredRolesForPath(pathname)?.[0] ?? null;
 }
 
 export function checkRouteAccess(
@@ -49,7 +53,7 @@ export function checkRouteAccess(
 
 export function routeForRole(role: Role): string {
   if (role === "PLATFORM_ADMIN") return "/platform";
-  if (role === "OWNER") return "/owner";
+  if (role === "OWNER" || role === "ADMIN") return "/owner";
   if (role === "RECEPTIONIST") return "/reception";
   if (role === "TRAINER") return "/trainer";
   return "/";

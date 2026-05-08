@@ -318,6 +318,9 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
         membershipPlansState={membershipPlansState}
         coachPlans={coachPlans}
         coachPlansState={coachPlansState}
+        activeCouponCount={coupons.filter((coupon) => coupon.active).length}
+        activeOfferCount={offers.filter((offer) => offer.active).length}
+        referralCodeCount={referrals.length}
         planForm={planForm}
         setPlanForm={setPlanForm}
         planEditForm={planEditForm}
@@ -379,11 +382,11 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
   }
 
   if (mode === "payment-refunds") {
-    return <RefundsSection payments={payments} />;
+    return <RefundsSection payments={payments} onRefundSubmitted={paymentsState.reload} />;
   }
 
   if (mode === "billing") {
-    return <BillingSection organization={organization} summary={summary} />;
+    return <BillingSection orgId={orgId} organization={organization} summary={summary} />;
   }
 
   if (mode === "settings") {

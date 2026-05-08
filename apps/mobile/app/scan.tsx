@@ -6,7 +6,7 @@ import {
   BottomSheetModal,
   BottomSheetView,
   type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+} from "@/components/expo-safe-bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -87,7 +87,8 @@ export default function Scan() {
   const [scanMode, setScanMode] = useState<ScanMode>("scan");
   const [modeLocked, setModeLocked] = useState(false);
   const [scanState, setScanState] = useState<ScanState>("idle");
-  const [code, setCode] = useState("");
+  const [codePrefix, setCodePrefix] = useState("");
+  const [codeDigits, setCodeDigits] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [pendingPushPromptHref, setPendingPushPromptHref] = useState<AttendanceResultHref | null>(
     null,
@@ -95,6 +96,7 @@ export default function Scan() {
   const completedRef = useRef(false);
   const pushPromptClosingRef = useRef(false);
   const pushPromptSheetRef = useRef<BottomSheetModal>(null);
+  const codeDigitsRef = useRef<TextInput>(null);
   const pushPromptSnapPoints = useMemo(() => ["36%"], []);
 
   useEffect(() => {
@@ -197,7 +199,7 @@ export default function Scan() {
     [],
   );
 
-  async function completeScan(payload: string) {
+  async function completeScan(payload: string, kind: "qr" | "code" = "qr") {
     if (completedRef.current) {
       return;
     }
@@ -221,7 +223,7 @@ export default function Scan() {
       }
       const result = await attendanceApi.scan<ScanResult>({
         token,
-        body: { qrPayload: payload },
+        body: kind === "code" ? { checkInCode: payload } : { qrPayload: payload },
       });
       const status = result.status ?? result.attendance.status ?? "APPROVED";
       const failed = status === "REJECTED" || status === "FLAGGED";
@@ -300,12 +302,36 @@ export default function Scan() {
   }
 
   function submitCode() {
-    const cleanCode = code.trim();
-    if (!cleanCode) {
+    const formattedCode = `${codePrefix}-${codeDigits}`;
+    if (codePrefix.length !== 2 || codeDigits.length !== 4) {
       return;
     }
     void Haptics.selectionAsync();
-    void completeScan(cleanCode);
+    void completeScan(formattedCode, "code");
+  }
+
+  function handlePrefixChange(value: string) {
+    const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const letters = compact.replace(/[^A-Z]/g, "").slice(0, 2);
+    const digits = compact.replace(/[^0-9]/g, "").slice(0, 4);
+    setCodePrefix(letters);
+    if (digits) {
+      setCodeDigits((current) => `${digits}${current}`.slice(0, 4));
+    }
+    if (letters.length === 2) {
+      codeDigitsRef.current?.focus();
+    }
+  }
+
+  function handleDigitsChange(value: string) {
+    const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const pastedMatch = /^([A-Z]{2})([0-9]{1,4})$/.exec(compact);
+    if (pastedMatch) {
+      setCodePrefix(pastedMatch[1] ?? "");
+      setCodeDigits(pastedMatch[2] ?? "");
+      return;
+    }
+    setCodeDigits(compact.replace(/[^0-9]/g, "").slice(0, 4));
   }
 
   function handleModeChange(nextMode: ScanMode) {
@@ -320,11 +346,14 @@ export default function Scan() {
     setBusy(false);
     setScanState("idle");
     setErrorMessage("");
-    setCode("");
+    setCodePrefix("");
+    setCodeDigits("");
   }
 
   const hasCamera = permission?.granted;
   const cameraBlocked = permission && !permission.granted && permission.canAskAgain === false;
+  const needsProfilePhoto = /profile photo/i.test(errorMessage);
+  const codeReady = codePrefix.length === 2 && codeDigits.length === 4;
 
   return (
     <>
@@ -433,28 +462,43 @@ export default function Scan() {
           ) : (
             <GlassCard variant="compact" contentStyle={styles.codeContent}>
               <View style={styles.codeHeader}>
-                <Text style={styles.codeTitle}>Enter desk code</Text>
-                <Text style={styles.codeHint}>Use the code shown at the gym desk.</Text>
+                <Text style={styles.codeTitle}>Enter check-in code</Text>
+                <Text style={styles.codeHint}>Use the two letters and four digits shown with the QR.</Text>
               </View>
               <View style={styles.codeRow}>
                 <TextInput
-                  value={code}
-                  onChangeText={setCode}
+                  value={codePrefix}
+                  onChangeText={handlePrefixChange}
                   autoCapitalize="characters"
-                  placeholder="Desk code"
+                  autoCorrect={false}
+                  maxLength={2}
+                  placeholder="AB"
                   placeholderTextColor="rgba(255,255,255,0.55)"
-                  style={styles.codeInput}
+                  style={[styles.codeInput, styles.codePrefixInput]}
+                  returnKeyType="next"
+                  onSubmitEditing={() => codeDigitsRef.current?.focus()}
+                />
+                <Text style={styles.codeDivider}>-</Text>
+                <TextInput
+                  ref={codeDigitsRef}
+                  value={codeDigits}
+                  onChangeText={handleDigitsChange}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  placeholder="1234"
+                  placeholderTextColor="rgba(255,255,255,0.55)"
+                  style={[styles.codeInput, styles.codeDigitsInput]}
                   returnKeyType="done"
                   onSubmitEditing={submitCode}
                 />
                 <Pressable
                   onPress={submitCode}
-                  disabled={busy || !code.trim()}
+                  disabled={busy || !codeReady}
                   accessibilityRole="button"
                   accessibilityLabel="Check code"
                   style={[
                     styles.codeButton,
-                    busy || !code.trim() ? styles.codeButtonDisabled : null,
+                    busy || !codeReady ? styles.codeButtonDisabled : null,
                   ]}
                 >
                   <Ionicons name="arrow-forward" size={18} color={colors.bg} />
@@ -476,12 +520,18 @@ export default function Scan() {
                 <Text style={styles.errorText}>{errorMessage}</Text>
               </View>
               <ZookButton
-                onPress={resetScan}
+                onPress={() => {
+                  if (needsProfilePhoto) {
+                    router.push("/profile" as never);
+                    return;
+                  }
+                  resetScan();
+                }}
                 tone="secondary"
-                icon="refresh-outline"
+                icon={needsProfilePhoto ? "person-circle-outline" : "refresh-outline"}
                 style={styles.retryButton}
               >
-                Scan again
+                {needsProfilePhoto ? "Add photo" : "Scan again"}
               </ZookButton>
             </GlassCard>
           ) : null}
@@ -701,7 +751,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   codeInput: {
-    flex: 1,
     minHeight: 44,
     borderRadius: 14,
     borderWidth: 1,
@@ -709,7 +758,20 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.2)",
     color: colors.text,
     paddingHorizontal: 12,
+    textAlign: "center",
     ...typography.bodyStrong,
+  },
+  codePrefixInput: {
+    width: 74,
+    letterSpacing: 1.4,
+  },
+  codeDigitsInput: {
+    flex: 1,
+    letterSpacing: 2,
+  },
+  codeDivider: {
+    color: colors.muted,
+    ...typography.cardTitle,
   },
   codeButton: {
     width: 44,

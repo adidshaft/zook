@@ -1,12 +1,8 @@
-export const roles = [
-  "PLATFORM_ADMIN",
-  "OWNER",
-  "ADMIN",
-  "RECEPTIONIST",
-  "TRAINER",
-  "MEMBER",
-] as const;
+export const platformRole = "PLATFORM_ADMIN" as const;
+export const orgRoles = ["OWNER", "ADMIN", "RECEPTIONIST", "TRAINER", "MEMBER"] as const;
+export const roles = [platformRole, ...orgRoles] as const;
 export type Role = (typeof roles)[number];
+export type OrgRole = (typeof orgRoles)[number];
 
 export const permissions = [
   "ORG_MANAGE_BILLING",
@@ -220,7 +216,7 @@ export interface RequestContext {
   orgId?: string;
   orgStatus?: OrganizationStatus;
   branchId?: string;
-  roles: Role[];
+  roles: OrgRole[];
   permissions: Permission[];
   isPlatformAdmin?: boolean;
   ipAddress?: string;
@@ -234,7 +230,7 @@ export interface AuthOrganizationSummary {
   status: OrganizationStatus;
   city: string;
   state: string;
-  roles: Role[];
+  roles: OrgRole[];
   permissions: Permission[];
   joinedAt: Date;
 }
@@ -243,6 +239,7 @@ export interface AuthSessionUser {
   id: string;
   email: string;
   name: string;
+  privateHandle?: string;
   phone?: string;
   profilePhotoUrl?: string;
   isMinor: boolean;

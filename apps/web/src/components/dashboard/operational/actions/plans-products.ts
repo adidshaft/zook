@@ -37,14 +37,18 @@ function validatePlanName(value: string) {
   return "";
 }
 
-export function payloadForProductForm(form: ProductForm) {
+export function payloadForProductForm(form: ProductForm, branchId?: string | null) {
   return {
+    branchId: branchId || undefined,
     name: form.name,
     description: form.description || undefined,
     category: form.category,
     pricePaise: Math.round(Number(form.priceRupees || 0) * 100),
     stock: Number(form.stock || 0),
     lowStockThreshold: Number(form.lowStockThreshold || 0),
+    imageAssetId: form.imageAssetId || undefined,
+    imageAssetIds: form.imageAssetIds,
+    imageUrls: form.imagePreviewUrls,
     active: form.active,
   };
 }
@@ -58,6 +62,8 @@ export function createPlansProductsActions({
   state: DashboardOperationalState;
   resources: DashboardOperationalResources;
 }) {
+  const selectedBranchId = resources.branchScope.selectedBranch?.id ?? undefined;
+
   async function createMembershipPlan() {
     try {
       const planNameError = validatePlanName(state.planForm.name);
@@ -141,13 +147,6 @@ export function createPlansProductsActions({
   }
 
   async function deleteMembershipPlan(planId: string) {
-    if (
-      !window.confirm(
-        "Delete this unused membership plan? Plans with subscriptions should be archived instead.",
-      )
-    ) {
-      return;
-    }
     try {
       state.setFormBusy(`plan:${planId}:delete`);
       state.setFormError("");
@@ -174,7 +173,7 @@ export function createPlansProductsActions({
       state.setFormStatus("");
       await webApiFetch(`/api/orgs/${orgId}/products`, {
         method: "POST",
-        body: payloadForProductForm(state.productForm),
+        body: payloadForProductForm(state.productForm, selectedBranchId),
         feedback: { success: "Shop product created." },
       });
       state.setProductForm(state.emptyProductForm);
@@ -188,6 +187,11 @@ export function createPlansProductsActions({
   }
 
   function startProductEdit(product: ProductRow) {
+    const imageUrls = Array.isArray(product.imageUrls)
+      ? product.imageUrls.filter((url): url is string => typeof url === "string")
+      : product.imageUrl
+        ? [product.imageUrl]
+        : [];
     state.setEditingProductId(product.id);
     state.setProductEditForm({
       name: product.name,
@@ -196,6 +200,10 @@ export function createPlansProductsActions({
       stock: product.stock.toString(),
       lowStockThreshold: product.lowStockThreshold.toString(),
       description: product.description ?? "",
+      imageAssetId: "",
+      imageAssetIds: [],
+      imagePreviewUrl: imageUrls[0] ?? "",
+      imagePreviewUrls: imageUrls,
       active: product.active,
     });
     state.setStockAdjustment({ productId: product.id, delta: "", reason: "Manual stock count" });
@@ -213,7 +221,7 @@ export function createPlansProductsActions({
       state.setFormStatus("");
       await webApiFetch(`/api/orgs/${orgId}/products/${productId}`, {
         method: "PATCH",
-        body: patch ?? payloadForProductForm(state.productEditForm),
+        body: patch ?? payloadForProductForm(state.productEditForm, selectedBranchId),
         feedback: {
           success:
             patch?.active === false
@@ -242,6 +250,7 @@ export function createPlansProductsActions({
         method: "POST",
         body: {
           productId,
+          branchId: selectedBranchId,
           delta: Number(state.stockAdjustment.delta),
           reason: state.stockAdjustment.reason || "Manual stock adjustment",
         },
@@ -258,13 +267,6 @@ export function createPlansProductsActions({
   }
 
   async function deleteProduct(productId: string) {
-    if (
-      !window.confirm(
-        "Delete this unused product? Products with order history should be archived instead.",
-      )
-    ) {
-      return;
-    }
     try {
       state.setFormBusy(`product:${productId}:delete`);
       state.setFormError("");

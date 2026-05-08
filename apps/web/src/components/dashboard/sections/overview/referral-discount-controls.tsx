@@ -8,6 +8,18 @@ import { OfferControls } from "./offer-controls";
 import { ReferralCodeControls } from "./referral-code-controls";
 import type { OverviewOperationalSectionProps } from "./types";
 
+function bpsToPercent(value: string) {
+  if (!value.trim()) return "";
+  const amount = Number(value);
+  return Number.isFinite(amount) ? String(amount / 100) : value;
+}
+
+function percentToBps(value: string) {
+  if (!value.trim()) return "";
+  const amount = Number(value);
+  return Number.isFinite(amount) ? String(Math.round(amount * 100)) : value;
+}
+
 type ReferralDiscountControlsProps = Pick<
   OverviewOperationalSectionProps,
   | "referralPolicy"
@@ -237,14 +249,14 @@ export function ReferralDiscountControls({
         className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
       />
       <input
-        value={policyForm.maxDiscountCapBps}
+        value={bpsToPercent(policyForm.maxDiscountCapBps)}
         onChange={(event) =>
           setPolicyForm((current) => ({
             ...current,
-            maxDiscountCapBps: event.target.value,
+            maxDiscountCapBps: percentToBps(event.target.value),
           }))
         }
-        placeholder="Max cap bps"
+        placeholder="Maximum discount %"
         inputMode="numeric"
         className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
       />

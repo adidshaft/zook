@@ -31,15 +31,15 @@ import {
   QA_DEMO_ACCOUNT_EMAIL,
   QA_DEMO_ACCOUNT_PHONE,
   normalizePhoneNumber,
+  orgRoles,
   permissions,
-  roles,
   validateRuntimeConfig,
   type Permission,
   type PaymentMandateStatus,
   type AIRequestType,
   type NotificationType,
+  type OrgRole,
   type PlanType,
-  type Role,
 } from "@zook/core";
 import {
   LocalStorageProvider,
@@ -71,6 +71,7 @@ import {
   calculateShopOrder,
   buildAIQuotaState,
   AIGuardError,
+  buildInvoiceNumber,
   canReceiveNotification,
   canAssignPlanToUser,
   canSendNotification,
@@ -119,6 +120,7 @@ import {
 } from "./errors";
 import { fail, ok, readJson } from "./response";
 import { resolveSessionSummaryFromToken } from "./session";
+import { privateUserHandle } from "./private-user-handle";
 import { writeAuditLog } from "./audit";
 import { getDevOtpResponseValue } from "./auth-response";
 import { assertRateLimit, defaultRateLimitRules, getRateLimitDiagnostics } from "./rate-limit";
@@ -323,7 +325,7 @@ const staffInviteSchema = z
     if (value.role === "RECEPTIONIST" && !value.branchId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Choose the branch this receptionist will manage.",
+        message: "Choose the branch this Reception user will manage.",
         path: ["branchId"],
       });
     }
@@ -338,7 +340,7 @@ const staffRoleUpdateSchema = z
     if (value.role === "RECEPTIONIST" && !value.branchId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Receptionists must be assigned to one branch.",
+        message: "Reception users must be assigned to one branch.",
         path: ["branchId"],
       });
     }
@@ -467,12 +469,7 @@ async function resolveBranchLocation(input: z.infer<typeof branchManageBaseSchem
 }
 
 const permissionOverrideSchema = z.object({
-  role: z
-    .enum(roles)
-    .refine(
-      (role) => role !== "PLATFORM_ADMIN",
-      "Platform admin permissions are not tenant scoped.",
-    ),
+  role: z.enum(orgRoles),
   permission: z
     .enum(permissions)
     .refine(
@@ -541,7 +538,9 @@ const productInputSchema = z.object({
   stock: z.number().int().nonnegative(),
   lowStockThreshold: z.number().int().nonnegative().default(8),
   imageAssetId: z.string().optional(),
+  imageAssetIds: z.array(z.string()).max(6).optional(),
   imageUrl: z.string().url().optional(),
+  imageUrls: z.array(z.string().url()).max(6).optional(),
   active: z.boolean().default(true),
 });
 
@@ -565,6 +564,11 @@ const inventoryAdjustmentSchema = z.object({
     .int()
     .refine((value) => value !== 0, "Inventory delta must be non-zero"),
   reason: z.string().trim().min(2).max(200),
+});
+
+const paymentRefundSchema = z.object({
+  amountPaise: z.number().int().positive().optional(),
+  reason: z.string().trim().min(2).max(200).default("Owner requested refund"),
 });
 
 const subscriptionReminderResolveSchema = z.object({
@@ -753,18 +757,37 @@ const organizationPublicProfileSchema = z.object({
     .trim()
     .regex(/^\d{6}$/),
   amenities: z.array(z.string().trim().min(2).max(80)).default([]),
+  equipment: z.array(z.string().trim().min(2).max(80)).max(60).default([]),
   visibility: z.enum(["PUBLIC", "INVITE_ONLY", "HIDDEN"]),
   joinMode: z.enum(["OPEN_JOIN", "APPROVAL_REQUIRED", "INVITE_ONLY"]),
   logoUrl: z.string().trim().url().optional().or(z.literal("")),
   coverImageUrl: z.string().trim().url().optional().or(z.literal("")),
   tagline: z.string().trim().max(160).optional(),
-  gallery: z.array(z.string().trim().url()).max(8).default([]),
-  galleryAssetIds: z.array(z.string()).max(8).optional(),
+  gallery: z.array(z.string().trim().url()).max(15).default([]),
+  galleryAssetIds: z.array(z.string()).max(15).optional(),
   facilities: z.array(z.string().trim().min(2).max(80)).max(24).default([]),
   gymType: z.string().trim().max(80).optional(),
   openingHoursSummary: z.string().trim().max(160).optional(),
   appStoreUrl: z.string().trim().url().optional().or(z.literal("")),
   playStoreUrl: z.string().trim().url().optional().or(z.literal("")),
+});
+
+const organizationBillingDetailsSchema = z.object({
+  legalName: z.string().trim().min(2).max(160),
+  gstNumber: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/),
+  contactEmail: z.string().trim().email(),
+  contactPhone: z.string().trim().min(8).max(20).optional().or(z.literal("")),
+  address: z.string().trim().min(3).max(240),
+  city: z.string().trim().min(2).max(80),
+  state: z.string().trim().min(2).max(80),
+  pincode: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/),
 });
 
 const trainerProfileAssetSchema = z.object({
@@ -870,6 +893,40 @@ function clean<T extends Record<string, unknown>>(input: T): any {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
 }
 
+const exclusiveOrgRoles = [...orgRoles];
+
+const orgRoleLabels: Record<OrgRole, string> = {
+  OWNER: "Owner",
+  ADMIN: "Admin",
+  RECEPTIONIST: "Reception",
+  TRAINER: "Trainer",
+  MEMBER: "Member",
+};
+
+type RoleAssignmentClient = Pick<typeof prisma, "organizationRoleAssignment">;
+
+async function assertSingleRoleForOrgUser(
+  client: RoleAssignmentClient,
+  input: { orgId: string; userId: string; nextRole: OrgRole; allowAssignmentId?: string },
+) {
+  const existingAssignment = await client.organizationRoleAssignment.findFirst({
+    where: clean({
+      orgId: input.orgId,
+      userId: input.userId,
+      role: { in: exclusiveOrgRoles.filter((role) => role !== input.nextRole) },
+      id: input.allowAssignmentId ? { not: input.allowAssignmentId } : undefined,
+    }),
+  });
+  if (!existingAssignment) {
+    return;
+  }
+  const existingRole = orgRoleLabels[existingAssignment.role as OrgRole] ?? existingAssignment.role;
+  const nextRole = orgRoleLabels[input.nextRole];
+  throw conflictError(
+    `This account already has ${existingRole} access for this gym. Change that role before adding ${nextRole} access.`,
+  );
+}
+
 function sha256(value: string) {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -884,7 +941,9 @@ function isHttpsRequest(request: NextRequest) {
 function shouldUseSecureSessionCookie(request: NextRequest) {
   const appEnv = getAppEnv();
   if (appEnv !== "local" && !isHttpsRequest(request)) {
-    throw serviceUnavailableError("HTTPS is required for session cookies outside local environments.");
+    throw serviceUnavailableError(
+      "HTTPS is required for session cookies outside local environments.",
+    );
   }
   return appEnv !== "local" || isHttpsRequest(request);
 }
@@ -925,7 +984,11 @@ function isIdempotentOperation(path: string[], method: string) {
     ["attendance", "scan"],
     ["orgs", /.+/, "manual-payments"],
     ["orgs", /.+/, "manual-payments", "general"],
+    ["orgs", /.+/, "payments", /.+/, "receipt"],
+    ["orgs", /.+/, "payments", /.+/, "invoice"],
     ["orgs", /.+/, "shop", "orders", /.+/, "manual-payment"],
+    ["me", "payments", /.+/, "receipt"],
+    ["me", "payments", /.+/, "invoice"],
     ["orgs", /.+/, "classes"],
     ["orgs", /.+/, "classes", /.+/, "enroll"],
     ["shop", "orders"],
@@ -1037,6 +1100,19 @@ function dateKey(date = new Date()) {
   return date.toISOString().slice(0, 10);
 }
 
+function operationalDateKey(date = new Date(), timeZone = "Asia/Kolkata") {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  return year && month && day ? `${year}-${month}-${day}` : dateKey(date);
+}
+
 function entryCodeForAttendanceId(id: string) {
   let hash = 0;
   for (let index = 0; index < id.length; index += 1) {
@@ -1047,6 +1123,21 @@ function entryCodeForAttendanceId(id: string) {
 
 function attendanceWithEntryCode<T extends { id: string }>(record: T) {
   return { ...record, entryCode: entryCodeForAttendanceId(record.id) };
+}
+
+function checkInCodeForQrNonce(nonce: string) {
+  const digest = createHash("sha256").update(`check-in:${nonce}`).digest();
+  const letters = [digest[0], digest[1]]
+    .map((value) => String.fromCharCode(65 + ((value ?? 0) % 26)))
+    .join("");
+  const digits = digest.readUInt32BE(2) % 10_000;
+  return `${letters}-${String(digits).padStart(4, "0")}`;
+}
+
+function normalizeCheckInCode(input: string) {
+  const compact = input.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const match = /^([A-Z]{2})([0-9]{4})$/.exec(compact);
+  return match ? `${match[1]}-${match[2]}` : "";
 }
 
 async function resolveOrgBranch(orgId: string, branchId?: string | null) {
@@ -1191,6 +1282,58 @@ async function getOrganizationScopedFileAsset(
   const asset = await findFileAssetOrThrow(fileAssetId);
   assertFileAssetBelongsToOrg({ asset, orgId, allowedCategories });
   return asset;
+}
+
+function uniqueStringList(values: Array<string | null | undefined>, limit: number) {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    result.push(trimmed);
+    if (result.length >= limit) break;
+  }
+  return result;
+}
+
+async function resolveProductImageUrls(
+  orgId: string,
+  input: {
+    imageAssetId?: string | undefined;
+    imageAssetIds?: string[] | undefined;
+    imageUrl?: string | undefined;
+    imageUrls?: string[] | undefined;
+  },
+) {
+  const assetIds = uniqueStringList(
+    input.imageAssetIds?.length ? input.imageAssetIds : [input.imageAssetId],
+    6,
+  );
+  const assets = await Promise.all(
+    assetIds.map((assetId) => getOrganizationScopedFileAsset(assetId, orgId, ["product_image"])),
+  );
+  return uniqueStringList(
+    [
+      ...assets.map((asset) => asset?.url),
+      ...(input.imageUrls?.length ? input.imageUrls : [input.imageUrl]),
+    ],
+    6,
+  );
+}
+
+function hasProductImageInput(input: {
+  imageAssetId?: string | undefined;
+  imageAssetIds?: string[] | undefined;
+  imageUrl?: string | undefined;
+  imageUrls?: string[] | undefined;
+}) {
+  return (
+    input.imageAssetId !== undefined ||
+    input.imageAssetIds !== undefined ||
+    input.imageUrl !== undefined ||
+    input.imageUrls !== undefined
+  );
 }
 
 async function getUserScopedFileAsset(input: {
@@ -1390,9 +1533,13 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
       const user = usersById.get(profile.userId) ?? null;
       return {
         profile,
-        user: user ? { ...user, email: publicUserEmail(user.email) ?? "" } : null,
-        lastCheckIn: attendance.find((record) => record.userId === profile.userId) ?? null,
-        recentCheckIns: attendance.filter((record) => record.userId === profile.userId).slice(0, 3),
+        user: user ? serializeUserForClient(user) : null,
+        lastCheckIn:
+          attendance.find((record) => record.userId === profile.userId) ?? null,
+        recentCheckIns: attendance
+          .filter((record) => record.userId === profile.userId)
+          .slice(0, 3)
+          .map(attendanceWithEntryCode),
         lastPayment: payments.find((payment) => payment.userId === profile.userId) ?? null,
         activeSubscription:
           subscriptions.find(
@@ -1424,12 +1571,23 @@ async function listOrganizationPaymentsPage(orgId: string, request: NextRequest)
       id: { in: page.items.map((payment) => payment.userId).filter(Boolean) as string[] },
     },
   });
+  const refunds = page.items.length
+    ? await prisma.paymentRefund.findMany({
+        where: { orgId, paymentId: { in: page.items.map((payment) => payment.id) } },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
   const usersById = new Map(users.map((user) => [user.id, user]));
   return {
     payments: page.items.map((payment) => {
       const user = payment.userId ? usersById.get(payment.userId) : undefined;
+      const paymentRefunds = refunds.filter((refund) => refund.paymentId === payment.id);
       return {
         ...payment,
+        refunds: paymentRefunds,
+        refundedAmountPaise: paymentRefunds
+          .filter((refund) => !["FAILED", "CANCELLED"].includes(refund.status))
+          .reduce((total, refund) => total + refund.amountPaise, 0),
         user: user ? { ...user, email: publicUserEmail(user.email) ?? "" } : null,
       };
     }),
@@ -1559,10 +1717,13 @@ function nameFromPhone(phone: string) {
   return `Member ${phone.slice(-4)}`;
 }
 
-function serializeUserForClient<T extends { email: string; phone?: string | null }>(user: T) {
+function serializeUserForClient<T extends { id: string; email: string; phone?: string | null }>(
+  user: T,
+) {
   return {
     ...user,
     email: publicUserEmail(user.email) ?? "",
+    privateHandle: privateUserHandle(user.id),
   };
 }
 
@@ -1733,6 +1894,11 @@ async function ensureOrganizationMembership(input: {
       status: "active",
     },
   });
+  await assertSingleRoleForOrgUser(prisma, {
+    orgId: input.orgId,
+    userId: input.userId,
+    nextRole: "MEMBER",
+  });
   await prisma.organizationRoleAssignment.upsert({
     where: {
       orgId_userId_role: {
@@ -1818,6 +1984,302 @@ function getObjectMetadata(value: Prisma.JsonValue | null | undefined) {
   return value as Record<string, unknown>;
 }
 
+type BillingDocumentKind = "receipt" | "invoice";
+
+type BillingOrgDetails = {
+  id: string;
+  name: string;
+  username: string;
+  legalName?: string | null;
+  gstNumber?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+};
+
+function missingBillingDetails(org: BillingOrgDetails, kind: BillingDocumentKind) {
+  const required: Array<[keyof BillingOrgDetails, string]> = [
+    ["legalName", "Legal business name"],
+    ["contactEmail", "Billing email"],
+    ["address", "Billing address"],
+    ["city", "City"],
+    ["state", "State"],
+    ["pincode", "Pincode"],
+  ];
+  if (kind === "invoice") {
+    required.splice(1, 0, ["gstNumber", "GST number"]);
+  }
+  return required
+    .filter(([key]) => {
+      const value = org[key];
+      return typeof value !== "string" || !value.trim();
+    })
+    .map(([, label]) => label);
+}
+
+function assertBillingDetailsReady(org: BillingOrgDetails, kind: BillingDocumentKind) {
+  const missing = missingBillingDetails(org, kind);
+  if (missing.length) {
+    throw validationError(
+      `${kind === "invoice" ? "Invoice" : "Receipt"} generation needs billing details first: ${missing.join(", ")}.`,
+      { missing },
+    );
+  }
+}
+
+function documentOrgCode(org: Pick<BillingOrgDetails, "username" | "name">) {
+  const code = (org.username || org.name)
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "")
+    .slice(0, 8);
+  return code || "ZOOK";
+}
+
+function buildReceiptNumber(input: {
+  org: Pick<BillingOrgDetails, "username" | "name">;
+  recordedAt: Date;
+  sequence: number;
+}) {
+  const year = input.recordedAt.getUTCFullYear();
+  const month = String(input.recordedAt.getUTCMonth() + 1).padStart(2, "0");
+  return `RC-${documentOrgCode(input.org)}-${year}${month}-${String(input.sequence).padStart(5, "0")}`;
+}
+
+function documentAmount(value: number | null | undefined) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 2,
+  }).format((value ?? 0) / 100);
+}
+
+function escapeHtml(value: unknown) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function renderDocumentHtml(input: {
+  title: string;
+  org: BillingOrgDetails;
+  memberName?: string | null;
+  number: string;
+  issueDate: Date;
+  rows: Array<{ label: string; value: string | number | null | undefined }>;
+}) {
+  return `<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(input.title)} ${escapeHtml(input.number)}</title>
+  <style>
+    body { margin: 0; background: #f4f4f0; color: #151512; font-family: Inter, Arial, sans-serif; }
+    main { max-width: 760px; margin: 32px auto; background: #fff; border: 1px solid #ddd8cb; padding: 40px; }
+    header { display: flex; justify-content: space-between; gap: 24px; border-bottom: 1px solid #e7e2d5; padding-bottom: 24px; }
+    h1 { margin: 0; font-size: 32px; }
+    h2 { margin: 0 0 8px; font-size: 18px; }
+    p { margin: 4px 0; color: #575347; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 28px; }
+    th, td { text-align: left; border-bottom: 1px solid #eee8db; padding: 13px 0; }
+    th { color: #6d6759; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .amount { font-size: 24px; font-weight: 700; color: #151512; }
+    .print { margin-top: 28px; border: 0; border-radius: 999px; background: #b9f455; padding: 12px 18px; font-weight: 700; }
+    @media print { body { background: #fff; } main { margin: 0; max-width: none; border: 0; } .print { display: none; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>${escapeHtml(input.title)}</h1>
+        <p>${escapeHtml(input.number)}</p>
+        <p>${escapeHtml(input.issueDate.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }))}</p>
+      </div>
+      <div>
+        <h2>${escapeHtml(input.org.legalName ?? input.org.name)}</h2>
+        <p>${escapeHtml(input.org.address)}, ${escapeHtml(input.org.city)}, ${escapeHtml(input.org.state)} ${escapeHtml(input.org.pincode)}</p>
+        <p>${escapeHtml(input.org.contactEmail)}</p>
+        ${input.org.gstNumber ? `<p>GST: ${escapeHtml(input.org.gstNumber)}</p>` : ""}
+      </div>
+    </header>
+    ${input.memberName ? `<p style="margin-top:24px">Issued to: <strong>${escapeHtml(input.memberName)}</strong></p>` : ""}
+    <table>
+      <thead><tr><th>Detail</th><th>Value</th></tr></thead>
+      <tbody>
+        ${input.rows
+          .map(
+            (row) => `<tr><td>${escapeHtml(row.label)}</td><td>${escapeHtml(row.value)}</td></tr>`,
+          )
+          .join("")}
+      </tbody>
+    </table>
+    <button class="print" onclick="window.print()">Print</button>
+  </main>
+</body>
+</html>`;
+}
+
+async function getPaymentDocumentContext(input: {
+  orgId: string;
+  paymentId: string;
+  userId?: string;
+}) {
+  const payment = await prisma.payment.findFirst({
+    where: {
+      id: input.paymentId,
+      orgId: input.orgId,
+      ...(input.userId ? { userId: input.userId } : {}),
+    },
+  });
+  if (!payment) {
+    throw notFoundError("Payment not found");
+  }
+  const [org, user, invoice] = await Promise.all([
+    prisma.organization.findUnique({ where: { id: input.orgId } }),
+    payment.userId ? prisma.user.findUnique({ where: { id: payment.userId } }) : null,
+    prisma.invoice.findFirst({
+      where: { orgId: input.orgId, paymentId: payment.id },
+      orderBy: { issueDate: "desc" },
+    }),
+  ]);
+  if (!org) {
+    throw notFoundError("Organization not found");
+  }
+  return { org, payment, user, invoice };
+}
+
+async function ensurePaymentReceipt(input: { orgId: string; paymentId: string; userId?: string }) {
+  const { org, payment, user, invoice } = await getPaymentDocumentContext(input);
+  assertBillingDetailsReady(org, "receipt");
+  if (payment.status !== "SUCCEEDED" && payment.status !== "PARTIALLY_REFUNDED") {
+    throw conflictError("Receipts can be generated only after a payment succeeds.");
+  }
+  if (payment.receiptNumber) {
+    return { org, payment, user, invoice, receiptNumber: payment.receiptNumber };
+  }
+  const sequence = (await prisma.payment.count({ where: { orgId: input.orgId } })) + 1;
+  const receiptNumber = buildReceiptNumber({
+    org,
+    recordedAt: payment.recordedAt ?? payment.createdAt,
+    sequence,
+  });
+  const updatedPayment = await prisma.payment.update({
+    where: { id: payment.id },
+    data: { receiptNumber },
+  });
+  return { org, payment: updatedPayment, user, invoice, receiptNumber };
+}
+
+function inclusiveGstBreakdown(totalPaise: number, gstRateBps: number) {
+  if (!gstRateBps) {
+    return { subtotalPaise: totalPaise, gstPaise: 0, totalPaise };
+  }
+  const subtotalPaise = Math.round((totalPaise * 10_000) / (10_000 + gstRateBps));
+  return {
+    subtotalPaise,
+    gstPaise: totalPaise - subtotalPaise,
+    totalPaise,
+  };
+}
+
+async function ensurePaymentInvoice(input: { orgId: string; paymentId: string; userId?: string }) {
+  const { org, payment, user, invoice } = await getPaymentDocumentContext(input);
+  assertBillingDetailsReady(org, "invoice");
+  if (payment.status !== "SUCCEEDED" && payment.status !== "PARTIALLY_REFUNDED") {
+    throw conflictError("Invoices can be generated only after a payment succeeds.");
+  }
+  if (invoice) {
+    return { org, payment, user, invoice };
+  }
+  const sequence = (await prisma.invoice.count({ where: { orgId: input.orgId } })) + 1;
+  const issueDate = new Date();
+  const invoiceNumber = buildInvoiceNumber({
+    orgCode: documentOrgCode(org),
+    issueDate,
+    sequence,
+  });
+  const gstRateBps = 1800;
+  const totals = inclusiveGstBreakdown(payment.amountPaise, gstRateBps);
+  const createdInvoice = await prisma.invoice.create({
+    data: {
+      orgId: input.orgId,
+      userId: payment.userId,
+      paymentId: payment.id,
+      invoiceNumber,
+      invoiceNo: invoiceNumber,
+      issueDate,
+      issuedAt: issueDate,
+      gstNumber: org.gstNumber,
+      gstRateBps,
+      subtotalPaise: totals.subtotalPaise,
+      gstPaise: totals.gstPaise,
+      totalPaise: totals.totalPaise,
+      amountPaise: totals.totalPaise,
+      taxPaise: totals.gstPaise,
+      status: payment.status,
+      invoiceStatus: "issued",
+      metadata: {
+        paymentPurpose: payment.purpose,
+        lineItems: [
+          {
+            description: `${payment.purpose.replaceAll("_", " ").toLowerCase()} payment`,
+            quantity: 1,
+            subtotalPaise: totals.subtotalPaise,
+            gstPaise: totals.gstPaise,
+            totalPaise: totals.totalPaise,
+          },
+        ],
+      } as Prisma.InputJsonValue,
+    },
+  });
+  return { org, payment, user, invoice: createdInvoice };
+}
+
+function receiptHtml(input: Awaited<ReturnType<typeof ensurePaymentReceipt>>) {
+  return renderDocumentHtml({
+    title: "Payment receipt",
+    org: input.org,
+    memberName: input.user?.name ?? input.user?.email ?? null,
+    number: input.receiptNumber,
+    issueDate: input.payment.recordedAt ?? input.payment.createdAt,
+    rows: [
+      { label: "Amount", value: documentAmount(input.payment.amountPaise) },
+      { label: "Payment mode", value: input.payment.mode.replaceAll("_", " ") },
+      { label: "Purpose", value: input.payment.purpose.replaceAll("_", " ") },
+      { label: "Status", value: input.payment.status.replaceAll("_", " ") },
+      { label: "Reference", value: input.payment.providerRef ?? input.payment.receiptNumber ?? "" },
+    ],
+  });
+}
+
+function invoiceHtml(input: Awaited<ReturnType<typeof ensurePaymentInvoice>>) {
+  return renderDocumentHtml({
+    title: "Tax invoice",
+    org: input.org,
+    memberName: input.user?.name ?? input.user?.email ?? null,
+    number: input.invoice.invoiceNumber ?? input.invoice.invoiceNo ?? input.invoice.id,
+    issueDate: input.invoice.issueDate ?? input.invoice.issuedAt,
+    rows: [
+      { label: "Subtotal", value: documentAmount(input.invoice.subtotalPaise) },
+      { label: "GST", value: documentAmount(input.invoice.gstPaise) },
+      { label: "Total", value: documentAmount(input.invoice.totalPaise) },
+      { label: "Payment status", value: input.invoice.status.replaceAll("_", " ") },
+      {
+        label: "Payment reference",
+        value: input.payment.providerRef ?? input.payment.receiptNumber ?? "",
+      },
+    ],
+  });
+}
+
 function publicTrainerPhotoUrl(value: string | null | undefined) {
   if (!value || value.startsWith("/api/files/")) {
     return null;
@@ -1825,11 +2287,7 @@ function publicTrainerPhotoUrl(value: string | null | undefined) {
   return value;
 }
 
-async function assertOrgUser(input: {
-  orgId: string;
-  userId: string;
-  role?: Exclude<Role, "PLATFORM_ADMIN">;
-}) {
+async function assertOrgUser(input: { orgId: string; userId: string; role?: OrgRole }) {
   const membership = await prisma.organizationUser.findUnique({
     where: { orgId_userId: { orgId: input.orgId, userId: input.userId } },
   });
@@ -1897,7 +2355,11 @@ async function fanoutPlanPublished(input: {
     },
     select: { assignedToUserId: true },
   });
-  const userIds = [...new Set(assignments.map((assignment) => assignment.assignedToUserId).filter(Boolean) as string[])];
+  const userIds = [
+    ...new Set(
+      assignments.map((assignment) => assignment.assignedToUserId).filter(Boolean) as string[],
+    ),
+  ];
   if (!userIds.length) {
     return { notified: 0, emailed: 0 };
   }
@@ -2375,7 +2837,7 @@ async function verifyGuardianConsentChallenge(input: {
       where: { id: challenge.id },
       data: { status: "EXPIRED", failureReason: "Challenge expired." },
     });
-    throw validationError("Guardian OTP has expired.");
+    throw validationError("Guardian code has expired.");
   }
 
   const devCodeAllowed = getAllowedFixedOtp() === input.code;
@@ -2387,11 +2849,11 @@ async function verifyGuardianConsentChallenge(input: {
       data: clean({
         attempts,
         ...(attempts >= challenge.maxAttempts
-          ? { status: "FAILED", failureReason: "Guardian OTP attempts exceeded." }
+          ? { status: "FAILED", failureReason: "Guardian code attempts exceeded." }
           : {}),
       }),
     });
-    throw validationError("Guardian OTP is invalid.");
+    throw validationError("Guardian code is invalid.");
   }
 
   const consent = await prisma.guardianConsent.findUniqueOrThrow({
@@ -2644,9 +3106,12 @@ function currentAIProviderType(): "MOCK" | "OPENAI" {
 
 function assertAiLaunchEnabled() {
   if (process.env.AI_FEATURES_ENABLED !== "true") {
-    throw serviceUnavailableError("AI plan assistant is coming soon. Trainers can create, review, assign, and send plans manually.", {
-      expectedFormat: "AI_FEATURES_ENABLED=true",
-    });
+    throw serviceUnavailableError(
+      "AI plan assistant is coming soon. Trainers can create, review, assign, and send plans manually.",
+      {
+        expectedFormat: "AI_FEATURES_ENABLED=true",
+      },
+    );
   }
 }
 
@@ -2715,10 +3180,7 @@ function normalizedStructuredPlanContent(response: string | Record<string, unkno
   return response;
 }
 
-async function resolveAIQuotaState(input: {
-  userId: string;
-  role: Exclude<Role, "PLATFORM_ADMIN">;
-}) {
+async function resolveAIQuotaState(input: { userId: string; role: OrgRole }) {
   const today = startOfDay();
   const monthStart = startOfMonth();
   const [usedTextDaily, usedTextMonth, usedImagesMonth] = await Promise.all([
@@ -2793,7 +3255,7 @@ async function persistBlockedAiAttempt(input: {
   request: NextRequest;
   orgId?: string;
   userId: string;
-  role: Exclude<Role, "PLATFORM_ADMIN">;
+  role: OrgRole;
   requestType: AIRequestType;
   prompt: string;
   error: AIGuardError;
@@ -3528,6 +3990,26 @@ async function applyAttendanceUsage(input: {
   if (existingUsage) {
     return input.subscription;
   }
+  const usageRecord = await prisma.attendanceRecord.findUnique({
+    where: { id: input.recordId },
+    select: { dateKey: true },
+  });
+  const alreadyCheckedInToday =
+    input.alreadyCheckedInToday ??
+    Boolean(
+      usageRecord?.dateKey
+        ? await prisma.attendanceRecord.findFirst({
+            where: {
+              orgId: input.orgId,
+              subscriptionId: input.subscription.id,
+              status: "APPROVED",
+              id: { not: input.recordId },
+              dateKey: usageRecord.dateKey,
+            },
+            select: { id: true },
+          })
+        : null,
+    );
   const updated = consumeVisit(
     clean({
       id: input.subscription.id,
@@ -3542,7 +4024,7 @@ async function applyAttendanceUsage(input: {
     }),
     toMembershipPlanInput(input.plan),
     clean({
-      alreadyCheckedInToday: input.alreadyCheckedInToday ?? false,
+      alreadyCheckedInToday,
       multiEntryConsumes: input.multiEntryConsumes,
     }),
   );
@@ -3698,10 +4180,10 @@ class PrismaAuthRepo {
     });
     const isNewDevice = Boolean(
       input.deviceFingerprintHash &&
-        existingSessions.length > 0 &&
-        !existingSessions.some(
-          (session) => session.deviceFingerprintHash === input.deviceFingerprintHash,
-        ),
+      existingSessions.length > 0 &&
+      !existingSessions.some(
+        (session) => session.deviceFingerprintHash === input.deviceFingerprintHash,
+      ),
     );
     const session = await prisma.userSession.create({
       data: {
@@ -3781,9 +4263,13 @@ async function handleAuth(request: NextRequest, path: string[]) {
     await assertRateLimit(
       "otpRequestByIdentifier",
       body.identifier.value,
-      "Too many OTP requests for this account.",
+      "Too many one-time code requests for this account.",
     );
-    await assertRateLimit("otpRequestByIp", ipAddress, "Too many OTP requests from this IP.");
+    await assertRateLimit(
+      "otpRequestByIp",
+      ipAddress,
+      "Too many one-time code requests from this IP.",
+    );
     if (isQaFreshIdentifier(body.identifier)) {
       assertLocalQaIdentityAllowed();
     } else if (isQaDemoIdentifier(body.identifier)) {
@@ -3808,12 +4294,12 @@ async function handleAuth(request: NextRequest, path: string[]) {
     await assertRateLimit(
       "otpVerifyByIdentifier",
       body.identifier.value,
-      "Too many OTP verification attempts for this account.",
+      "Too many one-time code attempts for this account.",
     );
     await assertRateLimit(
       "otpVerifyByIp",
       ipAddress,
-      "Too many OTP verification attempts from this IP.",
+      "Too many one-time code attempts from this IP.",
     );
     const user = await getAuthUserForVerifiedIdentifier(body.identifier);
     const session = await auth.verifyOtp(
@@ -3982,9 +4468,13 @@ async function handleMeData(request: NextRequest, path: string[]) {
     await assertRateLimit(
       "otpRequestByIdentifier",
       body.identifier.value,
-      "Too many OTP requests for this contact.",
+      "Too many one-time code requests for this contact.",
     );
-    await assertRateLimit("otpRequestByIp", ipAddress, "Too many OTP requests from this IP.");
+    await assertRateLimit(
+      "otpRequestByIp",
+      ipAddress,
+      "Too many one-time code requests from this IP.",
+    );
     const auth = new AuthService(
       new PrismaAuthRepo(),
       getEmailProviderOrThrow(),
@@ -4010,12 +4500,12 @@ async function handleMeData(request: NextRequest, path: string[]) {
     await assertRateLimit(
       "otpVerifyByIdentifier",
       body.identifier.value,
-      "Too many OTP verification attempts for this contact.",
+      "Too many one-time code attempts for this contact.",
     );
     await assertRateLimit(
       "otpVerifyByIp",
       ipAddress,
-      "Too many OTP verification attempts from this IP.",
+      "Too many one-time code attempts from this IP.",
     );
     const auth = new AuthService(new PrismaAuthRepo(), getEmailProviderOrThrow());
     await auth.verifyOtpChallenge({
@@ -4255,6 +4745,49 @@ async function handleMeData(request: NextRequest, path: string[]) {
         totalPaise: invoice.totalPaise || invoice.amountPaise,
         pdfAsset: invoice.pdfAssetId ? (assetsById.get(invoice.pdfAssetId) ?? null) : null,
       })),
+    });
+  }
+  if (
+    (request.method === "POST" || request.method === "GET") &&
+    pathMatches(path, ["me", "payments", /.+/, "receipt"])
+  ) {
+    const userId = requireAuth(await getRequestContext(request));
+    const paymentId = path[2]!;
+    const payment = await prisma.payment.findFirst({ where: { id: paymentId, userId } });
+    if (!payment?.orgId) {
+      throw notFoundError("Payment not found");
+    }
+    const receipt = await ensurePaymentReceipt({ orgId: payment.orgId, paymentId, userId });
+    if (request.method === "GET" && request.nextUrl.searchParams.get("format") === "html") {
+      return new NextResponse(receiptHtml(receipt), {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    return ok({
+      receiptNumber: receipt.receiptNumber,
+      payment: receipt.payment,
+      receiptUrl: `/api/me/payments/${paymentId}/receipt?format=html`,
+    });
+  }
+  if (
+    (request.method === "POST" || request.method === "GET") &&
+    pathMatches(path, ["me", "payments", /.+/, "invoice"])
+  ) {
+    const userId = requireAuth(await getRequestContext(request));
+    const paymentId = path[2]!;
+    const payment = await prisma.payment.findFirst({ where: { id: paymentId, userId } });
+    if (!payment?.orgId) {
+      throw notFoundError("Payment not found");
+    }
+    const invoice = await ensurePaymentInvoice({ orgId: payment.orgId, paymentId, userId });
+    if (request.method === "GET" && request.nextUrl.searchParams.get("format") === "html") {
+      return new NextResponse(invoiceHtml(invoice), {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    return ok({
+      invoice: invoice.invoice,
+      invoiceUrl: `/api/me/payments/${paymentId}/invoice?format=html`,
     });
   }
   return undefined;
@@ -4804,6 +5337,7 @@ async function handleFiles(request: NextRequest, path: string[]) {
       trainer_upi_qr: ["PT_RECORD", "TRAINERS_MANAGE"],
       org_logo: ["ORG_MANAGE_PROFILE"],
       org_cover: ["ORG_MANAGE_PROFILE"],
+      org_gallery: ["ORG_MANAGE_PROFILE"],
     };
 
     const canDeleteOwn = asset.ownerUserId === userId;
@@ -4991,6 +5525,11 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           settingValues.facilities.every((item) => typeof item === "string")
             ? settingValues.facilities
             : [],
+        equipment:
+          Array.isArray(settingValues.equipment) &&
+          settingValues.equipment.every((item) => typeof item === "string")
+            ? settingValues.equipment
+            : [],
         gymType: typeof settingValues.gymType === "string" ? settingValues.gymType : null,
         openingHoursSummary:
           typeof settingValues.openingHoursSummary === "string"
@@ -5085,6 +5624,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       const created = await tx.organization.create({
         data: clean({
           name: body.name,
+          legalName: body.name,
           username,
           contactPhone: body.contactPhone,
           contactEmail: body.contactEmail,
@@ -5137,7 +5677,12 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       await tx.organizationSetting.create({
         data: {
           orgId: created.id,
-          keyValues: { defaultBranchId: branch.id, attendanceMode: "EXCEPTION_APPROVAL" },
+          keyValues: {
+            defaultBranchId: branch.id,
+            attendanceMode: "EXCEPTION_APPROVAL",
+            equipment: body.equipment,
+            gymType: body.amenities[0] ?? "",
+          },
         },
       });
       await tx.notificationTemplate.createMany({
@@ -5167,6 +5712,92 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     }
     return ok({ org: await prisma.organization.findUnique({ where: { id: membership.orgId } }) });
   }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "billing-profile"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
+    const [org, subscription] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: orgId } }),
+      prisma.saaSSubscription.findUnique({ where: { orgId } }),
+    ]);
+    if (!org) {
+      throw notFoundError("Organization not found");
+    }
+    return ok({
+      billingProfile: {
+        legalName: org.legalName ?? "",
+        gstNumber: org.gstNumber ?? "",
+        billingEmail: subscription?.billingEmail ?? org.contactEmail ?? "",
+        contactEmail: org.contactEmail ?? "",
+        contactPhone: org.contactPhone ?? "",
+        address: org.address,
+        city: org.city,
+        state: org.state,
+        pincode: org.pincode,
+        receiptReady: missingBillingDetails(org, "receipt").length === 0,
+        invoiceReady: missingBillingDetails(org, "invoice").length === 0,
+        receiptMissing: missingBillingDetails(org, "receipt"),
+        invoiceMissing: missingBillingDetails(org, "invoice"),
+      },
+    });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "billing-profile"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
+    const body = organizationBillingDetailsSchema.parse(await readJson(request));
+    const [org] = await prisma.$transaction([
+      prisma.organization.update({
+        where: { id: orgId },
+        data: {
+          legalName: body.legalName,
+          gstNumber: body.gstNumber,
+          contactEmail: body.contactEmail,
+          contactPhone: body.contactPhone || null,
+          address: body.address,
+          city: body.city,
+          state: body.state,
+          pincode: body.pincode,
+        },
+      }),
+      prisma.saaSSubscription.upsert({
+        where: { orgId },
+        create: {
+          orgId,
+          status: "TRIAL_ACTIVE",
+          trialStartAt: new Date(),
+          trialEndAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          billingEmail: body.contactEmail,
+        },
+        update: { billingEmail: body.contactEmail },
+      }),
+    ]);
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "organization.billing_profile_updated",
+      entityType: "organization",
+      entityId: orgId,
+    });
+    return ok({
+      billingProfile: {
+        legalName: org.legalName ?? "",
+        gstNumber: org.gstNumber ?? "",
+        billingEmail: body.contactEmail,
+        contactEmail: org.contactEmail ?? "",
+        contactPhone: org.contactPhone ?? "",
+        address: org.address,
+        city: org.city,
+        state: org.state,
+        pincode: org.pincode,
+        receiptReady: missingBillingDetails(org, "receipt").length === 0,
+        invoiceReady: missingBillingDetails(org, "invoice").length === 0,
+        receiptMissing: missingBillingDetails(org, "receipt"),
+        invoiceMissing: missingBillingDetails(org, "invoice"),
+      },
+    });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "profile"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -5192,6 +5823,9 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           : [],
         facilities: Array.isArray(settingValues.facilities)
           ? settingValues.facilities.filter((item): item is string => typeof item === "string")
+          : [],
+        equipment: Array.isArray(settingValues.equipment)
+          ? settingValues.equipment.filter((item): item is string => typeof item === "string")
           : [],
         gymType: typeof settingValues.gymType === "string" ? settingValues.gymType : "",
         openingHoursSummary:
@@ -5279,6 +5913,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
             tagline: body.tagline ?? "",
             gallery,
             facilities: body.facilities,
+            equipment: body.equipment,
             gymType: body.gymType ?? "",
             openingHoursSummary: body.openingHoursSummary ?? "",
             appStoreUrl: body.appStoreUrl || "",
@@ -5291,6 +5926,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
             tagline: body.tagline ?? "",
             gallery,
             facilities: body.facilities,
+            equipment: body.equipment,
             gymType: body.gymType ?? "",
             openingHoursSummary: body.openingHoursSummary ?? "",
             appStoreUrl: body.appStoreUrl || "",
@@ -5332,6 +5968,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
         tagline: body.tagline ?? "",
         gallery,
         facilities: body.facilities,
+        equipment: body.equipment,
         gymType: body.gymType ?? "",
         openingHoursSummary: body.openingHoursSummary ?? "",
         appStoreUrl: body.appStoreUrl || "",
@@ -6069,11 +6706,14 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
   async function pauseCapDaysForOrg(orgId: string) {
     const setting = await prisma.organizationSetting.findUnique({ where: { orgId } });
     const values =
-      setting?.keyValues && typeof setting.keyValues === "object" && !Array.isArray(setting.keyValues)
+      setting?.keyValues &&
+      typeof setting.keyValues === "object" &&
+      !Array.isArray(setting.keyValues)
         ? (setting.keyValues as Record<string, unknown>)
         : {};
-    const configured =
-      Number(values.membershipPauseCapDaysPerYear ?? values.pauseCapDaysPerYear ?? 30);
+    const configured = Number(
+      values.membershipPauseCapDaysPerYear ?? values.pauseCapDaysPerYear ?? 30,
+    );
     return Number.isFinite(configured) && configured >= 0 ? Math.floor(configured) : 30;
   }
 
@@ -6113,7 +6753,8 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       subscription.endsAt && subscription.endsAt > effectiveAt
         ? wholeDaysBetween(effectiveAt, subscription.endsAt)
         : 0;
-    const endsAt = planDurationDays > 0 ? addDays(effectiveAt, planDurationDays + unusedDays) : window.endsAt;
+    const endsAt =
+      planDurationDays > 0 ? addDays(effectiveAt, planDurationDays + unusedDays) : window.endsAt;
     const remainingVisits =
       newPlan.visitLimit !== null
         ? newPlan.visitLimit + Math.max(subscription.remainingVisits ?? 0, 0)
@@ -6433,6 +7074,192 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     requireOrgAnyPermission(ctx, orgId, ["PAYMENTS_VIEW", "PAYMENTS_RECORD_OFFLINE"]);
     return ok(await listOrganizationPaymentsPage(orgId, request));
   }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "invoices"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgAnyPermission(ctx, orgId, ["ORG_MANAGE_BILLING", "PAYMENTS_VIEW"]);
+    const invoices = await prisma.invoice.findMany({
+      where: { orgId },
+      orderBy: [{ issueDate: "desc" }, { issuedAt: "desc" }],
+      take: 100,
+    });
+    const users = invoices.some((invoice) => invoice.userId)
+      ? await prisma.user.findMany({
+          where: {
+            id: { in: invoices.map((invoice) => invoice.userId).filter(Boolean) as string[] },
+          },
+        })
+      : [];
+    const usersById = new Map(users.map((user) => [user.id, user]));
+    return ok({
+      invoices: invoices.map((invoice) => ({
+        ...invoice,
+        user: invoice.userId ? (usersById.get(invoice.userId) ?? null) : null,
+        invoiceUrl: invoice.paymentId
+          ? `/api/orgs/${orgId}/payments/${invoice.paymentId}/invoice?format=html`
+          : null,
+      })),
+    });
+  }
+  if (
+    (request.method === "POST" || request.method === "GET") &&
+    pathMatches(path, ["orgs", /.+/, "payments", /.+/, "receipt"])
+  ) {
+    const orgId = path[1]!;
+    const paymentId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgAnyPermission(ctx, orgId, ["PAYMENTS_VIEW", "PAYMENTS_RECORD_OFFLINE"]);
+    const receipt = await ensurePaymentReceipt({ orgId, paymentId });
+    if (request.method === "GET" && request.nextUrl.searchParams.get("format") === "html") {
+      return new NextResponse(receiptHtml(receipt), {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    return ok({
+      receiptNumber: receipt.receiptNumber,
+      payment: receipt.payment,
+      receiptUrl: `/api/orgs/${orgId}/payments/${paymentId}/receipt?format=html`,
+    });
+  }
+  if (
+    (request.method === "POST" || request.method === "GET") &&
+    pathMatches(path, ["orgs", /.+/, "payments", /.+/, "invoice"])
+  ) {
+    const orgId = path[1]!;
+    const paymentId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgAnyPermission(ctx, orgId, ["ORG_MANAGE_BILLING", "PAYMENTS_VIEW"]);
+    const invoice = await ensurePaymentInvoice({ orgId, paymentId });
+    if (request.method === "GET" && request.nextUrl.searchParams.get("format") === "html") {
+      return new NextResponse(invoiceHtml(invoice), {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    return ok({
+      invoice: invoice.invoice,
+      invoiceUrl: `/api/orgs/${orgId}/payments/${paymentId}/invoice?format=html`,
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "payments", /.+/, "refund"])) {
+    const orgId = path[1]!;
+    const paymentId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PAYMENTS_REFUND");
+    const body = paymentRefundSchema.parse(await readJson(request).catch(() => ({})));
+    const payment = await prisma.payment.findFirst({ where: { id: paymentId, orgId } });
+    if (!payment) {
+      throw notFoundError("Payment not found");
+    }
+    if (!["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(payment.status)) {
+      throw conflictError("Only successful or partly refunded payments can be refunded.");
+    }
+    if (!payment.providerRef) {
+      throw validationError(
+        "This payment was not collected through Razorpay, so it cannot be refunded here.",
+      );
+    }
+    const existingRefunds = await prisma.paymentRefund.findMany({
+      where: {
+        paymentId: payment.id,
+        orgId,
+        status: { notIn: ["FAILED", "CANCELLED"] },
+      },
+    });
+    const alreadyRefundedPaise = existingRefunds.reduce(
+      (total, refund) => total + refund.amountPaise,
+      0,
+    );
+    const refundableAmountPaise = Math.max(payment.amountPaise - alreadyRefundedPaise, 0);
+    if (refundableAmountPaise <= 0) {
+      throw conflictError("This payment has already been fully refunded.");
+    }
+    const refundAmountPaise = body.amountPaise ?? refundableAmountPaise;
+    if (refundAmountPaise > refundableAmountPaise) {
+      throw validationError(
+        `Refund amount cannot exceed the remaining ${Math.round(refundableAmountPaise / 100)} rupees.`,
+      );
+    }
+    const provider = getPaymentProviderOrThrow();
+    const requestedRefund = await prisma.paymentRefund.create({
+      data: {
+        orgId,
+        branchId: payment.branchId,
+        paymentId: payment.id,
+        provider: payment.provider,
+        amountPaise: refundAmountPaise,
+        currency: payment.currency,
+        status: "REQUESTED",
+        reason: body.reason,
+        requestedById: userId,
+      },
+    });
+    let refund;
+    try {
+      refund = await provider.refundPayment({
+        paymentId: payment.providerRef,
+        amountPaise: refundAmountPaise,
+        reason: body.reason,
+      });
+    } catch (cause) {
+      await prisma.paymentRefund.update({
+        where: { id: requestedRefund.id },
+        data: {
+          status: "FAILED",
+          failureReason: cause instanceof Error ? cause.message : "Refund failed.",
+        },
+      });
+      throw cause;
+    }
+    const processedAt = new Date();
+    const nextRefundedAmountPaise = alreadyRefundedPaise + refundAmountPaise;
+    const nextStatus =
+      nextRefundedAmountPaise >= payment.amountPaise ? "REFUNDED" : "PARTIALLY_REFUNDED";
+    const [updatedRefund, updated] = await prisma.$transaction([
+      prisma.paymentRefund.update({
+        where: { id: requestedRefund.id },
+        data: {
+          status: refund.status,
+          providerRefundId: refund.providerRefundId ?? null,
+          processedAt,
+          providerResponse: refund as unknown as Prisma.InputJsonValue,
+        },
+      }),
+      prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: nextStatus,
+          metadata: {
+            ...(typeof payment.metadata === "object" && payment.metadata ? payment.metadata : {}),
+            refundedAmountPaise: nextRefundedAmountPaise,
+            refund: {
+              refundId: requestedRefund.id,
+              status: refund.status,
+              providerRefundId: refund.providerRefundId,
+              amountPaise: refundAmountPaise,
+              reason: body.reason,
+              refundedAt: processedAt.toISOString(),
+              refundedById: userId,
+            },
+          },
+        },
+      }),
+    ]);
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "payment.refunded",
+      entityType: "payment",
+      entityId: payment.id,
+      metadata: {
+        refundId: updatedRefund.id,
+        providerRefundId: refund.providerRefundId,
+        amountPaise: refundAmountPaise,
+        status: nextStatus,
+      },
+    });
+    return ok({ payment: updated, refund: updatedRefund });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "subscription-reminders"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -6576,7 +7403,9 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       throw validationError("Use the membership or shop checkout route for this purpose.");
     }
     if (body.metadata?.subscriptionId || body.metadata?.shopOrderId) {
-      throw validationError("Generic checkout cannot directly reference membership or shop records.");
+      throw validationError(
+        "Generic checkout cannot directly reference membership or shop records.",
+      );
     }
     if (body.userId && body.userId !== userId && !ctx.isPlatformAdmin) {
       throw forbiddenError("You cannot start this payment for another person.");
@@ -7636,7 +8465,9 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_SUBSCRIPTION_MANAGE");
     const body = subscriptionSwitchSchema.parse(await readJson(request));
-    const subscription = await prisma.memberSubscription.findFirst({ where: { id: subscriptionId, orgId } });
+    const subscription = await prisma.memberSubscription.findFirst({
+      where: { id: subscriptionId, orgId },
+    });
     if (!subscription) {
       throw notFoundError("Membership not found");
     }
@@ -7660,7 +8491,9 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_SUBSCRIPTION_MANAGE");
     const body = subscriptionPauseSchema.parse(await readJson(request));
-    const subscription = await prisma.memberSubscription.findFirst({ where: { id: subscriptionId, orgId } });
+    const subscription = await prisma.memberSubscription.findFirst({
+      where: { id: subscriptionId, orgId },
+    });
     if (!subscription) {
       throw notFoundError("Membership not found");
     }
@@ -7683,7 +8516,9 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
     const subscriptionId = path[3]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_SUBSCRIPTION_MANAGE");
-    const subscription = await prisma.memberSubscription.findFirst({ where: { id: subscriptionId, orgId } });
+    const subscription = await prisma.memberSubscription.findFirst({
+      where: { id: subscriptionId, orgId },
+    });
     if (!subscription) {
       throw notFoundError("Membership not found");
     }
@@ -8221,9 +9056,7 @@ async function handleCouponsReferrals(request: NextRequest, path: string[]) {
       throw validationError("Referral program is not active for this gym.");
     }
     const referrerUserId = canManage && body.referrerUserId ? body.referrerUserId : userId;
-    const createdByRole = (body.createdByRole ??
-      ctx.roles.find((role) => role !== "PLATFORM_ADMIN") ??
-      "MEMBER") as Exclude<Role, "PLATFORM_ADMIN">;
+    const createdByRole = (body.createdByRole ?? ctx.roles[0] ?? "MEMBER") as OrgRole;
     if (createdByRole === "TRAINER" && !policy.trainerReferralEnabled) {
       throw validationError("Trainer referrals are not enabled.");
     }
@@ -8367,7 +9200,8 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ATTENDANCE_QR_DISPLAY");
-    const branch = await resolveOrgBranch(orgId);
+    const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
+    const branch = await resolveOrgBranch(orgId, branchId);
     const payload = createSignedQrToken({
       orgId,
       branchId: branch.id,
@@ -8384,7 +9218,11 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         createdById: userId,
       },
     });
-    return ok({ qrPayload: encodeQrPayload(payload), expiresAt: new Date(payload.expiry) });
+    return ok({
+      qrPayload: encodeQrPayload(payload),
+      checkInCode: checkInCodeForQrNonce(payload.nonce),
+      expiresAt: new Date(payload.expiry),
+    });
   }
   if (request.method === "POST" && pathMatches(path, ["attendance", "dev-scan"])) {
     const appEnv = (process.env.APP_ENV ?? process.env.ENV_PROFILE ?? "local").toLowerCase();
@@ -8398,37 +9236,22 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       throw validationError("Select a gym before trying a sample check-in.");
     }
     const branch = await resolveOrgBranch(orgId);
-    const existing = await prisma.attendanceRecord.findUnique({
+    const dateKey = operationalDateKey();
+    const existing = await prisma.attendanceRecord.findFirst({
       where: {
-        orgId_branchId_userId_dateKey: {
-          orgId,
-          branchId: branch.id,
-          userId,
-          dateKey: dateKey(),
-        },
+        orgId,
+        branchId: branch.id,
+        userId,
+        dateKey,
       },
+      orderBy: { checkedInAt: "desc" },
     });
-    if (existing) {
-      return ok({
-        attendance: {
-          ...attendanceWithEntryCode(existing),
-          checkedInAt: existing.checkedInAt,
-          branchName: branch.name,
-          planName: "Test check-in",
-        },
-        status: existing.status,
-        duplicate: true,
-        suspiciousFlags: Array.isArray(existing.suspiciousFlags)
-          ? existing.suspiciousFlags
-          : ["duplicate_same_day"],
-      });
-    }
     const record = await prisma.attendanceRecord.create({
       data: {
         orgId,
         branchId: branch.id,
         userId,
-        dateKey: dateKey(),
+        dateKey,
         status: "APPROVED",
         source: "MANUAL",
         suspiciousFlags: ["local_dev_scan"],
@@ -8451,7 +9274,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         planName: "Test check-in",
       },
       status: record.status,
-      duplicate: false,
+      duplicate: Boolean(existing),
       suspiciousFlags: [],
     });
   }
@@ -8465,11 +9288,51 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       "Too many attendance scans. Please wait before trying again.",
     );
     const now = new Date();
-    const decoded = validateSignedQrToken({
-      encoded: body.qrPayload,
-      secret: getQrSigningSecret(),
-      now,
-    });
+    const decoded = body.qrPayload
+      ? validateSignedQrToken({
+          encoded: body.qrPayload,
+          secret: getQrSigningSecret(),
+          now,
+        })
+      : await (async () => {
+          const normalizedCode = normalizeCheckInCode(body.checkInCode ?? "");
+          if (!normalizedCode) {
+            throw validationError("Enter the check-in code as two letters and four digits.");
+          }
+          await assertRateLimit(
+            "qrScanByToken",
+            `code:${normalizedCode}`,
+            "Too many code attempts. Please wait before trying again.",
+          );
+          const activeTokens = await prisma.attendanceQrToken.findMany({
+            where: { expiresAt: { gt: now } },
+            orderBy: { issuedAt: "desc" },
+            take: 500,
+          });
+          const matches = activeTokens.filter(
+            (token) => checkInCodeForQrNonce(token.nonce) === normalizedCode,
+          );
+          if (matches.length !== 1) {
+            throw validationError(
+              matches.length > 1
+                ? "This check-in code matched more than one active branch. Please scan the QR."
+                : "Check-in code is invalid or expired.",
+            );
+          }
+          const token = matches[0]!;
+          return validateSignedQrToken({
+            encoded: encodeQrPayload({
+              orgId: token.orgId,
+              branchId: token.branchId,
+              timestamp: token.issuedAt.getTime(),
+              nonce: token.nonce,
+              expiry: token.expiresAt.getTime(),
+              signature: token.signature,
+            }),
+            secret: getQrSigningSecret(),
+            now,
+          });
+        })();
     await assertRateLimit(
       "qrScanByToken",
       decoded.nonce,
@@ -8490,65 +9353,47 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       data: { scanCount: { increment: 1 }, lastScannedAt: now },
     });
     if (scanReservation.count !== 1) {
-      throw validationError("This QR code has expired due to scan volume. Ask reception to refresh it.");
+      throw validationError(
+        "This QR code has expired due to scan volume. Ask reception to refresh it.",
+      );
     }
-    const [org, memberProfile, scanUser, subscription, expiredSubscription, duplicate, branch] =
+    const [org, memberProfile, scanUser, subscription, expiredSubscription, recentCheckIn, branch] =
       await Promise.all([
-      prisma.organization.findUnique({ where: { id: decoded.orgId } }),
-      prisma.memberProfile.findUnique({
-        where: { orgId_userId: { orgId: decoded.orgId, userId } },
-      }),
-      prisma.user.findUnique({ where: { id: userId } }),
-      prisma.memberSubscription.findFirst({
-        where: { orgId: decoded.orgId, memberUserId: userId, status: "ACTIVE" },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.memberSubscription.findFirst({
-        where: { orgId: decoded.orgId, memberUserId: userId, status: "EXPIRED" },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.attendanceRecord.findUnique({
-        where: {
-          orgId_branchId_userId_dateKey: {
+        prisma.organization.findUnique({ where: { id: decoded.orgId } }),
+        prisma.memberProfile.findUnique({
+          where: { orgId_userId: { orgId: decoded.orgId, userId } },
+        }),
+        prisma.user.findUnique({ where: { id: userId } }),
+        prisma.memberSubscription.findFirst({
+          where: { orgId: decoded.orgId, memberUserId: userId, status: "ACTIVE" },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.memberSubscription.findFirst({
+          where: { orgId: decoded.orgId, memberUserId: userId, status: "EXPIRED" },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.attendanceRecord.findFirst({
+          where: {
             orgId: decoded.orgId,
             branchId: decoded.branchId,
             userId,
-            dateKey: dateKey(),
+            dateKey: operationalDateKey(now),
           },
-        },
-      }),
-      prisma.branch.findUnique({
-        where: { id: decoded.branchId },
-        select: { id: true, name: true, operatingHours: true },
-      }),
-    ]);
+          orderBy: { checkedInAt: "desc" },
+        }),
+        prisma.branch.findUnique({
+          where: { id: decoded.branchId },
+          select: { id: true, name: true, operatingHours: true },
+        }),
+      ]);
     const plan = subscription
       ? await prisma.membershipPlan.findUnique({
           where: { id: subscription.planId },
         })
       : null;
-    if (duplicate) {
-      return ok({
-        attendance: {
-          ...attendanceWithEntryCode(duplicate),
-          checkedInAt: duplicate.checkedInAt,
-          branchName: branch?.name ?? null,
-          planName: plan?.name ?? null,
-        },
-        status: duplicate.status,
-        duplicate: true,
-        suspiciousFlags: Array.isArray(duplicate.suspiciousFlags)
-          ? duplicate.suspiciousFlags
-          : ["duplicate_same_day"],
-      });
-    }
     if (!org || !subscription) {
       if (expiredSubscription) {
-        return fail(
-          "MEMBERSHIP_EXPIRED",
-          "Membership expired. Renew before checking in.",
-          400,
-        );
+        return fail("MEMBERSHIP_EXPIRED", "Membership expired. Renew before checking in.", 400);
       }
       return fail("NO_ACTIVE_MEMBERSHIP", "No active membership", 400);
     }
@@ -8576,6 +9421,14 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         400,
       );
     }
+    const hasProfilePhoto = Boolean(memberProfile?.profilePhotoUrl || scanUser?.profilePhotoUrl);
+    if (!hasProfilePhoto) {
+      return fail(
+        "PROFILE_PHOTO_REQUIRED",
+        "Add a profile photo before check-in so the desk can verify you.",
+        400,
+      );
+    }
     if (!plan) return fail("PLAN_NOT_FOUND", "Plan not found", 400);
     const validation = validateAttendanceScan({
       subscription: clean({
@@ -8591,9 +9444,10 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       }),
       plan: toMembershipPlanInput(plan),
       orgStatus: org.status,
-      hasProfilePhoto: Boolean(memberProfile?.profilePhotoUrl),
-      alreadyCheckedInToday: false,
-      wrongBranch: subscription.branchId !== decoded.branchId,
+      hasProfilePhoto,
+      alreadyCheckedInToday: Boolean(recentCheckIn),
+      wrongBranch: false,
+      multiEntryConsumes: org.multiEntryConsumes,
       now,
     });
     if (!validation.allowed) {
@@ -8612,7 +9466,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         branchId: decoded.branchId,
         userId,
         subscriptionId: subscription.id,
-        dateKey: dateKey(),
+        dateKey: operationalDateKey(now),
         status,
         source: "QR_SCAN",
         qrTokenId: decoded.nonce,
@@ -8626,6 +9480,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         subscription,
         plan,
         recordId: record.id,
+        alreadyCheckedInToday: Boolean(recentCheckIn),
         multiEntryConsumes: org.multiEntryConsumes,
       });
     }
@@ -8637,7 +9492,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         planName: plan.name,
       },
       status,
-      duplicate: false,
+      duplicate: Boolean(recentCheckIn),
       suspiciousFlags: validation.suspiciousFlags,
       warnings: validation.warnings,
     });
@@ -8685,8 +9540,10 @@ async function handleAttendance(request: NextRequest, path: string[]) {
             ? {
                 id: user.id,
                 name: user.name,
+                privateHandle: privateUserHandle(user.id),
                 email: publicUserEmail(user.email) ?? "",
                 phone: user.phone,
+                profilePhotoUrl: user.profilePhotoUrl,
               }
             : null,
         },
@@ -8705,8 +9562,10 @@ async function handleAttendance(request: NextRequest, path: string[]) {
             ? {
                 id: user.id,
                 name: user.name,
+                privateHandle: privateUserHandle(user.id),
                 email: publicUserEmail(user.email) ?? "",
                 phone: user.phone,
+                profilePhotoUrl: user.profilePhotoUrl,
               }
             : null,
         },
@@ -8771,8 +9630,9 @@ async function handleAttendance(request: NextRequest, path: string[]) {
           : null;
         return {
           ...record,
+          entryCode: entryCodeForAttendanceId(record.id),
           branchName: branchNamesById.get(record.branchId) ?? null,
-          user,
+          user: user ? serializeUserForClient(user) : null,
           profile,
           subscription,
           plan,
@@ -8909,19 +9769,6 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     await assertOrgUser({ orgId, userId: body.memberUserId, role: "MEMBER" });
     const branchId = await assertBranchAccessForContext(ctx, orgId, body.branchId);
     const branch = await resolveOrgBranch(orgId, branchId);
-    const duplicate = await prisma.attendanceRecord.findUnique({
-      where: {
-        orgId_branchId_userId_dateKey: {
-          orgId,
-          branchId: branch.id,
-          userId: body.memberUserId,
-          dateKey: dateKey(),
-        },
-      },
-    });
-    if (duplicate) {
-      throw conflictError("Member already has an attendance record for today.");
-    }
     const memberUser = await prisma.user.findUniqueOrThrow({ where: { id: body.memberUserId } });
     try {
       assertMinorConsentGranted({
@@ -8937,7 +9784,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         orgId,
         branchId: branch.id,
         userId: body.memberUserId,
-        dateKey: dateKey(),
+        dateKey: operationalDateKey(),
         status: "APPROVED",
         source: "MANUAL",
         approvedById: userId,
@@ -8956,7 +9803,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       }),
     });
     const subscription = await prisma.memberSubscription.findFirst({
-      where: { orgId, branchId: branch.id, memberUserId: body.memberUserId, status: "ACTIVE" },
+      where: { orgId, memberUserId: body.memberUserId, status: "ACTIVE" },
       orderBy: { createdAt: "desc" },
     });
     const plan = subscription
@@ -9040,6 +9887,11 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         update: { leftAt: null },
         create: { orgId: invite.orgId, userId },
       });
+      await assertSingleRoleForOrgUser(tx, {
+        orgId: invite.orgId,
+        userId,
+        nextRole: invite.role as OrgRole,
+      });
       const roleAssignment = await tx.organizationRoleAssignment.upsert({
         where: { orgId_userId_role: { orgId: invite.orgId, userId, role: invite.role } },
         update: { assignedById: invite.invitedById, branchId: invite.branchId },
@@ -9097,8 +9949,20 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
         select: { id: true },
       });
       if (!branch) {
-        throw validationError("Choose an active branch for this receptionist.");
+        throw validationError("Choose an active branch for this Reception user.");
       }
+    }
+    const inviteEmail = body.email.toLowerCase();
+    const invitedUser = await prisma.user.findFirst({
+      where: { email: { equals: inviteEmail, mode: "insensitive" } },
+      select: { id: true },
+    });
+    if (invitedUser) {
+      await assertSingleRoleForOrgUser(prisma, {
+        orgId,
+        userId: invitedUser.id,
+        nextRole: body.role,
+      });
     }
     const [organization, inviter] = await Promise.all([
       prisma.organization.findUnique({ where: { id: orgId } }),
@@ -9107,7 +9971,7 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     const invite = await prisma.staffInvitation.create({
       data: {
         orgId,
-        email: body.email,
+        email: inviteEmail,
         role: body.role,
         branchId: body.role === "RECEPTIONIST" ? (body.branchId ?? null) : null,
         token: randomBytes(18).toString("base64url"),
@@ -9159,6 +10023,12 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     if (body.branchId) {
       await resolveOrgBranch(orgId, body.branchId);
     }
+    await assertSingleRoleForOrgUser(prisma, {
+      orgId,
+      userId: existingAssignment.userId,
+      nextRole: body.role,
+      allowAssignmentId: existingAssignment.id,
+    });
     const duplicateAssignment = await prisma.organizationRoleAssignment.findFirst({
       where: {
         orgId,
@@ -10458,8 +11328,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     if (body.orgId) {
       requireOrgPermission(ctx, body.orgId, "AI_USE_TEXT");
     }
-    const role = (ctx.roles.find((candidate) => candidate !== "PLATFORM_ADMIN") ??
-      "MEMBER") as Exclude<Role, "PLATFORM_ADMIN">;
+    const role = (ctx.roles[0] ?? "MEMBER") as OrgRole;
     const quota = await resolveAIQuotaState({ userId, role });
     let result: Awaited<ReturnType<typeof runAIGuardedRequest>>;
     try {
@@ -10553,8 +11422,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
       body.orgId,
       requestType === "IMAGE" ? "AI_GENERATE_IMAGE" : "AI_GENERATE_PLAN",
     );
-    const role = (ctx.roles.find((candidate) => candidate !== "PLATFORM_ADMIN") ??
-      "MEMBER") as Exclude<Role, "PLATFORM_ADMIN">;
+    const role = (ctx.roles[0] ?? "MEMBER") as OrgRole;
     if (requestType === "STRUCTURED_PLAN" && !ctx.roles.includes("TRAINER")) {
       throw forbiddenError("Trainer plan generation requires a trainer role.");
     }
@@ -11538,9 +12406,7 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const userId = assertOrgServicePermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
     const body = productInputSchema.parse(await readJson(request));
     const branch = await resolveOrgBranch(orgId, body.branchId);
-    const imageAsset = await getOrganizationScopedFileAsset(body.imageAssetId, orgId, [
-      "product_image",
-    ]);
+    const imageUrls = await resolveProductImageUrls(orgId, body);
     const product = await prisma.product.create({
       data: clean({
         orgId,
@@ -11551,7 +12417,8 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         stock: body.stock,
         category: body.category,
         lowStockThreshold: body.lowStockThreshold,
-        imageUrl: imageAsset?.url ?? body.imageUrl,
+        imageUrl: imageUrls[0],
+        imageUrls: imageUrls.length ? (imageUrls as Prisma.InputJsonValue) : undefined,
         active: body.active,
       }),
     });
@@ -11574,12 +12441,12 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const existingProduct = await prisma.product.findFirst({ where: { id: productId, orgId } });
     const branch =
       body.branchId !== undefined ? await resolveOrgBranch(orgId, body.branchId) : null;
-    const imageAsset = await getOrganizationScopedFileAsset(body.imageAssetId, orgId, [
-      "product_image",
-    ]);
     if (!existingProduct) {
       throw notFoundError("Product not found");
     }
+    const imageUrls = hasProductImageInput(body)
+      ? await resolveProductImageUrls(orgId, body)
+      : null;
     const product = await prisma.product.update({
       where: { id: existingProduct.id },
       data: clean({
@@ -11590,7 +12457,10 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
         pricePaise: body.pricePaise,
         stock: body.stock,
         lowStockThreshold: body.lowStockThreshold,
-        imageUrl: imageAsset?.url ?? body.imageUrl,
+        imageUrl: imageUrls ? (imageUrls[0] ?? null) : undefined,
+        imageUrls: imageUrls
+          ? ((imageUrls.length ? imageUrls : Prisma.JsonNull) as Prisma.InputJsonValue)
+          : undefined,
         active: body.active,
       }),
     });
@@ -12282,7 +13152,11 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const registry = getProviderRegistryDiagnostics();
     const coarseProviders = Object.fromEntries(
       Object.entries(registry).map(([name, value]) => {
-        const record = value as { status?: unknown; configured?: unknown; activeProvider?: unknown };
+        const record = value as {
+          status?: unknown;
+          configured?: unknown;
+          activeProvider?: unknown;
+        };
         return [
           name,
           {

@@ -1,5 +1,6 @@
-import { QA_DEMO_ACCOUNT_EMAIL, QA_DEMO_ACCOUNT_PHONE, zookDemoFixtures } from "@zook/core";
-import { type AuthSessionSummary, type Role } from "@zook/core";
+import { zookDemoFixtures } from "@zook/core/demo-fixtures";
+import { QA_DEMO_ACCOUNT_EMAIL, QA_DEMO_ACCOUNT_PHONE } from "@zook/core/test-identities";
+import { type AuthSessionSummary, type OrgRole } from "@zook/core";
 import { isOfflineDemoMode } from "./runtime-mode";
 
 export const DEMO_AUTH_TOKEN = "offline-demo-session";
@@ -11,7 +12,7 @@ export { isOfflineDemoMode };
 export function getOfflineDemoSession(): AuthSessionSummary {
   const user = zookDemoFixtures.users.find((candidate) => candidate.email === DEMO_MEMBER_EMAIL) ?? zookDemoFixtures.users[0];
   const organization = zookDemoFixtures.organizations[0];
-  const sessionRoles: Role[] = ["MEMBER"];
+  const sessionRoles: OrgRole[] = ["MEMBER"];
   const activeOrganization = organization
     ? {
         orgId: organization.id,

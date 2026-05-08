@@ -4,11 +4,11 @@ import {
   BottomSheetModal,
   BottomSheetView,
   type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+} from "@/components/expo-safe-bottom-sheet";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
-import Reanimated from "react-native-reanimated";
+import Reanimated from "@/lib/reanimated-lite";
 import type { PaymentMode } from "@zook/core";
 import {
   AuditWarning,

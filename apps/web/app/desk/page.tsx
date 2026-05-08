@@ -13,7 +13,7 @@ export const metadata = {
 export default async function DeskPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; orderId?: string; branchId?: string }>;
+  searchParams: Promise<{ tab?: string; orderId?: string; branchId?: string; from?: string }>;
 }) {
   const resolvedSearch = await searchParams;
   const session = await requireDashboardSession();
@@ -34,6 +34,7 @@ export default async function DeskPage({
         locale={session.user.preferredLocale ?? "en"}
         initialTab={resolvedSearch.tab === "pickup" ? "pickup" : undefined}
         initialOrderId={resolvedSearch.orderId}
+        canOpenManagement
       />
     );
   }
@@ -53,10 +54,10 @@ export default async function DeskPage({
     },
     orderBy: { createdAt: "desc" },
   });
-  if (!assignment?.branchId) {
-    redirect("/me");
-  }
-  const data = await getDashboardData(session.activeOrgId, assignment.branchId);
+  const data = await getDashboardData(
+    session.activeOrgId,
+    assignment?.branchId ?? resolvedSearch.branchId,
+  );
   const organization = data.orgs[0];
 
   if (!organization) {
@@ -71,6 +72,7 @@ export default async function DeskPage({
       locale={session.user.preferredLocale ?? "en"}
       initialTab={resolvedSearch.tab === "pickup" ? "pickup" : undefined}
       initialOrderId={resolvedSearch.orderId}
+      redirectedFromDashboard={resolvedSearch.from === "dashboard"}
     />
   );
 }

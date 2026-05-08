@@ -114,6 +114,7 @@ export type MemberRow = {
 
 export type PaymentRow = {
   id: string;
+  orgId?: string | null;
   purpose: string;
   amountPaise: number;
   currency?: string | null;
@@ -122,6 +123,18 @@ export type PaymentRow = {
   provider?: string | null;
   providerRef?: string | null;
   receiptNumber?: string | null;
+  refundedAmountPaise?: number | null;
+  refunds?: Array<{
+    id: string;
+    amountPaise: number;
+    currency?: string | null;
+    status: string;
+    reason?: string | null;
+    providerRefundId?: string | null;
+    createdAt: string | Date;
+    processedAt?: string | Date | null;
+    failureReason?: string | null;
+  }>;
   recordedAt?: string | Date | null;
   createdAt: string | Date;
   user?: {
@@ -192,12 +205,15 @@ export type CoachPlanRow = {
 
 export type ProductRow = {
   id: string;
+  branchId?: string | null;
   name: string;
   description?: string | null;
   category: string;
   pricePaise: number;
   stock: number;
   lowStockThreshold: number;
+  imageUrl?: string | null;
+  imageUrls?: string[] | null;
   active: boolean;
 };
 
@@ -377,9 +393,11 @@ export type AuditLogRow = {
 export type NotificationSnapshot = {
   id: string;
   title: string;
+  body?: string | null;
   type: string;
   status: string;
   audience?: string | null;
+  pushEnabled?: boolean | null;
   createdAt: string | Date;
 };
 
@@ -485,5 +503,5 @@ export function formatPlanShape(plan: MembershipPlanRow) {
   if (plan.validityDays) {
     return `${plan.validityDays} days validity`;
   }
-  return "Configured in service layer";
+  return "Configured";
 }

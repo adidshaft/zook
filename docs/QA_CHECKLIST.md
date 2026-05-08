@@ -26,11 +26,11 @@ pnpm dev:mobile
 ```
 
 - Web `/login`: request OTP for each seeded role and verify with the returned/dev OTP.
-- Mobile login: member, trainer, receptionist, owner/admin restore session after app restart.
+- Mobile login: Member, Trainer, Reception, Owner/Admin restore session after app restart.
 - Member: Home loads backend membership, scan QR from `/dashboard/attendance/qr-display`, open assigned plan, complete workout/progress, read notification, request privacy export/delete.
 - Trainer: assigned-client list only shows assigned clients; AI draft generation requires an assigned client, opens editable review, save edits persists exercises, review is required before assign, and assign creates a member notification.
 - AI safety: with `AI_PROVIDER=mock` locally, try an out-of-scope or unsafe prompt and confirm the API returns a controlled validation error while `AIUsageLog` and audit records persist the block. With `AI_PROVIDER=disabled`, trainer generation should show unavailable state rather than fake success.
-- Receptionist: pending/flagged queue loads; approve/reject persists; manual attendance requires reason; offline payment requires reason; pickup code verifies via backend; fulfilled count updates after fulfillment.
+- Reception: pending/flagged queue loads; approve/reject persists; manual attendance requires reason; offline payment requires reason; pickup code verifies via backend; fulfilled count updates after fulfillment.
 - Owner mobile: active members, check-ins, revenue, approvals, stock, and members use backend reads.
 - Owner/admin web: dashboard, members, attendance, plans, payments, notifications, shop, reports, staff, audit, and provider diagnostics load from API/read models.
 - Public web: `/g/{username}` shows persisted public plans/trainers/gallery when present and honest empty states when not; no join CTA appears when no public membership plan is published.
@@ -41,7 +41,7 @@ pnpm dev:mobile
 - Dashboard fallback: explicit offline demo may show `Demo Mode`; backend/read-model failures outside demo must show an unavailable/error state, not a demo-success label.
 - Default Branch: owner dashboard and QR display show Default Branch context; membership plan creation stores the Default Branch; checkout/manual activation use a plan branch when present; `branchId` filters on dashboard/attendance/report endpoints reject branches from another org.
 - Multi-branch: shop products/orders and payment records carry `branchId`; dashboard, payment, revenue, manual-cash, and shop report endpoints should honor `branchId` filters and reject branches from another org.
-- Platform admin: provider diagnostics load from `/api/platform/provider-status` and do not expose secret values.
+- Internal platform operator: provider diagnostics load from `/api/platform/provider-status` and do not expose secret values.
 - Notifications: create a selected-member notification; confirm the in-app inbox receives it, mark-read persists, unread count falls, and tap routing opens the expected plan/order/membership/attendance screen.
 - Push: with `PUSH_PROVIDER=disabled`, product actions must still create in-app notifications and record provider-disabled delivery attempts without returning fake remote success.
 - Storage: upload a valid `org_logo`, `org_cover`, or `org_gallery` file and confirm public pages use the returned `/api/files/{id}/content` URL; private categories must require auth and wrong-org files must be denied.
@@ -125,4 +125,4 @@ RUN_DB_WEB_TESTS=1 pnpm test:web
 pnpm test:acceptance:db
 ```
 
-Only run DB-backed checks when `DATABASE_URL` points to a seeded disposable database. The current DB-backed suite covers local mock checkout activation, shop pickup verification/fulfillment, receptionist attendance approve/reject with notifications/audit, trainer AI assignment, member workout reports, privacy export/delete request jobs, platform diagnostics, and selected RBAC/payment boundaries; provider/device certification remains manual.
+Only run DB-backed checks when `DATABASE_URL` points to a seeded disposable database. The current DB-backed suite covers local mock checkout activation, shop pickup verification/fulfillment, Reception attendance approve/reject with notifications/audit, trainer AI assignment, member workout reports, privacy export/delete request jobs, platform diagnostics, and selected RBAC/payment boundaries; provider/device certification remains manual.

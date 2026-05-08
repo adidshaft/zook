@@ -22,13 +22,20 @@ export const QA_DEMO_ACCOUNT = {
 };
 
 export async function expectApiOk<T = unknown>(response: APIResponse) {
-  const payload = (await response.json()) as { ok?: boolean; data?: T; error?: { message?: string } };
-  expect(response.ok(), payload.error?.message ?? `Expected ${response.status()} to be OK.`).toBeTruthy();
+  const payload = (await response.json()) as {
+    ok?: boolean;
+    data?: T;
+    error?: { message?: string };
+  };
+  expect(
+    response.ok(),
+    payload.error?.message ?? `Expected ${response.status()} to be OK.`,
+  ).toBeTruthy();
   expect(payload.ok).toBe(true);
   expect(payload.data).toBeDefined();
   return {
     ...payload,
-    data: payload.data as T
+    data: payload.data as T,
   };
 }
 
@@ -48,7 +55,7 @@ export function expectNoConsoleErrors(page: Page) {
   return {
     assertClean() {
       expect(errors).toEqual([]);
-    }
+    },
   };
 }
 
@@ -72,9 +79,9 @@ export async function getLatestOtpFromMockOrUseDevCode(page: Page, _identifier: 
 export async function loginWithOtp(page: Page, identifier: string) {
   await page.goto("/login");
   await page.getByLabel(/email|phone/i).fill(identifier);
-  await page.getByRole("button", { name: "Send OTP" }).click();
+  await page.getByRole("button", { name: /send (otp|code)/i }).click();
   const code = await getLatestOtpFromMockOrUseDevCode(page, identifier);
-  await page.getByLabel("OTP").fill(code);
+  await page.getByLabel(/otp|one-time code/i).fill(code);
   await page.waitForURL(/\/(?:dashboard|platform|gyms|me)(?:$|[/?#])/, { timeout: 10_000 });
 }
 
@@ -86,8 +93,8 @@ export async function loginWithSessionCookie(page: Page, email: string) {
     data: {
       userId: user.id,
       tokenHash: AuthService.hash(token),
-      expiresAt
-    }
+      expiresAt,
+    },
   });
   await page.context().clearCookies();
   await page.context().addCookies([
@@ -97,8 +104,8 @@ export async function loginWithSessionCookie(page: Page, email: string) {
       url: "http://127.0.0.1:3120",
       httpOnly: true,
       sameSite: "Lax",
-      expires: Math.floor(expiresAt.getTime() / 1000)
-    }
+      expires: Math.floor(expiresAt.getTime() / 1000),
+    },
   ]);
   return user;
 }
@@ -107,9 +114,9 @@ export async function seedAndGetOrg(input: { username?: string; name?: string } 
   const org = await prisma.organization.findFirst({
     where: {
       ...(input.username ? { username: input.username } : {}),
-      ...(input.name ? { name: input.name } : {})
+      ...(input.name ? { name: input.name } : {}),
     },
-    orderBy: { createdAt: "asc" }
+    orderBy: { createdAt: "asc" },
   });
 
   if (!org) {
@@ -138,29 +145,37 @@ export async function createMembershipPlan(
       type: overrides.type ?? "DURATION",
       pricePaise: overrides.pricePaise ?? 99900,
       durationDays: overrides.durationDays ?? 30,
-      publicVisible: overrides.publicVisible ?? true
-    }
+      publicVisible: overrides.publicVisible ?? true,
+    },
   });
 
   const payload = await expectApiOk<{ plan: MembershipPlan }>(response);
   return payload.data?.plan;
 }
 
-export async function completeMockCheckout(page: Page, sessionId: string, status: "SUCCEEDED" | "FAILED" = "SUCCEEDED") {
+export async function completeMockCheckout(
+  page: Page,
+  sessionId: string,
+  status: "SUCCEEDED" | "FAILED" = "SUCCEEDED",
+) {
   const response = await page.request.post(`/api/payments/mock/${sessionId}/complete`, {
-    data: { status }
+    data: { status },
   });
   return expectApiOk(response);
 }
 
-export async function findLatestAuditLog(input: { orgId?: string; action?: string; actorUserId?: string }) {
+export async function findLatestAuditLog(input: {
+  orgId?: string;
+  action?: string;
+  actorUserId?: string;
+}) {
   return prisma.auditLog.findFirst({
     where: {
       ...(input.orgId ? { orgId: input.orgId } : {}),
       ...(input.action ? { action: input.action } : {}),
-      ...(input.actorUserId ? { actorUserId: input.actorUserId } : {})
+      ...(input.actorUserId ? { actorUserId: input.actorUserId } : {}),
     },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "desc" },
   });
 }
 

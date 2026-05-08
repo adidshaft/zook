@@ -6,8 +6,17 @@ import QRCode from "qrcode";
 import { GlassCard, Pill } from "./glass-card";
 import { webApiFetch } from "@/lib/api-client";
 
-export function AttendanceQrPanel({ orgId }: { orgId: string }) {
+export function AttendanceQrPanel({
+  orgId,
+  branchId,
+  branchName,
+}: {
+  orgId: string;
+  branchId?: string | null;
+  branchName?: string | null;
+}) {
   const [qrPayload, setQrPayload] = useState<string>("");
+  const [checkInCode, setCheckInCode] = useState<string>("");
   const [qrImageUrl, setQrImageUrl] = useState<string>("");
   const [expiresAt, setExpiresAt] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -16,16 +25,22 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
   const loadToken = useCallback(async () => {
     try {
       setError("");
-      const payload = await webApiFetch<{ qrPayload: string; expiresAt: string }>(
-        `/api/orgs/${orgId}/attendance/qr-token`,
+      const query = branchId ? `?branchId=${encodeURIComponent(branchId)}` : "";
+      const payload = await webApiFetch<{
+        qrPayload: string;
+        checkInCode?: string;
+        expiresAt: string;
+      }>(
+        `/api/orgs/${orgId}/attendance/qr-token${query}`,
         { method: "POST" },
       );
       setQrPayload(payload.qrPayload);
+      setCheckInCode(payload.checkInCode ?? "");
       setExpiresAt(payload.expiresAt);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to load attendance QR token.");
     }
-  }, [orgId]);
+  }, [branchId, orgId]);
 
   useEffect(() => {
     void loadToken();
@@ -59,7 +74,7 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
       })
       .catch(() => {
         if (active) {
-          setQrRenderError("Unable to show the QR image. Support details are still available.");
+          setQrRenderError("Unable to show the QR image. Refresh and try again.");
         }
       });
 
@@ -72,8 +87,10 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
     <GlassCard>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Entry QR code</h2>
-          <p className="mt-1 text-sm text-white/45">Display this at reception or the entry gate.</p>
+          <h2 className="text-xl font-semibold">Check-in QR</h2>
+          <p className="mt-1 text-sm text-white/45">
+            Display this for {branchName ?? "this branch"}.
+          </p>
         </div>
         <button
           onClick={() => void loadToken()}
@@ -86,7 +103,7 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
       <div className="mt-5 rounded-[24px] border border-white/10 bg-black/30 p-5">
         <div className="flex items-center gap-2 text-lime-200">
           <QrCode size={18} />
-          <span className="text-sm font-medium">Fresh QR code</span>
+          <span className="text-sm font-medium">Fresh check-in QR</span>
         </div>
         {error ? <p className="mt-4 text-sm text-red-200">{error}</p> : null}
         {!error ? (
@@ -107,26 +124,36 @@ export function AttendanceQrPanel({ orgId }: { orgId: string }) {
             <div className="flex min-w-0 flex-col justify-between gap-4">
               <div>
                 <p className="text-sm leading-6 text-white/58">
-                  Display this code at reception or the entry gate. Members scan it from the mobile
-                  app and receive a short entry code for the desk.
+                  Display this at reception or the entry gate. Members can scan the QR or type the
+                  short code in the mobile app.
                 </p>
+                <div className="mt-5 rounded-2xl border border-lime-200/20 bg-lime-200/10 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lime-100/70">
+                    Check-in code
+                  </p>
+                  <p className="mt-2 font-mono text-4xl font-black tracking-[0.14em] text-lime-100">
+                    {checkInCode || "-- ----"}
+                  </p>
+                  <p className="mt-2 text-sm leading-5 text-white/48">
+                    Same branch and expiry as the QR.
+                  </p>
+                </div>
                 {qrRenderError ? (
                   <p className="mt-3 text-sm text-red-200">{qrRenderError}</p>
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Pill tone="lime">Secure code</Pill>
-                <Pill>Main branch</Pill>
+                <Pill tone="lime">Check-in ready</Pill>
+                {branchName ? <Pill>{branchName}</Pill> : null}
                 {expiresAt ? <Pill>Expires {new Date(expiresAt).toLocaleTimeString()}</Pill> : null}
               </div>
-              <details className="rounded-2xl border border-white/10 bg-black/35 p-4">
-                <summary className="cursor-pointer text-sm font-medium text-white/72">
-                  Support details
-                </summary>
-                <pre className="mt-4 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-white/70">
-                  {qrPayload || "Loading details..."}
-                </pre>
-              </details>
+              <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                <p className="text-sm font-medium text-white/72">Desk handoff</p>
+                <p className="mt-2 text-sm leading-6 text-white/48">
+                  After a member checks in, the desk sees their photo and a separate entry code for
+                  identity matching.
+                </p>
+              </div>
             </div>
           </div>
         ) : null}

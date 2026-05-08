@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   typedRoutes: false,
   allowedDevOrigins: ["127.0.0.1"],
   images: {
+    localPatterns: [{ pathname: "/**" }],
     remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
   async headers() {
@@ -21,16 +22,17 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains; preload"
+            value: "max-age=31536000; includeSubDomains; preload",
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(self), geolocation=(self), microphone=(), payment=(), browsing-topics=()"
-          }
-        ]
-      }
+            value:
+              "camera=(self), geolocation=(self), microphone=(), payment=(), browsing-topics=()",
+          },
+        ],
+      },
     ];
-  }
+  },
 };
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");

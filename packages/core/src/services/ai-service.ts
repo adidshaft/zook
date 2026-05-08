@@ -1,8 +1,8 @@
 import type { AIProvider } from "../providers/ai";
 import { estimateTokens, isImageRequest } from "../providers/ai";
-import type { AIQuotaState, AIRequestType, Role, UserSafetyState } from "../types";
+import type { AIQuotaState, AIRequestType, OrgRole, UserSafetyState } from "../types";
 
-const defaultQuotaByRole: Record<Exclude<Role, "PLATFORM_ADMIN">, Pick<AIQuotaState, "textDailyLimit" | "textMonthLimit" | "imageMonthLimit">> = {
+const defaultQuotaByRole: Record<OrgRole, Pick<AIQuotaState, "textDailyLimit" | "textMonthLimit" | "imageMonthLimit">> = {
   OWNER: { textDailyLimit: 25, textMonthLimit: 500, imageMonthLimit: 20 },
   ADMIN: { textDailyLimit: 25, textMonthLimit: 500, imageMonthLimit: 20 },
   RECEPTIONIST: { textDailyLimit: 5, textMonthLimit: 50, imageMonthLimit: 0 },
@@ -46,13 +46,13 @@ export class AIGuardError extends Error {
   }
 }
 
-export function defaultAIQuotaForRole(role: Exclude<Role, "PLATFORM_ADMIN">): AIQuotaState {
+export function defaultAIQuotaForRole(role: OrgRole): AIQuotaState {
   const limits = defaultQuotaByRole[role];
   return { ...limits, usedTextDaily: 0, usedTextMonth: 0, usedImagesMonth: 0 };
 }
 
 export function buildAIQuotaState(
-  role: Exclude<Role, "PLATFORM_ADMIN">,
+  role: OrgRole,
   usage?: Partial<Pick<AIQuotaState, "usedTextDaily" | "usedTextMonth" | "usedImagesMonth">>
 ): AIQuotaState {
   return {
@@ -62,7 +62,7 @@ export function buildAIQuotaState(
 }
 
 export function assertAIAllowed(input: {
-  role: Exclude<Role, "PLATFORM_ADMIN">;
+  role: OrgRole;
   requestType: AIRequestType;
   quota: AIQuotaState;
   user: UserSafetyState;
@@ -90,7 +90,7 @@ export function assertAIAllowed(input: {
 export async function runAIGuardedRequest(input: {
   provider: AIProvider;
   prompt: string;
-  role: Exclude<Role, "PLATFORM_ADMIN">;
+  role: OrgRole;
   requestType: AIRequestType;
   quota: AIQuotaState;
   user: UserSafetyState;

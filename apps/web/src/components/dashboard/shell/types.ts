@@ -14,5 +14,6 @@ export type NavItem = {
   href: string;
   icon: LucideIcon;
   shortLabel?: string;
+  hidden?: boolean;
   permissions?: Permission[];
 };

@@ -6,7 +6,7 @@ import type {
   ReferralCode,
   UserSafetyState,
 } from "../types";
-import { hasPermission } from "../permissions";
+import { canAccessPlatform, hasPermission, permissionsForRoles } from "../permissions";
 import { MockAIProvider } from "../providers/ai";
 import {
   applyCoupon,
@@ -350,19 +350,33 @@ describe("attendance", () => {
     ).toThrow("expired");
   });
 
-  it("protects duplicate attendance and maps approval mode", () => {
+  it("allows repeat same-day attendance without a duplicate exception", () => {
     const scan = validateAttendanceScan({
       subscription: activeSubscription,
       plan: durationPlan,
       orgStatus: "ACTIVE",
       hasProfilePhoto: true,
       alreadyCheckedInToday: true,
+      now,
     });
-    expect(scan.suspiciousFlags).toContain("duplicate_same_day");
+    expect(scan.allowed).toBe(true);
+    expect(scan.suspiciousFlags).not.toContain("duplicate_same_day");
     expect(
       decideAttendanceStatus({ mode: "EXCEPTION_APPROVAL", suspiciousFlags: scan.suspiciousFlags }),
-    ).toBe("PENDING_APPROVAL");
+    ).toBe("APPROVED");
     expect(decideAttendanceStatus({ mode: "AUTOMATIC", suspiciousFlags: [] })).toBe("APPROVED");
+  });
+
+  it("allows a same-day repeat scan after a visit pack was consumed once", () => {
+    const scan = validateAttendanceScan({
+      subscription: { ...activeSubscription, planId: hybridPlan.id, remainingVisits: 0 },
+      plan: hybridPlan,
+      orgStatus: "ACTIVE",
+      hasProfilePhoto: true,
+      alreadyCheckedInToday: true,
+      now,
+    });
+    expect(scan).toMatchObject({ allowed: true, suspiciousFlags: [] });
   });
 
   it("requires a manual override reason", () => {
@@ -413,6 +427,13 @@ describe("permissions and notifications", () => {
   it("checks role permissions", () => {
     expect(hasPermission(["OWNER"], "SHOP_MANAGE_PRODUCTS")).toBe(true);
     expect(hasPermission(["TRAINER"], "PAYMENTS_REFUND")).toBe(false);
+  });
+
+  it("keeps platform access separate from gym roles", () => {
+    expect(permissionsForRoles(["PLATFORM_ADMIN"])).toEqual([]);
+    expect(hasPermission(["PLATFORM_ADMIN"], "PLATFORM_MANAGE_ORGS")).toBe(false);
+    expect(canAccessPlatform(["PLATFORM_ADMIN"], false)).toBe(false);
+    expect(canAccessPlatform([], true)).toBe(true);
   });
 
   it("checks notification permissions and recipient opt-out", () => {

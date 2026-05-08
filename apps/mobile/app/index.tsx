@@ -108,6 +108,7 @@ export default function Home() {
     : "None";
   const hasGym = Boolean(activeOrganization);
   const hasMembership = Boolean(memberHome?.activeMembership);
+  const profileNeedsWork = Boolean(hasMembership && (!profilePhotoUrl || !session?.user.phone));
   const neverCheckedIn = hasMembership && (memberHome?.recentAttendance?.length ?? 0) === 0;
   const renewalImminent =
     hasMembership &&
@@ -241,6 +242,8 @@ export default function Home() {
             <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} />
           ) : null}
 
+          {profileNeedsWork ? <ProfileReadyPrompt needsPhoto={!profilePhotoUrl} /> : null}
+
           {hasMembership ? (
             <>
               <MemberStateHero
@@ -319,6 +322,29 @@ export default function Home() {
         {!renewalImminent ? <BottomNav /> : null}
       </ZookScreen>
     </>
+  );
+}
+
+function ProfileReadyPrompt({ needsPhoto }: { needsPhoto: boolean }) {
+  return (
+    <Link href="/profile" asChild>
+      <Pressable accessibilityRole="link" accessibilityLabel="Complete profile for check-in">
+        <View style={styles.profilePrompt}>
+          <View style={styles.profilePromptIcon}>
+            <Ionicons name={needsPhoto ? "camera-outline" : "call-outline"} size={18} color={colors.bg} />
+          </View>
+          <View style={styles.profilePromptCopy}>
+            <Text style={styles.profilePromptTitle}>Finish your check-in profile</Text>
+            <Text numberOfLines={2} style={styles.profilePromptBody}>
+              {needsPhoto
+                ? "Add your photo so reception can verify you at entry."
+                : "Add your mobile number so the gym can reach you when needed."}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </View>
+      </Pressable>
+    </Link>
   );
 }
 
@@ -597,6 +623,37 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "900",
     lineHeight: 12,
+  },
+  profilePrompt: {
+    minHeight: 76,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.28)",
+    backgroundColor: "rgba(185,244,85,0.1)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+  },
+  profilePromptIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profilePromptCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  profilePromptTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  profilePromptBody: {
+    color: colors.muted,
+    ...typography.small,
   },
   memberHeroContent: {
     padding: 18,

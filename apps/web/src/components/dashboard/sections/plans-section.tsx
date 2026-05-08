@@ -1,8 +1,10 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
+import Link from "next/link";
 import { ErrorNotice } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
 import {
@@ -46,6 +48,9 @@ type PlansSectionProps = {
   membershipPlansState: ResourceState;
   coachPlans: CoachPlanRow[];
   coachPlansState: ResourceState;
+  activeCouponCount: number;
+  activeOfferCount: number;
+  referralCodeCount: number;
   planForm: PlanFormState;
   setPlanForm: Dispatch<SetStateAction<PlanFormState>>;
   planEditForm: PlanFormState;
@@ -74,6 +79,9 @@ export function PlansSection({
   membershipPlansState,
   coachPlans,
   coachPlansState,
+  activeCouponCount,
+  activeOfferCount,
+  referralCodeCount,
   planForm,
   setPlanForm,
   planEditForm,
@@ -271,13 +279,16 @@ export function PlansSection({
                       >
                         {plan.active ? "Archive" : "Restore"}
                       </button>
-                      <button
-                        onClick={() => void deleteMembershipPlan(plan.id)}
+                      <ConfirmActionButton
+                        title="Delete membership plan?"
+                        description="Only unused plans can be deleted. Plans with subscriptions should be archived so member history stays intact."
+                        confirmLabel="Delete"
+                        onConfirm={() => deleteMembershipPlan(plan.id)}
                         disabled={formBusy === `plan:${plan.id}:delete`}
                         className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs font-medium text-red-100/80 hover:border-red-300/45 disabled:opacity-50"
                       >
                         Delete
-                      </button>
+                      </ConfirmActionButton>
                     </div>
                   ),
                 },
@@ -394,6 +405,50 @@ export function PlansSection({
               </button>
             </div>
           ) : null}
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <SectionHeader
+          eyebrow="Plan growth"
+          title="Discounts, offers, and referrals"
+          description="Keep member acquisition tools next to the plans they affect."
+        />
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          {[
+            {
+              label: "Coupons",
+              href: "/dashboard/plans/coupons",
+              detail: "Create joining discounts and usage limits.",
+              badge: `${activeCouponCount} active`,
+            },
+            {
+              label: "Offers",
+              href: "/dashboard/plans/offers",
+              detail: "Publish plan offers for a date window or campaign.",
+              badge: `${activeOfferCount} live`,
+            },
+            {
+              label: "Referrals",
+              href: "/dashboard/plans/referrals",
+              detail: "Reward member, trainer, and staff referrals.",
+              badge: `${referralCodeCount} codes`,
+            },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="zook-focus rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-lime-300/35 hover:bg-lime-300/8"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium text-white">{item.label}</p>
+                  <p className="mt-2 text-sm leading-5 text-white/50">{item.detail}</p>
+                </div>
+                <Pill tone="blue">{item.badge}</Pill>
+              </div>
+            </Link>
+          ))}
         </div>
       </GlassCard>
 

@@ -23,8 +23,11 @@ const demoProducts = zookDemoFixtures.shopProducts.filter(
 const demoNotifications = zookDemoFixtures.notifications.map((notification) => ({
   id: notification.id,
   title: notification.title,
+  body: notification.message,
   type: notification.type,
   status: "SENT",
+  audience: "single_member",
+  pushEnabled: true,
   createdAt: notification.createdAt,
 }));
 const demoAiUsage = zookDemoFixtures.aiUsageRecords.map((usage) => ({

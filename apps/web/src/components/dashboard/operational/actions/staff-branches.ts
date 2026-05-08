@@ -1,8 +1,5 @@
 import { webApiFetch } from "@/lib/api-client";
-import {
-  branchFormPayload,
-  type BranchFormState,
-} from "../../sections/branches-section";
+import { branchFormPayload, type BranchFormState } from "../../sections/branches-section";
 import { normalizeBranchHours, serializeBranchHours } from "../../sections/branch-hours-editor";
 import { type BranchRow, type CoachPlanRow } from "../../../dashboard-operational-model";
 import { createEmptyStaffInvite, type DashboardOperationalState } from "../controller-state";
@@ -28,7 +25,7 @@ export function createStaffBranchesActions({
       });
       state.setStaffInvite(createEmptyStaffInvite());
       resources.staffState.reload();
-      state.setFormStatus("Staff invite created.");
+      state.setFormStatus("Invite email sent. The sign-in link expires in 7 days.");
     } catch (cause) {
       state.setFormError(cause instanceof Error ? cause.message : "Unable to invite staff.");
     } finally {
@@ -56,9 +53,6 @@ export function createStaffBranchesActions({
   }
 
   async function revokeStaff(assignmentId: string) {
-    if (!window.confirm("Revoke this staff member's access to the gym?")) {
-      return;
-    }
     try {
       state.setFormBusy(`staff:${assignmentId}:revoke`);
       state.setFormError("");
@@ -74,13 +68,6 @@ export function createStaffBranchesActions({
   }
 
   async function deleteCoachPlan(plan: CoachPlanRow) {
-    if (
-      !window.confirm(
-        "Archive or delete this coaching plan? Assigned plans are archived to keep member history intact.",
-      )
-    ) {
-      return;
-    }
     try {
       state.setFormBusy(`coach-plan:${plan.id}:delete`);
       state.setFormError("");
@@ -112,7 +99,9 @@ export function createStaffBranchesActions({
       state.setBranchForm(state.emptyBranchForm);
       resources.branchesState.reload();
       state.setFormStatus(
-        payload.warnings?.length ? `Branch created. ${payload.warnings.join(" ")}` : "Branch created.",
+        payload.warnings?.length
+          ? `Branch created. ${payload.warnings.join(" ")}`
+          : "Branch created.",
       );
     } catch (cause) {
       state.setFormError(cause instanceof Error ? cause.message : "Unable to create branch.");
@@ -126,16 +115,21 @@ export function createStaffBranchesActions({
       state.setFormBusy(`branch:${branch.id}`);
       state.setFormError("");
       state.setFormStatus("");
-      const payload = await webApiFetch<{ warnings?: string[] }>(`/api/orgs/${orgId}/branches/${branch.id}`, {
-        method: "PATCH",
-        body:
-          "amenitiesText" in patch || "hoursText" in patch
-            ? branchFormPayload(patch as BranchFormState)
-            : patch,
-      });
+      const payload = await webApiFetch<{ warnings?: string[] }>(
+        `/api/orgs/${orgId}/branches/${branch.id}`,
+        {
+          method: "PATCH",
+          body:
+            "amenitiesText" in patch || "hoursText" in patch
+              ? branchFormPayload(patch as BranchFormState)
+              : patch,
+        },
+      );
       resources.branchesState.reload();
       state.setFormStatus(
-        payload.warnings?.length ? `Branch updated. ${payload.warnings.join(" ")}` : "Branch updated.",
+        payload.warnings?.length
+          ? `Branch updated. ${payload.warnings.join(" ")}`
+          : "Branch updated.",
       );
     } catch (cause) {
       state.setFormError(cause instanceof Error ? cause.message : "Unable to update branch.");
@@ -174,9 +168,6 @@ export function createStaffBranchesActions({
   }
 
   async function deactivateBranch(branch: BranchRow) {
-    if (!window.confirm("Deactivate this branch? Existing history stays intact.")) {
-      return;
-    }
     try {
       state.setFormBusy(`branch:${branch.id}:delete`);
       state.setFormError("");

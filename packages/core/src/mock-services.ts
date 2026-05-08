@@ -1,4 +1,5 @@
-import type { AuthSessionSummary, Role } from "./types";
+import type { AuthSessionSummary, OrgRole } from "./types";
+import { isOrgRole } from "./permissions";
 import { normalizeLoginIdentifier } from "./validators";
 import {
   type DemoAttendanceAttempt,
@@ -46,7 +47,8 @@ function buildSession(
         .filter(
           (assignment) => assignment.userId === user.id && assignment.orgId === organization.id,
         )
-        .map((assignment) => assignment.role);
+        .map((assignment) => assignment.role)
+        .filter(isOrgRole);
       if (!roles.length) {
         return null;
       }
@@ -103,7 +105,7 @@ function entryCodeForOutcome(outcome: DemoAttendanceOutcome) {
 export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures) {
   const state = cloneFixtures(seed);
   let activeOrgId = state.organizations[0]?.id ?? "org-demo-unset";
-  let activeRole: Role = "MEMBER";
+  let activeRole: OrgRole = "MEMBER";
 
   function writeAudit(input: {
     orgId: string;
@@ -203,9 +205,10 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
       async getAvailableRoles(orgId = activeOrgId, userId = "user-aarav") {
         return state.roleAssignments
           .filter((assignment) => assignment.orgId === orgId && assignment.userId === userId)
-          .map((assignment) => assignment.role);
+          .map((assignment) => assignment.role)
+          .filter(isOrgRole);
       },
-      async setActiveRole(role: Role) {
+      async setActiveRole(role: OrgRole) {
         activeRole = role;
         return { activeRole };
       },

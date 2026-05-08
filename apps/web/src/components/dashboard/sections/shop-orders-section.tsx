@@ -12,11 +12,19 @@ import { ShopOrderPaymentControl } from "../read-only/shop-order-payment-control
 
 const copy = {
   title: "Pickup and fulfillment queue",
-  description: "Orders ready for payment or pickup.",
+  description: "Orders needing payment, pickup verification, or review.",
   loadingTitle: "Loading shop orders",
   loadingBody: "Pulling the latest order queue.",
   empty: "No shop orders are currently recorded for this organization.",
 };
+
+function orderDeskNote(order: ShopOrderRow) {
+  if (order.status === "PENDING_PAYMENT") return "Payment needed before pickup";
+  if (order.status === "READY_FOR_PICKUP") return "Verify pickup in Desk";
+  if (order.status === "FULFILLED") return "Already fulfilled";
+  if (order.status === "CANCELLED") return "Cancelled";
+  return "Review order";
+}
 
 export function ShopOrdersSection({
   orgId,
@@ -71,7 +79,12 @@ export function ShopOrdersSection({
               {
                 id: "status",
                 header: "Status",
-                render: (order) => <StatusPill value={formatEnumLabel(order.status)} />,
+                render: (order) => (
+                  <div className="grid gap-1">
+                    <StatusPill value={formatEnumLabel(order.status)} />
+                    <span className="text-xs text-white/38">{orderDeskNote(order)}</span>
+                  </div>
+                ),
               },
               {
                 id: "pickup",
@@ -103,11 +116,17 @@ export function ShopOrdersSection({
                       orgId={orgId}
                       order={order}
                       onRecorded={() => {
-                        setStatus(`Payment recorded for order ${order.id.slice(-8).toUpperCase()}.`);
+                        setStatus(
+                          `Payment recorded for order ${order.id.slice(-8).toUpperCase()}.`,
+                        );
                       }}
                     />
+                  ) : order.status === "FULFILLED" ? (
+                    <span className="text-xs text-white/35">Already fulfilled</span>
+                  ) : order.status === "CANCELLED" ? (
+                    <span className="text-xs text-white/35">Cancelled</span>
                   ) : (
-                    <span className="text-xs text-white/35">No action</span>
+                    <span className="text-xs text-white/35">No desk step</span>
                   ),
               },
             ]}

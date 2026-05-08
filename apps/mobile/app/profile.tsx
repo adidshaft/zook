@@ -1,4 +1,5 @@
-import type { Role } from "@zook/core";
+import { isOrgRole } from "@zook/core/permissions";
+import type { Role } from "@zook/core/types";
 import { resolvePlanName } from "@zook/ui";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -35,6 +36,8 @@ type ActivityItem = {
 };
 
 function titleCaseRole(role: Role | string) {
+  if (role === "RECEPTIONIST") return "Reception";
+  if (role === "PLATFORM_ADMIN") return "Platform operator";
   return String(role)
     .replace(/_/g, " ")
     .toLowerCase()
@@ -127,7 +130,7 @@ export default function ProfileScreen() {
   );
   const roles = activeOrganization?.roles ?? [];
   useEffect(() => {
-    if (!activeRole || !roles.length || roles.includes(activeRole)) {
+    if (!activeRole || !roles.length || (isOrgRole(activeRole) && roles.includes(activeRole))) {
       return;
     }
     const fallback = roles[0];

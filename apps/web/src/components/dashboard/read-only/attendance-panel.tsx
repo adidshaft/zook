@@ -48,7 +48,11 @@ export function AttendancePanel({
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <AttendanceApprovalsPanel orgId={orgId} />
         <div className="grid gap-4">
-          <AttendanceQrPanel orgId={orgId} />
+            <AttendanceQrPanel
+              orgId={orgId}
+              branchId={branchScope.selectedBranch?.id ?? null}
+              branchName={selectedBranchName}
+            />
           <GlassCard>
             <SectionHeader
               eyebrow="Entry & attendance"
@@ -91,7 +95,7 @@ export function AttendancePanel({
         <SectionHeader
           eyebrow="Attendance"
           title="Recent attendance scans"
-          description="A cursor-paged ledger of member check-ins for the selected organization."
+          description="Recent member check-ins for the selected gym."
           badge={<Pill tone="blue">{attendanceRecords.length} loaded</Pill>}
           action={<CsvExportButton href={`/api/orgs/${orgId}/reports/attendance.csv`} />}
         />
@@ -99,7 +103,10 @@ export function AttendancePanel({
           {attendanceState.error ? (
             <ErrorNotice message={attendanceState.error} />
           ) : attendanceState.loading && attendanceRecords.length === 0 ? (
-            <EmptyState title="Loading attendance" description="Pulling the latest check-in ledger." />
+            <EmptyState
+              title="Loading attendance"
+              description="Pulling the latest check-in ledger."
+            />
           ) : (
             <>
               <DataTable

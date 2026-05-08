@@ -86,7 +86,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "pnpm --filter @zook/web exec next dev --hostname 127.0.0.1 --port 3120",
+    command: "node scripts/run-next-web.mjs dev --hostname 127.0.0.1 --port 3120",
     cwd: rootDir,
     env: {
       PATH: process.env.PATH ?? "",

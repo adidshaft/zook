@@ -108,5 +108,5 @@ test("web UX affordances connect operators to the next action", async ({ page })
   await expect(auditRow).toBeVisible();
   await page.waitForLoadState("networkidle");
   await auditRow.getByRole("button", { name: /details/i }).click();
-  await expect(page.getByRole("dialog", { name: /audit diff/i })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: /change details/i })).toBeVisible();
 });

@@ -29,8 +29,10 @@ export function ShopStatusCard({
         items={[
           {
             label: "Stock scope",
-            value: branchScope.inventoryScope === "ORG_WIDE" ? "Org-wide" : selectedBranchName,
-            meta: "Branch-level stock is a later multi-branch enhancement",
+            value: branchScope.selectedBranch ? selectedBranchName : "All branches",
+            meta: branchScope.selectedBranch
+              ? "Products and stock changes apply to this branch"
+              : "Choose a branch before changing branch stock",
           },
           {
             label: "Pending payment",

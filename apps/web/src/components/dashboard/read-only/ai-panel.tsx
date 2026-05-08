@@ -1,11 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DataTable, EmptyState, ReadoutGrid, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import {
+  DataTable,
+  EmptyState,
+  ReadoutGrid,
+  SectionHeader,
+  StatusPill,
+} from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn } from "../../ui";
 import { formatCompactNumber, formatEnumLabel, formatInr } from "@/lib/format";
-import type { AIUsageRow, CoachPlanRow, OrganizationSummary } from "../../dashboard-operational-model";
+import type {
+  AIUsageRow,
+  CoachPlanRow,
+  OrganizationSummary,
+} from "../../dashboard-operational-model";
 import { ErrorNotice, formatAiResponseSummary } from "../operational-shared";
 import type { LoadingState } from "./types";
 
@@ -33,12 +43,12 @@ export function AiPanel({
       <GlassCard>
         <SectionHeader
           eyebrow="Assistant"
-          title="Draft summaries"
-          description="Assisted drafts, categories, and review notes for this gym."
-          badge={<Pill tone="blue">{aiUsage.length} drafts</Pill>}
+          title="AI assistant preview"
+          description="Coming soon for owners. Existing draft history is shown here only when the team has created assisted content."
+          badge={<Pill tone="amber">Coming soon</Pill>}
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
-          Drafts originate in the Trainer app.
+          Trainer and owner AI workflows are being staged carefully before launch.
         </ManagedOn>
         <div className="mt-5">
           {aiUsageState.error ? (
@@ -46,7 +56,7 @@ export function AiPanel({
           ) : aiUsageState.loading && aiUsage.length === 0 ? (
             <EmptyState
               title="Loading drafts"
-              description="Getting the latest assisted drafts for this gym."
+              description="Checking whether this gym already has assisted draft history."
             />
           ) : (
             <DataTable
@@ -94,14 +104,14 @@ export function AiPanel({
                       onClick={() => setSelectedDraftId(usage.id)}
                       className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
                     >
-                      Open
+                      View
                     </button>
                   ),
                 },
               ]}
               rows={aiUsage}
               rowKey={(usage) => usage.id}
-              empty="No assistant drafts are available for this gym yet."
+              empty="AI workflows are coming soon. Draft history will appear here after launch."
             />
           )}
         </div>
@@ -109,12 +119,12 @@ export function AiPanel({
           <div
             role="dialog"
             aria-modal="false"
-            aria-label="Assistant draft JSON"
+            aria-label="Assistant draft detail"
             className="mt-4 rounded-[22px] border border-white/10 bg-black/35 p-4"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Draft JSON</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Draft detail</p>
                 <p className="mt-1 font-medium text-white">{selectedDraft.promptSummary}</p>
               </div>
               <button
@@ -125,9 +135,13 @@ export function AiPanel({
                 Close
               </button>
             </div>
-            <pre className="mt-4 max-h-80 overflow-auto rounded-[18px] border border-white/10 bg-black/40 p-3 text-xs leading-5 text-white/60">
-              {JSON.stringify(selectedDraft, null, 2)}
-            </pre>
+            <div className="mt-4 grid gap-3 rounded-[18px] border border-white/10 bg-black/40 p-3 text-sm leading-6 text-white/62">
+              <p>{formatAiResponseSummary(selectedDraft.responseSummary)}</p>
+              <p>
+                Category: {formatEnumLabel(selectedDraft.requestType)} · Cost:{" "}
+                {formatInr(selectedDraft.costEstimatePaise)}
+              </p>
+            </div>
           </div>
         ) : null}
       </GlassCard>
@@ -135,8 +149,8 @@ export function AiPanel({
       <GlassCard>
         <SectionHeader
           eyebrow="Draft output"
-          title="Assisted content"
-          description="A quick view of whether assisted work is becoming real coaching output."
+          title="Launch readiness"
+          description="A safe preview of AI usage signals before the assistant is opened up to the gym."
         />
         <ReadoutGrid
           className="mt-5"

@@ -189,6 +189,7 @@ export function validateAttendanceScan(input: {
   hasProfilePhoto: boolean;
   alreadyCheckedInToday: boolean;
   wrongBranch?: boolean;
+  multiEntryConsumes?: boolean;
   failedScanCount?: number;
   now?: Date;
 }): { allowed: boolean; suspiciousFlags: string[]; warnings: string[]; reason?: string } {
@@ -199,14 +200,19 @@ export function validateAttendanceScan(input: {
   if ((input.failedScanCount ?? 0) >= 3) {
     suspiciousFlags.push("too_many_failed_scans");
   }
-  if (input.alreadyCheckedInToday) {
-    suspiciousFlags.push("duplicate_same_day");
-  }
   const evaluation = evaluateSubscription(input.subscription, input.plan, {
     ...(input.now ? { now: input.now } : {}),
     orgStatus: input.orgStatus,
     hasProfilePhoto: input.hasProfilePhoto
   });
+  if (
+    !evaluation.valid &&
+    evaluation.reason === "visit_pack_empty" &&
+    input.alreadyCheckedInToday &&
+    !input.multiEntryConsumes
+  ) {
+    return { allowed: true, suspiciousFlags, warnings: evaluation.warnings ?? [] };
+  }
   if (!evaluation.valid) {
     return {
       allowed: false,

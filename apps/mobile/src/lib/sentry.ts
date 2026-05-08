@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/react-native";
-import { redactPII } from "@zook/core";
+import { redactPII } from "@zook/core/utils/redact";
 import Constants from "expo-constants";
 
 let initialized = false;

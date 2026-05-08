@@ -641,6 +641,7 @@ model OrganizationRoleAssignment {
   assignedById String?
   createdAt    DateTime @default(now())
 
+  @@unique([orgId, userId])
   @@unique([orgId, userId, role])
   @@index([orgId, role])
   @@index([orgId, branchId])
@@ -1109,6 +1110,30 @@ model Payment {
   @@index([userId])
 }
 
+model PaymentRefund {
+  id               String    @id @default(cuid())
+  orgId            String
+  branchId         String?
+  paymentId        String
+  provider         String?
+  providerRefundId String?
+  amountPaise      Int
+  currency         String    @default("INR")
+  status           String    @default("REQUESTED")
+  reason           String?
+  requestedById    String?
+  processedAt      DateTime?
+  failureReason    String?
+  providerResponse Json?
+  metadata         Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([provider, providerRefundId])
+  @@index([orgId, status, createdAt])
+  @@index([paymentId, createdAt])
+}
+
 model PaymentMandate {
   id                   String               @id @default(cuid())
   provider             String               @default("mock")
@@ -1449,7 +1474,7 @@ model AttendanceRecord {
   deviceId        String?
   createdAt       DateTime         @default(now())
 
-  @@unique([orgId, branchId, userId, dateKey])
+  @@index([orgId, branchId, userId, dateKey])
   @@index([orgId, status, checkedInAt])
   @@index([orgId, status, branchId, createdAt])
   @@index([userId, checkedInAt])
@@ -2021,6 +2046,7 @@ model Product {
   stock             Int
   lowStockThreshold Int             @default(5)
   imageUrl          String?
+  imageUrls         Json?
   active            Boolean         @default(true)
   taxRateBps        Int?
   createdAt         DateTime        @default(now())

@@ -1,13 +1,16 @@
 import {
+  isOrgRole,
   permissionsForRoles,
   publicUserEmail,
   type AuthOrganizationSummary,
   type AuthSessionSummary,
+  type OrgRole,
   type Permission,
   type Role,
 } from "@zook/core";
 import { AuthService } from "@zook/core/services";
 import { prisma } from "@zook/db";
+import { privateUserHandle } from "./private-user-handle";
 
 function resolvePermissions(
   roles: Role[],
@@ -22,6 +25,44 @@ function resolvePermissions(
     permissions.delete(override.permission);
   }
   return Array.from(permissions);
+}
+
+const activeOrganizationRolePriority: OrgRole[] = [
+  "OWNER",
+  "ADMIN",
+  "RECEPTIONIST",
+  "TRAINER",
+  "MEMBER",
+];
+
+const failClosedRolePriority: OrgRole[] = ["MEMBER", "TRAINER", "RECEPTIONIST", "ADMIN", "OWNER"];
+
+function resolveEffectiveOrgRoles(roles: Role[]): OrgRole[] {
+  const orgRoleSet = new Set(roles.filter(isOrgRole));
+  if (orgRoleSet.size <= 1) {
+    return Array.from(orgRoleSet);
+  }
+  const leastPrivilegedRole = failClosedRolePriority.find((role) => orgRoleSet.has(role));
+  return leastPrivilegedRole ? [leastPrivilegedRole] : [];
+}
+
+function rolePriorityScore(roles: Role[]) {
+  const match = activeOrganizationRolePriority.findIndex((role) => roles.includes(role));
+  return match === -1 ? activeOrganizationRolePriority.length : match;
+}
+
+function resolveActiveOrganization(summaries: AuthOrganizationSummary[], preferredOrgId?: string) {
+  const preferred = summaries.find((organization) => organization.orgId === preferredOrgId);
+  if (preferred) {
+    return preferred;
+  }
+  return summaries.slice().sort((left, right) => {
+    const priorityDelta = rolePriorityScore(left.roles) - rolePriorityScore(right.roles);
+    if (priorityDelta !== 0) {
+      return priorityDelta;
+    }
+    return new Date(left.joinedAt).getTime() - new Date(right.joinedAt).getTime();
+  })[0];
 }
 
 export async function resolveSessionSummaryFromToken(
@@ -67,15 +108,20 @@ export async function resolveSessionSummaryFromToken(
       if (!organization) {
         return null;
       }
-      const roles = assignments
-        .filter((assignment) => assignment.orgId === membership.orgId)
-        .map((assignment) => assignment.role) as Role[];
+      const roles = resolveEffectiveOrgRoles(
+        assignments
+          .filter((assignment) => assignment.orgId === membership.orgId)
+          .map((assignment) => assignment.role)
+          .filter(isOrgRole),
+      );
       const permissions = resolvePermissions(
         roles,
         overrides
           .filter(
             (override) =>
-              override.orgId === membership.orgId && roles.includes(override.role as Role),
+              override.orgId === membership.orgId &&
+              isOrgRole(override.role) &&
+              roles.includes(override.role),
           )
           .map((override) => ({
             permission: override.permission as Permission,
@@ -97,14 +143,14 @@ export async function resolveSessionSummaryFromToken(
     })
     .filter((item): item is AuthOrganizationSummary => Boolean(item));
 
-  const activeOrganization =
-    summaries.find((organization) => organization.orgId === preferredOrgId) ?? summaries[0];
+  const activeOrganization = resolveActiveOrganization(summaries, preferredOrgId);
 
   return {
     user: {
       id: user.id,
       email: publicUserEmail(user.email) ?? "",
       name: user.name,
+      privateHandle: privateUserHandle(user.id),
       isMinor: user.isMinor,
       guardianPending: user.guardianPending,
       isPlatformAdmin: user.isPlatformAdmin,

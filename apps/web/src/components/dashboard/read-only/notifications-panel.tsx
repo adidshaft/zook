@@ -42,15 +42,17 @@ export function NotificationsPanel({
     return (
       <NotificationHistoryPanel
         orgId={orgId}
-        initialNotifications={initialNotifications.map((notification) => ({
-          ...notification,
-          body: "",
-          pushEnabled: true,
-          createdAt:
-            typeof notification.createdAt === "string"
-              ? notification.createdAt
-              : new Date(notification.createdAt).toISOString(),
-        })) as Parameters<typeof NotificationHistoryPanel>[0]["initialNotifications"]}
+        initialNotifications={
+          initialNotifications.map((notification) => ({
+            ...notification,
+            body: notification.body ?? "Message body is syncing. Open history again in a moment.",
+            pushEnabled: Boolean(notification.pushEnabled),
+            createdAt:
+              typeof notification.createdAt === "string"
+                ? notification.createdAt
+                : new Date(notification.createdAt).toISOString(),
+          })) as Parameters<typeof NotificationHistoryPanel>[0]["initialNotifications"]
+        }
       />
     );
   }
@@ -61,25 +63,24 @@ export function NotificationsPanel({
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <GlassCard>
           <SectionHeader
-            eyebrow="Message limits"
+            eyebrow="Notification limits"
             title="Delivery status"
             description={
               <span className="inline-flex items-center gap-2">
                 Operational messages should stay crisp, permission-safe, and relevant.
                 <HelpHint label="Delivery status" title="Delivery status">
-                  Queued messages are throttled by provider limits and auto-retry every five
-                  minutes. Open History to resend manually.
+                  Some messages may wait because of daily limits. Open History to resend manually.
                 </HelpHint>
               </span>
             }
             badge={
               <Link
-                href="/dashboard/notifications/history?status=QUEUED"
+                href="/dashboard/notifications/history?status=attention"
                 className="zook-focus rounded-full"
               >
-              <Pill tone={summary.notificationQueueCount > 0 ? "amber" : "lime"}>
-                {summary.notificationQueueCount} queued
-              </Pill>
+                <Pill tone={summary.notificationQueueCount > 0 ? "amber" : "lime"}>
+                  {summary.notificationQueueCount} need attention
+                </Pill>
               </Link>
             }
           />
@@ -117,8 +118,8 @@ export function NotificationsPanel({
         <GlassCard>
           <SectionHeader
             eyebrow="Recent Messages"
-            title="Current message mix"
-            description="A quick read on the most recent notifications coming out of this organization."
+            title="Recent notifications"
+            description="A quick read on the latest updates sent from this gym."
             action={
               <Link
                 href="/dashboard/notifications/history"
@@ -133,7 +134,11 @@ export function NotificationsPanel({
               initialNotifications.slice(0, 4).map((notification) => (
                 <Link
                   key={notification.id}
-                  href="/dashboard/notifications/history"
+                  href={
+                    notification.status === "FAILED" || notification.status === "SCHEDULED"
+                      ? "/dashboard/notifications/history?status=attention"
+                      : `/dashboard/notifications/history?status=${encodeURIComponent(notification.status)}`
+                  }
                   className="rounded-[22px] border border-white/10 bg-black/20 p-4"
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -153,8 +158,8 @@ export function NotificationsPanel({
               ))
             ) : (
               <EmptyState
-                title="No notifications in history yet"
-                description="You have not sent any messages yet. Compose one to update your members."
+                title="No notifications sent yet"
+                description="Compose the first update when you are ready to reach members."
               />
             )}
           </div>

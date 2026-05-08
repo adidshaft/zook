@@ -8,7 +8,7 @@ import {
   withSequence,
   withSpring,
   withTiming,
-} from "react-native-reanimated";
+} from "@/lib/reanimated-lite";
 
 export function useReduceMotion() {
   const [reduceMotion, setReduceMotion] = useState(false);

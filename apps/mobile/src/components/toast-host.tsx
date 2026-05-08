@@ -4,7 +4,7 @@ import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from "react-native-reanimated";
+} from "@/lib/reanimated-lite";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, shadows, spacing, typography } from "@/lib/theme";
 import { subscribeToast, type ToastPayload, type ToastTone } from "@/lib/toast";

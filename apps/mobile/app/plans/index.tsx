@@ -6,7 +6,7 @@ import {
   BottomSheetModal,
   BottomSheetView,
   type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+} from "@/components/expo-safe-bottom-sheet";
 import { resolvePlanName } from "@zook/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";

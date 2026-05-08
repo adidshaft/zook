@@ -31,6 +31,10 @@ export function ReferralCodeControls({
   return (
     <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
       <p className="font-medium text-white">Referral codes</p>
+      <p className="mt-1 text-xs leading-5 text-white/45">
+        Share a code or checkout link with a member. The referred member applies it during plan
+        checkout; rewards are applied only after a successful redemption.
+      </p>
       <div className="mt-3 grid gap-3">
         <div className="grid gap-3 md:grid-cols-[1fr_1fr]">
           <TextInput

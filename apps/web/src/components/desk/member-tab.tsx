@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
 import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
-import { GlassCard } from "../glass-card";
+import { GlassCard, Pill } from "../glass-card";
 import type { DeskCopy } from "./copy";
 import type { MemberRow } from "./types";
 import { memberLabel, phoneLast4 } from "./utils";
@@ -31,6 +31,8 @@ export function MemberTab({
 }) {
   const [showPhone, setShowPhone] = useState(false);
   const phone = selectedMember?.user?.phone;
+  const selectedPhoto =
+    selectedMember?.profile.profilePhotoUrl ?? selectedMember?.user?.profilePhotoUrl ?? null;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
@@ -54,12 +56,21 @@ export function MemberTab({
               className="zook-focus rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-left transition hover:bg-white/8"
             >
               <p className="text-sm font-medium text-white">{memberLabel(member)}</p>
-              <p className="mt-1 text-xs text-white/42">
-                {copy.phoneEnding} {phoneLast4(member.user?.phone)} -{" "}
-                {member.activeSubscription
-                  ? formatEnumLabel(member.activeSubscription.status)
-                  : copy.noActivePlan}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/42">
+                {member.user?.privateHandle ? (
+                  <span className="rounded-full border border-white/10 px-2 py-1 text-white/58">
+                    {member.user.privateHandle}
+                  </span>
+                ) : null}
+                <span>
+                  {copy.phoneEnding} {phoneLast4(member.user?.phone)}
+                </span>
+                <span>
+                  {member.activeSubscription
+                    ? formatEnumLabel(member.activeSubscription.status)
+                    : copy.noActivePlan}
+                </span>
+              </div>
             </button>
           ))}
         </div>
@@ -69,9 +80,9 @@ export function MemberTab({
         {selectedMember ? (
           <>
             <div className="flex items-start gap-4">
-              {selectedMember.profile.profilePhotoUrl ? (
+              {selectedPhoto ? (
                 <img
-                  src={selectedMember.profile.profilePhotoUrl}
+                  src={selectedPhoto}
                   alt=""
                   className="h-20 w-20 shrink-0 rounded-3xl object-cover"
                 />
@@ -81,6 +92,11 @@ export function MemberTab({
                 </div>
               )}
               <div className="min-w-0">
+                {selectedMember.user?.privateHandle ? (
+                  <Pill tone="blue">
+                    {copy.privateId}: {selectedMember.user.privateHandle}
+                  </Pill>
+                ) : null}
                 <h2 className="text-2xl font-semibold text-white">{memberLabel(selectedMember)}</h2>
                 <button
                   type="button"
@@ -89,7 +105,7 @@ export function MemberTab({
                 >
                   {showPhone && phone ? phone : `${copy.phoneEnding} ${phoneLast4(phone)}`}
                 </button>
-                {!selectedMember.profile.profilePhotoUrl ? (
+                {!selectedPhoto ? (
                   <p className="mt-2 text-xs text-white/38">{copy.profilePhotoMissing}</p>
                 ) : null}
               </div>

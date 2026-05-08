@@ -1,9 +1,11 @@
-import { renderDashboardRoute } from "../dashboard-route";
+import { redirect } from "next/navigation";
 
-export default function ProfilePage({
+export default async function ProfilePage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["public-profile"], searchParams });
+  const params = await searchParams;
+  const query = params.branchId ? `?branchId=${encodeURIComponent(params.branchId)}` : "";
+  redirect(`/dashboard/public-profile${query}`);
 }

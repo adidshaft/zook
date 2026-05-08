@@ -35,6 +35,48 @@ export const amenityOptions = [
   "Flexible plans",
 ];
 
+export const equipmentOptions = [
+  "Treadmills",
+  "Elliptical trainers",
+  "Stationary bikes",
+  "Rowing machines",
+  "Stair climbers",
+  "Cable crossover machine",
+  "Functional trainer",
+  "Smith machine",
+  "Power racks",
+  "Squat racks",
+  "Flat benches",
+  "Adjustable benches",
+  "Olympic barbells",
+  "EZ curl bars",
+  "Dumbbells",
+  "Kettlebells",
+  "Weight plates",
+  "Leg press machine",
+  "Hack squat machine",
+  "Leg extension machine",
+  "Seated leg curl machine",
+  "Calf raise machine",
+  "Chest press machine",
+  "Pec deck machine",
+  "Lat pulldown machine",
+  "Seated row machine",
+  "Shoulder press machine",
+  "Assisted pull-up machine",
+  "Dip station",
+  "Pull-up bar",
+  "Preacher curl bench",
+  "Ab crunch machine",
+  "Roman chair",
+  "Battle ropes",
+  "Medicine balls",
+  "TRX suspension trainer",
+  "Foam rollers",
+  "Yoga mats",
+  "Hip thrust station",
+];
+
 export function listToText(value?: string[] | null) {
   return (value ?? []).join(", ");
 }

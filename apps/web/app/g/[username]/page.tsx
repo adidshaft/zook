@@ -375,6 +375,27 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
             </div>
           </GlassCard>
           <GlassCard>
+            <h2 className="text-2xl font-semibold text-white">{t("equipment")}</h2>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {org.equipment.length ? (
+                org.equipment.map((equipment) => (
+                  <Pill
+                    key={equipment}
+                    tone="lime"
+                    className="border-white/15 bg-white/10 text-white/80"
+                  >
+                    {equipment}
+                  </Pill>
+                ))
+              ) : (
+                <p className="text-sm text-white/50">{t("equipmentPending")}</p>
+              )}
+            </div>
+          </GlassCard>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <GlassCard>
             <h2 className="text-2xl font-semibold text-white">{t("shareOrInstall")}</h2>
             <p className="mt-3 text-sm leading-6 text-white/55">
               {t("shareInstallCopyPrefix")} {org.name}.

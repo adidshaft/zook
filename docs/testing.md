@@ -67,7 +67,7 @@ Those acceptance flows now cover:
 - payment access/idempotency boundaries
 - shop order success, pickup code verification, and fulfillment
 - default-branch filters and QR target behavior
-- receptionist attendance approve/reject with member notifications and audit logs
+- Reception attendance approve/reject with member notifications and audit logs
 - notification creation
 - tracking workout creation
 - trainer AI draft assignment and trainer-visible workout reports
@@ -85,8 +85,8 @@ The current local acceptance checklist is:
 4. Member scans or pastes a QR token and sees attendance status from the backend
 5. Member logs a workout session and sees tracking history persist
 6. Trainer generates an AI draft, assigns it to a client, records PT, and sends a scoped notification
-7. Receptionist reviews attendance approvals, records a manual payment, and fulfills pickup
-8. Platform admin views org metrics and status controls
+7. Reception reviews attendance approvals, records a manual payment, and fulfills pickup
+8. Internal platform operator views org metrics and status controls
 
 ## Known Constraints
 

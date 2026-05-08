@@ -118,6 +118,7 @@ export interface GymProfileData {
     tagline?: string | null;
     gallery?: string[];
     facilities?: string[];
+    equipment?: string[];
     gymType?: string | null;
     openingHoursSummary?: string | null;
     appStoreUrl?: string | null;
@@ -252,6 +253,7 @@ export interface ShopProductRecord {
   stock: number;
   lowStockThreshold: number;
   imageUrl?: string | null;
+  imageUrls?: string[] | null;
   active?: boolean;
 }
 
@@ -296,6 +298,23 @@ export interface OrgPaymentRecord {
   recordedAt?: string | null;
   createdAt?: string;
   user?: { id: string; name: string; email: string; phone?: string | null } | null;
+}
+
+export interface InvoiceRecord {
+  id: string;
+  orgId?: string | null;
+  userId?: string | null;
+  paymentId?: string | null;
+  invoiceNumber?: string | null;
+  invoiceNo?: string | null;
+  issueDate?: string | null;
+  issuedAt?: string | null;
+  subtotalPaise?: number;
+  gstPaise?: number;
+  totalPaise?: number;
+  amountPaise?: number;
+  status?: string;
+  invoiceStatus?: string | null;
 }
 
 export interface MyProfileData {
@@ -570,6 +589,39 @@ export function useMyMemberships() {
         token,
       }),
     enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function useMyInvoices() {
+  const { status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "invoices"],
+    queryFn: () =>
+      mobileApiFetch<{ invoices: InvoiceRecord[] }>("/me/invoices", {
+        token,
+      }),
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function useGeneratePaymentDocument() {
+  const queryClient = useQueryClient();
+  const { token } = useAuth();
+  return useMutation({
+    mutationFn: ({ paymentId, kind }: { paymentId: string; kind: "receipt" | "invoice" }) =>
+      mobileApiFetch<{
+        receiptNumber?: string;
+        receiptUrl?: string;
+        invoice?: InvoiceRecord;
+        invoiceUrl?: string;
+        payment?: OrgPaymentRecord;
+      }>(`/me/payments/${paymentId}/${kind}`, { method: "POST", token }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "invoices"] }),
+      ]);
+    },
   });
 }
 

@@ -20,6 +20,10 @@ function hasMemberAccess(session: Pick<AuthSessionSummary, "activeOrganization">
   return Boolean(session.activeOrganization?.roles.includes("MEMBER"));
 }
 
+function privateMemberPath(session: Pick<AuthSessionSummary, "user">) {
+  return session.user.privateHandle ? `/me/${session.user.privateHandle}` : "/me";
+}
+
 export function resolvePostLoginPath(
   session:
     | Pick<AuthSessionSummary, "activeOrgId" | "activeOrganization" | "user">
@@ -61,7 +65,7 @@ export function resolvePostLoginPath(
     return "/coach";
   }
   if (session && hasMemberAccess(session)) {
-    return "/me";
+    return privateMemberPath(session);
   }
   return "/gyms";
 }
@@ -83,7 +87,7 @@ export function publicAccountLink(
     return { href: "/coach", label: labels.coach ?? "Coach" };
   }
   if (hasMemberAccess(session)) {
-    return { href: "/me", label: labels.membership };
+    return { href: privateMemberPath(session), label: labels.membership };
   }
   return null;
 }

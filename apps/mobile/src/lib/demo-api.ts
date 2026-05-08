@@ -1,4 +1,4 @@
-import { zookDemoFixtures } from "@zook/core";
+import { zookDemoFixtures } from "@zook/core/demo-fixtures";
 import { DEMO_MEMBER_EMAIL, DEMO_MEMBER_PHONE, getOfflineDemoSession } from "./demo-mode";
 
 function normalizePath(path: string) {
@@ -76,6 +76,7 @@ function demoGymProfile(username: string) {
       address: org.address,
       tagline: "Premium strength, PT, and recovery operations in one gym cockpit.",
       gallery: [],
+      equipment: ["Dumbbells", "Power racks", "Treadmills", "Cable crossover machine"],
     },
     branches: zookDemoFixtures.branches.filter((branch) => branch.orgId === org.id),
     trainers: zookDemoFixtures.users

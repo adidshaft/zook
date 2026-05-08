@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { Permission, Role } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
+import { ConfirmDialog } from "../dashboard-primitives";
 import { GlassCard, Pill } from "../glass-card";
 import {
   AudienceStep,
@@ -26,6 +28,21 @@ import {
   type TemplateRow,
 } from "./shared";
 
+function isAudience(value: string | null): value is Audience {
+  return Boolean(
+    value &&
+    [
+      "all_active_members",
+      "expiring_soon",
+      "branch_members",
+      "membership_plan",
+      "single_member",
+      "selected_members",
+      "assigned_clients",
+    ].includes(value),
+  );
+}
+
 export function NotificationComposerPanel({
   orgId,
   roles = [],
@@ -35,6 +52,7 @@ export function NotificationComposerPanel({
   roles?: Role[];
   permissions?: Permission[];
 }) {
+  const searchParams = useSearchParams();
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
@@ -57,6 +75,8 @@ export function NotificationComposerPanel({
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sendConfirmationOpen, setSendConfirmationOpen] = useState(false);
+  const [queryApplied, setQueryApplied] = useState(false);
 
   const loadResources = useCallback(async () => {
     try {
@@ -121,6 +141,41 @@ export function NotificationComposerPanel({
       setPreview(null);
     }
   }, [audience, availableAudiences]);
+
+  useEffect(() => {
+    if (queryApplied) return;
+    const nextAudience = searchParams.get("audience");
+    const nextUserId = searchParams.get("userId");
+    const nextBranchId = searchParams.get("branchId");
+    const nextPlanId = searchParams.get("planId");
+    if (!isAudience(nextAudience) && !nextUserId && !nextBranchId && !nextPlanId) {
+      setQueryApplied(true);
+      return;
+    }
+    if (isAudience(nextAudience)) {
+      const allowed = availableAudiences.some(
+        (option) => option.value === nextAudience && option.allowed,
+      );
+      if (allowed) {
+        setAudience(nextAudience);
+      }
+    }
+    if (nextUserId) {
+      setAudience("single_member");
+      setSingleUserId(nextUserId);
+    }
+    if (nextBranchId) {
+      setAudience("branch_members");
+      setBranchId(nextBranchId);
+    }
+    if (nextPlanId) {
+      setAudience("membership_plan");
+      setPlanId(nextPlanId);
+    }
+    setStep(2);
+    setPreview(null);
+    setQueryApplied(true);
+  }, [availableAudiences, queryApplied, searchParams]);
 
   function payload() {
     return {
@@ -247,6 +302,7 @@ export function NotificationComposerPanel({
       setSaveAsTemplate(false);
       setTemplateName("");
       setPreview(null);
+      setSendConfirmationOpen(false);
       setStep(1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to send notification.");
@@ -336,6 +392,18 @@ export function NotificationComposerPanel({
               {error}
             </p>
           ) : null}
+          {sendConfirmationOpen ? (
+            <ConfirmDialog
+              title={`Send to ${preview?.willDeliver ?? 0} members?`}
+              description="Zook will prepare the message and send it through the active message service."
+              confirmLabel="Send message"
+              onCancel={() => setSendConfirmationOpen(false)}
+              onConfirm={() => {
+                setSendConfirmationOpen(false);
+                void submitNotification();
+              }}
+            />
+          ) : null}
           <div className="flex flex-wrap justify-between gap-3">
             <button
               type="button"
@@ -367,13 +435,7 @@ export function NotificationComposerPanel({
               {step === 4 ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (
-                      window.confirm(`Send this message to ${preview?.willDeliver ?? 0} members?`)
-                    ) {
-                      void submitNotification();
-                    }
-                  }}
+                  onClick={() => setSendConfirmationOpen(true)}
                   disabled={saving || !preview?.willDeliver}
                   className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
                 >

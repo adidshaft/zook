@@ -129,12 +129,12 @@ export function AuditPanel({
           <div
             role="dialog"
             aria-modal="false"
-            aria-label="Audit diff"
+            aria-label="Change details"
             className="mt-4 rounded-[22px] border border-white/10 bg-black/35 p-4"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Audit diff</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Change details</p>
                 <p className="mt-1 font-medium text-white">
                   {formatEnumLabel(selectedAuditLog.action)}
                 </p>
@@ -148,12 +148,26 @@ export function AuditPanel({
               </button>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <pre className="max-h-72 overflow-auto rounded-[18px] border border-white/10 bg-black/40 p-3 text-xs leading-5 text-white/60">
-                {JSON.stringify(selectedAuditLog.before ?? {}, null, 2)}
-              </pre>
-              <pre className="max-h-72 overflow-auto rounded-[18px] border border-white/10 bg-black/40 p-3 text-xs leading-5 text-white/60">
-                {JSON.stringify(selectedAuditLog.after ?? selectedAuditLog.metadata ?? {}, null, 2)}
-              </pre>
+              <div className="rounded-[18px] border border-white/10 bg-black/40 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+                  Before
+                </p>
+                <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-xs leading-5 text-white/60">
+                  {JSON.stringify(selectedAuditLog.before ?? {}, null, 2)}
+                </pre>
+              </div>
+              <div className="rounded-[18px] border border-white/10 bg-black/40 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+                  After
+                </p>
+                <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-xs leading-5 text-white/60">
+                  {JSON.stringify(
+                    selectedAuditLog.after ?? selectedAuditLog.metadata ?? {},
+                    null,
+                    2,
+                  )}
+                </pre>
+              </div>
             </div>
           </div>
         ) : null}
@@ -170,9 +184,9 @@ export function AuditPanel({
               onClick={() => setAiFilter("needs-review")}
               className="zook-focus rounded-full"
             >
-            <Pill tone={misconfiguredAiCount > 0 ? "amber" : "lime"}>
-              {misconfiguredAiCount} need review
-            </Pill>
+              <Pill tone={misconfiguredAiCount > 0 ? "amber" : "lime"}>
+                {misconfiguredAiCount} need review
+              </Pill>
             </button>
           }
         />
@@ -263,9 +277,14 @@ export function AuditPanel({
                 Close
               </button>
             </div>
-            <pre className="mt-4 max-h-80 overflow-auto rounded-[18px] border border-white/10 bg-black/40 p-3 text-xs leading-5 text-white/60">
-              {JSON.stringify(selectedAiUsage, null, 2)}
-            </pre>
+            <div className="mt-4 grid gap-3 rounded-[18px] border border-white/10 bg-black/40 p-3 text-sm leading-6 text-white/62">
+              <p>{formatAiResponseSummary(selectedAiUsage.responseSummary)}</p>
+              <p>
+                {formatEnumLabel(selectedAiUsage.role)} ·{" "}
+                {formatEnumLabel(selectedAiUsage.requestType)} ·{" "}
+                {formatDateTime(selectedAiUsage.createdAt)}
+              </p>
+            </div>
           </div>
         ) : null}
       </GlassCard>

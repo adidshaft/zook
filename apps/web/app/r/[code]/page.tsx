@@ -30,11 +30,7 @@ async function referralUsername(code: string) {
   return org?.username ?? null;
 }
 
-export default async function ReferralPage({
-  params
-}: {
-  params: Promise<{ code: string }>;
-}) {
+export default async function ReferralPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const normalizedCode = code.trim().toUpperCase();
   const username = await referralUsername(normalizedCode);
@@ -51,9 +47,12 @@ export default async function ReferralPage({
         <Pill tone="amber">Referral {normalizedCode}</Pill>
         <h1 className="mt-5 text-3xl font-semibold">Open Zook to join this gym</h1>
         <p className="mt-3 text-sm leading-6 text-white/55">
-          Deep link target: zook://join/{username}?ref={normalizedCode}
+          Continue to the gym membership page. Your referral code will be applied there.
         </p>
-        <Link href={`/join/${username}?ref=${normalizedCode}`} className="mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 font-semibold text-black">
+        <Link
+          href={`/join/${username}?ref=${normalizedCode}`}
+          className="mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+        >
           Continue
         </Link>
       </GlassCard>

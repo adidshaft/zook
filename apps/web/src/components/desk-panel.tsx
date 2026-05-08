@@ -35,6 +35,8 @@ export function DeskPanel({
   locale,
   initialTab,
   initialOrderId,
+  canOpenManagement,
+  redirectedFromDashboard,
 }: {
   orgId: string;
   orgName: string;
@@ -42,6 +44,8 @@ export function DeskPanel({
   locale?: string | null;
   initialTab?: TabKey | undefined;
   initialOrderId?: string | undefined;
+  canOpenManagement?: boolean;
+  redirectedFromDashboard?: boolean;
 }) {
   const copy = deskTranslations[locale === "hi" ? "hi" : "en"];
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab ?? "queue");
@@ -65,6 +69,10 @@ export function DeskPanel({
   const [verifiedOrderIds, setVerifiedOrderIds] = useState<string[]>([]);
   const [skippedCodeOrderIds, setSkippedCodeOrderIds] = useState<string[]>([]);
   const [lastReceipt, setLastReceipt] = useState<ReceiptDetails | null>(null);
+  const [messageDraft, setMessageDraft] = useState<{ member: MemberRow; body: string } | null>(
+    null,
+  );
+  const [pickupDraft, setPickupDraft] = useState<{ order: ShopOrder; code: string } | null>(null);
 
   const pendingState = useOperationalResource<{ records: AttendanceQueueRecord[] }>({
     path: withBranch(`/api/orgs/${orgId}/attendance/live`, branch),
@@ -108,7 +116,7 @@ export function DeskPanel({
     return members
       .filter((member) => {
         const user = member.user;
-        return [user?.name, user?.email, user?.phone]
+        return [user?.name, user?.email, user?.phone, user?.privateHandle]
           .filter(Boolean)
           .some((value) => value!.toLowerCase().includes(query));
       })
@@ -245,24 +253,30 @@ export function DeskPanel({
     }
   }
 
-  async function sendMemberMessage(member: MemberRow) {
+  function sendMemberMessage(member: MemberRow) {
     if (!member.user?.id) return;
-    const body = window.prompt(copy.directMessagePrompt);
-    if (!body?.trim()) return;
+    setMessageDraft({ member, body: "" });
+    setToast("");
+  }
+
+  async function submitMemberMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!messageDraft?.member.user?.id || !messageDraft.body.trim()) return;
     try {
-      setBusyId(`message:${member.user.id}`);
+      setBusyId(`message:${messageDraft.member.user.id}`);
       setToast("");
       await webApiFetch(`/api/orgs/${orgId}/notifications`, {
         method: "POST",
         body: {
           type: "TRANSACTIONAL",
           title: copy.deskMessageTitle,
-          body,
+          body: messageDraft.body.trim(),
           audience: "single_member",
-          singleUserId: member.user.id,
+          singleUserId: messageDraft.member.user.id,
           pushEnabled: true,
         },
       });
+      setMessageDraft(null);
       setToast(copy.messageSent);
     } catch (cause) {
       setToast(cause instanceof Error ? cause.message : copy.unableMessage);
@@ -359,20 +373,24 @@ export function DeskPanel({
   }
 
   async function verifyPickupCode(order: ShopOrder) {
-    const code = window.prompt(copy.pickupPrompt, order.pickupCode ?? "");
-    if (!code) {
-      return;
-    }
+    setPickupDraft({ order, code: order.pickupCode ?? "" });
+    setToast("");
+  }
+
+  async function submitPickupCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pickupDraft?.code.trim()) return;
     try {
-      setBusyId(`verify:${order.id}`);
+      setBusyId(`verify:${pickupDraft.order.id}`);
       setToast("");
       await webApiFetch(`/api/orgs/${orgId}/reception/verify-code`, {
         method: "POST",
-        body: { code },
+        body: { code: pickupDraft.code.trim() },
       });
       setVerifiedOrderIds((current) =>
-        current.includes(order.id) ? current : [...current, order.id],
+        current.includes(pickupDraft.order.id) ? current : [...current, pickupDraft.order.id],
       );
+      setPickupDraft(null);
       setToast(copy.pickupVerified);
     } catch (cause) {
       setToast(cause instanceof Error ? cause.message : copy.unablePickupVerify);
@@ -416,20 +434,111 @@ export function DeskPanel({
               </Pill>
             </div>
           </div>
-          <DashboardLocaleToggle locale={locale ?? undefined} labels={copy.common} />
-          <DashboardSignOutButton
-            compact
-            label={copy.common.signOut}
-            busyLabel={copy.common.signingOut}
-          />
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            {canOpenManagement ? (
+              <Link
+                href="/dashboard"
+                className="zook-focus inline-flex min-h-10 items-center justify-center rounded-full border border-white/10 px-4 text-sm font-semibold text-white/76 transition hover:bg-white/8 hover:text-white"
+              >
+                {copy.backToManagement}
+              </Link>
+            ) : null}
+            <DashboardLocaleToggle locale={locale ?? undefined} labels={copy.common} />
+            <DashboardSignOutButton
+              compact
+              label={copy.common.signOut}
+              busyLabel={copy.common.signingOut}
+            />
+          </div>
         </div>
       </header>
 
       <section className="mx-auto grid max-w-5xl gap-4 px-4 py-5">
+        {redirectedFromDashboard ? (
+          <div className="rounded-2xl border border-blue-300/25 bg-blue-300/10 px-4 py-3 text-sm text-blue-50">
+            {copy.openedAsReception}
+          </div>
+        ) : null}
+
         {toast ? (
           <div className="rounded-2xl border border-lime-300/25 bg-lime-300/10 px-4 py-3 text-sm text-lime-100">
             {toast}
           </div>
+        ) : null}
+
+        {messageDraft ? (
+          <form
+            className="rounded-[24px] border border-white/10 bg-black/30 p-4"
+            onSubmit={(event) => void submitMemberMessage(event)}
+          >
+            <p className="text-sm font-semibold text-white">
+              {copy.directMessagePrompt}: {messageDraft.member.user?.name ?? copy.member}
+            </p>
+            <textarea
+              value={messageDraft.body}
+              onChange={(event) =>
+                setMessageDraft((current) =>
+                  current ? { ...current, body: event.target.value } : current,
+                )
+              }
+              maxLength={500}
+              rows={3}
+              className="zook-focus mt-3 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none"
+              placeholder={copy.deskMessageTitle}
+            />
+            <div className="mt-3 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setMessageDraft(null)}
+                className="zook-focus min-h-10 rounded-full border border-white/10 px-4 text-sm text-white/70"
+              >
+                {copy.common.cancel}
+              </button>
+              <button
+                type="submit"
+                disabled={!messageDraft.body.trim() || busyId.startsWith("message:")}
+                className="zook-focus min-h-10 rounded-full bg-lime-300 px-4 text-sm font-semibold text-black disabled:opacity-60"
+              >
+                {busyId.startsWith("message:") ? copy.sending : copy.sendMemberMessage}
+              </button>
+            </div>
+          </form>
+        ) : null}
+
+        {pickupDraft ? (
+          <form
+            className="rounded-[24px] border border-white/10 bg-black/30 p-4"
+            onSubmit={(event) => void submitPickupCode(event)}
+          >
+            <p className="text-sm font-semibold text-white">{copy.pickupPrompt}</p>
+            <input
+              value={pickupDraft.code}
+              onChange={(event) =>
+                setPickupDraft((current) =>
+                  current ? { ...current, code: event.target.value } : current,
+                )
+              }
+              className="zook-focus mt-3 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none"
+              placeholder={copy.pickupCode}
+              autoComplete="one-time-code"
+            />
+            <div className="mt-3 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPickupDraft(null)}
+                className="zook-focus min-h-10 rounded-full border border-white/10 px-4 text-sm text-white/70"
+              >
+                {copy.common.cancel}
+              </button>
+              <button
+                type="submit"
+                disabled={!pickupDraft.code.trim() || busyId.startsWith("verify:")}
+                className="zook-focus min-h-10 rounded-full bg-lime-300 px-4 text-sm font-semibold text-black disabled:opacity-60"
+              >
+                {busyId.startsWith("verify:") ? copy.verifying : copy.verifyCode}
+              </button>
+            </div>
+          </form>
         ) : null}
 
         {activeTab === "queue" ? (
@@ -495,11 +604,12 @@ export function DeskPanel({
       </section>
 
       <Link
-        href="/desk/qr"
-        className="zook-focus fixed bottom-24 right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-lime-300 text-black shadow-[var(--zook-shadow-glow-lime)]"
+        href={withBranch("/desk/qr", branch)}
+        className="zook-focus fixed bottom-24 right-5 z-40 inline-flex min-h-14 items-center gap-2 rounded-full bg-lime-300 px-4 text-sm font-semibold text-black shadow-[var(--zook-shadow-glow-lime)]"
         aria-label={copy.showEntryQr}
       >
-        <QrCode size={24} />
+        <QrCode size={20} />
+        <span>Check-in QR</span>
       </Link>
 
       <DeskBottomNav activeTab={activeTab} copy={copy} onChange={setActiveTab} />

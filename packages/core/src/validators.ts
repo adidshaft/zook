@@ -127,6 +127,7 @@ export const createOrganizationSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   amenities: z.array(z.string()).default([]),
+  equipment: z.array(z.string().trim().min(2).max(80)).max(60).default([]),
   joinMode: z.enum(["OPEN_JOIN", "APPROVAL_REQUIRED", "INVITE_ONLY"]).default("OPEN_JOIN"),
   visibility: z.enum(["PUBLIC", "INVITE_ONLY", "HIDDEN"]).default("PUBLIC"),
 });
@@ -211,10 +212,13 @@ export const checkoutSchema = z.object({
 });
 
 export const attendanceScanSchema = z.object({
-  qrPayload: z.string().min(20),
+  qrPayload: z.string().min(20).optional(),
+  checkInCode: z.string().trim().min(6).max(12).optional(),
   deviceId: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
+}).refine((value) => Boolean(value.qrPayload || value.checkInCode), {
+  message: "Scan the QR or enter the check-in code.",
 });
 
 export const manualPaymentSchema = z.object({

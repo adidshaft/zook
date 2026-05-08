@@ -24,12 +24,14 @@ type MembersState = {
   loadingMore: boolean;
   hasMore: boolean;
   loadMore: () => void;
+  reload: () => void;
 };
 
 type ResourceState<T> = {
   data: T | undefined;
   error: string;
   loading: boolean;
+  reload: () => void;
 };
 
 export function MembersSection({
@@ -128,8 +130,9 @@ export function MembersSection({
           error: "Unable to update membership.",
         },
       });
-      setSubscriptionStatus("Membership updated. Refreshing the member record.");
-      window.location.reload();
+      memberDetailState.reload();
+      membersState.reload();
+      setSubscriptionStatus("Membership updated.");
     } catch (error) {
       setSubscriptionStatus(
         error instanceof Error ? error.message : "Unable to update membership.",

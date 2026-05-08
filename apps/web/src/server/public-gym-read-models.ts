@@ -47,6 +47,7 @@ export type PublicGymProfileData = {
     tagline: string | null;
     gallery: string[];
     facilities: string[];
+    equipment: string[];
     gymType: string | null;
     openingHoursSummary: string | null;
     appStoreUrl: string | null;
@@ -259,6 +260,7 @@ function demoPublicGymProfile(
       tagline: null,
       gallery: [],
       facilities: [],
+      equipment: [],
       gymType: null,
       openingHoursSummary: null,
       appStoreUrl: null,
@@ -366,6 +368,7 @@ async function publicGymProfileFromDb(
       tagline: typeof settingValues.tagline === "string" ? settingValues.tagline : null,
       gallery: stringArray(settingValues.gallery),
       facilities: stringArray(settingValues.facilities),
+      equipment: stringArray(settingValues.equipment),
       gymType: typeof settingValues.gymType === "string" ? settingValues.gymType : null,
       openingHoursSummary:
         typeof settingValues.openingHoursSummary === "string"

@@ -387,6 +387,15 @@ export default function Owner() {
             <Text style={styles.utilityText}>Profile</Text>
           </Pressable>
           <Pressable
+            onPress={() => router.push("/reception")}
+            accessibilityRole="button"
+            accessibilityLabel="Open reception desk"
+            style={styles.utilityPill}
+          >
+            <Ionicons name="clipboard-outline" size={16} color={colors.muted} />
+            <Text style={styles.utilityText}>Desk</Text>
+          </Pressable>
+          <Pressable
             onPress={() => router.replace(view === "members" ? "/owner" : "/owner?view=members")}
             accessibilityRole="button"
             accessibilityLabel={view === "members" ? "Back to command" : "Open members"}

@@ -3,6 +3,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { ErrorNotice } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
 import type {
@@ -53,7 +54,7 @@ type StaffSectionProps = {
 
 const roleCapabilitySections = [
   {
-    title: "Receptionist",
+    title: "Reception",
     items: [
       "Check in members",
       "Override entry when QR fails",
@@ -119,11 +120,14 @@ export function StaffSection({
               <p className="inline-flex items-center gap-2 font-medium text-white">
                 Invite staff
                 <HelpHint label="Invite email" title="Invite email">
-                  We email a magic link. The recipient signs in with OTP and joins this org with
-                  the role you pick.
+                  We email a sign-in link. The recipient confirms with a one-time code and joins
+                  this gym with the role you pick.
                 </HelpHint>
               </p>
-              <p className="mt-1 text-xs text-white/45">Invites a new team member.</p>
+              <p className="mt-1 text-xs text-white/45">
+                Invite email sends a sign-in link. Reception users should be tied to one branch;
+                admins and trainers can work across assigned gym areas.
+              </p>
             </div>
             <Pill tone="lime">Invite</Pill>
           </div>
@@ -149,7 +153,7 @@ export function StaffSection({
               }
               options={[
                 { value: "TRAINER", label: "Trainer" },
-                { value: "RECEPTIONIST", label: "Receptionist" },
+                { value: "RECEPTIONIST", label: "Reception" },
                 { value: "ADMIN", label: "Admin" },
               ]}
             />
@@ -159,9 +163,7 @@ export function StaffSection({
               label="Assign branch"
               placeholder="Assign branch"
               value={staffInvite.branchId}
-              onChange={(branchId) =>
-                setStaffInvite((current) => ({ ...current, branchId }))
-              }
+              onChange={(branchId) => setStaffInvite((current) => ({ ...current, branchId }))}
               options={branches
                 .filter((branch) => branch.active !== false)
                 .map((branch) => ({ value: branch.id, label: branch.name }))}
@@ -226,7 +228,7 @@ export function StaffSection({
                             Trainer
                           </option>
                           <option value="RECEPTIONIST" className="bg-black">
-                            Receptionist
+                            Reception
                           </option>
                           <option value="ADMIN" className="bg-black">
                             Admin
@@ -308,13 +310,16 @@ export function StaffSection({
                         </button>
                       )}
                       {assignment.role !== "OWNER" ? (
-                        <button
-                          onClick={() => void revokeStaff(assignment.id)}
+                        <ConfirmActionButton
+                          title="Revoke staff access?"
+                          description="This removes the staff member from this gym. Their historical activity stays in the audit log."
+                          confirmLabel="Revoke"
+                          onConfirm={() => revokeStaff(assignment.id)}
                           disabled={formBusy === `staff:${assignment.id}:revoke`}
                           className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs font-medium text-red-100/80 hover:border-red-300/45 disabled:opacity-50"
                         >
                           Revoke
-                        </button>
+                        </ConfirmActionButton>
                       ) : null}
                     </div>
                   ),
@@ -336,15 +341,27 @@ export function StaffSection({
         />
         <div className="mt-5 grid gap-3">
           {roleCapabilitySections.map((section) => (
-            <div key={section.title} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+            <div
+              key={section.title}
+              className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+            >
               <p className="font-semibold text-white">{section.title}</p>
               <div className="mt-3 grid gap-2">
                 {section.items.map((item) => (
-                  <p key={item} className="text-sm text-white/58">{item}</p>
+                  <p key={item} className="text-sm text-white/58">
+                    {item}
+                  </p>
                 ))}
               </div>
             </div>
           ))}
+        </div>
+        <div className="mt-5 rounded-[22px] border border-lime-300/20 bg-lime-300/6 p-4">
+          <p className="font-semibold text-white">Team profile checklist</p>
+          <p className="mt-2 text-sm leading-6 text-white/55">
+            Ask every new team member to add their photo, phone number, and display name after
+            accepting the invite. This keeps Reception, Trainer, Admin, and Owner records readable.
+          </p>
         </div>
       </GlassCard>
 
@@ -380,13 +397,24 @@ export function StaffSection({
                   <div className="flex flex-wrap gap-2">
                     <StatusPill value={formatEnumLabel(plan.status)} />
                     {plan.aiGenerated ? <StatusPill value="Assisted" tone="amber" /> : null}
-                    <button
-                      onClick={() => void deleteCoachPlan(plan)}
+                    <ConfirmActionButton
+                      title={
+                        plan.assignmentCount > 0
+                          ? "Archive coaching plan?"
+                          : "Delete coaching plan?"
+                      }
+                      description={
+                        plan.assignmentCount > 0
+                          ? "Assigned plans are archived so member history remains intact."
+                          : "This unused plan will be removed from the training library."
+                      }
+                      confirmLabel={plan.assignmentCount > 0 ? "Archive" : "Delete"}
+                      onConfirm={() => deleteCoachPlan(plan)}
                       disabled={formBusy === `coach-plan:${plan.id}:delete`}
                       className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs font-medium text-red-100/80 disabled:opacity-50"
                     >
                       {plan.assignmentCount > 0 ? "Archive" : "Delete"}
-                    </button>
+                    </ConfirmActionButton>
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-white/40">

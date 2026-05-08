@@ -55,6 +55,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         label: "Shop orders",
         href: "/dashboard/shop/orders",
         icon: Store,
+        hidden: true,
         permissions: ["SHOP_FULFILL_ORDER"],
       },
       {
@@ -95,20 +96,23 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         label: "Coupons",
         href: "/dashboard/plans/coupons",
         icon: ClipboardList,
-        permissions: ["MEMBERSHIP_PLAN_MANAGE"],
+        hidden: true,
+        permissions: ["COUPONS_MANAGE"],
       },
       {
         key: "offers",
         label: "Offers",
         href: "/dashboard/plans/offers",
         icon: ClipboardList,
-        permissions: ["MEMBERSHIP_PLAN_MANAGE"],
+        hidden: true,
+        permissions: ["COUPONS_MANAGE"],
       },
       {
         key: "referrals",
         label: "Referrals",
         href: "/dashboard/plans/referrals",
         icon: ClipboardList,
+        hidden: true,
         permissions: ["REFERRALS_MANAGE"],
       },
       {
@@ -125,7 +129,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
     items: [
       {
         key: "messages",
-        label: "Messages",
+        label: "Notifications",
         href: "/dashboard/notifications",
         icon: Bell,
         permissions: ["NOTIFICATION_CREATE_DRAFT"],
@@ -165,7 +169,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
       },
       {
         key: "activity",
-        label: "Audit log",
+        label: "Activity log",
         href: "/dashboard/audit",
         icon: History,
         shortLabel: "Activity",
@@ -195,7 +199,8 @@ export function filterNavGroups(groups: typeof navGroups, permissions: Set<Permi
       ...group,
       items: group.items.filter(
         (item) =>
-          !item.permissions || item.permissions.some((permission) => permissions.has(permission)),
+          !item.hidden &&
+          (!item.permissions || item.permissions.some((permission) => permissions.has(permission))),
       ),
     }))
     .filter((group) => group.items.length > 0);
@@ -206,5 +211,11 @@ export function isActiveNav(href: string, sectionKey: string) {
     return sectionKey === "";
   }
   const hrefKey = href.replace("/dashboard/", "");
+  if (hrefKey === "plans") {
+    return sectionKey === "plans" || sectionKey.startsWith("plans/");
+  }
+  if (["notifications", "payments"].includes(hrefKey)) {
+    return sectionKey === hrefKey;
+  }
   return sectionKey === hrefKey || sectionKey.startsWith(`${hrefKey}/`);
 }

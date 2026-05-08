@@ -39,7 +39,7 @@ export function CouponControls({
       <p className="inline-flex items-center gap-2 font-medium text-white">
         Coupons
         <HelpHint label="Discount value" title="Discount value">
-          Percentage uses basis points internally. Switch to fixed amount to enter rupees.
+          For percentages, enter the percent members should see. For fixed amount, enter rupees.
         </HelpHint>
       </p>
       <div className="mt-3 grid gap-3">
@@ -70,14 +70,14 @@ export function CouponControls({
             ]}
           />
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
           <TextInput
             label="Discount value"
             value={couponForm.value}
             onChange={(event) =>
               setCouponForm((current) => ({ ...current, value: event.target.value }))
             }
-            placeholder={couponForm.type === "PERCENTAGE" ? "% off" : "Rs off"}
+            placeholder={couponForm.type === "PERCENTAGE" ? "10" : "500"}
             inputMode="numeric"
           />
           <TextInput
@@ -95,9 +95,9 @@ export function CouponControls({
           <button
             onClick={() => void createCoupon()}
             disabled={formBusy === "coupon"}
-            className="zook-focus rounded-full bg-lime-300 px-4 py-3 text-sm font-semibold text-black disabled:opacity-60"
+            className="zook-focus self-end rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
           >
-            {formBusy === "coupon" ? "Creating..." : "Create"}
+            {formBusy === "coupon" ? "Creating..." : "Create coupon"}
           </button>
         </div>
         {coupons.slice(0, 4).map((coupon) => (

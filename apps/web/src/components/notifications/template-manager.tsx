@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { webApiFetch } from "@/lib/api-client";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
+import { ConfirmDialog } from "../dashboard-primitives";
 import { GlassCard, Pill } from "../glass-card";
 import { messageTypes, type NotificationType, type TemplateRow } from "./shared";
 
@@ -17,6 +18,7 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
   const [editingId, setEditingId] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<TemplateRow | null>(null);
 
   const loadTemplates = useCallback(async () => {
     const payload = await webApiFetch<{ templates: TemplateRow[] }>(
@@ -66,15 +68,13 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
   }
 
   async function deleteTemplate(template: TemplateRow) {
-    if (!window.confirm(`Remove "${template.name}" from saved templates?`)) {
-      return;
-    }
     try {
       setBusy(true);
       setStatus("");
       await webApiFetch(`/api/orgs/${orgId}/notifications/templates/${template.id}`, {
         method: "DELETE",
       });
+      setTemplateToDelete(null);
       await loadTemplates();
       setStatus("Template removed.");
     } catch (cause) {
@@ -183,7 +183,7 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void deleteTemplate(template)}
+                    onClick={() => setTemplateToDelete(template)}
                     className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs text-red-100/80"
                   >
                     Remove
@@ -196,6 +196,15 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
             <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
               Saved templates will appear here.
             </p>
+          ) : null}
+          {templateToDelete ? (
+            <ConfirmDialog
+              title={`Remove "${templateToDelete.name}"?`}
+              description="This removes the saved template. Sent notifications are not changed."
+              confirmLabel="Remove"
+              onCancel={() => setTemplateToDelete(null)}
+              onConfirm={() => void deleteTemplate(templateToDelete)}
+            />
           ) : null}
         </div>
       </GlassCard>

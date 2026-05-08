@@ -7,7 +7,7 @@ import Reanimated, {
   useSharedValue,
   withDelay,
   withTiming,
-} from "react-native-reanimated";
+} from "@/lib/reanimated-lite";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BrandMark } from "@/components/primitives";

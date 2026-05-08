@@ -31,7 +31,7 @@ export default function PlatformMobile() {
           contentContainerStyle={styles.content}
         >
           <MobileHeader
-            eyebrow="Platform admin"
+            eyebrow="Platform operator"
             title="Open the web dashboard"
             subtitle={`${session?.user.name ?? "Platform team"} · this role is easier on desktop`}
             chip={<StatusChip status="Web dashboard" tone="amber" />}

@@ -1,9 +1,6 @@
-import { QrCode } from "lucide-react";
-import { formatBranchName, joinModeLabel } from "@zook/core";
-import { StatusPill } from "../../dashboard-primitives";
+import { ClipboardCheck, QrCode } from "lucide-react";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButtonLink } from "../../zook-button";
-import { formatEnumLabel } from "@/lib/format";
 import { BranchSwitcher } from "./branch-switcher";
 import { UserMenu } from "./user-menu";
 import type { DashboardCopy, DashboardData } from "./types";
@@ -18,6 +15,7 @@ export function DashboardHeader({
   runtimeLabel,
   canShowQr,
   canViewReports,
+  canOpenDesk,
   user,
   copy,
 }: {
@@ -30,6 +28,7 @@ export function DashboardHeader({
   runtimeLabel: string;
   canShowQr: boolean;
   canViewReports: boolean;
+  canOpenDesk: boolean;
   user: { name: string; email: string; preferredLocale?: string | null };
   copy: DashboardCopy;
 }) {
@@ -38,6 +37,9 @@ export function DashboardHeader({
     ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
   const showTrialBanner = trialDaysLeft !== null && trialDaysLeft >= 0 && trialDaysLeft < 7;
+  const qrHref = selectedBranch?.id
+    ? `/dashboard/attendance/qr-display?branchId=${encodeURIComponent(selectedBranch.id)}`
+    : "/dashboard/attendance/qr-display";
 
   return (
     <GlassCard variant="strong" className="relative z-[100] min-w-0 overflow-visible">
@@ -53,20 +55,16 @@ export function DashboardHeader({
             </ol>
           </nav>
           <div className="flex flex-wrap items-center gap-2">
-            {runtimeLabel ? (
-              <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
+            {runtimeLabel && !data.connected ? (
+              <Pill tone="amber">{runtimeLabel}</Pill>
             ) : null}
-            <StatusPill value={formatEnumLabel(activeOrg.status)} />
-            <StatusPill value={joinModeLabel(activeOrg.joinMode)} tone="blue" />
-            <StatusPill
-              value={formatBranchName(selectedBranch)}
-              tone={selectedBranch ? "lime" : "amber"}
-            />
           </div>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
             {pageTitle}
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">{pageDescription}</p>
+          {pageDescription ? (
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">{pageDescription}</p>
+          ) : null}
           {data.branchScope.branches.length > 1 ? (
             <div className="mt-4">
               <BranchSwitcher
@@ -80,18 +78,24 @@ export function DashboardHeader({
           {showTrialBanner ? (
             <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/12 px-4 py-3 text-sm font-medium text-amber-50">
               Trial ends in {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"}. Add billing
-              before launch to keep this workspace active.
+              before launch to keep this gym active.
             </div>
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="mr-1 hidden text-right md:block">
-            <p className="text-sm font-medium text-white">{user.name}</p>
-            <p className="text-xs text-white/42">{user.email}</p>
-          </div>
+          {canOpenDesk ? (
+            <ZookButtonLink
+              href="/desk"
+              tone="secondary"
+              leadingIcon={<ClipboardCheck size={18} />}
+            >
+              Reception Desk
+            </ZookButtonLink>
+          ) : null}
           {canShowQr ? (
             <ZookButtonLink
-              href="/dashboard/attendance/qr-display"
+              href={qrHref}
+              target="_blank"
               leadingIcon={<QrCode size={18} />}
             >
               {copy.dashboard.showQr}
@@ -102,11 +106,7 @@ export function DashboardHeader({
               {copy.dashboard.reports}
             </ZookButtonLink>
           ) : null}
-          <UserMenu
-            user={user}
-            copy={copy}
-            showSwitchOrganization={data.orgs.length > 1}
-          />
+          <UserMenu user={user} copy={copy} showSwitchOrganization={data.orgs.length > 1} />
         </div>
       </div>
     </GlassCard>

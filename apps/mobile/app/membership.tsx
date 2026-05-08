@@ -8,7 +8,7 @@ import {
   BottomSheetScrollView,
   BottomSheetView,
   type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+} from "@/components/expo-safe-bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppState,
@@ -40,7 +40,14 @@ import { useAppFocusInvalidation } from "@/lib/app-focus";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { memberApi, paymentsApi } from "@/lib/domain-api";
 import { formatDateTime, formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
-import { useGymProfile, useMyMemberships, type PublicPlanSummary } from "@/lib/query-hooks";
+import {
+  useGeneratePaymentDocument,
+  useGymProfile,
+  useMyInvoices,
+  useMyMemberships,
+  type InvoiceRecord,
+  type PublicPlanSummary,
+} from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -97,6 +104,7 @@ type AutopayResult = {
 
 type PaymentRecord = {
   id: string;
+  orgId?: string | null;
   purpose?: string | null;
   amountPaise?: number | null;
   status?: string | null;
@@ -105,6 +113,8 @@ type PaymentRecord = {
   recordedAt?: string | null;
   createdAt?: string | null;
 };
+
+type PaymentDocumentKind = "receipt" | "invoice";
 
 function toneForStatus(status?: string | null) {
   if (status === "ACTIVE") return "lime" as const;
@@ -176,12 +186,15 @@ export default function MembershipScreen() {
   const { activeOrgId, session, token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
   const membershipsQuery = useMyMemberships();
+  const invoicesQuery = useMyInvoices();
+  const paymentDocument = useGeneratePaymentDocument();
   const activeOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization ??
     null;
   const memberships = (membershipsQuery.data?.subscriptions ?? []) as MembershipRecord[];
   const payments = ((membershipsQuery.data?.payments ?? []) as PaymentRecord[]).slice(0, 5);
+  const invoices = ((invoicesQuery.data?.invoices ?? []) as InvoiceRecord[]).slice(0, 5);
   const sortedSubscriptions = [...memberships].sort((left, right) => {
     if (left.id === routeParams.subscriptionId) return -1;
     if (right.id === routeParams.subscriptionId) return 1;
@@ -213,6 +226,7 @@ export default function MembershipScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [waitingCheckoutSessionId, setWaitingCheckoutSessionId] = useState<string | null>(null);
   const [checkingCheckoutStatus, setCheckingCheckoutStatus] = useState(false);
+  const [documentBusyKey, setDocumentBusyKey] = useState<string | null>(null);
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   useAppFocusInvalidation([["me", "memberships"], ["me", "membership"], ["me", "home"]]);
@@ -436,6 +450,31 @@ export default function MembershipScreen() {
       showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     } finally {
       setMembershipActionBusy(false);
+    }
+  }
+
+  async function createPaymentDocument(payment: PaymentRecord, kind: PaymentDocumentKind) {
+    if (!payment.id) return;
+    const busyKey = `${kind}:${payment.id}`;
+    setDocumentBusyKey(busyKey);
+    try {
+      await paymentDocument.mutateAsync({ paymentId: payment.id, kind });
+      await Promise.all([membershipsQuery.refetch(), invoicesQuery.refetch()]);
+      showToast({
+        tone: "success",
+        haptic: "success",
+        message: kind === "receipt" ? "Receipt generated." : "Invoice generated.",
+      });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      showToast({
+        title: kind === "receipt" ? "Receipt not ready" : "Invoice not ready",
+        message: getApiErrorMessage(error),
+        tone: "danger",
+        haptic: "error",
+      });
+    } finally {
+      setDocumentBusyKey(null);
     }
   }
 
@@ -706,30 +745,87 @@ export default function MembershipScreen() {
           <SectionHeader title="Payments" />
           {payments.length ? (
             <View style={styles.stack}>
-              {payments.map((payment) => (
-                <GlassCard key={payment.id} variant="compact" contentStyle={styles.paymentContent}>
-                  <View style={styles.paymentIcon}>
-                    <IconBubble icon="receipt-outline" tone="lime" size={34} />
-                  </View>
-                  <View style={styles.paymentCopy}>
-                    <View style={styles.paymentHeader}>
-                      <Text numberOfLines={1} style={styles.paymentTitle}>
-                        {titleCaseFromCode(payment.purpose ?? "PAYMENT")}
-                      </Text>
-                      <Text style={styles.paymentAmount}>{formatInr(payment.amountPaise)}</Text>
+              {payments.map((payment) => {
+                const canGenerate =
+                  payment.status === "SUCCEEDED" || payment.status === "PARTIALLY_REFUNDED";
+                const receiptBusy = documentBusyKey === `receipt:${payment.id}`;
+                const invoiceBusy = documentBusyKey === `invoice:${payment.id}`;
+                return (
+                  <GlassCard
+                    key={payment.id}
+                    variant="compact"
+                    contentStyle={styles.paymentContent}
+                  >
+                    <View style={styles.paymentIcon}>
+                      <IconBubble icon="receipt-outline" tone="lime" size={34} />
                     </View>
-                    <Text numberOfLines={1} style={styles.paymentBody}>
-                      {titleCaseFromCode(payment.mode ?? "ONLINE")} ·{" "}
-                      {formatDateTime(payment.recordedAt ?? payment.createdAt)}
-                    </Text>
-                    <Pill
-                      tone={payment.status === "SUCCEEDED" ? "lime" : toneForStatus(payment.status)}
-                    >
-                      {titleCaseFromCode(payment.status ?? "CREATED")}
-                    </Pill>
-                  </View>
-                </GlassCard>
-              ))}
+                    <View style={styles.paymentCopy}>
+                      <View style={styles.paymentHeader}>
+                        <Text numberOfLines={1} style={styles.paymentTitle}>
+                          {titleCaseFromCode(payment.purpose ?? "PAYMENT")}
+                        </Text>
+                        <Text style={styles.paymentAmount}>{formatInr(payment.amountPaise)}</Text>
+                      </View>
+                      <Text numberOfLines={1} style={styles.paymentBody}>
+                        {titleCaseFromCode(payment.mode ?? "ONLINE")} ·{" "}
+                        {formatDateTime(payment.recordedAt ?? payment.createdAt)}
+                      </Text>
+                      <View style={styles.paymentMetaRow}>
+                        <Pill
+                          tone={
+                            payment.status === "SUCCEEDED" ? "lime" : toneForStatus(payment.status)
+                          }
+                        >
+                          {titleCaseFromCode(payment.status ?? "CREATED")}
+                        </Pill>
+                        {payment.receiptNumber ? (
+                          <Text numberOfLines={1} style={styles.documentHint}>
+                            Receipt {payment.receiptNumber}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View style={styles.documentActions}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Generate receipt"
+                          disabled={!canGenerate || receiptBusy || invoiceBusy}
+                          onPress={() => void createPaymentDocument(payment, "receipt")}
+                          style={({ pressed }) => [
+                            styles.documentButton,
+                            !canGenerate ? styles.documentButtonDisabled : null,
+                            pressed && canGenerate ? styles.documentButtonPressed : null,
+                          ]}
+                        >
+                          {receiptBusy ? (
+                            <ActivityIndicator size="small" color={colors.lime} />
+                          ) : (
+                            <Ionicons name="document-text-outline" size={14} color={colors.lime} />
+                          )}
+                          <Text style={styles.documentButtonText}>Receipt</Text>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Generate invoice"
+                          disabled={!canGenerate || invoiceBusy || receiptBusy}
+                          onPress={() => void createPaymentDocument(payment, "invoice")}
+                          style={({ pressed }) => [
+                            styles.documentButton,
+                            !canGenerate ? styles.documentButtonDisabled : null,
+                            pressed && canGenerate ? styles.documentButtonPressed : null,
+                          ]}
+                        >
+                          {invoiceBusy ? (
+                            <ActivityIndicator size="small" color={colors.lime} />
+                          ) : (
+                            <Ionicons name="newspaper-outline" size={14} color={colors.lime} />
+                          )}
+                          <Text style={styles.documentButtonText}>Invoice</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </GlassCard>
+                );
+              })}
             </View>
           ) : (
             <GlassCard variant="compact" contentStyle={styles.emptyPaymentContent}>
@@ -740,6 +836,34 @@ export default function MembershipScreen() {
               </View>
             </GlassCard>
           )}
+          {invoices.length ? (
+            <>
+              <SectionHeader title="Invoices and receipts" />
+              <View style={styles.stack}>
+                {invoices.map((invoice) => (
+                  <GlassCard
+                    key={invoice.id}
+                    variant="compact"
+                    contentStyle={styles.invoiceContent}
+                  >
+                    <IconBubble icon="newspaper-outline" tone="blue" size={34} />
+                    <View style={styles.invoiceCopy}>
+                      <Text numberOfLines={1} style={styles.paymentTitle}>
+                        {invoice.invoiceNumber ?? invoice.invoiceNo ?? "Invoice"}
+                      </Text>
+                      <Text numberOfLines={1} style={styles.paymentBody}>
+                        {formatDateTime(invoice.issueDate ?? invoice.issuedAt)} ·{" "}
+                        {titleCaseFromCode(invoice.invoiceStatus ?? invoice.status ?? "ISSUED")}
+                      </Text>
+                    </View>
+                    <Text style={styles.paymentAmount}>
+                      {formatInr(invoice.totalPaise ?? invoice.amountPaise)}
+                    </Text>
+                  </GlassCard>
+                ))}
+              </View>
+            </>
+          ) : null}
         </ScrollView>
         <BottomNav />
         <RenewalSheet
@@ -1166,6 +1290,58 @@ const styles = StyleSheet.create({
   paymentBody: {
     color: colors.muted,
     ...typography.small,
+  },
+  paymentMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  documentHint: {
+    flexShrink: 1,
+    color: colors.muted,
+    ...typography.small,
+  },
+  documentActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    paddingTop: 2,
+  },
+  documentButton: {
+    minHeight: 34,
+    minWidth: 96,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.08)",
+    paddingHorizontal: 12,
+  },
+  documentButtonPressed: {
+    backgroundColor: "rgba(185,244,85,0.16)",
+  },
+  documentButtonDisabled: {
+    opacity: 0.45,
+  },
+  documentButtonText: {
+    color: colors.text,
+    ...typography.small,
+    fontWeight: "700",
+  },
+  invoiceContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  invoiceCopy: {
+    flex: 1,
+    gap: 4,
   },
   sheetBackground: {
     borderWidth: 1,

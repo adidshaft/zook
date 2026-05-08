@@ -1,6 +1,6 @@
 import QRCode from "react-native-qrcode-svg";
 import { View } from "react-native";
-import Reanimated from "react-native-reanimated";
+import Reanimated from "@/lib/reanimated-lite";
 import { useBreathingScale } from "@/lib/motion";
 import { colors, spacing } from "@/lib/theme";
 

@@ -6,7 +6,7 @@ import {
   BottomSheetModal,
   BottomSheetView,
   type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+} from "@/components/expo-safe-bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppState,
@@ -388,6 +388,18 @@ export default function GymProfileScreen() {
                 value={gym.address ?? `${gym.city}, ${gym.state}`}
                 tone="blue"
               />
+              {gym.equipment?.length ? (
+                <View style={styles.inlineChipBlock}>
+                  <Text style={styles.inlineChipTitle}>Equipment</Text>
+                  <View style={styles.tagMetaBlock}>
+                    {gym.equipment.slice(0, 12).map((equipment) => (
+                      <Text key={equipment} style={styles.tagMeta}>
+                        {equipment}
+                      </Text>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
             </GlassCard>
 
             {gallery.length ? (
@@ -903,6 +915,13 @@ const styles = StyleSheet.create({
   },
   profileDetailsCard: {
     gap: 10,
+  },
+  inlineChipBlock: {
+    gap: 8,
+  },
+  inlineChipTitle: {
+    color: colors.text,
+    ...typography.caption,
   },
   firstFoldEndCard: {
     marginBottom: spacing.xxxl,

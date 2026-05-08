@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { webApiFetch } from "@/lib/api-client";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
@@ -14,6 +15,8 @@ export function NotificationHistoryPanel({
   orgId: string;
   initialNotifications: NotificationRow[];
 }) {
+  const searchParams = useSearchParams();
+  const statusFilter = searchParams.get("status");
   const [notifications, setNotifications] = useState<NotificationRow[]>(initialNotifications);
   const [selectedNotification, setSelectedNotification] = useState<NotificationRow | null>(null);
   const [recipients, setRecipients] = useState<NotificationRecipientRow[]>([]);
@@ -80,6 +83,14 @@ export function NotificationHistoryPanel({
     if (!stats?.delivered) return 0;
     return Math.round((stats.read / stats.delivered) * 100);
   }
+  const visibleNotifications =
+    statusFilter === "attention"
+      ? notifications.filter((notification) =>
+          ["FAILED", "SCHEDULED"].includes(notification.status),
+        )
+      : statusFilter
+        ? notifications.filter((notification) => notification.status === statusFilter)
+        : notifications;
 
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
@@ -91,15 +102,22 @@ export function NotificationHistoryPanel({
               Recent member messages, audience, and delivery state.
             </p>
           </div>
-          <Pill tone="blue">{notifications.length} messages</Pill>
+          <Pill tone="blue">{visibleNotifications.length} messages</Pill>
         </div>
+        {statusFilter ? (
+          <p className="mt-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/52">
+            Showing{" "}
+            {statusFilter === "attention" ? "scheduled and failed" : formatEnumLabel(statusFilter)}{" "}
+            messages.
+          </p>
+        ) : null}
         {status ? (
           <p className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
             {status}
           </p>
         ) : null}
         <div className="mt-5 grid gap-3">
-          {notifications.map((notification) => (
+          {visibleNotifications.map((notification) => (
             <button
               key={notification.id}
               type="button"
@@ -142,9 +160,9 @@ export function NotificationHistoryPanel({
               </div>
             </button>
           ))}
-          {!notifications.length ? (
+          {!visibleNotifications.length ? (
             <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
-              Messages you send will appear here.
+              No messages match this view.
             </p>
           ) : null}
         </div>

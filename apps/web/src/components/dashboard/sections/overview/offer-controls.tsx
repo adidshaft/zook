@@ -41,7 +41,7 @@ export function OfferControls({
       <p className="inline-flex items-center gap-2 font-medium text-white">
         Public offers
         <HelpHint label="Discount value" title="Discount value">
-          Percentage uses basis points internally. Switch to fixed amount to enter rupees.
+          For percentages, enter the percent members should see. For fixed amount, enter rupees.
         </HelpHint>
       </p>
       <div className="mt-3 grid gap-3">
@@ -77,7 +77,7 @@ export function OfferControls({
                 discountValue: event.target.value,
               }))
             }
-            placeholder={offerForm.discountType === "PERCENTAGE" ? "% off" : "Rs off"}
+            placeholder={offerForm.discountType === "PERCENTAGE" ? "15" : "750"}
             inputMode="numeric"
           />
         </div>

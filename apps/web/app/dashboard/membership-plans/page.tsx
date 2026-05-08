@@ -1,9 +1,11 @@
-import { renderDashboardRoute } from "../dashboard-route";
+import { redirect } from "next/navigation";
 
-export default function MembershipPlansPage({
+export default async function MembershipPlansPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["plans"], searchParams });
+  const params = await searchParams;
+  const query = params.branchId ? `?branchId=${encodeURIComponent(params.branchId)}` : "";
+  redirect(`/dashboard/plans${query}`);
 }

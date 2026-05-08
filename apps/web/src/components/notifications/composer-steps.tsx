@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
+import { ConfirmDialog } from "../dashboard-primitives";
 import { RadioCardGroup, SearchableSelect } from "../ui";
 import { Pill } from "../glass-card";
 import {
@@ -87,6 +89,9 @@ export function AudienceStep({
     label: memberLabel(member),
     description: member.profile?.phone ?? undefined,
   }));
+  const selectedMembers = selectedUserIds
+    .map((userId) => members.find((member) => member.userId === userId))
+    .filter((member): member is MemberRow => Boolean(member));
 
   return (
     <div className="grid gap-3">
@@ -133,16 +138,44 @@ export function AudienceStep({
         />
       ) : null}
       {audience === "selected_members" ? (
-        <SearchableSelect
-          label="Choose members"
-          placeholder="Choose members"
-          searchPlaceholder="Search members"
-          emptyLabel="No members match"
-          multiple
-          values={selectedUserIds}
-          options={memberOptions}
-          onValuesChange={onSelectedUsersChange}
-        />
+        <div className="grid gap-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-white/70">Selected recipients</p>
+            <Pill tone={selectedUserIds.length ? "lime" : "neutral"}>
+              {selectedUserIds.length} selected
+            </Pill>
+          </div>
+          <SearchableSelect
+            label="Choose members"
+            placeholder="Choose members"
+            searchPlaceholder="Search by member name or phone"
+            emptyLabel="No members match"
+            multiple
+            values={selectedUserIds}
+            options={memberOptions}
+            onValuesChange={onSelectedUsersChange}
+          />
+          {selectedMembers.length ? (
+            <div className="flex flex-wrap gap-2">
+              {selectedMembers.map((member) => (
+                <button
+                  key={member.userId}
+                  type="button"
+                  onClick={() =>
+                    onSelectedUsersChange(selectedUserIds.filter((id) => id !== member.userId))
+                  }
+                  className="zook-focus rounded-full border border-lime-300/25 bg-lime-300/8 px-3 py-2 text-xs text-lime-100"
+                >
+                  {memberLabel(member)} · Remove
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <p className="text-xs text-white/42">
+            Large gyms currently load the first 100 members here; use branch or plan audiences for
+            broad sends.
+          </p>
+        </div>
       ) : null}
       {audience === "expiring_soon" ? (
         <label className="grid gap-2 text-sm text-white/55">
@@ -202,6 +235,7 @@ export function MessageDraftStep({
   onTitleChange: (title: string) => void;
 }) {
   const hasDraft = title.trim().length > 0 || body.trim().length > 0;
+  const [pendingTemplate, setPendingTemplate] = useState<TemplateRow | null>(null);
   const scheduleError =
     scheduleAt && new Date(scheduleAt).getTime() <= Date.now()
       ? "Schedule must be in the future. Leave blank to send now."
@@ -215,10 +249,8 @@ export function MessageDraftStep({
             key={template.id}
             type="button"
             onClick={() => {
-              if (
-                hasDraft &&
-                !window.confirm("Apply template? This replaces your current draft.")
-              ) {
+              if (hasDraft) {
+                setPendingTemplate(template);
                 return;
               }
               onApplyTemplate(template);
@@ -229,6 +261,18 @@ export function MessageDraftStep({
           </button>
         ))}
       </div>
+      {pendingTemplate ? (
+        <ConfirmDialog
+          title="Apply saved template?"
+          description="This replaces the current title and message draft."
+          confirmLabel="Apply template"
+          onCancel={() => setPendingTemplate(null)}
+          onConfirm={() => {
+            onApplyTemplate(pendingTemplate);
+            setPendingTemplate(null);
+          }}
+        />
+      ) : null}
       <input
         value={title}
         onChange={(event) => onTitleChange(event.target.value)}

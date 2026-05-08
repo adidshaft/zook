@@ -9,10 +9,7 @@ type NotificationRouteInput = Record<string, unknown> | null | undefined;
 const trustedWebHosts = new Set([
   "app.zook.app",
   "zook.app",
-  "app.zookfit.in",
-  "dashboard.zookfit.in",
-  "zookfit.in",
-  "www.zookfit.in",
+  "staging.zook.app",
   "localhost",
   "127.0.0.1",
 ]);
@@ -64,7 +61,7 @@ function parseInternalUrl(url: string): ParsedDeepLink | null {
     return null;
   }
   if (directPath.startsWith("/")) {
-    const parsed = new URL(directPath, "https://app.zookfit.in");
+    const parsed = new URL(directPath, "https://zook.app");
     const path = normalizePath(parsed.pathname);
     const params = searchParamsToRecord(parsed.searchParams);
     return { path, params, href: buildHref(path, params) };

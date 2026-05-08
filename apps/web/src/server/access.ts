@@ -55,7 +55,7 @@ export function requirePlatformAdmin(ctx: RequestContext) {
     throw unauthorizedError();
   }
   if (!ctx.isPlatformAdmin) {
-    throw forbiddenError("Platform admin required");
+    throw forbiddenError("Platform operator required");
   }
   return ctx.userId;
 }

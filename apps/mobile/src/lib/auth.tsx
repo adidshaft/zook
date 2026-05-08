@@ -1,10 +1,8 @@
 import {
   ApiError,
-  permissionsForRoles,
-  type AuthSessionSummary,
-  type Permission,
-  type Role,
-} from "@zook/core";
+} from "@zook/core/api";
+import { isOrgRole } from "@zook/core/permissions";
+import type { AuthSessionSummary, Permission, Role } from "@zook/core/types";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import {
@@ -88,17 +86,11 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function sessionDefaultRole(session?: AuthSessionSummary): Role | undefined {
-  if (session?.user.isPlatformAdmin) return "PLATFORM_ADMIN";
-  const roles = new Set(
-    session?.activeOrganization?.roles ?? session?.organizations[0]?.roles ?? [],
+  return defaultRoleForOrg(
+    (session?.activeOrganization?.roles ?? session?.organizations[0]?.roles ?? []).filter(
+      isOrgRole,
+    ),
   );
-  if (roles.has("MEMBER")) return "MEMBER";
-  if (roles.has("TRAINER")) return "TRAINER";
-  if (roles.has("RECEPTIONIST")) return "RECEPTIONIST";
-  if (roles.has("OWNER")) return "OWNER";
-  if (roles.has("ADMIN")) return "ADMIN";
-  if (roles.has("PLATFORM_ADMIN")) return "PLATFORM_ADMIN";
-  return undefined;
 }
 
 function defaultRoleForOrg(roles: Role[]): Role | undefined {
@@ -121,9 +113,6 @@ async function invalidateAllQueries() {
 }
 
 function sessionDefaultRoute(role?: Role) {
-  if (role === "PLATFORM_ADMIN") {
-    return "/platform";
-  }
   if (role === "TRAINER") {
     return "/trainer";
   }
@@ -134,6 +123,16 @@ function sessionDefaultRoute(role?: Role) {
     return "/owner";
   }
   return "/";
+}
+
+function defaultRouteForSession(session?: AuthSessionSummary, role?: Role) {
+  if (role) {
+    return sessionDefaultRoute(role);
+  }
+  if (session?.user.isPlatformAdmin && !session.organizations.length) {
+    return "/platform";
+  }
+  return sessionDefaultRoute(sessionDefaultRole(session));
 }
 
 function fallbackSessionExpiresAt() {
@@ -211,14 +210,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await setStoredValue(ACTIVE_ORG_STORAGE_KEY, resolvedOrgId);
       }
       const availableRoles = new Set(
-        currentSession.activeOrganization?.roles ??
+        (
+          currentSession.activeOrganization?.roles ??
           currentSession.organizations.find((organization) => organization.orgId === resolvedOrgId)
             ?.roles ??
           currentSession.organizations[0]?.roles ??
-          [],
+          []
+        ).filter(isOrgRole),
       );
       const resolvedRole =
-        preferredRole && availableRoles.has(preferredRole)
+        preferredRole && isOrgRole(preferredRole) && availableRoles.has(preferredRole)
           ? preferredRole
           : sessionDefaultRole(currentSession);
       if (resolvedRole) {
@@ -505,7 +506,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const currentRole = activeRoleRef.current;
       const correctedRole =
-        currentRole && targetOrg.roles.includes(currentRole)
+        currentRole && isOrgRole(currentRole) && targetOrg.roles.includes(currentRole)
           ? currentRole
           : defaultRoleForOrg(targetOrg.roles);
       await Promise.all([
@@ -538,7 +539,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!tokenValue) {
         return;
       }
-      if (!activeOrg?.roles.includes(role)) {
+      if (!isOrgRole(role) || !activeOrg?.roles.includes(role)) {
         throw new Error("Role not available in active org");
       }
       await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, role);
@@ -578,7 +579,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       activeOrgId,
       activeRole,
-      defaultRoute: sessionDefaultRoute(activeRole ?? sessionDefaultRole(session)),
+      defaultRoute: defaultRouteForSession(session, activeRole),
       offlineMode,
       offlineBanner,
       proactiveLogin,
@@ -645,21 +646,9 @@ export function useActivePermissions(): Set<Permission> {
       session?.organizations[0]
     );
   }, [activeOrgId, session?.activeOrganization, session?.organizations]);
-  const roles = activeOrg?.roles ?? [];
-  const permissionOverrides =
-    activeOrg && "permissionOverrides" in activeOrg
-      ? ((activeOrg as { permissionOverrides?: Permission[] }).permissionOverrides ?? [])
-      : [];
-
   return useMemo(
-    () =>
-      new Set(
-        permissionsForRoles(
-          roles,
-          permissionOverrides,
-        ),
-      ),
-    [permissionOverrides, roles],
+    () => new Set(activeOrg?.permissions ?? []),
+    [activeOrg?.permissions],
   );
 }
 

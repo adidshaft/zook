@@ -1,21 +1,42 @@
 import { publicUserEmail } from "@zook/core";
 import { Prisma, prisma } from "@zook/db";
+import { privateUserHandle } from "./private-user-handle";
 import { cachedJson } from "./server-cache";
 
-function serializeUserForReadModel<T extends { email: string } | null | undefined>(user: T): T {
+function serializeUserForReadModel<T extends { id: string; email: string } | null | undefined>(
+  user: T,
+) {
   if (!user) {
     return user;
   }
   return {
     ...user,
     email: publicUserEmail(user.email) ?? "",
-  } as T;
+    privateHandle: privateUserHandle(user.id),
+  };
+}
+
+function toDateKey(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  return year && month && day ? `${year}-${month}-${day}` : date.toISOString().slice(0, 10);
 }
 
 function startOfToday() {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return date;
+  const [year, month, day] = toDateKey(new Date()).split("-").map(Number);
+  if (!year || !month || !day) {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+  return new Date(Date.UTC(year, month - 1, day, -5, -30, 0, 0));
 }
 
 function addDays(date: Date, days: number) {
@@ -37,8 +58,12 @@ function daysUntil(date?: Date | null) {
   return Math.max(0, Math.ceil((date.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
 }
 
-function toDateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
+function entryCodeForAttendanceId(id: string) {
+  let total = 0;
+  for (let index = 0; index < id.length; index += 1) {
+    total = (total * 31 + id.charCodeAt(index)) % 1000000;
+  }
+  return total.toString().padStart(6, "0");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -72,6 +97,9 @@ async function getBranchScope(orgId: string, filters: DashboardBranchFilter = {}
     ? (branches.find((branch) => branch.id === filters.branchId) ?? null)
     : defaultBranch;
 
+  const inventoryScope =
+    selectedBranch && !selectedBranch.isDefault ? ("BRANCH" as const) : ("ORG_WIDE" as const);
+
   return {
     branches,
     defaultBranch,
@@ -81,7 +109,7 @@ async function getBranchScope(orgId: string, filters: DashboardBranchFilter = {}
         ? "default_branch"
         : "selected_branch"
       : "org_wide_missing_default",
-    inventoryScope: "ORG_WIDE" as const,
+    inventoryScope,
   };
 }
 
@@ -230,6 +258,7 @@ async function enrichAttendanceRecords(
       : null;
     return {
       ...record,
+      entryCode: entryCodeForAttendanceId(record.id),
       user: serializeUserForReadModel(usersById.get(record.userId) ?? null),
       profile: profilesByUserId.get(record.userId) ?? null,
       subscription,
@@ -260,6 +289,10 @@ async function getOrganizationDashboardDataUncached(
   monthStart.setHours(0, 0, 0, 0);
   const branchScope = await getBranchScope(orgId, filters);
   const branchWhere = branchScope.selectedBranch ? { branchId: branchScope.selectedBranch.id } : {};
+  const productWhere: Prisma.ProductWhereInput =
+    branchScope.inventoryScope === "BRANCH" && branchScope.selectedBranch
+      ? { OR: [{ branchId: branchScope.selectedBranch.id }, { branchId: null }] }
+      : {};
 
   const [
     organization,
@@ -307,7 +340,7 @@ async function getOrganizationDashboardDataUncached(
       _sum: { amountPaise: true },
     }),
     prisma.product.findMany({
-      where: { orgId, active: true, ...branchWhere },
+      where: { orgId, active: true, ...productWhere },
       orderBy: { stock: "asc" },
       take: 20,
     }),
@@ -652,9 +685,22 @@ export async function getOrganizationRecentPayments(
       },
     },
   });
+  const refunds = payments.length
+    ? await prisma.paymentRefund.findMany({
+        where: { orgId, paymentId: { in: payments.map((payment) => payment.id) } },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
   const usersById = new Map(users.map((user) => [user.id, user]));
   return payments.map((payment) => ({
     ...payment,
+    refunds: refunds.filter((refund) => refund.paymentId === payment.id),
+    refundedAmountPaise: refunds
+      .filter(
+        (refund) =>
+          refund.paymentId === payment.id && !["FAILED", "CANCELLED"].includes(refund.status),
+      )
+      .reduce((total, refund) => total + refund.amountPaise, 0),
     user: payment.userId ? serializeUserForReadModel(usersById.get(payment.userId) ?? null) : null,
   }));
 }

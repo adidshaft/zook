@@ -803,6 +803,7 @@ export default function Shop() {
                   ? `Only ${product.stock} left`
                   : `${product.stock} in stock`
                 : "Out of stock";
+            const productImageUrl = product.imageUrl ?? product.imageUrls?.[0] ?? null;
             return (
               <ProductCard
                 key={product.id}
@@ -810,7 +811,7 @@ export default function Shop() {
                 price={formatInr(product.pricePaise)}
                 stock={fulfillmentLabel}
                 tone={product.stock <= 0 ? "red" : lowStock ? "amber" : "lime"}
-                imageUrl={(product as { imageUrl?: string | null }).imageUrl}
+                imageUrl={productImageUrl}
                 quantity={cart[product.id] ?? 0}
                 icon={iconForCategory(product.category as Category)}
                 compact

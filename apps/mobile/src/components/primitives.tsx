@@ -27,12 +27,13 @@ import Reanimated, {
   useSharedValue,
   withRepeat,
   withTiming,
-} from "react-native-reanimated";
+} from "@/lib/reanimated-lite";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
+import { useBottomScrollPadding, useStickyActionOffset } from "@/lib/use-layout-padding";
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/query-hooks";
 import { isOfflineDemoMode } from "@/lib/runtime-mode";
 import { colors, layout, palettes, radii, shadows, spacing, typography } from "@/lib/theme";
@@ -322,9 +323,8 @@ export function ScreenShell({
   contentStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
 } & Omit<ScrollViewProps, "contentContainerStyle" | "style">) {
-  const contentPaddingBottom =
-    (bottomNav ? layout.bottomNavContentPadding : 24) +
-    (stickyAction ? layout.stickyActionHeight : 0);
+  const computedBottomPadding = useBottomScrollPadding({ hasStickyAction: stickyAction });
+  const contentPaddingBottom = bottomNav ? computedBottomPadding : stickyAction ? layout.stickyActionHeight + spacing.lg : spacing.xl;
   return (
     <ZookScreen ambient={ambient} style={style}>
       {title ? <Text style={styles.legacyTitle}>{title}</Text> : null}
@@ -1699,20 +1699,21 @@ export function SwipeActionRow({
 }
 
 export function StickyActionBar({
-  bottomOffset = layout.bottomNavHeight + spacing.md,
+  bottomOffset,
   children,
 }: {
   bottomOffset?: number;
   children: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
+  const computedBottomOffset = useStickyActionOffset();
   return (
     <BlurView
       intensity={54}
       tint="dark"
       style={StyleSheet.flatten([
         styles.stickyActionBar,
-        { bottom: bottomOffset, paddingBottom: Math.max(insets.bottom, 14) },
+        { bottom: bottomOffset ?? computedBottomOffset, paddingBottom: Math.max(insets.bottom, 14) },
       ])}
     >
       <View pointerEvents="none" style={styles.stickyActionFadeSoft} />

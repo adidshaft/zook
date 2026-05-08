@@ -100,7 +100,7 @@ export function useDashboardOperationalResources({
     PaymentRow
   >({
     path: withBranch(`/api/orgs/${orgId}/payments?limit=50`),
-    enabled: mode === "payments",
+    enabled: mode === "payments" || mode === "payment-refunds",
     itemKey: "payments",
   });
   const attendanceState = usePagedOperationalResource<
@@ -269,6 +269,7 @@ export function useDashboardOperationalResources({
     readyOrders,
     misconfiguredAiCount,
     overviewWorkflowCards,
+    branchScope,
   };
 }
 

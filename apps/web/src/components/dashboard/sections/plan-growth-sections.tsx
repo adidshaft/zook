@@ -64,8 +64,20 @@ const copy = {
     "Create member, staff, and trainer referral codes with clear monthly limits.",
   referralEmpty: "Referral performance appears after the first share.",
   policyDescription: "Set the reward, friend discount, and monthly cap.",
-  maxDiscount: "Max discount bps",
+  maxDiscount: "Maximum discount (%)",
 };
+
+function bpsToPercent(value: string) {
+  if (!value.trim()) return "";
+  const amount = Number(value);
+  return Number.isFinite(amount) ? String(amount / 100) : value;
+}
+
+function percentToBps(value: string) {
+  if (!value.trim()) return "";
+  const amount = Number(value);
+  return Number.isFinite(amount) ? String(Math.round(amount * 100)) : value;
+}
 
 function RouteFeedback({ error, status }: { error: string; status: string }) {
   if (error) {
@@ -219,25 +231,24 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                     <div className="flex flex-wrap justify-end gap-2">
                       <button
                         type="button"
-                        onClick={() => window.alert(`Referral tree for ${item.code.code}`)}
-                        className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
-                      >
-                        View tree
-                      </button>
-                      <button
-                        type="button"
                         disabled={props.formBusy === `referral:${item.code.id}`}
                         onClick={() => void props.updateReferral(item.code, "paused")}
                         className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65 disabled:opacity-50"
                       >
                         Pause code
                       </button>
-                      <Link
-                        href={`/dashboard/notifications?audience=single_member&userId=${encodeURIComponent(item.code.referrerUserId ?? "")}`}
-                        className="zook-focus rounded-full border border-lime-300/30 px-3 py-1 text-xs text-lime-100"
-                      >
-                        Notify
-                      </Link>
+                      {item.code.referrerUserId ? (
+                        <Link
+                          href={`/dashboard/notifications?audience=single_member&userId=${encodeURIComponent(item.code.referrerUserId)}`}
+                          className="zook-focus rounded-full border border-lime-300/30 px-3 py-1 text-xs text-lime-100"
+                        >
+                          Notify
+                        </Link>
+                      ) : (
+                        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/35">
+                          Member not linked
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))
@@ -251,11 +262,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
         </div>
       </Section>
 
-      <Section
-        eyebrow="Policy"
-        title="Referral policy"
-        description={copy.policyDescription}
-      >
+      <Section eyebrow="Policy" title="Referral policy" description={copy.policyDescription}>
         <div className="grid gap-4">
           {props.referralPolicyState.error ? (
             <ErrorNotice message={props.referralPolicyState.error} />
@@ -329,16 +336,20 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
             />
             <TextInput
               label={copy.maxDiscount}
-              value={props.policyForm.maxDiscountCapBps}
+              value={bpsToPercent(props.policyForm.maxDiscountCapBps)}
               inputMode="numeric"
               onChange={(event) =>
                 props.setPolicyForm((current) => ({
                   ...current,
-                  maxDiscountCapBps: event.target.value,
+                  maxDiscountCapBps: percentToBps(event.target.value),
                 }))
               }
             />
           </div>
+          <p className="text-xs leading-5 text-white/45">
+            For percentage discounts, enter the visible percent value. For fixed discounts, enter
+            rupees.
+          </p>
           <div className="flex flex-wrap items-center gap-3">
             <Toggle
               label="Referral program"

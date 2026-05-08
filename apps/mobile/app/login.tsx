@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as AppleAuthentication from "expo-apple-authentication";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
-import { ApiError } from "@zook/core";
+import { ApiError } from "@zook/core/api";
 import {
   ActivityIndicator,
   Keyboard,
@@ -34,8 +34,8 @@ import { colors, spacing, typography } from "@/lib/theme";
 type LoginMethod = "email" | "phone";
 type BusyAction = "otp" | "apple" | "google" | null;
 
-const TERMS_URL = "https://zookfit.in/terms";
-const PRIVACY_URL = "https://zookfit.in/privacy";
+const TERMS_URL = "https://zook.app/terms";
+const PRIVACY_URL = "https://zook.app/privacy";
 const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const OTP_RATE_LIMIT_FALLBACK_SECONDS = 60;
 
@@ -124,7 +124,7 @@ export default function Login() {
   const otpInputRef = useRef<OtpInputHandle>(null);
   const phoneInputRef = useRef<PhoneInput>(null);
   const verifyingRef = useRef(false);
-  const [method, setMethod] = useState<LoginMethod>("email");
+  const [method, setMethod] = useState<LoginMethod>("phone");
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -403,15 +403,17 @@ export default function Login() {
               {stage === "identifier" ? t("auth.signIn") : t("auth.verifyCode")}
             </Text>
             <Text style={styles.formSubtitle}>
-              {stage === "identifier" ? "Sign in or create your account." : t("auth.otpSubtitle")}
+              {stage === "identifier"
+                ? "Use your mobile number. Email can be added later."
+                : t("auth.otpSubtitle")}
             </Text>
           </View>
 
           {stage === "identifier" ? (
             <>
               <View style={styles.tabGroup} accessibilityRole="tablist">
-                <MethodTab active={method === "email"} label="Email" onPress={() => selectMethod("email")} />
                 <MethodTab active={method === "phone"} label="Phone" onPress={() => selectMethod("phone")} />
+                <MethodTab active={method === "email"} label="Email" onPress={() => selectMethod("email")} />
               </View>
 
               {method === "email" ? (

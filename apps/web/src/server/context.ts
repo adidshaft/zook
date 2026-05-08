@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { permissionsForRoles, type RequestContext, type Role } from "@zook/core";
+import { isOrgRole, platformPermissions, type RequestContext } from "@zook/core";
 import { resolveSessionSummaryFromToken } from "./session";
 
 export const sessionCookieName = "zook_session";
@@ -38,14 +38,11 @@ export async function createRequestContext(
   const activeOrganization =
     session.organizations.find((organization) => organization.orgId === preferredOrgId) ??
     session.activeOrganization;
-  const roles = [
-    ...(activeOrganization?.roles ?? []),
-    ...(session.user.isPlatformAdmin ? (["PLATFORM_ADMIN"] as const) : [])
-  ] as Role[];
+  const roles = (activeOrganization?.roles ?? []).filter(isOrgRole);
   const permissions = Array.from(
     new Set([
       ...(activeOrganization?.permissions ?? []),
-      ...permissionsForRoles(session.user.isPlatformAdmin ? ["PLATFORM_ADMIN"] : [])
+      ...(session.user.isPlatformAdmin ? platformPermissions : [])
     ])
   );
 

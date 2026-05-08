@@ -78,7 +78,7 @@ describe("request access guards", () => {
   it("allows platform admins into platform routes", () => {
     const ctx: RequestContext = {
       userId: "platform_1",
-      roles: ["PLATFORM_ADMIN"],
+      roles: [],
       permissions: ["PLATFORM_MANAGE_ORGS"],
       isPlatformAdmin: true
     };
@@ -90,7 +90,7 @@ describe("request access guards", () => {
   it("does not let platform admins mutate tenant routes without tenant membership", () => {
     const ctx: RequestContext = {
       userId: "platform_1",
-      roles: ["PLATFORM_ADMIN"],
+      roles: [],
       permissions: ["PLATFORM_MANAGE_ORGS"],
       isPlatformAdmin: true
     };

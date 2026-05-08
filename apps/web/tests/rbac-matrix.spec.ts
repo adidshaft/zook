@@ -53,6 +53,7 @@ test("organization routes enforce role and permission matrix", async ({ page }) 
     where: { orgId: org.id, isDefault: true },
   });
   const ownerEmail = await createMatrixActor({ orgId: org.id, role: "OWNER" });
+  const adminEmail = await createMatrixActor({ orgId: org.id, role: "ADMIN" });
   const memberEmail = await createMatrixActor({ orgId: org.id, role: "MEMBER" });
   const receptionistEmail = await createMatrixActor({
     orgId: org.id,
@@ -64,12 +65,30 @@ test("organization routes enforce role and permission matrix", async ({ page }) 
 
   await loginWithSessionCookie(page, ownerEmail);
   await expect((await page.request.get(`/api/orgs/${org.id}/dashboard`)).status()).toBe(200);
-  await expect((await page.request.get(`/api/orgs/${org.id}/subscription-reminders`)).status()).toBe(
-    200,
-  );
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(
+    (await page.request.get(`/api/orgs/${org.id}/subscription-reminders`)).status(),
+  ).toBe(200);
+
+  await loginWithSessionCookie(page, adminEmail);
+  await expect((await page.request.get(`/api/orgs/${org.id}/dashboard`)).status()).toBe(200);
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.goto("/dashboard/billing");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(
+    (
+      await page.request.patch(`/api/orgs/${org.id}/permissions`, {
+        data: { role: "TRAINER", permission: "AI_GENERATE_PLAN", enabled: false },
+      })
+    ).status(),
+  ).toBe(403);
 
   await loginWithSessionCookie(page, memberEmail);
   await expect((await page.request.get(`/api/orgs/${org.id}/dashboard`)).status()).toBe(403);
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/gyms$/);
   await expect(
     (
       await page.request.post(`/api/orgs/${org.id}/products`, {
@@ -88,6 +107,9 @@ test("organization routes enforce role and permission matrix", async ({ page }) 
     200,
   );
   await expect((await page.request.get(`/api/orgs/${org.id}/payments/recent`)).status()).toBe(200);
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/desk(?:\?from=dashboard)?$/);
+  await expect(page.getByRole("heading", { name: "Today's queue" })).toBeVisible();
   await expect(
     (
       await page.request.patch(`/api/orgs/${org.id}/permissions`, {
@@ -99,6 +121,8 @@ test("organization routes enforce role and permission matrix", async ({ page }) 
   await loginWithSessionCookie(page, trainerEmail);
   await expect((await page.request.get(`/api/orgs/${org.id}/members`)).status()).toBe(200);
   await expect((await page.request.get(`/api/orgs/${org.id}/payments/recent`)).status()).toBe(403);
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/coach$/);
 
   await loginWithSessionCookie(page, platformEmail);
   await expect((await page.request.get("/api/platform/provider-status")).status()).toBe(200);

@@ -62,6 +62,11 @@ export default async function MyMembershipPage() {
 
         <GlassCard variant="strong" className="p-6 md:p-8">
           <Pill tone="lime">Member profile</Pill>
+          {session.user.privateHandle ? (
+            <Pill tone="blue" className="ml-2">
+              Private ID: {session.user.privateHandle}
+            </Pill>
+          ) : null}
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-5xl">
             My membership
           </h1>

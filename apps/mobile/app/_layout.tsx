@@ -15,8 +15,6 @@ import {
   Inter_900Black,
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 import { AuthProvider, setAuthQueryClient, useActivePermissions, useAuth } from "@/lib/auth";
 import { NetworkBanner, OfflineBanner } from "@/components/primitives";
@@ -27,7 +25,7 @@ import { I18nProvider, useI18n } from "@/lib/i18n";
 import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
 import { setApiAuthHandlers } from "@/lib/api";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
-import { checkRouteAccess, requiredRoleForPath, routeForRole } from "@/lib/route-guards";
+import { checkRouteAccess, requiredRolesForPath, routeForRole } from "@/lib/route-guards";
 import { initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout } from "@/lib/theme";
@@ -234,9 +232,16 @@ function LayoutContent() {
       return;
     }
 
-    if ((session?.organizations.length ?? 0) === 0) {
+    if ((session?.organizations.length ?? 0) === 0 && !session?.user.isPlatformAdmin) {
       if (onboardingFlag !== ONBOARDING_COMPLETED && pathname !== "/onboarding/role-question") {
         router.replace("/onboarding/role-question" as never);
+      }
+      return;
+    }
+
+    if ((session?.organizations.length ?? 0) === 0 && session?.user.isPlatformAdmin) {
+      if (!pathname.startsWith("/platform")) {
+        router.replace("/platform" as never);
       }
       return;
     }
@@ -277,19 +282,22 @@ function LayoutContent() {
       return;
     }
 
-    const required = requiredRoleForPath(pathname);
+    const requiredRoles = requiredRolesForPath(pathname);
     const hasRequiredRole =
-      required === "PLATFORM_ADMIN"
+      requiredRoles?.includes("PLATFORM_ADMIN")
         ? Boolean(session?.user.isPlatformAdmin || hasAnyRole("PLATFORM_ADMIN"))
-        : Boolean(required && hasAnyRole(required));
-    if (required && !hasRequiredRole) {
+        : Boolean(requiredRoles?.some((role) => hasAnyRole(role)));
+    if (requiredRoles && !hasRequiredRole) {
       router.replace(routeForRole(activeRole ?? "MEMBER") as never);
       return;
     }
 
-    if (required && !hasActiveRole(required)) {
-      void setActiveRole(required).then(() => {
-        showToast({ title: `Switched to ${required} view` });
+    const roleToActivate = requiredRoles?.find(
+      (role) => role !== "PLATFORM_ADMIN" && hasAnyRole(role),
+    );
+    if (roleToActivate && !hasActiveRole(roleToActivate)) {
+      void setActiveRole(roleToActivate).then(() => {
+        showToast({ title: `Switched to ${roleToActivate} view` });
       });
       return;
     }
@@ -351,12 +359,12 @@ function LayoutContent() {
         }}
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
-        <Stack.Screen name="plans" options={{ animation: "none" }} />
+        <Stack.Screen name="plans/index" options={{ animation: "none" }} />
         <Stack.Screen name="more" options={{ animation: "none" }} />
         <Stack.Screen name="scan" options={{ animation: "none" }} />
         <Stack.Screen name="tracking" options={{ animation: "none" }} />
         <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="notifications" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="membership" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="find-gyms" options={{ animation: "slide_from_right" }} />
@@ -366,13 +374,13 @@ function LayoutContent() {
           options={{ presentation: "modal", animation: "slide_from_bottom" }}
         />
         <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="owner" options={{ animation: "none" }} />
+        <Stack.Screen name="owner/index" options={{ animation: "none" }} />
         <Stack.Screen name="dashboard" options={{ animation: "fade" }} />
         <Stack.Screen name="platform" options={{ animation: "none" }} />
         <Stack.Screen name="reception" options={{ animation: "none" }} />
         <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
         <Stack.Screen name="login" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="trainer" options={{ animation: "none" }} />
+        <Stack.Screen name="trainer/index" options={{ animation: "none" }} />
         <Stack.Screen name="trainer/client/[id]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen
           name="trainer/client/[id]/ai-draft"
@@ -442,23 +450,21 @@ export default function Layout() {
 
   return (
     <SafeAreaProvider>
-      <GestureHandlerRootView style={styles.gestureRoot}>
-        <BottomSheetModalProvider>
-          <QueryClientProvider client={queryClient}>
-            <I18nProvider>
-              <AuthProvider>
-                <BranchSelectionProvider>
-                  <BottomNavVisibilityProvider>
-                    <PushNotificationsProvider>
-                      <LayoutContent />
-                    </PushNotificationsProvider>
-                  </BottomNavVisibilityProvider>
-                </BranchSelectionProvider>
-              </AuthProvider>
-            </I18nProvider>
-          </QueryClientProvider>
-        </BottomSheetModalProvider>
-      </GestureHandlerRootView>
+      <View style={styles.gestureRoot}>
+        <QueryClientProvider client={queryClient}>
+          <I18nProvider>
+            <AuthProvider>
+              <BranchSelectionProvider>
+                <BottomNavVisibilityProvider>
+                  <PushNotificationsProvider>
+                    <LayoutContent />
+                  </PushNotificationsProvider>
+                </BottomNavVisibilityProvider>
+              </BranchSelectionProvider>
+            </AuthProvider>
+          </I18nProvider>
+        </QueryClientProvider>
+      </View>
     </SafeAreaProvider>
   );
 }

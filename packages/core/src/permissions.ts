@@ -1,4 +1,4 @@
-import type { Permission, Role } from "./types";
+import { orgRoles, platformRole, type OrgRole, type Permission, type Role } from "./types";
 
 export const notificationPermissions = {
   createDraft: "NOTIFICATION_CREATE_DRAFT",
@@ -43,8 +43,19 @@ const ownerPermissions: Permission[] = [
   "PRIVACY_VIEW_AUDIT",
 ];
 
-export const defaultRolePermissions: Record<Role, Permission[]> = {
-  PLATFORM_ADMIN: ["PLATFORM_MANAGE_ORGS", "PLATFORM_VIEW_AI_USAGE", "PLATFORM_MANAGE_SETTINGS"],
+export const platformPermissions: Permission[] = [
+  "PLATFORM_MANAGE_ORGS",
+  "PLATFORM_VIEW_AI_USAGE",
+  "PLATFORM_MANAGE_SETTINGS",
+];
+
+const orgRoleSet = new Set<Role>(orgRoles);
+
+export function isOrgRole(role: Role | string): role is OrgRole {
+  return orgRoleSet.has(role as Role) && role !== platformRole;
+}
+
+export const defaultRolePermissions: Record<OrgRole, Permission[]> = {
   OWNER: ownerPermissions,
   ADMIN: ownerPermissions.filter(
     (permission) =>
@@ -79,7 +90,10 @@ export const defaultRolePermissions: Record<Role, Permission[]> = {
 
 export function permissionsForRoles(roles: Role[], overrides: Permission[] = []): Permission[] {
   return Array.from(
-    new Set([...roles.flatMap((role) => defaultRolePermissions[role] ?? []), ...overrides]),
+    new Set([
+      ...roles.flatMap((role) => (isOrgRole(role) ? defaultRolePermissions[role] : [])),
+      ...overrides,
+    ]),
   );
 }
 
@@ -102,5 +116,5 @@ export function requirePermission(
 }
 
 export function canAccessPlatform(roles: Role[], isPlatformAdmin = false): boolean {
-  return isPlatformAdmin || roles.includes("PLATFORM_ADMIN");
+  return isPlatformAdmin;
 }

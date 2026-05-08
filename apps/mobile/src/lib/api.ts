@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
-import { ApiError, parseApiResponse } from "@zook/core";
+import { ApiError, parseApiResponse } from "@zook/core/api";
 import { demoMobileApiFetch } from "./demo-api";
 import {
   getMobileApiMode,

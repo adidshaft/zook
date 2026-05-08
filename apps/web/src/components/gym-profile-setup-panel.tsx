@@ -10,11 +10,13 @@ import {
   StatusPill,
 } from "./dashboard-primitives";
 import { GlassCard, Pill } from "./glass-card";
+import { ImageAssetUpload } from "./image-asset-upload";
 import { webApiFetch } from "@/lib/api-client";
-import { formatDateTime, formatEnumLabel } from "@/lib/format";
+import { formatEnumLabel } from "@/lib/format";
 import {
   amenityOptions,
   ChipPicker,
+  equipmentOptions,
   facilityOptions,
   Field,
   gymTypes,
@@ -44,6 +46,7 @@ type OrgProfilePayload = {
     tagline?: string | null;
     gallery?: string[];
     facilities?: string[];
+    equipment?: string[];
     gymType?: string | null;
     openingHoursSummary?: string | null;
     appStoreUrl?: string | null;
@@ -86,6 +89,7 @@ type ProfileForm = {
   playStoreUrl: string;
   amenitiesText: string;
   facilitiesText: string;
+  equipmentText: string;
   galleryText: string;
 };
 
@@ -111,6 +115,7 @@ function formFromPayload(payload: OrgProfilePayload): ProfileForm {
     playStoreUrl: org.playStoreUrl ?? "",
     amenitiesText: listToText(org.amenities),
     facilitiesText: listToText(org.facilities),
+    equipmentText: listToText(org.equipment),
     galleryText: (org.gallery ?? []).join("\n"),
   };
 }
@@ -120,6 +125,17 @@ function appOrigin() {
     return "";
   }
   return window.location.origin;
+}
+
+function normalizeIndiaPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  const national = digits.startsWith("91") && digits.length > 10 ? digits.slice(2) : digits;
+  return national.slice(0, 10);
+}
+
+function formatIndiaPhone(value: string) {
+  const digits = normalizeIndiaPhone(value);
+  return digits ? `+91 ${digits}` : "+91 ";
 }
 
 export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
@@ -197,7 +213,8 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
           playStoreUrl: form.playStoreUrl,
           amenities: textToList(form.amenitiesText),
           facilities: textToList(form.facilitiesText),
-          gallery: textToList(form.galleryText),
+          equipment: textToList(form.equipmentText),
+          gallery: textToList(form.galleryText).slice(0, 15),
         },
       });
       setPayload(nextPayload);
@@ -227,8 +244,8 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
           <SectionHeader
             eyebrow="Web-only setup"
-            title="Gym profile and join links"
-            description="Owners set up the public gym profile here. The member app stays light: members can find the gym, scan the join QR, or open the public link."
+            title="Gym profile and membership links"
+            description="Owners set up the public gym profile here. Members can find the gym, open the profile link, or use the membership link when they are ready to buy a plan."
             badge={
               <div className="flex flex-wrap gap-2">
                 <Pill tone={form.visibility === "PUBLIC" ? "lime" : "amber"}>
@@ -253,7 +270,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72 hover:bg-white/8"
             >
               <Copy size={16} />
-              Copy join link
+              Copy membership link
             </button>
             <button
               type="button"
@@ -299,7 +316,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             <Field
               label="Contact phone"
               value={form.contactPhone}
-              onChange={(value) => update("contactPhone", value)}
+              onChange={(value) => update("contactPhone", formatIndiaPhone(value))}
             />
             <SelectField
               label="Gym type"
@@ -345,14 +362,20 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               value={form.amenitiesText}
               onChange={(value) => update("amenitiesText", value)}
             />
+            <ChipPicker
+              label="Equipment members can see"
+              options={equipmentOptions}
+              value={form.equipmentText}
+              onChange={(value) => update("equipmentText", value)}
+            />
           </div>
         </GlassCard>
 
         <GlassCard>
           <SectionHeader
             eyebrow="Join QR"
-            title="Download app and join"
-            description="Print this QR at reception, on posters, or on Instagram. It opens the gym public page, where members can join or open the app."
+            title="Gym profile QR"
+            description="Print this QR at reception, on posters, or on Instagram. It opens the public gym profile first; members can continue to membership purchase from there."
             badge={<Pill tone="lime">/{form.username}</Pill>}
           />
           <div className="mt-5 grid gap-4 md:grid-cols-[190px_1fr] xl:grid-cols-1">
@@ -366,12 +389,15 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             <ReadoutGrid
               columns={1}
               items={[
-                { label: "Public link", value: publicUrl, meta: "Shareable web profile" },
-                { label: "Join link", value: joinUrl, meta: "Payment and approval entry point" },
                 {
-                  label: "App deep link",
-                  value: payload.links.appDeepLink,
-                  meta: "Used once native apps are installed",
+                  label: "Gym profile link",
+                  value: publicUrl,
+                  meta: "Share this when people should see the gym first",
+                },
+                {
+                  label: "Membership link",
+                  value: joinUrl,
+                  meta: "Use this only when people should choose a plan",
                 },
               ]}
             />
@@ -389,7 +415,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               target="_blank"
               className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm text-white/70 hover:bg-white/8"
             >
-              Test join page
+              Test membership page
             </a>
           </div>
         </GlassCard>
@@ -449,31 +475,51 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             description="Add the logo, cover photo, and gallery images members will see."
           />
           <div className="mt-5 grid gap-4">
-            <Field
-              label="Logo URL"
-              value={form.logoUrl}
-              onChange={(value) => update("logoUrl", value)}
-              placeholder="https://..."
-            />
-            <Field
-              label="Cover photo URL"
-              value={form.coverImageUrl}
-              onChange={(value) => update("coverImageUrl", value)}
-              placeholder="https://..."
+            <div className="grid gap-4 md:grid-cols-2">
+              <ImageAssetUpload
+                orgId={orgId}
+                category="org_logo"
+                label="Logo"
+                helper="Square, 512 x 512 recommended"
+                valueUrl={form.logoUrl}
+                aspectClassName="aspect-square"
+                onUploaded={(asset) => update("logoUrl", asset.url)}
+              />
+              <ImageAssetUpload
+                orgId={orgId}
+                category="org_cover"
+                label="Cover photo"
+                helper="Wide, 1600 x 900 recommended"
+                valueUrl={form.coverImageUrl}
+                onUploaded={(asset) => update("coverImageUrl", asset.url)}
+              />
+            </div>
+            <ImageAssetUpload
+              orgId={orgId}
+              category="org_gallery"
+              label="Add gallery photo"
+              helper={`${Math.min(previewGallery.length, 15)}/15 added`}
+              onUploaded={(asset) => {
+                const nextGallery = [...textToList(form.galleryText), asset.url].slice(0, 15);
+                update("galleryText", nextGallery.join("\n"));
+              }}
             />
             <TextAreaField
-              label="Gallery photo URLs"
+              label="Gallery photos"
               value={form.galleryText}
-              onChange={(value) => update("galleryText", value)}
+              onChange={(value) => update("galleryText", textToList(value).slice(0, 15).join("\n"))}
               rows={5}
-              placeholder="One image URL per line"
+              placeholder="Uploaded photos appear here. You can also paste one image link per line."
             />
+            <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs leading-5 text-white/45">
+              Google Maps photo sync is not connected yet. Upload the best 15 photos here for now.
+            </p>
             <div className="grid gap-3 md:grid-cols-3">
-              {previewGallery.slice(0, 6).map((imageUrl) => (
+              {previewGallery.slice(0, 15).map((imageUrl, index) => (
                 <img
                   key={imageUrl}
                   src={imageUrl}
-                  alt=""
+                  alt={`${form.name} gallery photo ${index + 1}`}
                   className="aspect-[4/3] rounded-2xl border border-white/10 object-cover"
                 />
               ))}
@@ -481,32 +527,6 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
           </div>
         </GlassCard>
       </div>
-
-      <GlassCard>
-        <SectionHeader
-          eyebrow="App links"
-          title="Download links"
-          description="When App Store and Play Store URLs are ready, add them here. Public gym pages will show install buttons without changing the mobile app."
-        />
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <Field
-            label="App Store URL"
-            value={form.appStoreUrl}
-            onChange={(value) => update("appStoreUrl", value)}
-            placeholder="https://apps.apple.com/..."
-          />
-          <Field
-            label="Play Store URL"
-            value={form.playStoreUrl}
-            onChange={(value) => update("playStoreUrl", value)}
-            placeholder="https://play.google.com/store/apps/..."
-          />
-        </div>
-        <p className="mt-4 text-xs text-white/35">
-          Last updated:{" "}
-          {payload.org.updatedAt ? formatDateTime(payload.org.updatedAt) : "Not available"}
-        </p>
-      </GlassCard>
     </div>
   );
 }

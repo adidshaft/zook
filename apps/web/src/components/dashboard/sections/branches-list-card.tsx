@@ -3,6 +3,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { ErrorNotice } from "../operational-shared";
 import { EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import type {
   BranchRow,
@@ -18,7 +19,7 @@ function branchSetupSteps(branch: BranchRow, hasReceptionist: boolean, hasBranch
     { label: "Branch created", done: true },
     { label: "Manager assigned", done: Boolean(branch.managerId) },
     { label: "Working hours set", done: Boolean(branch.operatingHours) },
-    { label: "Receptionist invited", done: hasReceptionist },
+    { label: "Reception assigned", done: hasReceptionist },
     { label: "Plans ready", done: hasBranchPlan },
   ];
 }
@@ -337,13 +338,16 @@ function BranchSummaryRow({
           </button>
         ) : null}
         {!branch.isDefault && branch.active ? (
-          <button
-            onClick={() => void onDeactivate(branch)}
+          <ConfirmActionButton
+            title="Deactivate branch?"
+            description="Existing attendance, payments, and history stay intact. The branch stops appearing in active operational flows."
+            confirmLabel="Deactivate"
+            onConfirm={() => onDeactivate(branch)}
             disabled={formBusy === `branch:${branch.id}:delete`}
             className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs text-red-100/80 disabled:opacity-50"
           >
             Deactivate
-          </button>
+          </ConfirmActionButton>
         ) : null}
       </div>
     </div>

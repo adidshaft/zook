@@ -16,6 +16,7 @@ import {
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { toWebUrl } from "@/lib/api";
 import { notificationsApi, privacyApi } from "@/lib/domain-api";
 import { useI18n, type LocalePreference, type TranslationKey } from "@/lib/i18n";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
@@ -159,8 +160,8 @@ export default function Settings() {
 
   async function copyInviteLink() {
     const url = activeOrganization?.username
-      ? `https://app.zookfit.in/join/${activeOrganization.username}`
-      : "https://app.zookfit.in";
+      ? toWebUrl(`/join/${activeOrganization.username}`)
+      : toWebUrl("/");
     await Clipboard.setStringAsync(url);
     setClipboardStatus(t("settings.copied"));
     setTimeout(() => setClipboardStatus(""), 2000);

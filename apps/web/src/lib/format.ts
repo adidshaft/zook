@@ -51,6 +51,12 @@ export function formatEnumLabel(value: string | null | undefined): string {
   if (!value) {
     return "Unknown";
   }
+  if (value === "RECEPTIONIST") {
+    return "Reception";
+  }
+  if (value === "PLATFORM_ADMIN") {
+    return "Platform operator";
+  }
   return value
     .replace(/[-_]+/g, " ")
     .toLowerCase()
@@ -81,7 +87,7 @@ export function formatDaysRemaining(days: number): string {
 
 export function titleFromSection(section?: string[]): string {
   if (!section?.length) {
-    return "Today's Command Board";
+    return "Today's Operations";
   }
   return section
     .map((part) => {

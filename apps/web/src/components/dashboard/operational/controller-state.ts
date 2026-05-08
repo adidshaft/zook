@@ -36,6 +36,10 @@ export function createEmptyProductForm() {
     stock: "",
     lowStockThreshold: "5",
     description: "",
+    imageAssetId: "",
+    imageAssetIds: [] as string[],
+    imagePreviewUrl: "",
+    imagePreviewUrls: [] as string[],
     active: true,
   };
 }

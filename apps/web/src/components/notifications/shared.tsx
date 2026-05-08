@@ -1,6 +1,6 @@
 "use client";
 
-import { hasPermission, type Permission, type Role } from "@zook/core";
+import type { Permission, Role } from "@zook/core";
 
 export type NotificationType =
   | "TRANSACTIONAL"
@@ -151,10 +151,10 @@ export function canUseNotificationOption(input: {
   audience: PermissionAudience;
 }) {
   if (input.audience === "assigned_clients") {
-    return hasPermission(input.roles, "NOTIFICATION_SEND_ASSIGNED", input.permissions);
+    return input.permissions.includes("NOTIFICATION_SEND_ASSIGNED");
   }
   if (input.audience === "single_member") {
-    return hasPermission(input.roles, "NOTIFICATION_SEND_SELECTED", input.permissions);
+    return input.permissions.includes("NOTIFICATION_SEND_SELECTED");
   }
-  return hasPermission(input.roles, notificationPermissionByType[input.type], input.permissions);
+  return input.permissions.includes(notificationPermissionByType[input.type]);
 }

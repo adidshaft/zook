@@ -4,9 +4,17 @@ export type AttendanceQueueRecord = {
   id: string;
   status: string;
   checkedInAt: string;
+  entryCode?: string | null;
   suspiciousFlags?: string[] | null;
   branchName?: string | null;
-  user?: { id?: string; name?: string | null; email?: string | null; phone?: string | null } | null;
+  user?: {
+    id?: string;
+    name?: string | null;
+    privateHandle?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    profilePhotoUrl?: string | null;
+  } | null;
   profile?: { profilePhotoUrl?: string | null } | null;
   plan?: { name?: string | null } | null;
   subscription?: { endsAt?: string | null; remainingVisits?: number | null } | null;
@@ -14,7 +22,14 @@ export type AttendanceQueueRecord = {
 
 export type MemberRow = {
   profile: { id: string; profilePhotoUrl?: string | null };
-  user: { id: string; name: string; email: string; phone?: string | null } | null;
+  user: {
+    id: string;
+    name: string;
+    privateHandle?: string | null;
+    email: string;
+    phone?: string | null;
+    profilePhotoUrl?: string | null;
+  } | null;
   lastCheckIn?: { checkedInAt: string; status: string } | null;
   recentCheckIns?: Array<{ id: string; checkedInAt: string; status: string }>;
   lastPayment?: { id: string; amountPaise: number; mode: string; recordedAt?: string | null } | null;

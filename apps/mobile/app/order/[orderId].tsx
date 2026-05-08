@@ -14,12 +14,16 @@ export default function OrderAliasScreen() {
   const orgId = Array.isArray(params.orgId) ? params.orgId[0] : params.orgId;
   const focus = Array.isArray(params.focus) ? params.focus[0] : params.focus;
 
+  if (!orderId) {
+    return <Redirect href="/shop" />;
+  }
+
   return (
     <Redirect
       href={{
-        pathname: "/shop",
+        pathname: "/shop/pickup/[orderId]",
         params: {
-          ...(orderId ? { orderId } : {}),
+          orderId,
           ...(notificationId ? { notificationId } : {}),
           ...(orgId ? { orgId } : {}),
           focus: focus ?? "shop-order",

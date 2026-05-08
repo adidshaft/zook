@@ -74,14 +74,14 @@ const runtimeVersion = appVersion;
 
 const apiBaseUrlByProfile: Record<MobileReleaseProfile, string> = {
   local: "http://localhost:3000/api",
-  staging: "https://dashboard.zookfit.in/api",
-  production: "https://dashboard.zookfit.in/api"
+  staging: "https://staging.zook.app/api",
+  production: "https://zook.app/api"
 };
 
 const webUrlByProfile: Record<MobileReleaseProfile, string> = {
   local: "http://localhost:3000",
-  staging: "https://app.zookfit.in",
-  production: "https://app.zookfit.in"
+  staging: "https://staging.zook.app",
+  production: "https://zook.app"
 };
 
 function normalizeProfile(value?: string | null): MobileReleaseProfile | undefined {
@@ -179,6 +179,7 @@ export default (): ExpoConfig => {
   const apiMode = resolveApiMode();
   const sentryOrg = process.env.SENTRY_ORG?.trim();
   const sentryProject = (process.env.SENTRY_MOBILE_PROJECT ?? process.env.SENTRY_PROJECT)?.trim();
+  const shouldConfigureNativeSentry = releaseProfile !== "local" && sentryOrg && sentryProject;
   if (apiMode === "offline-demo" && releaseProfile !== "local") {
     throw new Error(
       "Sample mode is only available for local mobile builds."
@@ -192,7 +193,7 @@ export default (): ExpoConfig => {
   return {
     ...baseConfig,
     plugins:
-      sentryOrg && sentryProject
+      shouldConfigureNativeSentry
         ? [
             ...(baseConfig.plugins ?? []),
             [

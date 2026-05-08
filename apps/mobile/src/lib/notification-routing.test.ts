@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mapNotificationPayloadToHref, parseDeepLinkUrl } from "./notification-routing";
 
 function parseHref(href: string) {
-  const parsed = new URL(href, "https://app.zookfit.in");
+  const parsed = new URL(href, "https://zook.app");
   return {
     path: parsed.pathname,
     params: Object.fromEntries(parsed.searchParams.entries()),
@@ -22,7 +22,7 @@ describe("parseDeepLinkUrl", () => {
 
   it("accepts trusted web deep links", () => {
     expect(
-      parseDeepLinkUrl("https://app.zookfit.in/plan/assign_1?notificationId=notif_1")?.href,
+      parseDeepLinkUrl("https://zook.app/plan/assign_1?notificationId=notif_1")?.href,
     ).toBe("/plan/assign_1?notificationId=notif_1");
   });
 

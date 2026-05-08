@@ -19,6 +19,14 @@ export function QueueTab({
   busyId: string;
   onUpdateAttendance: (recordId: string, action: "approve" | "reject") => void;
 }) {
+  function recordPhoto(record: AttendanceQueueRecord) {
+    return record.profile?.profilePhotoUrl ?? record.user?.profilePhotoUrl ?? null;
+  }
+
+  function memberInitial(record: AttendanceQueueRecord) {
+    return (record.user?.name ?? record.user?.email ?? "M").slice(0, 1).toUpperCase();
+  }
+
   return (
     <div className="grid gap-4">
       <GlassCard>
@@ -36,21 +44,43 @@ export function QueueTab({
             pendingRecords.map((record) => (
               <div key={record.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                  <div>
-                    <p className="font-medium text-white">
-                      {record.user?.name ?? record.user?.email ?? "Member"}
-                    </p>
-                    <p className="mt-1 text-sm text-white/48">
-                      {record.suspiciousFlags?.length
-                        ? record.suspiciousFlags.map(formatEnumLabel).join(", ")
-                        : formatEnumLabel(record.status)}
-                      {" - "}
-                      {formatDateTime(record.checkedInAt)}
-                    </p>
-                    <p className="mt-1 text-xs text-white/38">
-                      {record.plan?.name ?? copy.membership} at{" "}
-                      {record.branchName ?? branchName ?? copy.branch}
-                    </p>
+                  <div className="flex min-w-0 gap-3">
+                    {recordPhoto(record) ? (
+                      <img
+                        src={recordPhoto(record) ?? undefined}
+                        alt=""
+                        className="h-16 w-16 shrink-0 rounded-2xl object-cover"
+                      />
+                    ) : (
+                      <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-amber-200/20 bg-amber-200/10 text-xl font-semibold text-amber-100">
+                        {memberInitial(record)}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-white">
+                          {record.user?.name ?? record.user?.email ?? "Member"}
+                        </p>
+                        {record.user?.privateHandle ? (
+                          <Pill>{record.user.privateHandle}</Pill>
+                        ) : null}
+                        {record.entryCode ? <Pill tone="blue">{record.entryCode}</Pill> : null}
+                      </div>
+                      <p className="mt-1 text-sm text-white/48">
+                        {record.suspiciousFlags?.length
+                          ? record.suspiciousFlags.map(formatEnumLabel).join(", ")
+                          : formatEnumLabel(record.status)}
+                        {" - "}
+                        {formatDateTime(record.checkedInAt)}
+                      </p>
+                      <p className="mt-1 text-xs text-white/38">
+                        {record.plan?.name ?? copy.membership} at{" "}
+                        {record.branchName ?? branchName ?? copy.branch}
+                      </p>
+                      <p className="mt-2 text-xs text-white/42">
+                        {recordPhoto(record) ? copy.photoMatches : copy.profilePhotoMissing}
+                      </p>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -91,9 +121,23 @@ export function QueueTab({
               key={record.id}
               className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
             >
-              <span className="text-sm font-medium text-white/78">
-                {record.user?.name ?? record.user?.email ?? "Member"}
-              </span>
+              <div className="flex min-w-0 items-center gap-3">
+                {recordPhoto(record) ? (
+                  <img
+                    src={recordPhoto(record) ?? undefined}
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/8 text-sm font-semibold text-white/70">
+                    {memberInitial(record)}
+                  </div>
+                )}
+                <span className="truncate text-sm font-medium text-white/78">
+                  {record.user?.name ?? record.user?.email ?? "Member"}
+                </span>
+                {record.entryCode ? <Pill tone="blue">{record.entryCode}</Pill> : null}
+              </div>
               <span className="text-xs text-white/45">{formatDateTime(record.checkedInAt)}</span>
             </div>
           ))}

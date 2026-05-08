@@ -11,17 +11,6 @@ type DashboardRouteProps = {
   searchParams: Promise<{ branchId?: string }>;
 };
 
-const dashboardAccessPermissions = new Set([
-  "ORG_VIEW_REPORTS",
-  "ORG_MANAGE_STAFF",
-  "ORG_MANAGE_PROFILE",
-  "ORG_MANAGE_BILLING",
-  "MEMBERS_VIEW",
-  "MEMBERS_MANAGE",
-  "PAYMENTS_VIEW",
-  "MEMBERSHIP_PLAN_MANAGE",
-]);
-
 const sectionAccessPermissions: Partial<Record<ReturnType<typeof resolveMode>, Permission[]>> = {
   members: ["MEMBERS_VIEW", "MEMBERS_MANAGE"],
   "join-requests": ["MEMBERS_VIEW", "MEMBERS_MANAGE"],
@@ -33,8 +22,8 @@ const sectionAccessPermissions: Partial<Record<ReturnType<typeof resolveMode>, P
   shop: ["SHOP_MANAGE_PRODUCTS", "SHOP_FULFILL_ORDER"],
   staff: ["ORG_MANAGE_STAFF"],
   plans: ["MEMBERSHIP_PLAN_MANAGE"],
-  "plan-coupons": ["MEMBERSHIP_PLAN_MANAGE"],
-  "plan-offers": ["MEMBERSHIP_PLAN_MANAGE"],
+  "plan-coupons": ["COUPONS_MANAGE"],
+  "plan-offers": ["COUPONS_MANAGE"],
   "plan-referrals": ["REFERRALS_MANAGE"],
   payments: ["PAYMENTS_VIEW", "PAYMENTS_RECORD_OFFLINE"],
   "payment-refunds": ["PAYMENTS_REFUND"],
@@ -50,11 +39,7 @@ function canAccessWebDashboard(session: Awaited<ReturnType<typeof requireDashboa
   if (session.user.isPlatformAdmin) {
     return true;
   }
-  return Boolean(
-    session.activeOrganization?.permissions.some((permission) =>
-      dashboardAccessPermissions.has(permission),
-    ),
-  );
+  return hasOwnerDashboardAccess(session);
 }
 
 function canAccessDashboardSection(
@@ -80,7 +65,7 @@ export async function loadDashboardRouteProps({ section, searchParams }: Dashboa
   }
   if (!session.user.isPlatformAdmin && !hasOwnerDashboardAccess(session)) {
     if (hasDeskAccess(session)) {
-      redirect("/desk");
+      redirect("/desk?from=dashboard");
     }
     if (hasCoachAccess(session)) {
       redirect("/coach");

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { GlassCard, Pill } from "./glass-card";
+import { equipmentOptions } from "./gym-profile-fields";
 import { webApiFetch } from "@/lib/api-client";
 import { joinModeLabel } from "@/lib/format";
 
@@ -97,12 +98,23 @@ function safeOwnerEmail(value: string) {
   return value;
 }
 
+function normalizeIndiaPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  const national = digits.startsWith("91") && digits.length > 10 ? digits.slice(2) : digits;
+  return national.slice(0, 10);
+}
+
+function formatIndiaPhone(value: string) {
+  const digits = normalizeIndiaPhone(value);
+  return digits ? `+91 ${digits}` : "+91 ";
+}
+
 export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [gymType, setGymType] = useState(gymTypes[0] ?? "Strength gym");
-  const [contactPhone, setContactPhone] = useState("");
+  const [contactPhone, setContactPhone] = useState("+91 ");
   const [contactEmail, setContactEmail] = useState(safeOwnerEmail(ownerEmail));
   const [gstNumber, setGstNumber] = useState("");
   const [address, setAddress] = useState("");
@@ -114,6 +126,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
   );
   const [visibility, setVisibility] = useState<"PUBLIC" | "INVITE_ONLY" | "HIDDEN">("PUBLIC");
   const [amenities, setAmenities] = useState<string[]>([]);
+  const [equipment, setEquipment] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -122,6 +135,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
       ? Boolean(
           name.trim() &&
           username.trim() &&
+          normalizeIndiaPhone(contactPhone).length === 10 &&
           contactEmail.trim() &&
           (!gstNumber.trim() || GSTIN_PATTERN.test(gstNumber.trim().toUpperCase())),
         )
@@ -135,6 +149,12 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
     );
   }
 
+  function toggleEquipment(option: string) {
+    setEquipment((current) =>
+      current.includes(option) ? current.filter((item) => item !== option) : [...current, option],
+    );
+  }
+
   async function createGym() {
     const normalizedGstNumber = gstNumber.trim().toUpperCase();
     if (normalizedGstNumber && !GSTIN_PATTERN.test(normalizedGstNumber)) {
@@ -144,13 +164,14 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
     if (
       !name.trim() ||
       !username.trim() ||
+      normalizeIndiaPhone(contactPhone).length !== 10 ||
       !address.trim() ||
       !city.trim() ||
       !state.trim() ||
       !/^\d{6}$/.test(pincode)
     ) {
       setMessage(
-        "Add gym name, public username, address, city, state, and a 6-digit pincode before creating the gym.",
+        "Add gym name, public username, 10-digit phone, address, city, state, and a 6-digit pincode before creating the gym.",
       );
       return;
     }
@@ -162,7 +183,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
         body: {
           name,
           username,
-          contactPhone,
+          contactPhone: formatIndiaPhone(contactPhone).replace(/\s/g, ""),
           contactEmail,
           gstNumber: normalizedGstNumber || undefined,
           address,
@@ -170,6 +191,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
           state,
           pincode,
           amenities: Array.from(new Set([gymType, ...amenities])),
+          equipment,
           joinMode,
           visibility,
         },
@@ -188,7 +210,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
         step === 0
           ? gstNumber.trim() && !GSTIN_PATTERN.test(gstNumber.trim().toUpperCase())
             ? "GST number must be a valid 15-character GSTIN."
-            : "Add gym name, public username, and contact email to continue."
+            : "Add gym name, public username, 10-digit phone, and contact email to continue."
           : "Add address, city, state, and a 6-digit pincode so members can find the gym.",
       );
       return;
@@ -205,14 +227,14 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
           Start your gym on Zook.
         </h1>
         <p className="mt-5 max-w-2xl text-sm leading-6 text-white/58">
-          Create the organization, main branch, owner role, trial workspace, and gym profile page
-          shell from the web. Mobile stays focused on daily execution.
+          Create the gym, main branch, owner access, trial setup, and public profile from the web.
+          Mobile stays focused on daily execution.
         </p>
         <div className="mt-8 grid gap-3">
           {[
             "Creates the organization and default branch",
             "Assigns you as owner",
-            "Publishes a public username for /in links",
+            "Publishes a public username for profile links",
             "Unlocks the gym profile page editor and join QR",
           ].map((item) => (
             <div
@@ -322,8 +344,12 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                 </span>
                 <input
                   value={contactPhone}
-                  onChange={(event) => setContactPhone(event.target.value)}
-                  placeholder="+91"
+                  onChange={(event) => setContactPhone(formatIndiaPhone(event.target.value))}
+                  onFocus={() => {
+                    if (!contactPhone.trim()) setContactPhone("+91 ");
+                  }}
+                  placeholder="+91 9876543210"
+                  inputMode="tel"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
                 />
               </label>
@@ -383,7 +409,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                 <select
                   value={state}
                   onChange={(event) => setState(event.target.value)}
-                  className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
+                  className="zook-focus w-full min-w-0 appearance-none truncate rounded-2xl border border-white/10 bg-black/25 px-4 py-3 pr-10 text-sm text-white outline-none"
                 >
                   <option value="" disabled className="bg-black">
                     Select state
@@ -474,6 +500,33 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                       {option}
                     </button>
                   ))}
+                </div>
+              </div>
+              <div className="mt-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Equipment
+                </p>
+                <p className="mt-2 text-xs leading-5 text-white/42">
+                  Select what members should see on the public gym profile. You can refine this
+                  later from Gym profile.
+                </p>
+                <div className="mt-3 max-h-56 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <div className="flex flex-wrap gap-2">
+                    {equipmentOptions.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => toggleEquipment(option)}
+                        className={`rounded-full border px-3 py-2 text-xs font-medium transition ${
+                          equipment.includes(option)
+                            ? "border-lime-300/45 bg-lime-300/15 text-lime-100"
+                            : "border-white/10 bg-white/5 text-white/50 hover:bg-white/8"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </>

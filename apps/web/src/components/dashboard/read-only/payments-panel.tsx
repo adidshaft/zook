@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import type * as React from "react";
-import { DataTable, EmptyState, ReadoutGrid, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import {
+  DataTable,
+  EmptyState,
+  ReadoutGrid,
+  SectionHeader,
+  StatusPill,
+} from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
 import { formatCompactNumber, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
@@ -57,6 +63,7 @@ export function PaymentsPanel({
   });
   const [manualPaymentStatus, setManualPaymentStatus] = useState("");
   const [manualPaymentBusy, setManualPaymentBusy] = useState(false);
+  const [documentBusyId, setDocumentBusyId] = useState<string | null>(null);
   const [lastReceipt, setLastReceipt] = useState<PaymentReceiptState | null>(null);
   const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
@@ -106,19 +113,22 @@ export function PaymentsPanel({
       setManualPaymentBusy(true);
       setManualPaymentStatus("");
       const amountPaise = Math.round(Number(manualPayment.amountRupees) * 100);
-      const payload = await webApiFetch<{ payment?: PaymentRow }>(`/api/orgs/${orgId}/manual-payments`, {
-        method: "POST",
-        feedback: { success: "Payment recorded.", error: "Unable to record payment." },
-        body: {
-          memberUserId: manualPayment.memberUserId,
-          planId: manualPayment.planId,
-          amountPaise,
-          mode: manualPayment.mode,
-          proofAssetId: manualPayment.proofAssetId || undefined,
-          receiptNumber: manualPayment.receiptNumber || undefined,
-          notes: manualPayment.notes || undefined,
+      const payload = await webApiFetch<{ payment?: PaymentRow }>(
+        `/api/orgs/${orgId}/manual-payments`,
+        {
+          method: "POST",
+          feedback: { success: "Payment recorded.", error: "Unable to record payment." },
+          body: {
+            memberUserId: manualPayment.memberUserId,
+            planId: manualPayment.planId,
+            amountPaise,
+            mode: manualPayment.mode,
+            proofAssetId: manualPayment.proofAssetId || undefined,
+            receiptNumber: manualPayment.receiptNumber || undefined,
+            notes: manualPayment.notes || undefined,
+          },
         },
-      });
+      );
       setManualPaymentStatus(`Payment recorded for ${formatInr(amountPaise)}.`);
       setLastReceipt({
         title: "Membership payment",
@@ -136,6 +146,38 @@ export function PaymentsPanel({
     }
   }
 
+  async function generatePaymentDocument(payment: PaymentRow, kind: "receipt" | "invoice") {
+    if (!payment.orgId) {
+      setManualPaymentStatus("This payment is missing its gym link.");
+      return;
+    }
+    try {
+      setDocumentBusyId(`${kind}:${payment.id}`);
+      setManualPaymentStatus("");
+      const payload = await webApiFetch<{ receiptUrl?: string; invoiceUrl?: string }>(
+        `/api/orgs/${payment.orgId}/payments/${payment.id}/${kind}`,
+        {
+          method: "POST",
+          feedback: {
+            success: kind === "receipt" ? "Receipt generated." : "Invoice generated.",
+          },
+        },
+      );
+      paymentsState.reload?.();
+      const url = kind === "receipt" ? payload.receiptUrl : payload.invoiceUrl;
+      if (url) {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+      setManualPaymentStatus(kind === "receipt" ? "Receipt generated." : "Invoice generated.");
+    } catch (cause) {
+      setManualPaymentStatus(
+        cause instanceof Error ? cause.message : `Unable to generate ${kind}.`,
+      );
+    } finally {
+      setDocumentBusyId(null);
+    }
+  }
+
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -144,7 +186,9 @@ export function PaymentsPanel({
           <div className="metric mt-3 text-4xl font-semibold text-white">
             {formatInr(summary.cashCollectedPaise)}
           </div>
-          <p className="mt-2 text-xs text-white/55">Cash, UPI, card, and bank transfers recorded today.</p>
+          <p className="mt-2 text-xs text-white/55">
+            Cash, UPI, card, and bank transfers recorded today.
+          </p>
         </GlassCard>
         <GlassCard variant="strong">
           <p className="text-sm text-white/48">Successful revenue</p>
@@ -158,9 +202,7 @@ export function PaymentsPanel({
           <div className="metric mt-3 text-4xl font-semibold text-white">
             {formatCompactNumber(queuedOrders.length)}
           </div>
-          <p className="mt-2 text-xs text-white/55">
-            Orders waiting for payment or pickup.
-          </p>
+          <p className="mt-2 text-xs text-white/55">Orders waiting for payment or pickup.</p>
         </GlassCard>
         <GlassCard variant="strong">
           <p className="text-sm text-white/48">Expiring memberships</p>
@@ -175,12 +217,17 @@ export function PaymentsPanel({
         <GlassCard>
           <SectionHeader
             eyebrow="Payments"
-            title="Payments ledger"
-            description="Membership, shop, online, and desk payments are shown in this gym's ledger."
+            title="Payment history"
+            description="Membership, shop, online, and desk payments are shown here."
             badge={<Pill tone="blue">{payments.length} loaded</Pill>}
             action={<CsvExportButton href={`/api/orgs/${orgId}/reports/payments.csv`} />}
           />
           <div className="mt-5">
+            {manualPaymentStatus ? (
+              <p className="mb-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/58">
+                {manualPaymentStatus}
+              </p>
+            ) : null}
             {paymentsState.error ? (
               <ErrorNotice message={paymentsState.error} />
             ) : paymentsState.loading && payments.length === 0 ? (
@@ -226,6 +273,31 @@ export function PaymentsPanel({
                         <span className="font-medium text-white">
                           {formatInr(payment.amountPaise)}
                         </span>
+                      ),
+                    },
+                    {
+                      id: "documents",
+                      header: "Documents",
+                      align: "right",
+                      render: (payment) => (
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void generatePaymentDocument(payment, "receipt")}
+                            disabled={documentBusyId === `receipt:${payment.id}`}
+                            className="zook-focus rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/8 disabled:opacity-50"
+                          >
+                            {documentBusyId === `receipt:${payment.id}` ? "Making..." : "Receipt"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void generatePaymentDocument(payment, "invoice")}
+                            disabled={documentBusyId === `invoice:${payment.id}`}
+                            className="zook-focus rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/8 disabled:opacity-50"
+                          >
+                            {documentBusyId === `invoice:${payment.id}` ? "Making..." : "Invoice"}
+                          </button>
+                        </div>
                       ),
                     },
                   ]}
@@ -409,129 +481,133 @@ export function PaymentsPanel({
               />
             ) : (
               <>
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                {([
-                  ["ALL", "All"],
-                  ["PENDING_PAYMENT", "Pending Payment"],
-                  ["READY_FOR_PICKUP", "Ready for Pickup"],
-                  ["FULFILLED", "Settled"],
-                ] as Array<[string, string]>).map(([value, label]) => (
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  {(
+                    [
+                      ["ALL", "All"],
+                      ["PENDING_PAYMENT", "Pending Payment"],
+                      ["READY_FOR_PICKUP", "Ready for Pickup"],
+                      ["FULFILLED", "Settled"],
+                    ] as Array<[string, string]>
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setOrderStatusFilter(value)}
+                      className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        orderStatusFilter === value
+                          ? "border-lime-300/45 bg-lime-300/12 text-lime-100"
+                          : "border-white/10 text-white/55 hover:bg-white/8"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                   <button
-                    key={value}
                     type="button"
-                    onClick={() => setOrderStatusFilter(value)}
-                    className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                      orderStatusFilter === value
-                        ? "border-lime-300/45 bg-lime-300/12 text-lime-100"
-                        : "border-white/10 text-white/55 hover:bg-white/8"
-                    }`}
+                    disabled={!selectedReadyOrders.length || bulkBusy}
+                    onClick={() => void bulkFulfillReadyOrders()}
+                    className="zook-focus ml-auto rounded-full bg-lime-300 px-4 py-2 text-xs font-semibold text-black disabled:opacity-50"
                   >
-                    {label}
+                    {bulkBusy ? "Settling..." : `Settle ${selectedReadyOrders.length || ""}`.trim()}
                   </button>
-                ))}
-                <button
-                  type="button"
-                  disabled={!selectedReadyOrders.length || bulkBusy}
-                  onClick={() => void bulkFulfillReadyOrders()}
-                  className="zook-focus ml-auto rounded-full bg-lime-300 px-4 py-2 text-xs font-semibold text-black disabled:opacity-50"
-                >
-                  {bulkBusy ? "Settling..." : `Settle ${selectedReadyOrders.length || ""}`.trim()}
-                </button>
-              </div>
-              <DataTable
-                columns={[
-                  {
-                    id: "select",
-                    header: "Select",
-                    render: (order) => (
-                      <input
-                        type="checkbox"
-                        checked={selectedOrderIds.includes(order.id)}
-                        onChange={() => toggleOrder(order.id)}
-                        disabled={order.status !== "READY_FOR_PICKUP"}
-                        aria-label={`Select order ${order.id.slice(-8).toUpperCase()}`}
-                        className="zook-focus h-4 w-4 rounded border-white/20 bg-black/40 accent-lime-300 disabled:opacity-40"
-                      />
-                    ),
-                  },
-                  {
-                    id: "order",
-                    header: "Order",
-                    render: (order) => (
-                      <div>
-                        <p className="font-medium text-white">
-                          {order.id.slice(-8).toUpperCase()}
-                        </p>
-                        <p className="mt-1 text-xs text-white/45">
-                          {formatDateTime(order.createdAt)}
-                        </p>
-                      </div>
-                    ),
-                  },
-                  {
-                    id: "status",
-                    header: "Status",
-                    render: (order) => <StatusPill value={formatEnumLabel(order.status)} />,
-                  },
-                  {
-                    id: "items",
-                    header: "Items",
-                    align: "right",
-                    render: (order) =>
-                      order.items.reduce((sum, item) => sum + item.quantity, 0).toString(),
-                  },
-                  {
-                    id: "notes",
-                    header: "Notes",
-                    render: (order) =>
-                      order.status === "READY_FOR_PICKUP"
-                        ? "Ready for desk handover"
-                        : order.status === "PENDING_PAYMENT"
-                          ? "Payment still needed"
-                          : "No desk note",
-                  },
-                  {
-                    id: "amount",
-                    header: "Amount",
-                    align: "right",
-                    render: (order) => (
-                      <span className="font-medium text-white">{formatInr(order.totalPaise)}</span>
-                    ),
-                  },
-                  {
-                    id: "actions",
-                    header: "",
-                    align: "right",
-                    render: (order) =>
-                      order.status === "PENDING_PAYMENT" && !order.paymentId ? (
-                        <ShopOrderPaymentControl
-                          orgId={orgId}
-                          order={order}
-                          disabled={manualPaymentBusy || !canRecordOffline}
-                          disabledTitle={!canRecordOffline ? permissionMessage : undefined}
-                          onRecorded={(receipt) => {
-                            setManualPaymentStatus(
-                              `Shop payment recorded for ${formatInr(order.totalPaise)}.`,
-                            );
-                            setLastReceipt(receipt);
-                            paymentsState.reload?.();
-                            shopOrdersState.reload?.();
-                          }}
+                </div>
+                <DataTable
+                  columns={[
+                    {
+                      id: "select",
+                      header: "Select",
+                      render: (order) => (
+                        <input
+                          type="checkbox"
+                          checked={selectedOrderIds.includes(order.id)}
+                          onChange={() => toggleOrder(order.id)}
+                          disabled={order.status !== "READY_FOR_PICKUP"}
+                          aria-label={`Select order ${order.id.slice(-8).toUpperCase()}`}
+                          className="zook-focus h-4 w-4 rounded border-white/20 bg-black/40 accent-lime-300 disabled:opacity-40"
                         />
-                      ) : (
-                        <span className="text-xs text-white/35">Settled</span>
                       ),
-                  },
-                ]}
-                rows={filteredShopOrders}
-                rowKey={(order) => order.id}
-                empty={
-                  <EmptyState
-                    title="No payments yet"
-                    description="Payments appear here when members buy memberships or shop pickups."
-                  />
-                }
-              />
+                    },
+                    {
+                      id: "order",
+                      header: "Order",
+                      render: (order) => (
+                        <div>
+                          <p className="font-medium text-white">
+                            {order.id.slice(-8).toUpperCase()}
+                          </p>
+                          <p className="mt-1 text-xs text-white/45">
+                            {formatDateTime(order.createdAt)}
+                          </p>
+                        </div>
+                      ),
+                    },
+                    {
+                      id: "status",
+                      header: "Status",
+                      render: (order) => <StatusPill value={formatEnumLabel(order.status)} />,
+                    },
+                    {
+                      id: "items",
+                      header: "Items",
+                      align: "right",
+                      render: (order) =>
+                        order.items.reduce((sum, item) => sum + item.quantity, 0).toString(),
+                    },
+                    {
+                      id: "notes",
+                      header: "Notes",
+                      render: (order) =>
+                        order.status === "READY_FOR_PICKUP"
+                          ? "Ready for desk handover"
+                          : order.status === "PENDING_PAYMENT"
+                            ? "Payment still needed"
+                            : "No desk note",
+                    },
+                    {
+                      id: "amount",
+                      header: "Amount",
+                      align: "right",
+                      render: (order) => (
+                        <span className="font-medium text-white">
+                          {formatInr(order.totalPaise)}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: "actions",
+                      header: "",
+                      align: "right",
+                      render: (order) =>
+                        order.status === "PENDING_PAYMENT" && !order.paymentId ? (
+                          <ShopOrderPaymentControl
+                            orgId={orgId}
+                            order={order}
+                            disabled={manualPaymentBusy || !canRecordOffline}
+                            disabledTitle={!canRecordOffline ? permissionMessage : undefined}
+                            onRecorded={(receipt) => {
+                              setManualPaymentStatus(
+                                `Shop payment recorded for ${formatInr(order.totalPaise)}.`,
+                              );
+                              setLastReceipt(receipt);
+                              paymentsState.reload?.();
+                              shopOrdersState.reload?.();
+                            }}
+                          />
+                        ) : (
+                          <span className="text-xs text-white/35">Settled</span>
+                        ),
+                    },
+                  ]}
+                  rows={filteredShopOrders}
+                  rowKey={(order) => order.id}
+                  empty={
+                    <EmptyState
+                      title="No shop orders in this view"
+                      description="Orders appear here when payment or pickup needs front-desk follow-up."
+                    />
+                  }
+                />
               </>
             )}
           </div>
@@ -564,7 +640,9 @@ export function PaymentsPanel({
               },
               {
                 label: "Plan ladder",
-                value: membershipPlans.length ? `${membershipPlans.length} live plans` : "Load plans",
+                value: membershipPlans.length
+                  ? `${membershipPlans.length} live plans`
+                  : "Load plans",
                 meta: "Useful while talking renewals at the desk",
               },
             ]}
