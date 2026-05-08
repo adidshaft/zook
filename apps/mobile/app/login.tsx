@@ -536,7 +536,7 @@ export default function Login() {
               <View style={styles.ssoRow}>
                 <SsoButton
                   label="Apple"
-                  mark="Apple"
+                  mark="A"
                   busy={busyAction === "apple"}
                   disabled={busy}
                   onPress={() => void handleAppleSignIn()}
@@ -630,7 +630,9 @@ function SsoButton({
       ) : (
         <Text style={styles.ssoMark}>{mark}</Text>
       )}
-      <Text style={styles.ssoLabel}>{label}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} style={styles.ssoLabel}>
+        {label}
+      </Text>
     </Pressable>
   );
 }

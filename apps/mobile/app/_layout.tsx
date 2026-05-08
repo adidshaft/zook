@@ -216,6 +216,9 @@ function LayoutContent() {
 
     if (status === "unauthenticated") {
       if (onboardingFlag === null) {
+        if (pathname === "/login") {
+          return;
+        }
         if (!isOnboardingRoute) {
           router.replace("/onboarding" as never);
         }

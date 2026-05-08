@@ -82,7 +82,7 @@ export function ValuePropsStep() {
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const cardWidth = Math.max(280, width - 48);
+  const cardWidth = Math.max(280, Math.min(520, width - 48));
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -300,12 +300,12 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   valueStage: {
-    marginHorizontal: -24,
+    overflow: "hidden",
   },
   valueCard: {
-    minHeight: 320,
+    minHeight: 300,
     justifyContent: "space-between",
-    padding: 24,
+    padding: 22,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.panel,
@@ -318,8 +318,8 @@ const styles = StyleSheet.create({
   valueCopy: {
     color: colors.text,
     fontFamily: "Inter_800ExtraBold",
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 28,
+    lineHeight: 34,
   },
   footer: {
     gap: 20,

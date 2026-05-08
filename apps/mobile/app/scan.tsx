@@ -84,7 +84,7 @@ export default function Scan() {
   const { permissionState, requestEnablePush } = usePushNotifications();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
-  const [scanMode, setScanMode] = useState<ScanMode>("scan");
+  const [scanMode, setScanMode] = useState<ScanMode>("code");
   const [modeLocked, setModeLocked] = useState(false);
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [codePrefix, setCodePrefix] = useState("");
@@ -100,10 +100,10 @@ export default function Scan() {
   const pushPromptSnapPoints = useMemo(() => ["36%"], []);
 
   useEffect(() => {
-    if (!permission) {
+    if (scanMode === "scan" && !permission) {
       void requestPermission();
     }
-  }, [permission, requestPermission]);
+  }, [permission, requestPermission, scanMode]);
 
   useEffect(() => {
     if (scanMode !== "scan" || scanState !== "failed" || !errorMessage) {
