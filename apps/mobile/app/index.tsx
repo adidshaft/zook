@@ -610,18 +610,18 @@ function MemberStateHero({
           </ZookButton>
         ) : (
           <ZookButton href="/scan" icon="qr-code-outline" style={styles.heroPrimaryAction}>
-            Check in
+            Scan QR
           </ZookButton>
         )}
         {showBillingAction ? (
           <ZookButton
-            href="/membership"
+            href="/plans"
             tone="secondary"
-            icon="card-outline"
+            icon="barbell-outline"
             style={styles.heroSecondaryAction}
-            accessibilityLabel={expired ? "Renew membership" : "Open membership"}
+            accessibilityLabel="Open plan"
           >
-            {expired ? "Renew" : "Pay"}
+            Plan
           </ZookButton>
         ) : null}
       </View>

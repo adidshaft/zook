@@ -457,8 +457,8 @@ export default function Scan() {
           }}
         >
           <MobileHeader
-            title="Check in"
-            subtitle="Scan QR or enter code"
+            title="Scan Gym QR"
+            subtitle="Server-authoritative check-in for your active gym"
             showProfileShortcut={false}
           />
 
@@ -469,6 +469,20 @@ export default function Scan() {
             value={scanMode}
             onChange={handleModeChange}
           />
+
+          <GlassCard variant="compact" contentStyle={styles.validationContent}>
+            {[
+              "Server-authoritative validation",
+              "Replay protection",
+              "Branch check",
+              "Membership check",
+            ].map((item) => (
+              <View key={item} style={styles.validationItem}>
+                <Ionicons name="checkmark-circle-outline" size={15} color={colors.lime} />
+                <Text style={styles.validationText}>{item}</Text>
+              </View>
+            ))}
+          </GlassCard>
 
           {cameraBlocked ? (
             <GlassCard variant="danger" contentStyle={styles.blockedPermissionContent}>
@@ -717,7 +731,28 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     paddingBottom: layout.bottomNavContentPadding,
-    gap: 10,
+    gap: 12,
+  },
+  validationContent: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    padding: 12,
+  },
+  validationItem: {
+    minHeight: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.18)",
+    backgroundColor: "rgba(185,244,85,0.075)",
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  validationText: {
+    color: colors.text,
+    ...typography.caption,
   },
   cameraCard: {
     height: 304,

@@ -73,7 +73,7 @@ function titleCase(value: string) {
 }
 
 function titleForView(view: OwnerView) {
-  if (view === "command") return "Needs attention";
+  if (view === "command") return "Command";
   if (view === "approvals") return "Approvals";
   if (view === "revenue") return "Revenue";
   if (view === "members") return "Members";
@@ -369,7 +369,7 @@ export default function Owner() {
           <View style={styles.headerCopy}>
             <Text numberOfLines={1} style={styles.headerMeta}>
               {dashboard?.organization?.name ?? "Active gym"} ·{" "}
-              {shellRole === "ADMIN" ? "Admin" : "Owner"}
+              {shellRole === "ADMIN" ? "Admin" : "Owner"} command view
             </Text>
             <Text style={styles.title}>{titleForView(view)}</Text>
           </View>

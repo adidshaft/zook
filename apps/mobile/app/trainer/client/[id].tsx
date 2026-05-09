@@ -354,10 +354,11 @@ export default function TrainerClientDetail() {
                   Save draft
                 </ZookButton>
                 <SecondaryButton
+                  onPress={() => router.push(`/trainer/client/${clientId}/ai-draft` as never)}
                   disabled={!client || savingPlan}
                   style={styles.actionHalf}
                 >
-                  AI coming soon
+                  Generate AI Draft
                 </SecondaryButton>
               </View>
               <SecondaryButton
