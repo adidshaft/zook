@@ -424,10 +424,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStoredValue(SESSION_STORAGE_KEY, result.token),
         setStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY, expiresAt),
       ]);
-      await hydrate(result.token, activeOrgId, activeRole);
+      await hydrate(result.token);
       await maybePromptForBiometric();
     },
-    [activeOrgId, activeRole, hydrate, maybePromptForBiometric],
+    [hydrate, maybePromptForBiometric],
   );
 
   const completeTokenSignIn = useCallback(
