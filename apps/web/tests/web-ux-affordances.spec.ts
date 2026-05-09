@@ -11,7 +11,7 @@ function requireDb() {
 test("web UX affordances connect operators to the next action", async ({ page }) => {
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const branch =
     (await prisma.branch.findFirst({ where: { orgId: org.id, isDefault: true } })) ??
     (await prisma.branch.findFirstOrThrow({ where: { orgId: org.id } }));

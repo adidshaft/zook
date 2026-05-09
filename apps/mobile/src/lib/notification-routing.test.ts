@@ -11,7 +11,7 @@ function parseHref(href: string) {
 
 describe("parseDeepLinkUrl", () => {
   it("parses app-scheme gym links", () => {
-    expect(parseDeepLinkUrl("zook://g/iron-house")?.href).toBe("/g/iron-house");
+    expect(parseDeepLinkUrl("zook://g/aarogya-strength")?.href).toBe("/g/aarogya-strength");
   });
 
   it("parses join links with referral context", () => {

@@ -64,6 +64,8 @@ function resolveAppEnv() {
 function resolveApiMode() {
   const candidates: Array<[string, string | undefined]> = [
     ["EXPO_PUBLIC_API_MODE", process.env.EXPO_PUBLIC_API_MODE],
+    ["MOBILE_API_MODE", process.env.MOBILE_API_MODE],
+    ["API_MODE", process.env.API_MODE],
   ];
   for (const [, value] of candidates) {
     const raw = value?.trim();

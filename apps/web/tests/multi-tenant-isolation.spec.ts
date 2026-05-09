@@ -20,7 +20,7 @@ async function createIsolatedOwner(orgId: string) {
 }
 
 test("owner member lists never include another organization", async ({ page }) => {
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const otherOrg = await seedAndGetOrg({ username: "peaklab" });
   await loginWithSessionCookie(page, await createIsolatedOwner(org.id));
 
@@ -39,7 +39,7 @@ test("owner member lists never include another organization", async ({ page }) =
 });
 
 test("concurrent org headers keep request context isolated", async ({ page }) => {
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const otherOrg = await seedAndGetOrg({ username: "peaklab" });
   await loginWithSessionCookie(page, await createIsolatedOwner(org.id));
 

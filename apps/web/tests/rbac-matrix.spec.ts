@@ -48,7 +48,7 @@ async function createMatrixActor(input: {
 
 test("organization routes enforce role and permission matrix", async ({ page }) => {
   requireDb();
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const defaultBranch = await prisma.branch.findFirstOrThrow({
     where: { orgId: org.id, isDefault: true },
   });

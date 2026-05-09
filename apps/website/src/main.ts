@@ -4,6 +4,31 @@ const appUrl = import.meta.env.VITE_ZOOK_APP_URL ?? "https://app.zook.kyokasuige
 const appHref = (path: string) => `${appUrl}${path}`;
 const asset = (name: string) => `/assets/zook-redesign/${name}`;
 
+type ProductImage = {
+  avif: string;
+  png: string;
+  alt: string;
+  width: number;
+  height: number;
+  loading?: "eager" | "lazy";
+  fetchPriority?: "high" | "low" | "auto";
+};
+
+const productImage = ({ avif, png, alt, width, height, loading = "lazy", fetchPriority }: ProductImage) => `
+  <picture>
+    <source srcset="${asset(avif)}" type="image/avif" />
+    <img
+      src="${asset(png)}"
+      width="${width}"
+      height="${height}"
+      loading="${loading}"
+      decoding="async"
+      ${fetchPriority ? `fetchpriority="${fetchPriority}"` : ""}
+      alt="${alt}"
+    />
+  </picture>
+`;
+
 const painCards = [
   ["Attendance gets messy.", "QR entry, desk approval, and entry codes stay in one auditable flow."],
   ["Payments are hard to verify.", "Direct UPI, cash, manual records, and hosted checkout all keep a trail."],
@@ -23,42 +48,60 @@ const proofSections = [
     eyebrow: "Web Control Room",
     title: "The owner gets a command board, not another spreadsheet.",
     body: "Active members, today’s scans, revenue, join requests, stock, AI usage, and staff actions sit in one calm operating surface.",
-    image: "02-owner-web-dashboard.png",
+    avif: "owner-web-dashboard.avif",
+    png: "02-owner-web-dashboard.png",
+    width: 1586,
+    height: 992,
     alt: "Zook owner web dashboard command board",
   },
   {
     eyebrow: "Mobile Execution App",
     title: "Every role gets the surface they actually use on the floor.",
     body: "Members check in and follow plans. Reception handles approvals. Trainers keep client context and draft workflows close.",
-    image: "03-member-mobile-home.png",
+    avif: "member-mobile-home.avif",
+    png: "03-member-mobile-home.png",
+    width: 941,
+    height: 1672,
     alt: "Zook member mobile home with membership card",
   },
   {
     eyebrow: "Reception Desk",
     title: "QR attendance feels simple at the desk, but stays server-authoritative.",
     body: "Reception sees pending approvals, flagged scans, entry-code verification, and recent check-ins without guessing from screenshots.",
-    image: "04-receptionist-desk-queue.png",
+    avif: "receptionist-desk-queue.avif",
+    png: "04-receptionist-desk-queue.png",
+    width: 941,
+    height: 1672,
     alt: "Zook receptionist desk approval queue",
   },
   {
     eyebrow: "Trainer + AI",
     title: "AI assists trainers. Trainers stay in control.",
     body: "Drafts are reviewed, edited, and approved before assignment. The system supports professionals instead of bypassing them.",
-    image: "06-trainer-ai-draft-review.png",
+    avif: "trainer-ai-draft-review.avif",
+    png: "06-trainer-ai-draft-review.png",
+    width: 941,
+    height: 1672,
     alt: "Zook trainer AI draft review workflow",
   },
   {
     eyebrow: "Attendance + Payments",
     title: "Built around how Indian gyms actually collect money.",
     body: "Direct UPI, cash, bank transfer, manual audit notes, hosted checkout, and QR entry all connect back to membership state.",
-    image: "07-attendance-payments-showcase.png",
+    avif: "attendance-qr-console.avif",
+    png: "07-attendance-payments-showcase.png",
+    width: 1586,
+    height: 992,
     alt: "Zook attendance and payment operations showcase",
   },
   {
     eyebrow: "Public Joining",
     title: "Turn your gym profile into a joinable page.",
     body: "Plans, referral codes, public profile, checkout handoff, and backend confirmation keep acquisition clean and trustworthy.",
-    image: "08-public-profile-checkout.png",
+    avif: "public-gym-profile.avif",
+    png: "08-public-profile-checkout.png",
+    width: 1586,
+    height: 992,
     alt: "Zook public gym profile and checkout handoff",
   },
 ];
@@ -111,7 +154,15 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
           </div>
         </div>
         <figure class="hero-visual reveal reveal-late">
-          <img src="${asset("01-hero-composite.png")}" width="1586" height="992" alt="Zook web control room and mobile execution app composite" fetchpriority="high" />
+          ${productImage({
+            avif: "hero-control-room-mobile-composite.avif",
+            png: "01-hero-composite.png",
+            width: 1586,
+            height: 992,
+            loading: "eager",
+            fetchPriority: "high",
+            alt: "Zook web control room and mobile execution app composite",
+          })}
         </figure>
       </section>
 
@@ -168,7 +219,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
               <p>${section.body}</p>
             </div>
             <figure class="proof-image">
-              <img src="${asset(section.image)}" width="${section.image.startsWith("0") && ["03", "04", "05", "06"].some((prefix) => section.image.startsWith(prefix)) ? "941" : "1586"}" height="${["03", "04", "05", "06"].some((prefix) => section.image.startsWith(prefix)) ? "1672" : "992"}" loading="lazy" alt="${section.alt}" />
+              ${productImage(section)}
             </figure>
           </article>
         `).join("")}

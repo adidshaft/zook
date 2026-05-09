@@ -21,14 +21,14 @@ test("login passes axe checks", async ({ page }) => {
 });
 
 test("public gym profile passes axe checks", async ({ page }) => {
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   await page.goto(`/g/${org.username}`);
   await expect(page.getByRole("heading", { name: org.name })).toBeVisible();
   await expectA11yClean(page);
 });
 
 test("public join page passes axe checks", async ({ page }) => {
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   await page.goto(`/join/${org.username}`);
   await expect(page.getByRole("heading")).toBeVisible();
   await expectA11yClean(page);

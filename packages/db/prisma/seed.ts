@@ -232,10 +232,10 @@ async function main() {
 
   const aarogyaStrength = await prisma.organization.create({
     data: {
-      name: "Iron House Fitness",
-      username: "iron-house",
+      name: "Aarogya Strength",
+      username: "aarogya-strength",
       contactPhone: "+91 98765 43210",
-      contactEmail: "hello@ironhouse.example",
+      contactEmail: "hello@aarogyastrength.example",
       address: "Lane 7, Koregaon Park",
       city: "Pune",
       state: "Maharashtra",
@@ -280,7 +280,7 @@ async function main() {
   const aarogyaBranch = await prisma.branch.create({
     data: {
       orgId: aarogyaStrength.id,
-      name: "Iron House Koregaon Park",
+      name: "Aarogya Strength Koregaon Park",
       address: aarogyaStrength.address,
       city: aarogyaStrength.city,
       state: aarogyaStrength.state,
@@ -1777,7 +1777,7 @@ async function main() {
     member: member.email,
     minor: minor.email,
     otp: "000000",
-    ironHouse: "iron-house",
+    aarogyaStrength: "aarogya-strength",
     peakLab: "peaklab",
   });
 }
