@@ -34,6 +34,11 @@
   --zook-shadow-glass: 0 24px 80px rgba(0, 0, 0, 0.38), 0 10px 28px rgba(0, 0, 0, 0.24);
   --zook-shadow-glow-lime: 0 18px 46px rgba(185, 244, 85, 0.16), 0 0 0 1px rgba(185, 244, 85, 0.08);
   --zook-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.13), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  --zook-lime-glow-subtle: 0 0 24px rgba(185, 244, 85, 0.4);
+  --zook-sidebar-width: 280px;
+  --zook-header-height: 72px;
+  --zook-card-radius: 24px;
+  --zook-stat-card-radius: 20px;
 }
 
 .zook-glass {

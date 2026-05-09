@@ -1842,6 +1842,7 @@ const navTranslationKeys: Record<string, TranslationKey> = {
   Plan: "nav.plans",
   Plans: "nav.plans",
   "Check in": "nav.checkIn",
+  "Check-in": "nav.checkIn",
   Scan: "nav.scan",
   Tracking: "nav.tracking",
   More: "nav.more",
@@ -1860,6 +1861,8 @@ const navTranslationKeys: Record<string, TranslationKey> = {
   Approvals: "nav.approvals",
   Revenue: "nav.revenue",
   Stock: "nav.stock",
+  Command: "nav.command",
+  Profile: "nav.profile",
 };
 
 function translatedNavLabel(label: string, t: ReturnType<typeof useI18n>["t"]) {
@@ -1871,10 +1874,10 @@ const memberTabs: DockTab[] = [
   { href: "/", label: "Home", icon: "home-outline", activeIcon: "home", matchPath: "/" },
   {
     href: "/scan",
-    label: "Check in",
+    label: "Check-in",
     accessibilityLabel: "Check in",
-    icon: "scan-outline",
-    activeIcon: "scan",
+    icon: "qr-code-outline",
+    activeIcon: "qr-code",
     matchPath: "/scan",
   },
   {
@@ -1885,11 +1888,18 @@ const memberTabs: DockTab[] = [
     matchPath: "/plans",
   },
   {
-    href: "/more" as Href,
-    label: "More",
-    icon: "grid-outline",
-    activeIcon: "grid",
-    matchPath: "/more",
+    href: "/shop" as Href,
+    label: "Shop",
+    icon: "bag-outline",
+    activeIcon: "bag",
+    matchPath: "/shop",
+  },
+  {
+    href: "/profile" as Href,
+    label: "Profile",
+    icon: "person-outline",
+    activeIcon: "person",
+    matchPath: "/profile",
   },
 ];
 
@@ -1910,13 +1920,6 @@ const trainerTabs: DockTab[] = [
     activeView: "clients",
   },
   {
-    href: "/scan",
-    label: "Check in",
-    icon: "scan-outline",
-    activeIcon: "scan",
-    matchPath: "/scan",
-  },
-  {
     href: "/trainer?view=plans" as Href,
     label: "Plans",
     icon: "reader-outline",
@@ -1930,6 +1933,13 @@ const trainerTabs: DockTab[] = [
     icon: "chatbubble-outline",
     activeIcon: "chatbubble",
     matchPath: "/notifications",
+  },
+  {
+    href: "/profile" as Href,
+    label: "Profile",
+    icon: "person-outline",
+    activeIcon: "person",
+    matchPath: "/profile",
   },
 ];
 
@@ -1965,12 +1975,19 @@ const receptionTabs: DockTab[] = [
     matchPath: "/reception",
     activeView: "orders",
   },
+  {
+    href: "/profile" as Href,
+    label: "Profile",
+    icon: "person-outline",
+    activeIcon: "person",
+    matchPath: "/profile",
+  },
 ];
 
 const ownerTabs: DockTab[] = [
   {
     href: "/owner",
-    label: "Needs",
+    label: "Command",
     icon: "pulse-outline",
     activeIcon: "pulse",
     matchPath: "/owner",

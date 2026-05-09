@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -7,7 +7,8 @@ import {
 } from "@/components/expo-safe-bottom-sheet";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Reanimated from "@/lib/reanimated-lite";
 import type { PaymentMode } from "@zook/core";
 import {
@@ -23,7 +24,6 @@ import {
   PrimaryButton,
   SearchField,
   SecondaryButton,
-  SegmentedControl,
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
@@ -115,9 +115,8 @@ function phoneRevealStorageKey(orgId?: string | null) {
 
 export default function Reception() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
-  const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeOrgId, logout, session, token } = useAuth();
+  const { activeOrgId, session, token } = useAuth();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const canRecordManualAttendance = useHasPermission("ATTENDANCE_MANUAL_OVERRIDE");
   const canRecordOfflinePayment = useHasPermission("PAYMENTS_RECORD_OFFLINE");
@@ -196,19 +195,6 @@ export default function Reception() {
   const showAuthenticationRequired = () => {
     showToast({ title: "Authentication required to perform this action." });
   };
-
-  function confirmSignOut() {
-    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign out",
-        style: "destructive",
-        onPress: () => {
-          void logout();
-        },
-      },
-    ]);
-  }
 
   const renderDecisionBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -471,87 +457,78 @@ export default function Reception() {
           ),
         }}
       >
-        <View style={styles.headerRow}>
+        <View style={styles.deskHeader}>
           <View style={styles.headerCopy}>
-            <Text numberOfLines={1} style={styles.headerMeta}>
-              {activeOrgLabel} · Reception
-            </Text>
             <Text style={styles.title}>
               {view === "desk"
                 ? "Desk"
                 : view === "members"
                   ? "Members"
                   : view === "payments"
-                    ? "Payments"
+                    ? "Record Payment"
                     : "Orders"}
             </Text>
-            <Text style={styles.subtitle}>Receptionist role chip · {session?.user.name ?? "staff"}</Text>
+            <Text style={styles.subtitle}>
+              {view === "desk" ? "Receptionist Desk" : session?.user.name ?? "Reception"}
+            </Text>
+          </View>
+          <View style={styles.roleChip}>
+            <Ionicons name="person-outline" size={19} color={colors.lime} />
+            <Text style={styles.roleChipText}>Receptionist</Text>
+            <Ionicons name="chevron-down" size={16} color={colors.muted} />
           </View>
         </View>
 
-        <View style={styles.utilityRow}>
-          <Pressable
-            onPress={() => router.push("/settings")}
-            accessibilityRole="button"
-            accessibilityLabel="Open settings"
-            style={styles.utilityPill}
-          >
-            <IconBubble icon="settings-outline" tone="blue" size={28} />
-            <Text style={styles.utilityText}>Settings</Text>
-          </Pressable>
-          <Pressable
-            onPress={confirmSignOut}
-            accessibilityRole="button"
-            accessibilityLabel="Sign out"
-            style={[styles.utilityPill, styles.signOutPill]}
-          >
-            <IconBubble icon="log-out-outline" tone="red" size={28} />
-            <Text style={[styles.utilityText, styles.signOutText]}>Sign out</Text>
-          </Pressable>
+        <View style={styles.gymSelector}>
+          <Ionicons name="business-outline" size={25} color={colors.text} />
+          <Text numberOfLines={1} style={styles.gymSelectorText}>{activeOrgLabel}</Text>
+          <Ionicons name="chevron-down" size={18} color={colors.muted} />
         </View>
 
-        <GlassCard variant="compact" padding={12} contentStyle={styles.memberContext}>
-          <IconBubble
-            icon={member ? "person-outline" : "person-add-outline"}
-            tone={member ? "lime" : "amber"}
-            size={34}
-          />
-          <View style={styles.memberContextCopy}>
-            <Text numberOfLines={1} style={styles.memberContextTitle}>
-              {member?.name ?? "No member selected"}
-            </Text>
-            <Text numberOfLines={1} style={styles.memberContextBody}>
-              {member?.email ?? "Search members before recording payments or attendance"}
-              {membership?.status ? ` · ${membership.status.replace(/_/g, " ")}` : ""}
-            </Text>
-          </View>
-          {member ? (
-            <Pressable
-              onPress={() => setSelectedMemberId(null)}
-              accessibilityRole="button"
-              accessibilityLabel="Clear selected member"
-              style={styles.clearMemberButton}
-            >
-              <Text style={styles.clearMemberText}>Clear</Text>
-            </Pressable>
-          ) : null}
-        </GlassCard>
+        {view !== "desk" ? (
+          <GlassCard variant="compact" padding={12} contentStyle={styles.memberContext}>
+            <IconBubble
+              icon={member ? "person-outline" : "person-add-outline"}
+              tone={member ? "lime" : "amber"}
+              size={34}
+            />
+            <View style={styles.memberContextCopy}>
+              <Text numberOfLines={1} style={styles.memberContextTitle}>
+                {member?.name ?? "No member selected"}
+              </Text>
+              <Text numberOfLines={1} style={styles.memberContextBody}>
+                {member?.email ?? "Search members before recording payments or attendance"}
+                {membership?.status ? ` · ${membership.status.replace(/_/g, " ")}` : ""}
+              </Text>
+            </View>
+            {member ? (
+              <Pressable
+                onPress={() => setSelectedMemberId(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Clear selected member"
+                style={styles.clearMemberButton}
+              >
+                <Text style={styles.clearMemberText}>Clear</Text>
+              </Pressable>
+            ) : null}
+          </GlassCard>
+        ) : null}
 
         {view === "desk" ? (
           <>
             <View style={styles.metricGrid}>
               <MetricTile
-                label="Scans"
+                label="Today"
                 value={String(todayCount)}
-                detail="Today"
+                detail="Check-ins"
                 tone="lime"
                 icon="qr-code-outline"
                 style={styles.metricThird}
               />
               <MetricTile
-                label="Queue"
-                value={String(approvalQueue.length)}
-                detail="Open tasks"
+                label="Pending"
+                value={String(pendingCount)}
+                detail="Awaiting approval"
                 tone="amber"
                 icon="flash-outline"
                 style={styles.metricThird}
@@ -559,7 +536,7 @@ export default function Reception() {
               <MetricTile
                 label="Flagged"
                 value={String(flaggedCount)}
-                detail="Needs care"
+                detail="Needs attention"
                 tone="red"
                 icon="alert-circle-outline"
                 style={styles.metricThird}
@@ -697,13 +674,13 @@ export default function Reception() {
                         Approve
                       </PrimaryButton>
                       <SecondaryButton
-                        icon="close-circle-outline"
+                        icon="eye-outline"
                         disabled={!canApproveAttendance || rejectAttendanceMutation.isPending}
                         onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}
                         onPress={() => openDecisionSheet(attempt)}
                         style={styles.actionHalf}
                       >
-                        Reject
+                        Review
                       </SecondaryButton>
                     </View>
                   </GlassCard>
@@ -885,11 +862,39 @@ export default function Reception() {
               />
               <View style={styles.formStack}>
                 <Text style={styles.fieldGroupLabel}>Collection mode</Text>
-                <SegmentedControl
-                  options={paymentModes}
-                  value={paymentMode}
-                  onChange={setPaymentMode}
-                />
+                <View style={styles.paymentModeGrid}>
+                  {paymentModes.map((mode) => {
+                    const selected = mode.value === paymentMode;
+                    return (
+                      <Pressable
+                        key={mode.value}
+                        onPress={() => setPaymentMode(mode.value)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        style={[styles.paymentModeTile, selected ? styles.paymentModeTileActive : null]}
+                      >
+                        <Ionicons
+                          name={
+                            mode.value === "CASH"
+                              ? "cash-outline"
+                              : mode.value === "DIRECT_UPI"
+                                ? "arrow-up-outline"
+                                : mode.value === "BANK_TRANSFER"
+                                  ? "business-outline"
+                                  : mode.value === "CARD"
+                                    ? "card-outline"
+                                    : "create-outline"
+                          }
+                          size={22}
+                          color={selected ? colors.lime : colors.muted}
+                        />
+                        <Text style={[styles.paymentModeText, selected ? styles.paymentModeTextActive : null]}>
+                          {mode.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
                 <FormField
                   label="Amount received"
                   value={amount}
@@ -918,7 +923,7 @@ export default function Reception() {
                 />
               </View>
               <AuditWarning>
-                Add a short note so finance can review this desk payment later.
+                All offline payments are recorded with audit logs. Ensure payment is received before recording.
               </AuditWarning>
               <FormField
                 label="Staff note"
@@ -1176,9 +1181,52 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
+  deskHeader: {
+    minHeight: 78,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    paddingTop: 8,
+  },
   headerCopy: {
     flex: 1,
     gap: 8,
+  },
+  roleChip: {
+    minHeight: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingHorizontal: 14,
+  },
+  roleChipText: {
+    color: colors.lime,
+    fontSize: 16,
+    lineHeight: 21,
+    fontFamily: "Inter_600SemiBold",
+  },
+  gymSelector: {
+    minHeight: 66,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.035)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: 17,
+  },
+  gymSelectorText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 18,
+    lineHeight: 23,
+    fontFamily: "Inter_600SemiBold",
   },
   headerMeta: {
     color: colors.muted,
@@ -1338,6 +1386,36 @@ const styles = StyleSheet.create({
   },
   formStack: {
     gap: spacing.md,
+  },
+  paymentModeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  paymentModeTile: {
+    minWidth: 76,
+    minHeight: 64,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.035)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+  },
+  paymentModeTileActive: {
+    borderColor: colors.lime,
+    backgroundColor: "rgba(185,244,85,0.12)",
+  },
+  paymentModeText: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  paymentModeTextActive: {
+    color: colors.lime,
+    fontFamily: "Inter_600SemiBold",
   },
   fieldGroupLabel: {
     color: colors.muted,

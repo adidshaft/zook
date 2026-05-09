@@ -6,10 +6,12 @@ import type { DashboardCopy } from "./types";
 
 export function UserMenu({
   user,
+  roleLabel,
   copy,
   showSwitchOrganization,
 }: {
   user: { name: string; email: string; preferredLocale?: string | null };
+  roleLabel?: string | undefined;
   copy: DashboardCopy;
   showSwitchOrganization: boolean;
 }) {
@@ -22,7 +24,7 @@ export function UserMenu({
         <UserCircle2 size={18} />
         <span className="hidden font-medium md:inline">{user.name}</span>
         <span className="hidden rounded-full border border-white/10 bg-white/6 px-2 py-0.5 text-[11px] font-semibold text-white/55 lg:inline">
-          {user.preferredLocale === "hi" ? copy.common.hindi : copy.common.english}
+          {roleLabel ?? (user.preferredLocale === "hi" ? copy.common.hindi : copy.common.english)}
         </span>
       </summary>
       <div className="absolute right-0 z-[120] mt-2 w-[min(92vw,22rem)] rounded-[24px] border border-white/10 bg-zinc-950/95 p-3 shadow-2xl shadow-black/50 backdrop-blur">

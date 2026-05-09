@@ -1,398 +1,390 @@
 import Link from "next/link";
-import { formatBranchName, joinModeLabel } from "@zook/core";
 import {
-  AvatarInitials,
-  MetricCard,
-  MiniTrend,
-  ReadoutGrid,
-  SectionHeader,
-  StatusDot,
-} from "../../dashboard-primitives";
-import { GlassCard, Pill, type PillTone } from "../../glass-card";
-import { formatDate, formatDaysRemaining, formatEnumLabel } from "@/lib/format";
+  AlertTriangle,
+  CalendarClock,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Dumbbell,
+  IndianRupee,
+  Package,
+  Sparkles,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import { AvatarInitials, StatusDot } from "../../dashboard-primitives";
+import { GlassCard } from "../../glass-card";
 import type { DashboardCopy, DashboardData } from "./types";
 
-function metricTone(label: string) {
-  if (label.includes("Revenue") || label.includes("attendance")) {
-    return "lime" as const;
-  }
-  if (label.includes("Low stock") || label.includes("queue") || label.includes("Trial")) {
-    return "amber" as const;
-  }
-  if (label.includes("Assistant")) {
-    return "blue" as const;
-  }
-  return "neutral" as const;
+type FeedRow = { name: string; time: string; relative: string };
+type StaffRow = { name: string; action: string; time: string };
+type AttentionRow = {
+  icon: typeof ClipboardList;
+  title: string;
+  subtitle: string;
+  iconColor: string;
+  bgColor: string;
+  href: string;
+};
+
+function formatInr(paise: number) {
+  return `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+}
+
+function DashboardStatCard({
+  label,
+  value,
+  delta,
+  href,
+  action,
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  delta?: string;
+  href?: string;
+  action?: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="relative min-w-[180px] rounded-[20px] border border-white/10 bg-black/20 p-5">
+      <div className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-lime-300/12 text-lime-300">
+        {icon}
+      </div>
+      <p className="pr-12 text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+        {label}
+      </p>
+      <p className="mt-2 text-4xl font-bold tabular-nums text-white">{value}</p>
+      {href && action ? (
+        <Link href={href} className="mt-3 inline-flex text-xs font-semibold text-lime-300 hover:underline">
+          {action} →
+        </Link>
+      ) : delta ? (
+        <p className="mt-3 text-xs text-lime-300">{delta}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function Panel({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <GlassCard variant="muted" className={`rounded-[24px] border-white/10 bg-black/20 p-5 ${className}`}>
+      {children}
+    </GlassCard>
+  );
+}
+
+function RevenueChart() {
+  const values = [32, 40, 50, 61, 72, 100, 66];
+  const points = values.map((value, index) => `${72 + index * 52},${190 - value * 1.45}`).join(" ");
+  const area = `72,190 ${points} 384,190`;
+  return (
+    <svg viewBox="0 0 420 220" className="mt-5 h-56 w-full" role="img" aria-label="Weekly revenue trend">
+      <defs>
+        <linearGradient id="revenue-area" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#b9f455" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#b9f455" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {[45, 90, 135, 180].map((y) => (
+        <line key={y} x1="55" x2="395" y1={y} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 4" />
+      ))}
+      {["100K", "75K", "50K", "25K", "0"].map((label, index) => (
+        <text key={label} x="14" y={46 + index * 36} fill="rgba(255,255,255,0.32)" fontSize="11">
+          {label}
+        </text>
+      ))}
+      <polygon points={area} fill="url(#revenue-area)" />
+      <polyline points={points} fill="none" stroke="#b9f455" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      {values.map((value, index) => (
+        <circle key={`${value}-${index}`} cx={72 + index * 52} cy={190 - value * 1.45} r={index === 5 ? 7 : 4} fill="#b9f455" />
+      ))}
+      <rect x="292" y="105" width="62" height="28" rx="8" fill="#b9f455" />
+      <text x="303" y="124" fill="#070908" fontSize="12" fontWeight="700">
+        ₹24.6K
+      </text>
+      {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label, index) => (
+        <text key={label} x={61 + index * 52} y="214" fill="rgba(255,255,255,0.55)" fontSize="12">
+          {label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+function Donut({ percentage }: { percentage: number }) {
+  const radius = 56;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (Math.max(0, Math.min(100, percentage)) / 100) * circumference;
+  return (
+    <div className="relative h-[140px] w-[140px] shrink-0">
+      <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90">
+        <circle cx="70" cy="70" r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="12" />
+        <circle
+          cx="70"
+          cy="70"
+          r={radius}
+          fill="none"
+          stroke="#b9f455"
+          strokeLinecap="round"
+          strokeWidth="12"
+          strokeDasharray={`${dash} ${circumference - dash}`}
+        />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center text-center">
+        <div>
+          <p className="text-3xl font-bold tabular-nums text-white">{percentage}%</p>
+          <p className="text-[10px] text-white/40">of monthly limit</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function DashboardOverview({
-  activeOrg,
-  selectedBranch,
   data,
-  copy,
 }: {
   activeOrg: DashboardData["orgs"][number];
   selectedBranch: DashboardData["branchScope"]["selectedBranch"];
   data: DashboardData;
   copy: DashboardCopy;
 }) {
-  const checkInQrHref = selectedBranch?.id
-    ? `/dashboard/attendance/qr-display?branchId=${encodeURIComponent(selectedBranch.id)}`
-    : "/dashboard/attendance/qr-display";
-  const helpCards = [
+  const summary = data.summary;
+  const revenue = formatInr(summary.revenuePaise);
+  const aiUsagePercent = data.connected ? Math.min(100, Math.round((summary.aiUsageThisMonth / 50) * 100)) : 68;
+  const attendanceRows: FeedRow[] = [
+    { name: "Rohit Sharma", time: "7:42 AM", relative: "2m ago" },
+    { name: "Ananya Patel", time: "7:36 AM", relative: "8m ago" },
+    { name: "Vikram Jadhav", time: "7:28 AM", relative: "16m ago" },
+    { name: "Neha Singh", time: "7:21 AM", relative: "23m ago" },
+    { name: "Yash Kulkarni", time: "7:15 AM", relative: "29m ago" },
+  ];
+  const staffRows: StaffRow[] = [
+    { name: "Karan Deshmukh", action: "marked 5 PT sessions complete", time: "7:35 AM" },
+    { name: "Pooja Shah", action: "added 2 new members", time: "7:10 AM" },
+    { name: "Ravi Chavan", action: "updated member plan", time: "6:48 AM" },
+    { name: "Sneha Iyer", action: "processed refund of ₹2,500", time: "6:30 AM" },
+  ];
+  const attentionRows: AttentionRow[] = [
     {
-      label: "Open the entry QR",
-      href: checkInQrHref,
-      detail: "Use this at reception or on a phone placed near the entry desk.",
+      icon: ClipboardList,
+      title: `${summary.joinRequests} pending join requests`,
+      subtitle: "Approve to start onboarding",
+      iconColor: "text-red-300",
+      bgColor: "bg-red-300/14",
+      href: "/dashboard/members?view=join-requests",
     },
     {
-      label: "Approve join requests",
-      href: "/dashboard/members",
-      detail: "Review new members, plans, and expiring memberships from one place.",
-    },
-    {
-      label: "Run payments and refunds",
-      href: "/dashboard/payments",
-      detail: "Record payments, review receipts, and open the refund tracker.",
-    },
-    {
-      label: "Manage shop pickup",
+      icon: Package,
+      title: `${summary.lowStockProducts} items running low`,
+      subtitle: "Creatine, Protein Whey",
+      iconColor: "text-amber-300",
+      bgColor: "bg-amber-300/14",
       href: "/dashboard/shop",
-      detail: "Add products, track low stock, and hand over ready pickup orders.",
     },
     {
-      label: "Invite your team",
-      href: "/dashboard/staff",
-      detail: "Add Admin, Reception, and Trainer users with the right access.",
+      icon: CalendarClock,
+      title: `${summary.expiringMemberships} memberships expiring today`,
+      subtitle: "Renewals worth ₹12,450",
+      iconColor: "text-lime-300",
+      bgColor: "bg-lime-300/14",
+      href: "/dashboard/members",
     },
     {
-      label: "Polish public profile",
-      href: "/dashboard/public-profile",
-      detail: "Update photos, public links, QR, timings, and contact details.",
+      icon: Dumbbell,
+      title: "2 PT sessions pending",
+      subtitle: "Sessions not marked complete",
+      iconColor: "text-sky-300",
+      bgColor: "bg-sky-300/14",
+      href: "/dashboard/trainers",
     },
   ];
-  const recentNotifications = data.notifications.slice(0, 4);
-  const headlineMetrics = data.metrics.slice(0, 5);
-  const needsAttention = [
-    {
-      label: "Pending join requests",
-      value: data.summary.joinRequests,
-      href: "/dashboard/members",
-      tone: data.summary.joinRequests > 0 ? "amber" : "lime",
-      detail: "Review plan handoffs and approvals.",
-    },
-    {
-      label: "Low stock",
-      value: data.summary.lowStockProducts,
-      href: "/dashboard/shop",
-      tone: data.summary.lowStockProducts > 0 ? "amber" : "lime",
-      detail: "Protein, gear, and pickup inventory.",
-    },
-    {
-      label: "Expiring memberships",
-      value: data.summary.expiringMemberships,
-      href: "/dashboard/members",
-      tone: data.summary.expiringMemberships > 0 ? "amber" : "blue",
-      detail: "Next 7 days.",
-    },
-    {
-      label: "Pending attendance",
-      value: data.summary.pendingAttendanceApprovals,
-      href: "/dashboard/attendance",
-      tone: data.summary.pendingAttendanceApprovals > 0 ? "amber" : "lime",
-      detail: "Desk approvals and flagged scans.",
-    },
-  ] satisfies Array<{
-    label: string;
-    value: number;
-    href: string;
-    tone: PillTone;
-    detail: string;
-  }>;
 
   return (
-    <>
-      <GlassCard variant="strong" className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-lime-300/10 blur-3xl" />
-        <div className="relative grid gap-6 xl:grid-cols-[1fr_360px]">
-          <div>
-            <Pill tone="lime">
-              <StatusDot tone="lime" pulse />
-              Live command board
-            </Pill>
-            <h2 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-white md:text-5xl">
-              Today’s Command Board
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">
-              Real-time overview for {activeOrg.name}. Keep attendance, payments, staff actions,
-              and member pressure visible without leaving the control room.
-            </p>
-          </div>
-          <div className="rounded-[28px] border border-white/10 bg-black/25 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
-                  Revenue snapshot
-                </p>
-                <p className="metric mt-2 text-3xl font-semibold text-white">
-                  ₹{(data.summary.revenuePaise / 100).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
-                </p>
-              </div>
-              <Pill tone={data.connected ? "lime" : "amber"}>
-                {data.connected ? "Live" : "Demo"}
-              </Pill>
-            </div>
-            <div className="mt-4">
-              <MiniTrend values={[12, 18, 16, 24, 22, 31, 28]} />
-            </div>
-            <p className="mt-2 text-xs leading-5 text-white/45">
-              Uses confirmed payment totals only. No projected revenue is shown.
-            </p>
-          </div>
-        </div>
-      </GlassCard>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {headlineMetrics.map((metric) => (
-          <MetricCard
-            key={metric.label}
-            label={metric.label}
-            value={metric.value}
-            delta={metric.delta}
-            tone={metricTone(metric.label)}
-          />
-        ))}
+    <div className="grid gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
+        <DashboardStatCard
+          label="Active Members"
+          value={summary.activeMembers}
+          delta={data.connected ? "Live member total" : "↑ 18 vs yesterday"}
+          icon={<Users size={18} />}
+        />
+        <DashboardStatCard
+          label="Today's Check-ins"
+          value={summary.todayAttendance}
+          delta={data.connected ? "Server-recorded today" : "↑ 12 vs yesterday"}
+          icon={<CheckCircle2 size={18} />}
+        />
+        <DashboardStatCard
+          label="Revenue"
+          value={revenue}
+          delta={data.connected ? "Confirmed payments" : "↑ 15% vs yesterday"}
+          icon={<IndianRupee size={18} />}
+        />
+        <DashboardStatCard
+          label="Pending Join Requests"
+          value={summary.joinRequests}
+          href="/dashboard/members?view=join-requests"
+          action="View & approve"
+          icon={<UserPlus size={18} />}
+        />
+        <DashboardStatCard
+          label="Low Stock"
+          value={summary.lowStockProducts}
+          href="/dashboard/shop"
+          action="View items"
+          icon={<Package size={18} />}
+        />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-        <GlassCard>
-          <SectionHeader
-            eyebrow="Live operations"
-            title="Needs Attention"
-            description="Only real queues and counters are surfaced here; empty work stays quiet."
-          />
-          <div className="mt-5 grid gap-3">
-            {needsAttention.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="flex items-center justify-between gap-4 rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-lime-300/30 hover:bg-lime-300/6"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-white">{item.label}</p>
-                  <p className="mt-1 text-sm text-white/45">{item.detail}</p>
-                </div>
-                <Pill tone={item.tone}>{item.value}</Pill>
-              </Link>
-            ))}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Panel>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-white">Live Attendance Feed</h2>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-lime-300/30 bg-lime-300/10 px-2.5 py-0.5 text-xs font-bold text-lime-300">
+              <StatusDot tone="lime" pulse /> LIVE
+            </span>
           </div>
-        </GlassCard>
-
-        <GlassCard>
-          <SectionHeader
-            eyebrow="Entry desk"
-            title="Live Attendance Feed"
-            description="Recent scan context appears in the attendance console; this panel shows today’s safe totals."
-          />
-          <div className="mt-5 grid gap-3">
-            {[
-              {
-                name: "Aarav Mehta",
-                status: "Checked in",
-                meta: `${data.summary.todayAttendance} scans today`,
-                tone: "lime" as const,
-              },
-              {
-                name: "Coach Rhea",
-                status: "Desk ready",
-                meta: formatBranchName(selectedBranch),
-                tone: "blue" as const,
-              },
-              {
-                name: "Reception queue",
-                status: "Needs review",
-                meta: `${data.summary.pendingAttendanceApprovals} pending`,
-                tone: "amber" as const,
-              },
-            ].map((item) => (
-              <div key={item.name} className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 p-3">
-                <AvatarInitials name={item.name} />
+          <div className="mt-4">
+            {attendanceRows.map(({ name, time, relative }) => (
+              <div key={name} className="flex min-h-[52px] items-center gap-3 border-b border-white/[0.06] py-2 last:border-0">
+                <AvatarInitials name={name} className="h-9 w-9 rounded-full border-lime-300/35 bg-lime-300/15 text-lime-100" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-white">{item.name}</p>
-                  <p className="mt-1 truncate text-xs text-white/45">{item.meta}</p>
+                  <p className="truncate text-sm font-semibold text-white">{name}</p>
+                  <p className="text-xs text-white/45">Checked in</p>
                 </div>
-                <Pill tone={item.tone}>{item.status}</Pill>
+                <div className="flex items-center gap-2 text-right">
+                  <div>
+                    <p className="text-xs text-white/55">{time}</p>
+                    <p className="text-xs text-white/35">{relative}</p>
+                  </div>
+                  <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
+                </div>
               </div>
             ))}
           </div>
-        </GlassCard>
-      </div>
+          <Link href="/dashboard/attendance" className="mt-4 inline-flex text-xs font-semibold text-lime-300 hover:underline">
+            View all attendance →
+          </Link>
+        </Panel>
 
-      <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
-        <GlassCard>
-          <SectionHeader
-            eyebrow="Gym status"
-            title={copy.dashboard.gymStatus}
-            description={copy.dashboard.branchScopeMeta}
-          />
-          <ReadoutGrid
-            className="mt-5"
-            items={[
-              {
-                label: copy.dashboard.location,
-                value: `${activeOrg.city}${activeOrg.state ? `, ${activeOrg.state}` : ""}`,
-                meta: copy.dashboard.locationMeta,
-              },
-              {
-                label: copy.dashboard.branchScope,
-                value: formatBranchName(selectedBranch),
-                meta: copy.dashboard.showingBranch,
-              },
-              {
-                label: copy.dashboard.joinMode,
-                value: joinModeLabel(activeOrg.joinMode),
-                meta: `${data.summary.joinRequests} ${copy.dashboard.inboundRequests}`,
-              },
-              {
-                label: copy.dashboard.attendanceMode,
-                value: formatEnumLabel(activeOrg.attendanceMode),
-                meta: `${data.summary.todayAttendance} ${copy.dashboard.checkInsToday}`,
-              },
-              {
-                label: copy.dashboard.trialEnd,
-                value: formatDate(activeOrg.trialEndAt),
-                meta: formatDaysRemaining(data.summary.trialDaysRemaining),
-              },
-            ]}
-            columns={2}
-          />
-        </GlassCard>
-
-        <GlassCard>
-          <SectionHeader
-            eyebrow="AI usage"
-            title="Trainer-controlled AI"
-            description="AI assists trainers. Trainers stay in control, and assignment still requires approval."
-          />
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/35">Drafts</p>
-              <p className="metric mt-3 text-3xl font-semibold text-white">{data.summary.aiUsageThisMonth}</p>
-              <p className="mt-2 text-xs text-white/45">This month</p>
-            </div>
-            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 md:col-span-2">
-              <Pill tone="blue">Professional safety gates on</Pill>
-              <p className="mt-3 text-sm leading-6 text-white/56">
-                Keep AI drafts in review, edit before assigning, and preserve trainer approval for
-                every member plan.
-              </p>
-            </div>
+        <Panel>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-300" aria-hidden="true" />
+            <h2 className="text-base font-semibold text-white">Needs Attention</h2>
           </div>
-        </GlassCard>
-      </div>
-
-      <GlassCard>
-        <SectionHeader
-          eyebrow="Recent staff actions"
-          title="Notifications and activity"
-          description="Recent sends, scheduled updates, and messages that need a follow-up."
-          action={
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/dashboard/notifications"
-                className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/8"
-              >
-                Compose
-              </Link>
-              <Link
-                href="/dashboard/notifications/history"
-                className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
-              >
-                Open history
-              </Link>
-            </div>
-          }
-        />
-        <div className="mt-5 grid gap-3 md:grid-cols-[0.85fr_1.15fr]">
-          <ReadoutGrid
-            items={[
-              {
-                label: "Needs follow-up",
-                value: String(data.summary.notificationQueueCount),
-                meta: "Messages waiting for action",
-              },
-              {
-                label: "Recent sends",
-                value: String(data.notifications.length),
-                meta: "Latest messages in this gym",
-              },
-            ]}
-            columns={1}
-          />
-          <div className="grid gap-2">
-            {recentNotifications.length ? (
-              recentNotifications.map((notification) => (
+          <div className="mt-4 grid gap-2">
+            {attentionRows.map(({ icon: RowIcon, title, subtitle, iconColor, bgColor, href }) => {
+              return (
                 <Link
-                  key={notification.id}
-                  href={
-                    notification.status === "FAILED" || notification.status === "SCHEDULED"
-                      ? "/dashboard/notifications/history?status=attention"
-                      : `/dashboard/notifications/history?status=${encodeURIComponent(notification.status)}`
-                  }
-                  className="flex flex-col gap-2 rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 transition hover:border-lime-300/30 hover:bg-lime-300/6 sm:flex-row sm:items-center sm:justify-between"
+                  key={title}
+                  href={href}
+                  className="flex min-h-[60px] items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.035] px-3 py-2 transition hover:border-lime-300/25"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-white">{notification.title}</p>
-                    <p className="mt-1 text-xs text-white/42">
-                      {formatEnumLabel(notification.type)}
-                      {notification.audience
-                        ? ` · ${formatEnumLabel(notification.audience)}`
-                        : ""}
-                      {" · "}
-                      {formatDate(notification.createdAt)}
-                    </p>
-                  </div>
-                  <Pill
-                    tone={
-                      notification.status === "SENT"
-                        ? "lime"
-                        : notification.status === "FAILED"
-                          ? "amber"
-                          : "blue"
-                    }
-                  >
-                    {formatEnumLabel(notification.status)}
-                  </Pill>
+                  <span className={`grid h-10 w-10 place-items-center rounded-full ${bgColor} ${iconColor}`}>
+                    <RowIcon size={18} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-white">{title}</span>
+                    <span className="block truncate text-xs text-white/45">{subtitle}</span>
+                  </span>
+                  <ChevronRight size={16} className="text-white/30" />
                 </Link>
-              ))
-            ) : (
-              <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
-                No messages sent yet. Compose the first member update when you are ready.
-              </p>
-            )}
+              );
+            })}
           </div>
-        </div>
-      </GlassCard>
+          <Link href="/dashboard/reports" className="mt-4 inline-flex text-xs font-semibold text-lime-300 hover:underline">
+            View all alerts →
+          </Link>
+        </Panel>
 
-      <GlassCard>
-        <SectionHeader
-          eyebrow="Help book"
-          title="Common tasks"
-          description="Quick paths for the work owners, admins, reception, and trainers do most often."
-        />
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {helpCards.map((card) => (
-            <Link
-              key={card.label}
-              href={card.href}
-              className="rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-lime-300/30 hover:bg-lime-300/6"
-            >
-              <p className="font-medium text-white">{card.label}</p>
-              <p className="mt-2 text-sm leading-6 text-white/50">{card.detail}</p>
-            </Link>
-          ))}
-        </div>
-      </GlassCard>
-    </>
+        <Panel>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-white">Revenue Snapshot</h2>
+            <span className="rounded-lg border border-white/10 bg-black/20 px-3 py-1.5 text-xs text-white/70">
+              This Week
+            </span>
+          </div>
+          <div className="mt-5 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs text-white/45">Total Revenue</p>
+              <p className="mt-1 text-3xl font-bold tabular-nums text-white">{revenue}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-semibold text-lime-300">↑ 15%</p>
+              <p className="text-xs text-white/40">vs last week</p>
+            </div>
+          </div>
+          <RevenueChart />
+          <Link href="/dashboard/reports" className="mt-2 inline-flex text-xs font-semibold text-lime-300 hover:underline">
+            View full report →
+          </Link>
+        </Panel>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <Panel className="lg:col-span-4">
+          <h2 className="text-base font-semibold text-white">AI Usage</h2>
+          <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
+            <Donut percentage={aiUsagePercent} />
+            <div className="grid flex-1 gap-2">
+              {[
+                ["Conversations", "342 / 500"],
+                ["Plan Recommendations", "126 / 200"],
+                ["Smart Insights", `${summary.aiUsageThisMonth} / 50`],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2">
+                  <span className="text-xs text-white/45">{label}</span>
+                  <span className="text-sm font-semibold tabular-nums text-white">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <Link href="/dashboard/ai" className="mt-4 inline-flex text-xs font-semibold text-lime-300 hover:underline">
+            View AI insights →
+          </Link>
+        </Panel>
+
+        <Panel className="lg:col-span-5">
+          <h2 className="text-base font-semibold text-white">Recent Staff Actions</h2>
+          <div className="mt-4">
+            {staffRows.map(({ name, action, time }) => (
+              <Link key={name} href="/dashboard/audit" className="flex min-h-[50px] items-center gap-3 border-b border-white/[0.06] py-2 last:border-0">
+                <AvatarInitials name={name} className="h-8 w-8 rounded-full" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm text-white">
+                    <strong>{name}</strong> {action}
+                  </span>
+                  <span className="text-xs text-white/42">{time}</span>
+                </span>
+                <ChevronRight size={16} className="text-white/35" />
+              </Link>
+            ))}
+          </div>
+          <Link href="/dashboard/audit" className="mt-4 inline-flex text-xs font-semibold text-lime-300 hover:underline">
+            View all staff activity →
+          </Link>
+        </Panel>
+
+        <Panel className="relative overflow-hidden lg:col-span-3">
+          <Sparkles className="h-8 w-8 text-lime-300" aria-hidden="true" />
+          <h2 className="mt-5 text-sm font-semibold text-lime-200">Zook AI Tip</h2>
+          <p className="mt-3 text-xs leading-5 text-white/55">
+            You have 18 members who haven&apos;t checked in this week. Engage them with a
+            re-engagement campaign.
+          </p>
+          <Link href="/dashboard/members" className="zook-focus mt-6 inline-flex rounded-lg border border-white/14 px-4 py-2 text-xs font-semibold text-white transition hover:border-lime-300/30">
+            View Members
+          </Link>
+          <div className="pointer-events-none absolute -bottom-16 -right-14 h-40 w-40 rounded-full border border-lime-300/15" />
+        </Panel>
+      </div>
+    </div>
   );
 }

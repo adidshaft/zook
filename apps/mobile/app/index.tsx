@@ -1,7 +1,5 @@
-import { Link, Stack, useRouter } from "expo-router";
+import { Link, Stack } from "expo-router";
 import type { Href } from "expo-router";
-import { BlurView } from "expo-blur";
-import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -34,20 +32,6 @@ import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
-function initialsFor(name?: string | null) {
-  const cleanName = name?.trim() ?? "";
-  return (
-    cleanName
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") ||
-    cleanName.charAt(0).toUpperCase() ||
-    "?"
-  );
-}
-
 function formatRenewalDate(value?: string | null) {
   if (!value) return "Renewal date pending";
   return `Renews ${new Date(value).toLocaleDateString("en-IN", {
@@ -65,7 +49,6 @@ function normalizeMediaUrl(value?: string | null) {
 }
 
 export default function Home() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const { activeOrgId, session } = useAuth();
@@ -91,19 +74,9 @@ export default function Home() {
   const activeOrganization = memberHome?.activeOrganization ?? sessionOrganization;
   const memberName = session?.user.name || "Member";
   const firstName = memberName.trim().split(/\s+/)[0] || "Member";
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return `Good morning, ${firstName}`;
-    if (hour < 17) return `Good afternoon, ${firstName}`;
-    return `Good evening, ${firstName}`;
-  }, [firstName]);
-  const initials = initialsFor(memberName);
   const profilePhotoUrl = normalizeMediaUrl(session?.user.profilePhotoUrl);
   const orgName = activeOrganization?.name ?? "Find a gym";
   const city = activeOrganization?.city ?? "Nearby";
-  const gymLogoUrl = normalizeMediaUrl(
-    activeOrganization && "logoUrl" in activeOrganization ? activeOrganization.logoUrl : null,
-  );
   const gymHref = sessionOrganization?.username
     ? (`/gym/${sessionOrganization.username}` as Href)
     : ("/find-gyms" as Href);
@@ -233,63 +206,20 @@ export default function Home() {
             />
           }
         >
-          <BlurView intensity={24} tint="dark" style={styles.homeHeader}>
-            <Pressable
-              onPress={() => router.push("/profile")}
-              style={({ pressed }) => (pressed ? styles.pressedAvatar : null)}
-              accessibilityRole="button"
-              accessibilityLabel="Open profile"
-              hitSlop={12}
-            >
-              <View style={styles.avatar}>
-                {profilePhotoUrl ? (
-                  <Image
-                    source={{ uri: profilePhotoUrl }}
-                    style={styles.avatarImage}
-                    contentFit="cover"
-                    accessibilityLabel="Your profile photo"
-                  />
-                ) : (
-                  <Text style={styles.avatarText}>{initials}</Text>
-                )}
-              </View>
-            </Pressable>
-            <Link href={gymHref} asChild>
-              <Pressable
-                accessibilityRole="link"
-                accessibilityLabel="Open gym details"
-                style={styles.headerCopy}
-              >
-                <Text numberOfLines={1} style={styles.greeting}>
-                  {greeting}
-                </Text>
-                <View style={styles.gymLineRow}>
-                  <View style={styles.gymLogo}>
-                    {gymLogoUrl ? (
-                      <Image
-                        source={{ uri: gymLogoUrl }}
-                        style={styles.gymLogoImage}
-                        contentFit="cover"
-                        accessibilityLabel={`${orgName} gym logo`}
-                      />
-                    ) : (
-                      <Text style={styles.gymLogoText}>{initialsFor(orgName)}</Text>
-                    )}
-                  </View>
-                  <Text numberOfLines={1} style={styles.gymLine}>
-                    {city}
-                  </Text>
-                  <Ionicons name="chevron-down" size={14} color={colors.muted} />
-                </View>
-              </Pressable>
-            </Link>
+          <View style={styles.premiumHeader}>
+            <View style={styles.premiumGreetingBlock}>
+              <Text style={styles.premiumGreeting}>Good morning,</Text>
+              <Text numberOfLines={1} style={styles.premiumName}>
+                {firstName}
+              </Text>
+            </View>
             <Link href="/notifications" asChild>
               <Pressable
-                style={styles.iconButton}
+                style={styles.premiumBell}
                 accessibilityRole="button"
                 accessibilityLabel="Open notifications"
               >
-                <Ionicons name="notifications-outline" size={21} color={colors.text} />
+                <Ionicons name="notifications-outline" size={27} color={colors.text} />
                 {unreadCount > 0 ? (
                   <View style={styles.unreadBadge}>
                     <Text style={styles.unreadBadgeText}>
@@ -299,7 +229,22 @@ export default function Home() {
                 ) : null}
               </Pressable>
             </Link>
-          </BlurView>
+          </View>
+
+          <Link href={gymHref} asChild>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Open gym details"
+              style={styles.premiumGymSelector}
+            >
+              <Ionicons name="business-outline" size={24} color={colors.text} />
+              <Text numberOfLines={1} style={styles.premiumGymText}>
+                {orgName}
+                {city ? ` · ${city}` : ""}
+              </Text>
+              <Ionicons name="chevron-down" size={19} color={colors.muted} />
+            </Pressable>
+          </Link>
 
           {homeError ? (
             <GlassCard variant="danger" contentStyle={styles.stateCardContent}>
@@ -345,38 +290,14 @@ export default function Home() {
                 }
                 showBillingAction={!renewalImminent}
               />
-              <View style={styles.todayGrid}>
-                <Link href="/plans" asChild>
-                  <Pressable
-                    accessibilityRole="link"
-                    accessibilityLabel="Open today's plan"
-                    style={styles.todayTilePressable}
-                  >
-                    <GlassCard variant="compact" style={styles.todayTile}>
-                      <Text style={styles.tileEyebrow}>Today</Text>
-                      <Text numberOfLines={1} style={styles.tileTitle}>
-                        {assignedPlan?.name ?? "No plan yet"}
-                      </Text>
-                      <Text numberOfLines={1} style={styles.tileMeta}>
-                        {assignedPlan ? "Workout plan" : "Trainer will assign one"}
-                      </Text>
-                    </GlassCard>
-                  </Pressable>
-                </Link>
-                <GlassCard variant="compact" style={styles.todayTile}>
-                  <Text style={styles.tileEyebrow}>Streak</Text>
-                  <View style={styles.streakRow}>
-                    <Text style={styles.streakValue}>{streakDays}</Text>
-                    <Ionicons name="flame-outline" size={16} color={colors.lime} />
-                    <Text style={styles.tileMeta}>days</Text>
-                  </View>
-                  <Text numberOfLines={1} style={styles.tileMeta}>
-                    Last visit {lastCheckIn}
-                  </Text>
-                </GlassCard>
-              </View>
-              <EngagementCard
+              <TodayPlanCard
+                planName={assignedPlan?.name ?? "No plan yet"}
+                trainerName="Coach Rhea"
+                assigned={Boolean(assignedPlan)}
+              />
+              <ActivityCard
                 streakDays={streakDays}
+                lastCheckIn={lastCheckIn}
                 totalCheckIns={
                   engagement?.totalCheckIns ?? memberHome?.recentAttendance?.length ?? 0
                 }
@@ -466,58 +387,87 @@ function safeIconName(icon?: string | null): keyof typeof Ionicons.glyphMap {
     : "ribbon-outline";
 }
 
-function EngagementCard({
+function TodayPlanCard({
+  assigned,
+  planName,
+  trainerName,
+}: {
+  assigned: boolean;
+  planName: string;
+  trainerName: string;
+}) {
+  return (
+    <Link href="/plans" asChild>
+      <Pressable accessibilityRole="link" accessibilityLabel="Open today's plan">
+        <GlassCard variant="compact" contentStyle={styles.todayPlanContent}>
+          <View style={styles.todayPlanHeader}>
+            <Ionicons name="clipboard-outline" size={22} color={colors.lime} />
+            <Text style={styles.todayPlanEyebrow}>Today’s Plan</Text>
+          </View>
+          <View style={styles.todayPlanBody}>
+            <View style={styles.todayPlanCopy}>
+              <Text numberOfLines={1} style={styles.todayPlanTitle}>
+                {planName}
+              </Text>
+              <Text numberOfLines={1} style={styles.todayPlanMeta}>
+                {assigned ? `6 exercises · ${trainerName}` : "Trainer will assign one"}
+              </Text>
+            </View>
+            <View style={styles.assignedChip}>
+              <Ionicons name={assigned ? "checkmark-circle-outline" : "time-outline"} size={15} color={colors.lime} />
+              <Text style={styles.assignedChipText}>{assigned ? "Assigned" : "Open"}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={colors.muted} />
+          </View>
+        </GlassCard>
+      </Pressable>
+    </Link>
+  );
+}
+
+function ActivityCard({
   latestBadge,
+  lastCheckIn,
   nextMilestone,
   streakDays,
   totalCheckIns,
 }: {
   latestBadge?: MemberBadgeRecord | null;
+  lastCheckIn: string;
   nextMilestone?: MemberNextMilestone | null;
   streakDays: number;
   totalCheckIns: number;
 }) {
-  const progress = Math.max(0.06, Math.min(1, nextMilestone?.progress ?? 0));
-  const progressWidth = `${Math.round(progress * 100)}%` as const;
-  const milestoneText = nextMilestone
-    ? nextMilestone.metric === "streakDays"
-      ? `${nextMilestone.remaining} day${nextMilestone.remaining === 1 ? "" : "s"} to ${nextMilestone.name}`
-      : `${nextMilestone.remaining} check-in${nextMilestone.remaining === 1 ? "" : "s"} to ${nextMilestone.name}`
-    : "All current badges earned";
-
+  const weeklyTarget = nextMilestone?.metric === "totalCheckIns" ? nextMilestone.remaining : 5;
+  const weeklyGoalLabel = `${Math.min(totalCheckIns, 5)}/${Math.max(weeklyTarget, 3)}`;
   return (
-    <GlassCard variant="compact" contentStyle={styles.engagementContent}>
-      <View style={styles.engagementTopRow}>
-        <View style={styles.engagementStreak}>
-          <Text style={styles.tileEyebrow}>Consistency</Text>
-          <View style={styles.streakRow}>
-            <Text style={styles.streakValue}>{streakDays}</Text>
-            <Ionicons name="flame-outline" size={16} color={colors.lime} />
-            <Text style={styles.tileMeta}>day streak</Text>
-          </View>
-          <Text numberOfLines={1} style={styles.tileMeta}>
-            {totalCheckIns} total check-ins
-          </Text>
+    <GlassCard variant="compact" contentStyle={styles.activityContent}>
+      <View style={styles.activityTitleRow}>
+        <Ionicons name="pulse-outline" size={21} color={colors.lime} />
+        <Text style={styles.activityTitle}>Activity</Text>
+      </View>
+      <View style={styles.activityStats}>
+        <View style={styles.activityStat}>
+          <Ionicons name="flame-outline" size={27} color={colors.lime} />
+          <Text style={styles.activityStatLabel}>Streak</Text>
+          <Text style={styles.activityStatValue}>{streakDays}</Text>
+          <Text style={styles.activityStatMeta}>days</Text>
         </View>
-        <View style={styles.badgePreview}>
-          <View style={[styles.badgeIcon, latestBadge ? null : styles.badgeIconEmpty]}>
-            <Ionicons
-              name={safeIconName(latestBadge?.icon)}
-              size={18}
-              color={latestBadge ? colors.bg : colors.muted}
-            />
-          </View>
-          <Text numberOfLines={1} style={styles.badgeTitle}>
-            {latestBadge?.name ?? "First badge awaits"}
-          </Text>
+        <View style={styles.activityDivider} />
+        <View style={styles.activityStat}>
+          <Ionicons name="time-outline" size={27} color={colors.lime} />
+          <Text style={styles.activityStatLabel}>Last check-in</Text>
+          <Text numberOfLines={1} style={styles.activityStatValueSmall}>{lastCheckIn}</Text>
+          <Text style={styles.activityStatMeta}>{latestBadge?.name ?? "Keep moving"}</Text>
+        </View>
+        <View style={styles.activityDivider} />
+        <View style={styles.activityStat}>
+          <Ionicons name={safeIconName(nextMilestone?.icon)} size={27} color={colors.lime} />
+          <Text style={styles.activityStatLabel}>Weekly goal</Text>
+          <Text style={styles.activityStatValue}>{weeklyGoalLabel}</Text>
+          <Text style={styles.activityStatMeta}>check-ins</Text>
         </View>
       </View>
-      <View style={styles.engagementProgressTrack}>
-        <View style={[styles.engagementProgressFill, { width: progressWidth }]} />
-      </View>
-      <Text numberOfLines={1} style={styles.mutedSmall}>
-        {milestoneText}
-      </Text>
     </GlassCard>
   );
 }
@@ -566,42 +516,61 @@ function MemberStateHero({
   showBillingAction: boolean;
   visitLabel: string;
 }) {
-  const boundedProgress =
-    `${Math.round(Math.max(0.06, Math.min(1, progressValue)) * 100)}%` as const;
   const mainLabel = expired ? "Membership needs renewal" : daysLeftLabel;
   const splitLabel = mainLabel.match(/^(\d+)\s+(.+)$/);
+  const visitCount = visitLabel.match(/^(\d+)/)?.[1] ?? "—";
+  const progressPct = `${Math.round(Math.max(0.08, Math.min(1, progressValue)) * 100)}%`;
 
   return (
     <GlassCard
       variant={expired ? "warning" : "selected"}
       glow={!expired}
-      contentStyle={styles.memberHeroContent}
+      contentStyle={styles.premiumMemberCard}
     >
-      <Text style={styles.heroEyebrow}>{expired ? "Renewal needed" : "Active membership"}</Text>
-      <View style={styles.heroNumberRow}>
-        {splitLabel ? (
-          <>
-            <Text style={[styles.heroNumber, expired ? styles.heroNumberUrgent : null]}>
-              {splitLabel[1]}
+      <View style={styles.premiumMemberTopRow}>
+        <View style={styles.premiumMemberCopy}>
+          <View style={styles.premiumMemberEyebrowRow}>
+            <Ionicons name="person-outline" size={21} color={colors.lime} />
+            <Text style={styles.premiumMemberEyebrow}>
+              {expired ? "Renewal needed" : "Active Membership"}
             </Text>
-            <Text style={styles.heroNumberSuffix}>{splitLabel[2]}</Text>
-          </>
-        ) : (
-          <Text style={[styles.heroTitle, expired ? styles.heroNumberUrgent : null]}>
-            {mainLabel}
+          </View>
+          <Text numberOfLines={1} style={styles.premiumPlanName}>
+            {planName}
           </Text>
-        )}
+          <View style={styles.daysLeftRow}>
+            {splitLabel ? (
+              <>
+                <Text style={[styles.daysLeftText, expired ? styles.heroNumberUrgent : null]}>
+                  {splitLabel[1]} {splitLabel[2]}
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color={expired ? colors.amber : colors.lime} />
+              </>
+            ) : (
+              <Text style={[styles.daysLeftText, expired ? styles.heroNumberUrgent : null]}>
+                {mainLabel}
+              </Text>
+            )}
+          </View>
+          <View style={styles.renewalRow}>
+            <Ionicons name="calendar-outline" size={15} color={colors.muted} />
+            <Text numberOfLines={1} style={styles.renewalText}>
+              {formatRenewalDate(renewalDate)}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.visitRingOuter}>
+          <View style={[styles.visitRingArc, { opacity: expired ? 0.65 : 1 }]}>
+            <Text style={styles.visitRingValue}>{visitCount}</Text>
+            <Text style={styles.visitRingLabel}>visits</Text>
+            <Text style={styles.visitRingLabel}>remaining</Text>
+          </View>
+          <Text style={styles.visitRingProgress}>{progressPct}</Text>
+        </View>
       </View>
-      <Text numberOfLines={1} style={styles.heroMeta}>
-        {planName} · {visitLabel} · {formatRenewalDate(renewalDate)}
-      </Text>
-      <View style={styles.heroMeterTrack}>
-        <View
-          style={[
-            styles.heroMeterFill,
-            { width: boundedProgress, backgroundColor: expired ? colors.amber : colors.lime },
-          ]}
-        />
+      <View style={styles.memberEncouragement}>
+        <Ionicons name="star-outline" size={17} color={colors.lime} />
+        <Text style={styles.memberEncouragementText}>Keep going, you’re doing great!</Text>
       </View>
       <View style={styles.heroActions}>
         {expired ? (
@@ -615,13 +584,13 @@ function MemberStateHero({
         )}
         {showBillingAction ? (
           <ZookButton
-            href="/plans"
+            href="/tracking-entry"
             tone="secondary"
-            icon="barbell-outline"
+            icon="play-outline"
             style={styles.heroSecondaryAction}
             accessibilityLabel="Open plan"
           >
-            Plan
+            Start Workout
           </ZookButton>
         ) : null}
       </View>
@@ -715,6 +684,254 @@ const styles = StyleSheet.create({
   },
   contentWithRenewalBar: {
     paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
+  },
+  premiumHeader: {
+    minHeight: 94,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    paddingTop: 14,
+  },
+  premiumGreetingBlock: {
+    flex: 1,
+    gap: 4,
+  },
+  premiumGreeting: {
+    color: colors.muted,
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  premiumName: {
+    color: colors.text,
+    fontSize: 39,
+    lineHeight: 45,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.8,
+  },
+  premiumBell: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.035)",
+  },
+  premiumGymSelector: {
+    minHeight: 70,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.035)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: 18,
+  },
+  premiumGymText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 17,
+    lineHeight: 22,
+    fontFamily: "Inter_600SemiBold",
+  },
+  premiumMemberCard: {
+    padding: 18,
+    gap: 16,
+  },
+  premiumMemberTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+  },
+  premiumMemberCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 10,
+  },
+  premiumMemberEyebrowRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  premiumMemberEyebrow: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  premiumPlanName: {
+    color: colors.text,
+    fontSize: 24,
+    lineHeight: 30,
+    fontFamily: "Inter_700Bold",
+  },
+  daysLeftRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  daysLeftText: {
+    color: colors.lime,
+    fontSize: 19,
+    lineHeight: 24,
+    fontFamily: "Inter_600SemiBold",
+  },
+  renewalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  renewalText: {
+    flex: 1,
+    color: colors.muted,
+    ...typography.small,
+  },
+  visitRingOuter: {
+    width: 124,
+    alignItems: "center",
+    gap: 4,
+  },
+  visitRingArc: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 9,
+    borderColor: colors.lime,
+    backgroundColor: "rgba(0,0,0,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: colors.lime,
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  visitRingValue: {
+    color: colors.text,
+    fontSize: 35,
+    lineHeight: 38,
+    fontFamily: "Inter_700Bold",
+  },
+  visitRingLabel: {
+    color: colors.text,
+    fontSize: 12,
+    lineHeight: 15,
+  },
+  visitRingProgress: {
+    color: colors.subtle,
+    fontSize: 10,
+    lineHeight: 12,
+  },
+  memberEncouragement: {
+    minHeight: 45,
+    borderTopWidth: 1,
+    borderColor: colors.divider,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  memberEncouragementText: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  todayPlanContent: {
+    padding: 18,
+    gap: 12,
+  },
+  todayPlanHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  todayPlanEyebrow: {
+    color: colors.muted,
+    fontSize: 16,
+    lineHeight: 21,
+  },
+  todayPlanBody: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  todayPlanCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  todayPlanTitle: {
+    color: colors.text,
+    fontSize: 22,
+    lineHeight: 27,
+    fontFamily: "Inter_700Bold",
+  },
+  todayPlanMeta: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  assignedChip: {
+    minHeight: 36,
+    borderRadius: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(185,244,85,0.14)",
+  },
+  assignedChipText: {
+    color: colors.lime,
+    fontSize: 13,
+    lineHeight: 17,
+    fontFamily: "Inter_600SemiBold",
+  },
+  activityContent: {
+    padding: 18,
+    gap: 18,
+  },
+  activityTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  activityTitle: {
+    color: colors.muted,
+    fontSize: 16,
+    lineHeight: 21,
+  },
+  activityStats: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    minHeight: 118,
+  },
+  activityStat: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+  activityDivider: {
+    width: 1,
+    backgroundColor: colors.divider,
+  },
+  activityStatLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  activityStatValue: {
+    color: colors.text,
+    fontSize: 27,
+    lineHeight: 31,
+    fontFamily: "Inter_700Bold",
+  },
+  activityStatValueSmall: {
+    color: colors.text,
+    fontSize: 21,
+    lineHeight: 26,
+    fontFamily: "Inter_700Bold",
+  },
+  activityStatMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 15,
   },
   homeHeader: {
     minHeight: 64,

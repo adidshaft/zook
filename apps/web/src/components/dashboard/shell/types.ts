@@ -16,4 +16,5 @@ export type NavItem = {
   shortLabel?: string;
   hidden?: boolean;
   permissions?: Permission[];
+  badgeKey?: "joinRequests" | "lowStockProducts" | "notificationQueueCount" | "pendingAttendanceApprovals";
 };

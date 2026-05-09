@@ -98,9 +98,15 @@ export function DashboardShell({
       shortLabel,
     })),
   }));
-  const canShowQr = activePermissions.has("ATTENDANCE_QR_DISPLAY");
-  const canViewReports = activePermissions.has("ORG_VIEW_REPORTS");
-  const canOpenDesk = roles.some((role) => role === "OWNER" || role === "ADMIN");
+  const roleLabel = roles.includes("OWNER")
+    ? "Owner"
+    : roles.includes("ADMIN")
+      ? "Admin"
+      : roles.includes("RECEPTIONIST")
+        ? "Reception"
+        : roles.includes("TRAINER")
+          ? "Trainer"
+          : "Member";
   const runtimeLabel = data.connected
     ? copy.dashboard.liveWorkspace
     : data.fallbackMode === "demo"
@@ -141,8 +147,6 @@ export function DashboardShell({
     <main className="zook-shell-bg min-h-dvh overflow-x-hidden px-3 py-4 sm:px-5 lg:px-6 xl:px-8">
       <div className="mx-auto grid w-full max-w-[1760px] min-w-0 items-start gap-5 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
         <DashboardSidebar
-          activeOrg={activeOrg}
-          selectedBranch={selectedBranch}
           data={data}
           visibleNavGroups={visibleNavGroups}
           sectionKey={sectionKey}
@@ -161,16 +165,21 @@ export function DashboardShell({
             activeOrg={activeOrg}
             selectedBranch={selectedBranch}
             data={data}
-            pageTitle={pageTitle}
-            pageDescription={pageDescription}
             branchHref={branchHref}
             runtimeLabel={runtimeLabel}
-            canShowQr={canShowQr}
-            canViewReports={canViewReports}
-            canOpenDesk={canOpenDesk}
             user={user}
+            roleLabel={roleLabel}
             copy={copy}
           />
+
+          <div className="px-1 pt-3 md:px-0">
+            <h1 className="text-3xl font-black tracking-[-0.035em] text-white md:text-4xl">
+              {pageTitle}
+            </h1>
+            {pageDescription ? (
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">{pageDescription}</p>
+            ) : null}
+          </div>
 
           {showOwnerSetupChecklist ? (
             <OwnerSetupChecklist

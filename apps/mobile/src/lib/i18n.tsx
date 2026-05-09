@@ -37,10 +37,12 @@ export type TranslationKey =
   | "nav.payments"
   | "nav.orders"
   | "nav.owner"
+  | "nav.command"
   | "nav.needs"
   | "nav.approvals"
   | "nav.revenue"
   | "nav.stock"
+  | "nav.profile"
   | "notifications.today"
   | "notifications.yesterday"
   | "notifications.earlierThisWeek"
@@ -224,10 +226,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.payments": "Payments",
     "nav.orders": "Orders",
     "nav.owner": "Owner",
+    "nav.command": "Command",
     "nav.needs": "Needs",
     "nav.approvals": "Approvals",
     "nav.revenue": "Revenue",
     "nav.stock": "Stock",
+    "nav.profile": "Profile",
     "notifications.today": "Today",
     "notifications.yesterday": "Yesterday",
     "notifications.earlierThisWeek": "Earlier this week",
@@ -410,10 +414,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.payments": "पेमेंट",
     "nav.orders": "ऑर्डर",
     "nav.owner": "ओनर",
+    "nav.command": "कमांड",
     "nav.needs": "जरूरतें",
     "nav.approvals": "मंजूरी",
     "nav.revenue": "रेवेन्यू",
     "nav.stock": "स्टॉक",
+    "nav.profile": "प्रोफाइल",
     "notifications.today": "आज",
     "notifications.yesterday": "कल",
     "notifications.earlierThisWeek": "इस हफ्ते पहले",
