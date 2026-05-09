@@ -37,8 +37,15 @@ import { attendanceApi } from "@/lib/domain-api";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { useMemberHome } from "@/lib/query-hooks";
 import { getMobileAppEnv } from "@/lib/runtime-mode";
+import {
+  enqueueAttendanceScan,
+  getQueuedAttendanceScans,
+  isRetriableAttendanceError,
+  removeQueuedAttendanceScan,
+} from "@/lib/offline-attendance-queue";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 type ScanResult = {
   attendance: {
@@ -90,6 +97,8 @@ export default function Scan() {
   const [codePrefix, setCodePrefix] = useState("");
   const [codeDigits, setCodeDigits] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [queuedScanCount, setQueuedScanCount] = useState(0);
+  const [replayingQueue, setReplayingQueue] = useState(false);
   const [pendingPushPromptHref, setPendingPushPromptHref] = useState<AttendanceResultHref | null>(
     null,
   );
@@ -104,6 +113,10 @@ export default function Scan() {
       void requestPermission();
     }
   }, [permission, requestPermission, scanMode]);
+
+  useEffect(() => {
+    void getQueuedAttendanceScans().then((queue) => setQueuedScanCount(queue.length));
+  }, []);
 
   useEffect(() => {
     if (scanMode !== "scan" || scanState !== "failed" || !errorMessage) {
@@ -187,6 +200,68 @@ export default function Scan() {
     }
   }
 
+  async function replayQueuedScans() {
+    if (!token || replayingQueue) {
+      return;
+    }
+    const queue = await getQueuedAttendanceScans();
+    setQueuedScanCount(queue.length);
+    if (!queue.length) {
+      return;
+    }
+    setReplayingQueue(true);
+    let synced = 0;
+    try {
+      for (const queuedScan of queue) {
+        try {
+          const result = await attendanceApi.scan<ScanResult>({
+            token,
+            body:
+              queuedScan.kind === "code"
+                ? { checkInCode: queuedScan.payload }
+                : { qrPayload: queuedScan.payload },
+          });
+          synced += 1;
+          await removeQueuedAttendanceScan(queuedScan.id);
+          const status = result.status ?? result.attendance.status ?? "APPROVED";
+          queryClient.setQueryData(["me", "attendance", result.attendance.id], {
+            attendance: {
+              ...result.attendance,
+              status,
+              reason: scanReason(result),
+            },
+          });
+        } catch (error) {
+          if (isRetriableAttendanceError(error)) {
+            break;
+          }
+          await removeQueuedAttendanceScan(queuedScan.id);
+        }
+      }
+      const nextQueue = await getQueuedAttendanceScans();
+      setQueuedScanCount(nextQueue.length);
+      if (synced > 0) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
+          queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+        ]);
+        showToast({
+          tone: "success",
+          haptic: "success",
+          message: synced === 1 ? "Saved check-in synced." : `${synced} saved check-ins synced.`,
+        });
+      }
+    } finally {
+      setReplayingQueue(false);
+    }
+  }
+
+  useEffect(() => {
+    if (token) {
+      void replayQueuedScans();
+    }
+  }, [token]);
+
   const renderPushPromptBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop
@@ -241,6 +316,20 @@ export default function Scan() {
       }
       navigateToAttendance(nextHref);
     } catch (error) {
+      if (isRetriableAttendanceError(error)) {
+        completedRef.current = false;
+        const nextQueue = await enqueueAttendanceScan({ payload, kind });
+        setQueuedScanCount(nextQueue.length);
+        setScanState("failed");
+        setErrorMessage("No connection. Your check-in was saved and will retry automatically.");
+        showToast({
+          title: "Check-in saved",
+          message: "Zook will retry when the phone is online.",
+          tone: "amber",
+          haptic: "warning",
+        });
+        return;
+      }
       completedRef.current = false;
       setScanState("failed");
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -532,6 +621,27 @@ export default function Scan() {
                 style={styles.retryButton}
               >
                 {needsProfilePhoto ? "Add photo" : "Scan again"}
+              </ZookButton>
+            </GlassCard>
+          ) : null}
+
+          {queuedScanCount > 0 ? (
+            <GlassCard variant="warning" contentStyle={styles.errorContent}>
+              <View style={styles.errorRow}>
+                <Ionicons name="cloud-upload-outline" size={18} color={colors.amber} />
+                <Text style={styles.errorText}>
+                  {queuedScanCount} saved check-in{queuedScanCount === 1 ? "" : "s"} waiting to sync.
+                </Text>
+              </View>
+              <ZookButton
+                onPress={() => void replayQueuedScans()}
+                tone="secondary"
+                icon="refresh-outline"
+                busy={replayingQueue}
+                busyLabel="Syncing"
+                style={styles.retryButton}
+              >
+                Retry now
               </ZookButton>
             </GlassCard>
           ) : null}

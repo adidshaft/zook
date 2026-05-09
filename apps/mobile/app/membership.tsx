@@ -25,6 +25,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomNav,
+  DatePickerField,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -130,6 +131,19 @@ function daysUntil(dateStr?: string | null) {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+function pauseMinimumDate() {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  date.setHours(12, 0, 0, 0);
+  return date;
+}
+
+function pauseDefaultDate() {
+  const date = pauseMinimumDate();
+  date.setDate(date.getDate() + 6);
+  return date;
+}
+
 function planIdFor(subscription?: MembershipRecord | null) {
   return subscription?.plan?.id ?? subscription?.planId ?? undefined;
 }
@@ -227,6 +241,7 @@ export default function MembershipScreen() {
   const [waitingCheckoutSessionId, setWaitingCheckoutSessionId] = useState<string | null>(null);
   const [checkingCheckoutStatus, setCheckingCheckoutStatus] = useState(false);
   const [documentBusyKey, setDocumentBusyKey] = useState<string | null>(null);
+  const [pauseResumesAt, setPauseResumesAt] = useState(() => pauseDefaultDate());
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   useAppFocusInvalidation([["me", "memberships"], ["me", "membership"], ["me", "home"]]);
@@ -429,14 +444,14 @@ export default function MembershipScreen() {
           ...(activeOrgId ? { orgId: activeOrgId } : {}),
           ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
           subscriptionId: subscription.id,
-          resumesAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          reason: "Member requested a short pause from mobile.",
+          resumesAt: pauseResumesAt.toISOString(),
+          reason: "Member selected a membership pause date from mobile.",
         });
-        setMembershipActionStatus("Membership paused for 7 days.");
+        setMembershipActionStatus(`Membership paused until ${formatLongDate(pauseResumesAt.toISOString())}.`);
         showToast({
           tone: "success",
           haptic: "success",
-          message: "Membership paused for 7 days.",
+          message: `Paused until ${formatLongDate(pauseResumesAt.toISOString())}.`,
         });
       }
       await Promise.all([
@@ -648,6 +663,17 @@ export default function MembershipScreen() {
                 <ZookButton onPress={() => openRenewal(latestSubscription)} icon="refresh-outline">
                   Renew or change plan
                 </ZookButton>
+                {latestSubscription.status !== "PAUSED" ? (
+                  <View style={styles.pausePicker}>
+                    <DatePickerField
+                      accessibilityLabel="Membership pause end date"
+                      label="Pause until"
+                      value={pauseResumesAt}
+                      minimumDate={pauseMinimumDate()}
+                      onChange={setPauseResumesAt}
+                    />
+                  </View>
+                ) : null}
                 <ZookButton
                   tone="secondary"
                   disabled={
@@ -657,7 +683,12 @@ export default function MembershipScreen() {
                   onPress={() => void pauseOrResumeMembership(latestSubscription)}
                   icon={latestSubscription.status === "PAUSED" ? "play-circle-outline" : "pause-circle-outline"}
                 >
-                  {latestSubscription.status === "PAUSED" ? "Resume membership" : "Pause 7 days"}
+                  {latestSubscription.status === "PAUSED"
+                    ? "Resume membership"
+                    : `Pause until ${pauseResumesAt.toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                      })}`}
                 </ZookButton>
                 {membershipActionStatus ? (
                   <Text style={styles.statusMessage}>{membershipActionStatus}</Text>
@@ -1097,6 +1128,9 @@ const styles = StyleSheet.create({
   calloutBody: {
     color: colors.muted,
     ...typography.body,
+  },
+  pausePicker: {
+    minHeight: 52,
   },
   loadingContent: {
     flexDirection: "row",

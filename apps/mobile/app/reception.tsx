@@ -141,7 +141,9 @@ export default function Reception() {
     (attempt) => attempt.status === "PENDING_APPROVAL",
   ).length;
   const flaggedCount = approvalQueue.filter((attempt) => attempt.status === "FLAGGED").length;
-  const todayCount = todayAttendanceQuery.data?.records.length ?? 0;
+  const todayRecords = todayAttendanceQuery.data?.records ?? [];
+  const todayCount = todayRecords.length;
+  const recentScans = todayRecords.slice(0, 5);
   const readyOrders = ordersQuery.data?.orders ?? [];
   const fulfilledCount = ordersQuery.data?.summary?.fulfilledToday ?? 0;
   const amountPaise = Math.round(Number(amount || "0") * 100);
@@ -572,6 +574,51 @@ export default function Reception() {
               </PrimaryButton>
               {verifyMessage ? <VerificationResult message={verifyMessage} /> : null}
             </GlassCard>
+
+            <SectionHeader
+              title="Live feed"
+              subtitle="Recent check-ins for this gym."
+              action={<Pill tone="lime">{todayCount} today</Pill>}
+            />
+            <View style={styles.liveFeed}>
+              {todayAttendanceQuery.isLoading ? <ReceptionQueueSkeleton /> : null}
+              {!todayAttendanceQuery.isLoading && !recentScans.length ? (
+                <GlassCard variant="compact" padding={14} contentStyle={styles.queueCard}>
+                  <ListRow
+                    title="No scans yet"
+                    subtitle="Approved check-ins will appear here as members enter."
+                    icon="radio-outline"
+                    tone="neutral"
+                  />
+                </GlassCard>
+              ) : null}
+              {recentScans.map((scan) => (
+                <GlassCard
+                  key={scan.id}
+                  variant="compact"
+                  padding={12}
+                  contentStyle={styles.liveFeedItem}
+                >
+                  <IconBubble
+                    icon={scan.status === "APPROVED" ? "checkmark-circle-outline" : "alert-circle-outline"}
+                    tone={scan.status === "APPROVED" ? "lime" : "amber"}
+                    size={34}
+                  />
+                  <View style={styles.liveFeedCopy}>
+                    <Text numberOfLines={1} style={styles.queueTitle}>
+                      {scan.user?.name ?? scan.user?.email ?? "Member"}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.cardBody}>
+                      {formatDateTime(scan.checkedInAt)} · {scan.branchName ?? "Branch"} ·{" "}
+                      {scan.plan?.name ?? "Membership"}
+                    </Text>
+                  </View>
+                  <Pill tone={scan.status === "APPROVED" ? "lime" : "amber"}>
+                    {scan.status.replace(/_/g, " ")}
+                  </Pill>
+                </GlassCard>
+              ))}
+            </View>
 
             <SectionHeader
               title="Review queue"
@@ -1200,6 +1247,19 @@ const styles = StyleSheet.create({
   },
   stack: {
     gap: spacing.md,
+  },
+  liveFeed: {
+    gap: 8,
+  },
+  liveFeedItem: {
+    minHeight: 62,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  liveFeedCopy: {
+    flex: 1,
+    gap: 3,
   },
   queueCard: {
     gap: spacing.md,

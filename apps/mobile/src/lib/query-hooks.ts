@@ -145,6 +145,23 @@ export interface GymProfileData {
   referral?: { code: string; couponId?: string | null; status: string } | null;
 }
 
+export interface ReferralCodeRecord {
+  id: string;
+  code: string;
+  status: string;
+  redemptionCount?: number | null;
+  maxUses?: number | null;
+  expiresAt?: string | null;
+}
+
+export interface ReferralRewardRecord {
+  id: string;
+  status?: string | null;
+  rewardType?: string | null;
+  rewardValue?: number | null;
+  createdAt?: string | null;
+}
+
 export interface TrainerClientRecord {
   id?: string;
   memberUserId: string;
@@ -645,6 +662,20 @@ export function useMyAttendance() {
     queryFn: () =>
       mobileApiFetch<{ attendance: Array<Record<string, unknown>> }>("/me/attendance", { token }),
     enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function useMyReferralCodes() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "referral-codes", activeOrgId],
+    queryFn: () =>
+      mobileApiFetch<{
+        referralCodes: ReferralCodeRecord[];
+        rewards: ReferralRewardRecord[];
+        links?: { web?: string; short?: string; app?: string };
+      }>(`/me/referral-codes${queryString({ orgId: activeOrgId })}`, { token }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
   });
 }
 

@@ -1,6 +1,7 @@
 import { useFocusEffect, useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useMemo, useState } from "react";
+import * as Haptics from "expo-haptics";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, BackHandler, Keyboard, StyleSheet, Text, View, Pressable } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -54,6 +55,7 @@ type ExerciseEntry = {
 };
 
 const iconHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
+const restDurations = [60, 90, 120];
 
 function emptyExercise(): ExerciseEntry {
   return { exerciseName: "", setsCompleted: "", reps: "", weightKg: "" };
@@ -72,6 +74,7 @@ export default function TrackingEntry() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [exercises, setExercises] = useState<ExerciseEntry[]>([emptyExercise()]);
+  const [restSeconds, setRestSeconds] = useState(0);
   const scrollPaddingBottom = useBottomScrollPadding({ hasStickyAction: true });
   const dirty = useMemo(
     () =>
@@ -107,6 +110,22 @@ export default function TrackingEntry() {
       return () => subscription.remove();
     }, [confirmDiscard]),
   );
+
+  useEffect(() => {
+    if (restSeconds <= 0) {
+      return undefined;
+    }
+    const timer = setInterval(() => {
+      setRestSeconds((current) => {
+        if (current <= 1) {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [restSeconds]);
 
   function updateExercise(index: number, field: keyof ExerciseEntry, value: string) {
     setExercises((current) =>
@@ -347,6 +366,51 @@ export default function TrackingEntry() {
             ))}
           </View>
 
+          <GlassCard variant="compact" contentStyle={styles.restTimerContent}>
+            <View style={styles.restTimerHeader}>
+              <IconBubble icon="timer-outline" tone={restSeconds > 0 ? "lime" : "neutral"} size={36} />
+              <View style={styles.restTimerCopy}>
+                <Text style={styles.restTimerTitle}>Rest timer</Text>
+                <Text style={styles.restTimerBody}>
+                  {restSeconds > 0 ? `${formatRestTime(restSeconds)} remaining` : "Start a timer between sets."}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.restTimerActions}>
+              {restDurations.map((seconds) => (
+                <Pressable
+                  key={seconds}
+                  onPress={() => setRestSeconds(seconds)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Start ${seconds} second rest timer`}
+                  style={[
+                    styles.restTimerButton,
+                    restSeconds === seconds ? styles.restTimerButtonActive : null,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.restTimerButtonText,
+                      restSeconds === seconds ? styles.restTimerButtonTextActive : null,
+                    ]}
+                  >
+                    {seconds}s
+                  </Text>
+                </Pressable>
+              ))}
+              {restSeconds > 0 ? (
+                <Pressable
+                  onPress={() => setRestSeconds(0)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Stop rest timer"
+                  style={styles.restTimerStop}
+                >
+                  <Ionicons name="stop" size={16} color={colors.red} />
+                </Pressable>
+              ) : null}
+            </View>
+          </GlassCard>
+
           {message ? (
             <Text style={styles.statusMessage}>{message}</Text>
           ) : null}
@@ -367,6 +431,12 @@ export default function TrackingEntry() {
       </ZookScreen>
     </>
   );
+}
+
+function formatRestTime(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
 const styles = StyleSheet.create({
@@ -488,6 +558,62 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 12,
     backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  restTimerContent: {
+    gap: spacing.md,
+  },
+  restTimerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  restTimerCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  restTimerTitle: {
+    color: colors.text,
+    ...typography.cardTitle,
+  },
+  restTimerBody: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  restTimerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  restTimerButton: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  restTimerButtonActive: {
+    borderColor: colors.limeBorder,
+    backgroundColor: colors.lime,
+  },
+  restTimerButtonText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  restTimerButtonTextActive: {
+    color: colors.bg,
+  },
+  restTimerStop: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,90,61,0.28)",
+    backgroundColor: "rgba(255,90,61,0.08)",
     alignItems: "center",
     justifyContent: "center",
   },

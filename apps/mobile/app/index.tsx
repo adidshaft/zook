@@ -2,9 +2,10 @@ import { Link, Stack, useRouter } from "expo-router";
 import type { Href } from "expo-router";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
+import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { resolvePlanName } from "@zook/ui";
 import {
@@ -20,8 +21,12 @@ import {
 import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
-import { useMemberHome } from "@/lib/query-hooks";
+import { syncSmartCheckInReminder } from "@/lib/check-in-reminders";
+import { mergeNotificationPreferences } from "@/lib/notification-preferences";
+import { useMemberHome, useMyNotificationPreferences, useMyReferralCodes } from "@/lib/query-hooks";
+import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 function initialsFor(name?: string | null) {
   const cleanName = name?.trim() ?? "";
@@ -57,8 +62,14 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const { activeOrgId, session } = useAuth();
   const homeQuery = useMemberHome();
+  const referralQuery = useMyReferralCodes();
+  const notificationPreferencesQuery = useMyNotificationPreferences();
   useAppFocusInvalidation([["me", "home"], ["me", "membership"], ["me", "notifications"]]);
   const memberHome = homeQuery.data;
+  const notificationPreferences = useMemo(
+    () => mergeNotificationPreferences(notificationPreferencesQuery.data?.preferences, activeOrgId),
+    [activeOrgId, notificationPreferencesQuery.data?.preferences],
+  );
   const sessionOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization;
@@ -131,6 +142,53 @@ export default function Home() {
     await queryClient.invalidateQueries({ queryKey: ["me", "home"] });
     setRefreshing(false);
   };
+
+  useEffect(() => {
+    const streak = memberHome?.streakDays ?? 0;
+    if (!activeOrgId || ![7, 30, 100].includes(streak)) {
+      return;
+    }
+    const key = `zook_streak_milestone_${activeOrgId}_${streak}`;
+    void getStoredValue(key).then((stored) => {
+      if (stored) return;
+      void setStoredValue(key, "1");
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast({
+        tone: "success",
+        haptic: "success",
+        title: `${streak}-day streak`,
+        message: "Nice consistency. Keep it going.",
+      });
+    });
+  }, [activeOrgId, memberHome?.streakDays]);
+
+  useEffect(() => {
+    if (!hasMembership || !memberHome) {
+      return;
+    }
+    void syncSmartCheckInReminder({
+      enabled: notificationPreferences.engagement && notificationPreferences.pushEnabled,
+      gymName: activeOrganization?.name,
+      recentAttendance: memberHome.recentAttendance,
+    });
+  }, [
+    activeOrganization?.name,
+    hasMembership,
+    memberHome,
+    notificationPreferences.engagement,
+    notificationPreferences.pushEnabled,
+  ]);
+
+  async function shareReferral() {
+    const code = referralQuery.data?.referralCodes[0]?.code;
+    if (!code) return;
+    const webPath =
+      referralQuery.data?.links?.web ??
+      (sessionOrganization?.username ? `/join/${sessionOrganization.username}?ref=${code}` : "/");
+    await Share.share({
+      message: `Join my gym on Zook with referral code ${code}: ${toWebUrl(webPath)}`,
+    });
+  }
 
   return (
     <>
@@ -309,6 +367,15 @@ export default function Home() {
                   </GlassCard>
                 </Pressable>
               </Link>
+              {referralQuery.data?.referralCodes[0] ? (
+                <ReferralCard
+                  code={referralQuery.data.referralCodes[0].code}
+                  redemptions={referralQuery.data.referralCodes[0].redemptionCount ?? 0}
+                  maxUses={referralQuery.data.referralCodes[0].maxUses ?? null}
+                  rewardsCount={referralQuery.data.rewards?.length ?? 0}
+                  onShare={() => void shareReferral()}
+                />
+              ) : null}
             </>
           ) : null}
         </ScrollView>
@@ -322,6 +389,43 @@ export default function Home() {
         {!renewalImminent ? <BottomNav /> : null}
       </ZookScreen>
     </>
+  );
+}
+
+function ReferralCard({
+  code,
+  maxUses,
+  onShare,
+  redemptions,
+  rewardsCount,
+}: {
+  code: string;
+  maxUses?: number | null;
+  onShare: () => void;
+  redemptions: number;
+  rewardsCount: number;
+}) {
+  return (
+    <GlassCard variant="compact" contentStyle={styles.referralContent}>
+      <IconBubble icon="gift-outline" tone="amber" size={38} />
+      <View style={styles.referralCopy}>
+        <Text style={styles.secondaryActionTitle}>Refer a friend</Text>
+        <Text numberOfLines={1} style={styles.mutedSmall}>
+          {redemptions}/{maxUses ?? "unlimited"} used · {rewardsCount} reward{rewardsCount === 1 ? "" : "s"}
+        </Text>
+        <Text selectable style={styles.referralCode}>
+          {code}
+        </Text>
+      </View>
+      <Pressable
+        onPress={onShare}
+        accessibilityRole="button"
+        accessibilityLabel="Share referral code"
+        style={styles.referralShareButton}
+      >
+        <Ionicons name="share-outline" size={18} color={colors.bg} />
+      </Pressable>
+    </GlassCard>
   );
 }
 
@@ -758,6 +862,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
     padding: 12,
+  },
+  referralContent: {
+    minHeight: 86,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: 12,
+  },
+  referralCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  referralCode: {
+    alignSelf: "flex-start",
+    color: colors.lime,
+    ...typography.bodyStrong,
+  },
+  referralShareButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 16,
+    backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
   },
   secondaryActionCopy: {
     flex: 1,
