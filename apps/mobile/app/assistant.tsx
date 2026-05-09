@@ -88,15 +88,21 @@ export default function AssistantScreen() {
         firstClient?.summary?.weightKg ? `Weight: ${firstClient.summary.weightKg} kg` : null,
         firstClient?.summary?.dietPreference ? `Diet: ${firstClient.summary.dietPreference}` : null,
         firstClient?.summary?.allergies ? `Allergies: ${firstClient.summary.allergies}` : null,
-        firstClient?.summary?.activePlans ? `Active plans: ${firstClient.summary.activePlans}` : null,
-      ].filter(Boolean).join("\n")
+        firstClient?.summary?.activePlans
+          ? `Active plans: ${firstClient.summary.activePlans}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n")
     : [
         profile?.user?.fitnessGoal ? `Goal: ${profile.user.fitnessGoal}` : null,
         profile?.wellness?.weightKg ? `Weight: ${profile.wellness.weightKg} kg` : null,
         profile?.wellness?.dietPreference ? `Diet: ${profile.wellness.dietPreference}` : null,
         profile?.wellness?.allergies ? `Allergies: ${profile.wellness.allergies}` : null,
         `Plans: ${plansCount}`,
-      ].filter(Boolean).join("\n");
+      ]
+        .filter(Boolean)
+        .join("\n");
 
   useEffect(() => {
     hydratedRef.current = false;
@@ -176,7 +182,8 @@ export default function AssistantScreen() {
     if (!token || !prompt || loading) {
       return;
     }
-    const outboundPrompt = attachSummary && contextSummary ? `${contextSummary}\n\nQuestion: ${prompt}` : prompt;
+    const outboundPrompt =
+      attachSummary && contextSummary ? `${contextSummary}\n\nQuestion: ${prompt}` : prompt;
     const nextUserMessage: ChatMessage = { id: `user-${Date.now()}`, role: "user", body: prompt };
     setMessages((current) => [...current, nextUserMessage]);
     setDraft("");
@@ -192,8 +199,12 @@ export default function AssistantScreen() {
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
         prompt: outboundPrompt,
       });
-      const body = typeof result.response === "string" ? result.response : JSON.stringify(result.response);
-      setMessages((current) => [...current, { id: `assistant-${Date.now()}`, role: "assistant", body }]);
+      const body =
+        typeof result.response === "string" ? result.response : JSON.stringify(result.response);
+      setMessages((current) => [
+        ...current,
+        { id: `assistant-${Date.now()}`, role: "assistant", body },
+      ]);
       await queryClient.invalidateQueries({ queryKey: ["me", "plans"] });
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (error) {
@@ -228,6 +239,7 @@ export default function AssistantScreen() {
 
   const suggestedPrompts = isTrainer ? trainerPrompts : memberPrompts;
   const composerBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + spacing.lg;
+  const assistantComingSoon = true;
 
   if (!canUseAi) {
     return (
@@ -237,10 +249,71 @@ export default function AssistantScreen() {
             <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
             <View style={styles.emptyCopy}>
               <Text style={styles.emptyTitle}>Plan assistant</Text>
-              <Text style={styles.emptyBody}>Owner and desk operations stay in the web dashboard.</Text>
+              <Text style={styles.emptyBody}>
+                Owner and desk operations stay in the web dashboard.
+              </Text>
             </View>
           </GlassCard>
         </View>
+        <BottomNav />
+      </ZookScreen>
+    );
+  }
+
+  if (assistantComingSoon) {
+    return (
+      <ZookScreen>
+        <ScrollView
+          contentInsetAdjustmentBehavior="never"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.lime}
+              colors={[colors.lime]}
+            />
+          }
+        >
+          <MobileHeader
+            eyebrow={isTrainer ? "Trainer assistant" : "Plan assistant"}
+            title="AI Chat"
+            subtitle="Training chat is being polished before it opens in the app."
+            leading={
+              <Pressable
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                style={styles.iconButton}
+              >
+                <Ionicons name="chevron-back" size={21} color={colors.text} />
+              </Pressable>
+            }
+            chip={
+              <View style={styles.comingSoonBadge}>
+                <Text style={styles.comingSoonBadgeText}>Coming Soon!</Text>
+              </View>
+            }
+            showProfileShortcut={false}
+          />
+          <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+            <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
+            <View style={styles.emptyCopy}>
+              <Text style={styles.emptyTitle}>AI Chat is coming soon</Text>
+              <Text style={styles.emptyBody}>
+                Workouts, plans, and profile data stay available while we finish the assistant.
+              </Text>
+            </View>
+          </GlassCard>
+          <View style={styles.suggestionRow}>
+            {suggestedPrompts.map((prompt) => (
+              <View key={prompt} style={styles.suggestionChipDisabled}>
+                <Text style={styles.suggestionText}>{prompt}</Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
         <BottomNav />
       </ZookScreen>
     );
@@ -265,12 +338,14 @@ export default function AssistantScreen() {
         <MobileHeader
           eyebrow={isTrainer ? "Trainer assistant" : "Plan assistant"}
           title={isTrainer ? "Coach with context" : "Talk through training"}
-          subtitle={isTrainer
-            ? "Attach client summaries, import notes, draft plans."
-            : "Ask in any language — answers are tied to your profile."}
+          subtitle={
+            isTrainer
+              ? "Attach client summaries, import notes, draft plans."
+              : "Ask in any language — answers are tied to your profile."
+          }
           leading={
             <Pressable
-              onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
               accessibilityRole="button"
               accessibilityLabel="Back"
               style={styles.iconButton}
@@ -293,8 +368,14 @@ export default function AssistantScreen() {
             accessibilityRole="button"
             accessibilityLabel="Attach summary"
           >
-            <Ionicons name="document-text-outline" size={16} color={attachSummary ? colors.bg : colors.muted} />
-            <Text style={[styles.controlChipText, attachSummary ? styles.controlChipTextActive : null]}>
+            <Ionicons
+              name="document-text-outline"
+              size={16}
+              color={attachSummary ? colors.bg : colors.muted}
+            />
+            <Text
+              style={[styles.controlChipText, attachSummary ? styles.controlChipTextActive : null]}
+            >
               {isTrainer ? "Client data" : "My profile"}
             </Text>
           </Pressable>
@@ -329,7 +410,9 @@ export default function AssistantScreen() {
           <GlassCard variant="compact" contentStyle={styles.contextContent}>
             <View style={styles.contextHeader}>
               <IconBubble icon="person-outline" tone="blue" size={32} />
-              <Text style={styles.contextLabel}>{isTrainer ? "Attached client data" : "Attached profile"}</Text>
+              <Text style={styles.contextLabel}>
+                {isTrainer ? "Attached client data" : "Attached profile"}
+              </Text>
             </View>
             <Text style={styles.contextText}>{contextSummary}</Text>
           </GlassCard>
@@ -366,7 +449,6 @@ export default function AssistantScreen() {
             </View>
           ) : null}
         </View>
-
       </ScrollView>
       <Animated.View
         style={[
@@ -382,7 +464,9 @@ export default function AssistantScreen() {
             placeholderTextColor={colors.subtle}
             multiline
             style={styles.input}
-            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200)}
+            onFocus={() =>
+              setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200)
+            }
           />
           <View style={styles.composerActions}>
             {draft.trim() ? (
@@ -400,9 +484,16 @@ export default function AssistantScreen() {
               disabled={!draft.trim() || loading}
               accessibilityRole="button"
               accessibilityLabel="Send"
-              style={[styles.sendButton, (!draft.trim() || loading) ? styles.sendButtonDisabled : null]}
+              style={[
+                styles.sendButton,
+                !draft.trim() || loading ? styles.sendButtonDisabled : null,
+              ]}
             >
-              <Ionicons name="send" size={18} color={(!draft.trim() || loading) ? colors.subtle : colors.bg} />
+              <Ionicons
+                name="send"
+                size={18}
+                color={!draft.trim() || loading ? colors.subtle : colors.bg}
+              />
             </Pressable>
           </View>
         </GlassCard>
@@ -428,6 +519,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.lime,
+  },
+  comingSoonBadge: {
+    minHeight: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  comingSoonBadgeText: {
+    color: colors.lime,
+    ...typography.caption,
   },
   iconButton: {
     width: 44,
@@ -482,6 +587,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  suggestionChipDisabled: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.03)",
+    opacity: 0.7,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },

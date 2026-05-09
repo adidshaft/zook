@@ -48,6 +48,37 @@ export interface MemberHomeData {
   nextCheckInEstimate?: string | null;
 }
 
+export interface MemberBadgeRecord {
+  id: string;
+  badgeId?: string;
+  code: string;
+  name: string;
+  description: string;
+  icon?: string | null;
+  awardedAt: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface MemberNextMilestone {
+  code: string;
+  name: string;
+  description: string;
+  icon?: string | null;
+  metric: "streakDays" | "totalCheckIns";
+  target: number;
+  current: number;
+  remaining: number;
+  progress: number;
+}
+
+export interface MemberEngagementData {
+  streakDays: number;
+  totalCheckIns: number;
+  badges: MemberBadgeRecord[];
+  latestBadge?: MemberBadgeRecord | null;
+  nextMilestone?: MemberNextMilestone | null;
+}
+
 export type ActiveMembershipRecord = NonNullable<MemberHomeData["activeMembership"]> & {
   plan?: PublicPlanSummary | null;
   organization?: MemberHomeData["activeOrganization"];
@@ -568,6 +599,32 @@ export function useMemberHome() {
     queryKey: ["me", "home", activeOrgId],
     queryFn: () =>
       mobileApiFetch<MemberHomeData>("/me/home", {
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+      }),
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function useMyEngagement() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "engagement", activeOrgId],
+    queryFn: () =>
+      mobileApiFetch<MemberEngagementData>("/me/engagement", {
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+      }),
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function useMyBadges() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "badges", activeOrgId],
+    queryFn: () =>
+      mobileApiFetch<{ badges: MemberBadgeRecord[] }>("/me/badges", {
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
       }),

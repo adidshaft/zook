@@ -75,6 +75,7 @@ import {
   canReceiveNotification,
   canAssignPlanToUser,
   canSendNotification,
+  badgeMilestoneDefinitions,
   computeSubscriptionWindow,
   consumeVisit,
   createPlanVersionSnapshot,
@@ -88,8 +89,10 @@ import {
   decideClassEnrollment,
   decideAttendanceStatus,
   encodeQrPayload,
+  evaluateBadgeMilestones,
   evaluateOperatingHours,
   fulfillShopOrderForContext,
+  getNextBadgeMilestone,
   normalizeUsername,
   PersonalTrackingService,
   requireManualOverrideReason,
@@ -1125,6 +1128,146 @@ function attendanceWithEntryCode<T extends { id: string }>(record: T) {
   return { ...record, entryCode: entryCodeForAttendanceId(record.id) };
 }
 
+function addDaysToDate(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+type EngagementBadgePayload = {
+  id: string;
+  badgeId: string;
+  code: string;
+  name: string;
+  description: string;
+  icon: string | null;
+  awardedAt: Date;
+  metadata: Prisma.JsonValue | null;
+};
+
+async function getEngagementStats(userId: string, orgId?: string) {
+  const where = clean({
+    userId,
+    orgId,
+    status: "APPROVED" as const,
+  });
+  const [totalCheckIns, attendance] = await Promise.all([
+    prisma.attendanceRecord.count({ where }),
+    prisma.attendanceRecord.findMany({
+      where,
+      orderBy: { checkedInAt: "desc" },
+      select: { dateKey: true },
+      take: 400,
+    }),
+  ]);
+  const attendanceKeys = new Set(attendance.map((record) => record.dateKey));
+  let streakDays = 0;
+  for (let offset = 0; offset < 365; offset += 1) {
+    if (!attendanceKeys.has(operationalDateKey(addDaysToDate(new Date(), -offset)))) {
+      break;
+    }
+    streakDays += 1;
+  }
+  return { streakDays, totalCheckIns };
+}
+
+async function ensureBadgeRows(codes: string[]) {
+  const definitions = badgeMilestoneDefinitions.filter((definition) =>
+    codes.includes(definition.code),
+  );
+  return Promise.all(
+    definitions.map((definition) =>
+      prisma.badge.upsert({
+        where: { code: definition.code },
+        update: {
+          name: definition.name,
+          description: definition.description,
+          icon: definition.icon,
+        },
+        create: {
+          code: definition.code,
+          name: definition.name,
+          description: definition.description,
+          icon: definition.icon,
+        },
+      }),
+    ),
+  );
+}
+
+async function getBadgePayloads(userId: string, orgId?: string) {
+  const userBadges = await prisma.userBadge.findMany({
+    where: clean({ userId, orgId }),
+    orderBy: { awardedAt: "desc" },
+  });
+  if (!userBadges.length) {
+    return [] as EngagementBadgePayload[];
+  }
+  const badgeRows = await prisma.badge.findMany({
+    where: { id: { in: Array.from(new Set(userBadges.map((badge) => badge.badgeId))) } },
+  });
+  const badgeById = new Map(badgeRows.map((badge) => [badge.id, badge]));
+  return userBadges.map((userBadge) => {
+    const badge = badgeById.get(userBadge.badgeId);
+    return {
+      id: userBadge.id,
+      badgeId: userBadge.badgeId,
+      code: badge?.code ?? "unknown",
+      name: badge?.name ?? "Badge",
+      description: badge?.description ?? "Badge earned.",
+      icon: badge?.icon ?? null,
+      awardedAt: userBadge.awardedAt,
+      metadata: userBadge.metadata ?? null,
+    };
+  });
+}
+
+async function awardEngagementBadges(input: { userId: string; orgId: string }) {
+  const [stats, existingBadges] = await Promise.all([
+    getEngagementStats(input.userId, input.orgId),
+    getBadgePayloads(input.userId, input.orgId),
+  ]);
+  const newCodes = evaluateBadgeMilestones({
+    ...stats,
+    existingBadgeCodes: existingBadges.map((badge) => badge.code),
+  });
+  if (!newCodes.length) {
+    return [] as EngagementBadgePayload[];
+  }
+  const badgeRows = await ensureBadgeRows(newCodes);
+  await prisma.userBadge.createMany({
+    data: badgeRows.map((badge) => ({
+      orgId: input.orgId,
+      userId: input.userId,
+      badgeId: badge.id,
+      metadata: {
+        streakDays: stats.streakDays,
+        totalCheckIns: stats.totalCheckIns,
+      },
+    })),
+    skipDuplicates: true,
+  });
+  return getBadgePayloads(input.userId, input.orgId).then((badges) =>
+    badges.filter((badge) => newCodes.includes(badge.code as (typeof newCodes)[number])),
+  );
+}
+
+async function getEngagementSummary(userId: string, orgId?: string) {
+  const [stats, badges] = await Promise.all([
+    getEngagementStats(userId, orgId),
+    getBadgePayloads(userId, orgId),
+  ]);
+  return {
+    ...stats,
+    badges,
+    latestBadge: badges[0] ?? null,
+    nextMilestone: getNextBadgeMilestone({
+      ...stats,
+      existingBadgeCodes: badges.map((badge) => badge.code),
+    }),
+  };
+}
+
 function checkInCodeForQrNonce(nonce: string) {
   const digest = createHash("sha256").update(`check-in:${nonce}`).digest();
   const letters = [digest[0], digest[1]]
@@ -1135,7 +1278,10 @@ function checkInCodeForQrNonce(nonce: string) {
 }
 
 function normalizeCheckInCode(input: string) {
-  const compact = input.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const compact = input
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
   const match = /^([A-Z]{2})([0-9]{4})$/.exec(compact);
   return match ? `${match[1]}-${match[2]}` : "";
 }
@@ -1534,8 +1680,7 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
       return {
         profile,
         user: user ? serializeUserForClient(user) : null,
-        lastCheckIn:
-          attendance.find((record) => record.userId === profile.userId) ?? null,
+        lastCheckIn: attendance.find((record) => record.userId === profile.userId) ?? null,
         recentCheckIns: attendance
           .filter((record) => record.userId === profile.userId)
           .slice(0, 3)
@@ -4375,6 +4520,13 @@ async function handleMeData(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
     return ok(await getMemberHomeData(userId, ctx.orgId));
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "engagement"])) {
+    const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
+    const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, requestedOrgId);
+    return ok(await getEngagementSummary(userId, requestedOrgId ?? ctx.orgId));
   }
   if (request.method === "GET" && pathMatches(path, ["me", "referral-codes"])) {
     const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
@@ -9266,6 +9418,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       entityId: record.id,
       metadata: { source: "local_dev_scan" },
     });
+    const newBadges = await awardEngagementBadges({ orgId, userId });
     return ok({
       attendance: {
         ...attendanceWithEntryCode(record),
@@ -9276,6 +9429,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       status: record.status,
       duplicate: Boolean(existing),
       suspiciousFlags: [],
+      newBadges,
     });
   }
   if (request.method === "POST" && pathMatches(path, ["attendance", "scan"])) {
@@ -9474,16 +9628,20 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         deviceId: body.deviceId,
       }),
     });
-    if (status === "APPROVED") {
-      await applyAttendanceUsage({
-        orgId: decoded.orgId,
-        subscription,
-        plan,
-        recordId: record.id,
-        alreadyCheckedInToday: Boolean(recentCheckIn),
-        multiEntryConsumes: org.multiEntryConsumes,
-      });
-    }
+    const newBadges =
+      status === "APPROVED"
+        ? await (async () => {
+            await applyAttendanceUsage({
+              orgId: decoded.orgId,
+              subscription,
+              plan,
+              recordId: record.id,
+              alreadyCheckedInToday: Boolean(recentCheckIn),
+              multiEntryConsumes: org.multiEntryConsumes,
+            });
+            return awardEngagementBadges({ orgId: decoded.orgId, userId });
+          })()
+        : [];
     return ok({
       attendance: {
         ...attendanceWithEntryCode(record),
@@ -9495,6 +9653,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       duplicate: Boolean(recentCheckIn),
       suspiciousFlags: validation.suspiciousFlags,
       warnings: validation.warnings,
+      newBadges,
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "reception", "verify-code"])) {
@@ -9675,6 +9834,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       where: { id: existingRecord.id },
       data: { status: "APPROVED", approvedById: userId, approvedAt: new Date() },
     });
+    let newBadges: EngagementBadgePayload[] = [];
     if (record.subscriptionId) {
       const subscription = await prisma.memberSubscription.findUnique({
         where: { id: record.subscriptionId },
@@ -9691,6 +9851,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
           recordId: record.id,
           multiEntryConsumes: org.multiEntryConsumes,
         });
+        newBadges = await awardEngagementBadges({ orgId, userId: record.userId });
       }
     }
     await createDirectNotification({
@@ -9713,6 +9874,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
     });
     return ok({
       record,
+      newBadges,
     });
   }
   if (
@@ -9819,6 +9981,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
         multiEntryConsumes: org.multiEntryConsumes,
       });
     }
+    const newBadges = await awardEngagementBadges({ orgId, userId: body.memberUserId });
     await createDirectNotification({
       orgId,
       createdById: userId,
@@ -9838,7 +10001,7 @@ async function handleAttendance(request: NextRequest, path: string[]) {
       entityId: record.id,
       metadata: { memberUserId: body.memberUserId, reason: body.reason },
     });
-    return ok({ record });
+    return ok({ record, newBadges });
   }
   return undefined;
 }
@@ -11302,8 +11465,11 @@ async function handleStaffPlansGoals(request: NextRequest, path: string[]) {
     return ok({ goal });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "badges"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    return ok({ badges: await prisma.userBadge.findMany({ where: { userId } }) });
+    const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
+    const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, requestedOrgId);
+    return ok({ badges: await getBadgePayloads(userId, requestedOrgId ?? ctx.orgId) });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "challenges"])) {
     return ok({

@@ -23,7 +23,13 @@ import { useAuth } from "@/lib/auth";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
 import { syncSmartCheckInReminder } from "@/lib/check-in-reminders";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
-import { useMemberHome, useMyNotificationPreferences, useMyReferralCodes } from "@/lib/query-hooks";
+import {
+  useMemberHome,
+  useMyEngagement,
+  useMyNotificationPreferences,
+  useMyReferralCodes,
+} from "@/lib/query-hooks";
+import type { MemberBadgeRecord, MemberNextMilestone } from "@/lib/query-hooks";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -36,7 +42,9 @@ function initialsFor(name?: string | null) {
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
-      .join("") || cleanName.charAt(0).toUpperCase() || "?"
+      .join("") ||
+    cleanName.charAt(0).toUpperCase() ||
+    "?"
   );
 }
 
@@ -62,10 +70,17 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const { activeOrgId, session } = useAuth();
   const homeQuery = useMemberHome();
+  const engagementQuery = useMyEngagement();
   const referralQuery = useMyReferralCodes();
   const notificationPreferencesQuery = useMyNotificationPreferences();
-  useAppFocusInvalidation([["me", "home"], ["me", "membership"], ["me", "notifications"]]);
+  useAppFocusInvalidation([
+    ["me", "home"],
+    ["me", "engagement"],
+    ["me", "membership"],
+    ["me", "notifications"],
+  ]);
   const memberHome = homeQuery.data;
+  const engagement = engagementQuery.data;
   const notificationPreferences = useMemo(
     () => mergeNotificationPreferences(notificationPreferencesQuery.data?.preferences, activeOrgId),
     [activeOrgId, notificationPreferencesQuery.data?.preferences],
@@ -103,10 +118,12 @@ export default function Home() {
   const daysLeftLabel =
     typeof daysLeft === "number" ? `${daysLeft} days left` : "Membership status pending";
   const remainingVisitsLabel =
-    typeof remainingVisits === "number" ? `${remainingVisits} visits remaining` : "Visit balance pending";
+    typeof remainingVisits === "number"
+      ? `${remainingVisits} visits remaining`
+      : "Visit balance pending";
   const unreadCount = memberHome?.unreadNotifications ?? 0;
   const assignedPlan = memberHome?.todayPlanName
-      ? {
+    ? {
         name: memberHome.todayPlanName,
         type: "Today",
       }
@@ -117,13 +134,15 @@ export default function Home() {
         month: "short",
       })
     : "None";
+  const streakDays = engagement?.streakDays ?? memberHome?.streakDays ?? 0;
+  const latestBadge = engagement?.latestBadge ?? engagement?.badges?.[0] ?? null;
+  const nextMilestone = engagement?.nextMilestone ?? null;
   const hasGym = Boolean(activeOrganization);
   const hasMembership = Boolean(memberHome?.activeMembership);
   const profileNeedsWork = Boolean(hasMembership && (!profilePhotoUrl || !session?.user.phone));
   const neverCheckedIn = hasMembership && (memberHome?.recentAttendance?.length ?? 0) === 0;
   const renewalImminent =
-    hasMembership &&
-    (membershipExpired || (typeof daysLeft === "number" && daysLeft <= 7));
+    hasMembership && (membershipExpired || (typeof daysLeft === "number" && daysLeft <= 7));
   const loadingHome = homeQuery.isLoading && !memberHome;
   const homeError = homeQuery.isError && !memberHome;
   const firstRunState =
@@ -139,12 +158,16 @@ export default function Home() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ["me", "home"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      queryClient.invalidateQueries({ queryKey: ["me", "engagement"] }),
+      queryClient.invalidateQueries({ queryKey: ["me", "badges"] }),
+    ]);
     setRefreshing(false);
   };
 
   useEffect(() => {
-    const streak = memberHome?.streakDays ?? 0;
+    const streak = streakDays;
     if (!activeOrgId || ![7, 30, 100].includes(streak)) {
       return;
     }
@@ -160,7 +183,7 @@ export default function Home() {
         message: "Nice consistency. Keep it going.",
       });
     });
-  }, [activeOrgId, memberHome?.streakDays]);
+  }, [activeOrgId, streakDays]);
 
   useEffect(() => {
     if (!hasMembership || !memberHome) {
@@ -269,7 +292,9 @@ export default function Home() {
                 <Ionicons name="notifications-outline" size={21} color={colors.text} />
                 {unreadCount > 0 ? (
                   <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+                    <Text style={styles.unreadBadgeText}>
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </Text>
                   </View>
                 ) : null}
               </Pressable>
@@ -314,10 +339,7 @@ export default function Home() {
                   typeof daysLeft === "number" && memberHome?.activePlan?.durationDays
                     ? Math.max(
                         0.08,
-                        Math.min(
-                          1,
-                          daysLeft / Math.max(memberHome.activePlan.durationDays, 1),
-                        ),
+                        Math.min(1, daysLeft / Math.max(memberHome.activePlan.durationDays, 1)),
                       )
                     : 0.72
                 }
@@ -344,7 +366,7 @@ export default function Home() {
                 <GlassCard variant="compact" style={styles.todayTile}>
                   <Text style={styles.tileEyebrow}>Streak</Text>
                   <View style={styles.streakRow}>
-                    <Text style={styles.streakValue}>{memberHome?.streakDays ?? 0}</Text>
+                    <Text style={styles.streakValue}>{streakDays}</Text>
                     <Ionicons name="flame-outline" size={16} color={colors.lime} />
                     <Text style={styles.tileMeta}>days</Text>
                   </View>
@@ -353,6 +375,14 @@ export default function Home() {
                   </Text>
                 </GlassCard>
               </View>
+              <EngagementCard
+                streakDays={streakDays}
+                totalCheckIns={
+                  engagement?.totalCheckIns ?? memberHome?.recentAttendance?.length ?? 0
+                }
+                latestBadge={latestBadge}
+                nextMilestone={nextMilestone}
+              />
               <Link href="/tracking-entry" asChild>
                 <Pressable accessibilityRole="link" accessibilityLabel="Log today's workout">
                   <GlassCard contentStyle={styles.secondaryActionContent}>
@@ -411,7 +441,8 @@ function ReferralCard({
       <View style={styles.referralCopy}>
         <Text style={styles.secondaryActionTitle}>Refer a friend</Text>
         <Text numberOfLines={1} style={styles.mutedSmall}>
-          {redemptions}/{maxUses ?? "unlimited"} used · {rewardsCount} reward{rewardsCount === 1 ? "" : "s"}
+          {redemptions}/{maxUses ?? "unlimited"} used · {rewardsCount} reward
+          {rewardsCount === 1 ? "" : "s"}
         </Text>
         <Text selectable style={styles.referralCode}>
           {code}
@@ -429,13 +460,79 @@ function ReferralCard({
   );
 }
 
+function safeIconName(icon?: string | null): keyof typeof Ionicons.glyphMap {
+  return icon && icon in Ionicons.glyphMap
+    ? (icon as keyof typeof Ionicons.glyphMap)
+    : "ribbon-outline";
+}
+
+function EngagementCard({
+  latestBadge,
+  nextMilestone,
+  streakDays,
+  totalCheckIns,
+}: {
+  latestBadge?: MemberBadgeRecord | null;
+  nextMilestone?: MemberNextMilestone | null;
+  streakDays: number;
+  totalCheckIns: number;
+}) {
+  const progress = Math.max(0.06, Math.min(1, nextMilestone?.progress ?? 0));
+  const progressWidth = `${Math.round(progress * 100)}%` as const;
+  const milestoneText = nextMilestone
+    ? nextMilestone.metric === "streakDays"
+      ? `${nextMilestone.remaining} day${nextMilestone.remaining === 1 ? "" : "s"} to ${nextMilestone.name}`
+      : `${nextMilestone.remaining} check-in${nextMilestone.remaining === 1 ? "" : "s"} to ${nextMilestone.name}`
+    : "All current badges earned";
+
+  return (
+    <GlassCard variant="compact" contentStyle={styles.engagementContent}>
+      <View style={styles.engagementTopRow}>
+        <View style={styles.engagementStreak}>
+          <Text style={styles.tileEyebrow}>Consistency</Text>
+          <View style={styles.streakRow}>
+            <Text style={styles.streakValue}>{streakDays}</Text>
+            <Ionicons name="flame-outline" size={16} color={colors.lime} />
+            <Text style={styles.tileMeta}>day streak</Text>
+          </View>
+          <Text numberOfLines={1} style={styles.tileMeta}>
+            {totalCheckIns} total check-ins
+          </Text>
+        </View>
+        <View style={styles.badgePreview}>
+          <View style={[styles.badgeIcon, latestBadge ? null : styles.badgeIconEmpty]}>
+            <Ionicons
+              name={safeIconName(latestBadge?.icon)}
+              size={18}
+              color={latestBadge ? colors.bg : colors.muted}
+            />
+          </View>
+          <Text numberOfLines={1} style={styles.badgeTitle}>
+            {latestBadge?.name ?? "First badge awaits"}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.engagementProgressTrack}>
+        <View style={[styles.engagementProgressFill, { width: progressWidth }]} />
+      </View>
+      <Text numberOfLines={1} style={styles.mutedSmall}>
+        {milestoneText}
+      </Text>
+    </GlassCard>
+  );
+}
+
 function ProfileReadyPrompt({ needsPhoto }: { needsPhoto: boolean }) {
   return (
     <Link href="/profile" asChild>
       <Pressable accessibilityRole="link" accessibilityLabel="Complete profile for check-in">
         <View style={styles.profilePrompt}>
           <View style={styles.profilePromptIcon}>
-            <Ionicons name={needsPhoto ? "camera-outline" : "call-outline"} size={18} color={colors.bg} />
+            <Ionicons
+              name={needsPhoto ? "camera-outline" : "call-outline"}
+              size={18}
+              color={colors.bg}
+            />
           </View>
           <View style={styles.profilePromptCopy}>
             <Text style={styles.profilePromptTitle}>Finish your check-in profile</Text>
@@ -480,9 +577,7 @@ function MemberStateHero({
       glow={!expired}
       contentStyle={styles.memberHeroContent}
     >
-      <Text style={styles.heroEyebrow}>
-        {expired ? "Renewal needed" : "Active membership"}
-      </Text>
+      <Text style={styles.heroEyebrow}>{expired ? "Renewal needed" : "Active membership"}</Text>
       <View style={styles.heroNumberRow}>
         {splitLabel ? (
           <>
@@ -855,6 +950,59 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     fontFamily: "Inter_700Bold",
     fontVariant: ["tabular-nums"],
+  },
+  engagementContent: {
+    gap: 12,
+    padding: 14,
+  },
+  engagementTopRow: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  engagementStreak: {
+    flex: 1,
+    minWidth: 0,
+  },
+  badgePreview: {
+    width: 118,
+    minHeight: 56,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+  },
+  badgeIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeIconEmpty: {
+    backgroundColor: colors.panel,
+  },
+  badgeTitle: {
+    maxWidth: "100%",
+    color: colors.text,
+    ...typography.caption,
+  },
+  engagementProgressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    overflow: "hidden",
+  },
+  engagementProgressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: colors.lime,
   },
   secondaryActionContent: {
     minHeight: 62,

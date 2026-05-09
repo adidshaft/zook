@@ -14,11 +14,19 @@ function activeOrg() {
 }
 
 function activeMembership() {
-  return zookDemoFixtures.memberships.find((membership) => membership.id === "membership-aarav-hybrid") ?? null;
+  return (
+    zookDemoFixtures.memberships.find(
+      (membership) => membership.id === "membership-aarav-hybrid",
+    ) ?? null
+  );
 }
 
 function activeTrainingPlan() {
-  return zookDemoFixtures.trainingPlans.find((plan) => plan.id === "plan-push-day") ?? zookDemoFixtures.trainingPlans[0] ?? null;
+  return (
+    zookDemoFixtures.trainingPlans.find((plan) => plan.id === "plan-push-day") ??
+    zookDemoFixtures.trainingPlans[0] ??
+    null
+  );
 }
 
 function demoProfile() {
@@ -30,7 +38,8 @@ function demoProfile() {
       email: session.user.email,
       name: session.user.name,
       phone: session.user.phone,
-      dateOfBirth: zookDemoFixtures.users.find((user) => user.id === session.user.id)?.dateOfBirth ?? null,
+      dateOfBirth:
+        zookDemoFixtures.users.find((user) => user.id === session.user.id)?.dateOfBirth ?? null,
       fitnessGoal: profile?.goal ?? null,
     },
     profile: profile
@@ -116,8 +125,12 @@ function demoGymProfile(username: string) {
 
 function demoOwnerDashboard() {
   const org = activeOrg();
-  const pendingAttendance = zookDemoFixtures.attendanceAttempts.filter((attempt) => attempt.status === "PENDING_APPROVAL");
-  const lowStock = zookDemoFixtures.shopProducts.filter((product) => product.stock <= product.lowStockThreshold);
+  const pendingAttendance = zookDemoFixtures.attendanceAttempts.filter(
+    (attempt) => attempt.status === "PENDING_APPROVAL",
+  );
+  const lowStock = zookDemoFixtures.shopProducts.filter(
+    (product) => product.stock <= product.lowStockThreshold,
+  );
   return {
     organization: org ? { id: org.id, name: org.name, status: org.status, trialEndAt: null } : null,
     metrics: [
@@ -156,8 +169,12 @@ function demoOwnerDashboard() {
 function demoTrainerClients() {
   return {
     clients: zookDemoFixtures.trainerClientAssignments.map((assignment) => {
-      const user = zookDemoFixtures.users.find((candidate) => candidate.id === assignment.memberUserId);
-      const profile = zookDemoFixtures.memberProfiles.find((candidate) => candidate.userId === assignment.memberUserId);
+      const user = zookDemoFixtures.users.find(
+        (candidate) => candidate.id === assignment.memberUserId,
+      );
+      const profile = zookDemoFixtures.memberProfiles.find(
+        (candidate) => candidate.userId === assignment.memberUserId,
+      );
       return {
         ...assignment,
         user: user
@@ -169,7 +186,9 @@ function demoTrainerClients() {
               fitnessGoal: profile?.goal,
             }
           : null,
-        profile: profile ? { fitnessGoal: profile.goal, notes: profile.goal, profilePhotoUrl: null } : null,
+        profile: profile
+          ? { fitnessGoal: profile.goal, notes: profile.goal, profilePhotoUrl: null }
+          : null,
         summary: {
           fitnessGoal: profile?.goal,
           dateOfBirth: user?.dateOfBirth,
@@ -177,7 +196,9 @@ function demoTrainerClients() {
           dietPreference: profile?.dietPreference,
           allergies: profile?.allergyNote,
           summaryNote: "Consistent attendance and ready for progressive overload.",
-          activePlans: zookDemoFixtures.trainingPlans.filter((plan) => plan.memberUserId === assignment.memberUserId).length,
+          activePlans: zookDemoFixtures.trainingPlans.filter(
+            (plan) => plan.memberUserId === assignment.memberUserId,
+          ).length,
         },
       };
     }),
@@ -214,7 +235,9 @@ function demoPlanAssignments() {
       orgId: trainingPlan.orgId,
       assignmentId: trainingPlan.id,
       userId: trainingPlan.memberUserId,
-      progressJson: { completedExercises: trainingPlan.exercises.slice(0, 2).map((exercise) => exercise.name) },
+      progressJson: {
+        completedExercises: trainingPlan.exercises.slice(0, 2).map((exercise) => exercise.name),
+      },
       completionPct: 33,
       createdAt: nowIso(),
       updatedAt: nowIso(),
@@ -224,10 +247,19 @@ function demoPlanAssignments() {
 
 function demoMembers() {
   return zookDemoFixtures.memberProfiles.map((profile) => {
-    const user = zookDemoFixtures.users.find((candidate) => candidate.id === profile.userId) ?? null;
-    const activeSubscription = zookDemoFixtures.memberships.find((membership) => membership.memberUserId === profile.userId) ?? null;
-    const lastCheckIn = zookDemoFixtures.attendanceAttempts.find((attempt) => attempt.memberUserId === profile.userId) ?? null;
-    const trainer = zookDemoFixtures.users.find((candidate) => candidate.id === profile.assignedTrainerId) ?? null;
+    const user =
+      zookDemoFixtures.users.find((candidate) => candidate.id === profile.userId) ?? null;
+    const activeSubscription =
+      zookDemoFixtures.memberships.find(
+        (membership) => membership.memberUserId === profile.userId,
+      ) ?? null;
+    const lastCheckIn =
+      zookDemoFixtures.attendanceAttempts.find(
+        (attempt) => attempt.memberUserId === profile.userId,
+      ) ?? null;
+    const trainer =
+      zookDemoFixtures.users.find((candidate) => candidate.id === profile.assignedTrainerId) ??
+      null;
     return {
       profile: {
         id: profile.id,
@@ -253,7 +285,8 @@ function demoShopOrders() {
     userId: order.memberUserId,
     items: order.items.map((item) => ({
       ...item,
-      product: zookDemoFixtures.shopProducts.find((product) => product.id === item.productId) ?? null,
+      product:
+        zookDemoFixtures.shopProducts.find((product) => product.id === item.productId) ?? null,
     })),
   }));
 }
@@ -280,13 +313,14 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname === "/auth/verify-otp") {
     const body = demoBody(init);
-    const identifier = String(body.identifier ?? "").trim().toLowerCase();
+    const identifier = String(body.identifier ?? "")
+      .trim()
+      .toLowerCase();
     const phoneIdentifier = String(body.identifier ?? "").replace(/\D/g, "");
     if (
       body.code !== "000000" ||
       !(
-        identifier === DEMO_MEMBER_EMAIL ||
-        phoneIdentifier === DEMO_MEMBER_PHONE.replace(/\D/g, "")
+        identifier === DEMO_MEMBER_EMAIL || phoneIdentifier === DEMO_MEMBER_PHONE.replace(/\D/g, "")
       )
     ) {
       throw new Error("Use member@zook.local or +91 98765 43210 with OTP 000000 for demo mode.");
@@ -300,7 +334,8 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname === "/auth/me") return session as T;
   if (pathname === "/auth/logout") return { ok: true } as T;
-  if (pathname === "/me/orgs") return { organizations: session.organizations, activeOrgId: session.activeOrgId } as T;
+  if (pathname === "/me/orgs")
+    return { organizations: session.organizations, activeOrgId: session.activeOrgId } as T;
   if (pathname === "/me/profile") return demoProfile() as T;
   if (pathname === "/me/notification-preferences") return { preferences: [] } as T;
   if (pathname === "/me/push-devices") return { devices: [] } as T;
@@ -341,7 +376,9 @@ export async function demoMobileApiFetch<T>(
         status: attempt.status,
         source: "OFFLINE_DEMO",
       })),
-      unreadNotifications: zookDemoFixtures.notifications.filter((notification) => !notification.readAt).length,
+      unreadNotifications: zookDemoFixtures.notifications.filter(
+        (notification) => !notification.readAt,
+      ).length,
       activeGoals: 3,
       assignedPlans: zookDemoFixtures.trainingPlans.length,
       streakDays: membership?.streakDays ?? 0,
@@ -350,9 +387,60 @@ export async function demoMobileApiFetch<T>(
     } as T;
   }
 
+  if (pathname === "/me/badges") {
+    return {
+      badges: [
+        {
+          id: "offline-badge-first",
+          badgeId: "badge-first-checkin",
+          code: "first_checkin",
+          name: "First check-in",
+          description: "Completed the first gym check-in.",
+          icon: "checkmark-circle-outline",
+          awardedAt: zookDemoFixtures.attendanceAttempts[0]?.checkedInAt ?? nowIso(),
+          metadata: { totalCheckIns: zookDemoFixtures.attendanceAttempts.length },
+        },
+      ],
+    } as T;
+  }
+
+  if (pathname === "/me/engagement") {
+    const streakDays = membership?.streakDays ?? 0;
+    const latestBadge = {
+      id: "offline-badge-first",
+      badgeId: "badge-first-checkin",
+      code: "first_checkin",
+      name: "First check-in",
+      description: "Completed the first gym check-in.",
+      icon: "checkmark-circle-outline",
+      awardedAt: zookDemoFixtures.attendanceAttempts[0]?.checkedInAt ?? nowIso(),
+      metadata: { totalCheckIns: zookDemoFixtures.attendanceAttempts.length },
+    };
+    return {
+      streakDays,
+      totalCheckIns: zookDemoFixtures.attendanceAttempts.length,
+      badges: [latestBadge],
+      latestBadge,
+      nextMilestone: {
+        code: "streak_7",
+        name: "7-day streak",
+        description: "Checked in for 7 days in a row.",
+        icon: "flame-outline",
+        metric: "streakDays",
+        target: 7,
+        current: streakDays,
+        remaining: Math.max(0, 7 - streakDays),
+        progress: Math.max(0, Math.min(1, streakDays / 7)),
+      },
+    } as T;
+  }
+
   if (pathname === "/me/membership/active") return { membership: activeMembership() } as T;
   if (pathname === "/me/memberships") {
-    return { subscriptions: zookDemoFixtures.memberships, payments: zookDemoFixtures.payments } as T;
+    return {
+      subscriptions: zookDemoFixtures.memberships,
+      payments: zookDemoFixtures.payments,
+    } as T;
   }
   if (pathname.match(/^\/me\/memberships\/[^/]+\/renew$/)) {
     return {
@@ -387,7 +475,8 @@ export async function demoMobileApiFetch<T>(
       },
     } as T;
   }
-  if (pathname === "/me/attendance") return { attendance: zookDemoFixtures.attendanceAttempts } as T;
+  if (pathname === "/me/attendance")
+    return { attendance: zookDemoFixtures.attendanceAttempts } as T;
   if (pathname.match(/^\/me\/attendance\/[^/]+$/)) {
     const attendanceRecordId = pathname.split("/").at(-1);
     const attendance =
@@ -396,7 +485,9 @@ export async function demoMobileApiFetch<T>(
     return { attendance } as T;
   }
   if (pathname === "/attendance/scan") {
-    const attempt = zookDemoFixtures.attendanceAttempts.find((record) => record.status === "APPROVED") ?? zookDemoFixtures.attendanceAttempts[0];
+    const attempt =
+      zookDemoFixtures.attendanceAttempts.find((record) => record.status === "APPROVED") ??
+      zookDemoFixtures.attendanceAttempts[0];
     return {
       attendance: attempt,
       status: attempt?.status ?? "APPROVED",
@@ -407,8 +498,12 @@ export async function demoMobileApiFetch<T>(
   if (pathname === "/me/plans") return { plans: demoPlanAssignments() } as T;
   if (pathname.match(/^\/me\/plans\/[^/]+\/exercises$/)) {
     const assignmentId = pathname.split("/")[3];
-    const assignment = demoPlanAssignments().find((candidate) => candidate.id === assignmentId) ?? demoPlanAssignments()[0];
-    const planRecord = zookDemoFixtures.trainingPlans.find((candidate) => candidate.id === assignment?.planId) ?? activeTrainingPlan();
+    const assignment =
+      demoPlanAssignments().find((candidate) => candidate.id === assignmentId) ??
+      demoPlanAssignments()[0];
+    const planRecord =
+      zookDemoFixtures.trainingPlans.find((candidate) => candidate.id === assignment?.planId) ??
+      activeTrainingPlan();
     return {
       assignment,
       plan: assignment?.plan ?? null,
@@ -422,12 +517,16 @@ export async function demoMobileApiFetch<T>(
     } as T;
   }
   if (pathname.match(/^\/me\/plans\/[^/]+\/complete$/)) {
-    return { progress: { completionPct: 100, progressJson: init.body ?? {} }, completedExercises: [] } as T;
+    return {
+      progress: { completionPct: 100, progressJson: init.body ?? {} },
+      completedExercises: [],
+    } as T;
   }
   if (pathname.match(/^\/orgs\/[^/]+\/plan-feedback$/)) {
     return { ok: true } as T;
   }
-  if (pathname === "/me/notifications") return { notifications: zookDemoFixtures.notifications } as T;
+  if (pathname === "/me/notifications")
+    return { notifications: zookDemoFixtures.notifications } as T;
   if (pathname === "/me/notifications/read") {
     const body = init.body as { ids?: string[] } | undefined;
     return { count: body?.ids?.length ?? 0 } as T;
@@ -522,7 +621,11 @@ export async function demoMobileApiFetch<T>(
   }
 
   if (pathname.endsWith("/shop/orders/active")) {
-    return { orders: demoShopOrders().filter((order) => order.status === "READY_FOR_PICKUP" || order.status === "PAID") } as T;
+    return {
+      orders: demoShopOrders().filter(
+        (order) => order.status === "READY_FOR_PICKUP" || order.status === "PAID",
+      ),
+    } as T;
   }
 
   if (pathname === "/shop/orders") {
@@ -536,7 +639,10 @@ export async function demoMobileApiFetch<T>(
   }
 
   if (pathname.startsWith("/payments/mock/")) {
-    return { session: { id: "offline-payment-session", status: "SUCCEEDED" }, payment: zookDemoFixtures.payments[0] } as T;
+    return {
+      session: { id: "offline-payment-session", status: "SUCCEEDED" },
+      payment: zookDemoFixtures.payments[0],
+    } as T;
   }
 
   if (pathname.includes("/trainers/") && pathname.endsWith("/clients")) {
@@ -558,7 +664,11 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname.endsWith("/join-requests")) {
     if (init.body) {
-      return { id: "offline-join-request", status: "PENDING", ...(init.body as object | undefined) } as T;
+      return {
+        id: "offline-join-request",
+        status: "PENDING",
+        ...(init.body as object | undefined),
+      } as T;
     }
     return { joinRequests: zookDemoFixtures.joinRequests } as T;
   }

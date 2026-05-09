@@ -271,10 +271,8 @@ export async function getOrganizationDashboardData(
   orgId: string,
   filters: DashboardBranchFilter = {},
 ) {
-  return cachedJson(
-    `org-dashboard:${orgId}:${filters.branchId ?? "default"}`,
-    20,
-    () => getOrganizationDashboardDataUncached(orgId, filters),
+  return cachedJson(`org-dashboard:${orgId}:${filters.branchId ?? "default"}`, 20, () =>
+    getOrganizationDashboardDataUncached(orgId, filters),
   );
 }
 
@@ -555,7 +553,7 @@ export async function getMemberHomeData(userId: string, preferredOrgId?: string)
     prisma.attendanceRecord.findMany({
       where: { userId, ...(activeOrgId ? { orgId: activeOrgId } : {}) },
       orderBy: { checkedInAt: "desc" },
-      take: 10,
+      take: 400,
     }),
     prisma.notificationRecipient.count({ where: { userId, readAt: null } }),
     prisma.userGoal.count({ where: { userId, active: true } }),

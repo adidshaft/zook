@@ -57,7 +57,9 @@ export const apiClient = {
 };
 
 export const filesApi = {
-  uploadProfilePhoto(options: RequestOptions & { file: MobileUploadFile; visibility?: "private" | "org" }) {
+  uploadProfilePhoto(
+    options: RequestOptions & { file: MobileUploadFile; visibility?: "private" | "org" },
+  ) {
     const formData = new FormData();
     formData.append("category", "profile_photo");
     formData.append("visibility", options.visibility ?? "private");
@@ -117,6 +119,18 @@ export const authClient = {
 export const memberApi = {
   home(options: RequestOptions) {
     return mobileApiFetch("/me/home", options);
+  },
+  getEngagement<T = unknown>(options: RequestOptions) {
+    return mobileApiFetch<T>("/me/engagement", {
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+    });
+  },
+  getBadges<T = unknown>(options: RequestOptions) {
+    return mobileApiFetch<T>("/me/badges", {
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+    });
   },
   profile(options: RequestOptions) {
     return mobileApiFetch("/me/profile", options);

@@ -4,6 +4,7 @@ export * from "./coupon-service";
 export * from "./referral-service";
 export * from "./payment-service";
 export * from "./attendance-service";
+export * from "./badge-service";
 export * from "./notification-service";
 export * from "./ai-service";
 export * from "./shop-service";
