@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { AlertTriangle, Check, Circle, X } from "lucide-react";
-import { GlassCard, Pill, type PillTone } from "./glass-card";
+import { GlassCard, Pill, ProductPanel, type PillTone } from "./glass-card";
 import { HelpHint } from "./ui";
 
 export function toneFromStatus(value: string | null | undefined): PillTone {
@@ -136,6 +136,157 @@ export function MetricCard({
       </div>
     </GlassCard>
   );
+}
+
+export function DashboardPageShell({
+  children,
+  eyebrow,
+  title,
+  description,
+  action,
+  className,
+}: {
+  children: React.ReactNode;
+  eyebrow?: string;
+  title: string;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string | undefined;
+}) {
+  return (
+    <ProductPanel className={className}>
+      <SectionHeader
+        {...(eyebrow ? { eyebrow } : {})}
+        title={title}
+        {...(description ? { description } : {})}
+        {...(action ? { action } : {})}
+      />
+      <div className="mt-5">{children}</div>
+    </ProductPanel>
+  );
+}
+
+export function MetricChip({
+  children,
+  tone = "neutral",
+  icon,
+  className,
+}: {
+  children: React.ReactNode;
+  tone?: PillTone;
+  icon?: React.ReactNode;
+  className?: string | undefined;
+}) {
+  return (
+    <Pill tone={tone} className={clsx("px-3.5 py-1.5", className)}>
+      {icon}
+      {children}
+    </Pill>
+  );
+}
+
+export function StatusDot({
+  tone = "neutral",
+  pulse = false,
+}: {
+  tone?: PillTone;
+  pulse?: boolean;
+}) {
+  const tones: Record<PillTone, string> = {
+    neutral: "bg-white/45 shadow-[0_0_0_4px_rgba(255,255,255,0.08)]",
+    lime: "bg-lime-300 shadow-[0_0_0_4px_rgba(185,244,85,0.12)]",
+    amber: "bg-amber-300 shadow-[0_0_0_4px_rgba(242,201,76,0.12)]",
+    red: "bg-[#ff5a3d] shadow-[0_0_0_4px_rgba(255,90,61,0.12)]",
+    blue: "bg-sky-300 shadow-[0_0_0_4px_rgba(125,211,252,0.12)]",
+  };
+  return (
+    <span
+      className={clsx(
+        "inline-block h-2.5 w-2.5 rounded-full",
+        tones[tone],
+        pulse ? "animate-pulse" : null,
+      )}
+      aria-hidden="true"
+    />
+  );
+}
+
+export function AvatarInitials({
+  name,
+  className,
+}: {
+  name?: string | null;
+  className?: string | undefined;
+}) {
+  const initials =
+    name
+      ?.trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "ZK";
+  return (
+    <span
+      className={clsx(
+        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/12 bg-white/8 text-xs font-semibold text-white",
+        className,
+      )}
+    >
+      {initials}
+    </span>
+  );
+}
+
+export function ActionRow({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string | undefined;
+}) {
+  return <div className={clsx("flex flex-wrap items-center gap-2", className)}>{children}</div>;
+}
+
+export function MiniTrend({
+  values = [18, 24, 21, 32, 30, 44, 40],
+  tone = "lime",
+  label = "Mini trend",
+}: {
+  values?: number[];
+  tone?: "lime" | "blue" | "amber";
+  label?: string;
+}) {
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const range = Math.max(max - min, 1);
+  const points = values
+    .map((value, index) => {
+      const x = (index / Math.max(values.length - 1, 1)) * 100;
+      const y = 42 - ((value - min) / range) * 34;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  const stroke = tone === "blue" ? "#7dd3fc" : tone === "amber" ? "#f2c94c" : "#b9f455";
+  return (
+    <svg viewBox="0 0 100 48" role="img" aria-label={label} className="h-14 w-full overflow-visible">
+      <defs>
+        <linearGradient id={`mini-trend-${tone}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polyline
+        points={`0,48 ${points} 100,48`}
+        fill={`url(#mini-trend-${tone})`}
+        stroke="none"
+      />
+      <polyline points={points} fill="none" stroke={stroke} strokeLinecap="round" strokeWidth="3" />
+    </svg>
+  );
+}
+
+export function RevenueMiniChart(props: Parameters<typeof MiniTrend>[0]) {
+  return <MiniTrend {...props} />;
 }
 
 export function EmptyState({

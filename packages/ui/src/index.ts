@@ -1,20 +1,27 @@
 export const zookColors = {
+  bg: "#070908",
   graphite950: "#070908",
   graphite900: "#101310",
   graphite800: "#171c18",
   graphite700: "#222820",
   graphite600: "#333b32",
   surface: "rgba(255, 255, 255, 0.06)",
+  surfaceStrong: "rgba(255, 255, 255, 0.08)",
   glass: "rgba(255, 255, 255, 0.06)",
   glassStrong: "rgba(255, 255, 255, 0.08)",
   border: "rgba(255, 255, 255, 0.14)",
-  borderStrong: "rgba(255, 255, 255, 0.18)",
+  borderStrong: "rgba(255, 255, 255, 0.20)",
   text: "#f4f7ef",
+  muted: "#aeb8a8",
+  subtle: "#778273",
   textMuted: "#aeb8a8",
   lime: "#b9f455",
+  limeSoft: "#d7ff6a",
   limeDim: "rgba(185, 244, 85, 0.16)",
   limeBorder: "rgba(185, 244, 85, 0.45)",
   limeDeep: "#6fad21",
+  warning: "#f2c94c",
+  danger: "#ff5a3d",
   amber: "#f2c94c",
   red: "#ff5a3d",
   blue: "#7dd3fc",
@@ -45,7 +52,7 @@ export const zookSpacing = {
 
 export const zookTypography = {
   family:
-    "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+    "Satoshi, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
   display: {
     fontSize: 48,
     lineHeight: 1.04,
@@ -75,9 +82,11 @@ export const zookTypography = {
 } as const;
 
 export const zookShadows = {
-  glass: "0 18px 42px rgba(0, 0, 0, 0.34)",
-  glowLime: "0 16px 36px rgba(185, 244, 85, 0.14)",
-  inset: "inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+  glass: "0 24px 80px rgba(0, 0, 0, 0.38), 0 10px 28px rgba(0, 0, 0, 0.24)",
+  glowLime:
+    "0 18px 46px rgba(185, 244, 85, 0.16), 0 0 0 1px rgba(185, 244, 85, 0.08)",
+  inset:
+    "inset 0 1px 0 rgba(255, 255, 255, 0.13), inset 0 -1px 0 rgba(255, 255, 255, 0.04)",
 } as const;
 
 export const zookTokens = {

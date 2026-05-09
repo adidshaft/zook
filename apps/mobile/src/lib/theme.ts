@@ -5,7 +5,7 @@ const red = (opacity: number) => `rgba(255,90,61,${opacity})`;
 
 export const colors = {
   bgApp: "#070908",
-  bgElevated: "#0C100E",
+  bgElevated: "#0B0F0D",
   textPrimary: "#F4F7EF",
   textMuted: "#AEB8A8",
   textSubtle: "#778273",
@@ -22,13 +22,13 @@ export const colors = {
   // Compatibility aliases used by existing screens.
   bg: "#070908",
   surfaceSolid: "#0C100E",
-  surfaceRaised: "#10150F",
+  surfaceRaised: "#111610",
   surface: glass(0.06),
   panel: glass(0.06),
   panelStrong: glass(0.08),
   accentPanel: lime(0.1),
   border: glass(0.14),
-  borderStrong: glass(0.18),
+  borderStrong: glass(0.2),
   limeBorder: lime(0.32),
   text: "#F4F7EF",
   muted: "#AEB8A8",
@@ -83,7 +83,7 @@ export const radii = {
 };
 
 export const typography = {
-  screenTitle: { fontSize: 24, fontFamily: "Inter_600SemiBold", lineHeight: 30 },
+  screenTitle: { fontSize: 26, fontFamily: "Inter_700Bold", lineHeight: 32 },
   headerTitle: { fontSize: 20, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
   sectionTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", lineHeight: 22 },
   cardTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 20 },
@@ -91,12 +91,12 @@ export const typography = {
   bodyStrong: { fontSize: 13.5, fontFamily: "Inter_600SemiBold", lineHeight: 19 },
   caption: { fontSize: 11.5, fontFamily: "Inter_600SemiBold", lineHeight: 15 },
   small: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
-  metric: { fontSize: 26, fontFamily: "Inter_600SemiBold", lineHeight: 31 },
+  metric: { fontSize: 28, fontFamily: "Inter_700Bold", lineHeight: 32 },
   navLabel: { fontSize: 10.5, fontFamily: "Inter_600SemiBold", lineHeight: 13 },
   button: { fontSize: 13.5, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
 
   // Compatibility aliases used by existing screens.
-  display: { fontSize: 32, fontFamily: "Inter_700Bold", lineHeight: 38 },
+  display: { fontSize: 34, fontFamily: "Inter_700Bold", lineHeight: 39 },
   h1: { fontSize: 24, fontFamily: "Inter_600SemiBold", lineHeight: 30 },
   h2: { fontSize: 20, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
   h3: { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 20 },
@@ -131,9 +131,9 @@ export const layout = {
 export const shadows = {
   glowLime: {
     shadowColor: colors.lime,
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 2,
   },
   glowLimeSoft: {
@@ -145,16 +145,16 @@ export const shadows = {
   },
   glowDark: {
     shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
     elevation: 1,
   },
   glass: {
     shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
     elevation: 1,
   },
   glowAmberSoft: {
@@ -173,9 +173,9 @@ export const shadows = {
   },
   card: {
     shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
     elevation: 1,
   },
 };

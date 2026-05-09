@@ -779,6 +779,53 @@ export function SectionHeader({
   );
 }
 
+export function SectionTitle(props: Parameters<typeof SectionHeader>[0]) {
+  return <SectionHeader {...props} />;
+}
+
+export function AppHeader(props: Parameters<typeof MobileHeader>[0]) {
+  return <MobileHeader {...props} />;
+}
+
+export function FieldCard(props: Parameters<typeof GlassCard>[0]) {
+  return <GlassCard variant="compact" {...props} />;
+}
+
+export function QueueCard(props: Parameters<typeof GlassCard>[0]) {
+  return <GlassCard pressable {...props} />;
+}
+
+export function AlertCard({
+  title,
+  message,
+  tone = "amber",
+  icon,
+  action,
+}: {
+  title: string;
+  message?: string;
+  tone?: PillTone;
+  icon?: IconName;
+  action?: ReactNode;
+}) {
+  return (
+    <GlassCard variant={tone === "red" ? "danger" : tone === "amber" ? "warning" : "selected"}>
+      <View style={styles.alertCardRow}>
+        <IconBubble icon={icon ?? "alert-circle-outline"} tone={tone} size={38} />
+        <View style={styles.alertCardCopy}>
+          <Text style={styles.alertCardTitle}>{title}</Text>
+          {message ? <Text style={styles.alertCardMessage}>{message}</Text> : null}
+        </View>
+        {action}
+      </View>
+    </GlassCard>
+  );
+}
+
+export function ActionButtonRow({ children }: { children: ReactNode }) {
+  return <View style={styles.actionButtonRow}>{children}</View>;
+}
+
 export function SectionLabel({ title, action }: { title: string; action?: ReactNode }) {
   return (
     <View style={styles.sectionHeader}>
@@ -2368,10 +2415,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -120,
     right: -72,
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: "rgba(185,244,85,0.055)",
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(185,244,85,0.075)",
     opacity: 0.82,
   },
   legacyTitle: {
@@ -2383,7 +2430,7 @@ const styles = StyleSheet.create({
   screenShellContent: {
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.xl,
-    gap: layout.cardGap,
+    gap: spacing.lg,
   },
   brandMark: {
     alignItems: "center",
@@ -2418,13 +2465,14 @@ const styles = StyleSheet.create({
   glassCard: {
     borderWidth: 1,
     overflow: "hidden",
+    backgroundColor: colors.panel,
   },
   glassCardGlow: {
     borderColor: colors.limeBorder,
     ...shadows.glowLimeSoft,
   },
   glassContent: {
-    padding: 16,
+    padding: 18,
     gap: spacing.md,
   },
   glassPanel: {
@@ -2461,7 +2509,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   mobileHeaderCentered: {
     justifyContent: "center",
@@ -2485,6 +2533,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: colors.text,
     ...typography.headerTitle,
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
     color: colors.muted,
@@ -2509,8 +2558,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     flex: 1,
-    color: colors.textMuted,
-    fontSize: 13,
+    color: colors.text,
+    fontSize: 14,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -2580,18 +2629,18 @@ const styles = StyleSheet.create({
   },
   metricTile: {
     flex: 1,
-    minHeight: 84,
-    borderRadius: radii.medium,
+    minHeight: 96,
+    borderRadius: radii.smallCard,
     borderWidth: 1,
-    padding: spacing.md,
-    gap: 6,
+    padding: spacing.lg,
+    gap: 7,
   },
   metricTileLabel: {
     color: colors.muted,
     ...typography.caption,
   },
   metricTileValue: {
-    ...typography.h3,
+    ...typography.metric,
   },
   metricTileDetail: {
     color: colors.muted,
@@ -2657,14 +2706,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   listRow: {
-    minHeight: 54,
+    minHeight: 62,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
     borderRadius: radii.medium,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(255,255,255,0.055)",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -2688,11 +2737,11 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   inputWrapper: {
-    minHeight: 46,
-    borderRadius: 14,
+    minHeight: 50,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.panel,
+    backgroundColor: "rgba(255,255,255,0.055)",
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
@@ -2893,11 +2942,11 @@ const styles = StyleSheet.create({
     ...typography.small,
   },
   segmentedControl: {
-    minHeight: 48,
-    borderRadius: radii.pill,
+    minHeight: 50,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(255,255,255,0.055)",
     flexDirection: "row",
     padding: 4,
     gap: 4,
@@ -2905,7 +2954,7 @@ const styles = StyleSheet.create({
   segmentedOption: {
     flex: 1,
     minHeight: 40,
-    borderRadius: radii.pill,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 8,
@@ -3002,8 +3051,8 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: radii.mainCard,
     borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: "rgba(255,255,255,0.035)",
+    borderColor: "rgba(185,244,85,0.22)",
+    backgroundColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -3078,7 +3127,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(7,9,8,0.9)",
+    backgroundColor: "rgba(7,9,8,0.92)",
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.md,
     gap: spacing.sm,
@@ -3143,7 +3192,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.bottomNav,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "rgba(7,9,8,0.76)",
+    backgroundColor: "rgba(7,9,8,0.86)",
     overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
@@ -3230,7 +3279,7 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   bottomNavItemActive: {
-    backgroundColor: "rgba(185,244,85,0.16)",
+    backgroundColor: "rgba(185,244,85,0.18)",
     borderWidth: 1,
     borderColor: "rgba(185,244,85,0.26)",
   },
@@ -3354,5 +3403,27 @@ const styles = StyleSheet.create({
   errorState: {
     borderColor: "rgba(255,90,61,0.28)",
     backgroundColor: "rgba(255,90,61,0.08)",
+  },
+  alertCardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  alertCardCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  alertCardTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  alertCardMessage: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  actionButtonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
 });
