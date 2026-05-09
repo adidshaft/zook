@@ -2,179 +2,217 @@ import "./style.css";
 
 const appUrl = import.meta.env.VITE_ZOOK_APP_URL ?? "https://app.zook.kyokasuigetsu.xyz";
 const appHref = (path: string) => `${appUrl}${path}`;
+const asset = (name: string) => `/assets/zook-redesign/${name}`;
 
-const ownerFeatures = [
-  ["Membership desk", "Create public plans, approve join requests, and keep renewals visible."],
-  ["QR entry", "Members scan, receive entry codes, and give staff a clean attendance trail."],
-  ["Revenue ops", "Track payments, shop pickup, cash collection, and low-stock pressure."],
-  ["Trainer output", "Review workout plans, assisted drafts, and trainer-visible member progress."],
+const painCards = [
+  ["Attendance gets messy.", "QR entry, desk approval, and entry codes stay in one auditable flow."],
+  ["Payments are hard to verify.", "Direct UPI, cash, manual records, and hosted checkout all keep a trail."],
+  ["Trainers lose plan context.", "Client goals, PT packs, progress, notes, and drafts sit together."],
+  ["Owners lack a live command view.", "The control room shows today’s pressure without another spreadsheet."],
 ];
 
-const workflows = [
-  ["1", "Publish", "Set gym profile, membership ladder, QR link, and join policy from web."],
-  ["2", "Operate", "Clear joins, run attendance, invite staff, and manage desk inventory."],
-  ["3", "Grow", "Use offers, referrals, notifications, and reports to keep the floor moving."],
+const roles = [
+  ["Member", "Scan QR, open today’s plan, track activity, shop, and manage membership."],
+  ["Receptionist", "Approve flagged scans, verify ZK entry codes, and record desk payments."],
+  ["Trainer", "Review clients, create plans, generate AI drafts, and approve before assigning."],
+  ["Owner", "Run approvals, revenue, stock, staff, reports, and public join flows."],
 ];
 
-const productStats = [
-  ["QR", "Entry codes"],
-  ["12", "Photo progress slots"],
-  ["INR", "Online and offline"],
+const proofSections = [
+  {
+    eyebrow: "Web Control Room",
+    title: "The owner gets a command board, not another spreadsheet.",
+    body: "Active members, today’s scans, revenue, join requests, stock, AI usage, and staff actions sit in one calm operating surface.",
+    image: "02-owner-web-dashboard.png",
+    alt: "Zook owner web dashboard command board",
+  },
+  {
+    eyebrow: "Mobile Execution App",
+    title: "Every role gets the surface they actually use on the floor.",
+    body: "Members check in and follow plans. Reception handles approvals. Trainers keep client context and draft workflows close.",
+    image: "03-member-mobile-home.png",
+    alt: "Zook member mobile home with membership card",
+  },
+  {
+    eyebrow: "Reception Desk",
+    title: "QR attendance feels simple at the desk, but stays server-authoritative.",
+    body: "Reception sees pending approvals, flagged scans, entry-code verification, and recent check-ins without guessing from screenshots.",
+    image: "04-receptionist-desk-queue.png",
+    alt: "Zook receptionist desk approval queue",
+  },
+  {
+    eyebrow: "Trainer + AI",
+    title: "AI assists trainers. Trainers stay in control.",
+    body: "Drafts are reviewed, edited, and approved before assignment. The system supports professionals instead of bypassing them.",
+    image: "06-trainer-ai-draft-review.png",
+    alt: "Zook trainer AI draft review workflow",
+  },
+  {
+    eyebrow: "Attendance + Payments",
+    title: "Built around how Indian gyms actually collect money.",
+    body: "Direct UPI, cash, bank transfer, manual audit notes, hosted checkout, and QR entry all connect back to membership state.",
+    image: "07-attendance-payments-showcase.png",
+    alt: "Zook attendance and payment operations showcase",
+  },
+  {
+    eyebrow: "Public Joining",
+    title: "Turn your gym profile into a joinable page.",
+    body: "Plans, referral codes, public profile, checkout handoff, and backend confirmation keep acquisition clean and trustworthy.",
+    image: "08-public-profile-checkout.png",
+    alt: "Zook public gym profile and checkout handoff",
+  },
+];
+
+const faqs = [
+  ["Is Zook only for large gyms?", "No. It is built for Indian gyms that need clean daily operations, whether one branch or many."],
+  ["Does Zook confirm payments automatically?", "Hosted payments activate after backend confirmation. Manual/offline payments are recorded with audit logs."],
+  ["Can trainers use AI to assign plans directly?", "No. AI can draft, but trainer review and approval stay in the workflow."],
+  ["Can members join from a public gym page?", "Yes, when the gym enables public joining and publishes plans."],
 ];
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
+  <div class="noise" aria-hidden="true"></div>
   <div class="site-shell">
     <header class="site-header">
       <a href="/" class="brand" aria-label="Zook home">
         <img src="/logo.png" alt="" class="brand-mark" />
-        <span>
-          <strong>Zook</strong>
-          <small>Gym OS</small>
-        </span>
+        <span><strong>Zook</strong><small>OS for gyms</small></span>
       </a>
       <nav class="site-nav" aria-label="Primary">
-        <a href="#operators">Operators</a>
-        <a href="#member-app">Member app</a>
-        <a href="${appHref("/gyms")}">Find gyms</a>
+        <a href="#product">Product</a>
+        <a href="#roles">Roles</a>
+        <a href="#workflow">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
       </nav>
       <div class="header-actions">
         <a href="${appHref("/login")}" class="button button-ghost">Login</a>
-        <a href="${appHref("/start-gym")}" class="button button-primary">Start your gym</a>
+        <a href="${appHref("/start-gym")}" class="button button-primary">Start free trial</a>
       </div>
     </header>
 
-    <main>
+    <main id="top">
       <section class="hero">
-        <div class="hero-copy">
-          <h1>Zook Gym OS</h1>
-          <p>
-            Run memberships, QR entry, trainer work, shop pickup, payments, and owner reporting
-            from one India-first operating record.
+        <div class="hero-copy reveal">
+          <p class="eyebrow">Built for Indian gyms · QR check-ins · UPI/manual payments · role-based apps</p>
+          <h1>Run your gym from one operating system.</h1>
+          <p class="hero-subhead">
+            Zook gives gym owners a web control room and every role a mobile execution app:
+            members, trainers, receptionists, and owners.
           </p>
           <div class="hero-actions">
-            <a href="${appHref("/start-gym")}" class="button button-primary">Start your gym</a>
-            <a href="${appHref("/gyms")}" class="button button-secondary">Find a gym</a>
+            <a href="${appHref("/start-gym")}" class="button button-primary">Start free trial</a>
+            <a href="#product" class="button button-secondary">View product</a>
+          </div>
+          <div class="trust-row" aria-label="Product capabilities">
+            <span>Server-authoritative QR</span>
+            <span>Audit logs</span>
+            <span>Hosted checkout</span>
           </div>
         </div>
+        <figure class="hero-visual reveal reveal-late">
+          <img src="${asset("01-hero-composite.png")}" width="1586" height="992" alt="Zook web control room and mobile execution app composite" fetchpriority="high" />
+        </figure>
+      </section>
 
-        <div class="product-stage" aria-label="Zook dashboard preview">
-          <div class="dashboard-preview">
-            <div class="preview-topbar">
-              <span>Zook command board</span>
-              <strong>Live desk</strong>
-            </div>
-            <div class="preview-grid">
-              <div>
-                <small>Active members</small>
-                <strong>482</strong>
-              </div>
-              <div>
-                <small>Today scans</small>
-                <strong>138</strong>
-              </div>
-              <div>
-                <small>Revenue</small>
-                <strong>₹1.8L</strong>
-              </div>
-            </div>
-            <div class="queue-panel">
-              <div>
-                <span class="status-dot"></span>
-                Join queue cleared
-              </div>
-              <div>
-                <span class="status-dot amber"></span>
-                3 low-stock products
-              </div>
-              <div>
-                <span class="status-dot blue"></span>
-                7 assistant drafts
-              </div>
-            </div>
-          </div>
-          <div class="phone-preview">
-            <div class="phone-camera"></div>
-            <div class="qr-tile">
-              <span></span><span></span><span></span><span></span>
-            </div>
-            <strong>Entry code 4821</strong>
-            <small>Workout, shop, notifications, and progress stay with the member.</small>
-          </div>
+      <section class="section pain">
+        <div class="section-heading">
+          <p class="eyebrow">The real problem</p>
+          <h2>Gyms are still run across registers, WhatsApp, UPI screenshots, and memory.</h2>
+        </div>
+        <div class="card-grid">
+          ${painCards.map(([title, body]) => `
+            <article class="glass-card">
+              <span class="card-index"></span>
+              <h3>${title}</h3>
+              <p>${body}</p>
+            </article>
+          `).join("")}
         </div>
       </section>
 
-      <section id="operators" class="section-grid">
-        <div class="section-intro">
-          <h2>Built for the people running the gym.</h2>
-          <p>
-            Zook separates owner setup, front-desk work, trainer delivery, and member self-service
-            without splitting the data. Everyone sees the same operating truth.
-          </p>
+      <section id="product" class="section split">
+        <div class="split-card glass-card">
+          <p class="eyebrow">Web Control Room</p>
+          <h2>Owners and admins operate the gym from the dashboard.</h2>
+          <p>Memberships, attendance, payments, shop, staff, reports, public profile, notifications, and AI controls stay connected.</p>
         </div>
-        <div class="feature-list">
-          ${ownerFeatures
-            .map(
-              ([title, copy]) => `
-                <article class="feature-row">
-                  <span class="row-glyph"></span>
-                  <div>
-                    <h3>${title}</h3>
-                    <p>${copy}</p>
-                  </div>
-                </article>
-              `,
-            )
-            .join("")}
+        <div class="split-card glass-card lime">
+          <p class="eyebrow">Mobile Execution App</p>
+          <h2>Members, trainers, receptionists, and owners execute the day.</h2>
+          <p>The app is role-aware, fast on the floor, and designed around scan, approve, record, create, and review actions.</p>
         </div>
       </section>
 
-      <section class="workflow-band">
-        <div class="workflow-header">
-          <h2>From public join link to daily operations.</h2>
-          <a href="${appHref("/dashboard")}" class="button button-secondary">Open dashboard</a>
+      <section id="roles" class="section roles">
+        <div class="section-heading narrow">
+          <p class="eyebrow">Role workflows</p>
+          <h2>One system. Clear surfaces for every job.</h2>
         </div>
-        <div class="workflow-grid">
-          ${workflows
-            .map(
-              ([step, title, copy]) => `
-                <article class="workflow-card">
-                  <span>${step}</span>
-                  <h3>${title}</h3>
-                  <p>${copy}</p>
-                </article>
-              `,
-            )
-            .join("")}
+        <div class="role-grid">
+          ${roles.map(([title, body]) => `
+            <article class="role-card">
+              <strong>${title}</strong>
+              <p>${body}</p>
+            </article>
+          `).join("")}
         </div>
       </section>
 
-      <section id="member-app" class="member-section">
-        <div class="member-visual">
-          <div class="progress-strip">
-            ${productStats
-              .map(
-                ([value, label]) => `
-                  <div>
-                    <strong>${value}</strong>
-                    <small>${label}</small>
-                  </div>
-                `,
-              )
-              .join("")}
-          </div>
-          <div class="photo-timeline">
-            <div></div>
-            <div></div>
-            <div></div>
-          </div>
+      <section id="workflow" class="section proof-stack">
+        ${proofSections.map((section, index) => `
+          <article class="proof ${index % 2 ? "proof-reverse" : ""}">
+            <div class="proof-copy">
+              <p class="eyebrow">${section.eyebrow}</p>
+              <h2>${section.title}</h2>
+              <p>${section.body}</p>
+            </div>
+            <figure class="proof-image">
+              <img src="${asset(section.image)}" width="${section.image.startsWith("0") && ["03", "04", "05", "06"].some((prefix) => section.image.startsWith(prefix)) ? "941" : "1586"}" height="${["03", "04", "05", "06"].some((prefix) => section.image.startsWith(prefix)) ? "1672" : "992"}" loading="lazy" alt="${section.alt}" />
+            </figure>
+          </article>
+        `).join("")}
+      </section>
+
+      <section id="pricing" class="section pricing">
+        <div class="section-heading narrow">
+          <p class="eyebrow">Pricing</p>
+          <h2>Start simple. Grow into the full gym OS.</h2>
+          <p>Final pricing can be configured before launch.</p>
         </div>
-        <div>
-          <h2>Members get the lighter surface.</h2>
-          <p>
-            The mobile app handles QR check-in, workout plans, AI fitness assistance, shop pickup,
-            notifications, and body-composition progress while web keeps owner operations precise.
-          </p>
-          <a href="${appHref("/gyms")}" class="button button-primary">Find a Zook gym</a>
+        <div class="pricing-grid">
+          ${["Starter", "Growth", "Pro"].map((tier, index) => `
+            <article class="price-card ${index === 1 ? "featured" : ""}">
+              <p class="eyebrow">${tier}</p>
+              <h3>${index === 0 ? "Single-gym basics" : index === 1 ? "Most gyms" : "Multi-role operations"}</h3>
+              <p>${index === 0 ? "Public profile, memberships, QR attendance." : index === 1 ? "Payments, desk queues, trainer workflows, reports." : "Advanced controls, branches, AI, audit depth."}</p>
+              <a href="${appHref("/start-gym")}" class="button ${index === 1 ? "button-primary" : "button-secondary"}">Book a demo</a>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+
+      <section id="faq" class="section faq">
+        <div class="section-heading narrow">
+          <p class="eyebrow">FAQ</p>
+          <h2>Operational, auditable, and ready for real gyms.</h2>
+        </div>
+        <div class="faq-list">
+          ${faqs.map(([question, answer]) => `
+            <details class="faq-item">
+              <summary>${question}</summary>
+              <p>${answer}</p>
+            </details>
+          `).join("")}
+        </div>
+      </section>
+
+      <section class="final-cta">
+        <p class="eyebrow">Zook Gym OS</p>
+        <h2>Bring your gym operations into one clean system.</h2>
+        <div class="hero-actions">
+          <a href="${appHref("/start-gym")}" class="button button-primary">Start free trial</a>
+          <a href="${appHref("/login")}" class="button button-secondary">Login</a>
         </div>
       </section>
     </main>
