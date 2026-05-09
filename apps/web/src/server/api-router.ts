@@ -6698,6 +6698,192 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     });
     return ok({ org });
   }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "members", "import"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    requireOrgPermission(ctx, orgId, "MEMBERS_MANAGE");
+    await assertRateLimit(
+      "fileUploadByActor",
+      `member-import:${orgId}:${userId}`,
+      "Too many import attempts. Try again later.",
+    );
+    const body = z
+      .object({
+        csv: z.string().min(1).max(500_000),
+        planId: z.string().optional(),
+        sendWelcomeNotification: z.boolean().default(true),
+        activateSubscription: z.boolean().default(false),
+      })
+      .parse(await readJson(request));
+
+    const lines = body.csv
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (lines.length < 2) {
+      throw validationError("CSV must contain a header row and at least one data row.");
+    }
+    const headerLine = lines[0]!.toLowerCase();
+    const headers = headerLine.split(",").map((h) => h.trim().replace(/^["']|["']$/g, ""));
+    const nameIndex = headers.findIndex((h) => h === "name" || h === "full name" || h === "member name");
+    const emailIndex = headers.findIndex((h) => h === "email" || h === "email address");
+    const phoneIndex = headers.findIndex((h) => h === "phone" || h === "mobile" || h === "phone number");
+    if (nameIndex < 0 || emailIndex < 0) {
+      throw validationError("CSV must include 'name' and 'email' columns.");
+    }
+
+    const organization = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!organization) {
+      throw notFoundError("Gym not found");
+    }
+
+    let plan: Awaited<ReturnType<typeof prisma.membershipPlan.findFirst>> | null = null;
+    if (body.planId) {
+      plan = await prisma.membershipPlan.findFirst({
+        where: { id: body.planId, orgId, active: true },
+      });
+      if (!plan) {
+        throw notFoundError("Membership plan not found");
+      }
+    }
+
+    const dataLines = lines.slice(1);
+    const maxRows = 500;
+    if (dataLines.length > maxRows) {
+      throw validationError(`Import limited to ${maxRows} members at a time.`);
+    }
+
+    const results: Array<{
+      row: number;
+      status: "created" | "existing" | "error";
+      email?: string;
+      error?: string;
+    }> = [];
+    const importedUserIds: string[] = [];
+    const branch = await resolveOrgBranch(orgId);
+
+    for (let i = 0; i < dataLines.length; i++) {
+      const line = dataLines[i]!;
+      const columns = line.split(",").map((col) => col.trim().replace(/^["']|["']$/g, ""));
+      const name = columns[nameIndex]?.trim();
+      const email = columns[emailIndex]?.trim().toLowerCase();
+      const phone =
+        phoneIndex >= 0
+          ? normalizePhoneNumber(columns[phoneIndex]?.trim() ?? "")
+          : undefined;
+
+      if (!name || !email) {
+        results.push({ row: i + 2, status: "error", error: "Missing name or email" });
+        continue;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        results.push({ row: i + 2, status: "error", email, error: "Invalid email format" });
+        continue;
+      }
+
+      try {
+        let user = await prisma.user.findUnique({ where: { email } });
+        let isNewUser = false;
+        if (!user) {
+          user = await prisma.user.create({
+            data: clean({
+              email,
+              name,
+              phone: phone || undefined,
+              marketingOptIn: true,
+            }),
+          });
+          isNewUser = true;
+        }
+
+        await ensureOrganizationMembership({
+          orgId,
+          userId: user.id,
+          marketingOptIn: user.marketingOptIn,
+        });
+
+        if (plan && body.activateSubscription) {
+          const existingSub = await prisma.memberSubscription.findFirst({
+            where: { orgId, memberUserId: user.id, status: { in: ["ACTIVE", "PENDING_PAYMENT"] } },
+          });
+          if (!existingSub) {
+            const window = computeSubscriptionWindow(
+              clean({
+                id: plan.id,
+                orgId: plan.orgId,
+                branchId: branch.id,
+                name: plan.name,
+                type: plan.type,
+                pricePaise: plan.pricePaise,
+                durationDays: plan.durationDays ?? undefined,
+                visitLimit: plan.visitLimit ?? undefined,
+                validityDays: plan.validityDays ?? undefined,
+                startDate: plan.startDate ?? undefined,
+                endDate: plan.endDate ?? undefined,
+                active: plan.active,
+                publicVisible: plan.publicVisible,
+              }),
+            );
+            await prisma.memberSubscription.create({
+              data: clean({
+                orgId,
+                branchId: branch.id,
+                memberUserId: user.id,
+                planId: plan.id,
+                status: "ACTIVE",
+                startsAt: window.startsAt,
+                endsAt: window.endsAt,
+                remainingVisits: window.remainingVisits,
+                activatedById: userId,
+                notes: "bulk_import",
+              }),
+            });
+          }
+        }
+
+        importedUserIds.push(user.id);
+        results.push({ row: i + 2, status: isNewUser ? "created" : "existing", email });
+      } catch (error) {
+        results.push({
+          row: i + 2,
+          status: "error",
+          email,
+          error: error instanceof Error ? error.message : "Unexpected error",
+        });
+      }
+    }
+
+    if (body.sendWelcomeNotification && importedUserIds.length > 0) {
+      await createDirectNotification({
+        orgId,
+        createdById: userId,
+        type: "TRANSACTIONAL",
+        title: `Welcome to ${organization.name}`,
+        body: "You have been added as a member. Open Zook to check your membership details.",
+        audience: "selected_members",
+        userIds: importedUserIds,
+      });
+    }
+
+    const created = results.filter((r) => r.status === "created").length;
+    const existing = results.filter((r) => r.status === "existing").length;
+    const errors = results.filter((r) => r.status === "error").length;
+
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "members.bulk_imported",
+      entityType: "organization",
+      entityId: orgId,
+      metadata: { totalRows: dataLines.length, created, existing, errors },
+    });
+
+    return ok({ results, summary: { total: dataLines.length, created, existing, errors } });
+  }
   return undefined;
 }
 
@@ -6848,6 +7034,103 @@ async function handleHealthReadiness(request: NextRequest, path: string[]) {
     const statusPayload = await getStatusPayload();
     return NextResponse.json(statusPayload, {
       status: statusPayload.status === "down" ? 503 : 200,
+    });
+  }
+
+  if (request.method === "POST" && pathMatches(path, ["cron", "renewal-reminders"])) {
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    const authHeader = request.headers.get("authorization");
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      throw forbiddenError("Invalid cron authorization.");
+    }
+    if (!cronSecret && getAppEnv() === "production") {
+      throw forbiddenError("CRON_SECRET must be set in production.");
+    }
+
+    const now = new Date();
+    const reminderWindowDays = [7, 3, 1];
+    let totalCreated = 0;
+    let totalSkipped = 0;
+    let totalNotified = 0;
+
+    for (const daysAhead of reminderWindowDays) {
+      const windowStart = new Date(now.getTime() + (daysAhead - 1) * 24 * 60 * 60 * 1000);
+      const windowEnd = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+
+      const expiringSubscriptions = await prisma.memberSubscription.findMany({
+        where: {
+          status: "ACTIVE",
+          endsAt: { gte: windowStart, lt: windowEnd },
+        },
+        take: 500,
+      });
+
+      const planIds = [...new Set(expiringSubscriptions.map((s) => s.planId))];
+      const plans = planIds.length
+        ? await prisma.membershipPlan.findMany({ where: { id: { in: planIds } }, select: { id: true, name: true } })
+        : [];
+      const planNameById = new Map(plans.map((p) => [p.id, p.name]));
+
+      for (const sub of expiringSubscriptions) {
+        const existingReminder = await prisma.subscriptionReminder.findFirst({
+          where: {
+            subscriptionId: sub.id,
+            kind: "SUBSCRIPTION_EXPIRING",
+            status: { in: ["PENDING", "SENT"] },
+            dueAt: { gte: windowStart, lt: windowEnd },
+          },
+        });
+
+        if (existingReminder) {
+          totalSkipped++;
+          continue;
+        }
+
+        await prisma.subscriptionReminder.create({
+          data: {
+            orgId: sub.orgId,
+            userId: sub.memberUserId,
+            subscriptionId: sub.id,
+            kind: "SUBSCRIPTION_EXPIRING",
+            status: "SENT",
+            dueAt: sub.endsAt!,
+            sentAt: now,
+            attemptCount: 1,
+            metadata: {
+              daysRemaining: daysAhead,
+              planName: planNameById.get(sub.planId),
+            } as Prisma.InputJsonValue,
+          },
+        });
+        totalCreated++;
+
+        const daysLabel = daysAhead === 1 ? "tomorrow" : `in ${daysAhead} days`;
+        try {
+          await createDirectNotification({
+            orgId: sub.orgId,
+            type: "OPERATIONAL",
+            title: "Membership expiring soon",
+            body: `Your membership expires ${daysLabel}. Renew now to keep your access.`,
+            audience: "expiring_member",
+            userIds: [sub.memberUserId],
+            pushEnabled: true,
+            metadata: {
+              subscriptionId: sub.id,
+              daysRemaining: daysAhead,
+            } as Prisma.InputJsonValue,
+          });
+          totalNotified++;
+        } catch {
+          // Notification delivery is best-effort for cron
+        }
+      }
+    }
+
+    return ok({
+      processed: true,
+      remindersCreated: totalCreated,
+      remindersSkipped: totalSkipped,
+      notificationsSent: totalNotified,
     });
   }
 

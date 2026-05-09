@@ -89,8 +89,13 @@ Plan-published fanout:
 
 ## On-Call Template
 
-- Primary:
-- Secondary:
-- Escalation:
+- Primary: Aman Pandey — phone TBD, Slack @aman
+- Secondary: (assign before widening beyond pilot)
+- Escalation: If primary unreachable for 30 min, secondary takes over. If both unreachable, roll back to last known good deployment.
 - Provider contacts:
-- Rollback approver:
+  - Razorpay support: https://dashboard.razorpay.com/support
+  - Resend support: https://resend.com/support
+  - Supabase support: https://supabase.com/dashboard/support
+  - Vercel support: https://vercel.com/support
+  - Sentry: https://sentry.io/support/
+- Rollback approver: Aman Pandey (primary)

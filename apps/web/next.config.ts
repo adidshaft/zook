@@ -10,7 +10,11 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   images: {
     localPatterns: [{ pathname: "/**" }],
-    remotePatterns: [{ protocol: "https", hostname: "**" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "*.supabase.co" },
+      { protocol: "https", hostname: "*.supabase.in" },
+      // Add your CDN or custom storage domain here if needed
+    ],
   },
   async headers() {
     return [

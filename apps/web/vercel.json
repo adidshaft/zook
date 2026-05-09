@@ -1,4 +1,10 @@
 {
   "buildCommand": "cd ../.. && pnpm db:generate && pnpm --filter @zook/web build",
-  "installCommand": "cd ../.. && pnpm install"
+  "installCommand": "cd ../.. && pnpm install",
+  "crons": [
+    {
+      "path": "/api/cron/renewal-reminders",
+      "schedule": "30 1 * * *"
+    }
+  ]
 }

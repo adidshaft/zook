@@ -71,9 +71,13 @@ export function middleware(request: NextRequest) {
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
   const responseInit = { request: { headers: requestHeaders } };
+  const privatePathPrefixes = ["/dashboard", "/desk", "/coach", "/staff", "/me", "/platform"];
   let response: NextResponse;
   const hasSession = Boolean(request.cookies.get(sessionCookieName)?.value);
-  if (request.nextUrl.pathname.startsWith("/platform") && !hasSession) {
+  const isPrivatePath = privatePathPrefixes.some((prefix) =>
+    request.nextUrl.pathname.startsWith(prefix),
+  );
+  if (isPrivatePath && !hasSession) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
     response = NextResponse.redirect(loginUrl);
