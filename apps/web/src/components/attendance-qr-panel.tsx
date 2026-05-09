@@ -10,10 +10,12 @@ export function AttendanceQrPanel({
   orgId,
   branchId,
   branchName,
+  density = "standard",
 }: {
   orgId: string;
   branchId?: string | null;
   branchName?: string | null;
+  density?: "standard" | "compact";
 }) {
   const [qrPayload, setQrPayload] = useState<string>("");
   const [checkInCode, setCheckInCode] = useState<string>("");
@@ -107,13 +109,29 @@ export function AttendanceQrPanel({
         </div>
         {error ? <p className="mt-4 text-sm text-red-200">{error}</p> : null}
         {!error ? (
-          <div className="mt-4 grid gap-5 lg:grid-cols-[300px_1fr]">
-            <div className="grid min-h-[300px] place-items-center rounded-[26px] border border-lime-200/25 bg-lime-50 p-4 shadow-[0_18px_46px_rgba(185,244,85,0.18),inset_0_1px_0_rgba(255,255,255,0.45)]">
+          <div
+            className={
+              density === "compact"
+                ? "mt-4 grid gap-5"
+                : "mt-4 grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]"
+            }
+          >
+            <div
+              className={
+                density === "compact"
+                  ? "grid min-h-[240px] place-items-center rounded-[26px] border border-lime-200/25 bg-lime-50 p-4 shadow-[0_18px_46px_rgba(185,244,85,0.18),inset_0_1px_0_rgba(255,255,255,0.45)]"
+                  : "grid min-h-[300px] place-items-center rounded-[26px] border border-lime-200/25 bg-lime-50 p-4 shadow-[0_18px_46px_rgba(185,244,85,0.18),inset_0_1px_0_rgba(255,255,255,0.45)]"
+              }
+            >
               {qrImageUrl ? (
                 <img
                   src={qrImageUrl}
                   alt="Attendance QR code"
-                  className="h-full max-h-[280px] w-full max-w-[280px] rounded-xl"
+                  className={
+                    density === "compact"
+                      ? "h-full max-h-[240px] w-full max-w-[240px] rounded-xl"
+                      : "h-full max-h-[280px] w-full max-w-[280px] rounded-xl"
+                  }
                 />
               ) : (
                 <p className="text-center text-sm font-medium text-black/60">
@@ -132,7 +150,7 @@ export function AttendanceQrPanel({
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lime-100/70">
                     Rolling signed QR token
                   </p>
-                  <p className="mt-2 font-mono text-4xl font-black tracking-[0.14em] text-lime-100">
+                  <p className="mt-2 break-all font-mono text-3xl font-black tracking-[0.12em] text-lime-100 sm:text-4xl">
                     {checkInCode || "-- ----"}
                   </p>
                   <p className="mt-2 text-sm leading-5 text-white/48">

@@ -100,6 +100,7 @@ export default function NotificationsScreen() {
   const notificationsQuery = useMyNotifications();
   useAppFocusInvalidation([["me", "notifications"], ["me", "home"]]);
   const detailSheetRef = useRef<BottomSheetModal>(null);
+  const autoMarkedNotificationRef = useRef<string | null>(null);
   const detailSnapPoints = useMemo(() => ["46%"], []);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -235,12 +236,17 @@ export default function NotificationsScreen() {
   }, [queryClient, routeParams.notificationId]);
 
   useEffect(() => {
+    if (!routeParams.notificationId) {
+      autoMarkedNotificationRef.current = null;
+      return;
+    }
     const matchingUnread = notifications.find(
       (item) =>
         (item.id === routeParams.notificationId || item.notification?.id === routeParams.notificationId) &&
         !item.readAt,
     );
-    if (matchingUnread) {
+    if (matchingUnread && autoMarkedNotificationRef.current !== matchingUnread.id) {
+      autoMarkedNotificationRef.current = matchingUnread.id;
       void markRead(matchingUnread.id);
     }
   }, [notifications, routeParams.notificationId]);

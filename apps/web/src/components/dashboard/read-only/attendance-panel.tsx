@@ -48,11 +48,12 @@ export function AttendancePanel({
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <AttendanceApprovalsPanel orgId={orgId} />
         <div className="grid gap-4">
-            <AttendanceQrPanel
-              orgId={orgId}
-              branchId={branchScope.selectedBranch?.id ?? null}
-              branchName={selectedBranchName}
-            />
+          <AttendanceQrPanel
+            orgId={orgId}
+            branchId={branchScope.selectedBranch?.id ?? null}
+            branchName={selectedBranchName}
+            density="compact"
+          />
           <GlassCard>
             <SectionHeader
               eyebrow="Entry & attendance"
