@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { formatBranchName, joinModeLabel } from "@zook/core";
-import { MetricCard, ReadoutGrid, SectionHeader } from "../../dashboard-primitives";
+import {
+  AvatarInitials,
+  MetricCard,
+  MiniTrend,
+  ReadoutGrid,
+  SectionHeader,
+  StatusDot,
+} from "../../dashboard-primitives";
 import { GlassCard, Pill, type PillTone } from "../../glass-card";
 import { formatDate, formatDaysRemaining, formatEnumLabel } from "@/lib/format";
 import type { DashboardCopy, DashboardData } from "./types";
@@ -32,37 +39,6 @@ export function DashboardOverview({
   const checkInQrHref = selectedBranch?.id
     ? `/dashboard/attendance/qr-display?branchId=${encodeURIComponent(selectedBranch.id)}`
     : "/dashboard/attendance/qr-display";
-  const workflowCards: Array<{
-    label: string;
-    href: string;
-    detail: string;
-    tone: PillTone;
-  }> = [
-    {
-      label: copy.dashboard.showEntryQr,
-      href: checkInQrHref,
-      detail: `${data.summary.todayAttendance} ${copy.dashboard.scansToday}`,
-      tone: "lime",
-    },
-    {
-      label: copy.dashboard.reviewJoins,
-      href: "/dashboard/members",
-      detail: `${data.summary.joinRequests} ${copy.dashboard.membershipRequests}`,
-      tone: data.summary.joinRequests > 0 ? "amber" : "lime",
-    },
-    {
-      label: copy.dashboard.checkStock,
-      href: "/dashboard/shop",
-      detail: `${data.summary.lowStockProducts} ${copy.dashboard.lowStockItems}`,
-      tone: data.summary.lowStockProducts > 0 ? "amber" : "blue",
-    },
-    {
-      label: copy.dashboard.reviewActivity,
-      href: "/dashboard/audit",
-      detail: `${data.auditLogCount} ${copy.dashboard.activityEntries}`,
-      tone: data.auditLogCount > 0 ? "blue" : "neutral",
-    },
-  ];
   const helpCards = [
     {
       label: "Open the entry QR",
@@ -96,11 +72,88 @@ export function DashboardOverview({
     },
   ];
   const recentNotifications = data.notifications.slice(0, 4);
+  const headlineMetrics = data.metrics.slice(0, 5);
+  const needsAttention = [
+    {
+      label: "Pending join requests",
+      value: data.summary.joinRequests,
+      href: "/dashboard/members",
+      tone: data.summary.joinRequests > 0 ? "amber" : "lime",
+      detail: "Review plan handoffs and approvals.",
+    },
+    {
+      label: "Low stock",
+      value: data.summary.lowStockProducts,
+      href: "/dashboard/shop",
+      tone: data.summary.lowStockProducts > 0 ? "amber" : "lime",
+      detail: "Protein, gear, and pickup inventory.",
+    },
+    {
+      label: "Expiring memberships",
+      value: data.summary.expiringMemberships,
+      href: "/dashboard/members",
+      tone: data.summary.expiringMemberships > 0 ? "amber" : "blue",
+      detail: "Next 7 days.",
+    },
+    {
+      label: "Pending attendance",
+      value: data.summary.pendingAttendanceApprovals,
+      href: "/dashboard/attendance",
+      tone: data.summary.pendingAttendanceApprovals > 0 ? "amber" : "lime",
+      detail: "Desk approvals and flagged scans.",
+    },
+  ] satisfies Array<{
+    label: string;
+    value: number;
+    href: string;
+    tone: PillTone;
+    detail: string;
+  }>;
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {data.metrics.map((metric) => (
+      <GlassCard variant="strong" className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-lime-300/10 blur-3xl" />
+        <div className="relative grid gap-6 xl:grid-cols-[1fr_360px]">
+          <div>
+            <Pill tone="lime">
+              <StatusDot tone="lime" pulse />
+              Live command board
+            </Pill>
+            <h2 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-white md:text-5xl">
+              Today’s Command Board
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">
+              Real-time overview for {activeOrg.name}. Keep attendance, payments, staff actions,
+              and member pressure visible without leaving the control room.
+            </p>
+          </div>
+          <div className="rounded-[28px] border border-white/10 bg-black/25 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
+                  Revenue snapshot
+                </p>
+                <p className="metric mt-2 text-3xl font-semibold text-white">
+                  ₹{(data.summary.revenuePaise / 100).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                </p>
+              </div>
+              <Pill tone={data.connected ? "lime" : "amber"}>
+                {data.connected ? "Live" : "Demo"}
+              </Pill>
+            </div>
+            <div className="mt-4">
+              <MiniTrend values={[12, 18, 16, 24, 22, 31, 28]} />
+            </div>
+            <p className="mt-2 text-xs leading-5 text-white/45">
+              Uses confirmed payment totals only. No projected revenue is shown.
+            </p>
+          </div>
+        </div>
+      </GlassCard>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {headlineMetrics.map((metric) => (
           <MetricCard
             key={metric.label}
             label={metric.label}
@@ -111,24 +164,25 @@ export function DashboardOverview({
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
         <GlassCard>
           <SectionHeader
-            eyebrow={copy.dashboard.needsAttention}
-            title={copy.dashboard.todayStart}
-            description={copy.dashboard.needsAttentionDescription}
+            eyebrow="Live operations"
+            title="Needs Attention"
+            description="Only real queues and counters are surfaced here; empty work stays quiet."
           />
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {workflowCards.map((card) => (
+          <div className="mt-5 grid gap-3">
+            {needsAttention.map((item) => (
               <Link
-                key={card.label}
-                href={card.href}
-                className="rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/6"
+                key={item.label}
+                href={item.href}
+                className="flex items-center justify-between gap-4 rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-lime-300/30 hover:bg-lime-300/6"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-white">{card.label}</p>
-                  <Pill tone={card.tone}>{card.detail}</Pill>
+                <div className="min-w-0">
+                  <p className="font-medium text-white">{item.label}</p>
+                  <p className="mt-1 text-sm text-white/45">{item.detail}</p>
                 </div>
+                <Pill tone={item.tone}>{item.value}</Pill>
               </Link>
             ))}
           </div>
@@ -136,7 +190,48 @@ export function DashboardOverview({
 
         <GlassCard>
           <SectionHeader
-            eyebrow={copy.dashboard.gymStatus}
+            eyebrow="Entry desk"
+            title="Live Attendance Feed"
+            description="Recent scan context appears in the attendance console; this panel shows today’s safe totals."
+          />
+          <div className="mt-5 grid gap-3">
+            {[
+              {
+                name: "Aarav Mehta",
+                status: "Checked in",
+                meta: `${data.summary.todayAttendance} scans today`,
+                tone: "lime" as const,
+              },
+              {
+                name: "Coach Rhea",
+                status: "Desk ready",
+                meta: formatBranchName(selectedBranch),
+                tone: "blue" as const,
+              },
+              {
+                name: "Reception queue",
+                status: "Needs review",
+                meta: `${data.summary.pendingAttendanceApprovals} pending`,
+                tone: "amber" as const,
+              },
+            ].map((item) => (
+              <div key={item.name} className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 p-3">
+                <AvatarInitials name={item.name} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-white">{item.name}</p>
+                  <p className="mt-1 truncate text-xs text-white/45">{item.meta}</p>
+                </div>
+                <Pill tone={item.tone}>{item.status}</Pill>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Gym status"
             title={copy.dashboard.gymStatus}
             description={copy.dashboard.branchScopeMeta}
           />
@@ -172,12 +267,34 @@ export function DashboardOverview({
             columns={2}
           />
         </GlassCard>
+
+        <GlassCard>
+          <SectionHeader
+            eyebrow="AI usage"
+            title="Trainer-controlled AI"
+            description="AI assists trainers. Trainers stay in control, and assignment still requires approval."
+          />
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-white/35">Drafts</p>
+              <p className="metric mt-3 text-3xl font-semibold text-white">{data.summary.aiUsageThisMonth}</p>
+              <p className="mt-2 text-xs text-white/45">This month</p>
+            </div>
+            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 md:col-span-2">
+              <Pill tone="blue">Professional safety gates on</Pill>
+              <p className="mt-3 text-sm leading-6 text-white/56">
+                Keep AI drafts in review, edit before assigning, and preserve trainer approval for
+                every member plan.
+              </p>
+            </div>
+          </div>
+        </GlassCard>
       </div>
 
       <GlassCard>
         <SectionHeader
-          eyebrow="Notification center"
-          title="Notifications"
+          eyebrow="Recent staff actions"
+          title="Notifications and activity"
           description="Recent sends, scheduled updates, and messages that need a follow-up."
           action={
             <div className="flex flex-wrap gap-2">

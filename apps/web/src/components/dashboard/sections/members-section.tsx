@@ -276,6 +276,23 @@ export function MembersSection({
               )}
             </div>
           ) : null}
+          <div className="mt-5 flex flex-col gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {["Active", "Pending Payment", "Expired", "Paused", "Visit Pack", "Trial"].map(
+                (filter) => (
+                  <Pill
+                    key={filter}
+                    tone={filter === "Active" ? "lime" : filter === "Pending Payment" ? "amber" : "neutral"}
+                  >
+                    {filter}
+                  </Pill>
+                ),
+              )}
+            </div>
+            <div className="min-h-11 min-w-0 rounded-full border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/38 lg:w-[360px]">
+              Search name, email, phone, member ID
+            </div>
+          </div>
           <div className="mt-5">
             {membersState.error ? (
               <ErrorNotice message={membersState.error} />

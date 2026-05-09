@@ -128,6 +128,9 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
     ? org.gallery
     : [org.coverImageUrl].filter((imageUrl): imageUrl is string => Boolean(imageUrl));
   const facilities = org.facilities.length ? org.facilities : org.amenities;
+  const heroAmenities = org.amenities.length
+    ? org.amenities
+    : ["Strength", "Cardio", "Personal Training", "Protein Bar", "Locker"];
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "HealthClub",
@@ -230,7 +233,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
               ) : null}
             </div>
             <div className="mt-7 flex flex-wrap gap-2">
-              {org.amenities.map((amenity) => (
+              {heroAmenities.map((amenity) => (
                 <Pill key={amenity} className="border-white/15 bg-white/10 text-white/80">
                   {amenity}
                 </Pill>

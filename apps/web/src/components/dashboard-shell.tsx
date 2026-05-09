@@ -125,10 +125,10 @@ export function DashboardShell({
     );
   }
 
-  const pageTitle = sectionKey === "" ? `${copy.dashboard.todayAt} ${activeOrg.name}` : title;
+  const pageTitle = sectionKey === "" ? "Today’s Command Board" : title;
   const pageDescription =
     sectionKey === ""
-      ? copy.dashboard.todayDescription
+      ? "Real-time overview of your gym operations."
       : sectionDescriptions[locale][sectionKey] ?? "";
   const currentDashboardPath = `/dashboard${sectionKey ? `/${sectionKey}` : ""}`;
   const branchHref = (branchId: string) =>
@@ -138,7 +138,7 @@ export function DashboardShell({
     (data.summary.activeMembers === 0 || !selectedBranch || activeOrg.status !== "ACTIVE");
 
   return (
-    <main className="min-h-dvh overflow-x-hidden px-3 py-4 sm:px-5 lg:px-6 xl:px-8">
+    <main className="zook-shell-bg min-h-dvh overflow-x-hidden px-3 py-4 sm:px-5 lg:px-6 xl:px-8">
       <div className="mx-auto grid w-full max-w-[1760px] min-w-0 items-start gap-5 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
         <DashboardSidebar
           activeOrg={activeOrg}

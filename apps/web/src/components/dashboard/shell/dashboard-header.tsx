@@ -1,4 +1,4 @@
-import { ClipboardCheck, QrCode } from "lucide-react";
+import { Bell, CalendarDays, ClipboardCheck, QrCode, Search } from "lucide-react";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButtonLink } from "../../zook-button";
 import { BranchSwitcher } from "./branch-switcher";
@@ -43,6 +43,28 @@ export function DashboardHeader({
 
   return (
     <GlassCard variant="strong" className="relative z-[100] min-w-0 overflow-visible">
+      <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-5 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone="lime">
+            <CalendarDays className="h-3 w-3" aria-hidden="true" />
+            Today
+          </Pill>
+          {selectedBranch ? <Pill tone="blue">{selectedBranch.name}</Pill> : null}
+          {runtimeLabel && !data.connected ? <Pill tone="amber">{runtimeLabel}</Pill> : null}
+        </div>
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+          <div className="hidden min-h-11 w-full max-w-[420px] items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 text-sm text-white/38 md:flex">
+            <Search className="h-4 w-4" aria-hidden="true" />
+            Search members, invoices, plans...
+          </div>
+          <div className="relative grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-black/25 text-white/70">
+            <Bell className="h-4 w-4" aria-hidden="true" />
+            {data.summary.notificationQueueCount > 0 ? (
+              <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#ff5a3d] ring-2 ring-[#070908]" />
+            ) : null}
+          </div>
+        </div>
+      </div>
       <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
         <div className="min-w-0">
           <nav aria-label="Breadcrumb" className="mb-3 text-xs text-white/45">
@@ -54,11 +76,6 @@ export function DashboardHeader({
               </li>
             </ol>
           </nav>
-          <div className="flex flex-wrap items-center gap-2">
-            {runtimeLabel && !data.connected ? (
-              <Pill tone="amber">{runtimeLabel}</Pill>
-            ) : null}
-          </div>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
             {pageTitle}
           </h1>

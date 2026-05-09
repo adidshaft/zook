@@ -21,7 +21,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
   {
     key: "operations",
     items: [
-      { key: "today", label: "Today", href: "/dashboard", icon: Dumbbell },
+      { key: "today", label: "Dashboard", href: "/dashboard", icon: Dumbbell },
       {
         key: "attendance",
         label: "Attendance",
@@ -117,7 +117,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
       },
       {
         key: "team",
-        label: "Team",
+        label: "Staff",
         href: "/dashboard/staff",
         icon: Shield,
         permissions: ["ORG_MANAGE_STAFF"],
@@ -177,7 +177,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
       },
       {
         key: "ai",
-        label: "AI",
+        label: "Plans & AI",
         href: "/dashboard/ai",
         icon: Bot,
         permissions: ["ORG_VIEW_REPORTS", "AI_MANAGE_SETTINGS"],
