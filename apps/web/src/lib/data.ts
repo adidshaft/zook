@@ -145,7 +145,7 @@ export async function getDashboardData(orgId?: string, branchId?: string) {
         orgs: [data.organization],
         products: data.products,
         notifications: data.notifications,
-        attendance: data.joinRequests,
+        attendance: [],
         aiUsage: data.aiUsage,
         joinRequests: data.joinRequests,
         auditLogCount: data.auditLogCount,

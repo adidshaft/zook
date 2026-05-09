@@ -102,6 +102,7 @@ export default function Plans() {
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
+            stickyHeaderIndices: [0],
             refreshControl: (
               <RefreshControl
                 refreshing={refreshing}
@@ -431,6 +432,7 @@ export function PlanDetailScreen() {
             <MobileHeader
               title={planTitle(selectedAssignment)}
               subtitle={coachName}
+              style={styles.stickyHeader}
               leading={
                 <Pressable
                   onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
@@ -594,7 +596,13 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
+  },
+  stickyHeader: {
+    marginHorizontal: -layout.screenPadding,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.bg,
   },
   iconButton: {
     width: 44,

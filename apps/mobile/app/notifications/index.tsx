@@ -101,7 +101,7 @@ export default function NotificationsScreen() {
   useAppFocusInvalidation([["me", "notifications"], ["me", "home"]]);
   const detailSheetRef = useRef<BottomSheetModal>(null);
   const autoMarkedNotificationRef = useRef<string | null>(null);
-  const detailSnapPoints = useMemo(() => ["46%"], []);
+  const detailSnapPoints = useMemo(() => ["34%"], []);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [olderExpanded, setOlderExpanded] = useState(false);
@@ -389,7 +389,7 @@ export default function NotificationsScreen() {
           backdropComponent={renderDetailBackdrop}
           backgroundStyle={styles.sheetBackground}
           handleIndicatorStyle={styles.sheetHandle}
-          bottomInset={insets.bottom}
+          bottomInset={Math.max(insets.bottom, 12) + 84}
         >
           <BottomSheetView style={styles.detailSheet}>
             <View style={styles.detailHeader}>
@@ -638,6 +638,7 @@ const styles = StyleSheet.create({
   detailSheet: {
     gap: spacing.lg,
     padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   detailHeader: {
     flexDirection: "row",

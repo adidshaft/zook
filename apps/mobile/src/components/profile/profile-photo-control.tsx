@@ -309,7 +309,14 @@ export function ProfilePhotoControl({
       {visibleUri ? (
         <Image source={{ uri: visibleUri }} style={styles.image} contentFit="cover" />
       ) : (
-        <Text style={[styles.initials, { fontSize: Math.max(18, size * 0.32) }]}>{initials}</Text>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.72}
+          style={[styles.initials, { fontSize: Math.max(18, size * 0.26) }]}
+        >
+          {initials}
+        </Text>
       )}
       <View style={styles.badge}>
         {busy ? (
@@ -328,7 +335,7 @@ const styles = StyleSheet.create({
   control: {
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
+    overflow: "visible",
     backgroundColor: colors.panelStrong,
     borderWidth: 1,
     borderColor: colors.limeBorder,
@@ -336,6 +343,7 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
+    borderRadius: 999,
   },
   initials: {
     ...typography.headerTitle,
@@ -343,8 +351,8 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    right: 0,
-    bottom: 0,
+    right: -4,
+    bottom: -4,
     width: 30,
     height: 30,
     borderRadius: 15,

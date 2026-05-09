@@ -16,8 +16,6 @@ import { AvatarInitials, StatusDot } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
 import type { DashboardCopy, DashboardData } from "./types";
 
-type FeedRow = { name: string; time: string; relative: string };
-type StaffRow = { name: string; action: string; time: string };
 type AttentionRow = {
   icon: typeof ClipboardList;
   title: string;
@@ -80,12 +78,16 @@ function Panel({
   );
 }
 
-function RevenueChart() {
-  const values = [32, 40, 50, 61, 72, 100, 66];
-  const points = values.map((value, index) => `${72 + index * 52},${190 - value * 1.45}`).join(" ");
+function RevenueChart({ revenuePaise }: { revenuePaise: number }) {
+  const revenueRupees = Math.round(revenuePaise / 100);
+  const values = [0, 0, 0, 0, 0, 0, revenueRupees];
+  const max = Math.max(1, ...values);
+  const scaled = values.map((value) => Math.max(0, Math.min(100, (value / max) * 100)));
+  const latestScaled = scaled.at(-1) ?? 0;
+  const points = scaled.map((value, index) => `${72 + index * 52},${190 - value * 1.45}`).join(" ");
   const area = `72,190 ${points} 384,190`;
   return (
-    <svg viewBox="0 0 420 220" className="mt-5 h-56 w-full" role="img" aria-label="Weekly revenue trend">
+    <svg viewBox="0 0 420 220" className="mt-5 h-56 w-full" role="img" aria-label="Today revenue snapshot">
       <defs>
         <linearGradient id="revenue-area" x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="#b9f455" stopOpacity="0.22" />
@@ -95,19 +97,19 @@ function RevenueChart() {
       {[45, 90, 135, 180].map((y) => (
         <line key={y} x1="55" x2="395" y1={y} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 4" />
       ))}
-      {["100K", "75K", "50K", "25K", "0"].map((label, index) => (
-        <text key={label} x="14" y={46 + index * 36} fill="rgba(255,255,255,0.32)" fontSize="11">
-          {label}
+      {[max, max * 0.75, max * 0.5, max * 0.25, 0].map((value, index) => (
+        <text key={`${value}-${index}`} x="14" y={46 + index * 36} fill="rgba(255,255,255,0.32)" fontSize="11">
+          {value >= 1000 ? `${Math.round(value / 1000)}K` : Math.round(value)}
         </text>
       ))}
       <polygon points={area} fill="url(#revenue-area)" />
       <polyline points={points} fill="none" stroke="#b9f455" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      {values.map((value, index) => (
+      {scaled.map((value, index) => (
         <circle key={`${value}-${index}`} cx={72 + index * 52} cy={190 - value * 1.45} r={index === 5 ? 7 : 4} fill="#b9f455" />
       ))}
-      <rect x="292" y="105" width="62" height="28" rx="8" fill="#b9f455" />
-      <text x="303" y="124" fill="#070908" fontSize="12" fontWeight="700">
-        ₹24.6K
+      <rect x="292" y={Math.max(42, 190 - latestScaled * 1.45 - 14)} width="76" height="28" rx="8" fill="#b9f455" />
+      <text x="303" y={Math.max(61, 190 - latestScaled * 1.45 + 5)} fill="#070908" fontSize="12" fontWeight="700">
+        {formatInr(revenuePaise)}
       </text>
       {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label, index) => (
         <text key={label} x={61 + index * 52} y="214" fill="rgba(255,255,255,0.55)" fontSize="12">
@@ -157,20 +159,8 @@ export function DashboardOverview({
 }) {
   const summary = data.summary;
   const revenue = formatInr(summary.revenuePaise);
-  const aiUsagePercent = data.connected ? Math.min(100, Math.round((summary.aiUsageThisMonth / 50) * 100)) : 68;
-  const attendanceRows: FeedRow[] = [
-    { name: "Rohit Sharma", time: "7:42 AM", relative: "2m ago" },
-    { name: "Ananya Patel", time: "7:36 AM", relative: "8m ago" },
-    { name: "Vikram Jadhav", time: "7:28 AM", relative: "16m ago" },
-    { name: "Neha Singh", time: "7:21 AM", relative: "23m ago" },
-    { name: "Yash Kulkarni", time: "7:15 AM", relative: "29m ago" },
-  ];
-  const staffRows: StaffRow[] = [
-    { name: "Karan Deshmukh", action: "marked 5 PT sessions complete", time: "7:35 AM" },
-    { name: "Pooja Shah", action: "added 2 new members", time: "7:10 AM" },
-    { name: "Ravi Chavan", action: "updated member plan", time: "6:48 AM" },
-    { name: "Sneha Iyer", action: "processed refund of ₹2,500", time: "6:30 AM" },
-  ];
+  const aiQuota = 50;
+  const aiUsagePercent = Math.min(100, Math.round((summary.aiUsageThisMonth / aiQuota) * 100));
   const attentionRows: AttentionRow[] = [
     {
       icon: ClipboardList,
@@ -183,26 +173,28 @@ export function DashboardOverview({
     {
       icon: Package,
       title: `${summary.lowStockProducts} items running low`,
-      subtitle: "Creatine, Protein Whey",
+      subtitle: data.products.length
+        ? data.products.slice(0, 2).map((product) => product.name).join(", ")
+        : "Pickup inventory is healthy",
       iconColor: "text-amber-300",
       bgColor: "bg-amber-300/14",
       href: "/dashboard/shop",
     },
     {
       icon: CalendarClock,
-      title: `${summary.expiringMemberships} memberships expiring today`,
-      subtitle: "Renewals worth ₹12,450",
+      title: `${summary.expiringMemberships} memberships expiring soon`,
+      subtitle: "Renewal window: next 7 days",
       iconColor: "text-lime-300",
       bgColor: "bg-lime-300/14",
       href: "/dashboard/members",
     },
     {
       icon: Dumbbell,
-      title: "2 PT sessions pending",
-      subtitle: "Sessions not marked complete",
+      title: `${summary.pendingAttendanceApprovals} attendance approvals pending`,
+      subtitle: "Desk review queue",
       iconColor: "text-sky-300",
       bgColor: "bg-sky-300/14",
-      href: "/dashboard/trainers",
+      href: "/dashboard/attendance",
     },
   ];
 
@@ -248,26 +240,18 @@ export function DashboardOverview({
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-white">Live Attendance Feed</h2>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-lime-300/30 bg-lime-300/10 px-2.5 py-0.5 text-xs font-bold text-lime-300">
-              <StatusDot tone="lime" pulse /> LIVE
+              <StatusDot tone="lime" pulse /> TODAY
             </span>
           </div>
           <div className="mt-4">
-            {attendanceRows.map(({ name, time, relative }) => (
-              <div key={name} className="flex min-h-[52px] items-center gap-3 border-b border-white/[0.06] py-2 last:border-0">
-                <AvatarInitials name={name} className="h-9 w-9 rounded-full border-lime-300/35 bg-lime-300/15 text-lime-100" />
+            <div className="flex min-h-[72px] items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.035] px-3 py-3">
+                <AvatarInitials name="Check ins" className="h-10 w-10 rounded-full border-lime-300/35 bg-lime-300/15 text-lime-100" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-white">{name}</p>
-                  <p className="text-xs text-white/45">Checked in</p>
+                  <p className="truncate text-sm font-semibold text-white">{summary.todayAttendance} check-ins recorded today</p>
+                  <p className="text-xs text-white/45">Server-authoritative attendance count</p>
                 </div>
-                <div className="flex items-center gap-2 text-right">
-                  <div>
-                    <p className="text-xs text-white/55">{time}</p>
-                    <p className="text-xs text-white/35">{relative}</p>
-                  </div>
-                  <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
-                </div>
-              </div>
-            ))}
+                <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
+            </div>
           </div>
           <Link href="/dashboard/attendance" className="mt-4 inline-flex text-xs font-semibold text-lime-300 hover:underline">
             View all attendance →
@@ -308,7 +292,7 @@ export function DashboardOverview({
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-white">Revenue Snapshot</h2>
             <span className="rounded-lg border border-white/10 bg-black/20 px-3 py-1.5 text-xs text-white/70">
-              This Week
+              Today
             </span>
           </div>
           <div className="mt-5 flex items-start justify-between gap-4">
@@ -317,11 +301,11 @@ export function DashboardOverview({
               <p className="mt-1 text-3xl font-bold tabular-nums text-white">{revenue}</p>
             </div>
             <div className="text-right">
-              <p className="text-xs font-semibold text-lime-300">↑ 15%</p>
-              <p className="text-xs text-white/40">vs last week</p>
+              <p className="text-xs font-semibold text-lime-300">Live</p>
+              <p className="text-xs text-white/40">today</p>
             </div>
           </div>
-          <RevenueChart />
+          <RevenueChart revenuePaise={summary.revenuePaise} />
           <Link href="/dashboard/reports" className="mt-2 inline-flex text-xs font-semibold text-lime-300 hover:underline">
             View full report →
           </Link>
@@ -335,9 +319,9 @@ export function DashboardOverview({
             <Donut percentage={aiUsagePercent} />
             <div className="grid flex-1 gap-2">
               {[
-                ["Conversations", "342 / 500"],
-                ["Plan Recommendations", "126 / 200"],
-                ["Smart Insights", `${summary.aiUsageThisMonth} / 50`],
+                ["AI usage events", `${summary.aiUsageThisMonth} / ${aiQuota}`],
+                ["Recent logs", `${data.aiUsage.length}`],
+                ["Provider state", data.connected ? "Connected" : "Demo"],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2">
                   <span className="text-xs text-white/45">{label}</span>
@@ -354,18 +338,16 @@ export function DashboardOverview({
         <Panel className="lg:col-span-5">
           <h2 className="text-base font-semibold text-white">Recent Staff Actions</h2>
           <div className="mt-4">
-            {staffRows.map(({ name, action, time }) => (
-              <Link key={name} href="/dashboard/audit" className="flex min-h-[50px] items-center gap-3 border-b border-white/[0.06] py-2 last:border-0">
-                <AvatarInitials name={name} className="h-8 w-8 rounded-full" />
+            <Link href="/dashboard/audit" className="flex min-h-[58px] items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.035] px-3 py-2">
+                <AvatarInitials name="Audit" className="h-8 w-8 rounded-full" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-white">
-                    <strong>{name}</strong> {action}
+                    <strong>{summary.staffCount}</strong> staff roles · {data.auditLogCount} audit records
                   </span>
-                  <span className="text-xs text-white/42">{time}</span>
+                  <span className="text-xs text-white/42">Open audit log for exact actions and timestamps</span>
                 </span>
                 <ChevronRight size={16} className="text-white/35" />
-              </Link>
-            ))}
+            </Link>
           </div>
           <Link href="/dashboard/audit" className="mt-4 inline-flex text-xs font-semibold text-lime-300 hover:underline">
             View all staff activity →
@@ -376,8 +358,9 @@ export function DashboardOverview({
           <Sparkles className="h-8 w-8 text-lime-300" aria-hidden="true" />
           <h2 className="mt-5 text-sm font-semibold text-lime-200">Zook AI Tip</h2>
           <p className="mt-3 text-xs leading-5 text-white/55">
-            You have 18 members who haven&apos;t checked in this week. Engage them with a
-            re-engagement campaign.
+            {summary.todayAttendance === 0
+              ? "No check-ins recorded today yet. Use reminders only when the gym confirms the campaign."
+              : `${summary.todayAttendance} members checked in today. Keep the desk queue clear before peak hours.`}
           </p>
           <Link href="/dashboard/members" className="zook-focus mt-6 inline-flex rounded-lg border border-white/14 px-4 py-2 text-xs font-semibold text-white transition hover:border-lime-300/30">
             View Members

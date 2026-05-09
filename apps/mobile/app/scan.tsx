@@ -91,7 +91,7 @@ export default function Scan() {
   const { permissionState, requestEnablePush } = usePushNotifications();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
-  const [scanMode, setScanMode] = useState<ScanMode>("code");
+  const [scanMode, setScanMode] = useState<ScanMode>("scan");
   const [modeLocked, setModeLocked] = useState(false);
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [codePrefix, setCodePrefix] = useState("");
@@ -470,20 +470,6 @@ export default function Scan() {
             onChange={handleModeChange}
           />
 
-          <GlassCard variant="compact" contentStyle={styles.validationContent}>
-            {[
-              "Server-authoritative validation",
-              "Replay protection",
-              "Branch check",
-              "Membership check",
-            ].map((item) => (
-              <View key={item} style={styles.validationItem}>
-                <Ionicons name="checkmark-circle-outline" size={15} color={colors.lime} />
-                <Text style={styles.validationText}>{item}</Text>
-              </View>
-            ))}
-          </GlassCard>
-
           {cameraBlocked ? (
             <GlassCard variant="danger" contentStyle={styles.blockedPermissionContent}>
               <IconBubble icon="camera-outline" tone="red" size={42} />
@@ -615,6 +601,15 @@ export default function Scan() {
               ) : null}
             </GlassCard>
           )}
+
+          <GlassCard variant="compact" contentStyle={styles.validationContent}>
+            {["Server validation", "Branch check", "Membership check"].map((item) => (
+              <View key={item} style={styles.validationItem}>
+                <Ionicons name="checkmark-circle-outline" size={15} color={colors.lime} />
+                <Text style={styles.validationText}>{item}</Text>
+              </View>
+            ))}
+          </GlassCard>
 
           {errorMessage ? (
             <GlassCard variant="warning" contentStyle={styles.errorContent}>

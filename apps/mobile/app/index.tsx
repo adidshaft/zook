@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Svg, { Circle } from "react-native-svg";
 import { resolvePlanName } from "@zook/ui";
 import {
   BottomNav,
@@ -82,6 +83,7 @@ export default function Home() {
     : ("/find-gyms" as Href);
   const daysLeft = memberHome?.activeMembership?.daysLeft;
   const remainingVisits = memberHome?.activeMembership?.remainingVisits;
+  const visitLimit = memberHome?.activePlan?.visitLimit;
   const membershipExpired =
     Boolean(memberHome?.activeMembership) &&
     (String(memberHome?.activeMembership?.status ?? "")
@@ -281,12 +283,19 @@ export default function Home() {
                 visitLabel={remainingVisitsLabel}
                 renewalDate={memberHome?.activeMembership?.endsAt}
                 progressValue={
-                  typeof daysLeft === "number" && memberHome?.activePlan?.durationDays
+                  typeof remainingVisits === "number" && typeof visitLimit === "number" && visitLimit > 0
+                    ? Math.max(0, Math.min(1, (visitLimit - remainingVisits) / visitLimit))
+                    : typeof daysLeft === "number" && memberHome?.activePlan?.durationDays
                     ? Math.max(
                         0.08,
                         Math.min(1, daysLeft / Math.max(memberHome.activePlan.durationDays, 1)),
                       )
                     : 0.72
+                }
+                visitProgressLabel={
+                  typeof remainingVisits === "number" && typeof visitLimit === "number" && visitLimit > 0
+                    ? `${Math.max(0, visitLimit - remainingVisits)} of ${visitLimit} visits used`
+                    : undefined
                 }
                 showBillingAction={!renewalImminent}
               />
@@ -504,6 +513,7 @@ function MemberStateHero({
   expired,
   planName,
   progressValue,
+  visitProgressLabel,
   renewalDate,
   showBillingAction,
   visitLabel,
@@ -512,6 +522,7 @@ function MemberStateHero({
   expired: boolean;
   planName: string;
   progressValue: number;
+  visitProgressLabel?: string;
   renewalDate?: string | null;
   showBillingAction: boolean;
   visitLabel: string;
@@ -519,7 +530,12 @@ function MemberStateHero({
   const mainLabel = expired ? "Membership needs renewal" : daysLeftLabel;
   const splitLabel = mainLabel.match(/^(\d+)\s+(.+)$/);
   const visitCount = visitLabel.match(/^(\d+)/)?.[1] ?? "—";
-  const progressPct = `${Math.round(Math.max(0.08, Math.min(1, progressValue)) * 100)}%`;
+  const progress = Math.max(0, Math.min(1, progressValue));
+  const progressPct = `${Math.round(progress * 100)}%`;
+  const ringSize = 104;
+  const strokeWidth = 9;
+  const radius = (ringSize - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
 
   return (
     <GlassCard
@@ -560,12 +576,39 @@ function MemberStateHero({
           </View>
         </View>
         <View style={styles.visitRingOuter}>
-          <View style={[styles.visitRingArc, { opacity: expired ? 0.65 : 1 }]}>
+          <Svg width={ringSize} height={ringSize} style={styles.visitRingSvg}>
+            <Circle
+              cx={ringSize / 2}
+              cy={ringSize / 2}
+              r={radius}
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth={strokeWidth}
+              fill="none"
+            />
+            <Circle
+              cx={ringSize / 2}
+              cy={ringSize / 2}
+              r={radius}
+              stroke={expired ? colors.amber : colors.lime}
+              strokeWidth={strokeWidth}
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={`${circumference * progress} ${circumference}`}
+              transform={`rotate(-90 ${ringSize / 2} ${ringSize / 2})`}
+              opacity={expired ? 0.65 : 1}
+            />
+          </Svg>
+          <View style={styles.visitRingArc}>
             <Text style={styles.visitRingValue}>{visitCount}</Text>
             <Text style={styles.visitRingLabel}>visits</Text>
             <Text style={styles.visitRingLabel}>remaining</Text>
           </View>
           <Text style={styles.visitRingProgress}>{progressPct}</Text>
+          {visitProgressLabel ? (
+            <Text numberOfLines={1} style={styles.visitRingMeta}>
+              {visitProgressLabel}
+            </Text>
+          ) : null}
         </View>
       </View>
       <View style={styles.memberEncouragement}>
@@ -699,13 +742,13 @@ const styles = StyleSheet.create({
   },
   premiumGreeting: {
     color: colors.muted,
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 22,
   },
   premiumName: {
     color: colors.text,
-    fontSize: 39,
-    lineHeight: 45,
+    fontSize: 34,
+    lineHeight: 40,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.8,
   },
@@ -718,7 +761,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.035)",
   },
   premiumGymSelector: {
-    minHeight: 70,
+    minHeight: 62,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
@@ -736,8 +779,8 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
   premiumMemberCard: {
-    padding: 18,
-    gap: 16,
+    padding: 16,
+    gap: 14,
   },
   premiumMemberTopRow: {
     flexDirection: "row",
@@ -761,8 +804,8 @@ const styles = StyleSheet.create({
   },
   premiumPlanName: {
     color: colors.text,
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 22,
+    lineHeight: 28,
     fontFamily: "Inter_700Bold",
   },
   daysLeftRow: {
@@ -791,24 +834,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
+  visitRingSvg: {
+    position: "absolute",
+    top: 0,
+  },
   visitRingArc: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    borderWidth: 9,
-    borderColor: colors.lime,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
     backgroundColor: "rgba(0,0,0,0.22)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: colors.lime,
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 0 },
   },
   visitRingValue: {
     color: colors.text,
-    fontSize: 35,
-    lineHeight: 38,
+    fontSize: 28,
+    lineHeight: 32,
     fontFamily: "Inter_700Bold",
   },
   visitRingLabel: {
@@ -820,6 +861,13 @@ const styles = StyleSheet.create({
     color: colors.subtle,
     fontSize: 10,
     lineHeight: 12,
+  },
+  visitRingMeta: {
+    color: colors.muted,
+    fontSize: 10,
+    lineHeight: 13,
+    maxWidth: 122,
+    textAlign: "center",
   },
   memberEncouragement: {
     minHeight: 45,
@@ -1129,7 +1177,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroSecondaryAction: {
-    width: 74,
+    flex: 0.9,
+    paddingHorizontal: 8,
   },
   todayGrid: {
     flexDirection: "row",

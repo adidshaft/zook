@@ -366,11 +366,11 @@ function LayoutContent() {
         <Stack.Screen name="more" options={{ animation: "none" }} />
         <Stack.Screen name="scan" options={{ animation: "none" }} />
         <Stack.Screen name="tracking" options={{ animation: "none" }} />
-        <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="membership" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="find-gyms" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="assistant" options={{ animation: "slide_from_right" }} />
         <Stack.Screen
           name="tracking-entry"

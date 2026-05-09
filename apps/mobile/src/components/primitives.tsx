@@ -2208,6 +2208,7 @@ export function BottomNav({
     return (
       <View style={[styles.memberBottomNavShell, { bottom }]}>
         <BlurView intensity={18} tint="dark" style={styles.memberBottomNavBlur} />
+        <View pointerEvents="none" style={styles.memberBottomNavLowerShield} />
         <View style={styles.memberBottomNavItems}>{navItems}</View>
       </View>
     );
@@ -3241,6 +3242,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.24,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 12 },
+  },
+  memberBottomNavLowerShield: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 34,
+    borderBottomLeftRadius: radii.bottomNav,
+    borderBottomRightRadius: radii.bottomNav,
+    backgroundColor: "rgba(0,0,0,0.46)",
   },
   memberBottomNavItems: {
     position: "absolute",
