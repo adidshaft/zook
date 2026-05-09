@@ -3,6 +3,7 @@ import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
 import type { DeskCopy } from "./copy";
 import type { AttendanceQueueRecord } from "./types";
+import { ageLabel } from "./utils";
 
 export function QueueTab({
   copy,
@@ -76,6 +77,9 @@ export function QueueTab({
                       <p className="mt-1 text-xs text-white/38">
                         {record.plan?.name ?? copy.membership} at{" "}
                         {record.branchName ?? branchName ?? copy.branch}
+                      </p>
+                      <p className="mt-1 text-xs text-white/38">
+                        {ageLabel(record.user?.dateOfBirth)}
                       </p>
                       <p className="mt-2 text-xs text-white/42">
                         {recordPhoto(record) ? copy.photoMatches : copy.profilePhotoMissing}

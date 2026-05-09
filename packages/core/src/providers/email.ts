@@ -390,7 +390,7 @@ export class SMTPEmailProvider extends BaseTransactionalEmailProvider {
 export class ResendEmailProvider extends BaseTransactionalEmailProvider {
   constructor(
     private readonly apiKey: string,
-    fromEmail = "Zook <noreply@zook.app>",
+    fromEmail = "Zook <noreply@zookfit.in>",
   ) {
     super(fromEmail);
   }

@@ -151,6 +151,7 @@ export async function resolveSessionSummaryFromToken(
       email: publicUserEmail(user.email) ?? "",
       name: user.name,
       privateHandle: privateUserHandle(user.id),
+      dateOfBirth: user.dateOfBirth,
       isMinor: user.isMinor,
       guardianPending: user.guardianPending,
       isPlatformAdmin: user.isPlatformAdmin,

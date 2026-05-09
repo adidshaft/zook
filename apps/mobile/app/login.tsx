@@ -15,7 +15,6 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import PhoneInput from "react-native-phone-number-input";
 import {
   BrandMark,
   GlassCard,
@@ -34,8 +33,8 @@ import { colors, spacing, typography } from "@/lib/theme";
 type LoginMethod = "email" | "phone";
 type BusyAction = "otp" | "apple" | "google" | null;
 
-const TERMS_URL = "https://zook.app/terms";
-const PRIVACY_URL = "https://zook.app/privacy";
+const TERMS_URL = "https://zookfit.in/terms";
+const PRIVACY_URL = "https://zookfit.in/privacy";
 const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const OTP_RATE_LIMIT_FALLBACK_SECONDS = 60;
 
@@ -62,6 +61,18 @@ function sanitizeOtpCode(value: string) {
     .normalize("NFKC")
     .replace(/[^0-9]/g, "")
     .slice(0, 6);
+}
+
+function sanitizeIndianMobile(value: string) {
+  return value
+    .normalize("NFKC")
+    .replace(/[^0-9]/g, "")
+    .replace(/^91(?=[6-9][0-9]{9}$)/, "")
+    .slice(0, 10);
+}
+
+function isValidIndianMobile(value: string) {
+  return /^[6-9][0-9]{9}$/.test(value);
 }
 
 function isCanceledAuthError(error: unknown) {
@@ -122,13 +133,11 @@ export default function Login() {
   const heroFontSize = Math.min(54, width * 0.13);
   const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
   const otpInputRef = useRef<OtpInputHandle>(null);
-  const phoneInputRef = useRef<PhoneInput>(null);
   const verifyingRef = useRef(false);
   const [method, setMethod] = useState<LoginMethod>("phone");
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [formattedPhone, setFormattedPhone] = useState("");
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"identifier" | "otp">("identifier");
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
@@ -146,13 +155,12 @@ export default function Login() {
     }
     if (prefill.includes("@")) {
       setMethod("email");
-    setEmail(prefill.trim().toLowerCase());
-    setEmailTouched(false);
+      setEmail(prefill.trim().toLowerCase());
+      setEmailTouched(false);
       return;
     }
     setMethod("phone");
-    setPhoneNumber(prefill.replace(/^\+91\s*/, ""));
-    setFormattedPhone(prefill.trim());
+    setPhoneNumber(sanitizeIndianMobile(prefill));
   }, [params.prefill]);
 
   useEffect(() => {
@@ -202,11 +210,7 @@ export default function Login() {
     if (method === "email") {
       return email.trim().toLowerCase();
     }
-    return (
-      formattedPhone.trim() ||
-      phoneInputRef.current?.getNumberAfterPossiblyEliminatingZero().formattedNumber.trim() ||
-      ""
-    );
+    return `+91${sanitizeIndianMobile(phoneNumber)}`;
   }
 
   function selectMethod(nextMethod: LoginMethod) {
@@ -220,7 +224,8 @@ export default function Login() {
     resetOtpState();
   }
 
-  const emailInvalid = emailTouched && email.trim().length > 0 && !/^\S+@\S+\.\S+$/.test(email.trim());
+  const emailInvalid =
+    emailTouched && email.trim().length > 0 && !/^\S+@\S+\.\S+$/.test(email.trim());
 
   function handleOtpError(error: unknown) {
     if (isAccountLockedError(error)) {
@@ -247,8 +252,8 @@ export default function Login() {
         setMessage("Enter a valid email address.");
         return;
       }
-    } else if (!phoneNumber.trim() || !phoneInputRef.current?.isValidNumber(phoneNumber)) {
-      setMessage("Enter a valid mobile number.");
+    } else if (!isValidIndianMobile(phoneNumber)) {
+      setMessage("Enter a valid 10-digit mobile number.");
       return;
     }
     setBusyAction("otp");
@@ -274,12 +279,7 @@ export default function Login() {
   async function submitOtp(overrideCode?: string) {
     const identifier = selectedIdentifier();
     const nextCode = sanitizeOtpCode(overrideCode ?? (code || devOtp || localDevOtp || ""));
-    if (
-      verifyingRef.current ||
-      accountLocked ||
-      rateLimitCooldown > 0 ||
-      nextCode.length !== 6
-    ) {
+    if (verifyingRef.current || accountLocked || rateLimitCooldown > 0 || nextCode.length !== 6) {
       return;
     }
     verifyingRef.current = true;
@@ -331,7 +331,14 @@ export default function Login() {
         setMessage("Apple did not return an identity token. Try again.");
         return;
       }
-      await signInWithApple(credential.identityToken);
+      const fullName = [
+        credential.fullName?.givenName,
+        credential.fullName?.middleName,
+        credential.fullName?.familyName,
+      ]
+        .filter(Boolean)
+        .join(" ");
+      await signInWithApple(credential.identityToken, fullName || undefined);
       setMessage(t("auth.signedIn"));
     } catch (error) {
       if (isCanceledAuthError(error)) return;
@@ -360,8 +367,7 @@ export default function Login() {
       }
       const response = await module.GoogleSignin.signIn();
       if (response.type !== "success") return;
-      const idToken =
-        response.data.idToken ?? (await module.GoogleSignin.getTokens()).idToken;
+      const idToken = response.data.idToken ?? (await module.GoogleSignin.getTokens()).idToken;
       if (!idToken) {
         setMessage("Google did not return an ID token. Try again.");
         return;
@@ -412,8 +418,16 @@ export default function Login() {
           {stage === "identifier" ? (
             <>
               <View style={styles.tabGroup} accessibilityRole="tablist">
-                <MethodTab active={method === "phone"} label="Phone" onPress={() => selectMethod("phone")} />
-                <MethodTab active={method === "email"} label="Email" onPress={() => selectMethod("email")} />
+                <MethodTab
+                  active={method === "phone"}
+                  label="Phone"
+                  onPress={() => selectMethod("phone")}
+                />
+                <MethodTab
+                  active={method === "email"}
+                  label="Email"
+                  onPress={() => selectMethod("email")}
+                />
               </View>
 
               {method === "email" ? (
@@ -446,28 +460,18 @@ export default function Login() {
                     </View>
                     <Text style={styles.phoneHintText}>{t("auth.phoneHint")}</Text>
                   </View>
-                  <PhoneInput
-                    ref={phoneInputRef}
-                    defaultCode="IN"
+                  <GlassInput
+                    label="Number"
                     value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    onChangeFormattedText={setFormattedPhone}
-                    disabled={busy}
-                    layout="first"
-                    withDarkTheme
-                    placeholder="98765 43210"
-                    containerStyle={styles.phoneContainer}
-                    textContainerStyle={styles.phoneTextContainer}
-                    textInputStyle={styles.phoneTextInput}
-                    codeTextStyle={styles.phoneCodeText}
-                    flagButtonStyle={styles.phoneFlagButton}
-                    countryPickerButtonStyle={styles.phoneCountryButton}
-                    textInputProps={{
-                      autoComplete: "tel",
-                      keyboardType: "phone-pad",
-                      placeholderTextColor: "rgba(255,255,255,0.55)",
-                      returnKeyType: "next",
+                    onChangeText={(value) => {
+                      setPhoneNumber(sanitizeIndianMobile(value));
+                      if (message === "Enter a valid 10-digit mobile number.") setMessage("");
                     }}
+                    editable={!busy}
+                    autoComplete="tel"
+                    keyboardType="phone-pad"
+                    returnKeyType="next"
+                    placeholder="98765 43210"
                   />
                 </View>
               )}
@@ -493,11 +497,7 @@ export default function Login() {
             busy={busyAction === "otp"}
             busyLabel={t("auth.working")}
           >
-            {stage === "identifier" ? (
-              "Send OTP"
-            ) : (
-              t("auth.verifyAndSignIn")
-            )}
+            {stage === "identifier" ? "Send OTP" : t("auth.verifyAndSignIn")}
           </ZookButton>
 
           {stage === "otp" ? (

@@ -16,7 +16,7 @@ import {
 import { GoogleMapProvider, MockMapProvider, type MapProvider } from "./map";
 import { MockPaymentProvider, RazorpayPaymentProvider, type PaymentProvider } from "./payment";
 import { ExpoPushProvider, MockPushProvider, type PushProvider } from "./push";
-import { MockSmsProvider, WebhookSmsProvider, type SmsProvider } from "./sms";
+import { MockSmsProvider, Msg91SmsProvider, WebhookSmsProvider, type SmsProvider } from "./sms";
 import {
   LocalStorageProvider,
   S3CompatibleStorageProvider,
@@ -478,7 +478,14 @@ function resolveSmsProvider(): ProviderResolution<SmsProvider> {
   const selectionValue = env(process.env.SMS_PROVIDER);
   const defaultProvider = process.env.APP_ENV?.trim() === "production" ? "disabled" : "mock";
   const selectedProvider = selectionValue ?? defaultProvider;
-  const envState = envFlags(["SMS_PROVIDER", "SMS_WEBHOOK_URL", "SMS_WEBHOOK_SECRET"]);
+  const envState = envFlags([
+    "SMS_PROVIDER",
+    "SMS_WEBHOOK_URL",
+    "SMS_WEBHOOK_SECRET",
+    "MSG91_AUTH_KEY",
+    "MSG91_TEMPLATE_ID",
+    "MSG91_SENDER_ID",
+  ]);
 
   if (selectedProvider === "mock") {
     return createReadyResolution({
@@ -495,7 +502,7 @@ function resolveSmsProvider(): ProviderResolution<SmsProvider> {
       category: "sms",
       selectionEnv: "SMS_PROVIDER",
       defaultProvider,
-      supportedProviders: ["mock", "webhook", "disabled"],
+      supportedProviders: ["mock", "webhook", "msg91", "disabled"],
       env: envState,
     });
   }
@@ -508,7 +515,7 @@ function resolveSmsProvider(): ProviderResolution<SmsProvider> {
         selectionEnv: "SMS_PROVIDER",
         selectedProvider,
         defaultProvider,
-        supportedProviders: ["mock", "webhook", "disabled"],
+        supportedProviders: ["mock", "webhook", "msg91", "disabled"],
         missingEnv: ["SMS_WEBHOOK_URL"],
         env: envState,
         mode: "live",
@@ -529,12 +536,52 @@ function resolveSmsProvider(): ProviderResolution<SmsProvider> {
     });
   }
 
+  if (selectedProvider === "msg91") {
+    const authKey = env(process.env.MSG91_AUTH_KEY);
+    const templateId = env(process.env.MSG91_TEMPLATE_ID);
+    const missingEnv = [
+      authKey ? null : "MSG91_AUTH_KEY",
+      templateId ? null : "MSG91_TEMPLATE_ID",
+    ].filter(Boolean) as string[];
+    if (missingEnv.length > 0) {
+      return createMisconfiguredResolution({
+        category: "sms",
+        selectionEnv: "SMS_PROVIDER",
+        selectedProvider,
+        defaultProvider,
+        supportedProviders: ["mock", "webhook", "msg91", "disabled"],
+        missingEnv,
+        env: envState,
+        mode: "live",
+      });
+    }
+
+    const expiryMinutes = Number(env(process.env.MSG91_OTP_EXPIRY_MINUTES) ?? "10");
+    return createReadyResolution({
+      category: "sms",
+      selectedProvider,
+      selectionValue,
+      env: envState,
+      provider: new Msg91SmsProvider({
+        authKey: authKey as string,
+        templateId: templateId as string,
+        ...(env(process.env.MSG91_SENDER_ID)
+          ? { senderId: env(process.env.MSG91_SENDER_ID) as string }
+          : {}),
+        ...(env(process.env.MSG91_API_BASE_URL)
+          ? { apiBaseUrl: env(process.env.MSG91_API_BASE_URL) as string }
+          : {}),
+        otpExpiryMinutes: Number.isFinite(expiryMinutes) && expiryMinutes > 0 ? expiryMinutes : 10,
+      }),
+    });
+  }
+
   return createUnsupportedResolution({
     category: "sms",
     selectionEnv: "SMS_PROVIDER",
     selectedProvider,
     defaultProvider,
-    supportedProviders: ["mock", "webhook", "disabled"],
+    supportedProviders: ["mock", "webhook", "msg91", "disabled"],
     env: envState,
     mode: "live",
   });

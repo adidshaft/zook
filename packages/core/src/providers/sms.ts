@@ -75,3 +75,67 @@ export class WebhookSmsProvider implements SmsProvider {
     }
   }
 }
+
+export class Msg91SmsProvider implements SmsProvider {
+  private readonly apiBaseUrl: string;
+  private readonly otpExpiryMinutes: number;
+
+  constructor(
+    private readonly input: {
+      authKey: string;
+      templateId: string;
+      senderId?: string;
+      apiBaseUrl?: string;
+      otpExpiryMinutes?: number;
+    },
+  ) {
+    this.apiBaseUrl = input.apiBaseUrl ?? "https://control.msg91.com/api/v5/otp";
+    this.otpExpiryMinutes = input.otpExpiryMinutes ?? 10;
+  }
+
+  getDiagnostics(): ProviderInstanceDiagnostics {
+    return {
+      provider: "msg91",
+      mode: "live",
+      configured: true,
+      metadata: {
+        templateId: this.input.templateId,
+        hasSenderId: Boolean(this.input.senderId),
+        otpExpiryMinutes: this.otpExpiryMinutes,
+      },
+    };
+  }
+
+  async sendOtp(input: { phone: string; code: string; expiresAt: Date }): Promise<void> {
+    const url = new URL(this.apiBaseUrl);
+    url.searchParams.set("template_id", this.input.templateId);
+    url.searchParams.set("mobile", normalizeMsg91Mobile(input.phone));
+    url.searchParams.set("authkey", this.input.authKey);
+    url.searchParams.set("otp", input.code);
+    url.searchParams.set("otp_expiry", String(this.otpExpiryMinutes));
+    url.searchParams.set("realTimeResponse", "1");
+    if (this.input.senderId) {
+      url.searchParams.set("sender", this.input.senderId);
+    }
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authkey: this.input.authKey,
+      },
+      body: JSON.stringify({ otp: input.code }),
+    });
+    if (!response.ok) {
+      throw new Error(`MSG91 OTP failed with ${response.status}.`);
+    }
+  }
+}
+
+function normalizeMsg91Mobile(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) {
+    return `91${digits}`;
+  }
+  return digits;
+}

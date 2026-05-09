@@ -325,7 +325,7 @@ export default function Settings() {
           >
             <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
               <Pressable
-                onPress={() => void Linking.openURL("mailto:help@zook.app")}
+                onPress={() => void Linking.openURL("mailto:support@zookfit.in")}
                 accessibilityRole="button"
                 accessibilityLabel={t("settings.contactSupport")}
               >

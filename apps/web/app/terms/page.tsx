@@ -11,48 +11,74 @@ const termsCopy = {
   en: {
     eyebrow: "Terms",
     title: "Zook terms of service",
+    updated: "Last updated May 2026",
     intro:
-      "These terms explain the rules for using Zook as a gym owner, staff member, trainer, or member.",
+      "These terms explain the rules for using Zook, operated by Kyoka Suigetsu LLP in India, as a gym owner, staff member, trainer, or member.",
     sections: [
       [
+        "What Zook provides",
+        "Zook is gym management software for public gym profiles, membership purchase flows, attendance, staff operations, trainer workflows, shop orders, notifications, receipts, invoices, and support records.",
+      ],
+      [
         "Gym responsibility",
-        "Gyms are responsible for their public profile, plans, trainer content, pricing, refunds, attendance decisions, and any local compliance obligations.",
+        "Gyms are responsible for their public profile, branches, plans, trainer content, pricing, taxes, local compliance, membership approvals, attendance decisions, refunds, and the accuracy of information they publish.",
       ],
       [
         "Member access",
-        "Memberships, approvals, renewals, pauses, and refunds are controlled by the gym. Zook provides the software record and payment workflow.",
+        "Memberships, approvals, renewals, pauses, entry rules, trainer access, shop pickup, and refunds are controlled by the gym. Zook provides the software record and workflow.",
       ],
       [
         "Payments",
-        "Payment availability depends on the configured provider. Amounts are shown before payment, and successful payments activate eligible memberships automatically.",
+        "Payment availability depends on the configured provider. Amounts are shown before payment, and successful payments may activate eligible memberships automatically. Payments may open Razorpay or another secure provider in the browser.",
+      ],
+      [
+        "Refunds and cancellations",
+        "Gym membership refunds and cancellations are controlled by the gym unless Zook is explicitly shown as the merchant of record. Duplicate, failed, or accidental platform charges can be reviewed by writing to support@zookfit.in with the payment reference.",
       ],
       [
         "Acceptable use",
-        "Do not misuse Zook, bypass access controls, upload harmful content, or use demo data as a substitute for real member consent.",
+        "Do not misuse Zook, bypass access controls, share another person's entry code, upload harmful content, impersonate others, or use demo data as a substitute for real member consent.",
+      ],
+      [
+        "Support",
+        "For account, billing, or operational support, write to support@zookfit.in with your gym name and the phone or email on your account.",
       ],
     ],
   },
   hi: {
     eyebrow: "शर्तें",
     title: "Zook सेवा शर्तें",
+    updated: "आखिरी अपडेट मई 2026",
     intro:
-      "ये शर्तें बताती हैं कि जिम मालिक, स्टाफ, ट्रेनर या सदस्य के रूप में Zook इस्तेमाल करने के नियम क्या हैं.",
+      "ये शर्तें बताती हैं कि भारत में Kyoka Suigetsu LLP द्वारा चलाए जाने वाले Zook को जिम मालिक, स्टाफ, ट्रेनर या सदस्य के रूप में इस्तेमाल करने के नियम क्या हैं.",
     sections: [
       [
+        "Zook क्या देता है",
+        "Zook public gym profile, membership purchase flow, attendance, staff operations, trainer workflow, shop orders, notifications, receipts, invoices और support records के लिए gym management software है.",
+      ],
+      [
         "जिम की जिम्मेदारी",
-        "जिम अपने सार्वजनिक प्रोफाइल, प्लान, ट्रेनर सामग्री, कीमत, रिफंड, उपस्थिति फैसलों और स्थानीय अनुपालन के लिए जिम्मेदार हैं.",
+        "जिम अपने public profile, branches, plans, trainer content, pricing, taxes, local compliance, membership approvals, attendance decisions, refunds और प्रकाशित जानकारी की सटीकता के लिए जिम्मेदार हैं.",
       ],
       [
         "सदस्य पहुंच",
-        "सदस्यता, स्वीकृति, नवीनीकरण, रोक और रिफंड जिम नियंत्रित करता है. Zook सॉफ्टवेयर रिकॉर्ड और भुगतान वर्कफ्लो देता है.",
+        "Membership, approvals, renewals, pauses, entry rules, trainer access, shop pickup और refunds जिम नियंत्रित करता है. Zook software record और workflow देता है.",
       ],
       [
         "भुगतान",
-        "भुगतान उपलब्धता कॉन्फ़िगर किए गए प्रदाता पर निर्भर करती है. राशि भुगतान से पहले दिखती है और सफल भुगतान योग्य सदस्यता सक्रिय करता है.",
+        "भुगतान उपलब्धता configured provider पर निर्भर करती है. राशि भुगतान से पहले दिखती है और successful payment योग्य membership को automatically active कर सकता है. भुगतान browser में Razorpay या किसी secure provider पर खुल सकता है.",
+      ],
+      [
+        "रिफंड और cancellation",
+        "Gym membership refunds और cancellations जिम नियंत्रित करता है जब तक Zook को साफ तौर पर merchant of record न दिखाया जाए. Duplicate, failed या accidental platform charges के लिए payment reference के साथ support@zookfit.in पर लिखें.",
       ],
       [
         "स्वीकार्य उपयोग",
-        "Zook का दुरुपयोग, एक्सेस नियंत्रण bypass, हानिकारक सामग्री अपलोड, या demo data को वास्तविक सदस्य सहमति के स्थान पर इस्तेमाल न करें.",
+        "Zook का दुरुपयोग, access controls bypass, किसी और का entry code share, harmful content upload, impersonation, या demo data को वास्तविक member consent के स्थान पर इस्तेमाल न करें.",
+      ],
+      [
+        "सहायता",
+        "Account, billing या operational support के लिए support@zookfit.in पर जिम नाम और account का phone या email लिखें.",
       ],
     ],
   },
@@ -86,6 +112,9 @@ export default async function TermsPage({
           <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white md:text-5xl">
             {copy.title}
           </h1>
+          <p className="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-white/38">
+            {copy.updated}
+          </p>
           <p className="mt-5 text-base leading-7 text-white/62">{copy.intro}</p>
           <div className="mt-8 grid gap-4">
             {copy.sections.map(([title, body]) => (

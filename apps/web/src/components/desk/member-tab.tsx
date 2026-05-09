@@ -4,7 +4,7 @@ import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/fo
 import { GlassCard, Pill } from "../glass-card";
 import type { DeskCopy } from "./copy";
 import type { MemberRow } from "./types";
-import { memberLabel, phoneLast4 } from "./utils";
+import { ageLabel, memberLabel, phoneLast4 } from "./utils";
 
 export function MemberTab({
   copy,
@@ -65,6 +65,7 @@ export function MemberTab({
                 <span>
                   {copy.phoneEnding} {phoneLast4(member.user?.phone)}
                 </span>
+                <span>{ageLabel(member.user?.dateOfBirth)}</span>
                 <span>
                   {member.activeSubscription
                     ? formatEnumLabel(member.activeSubscription.status)
@@ -105,6 +106,9 @@ export function MemberTab({
                 >
                   {showPhone && phone ? phone : `${copy.phoneEnding} ${phoneLast4(phone)}`}
                 </button>
+                <p className="mt-1 text-sm text-white/48">
+                  {ageLabel(selectedMember.user?.dateOfBirth)}
+                </p>
                 {!selectedPhoto ? (
                   <p className="mt-2 text-xs text-white/38">{copy.profilePhotoMissing}</p>
                 ) : null}

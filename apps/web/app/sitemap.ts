@@ -4,7 +4,7 @@ import { prisma } from "@zook/db";
 import { canUsePublicDemoFallback } from "@/server/public-gym-read-models";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_WEB_URL ?? "https://app.zook.kyokasuigetsu.xyz";
+  const baseUrl = process.env.NEXT_PUBLIC_WEB_URL ?? "https://zookfit.in";
   let gyms: Array<{ username: string; updatedAt?: Date | string | null }> = [];
   try {
     gyms = await prisma.organization.findMany({
@@ -13,14 +13,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       take: 500,
       orderBy: { updatedAt: "desc" },
     });
-  } catch (error) {
-    if (!canUsePublicDemoFallback()) {
-      throw error;
+  } catch {
+    if (canUsePublicDemoFallback()) {
+      gyms = zookDemoFixtures.organizations.map((gym) => ({
+        username: gym.username,
+        updatedAt: null,
+      }));
+    } else {
+      console.warn("Sitemap public gym entries were skipped because the database was unavailable.");
     }
-    gyms = zookDemoFixtures.organizations.map((gym) => ({
-      username: gym.username,
-      updatedAt: null,
-    }));
   }
 
   return [
@@ -28,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/gyms`, changeFrequency: "daily", priority: 0.9 },
     { url: `${baseUrl}/privacy`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${baseUrl}/terms`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${baseUrl}/support`, changeFrequency: "monthly", priority: 0.4 },
     ...gyms.map((gym) => ({
       url: `${baseUrl}/g/${gym.username}`,
       lastModified: gym.updatedAt ? new Date(gym.updatedAt) : undefined,

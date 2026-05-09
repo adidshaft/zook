@@ -11,11 +11,11 @@ Last updated: 3 May 2026
 - `preview`
   - internal distribution build for staging pilot validation
   - defaults to `EXPO_PUBLIC_ENV_PROFILE=staging`
-  - expected API/web targets resolve to `https://staging.zook.app`
+  - expected API/web targets resolve to `https://staging.zookfit.in`
 - `production`
   - production candidate build
   - defaults to `EXPO_PUBLIC_ENV_PROFILE=production`
-  - expected API/web targets resolve to `https://zook.app`
+  - expected API/web targets resolve to `https://zookfit.in`
 
 `apps/mobile/eas.json` is the source of truth for these profiles.
 

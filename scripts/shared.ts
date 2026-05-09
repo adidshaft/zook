@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawnSync, type SpawnSyncOptions } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -53,7 +53,7 @@ export const playwrightForwardEnvKeys = [
   "MAINTENANCE_MOCK_MODE",
   "SEED_DEMO_USERS_ENABLED",
   "ALLOW_FIXED_OTP_IN_STAGING",
-  "ALLOW_MOCK_PAYMENT_COMPLETION"
+  "ALLOW_MOCK_PAYMENT_COMPLETION",
 ] as const;
 
 export const providerSelections = [
@@ -64,8 +64,8 @@ export const providerSelections = [
     implementedProviders: ["mock", "resend", "smtp"],
     liveProviders: {
       smtp: ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_FROM"],
-      resend: ["RESEND_API_KEY", "EMAIL_FROM"]
-    }
+      resend: ["RESEND_API_KEY", "EMAIL_FROM"],
+    },
   },
   {
     label: "Payment provider",
@@ -74,8 +74,8 @@ export const providerSelections = [
     implementedProviders: ["mock", "razorpay", "disabled"],
     liveProviders: {
       razorpay: ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"],
-      disabled: []
-    }
+      disabled: [],
+    },
   },
   {
     label: "Storage provider",
@@ -85,8 +85,8 @@ export const providerSelections = [
     liveProviders: {
       supabase: ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_STORAGE_BUCKET"],
       s3: ["S3_BUCKET", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"],
-      r2: ["S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"]
-    }
+      r2: ["S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"],
+    },
   },
   {
     label: "Maps provider",
@@ -94,8 +94,8 @@ export const providerSelections = [
     defaultValue: "mock",
     implementedProviders: ["mock", "google"],
     liveProviders: {
-      google: ["GOOGLE_MAPS_API_KEY"]
-    }
+      google: ["GOOGLE_MAPS_API_KEY"],
+    },
   },
   {
     label: "AI provider",
@@ -104,8 +104,8 @@ export const providerSelections = [
     implementedProviders: ["mock", "openai", "disabled"],
     liveProviders: {
       openai: ["OPENAI_API_KEY"],
-      disabled: []
-    }
+      disabled: [],
+    },
   },
   {
     label: "Push provider",
@@ -114,9 +114,20 @@ export const providerSelections = [
     implementedProviders: ["mock", "expo", "disabled"],
     liveProviders: {
       expo: ["EXPO_PROJECT_ID"],
-      disabled: []
-    }
-  }
+      disabled: [],
+    },
+  },
+  {
+    label: "SMS provider",
+    envKey: "SMS_PROVIDER",
+    defaultValue: "mock",
+    implementedProviders: ["mock", "webhook", "msg91", "disabled"],
+    liveProviders: {
+      webhook: ["SMS_WEBHOOK_URL"],
+      msg91: ["MSG91_AUTH_KEY", "MSG91_TEMPLATE_ID"],
+      disabled: [],
+    },
+  },
 ] as const;
 
 export function loadLocalEnvironment() {
@@ -162,7 +173,9 @@ export function resolveEnvProfile(): EnvProfile {
     return profile as EnvProfile;
   }
   if (profile) {
-    throw new Error(`APP_ENV/ENV_PROFILE=${profile} is not supported. Use one of: ${envProfiles.join(", ")}.`);
+    throw new Error(
+      `APP_ENV/ENV_PROFILE=${profile} is not supported. Use one of: ${envProfiles.join(", ")}.`,
+    );
   }
   return "local";
 }
@@ -232,10 +245,50 @@ export function readPackageManagerVersion() {
   return packageJson.packageManager?.split("@")[1];
 }
 
+const pnpmCandidates = [
+  "pnpm",
+  "/usr/local/bin/pnpm",
+  "/opt/homebrew/bin/pnpm",
+  resolve(rootDir, "node_modules/.bin/pnpm"),
+] as const;
+
+export function resolvePnpmCommand() {
+  const errors: string[] = [];
+  for (const candidate of pnpmCandidates) {
+    try {
+      execFileSync(candidate, ["--version"], {
+        cwd: rootDir,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      return candidate;
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+  throw new Error(errors[0] ?? "Unable to resolve pnpm.");
+}
+
+export function withPnpmPath(envInput: NodeJS.ProcessEnv = process.env) {
+  return {
+    ...envInput,
+    PATH: ["/usr/local/bin", "/opt/homebrew/bin", envInput.PATH].filter(Boolean).join(":"),
+  };
+}
+
+export function spawnPnpm(args: string[], options: SpawnSyncOptions = {}) {
+  return spawnSync(resolvePnpmCommand(), args, {
+    ...options,
+    cwd: options.cwd ?? rootDir,
+    env: withPnpmPath(options.env as NodeJS.ProcessEnv | undefined),
+  });
+}
+
 export function readPnpmVersion() {
-  return execFileSync("pnpm", ["--version"], {
+  return execFileSync(resolvePnpmCommand(), ["--version"], {
     cwd: rootDir,
-    encoding: "utf8"
+    encoding: "utf8",
+    env: withPnpmPath(),
   }).trim();
 }
 
@@ -248,30 +301,27 @@ export function hasGeneratedPrismaClient() {
     resolve(rootDir, "node_modules/.prisma/client/index.d.ts"),
     resolve(rootDir, "packages/db/node_modules/.prisma/client/index.d.ts"),
     resolve(rootDir, "node_modules/.prisma/client/index.js"),
-    resolve(rootDir, "packages/db/node_modules/.prisma/client/index.js")
+    resolve(rootDir, "packages/db/node_modules/.prisma/client/index.js"),
   ];
 
   return candidates.some((candidate) => existsSync(candidate));
 }
 
 export function evaluateProviderSelection(
-  selection: (typeof providerSelections)[number]
+  selection: (typeof providerSelections)[number],
 ): CheckResult {
   const selectedProvider = env(selection.envKey) ?? selection.defaultValue;
   const supportedProviders = [selection.defaultValue, ...Object.keys(selection.liveProviders)];
 
   if (selectedProvider === selection.defaultValue) {
-    return pass(
-      selection.label,
-      `${selection.envKey}=${selectedProvider} (local-safe default)`
-    );
+    return pass(selection.label, `${selection.envKey}=${selectedProvider} (local-safe default)`);
   }
 
   if (!supportedProviders.includes(selectedProvider)) {
     return fail(
       selection.label,
       `${selection.envKey}=${selectedProvider} is not a supported option.`,
-      `Supported values: ${supportedProviders.join(", ")}`
+      `Supported values: ${supportedProviders.join(", ")}`,
     );
   }
 
@@ -279,11 +329,12 @@ export function evaluateProviderSelection(
     return fail(
       selection.label,
       `${selection.envKey}=${selectedProvider} is configured, but that provider is not implemented in the runtime registry yet.`,
-      `Use ${selection.defaultValue} until the runtime adapter ships.`
+      `Use ${selection.defaultValue} until the runtime adapter ships.`,
     );
   }
 
-  const requiredKeys = selection.liveProviders[selectedProvider as keyof typeof selection.liveProviders];
+  const requiredKeys =
+    selection.liveProviders[selectedProvider as keyof typeof selection.liveProviders];
   if (!requiredKeys?.length) {
     return pass(selection.label, `${selection.envKey}=${selectedProvider} is selected.`);
   }
@@ -292,7 +343,7 @@ export function evaluateProviderSelection(
     return fail(
       selection.label,
       `${selection.envKey}=${selectedProvider} is missing ${missingKeys.join(", ")}.`,
-      `Either configure the missing keys or switch back to ${selection.defaultValue}.`
+      `Either configure the missing keys or switch back to ${selection.defaultValue}.`,
     );
   }
 
@@ -303,7 +354,7 @@ export function runCommand(command: string, args: string[], label: string) {
   const result = spawnSync(command, args, {
     cwd: rootDir,
     env: process.env,
-    stdio: "inherit"
+    stdio: "inherit",
   });
 
   if (result.status !== 0) {

@@ -292,7 +292,7 @@ export default async function HomePage({
             <Link href={localizedPath("/terms", locale)} className="transition hover:text-white">
               {t("terms")}
             </Link>
-            <a href="mailto:hello@zook.app" className="transition hover:text-white">
+            <a href="mailto:support@zookfit.in" className="transition hover:text-white">
               {t("contact")}
             </a>
           </div>

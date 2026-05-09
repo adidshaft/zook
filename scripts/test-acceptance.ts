@@ -1,6 +1,5 @@
 import { runDbCheck } from "./check-db";
-import { env, loadLocalEnvironment, rootDir } from "./shared";
-import { spawnSync } from "node:child_process";
+import { env, loadLocalEnvironment, rootDir, spawnPnpm } from "./shared";
 
 async function main() {
   loadLocalEnvironment();
@@ -13,7 +12,7 @@ async function main() {
     const message = [
       "DATABASE_URL is not set for DB-gated acceptance tests.",
       "Create `.env.test.local` or `.env.test`, or export DATABASE_URL directly.",
-      "Then run `pnpm test:db:prepare` followed by `pnpm test:acceptance:db`."
+      "Then run `pnpm test:db:prepare` followed by `pnpm test:acceptance:db`.",
     ].join("\n");
 
     if (requireDb) {
@@ -43,13 +42,13 @@ async function main() {
     playwrightArgs.push("--debug");
   }
 
-  const result = spawnSync("pnpm", playwrightArgs, {
+  const result = spawnPnpm(playwrightArgs, {
     cwd: rootDir,
     env: {
       ...process.env,
-      RUN_DB_WEB_TESTS: "1"
+      RUN_DB_WEB_TESTS: "1",
     },
-    stdio: "inherit"
+    stdio: "inherit",
   });
 
   process.exit(result.status ?? 1);

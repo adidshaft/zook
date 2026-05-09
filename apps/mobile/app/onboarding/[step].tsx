@@ -227,7 +227,7 @@ export function RoleQuestionStep() {
     setBusyAction(action);
     try {
       if (action === "owner") {
-        await Linking.openURL("https://app.zook.app/start-gym?return=zook://");
+        await Linking.openURL("https://zookfit.in/start-gym?return=zook://");
       } else if (action !== "member") {
         await setStoredValue("zook_onboarding_role_interest", action);
       }

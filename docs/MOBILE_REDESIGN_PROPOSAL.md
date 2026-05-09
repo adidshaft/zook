@@ -313,7 +313,7 @@ Persist completion in SecureStore as `zook_onboarding_completed`. Skip flow on s
 ### 4.5 Onboarding for owners
 
 Today there's no "Create gym" path on mobile. Add either:
-- **Web bridge**: `Linking.openURL("https://app.zook.app/start-gym?return=zook://")` — leverages the existing web wizard. After completion, the deep link returns to mobile with a freshly-issued session.
+- **Web bridge**: `Linking.openURL("https://zookfit.in/start-gym?return=zook://")` — leverages the existing web wizard. After completion, the deep link returns to mobile with a freshly-issued session.
 - **Native wizard**: a 3-screen flow (Identity, Location with map picker, First plan) calling `POST /api/orgs`. More work, better UX. Phase 2.
 
 ### 4.6 Permission priming and JIT prompts
@@ -700,13 +700,13 @@ Configure iOS associated domains and Android intent filters in `app.config.ts`:
 
 ```ts
 ios: {
-  associatedDomains: ["applinks:app.zook.app", "applinks:zook.app"],
+  associatedDomains: ["applinks:zookfit.in", "applinks:app.zookfit.in"],
 },
 android: {
   intentFilters: [
     {
       action: "VIEW",
-      data: [{ scheme: "https", host: "app.zook.app" }],
+      data: [{ scheme: "https", host: "zookfit.in" }, { scheme: "https", host: "app.zookfit.in" }],
       category: ["BROWSABLE", "DEFAULT"],
       autoVerify: true,
     },
@@ -889,7 +889,7 @@ Goal: every input-bearing screen has correct keyboard handling; sticky bars don'
 - Touch targets fixed (3.9)
 - Clipboard + minor RN fixes
 
-**DoD:** `https://app.zook.app/join/partner-gym` opens the app. Tapping a "membership renewed" push lands on `/membership` with fresh data. After Razorpay checkout, user lands on `/membership` with confirmation, queries refreshed automatically. Push permission prompted at the right moment, not buried in settings.
+**DoD:** `https://zookfit.in/join/partner-gym` opens the app. Tapping a "membership renewed" push lands on `/membership` with fresh data. After Razorpay checkout, user lands on `/membership` with confirmation, queries refreshed automatically. Push permission prompted at the right moment, not buried in settings.
 
 ---
 
@@ -903,7 +903,7 @@ After all six sprints, all of these must be true:
 
 3. **Trainer**: opens app → `/trainer` clients list → opens client → quick-creates a plan from template (3 taps to assign) → sees member receive push notification → tapping that push lands the member directly on the assigned plan detail.
 
-4. **Owner**: opens app at front desk → switches role to owner via profile → owner approvals view → approves a join request. Each privileged button only visible when permissions allow. Universal link `https://app.zook.app/dashboard` opens the web (mobile owners use mobile for monitoring, web for management).
+4. **Owner**: opens app at front desk → switches role to owner via profile → owner approvals view → approves a join request. Each privileged button only visible when permissions allow. Universal link `https://zookfit.in/dashboard` opens the web (mobile owners use mobile for monitoring, web for management).
 
 5. **Multi-role**: a user who's MEMBER in Pilot Gym and TRAINER in Peak Lab — switching org auto-corrects role; switching role within org doesn't bleed cached data from previous role.
 
@@ -941,7 +941,7 @@ These don't block Sprint 1 (foundations are pure RN/Expo work). Sprints 3 (Apple
 ✅ AC-1: Fresh installs route unauthenticated users through onboarding before login, email OTP auto-submits, scan invalidates attendance/home queries, approved member attendance now auto-dismisses to `/`, and secondary/query screens use back controls plus refresh where query-backed.
 ✅ AC-2: Reception defaults to the Queue/desk tab, approval decisions require a bottom-sheet reason, manual payments and pickup skip-code fulfillment call local privileged auth, and logout is always in the reception header.
 ✅ AC-3: Trainer defaults to the client surface, client detail opens from the list, plan create/assign actions are wired, assignment invalidates notifications, and plan push payloads route members to `/plans/[assignmentId]`.
-✅ AC-4: Profile role switching routes owners to `/owner`, owner approvals can approve join requests, privileged buttons are permission-gated, and `/dashboard` now bridges `https://app.zook.app/dashboard` back to the web dashboard.
+✅ AC-4: Profile role switching routes owners to `/owner`, owner approvals can approve join requests, privileged buttons are permission-gated, and `/dashboard` now bridges `https://zookfit.in/dashboard` back to the web dashboard.
 ✅ AC-5: Org switching auto-corrects unavailable roles in `setActiveOrgId`, role switching validates active-org roles in `setActiveRole`, and both paths invalidate role/org-scoped query caches.
 ✅ AC-6: Input-heavy screens use `KeyboardAwareScreen` with tap-outside dismissal, bottom nav hides during keyboard activity, and OTP input submits automatically at six digits.
 ✅ AC-7: `StickyActionBar` defaults above `layout.bottomNavHeight`, exact `bottomOffset={0}` is absent, and bottom nav hides during scan camera, keyboard-active forms, and onboarding layouts.
@@ -949,7 +949,7 @@ These don't block Sprint 1 (foundations are pure RN/Expo work). Sprints 3 (Apple
 ✅ AC-9: The app shell sends fresh unauthenticated installs to onboarding instead of a blank login, camera/push prompts are requested just-in-time with explanatory copy.
 ✅ AC-10: Manual payment, manual attendance override, and fulfillment-with-skip-code all call `requirePrivilegedAuth`; their request bodies include reasons/notes/skipReason for server audit logging.
 ✅ AC-11: Production/staging builds reject `EXPO_PUBLIC_API_MODE=offline-demo`, runtime config blocks invalid sample mode before data access, and grep found no `user-aarav` in `apps/mobile`.
-✅ AC-12: Push taps map membership, attendance, order, notification, and plan payloads to app routes; universal-link hosts include `app.zook.app`/`zook.app`; checkout return links use `zook://payments/return` and refresh membership/home/shop/org state.
+✅ AC-12: Push taps map membership, attendance, order, notification, and plan payloads to app routes; universal-link hosts include `zookfit.in`/`app.zookfit.in`; checkout return links use `zook://payments/return` and refresh membership/home/shop/org state.
 
 Search verification: `grep -r "user-aarav" apps/mobile/.`, `grep -r "EXPO_PUBLIC_OFFLINE_DEMO" apps/.`, and `grep -r "bottomOffset={0}" apps/mobile/.` all returned zero; `head -1 apps/mobile/app/profile.tsx` is `import type { Role } from "@zook/core";`; all `<Text>Loading X</Text>` card cases were replaced with skeletons.
 -->

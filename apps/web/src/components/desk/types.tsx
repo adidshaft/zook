@@ -13,6 +13,7 @@ export type AttendanceQueueRecord = {
     privateHandle?: string | null;
     email?: string | null;
     phone?: string | null;
+    dateOfBirth?: string | Date | null;
     profilePhotoUrl?: string | null;
   } | null;
   profile?: { profilePhotoUrl?: string | null } | null;
@@ -28,6 +29,7 @@ export type MemberRow = {
     privateHandle?: string | null;
     email: string;
     phone?: string | null;
+    dateOfBirth?: string | Date | null;
     profilePhotoUrl?: string | null;
   } | null;
   lastCheckIn?: { checkedInAt: string; status: string } | null;

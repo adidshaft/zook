@@ -96,6 +96,19 @@ function redactPhone(phone?: string | null) {
   return `****${phone.slice(-4)}`;
 }
 
+function ageLabel(dateOfBirth?: string | null) {
+  if (!dateOfBirth) return "DOB not added";
+  const parsed = new Date(dateOfBirth);
+  if (Number.isNaN(parsed.getTime())) return "DOB not added";
+  const today = new Date();
+  let age = today.getFullYear() - parsed.getFullYear();
+  const monthDelta = today.getMonth() - parsed.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < parsed.getDate())) {
+    age -= 1;
+  }
+  return `${age} years`;
+}
+
 function phoneRevealStorageKey(orgId?: string | null) {
   return `zook_revealed_reception_phones_${orgId ?? "none"}`;
 }
@@ -763,6 +776,10 @@ export default function Reception() {
                       <Text numberOfLines={1} style={styles.memberPhoneText}>
                         {phoneRevealed ? (phone ?? "No phone") : redactPhone(phone)}
                       </Text>
+                      <Text style={styles.memberPhoneText}>·</Text>
+                      <Text numberOfLines={1} style={styles.memberPhoneText}>
+                        {ageLabel(user.user?.dateOfBirth)}
+                      </Text>
                       {phone && !phoneRevealed ? (
                         <Pressable
                           onPress={() => revealMemberPhone(user.profile.userId)}
@@ -781,7 +798,11 @@ export default function Reception() {
             <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
                 title="Desk actions"
-                subtitle={member?.name ? `${member.name} selected` : "Search or select a member"}
+                subtitle={
+                  member?.name
+                    ? `${member.name} selected · ${ageLabel(member.dateOfBirth)}`
+                    : "Search or select a member"
+                }
               />
               <ListRow
                 title="Membership"

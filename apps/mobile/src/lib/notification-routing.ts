@@ -7,9 +7,9 @@ export interface ParsedDeepLink {
 type NotificationRouteInput = Record<string, unknown> | null | undefined;
 
 const trustedWebHosts = new Set([
-  "app.zook.app",
-  "zook.app",
-  "staging.zook.app",
+  "zookfit.in",
+  "app.zookfit.in",
+  "staging.zookfit.in",
   "localhost",
   "127.0.0.1",
 ]);
@@ -61,7 +61,7 @@ function parseInternalUrl(url: string): ParsedDeepLink | null {
     return null;
   }
   if (directPath.startsWith("/")) {
-    const parsed = new URL(directPath, "https://zook.app");
+    const parsed = new URL(directPath, "https://zookfit.in");
     const path = normalizePath(parsed.pathname);
     const params = searchParamsToRecord(parsed.searchParams);
     return { path, params, href: buildHref(path, params) };

@@ -1,6 +1,4 @@
-import {
-  ApiError,
-} from "@zook/core/api";
+import { ApiError } from "@zook/core/api";
 import { isOrgRole } from "@zook/core/permissions";
 import type { AuthSessionSummary, Permission, Role } from "@zook/core/types";
 import type { QueryClient } from "@tanstack/react-query";
@@ -68,7 +66,7 @@ interface AuthContextValue {
   proactiveLogin?: { identifier?: string; triggeredAt: number };
   biometricEnabled: boolean;
   requestOtp: (identifier: string) => Promise<RequestOtpResult>;
-  signInWithApple: (identityToken: string) => Promise<void>;
+  signInWithApple: (identityToken: string, fullName?: string) => Promise<void>;
   signInWithGoogle: (idToken: string) => Promise<void>;
   verifyOtp: (identifier: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -447,8 +445,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signInWithApple = useCallback(
-    async (identityToken: string) => {
-      const result = await authClient.signInWithApple(identityToken);
+    async (identityToken: string, fullName?: string) => {
+      const result = await authClient.signInWithApple(identityToken, fullName);
       await completeTokenSignIn(result.token, result.expiresAt);
     },
     [completeTokenSignIn],
@@ -646,10 +644,7 @@ export function useActivePermissions(): Set<Permission> {
       session?.organizations[0]
     );
   }, [activeOrgId, session?.activeOrganization, session?.organizations]);
-  return useMemo(
-    () => new Set(activeOrg?.permissions ?? []),
-    [activeOrg?.permissions],
-  );
+  return useMemo(() => new Set(activeOrg?.permissions ?? []), [activeOrg?.permissions]);
 }
 
 export function useHasPermission(permission: Permission): boolean {

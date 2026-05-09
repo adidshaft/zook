@@ -50,9 +50,9 @@ Users can hold roles in multiple organizations and multiple roles in one organiz
 
 ## Deep Links
 
-- `zook.app/g/{gymUsername}`
-- `zook.app/join/{gymUsername}?ref={referralCode}`
-- `zook.app/r/{referralCode}`
+- `zookfit.in/g/{gymUsername}`
+- `zookfit.in/join/{gymUsername}?ref={referralCode}`
+- `zookfit.in/r/{referralCode}`
 - `zook://g/{gymUsername}`
 - `zook://join/{gymUsername}?ref={referralCode}`
 

@@ -23,12 +23,12 @@ Last updated: 24 April 2026
   - `cd apps/mobile`
   - `npx eas-cli@latest build --profile preview -p ios`
   - `npx eas-cli@latest build --profile preview -p android`
-  - preview defaults to `https://staging.zook.app/api`
+  - preview defaults to `https://staging.zookfit.in/api`
 - Production candidate:
   - `cd apps/mobile`
   - `npx eas-cli@latest build --profile production -p ios`
   - `npx eas-cli@latest build --profile production -p android`
-  - production defaults to `https://zook.app/api`
+  - production defaults to `https://zookfit.in/api`
 
 ## Login
 

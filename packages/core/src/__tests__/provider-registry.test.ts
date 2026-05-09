@@ -19,6 +19,7 @@ import {
   MockPushProvider,
   MockWhatsAppProvider,
   MockSmsProvider,
+  Msg91SmsProvider,
   OpenAIProvider,
   ProviderSetupError,
   RazorpayPaymentProvider,
@@ -66,6 +67,10 @@ function clearProviderEnv() {
   delete process.env.SMS_PROVIDER;
   delete process.env.SMS_WEBHOOK_URL;
   delete process.env.SMS_WEBHOOK_SECRET;
+  delete process.env.MSG91_AUTH_KEY;
+  delete process.env.MSG91_TEMPLATE_ID;
+  delete process.env.MSG91_SENDER_ID;
+  delete process.env.MSG91_OTP_EXPIRY_MINUTES;
   delete process.env.STORAGE_PROVIDER;
   delete process.env.S3_ENDPOINT;
   delete process.env.S3_REGION;
@@ -225,6 +230,9 @@ describe("provider registry", () => {
     process.env.RAZORPAY_MODE = "test";
     process.env.PUSH_PROVIDER = "expo";
     process.env.EXPO_PROJECT_ID = "expo-project-id";
+    process.env.SMS_PROVIDER = "msg91";
+    process.env.MSG91_AUTH_KEY = "msg91-auth";
+    process.env.MSG91_TEMPLATE_ID = "template-id";
     process.env.STORAGE_PROVIDER = "s3";
     process.env.S3_BUCKET = "zook-stage";
     process.env.S3_REGION = "ap-south-1";
@@ -240,6 +248,7 @@ describe("provider registry", () => {
     expect(getMapProvider()).toBeInstanceOf(GoogleMapProvider);
     expect(getPaymentProvider()).toBeInstanceOf(RazorpayPaymentProvider);
     expect(getPushProvider()).toBeInstanceOf(ExpoPushProvider);
+    expect(getSmsProvider()).toBeInstanceOf(Msg91SmsProvider);
     expect(getStorageProvider()).toBeInstanceOf(S3CompatibleStorageProvider);
     expect(getWhatsAppProvider()).toBeInstanceOf(TwilioWhatsAppProvider);
 
@@ -280,6 +289,13 @@ describe("provider registry", () => {
         selectedProvider: "expo",
         activeProvider: "expo",
         provider: "expo",
+        mode: "live",
+      },
+      sms: {
+        status: "ready",
+        selectedProvider: "msg91",
+        activeProvider: "msg91",
+        provider: "msg91",
         mode: "live",
       },
       storage: {
@@ -347,6 +363,7 @@ describe("provider registry", () => {
     process.env.MAP_PROVIDER = "google";
     process.env.PAYMENT_PROVIDER = "razorpay";
     process.env.PUSH_PROVIDER = "expo";
+    process.env.SMS_PROVIDER = "msg91";
     process.env.STORAGE_PROVIDER = "s3";
     process.env.WHATSAPP_PROVIDER = "twilio";
 
@@ -373,6 +390,10 @@ describe("provider registry", () => {
     expect(() => getPushProvider()).toThrowError(ProviderSetupError);
     expect(() => getPushProvider()).toThrowError(/EXPO_PROJECT_ID/);
     expect(() => getPushProvider()).toThrowError(/PUSH_PROVIDER=mock/);
+
+    expect(() => getSmsProvider()).toThrowError(ProviderSetupError);
+    expect(() => getSmsProvider()).toThrowError(/MSG91_AUTH_KEY/);
+    expect(() => getSmsProvider()).toThrowError(/SMS_PROVIDER=mock/);
 
     expect(() => getWhatsAppProvider()).toThrowError(ProviderSetupError);
     expect(() => getWhatsAppProvider()).toThrowError(/TWILIO_ACCOUNT_SID/);
@@ -403,6 +424,11 @@ describe("provider registry", () => {
         status: "misconfigured",
         activeProvider: null,
         missingEnv: ["EXPO_PROJECT_ID"],
+      },
+      sms: {
+        status: "misconfigured",
+        activeProvider: null,
+        missingEnv: ["MSG91_AUTH_KEY", "MSG91_TEMPLATE_ID"],
       },
       storage: {
         status: "misconfigured",

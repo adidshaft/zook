@@ -16,30 +16,34 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   splash: {
     image: "./assets/splash.png",
     resizeMode: "contain",
-    backgroundColor: "#070908"
+    backgroundColor: "#070908",
   },
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.zook.app",
-    associatedDomains: ["applinks:app.zook.app", "applinks:zook.app"],
-    icon: "./assets/icons/AppIcon-1024.png"
+    usesAppleSignIn: true,
+    associatedDomains: ["applinks:zookfit.in", "applinks:app.zookfit.in"],
+    icon: "./assets/icons/AppIcon-1024.png",
   },
   android: {
     package: "com.zook.app",
     intentFilters: [
       {
         action: "VIEW",
-        data: [{ scheme: "https", host: "app.zook.app" }],
+        data: [
+          { scheme: "https", host: "zookfit.in" },
+          { scheme: "https", host: "app.zookfit.in" },
+        ],
         category: ["BROWSABLE", "DEFAULT"],
-        autoVerify: true
-      }
+        autoVerify: true,
+      },
     ],
     adaptiveIcon: {
       foregroundImage: "./assets/icons/ic_launcher_foreground.png",
       backgroundImage: "./assets/icons/ic_launcher_background.png",
       monochromeImage: "./assets/icons/ic_launcher_monochrome.png",
-      backgroundColor: "#070908"
-    }
+      backgroundColor: "#070908",
+    },
   },
   plugins: [
     "expo-router",
@@ -48,40 +52,43 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
       "expo-notifications",
       {
         icon: "./assets/notification-icon.png",
-        color: "#B9F455"
-      }
+        color: "#B9F455",
+      },
     ],
     "expo-secure-store",
+    "expo-apple-authentication",
     [
       "expo-camera",
       {
-        cameraPermission: "Zook uses the camera to scan gym attendance QR codes."
-      }
-    ]
+        cameraPermission: "Zook uses the camera to scan gym attendance QR codes.",
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
   ],
   experiments: {
-    typedRoutes: true
+    typedRoutes: true,
   },
   extra: {
     eas: {
-      projectId: "3ac0a41f-b9fd-4d91-accf-0e46f3313539"
+      projectId: "3ac0a41f-b9fd-4d91-accf-0e46f3313539",
     },
-    sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || ""
-  }
+    sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || "",
+  },
 };
 const appVersion = baseConfig.version ?? "0.1.0";
 const runtimeVersion = appVersion;
 
 const apiBaseUrlByProfile: Record<MobileReleaseProfile, string> = {
   local: "http://localhost:3000/api",
-  staging: "https://staging.zook.app/api",
-  production: "https://zook.app/api"
+  staging: "https://staging.zookfit.in/api",
+  production: "https://zookfit.in/api",
 };
 
 const webUrlByProfile: Record<MobileReleaseProfile, string> = {
   local: "http://localhost:3000",
-  staging: "https://staging.zook.app",
-  production: "https://zook.app"
+  staging: "https://staging.zookfit.in",
+  production: "https://zookfit.in",
 };
 
 function normalizeProfile(value?: string | null): MobileReleaseProfile | undefined {
@@ -109,7 +116,7 @@ function resolveReleaseProfile(): MobileReleaseProfile {
     "EXPO_PUBLIC_APP_ENV",
     "MOBILE_ENV_PROFILE",
     "EXPO_PUBLIC_ENV_PROFILE",
-    "EAS_BUILD_PROFILE"
+    "EAS_BUILD_PROFILE",
   ] as const;
   for (const key of candidates) {
     const value = process.env[key]?.trim();
@@ -159,7 +166,7 @@ function resolveApiMode(): MobileApiMode {
 function resolveUrl(
   explicitValue: string | undefined,
   profile: MobileReleaseProfile,
-  defaults: Record<MobileReleaseProfile, string>
+  defaults: Record<MobileReleaseProfile, string>,
 ) {
   return explicitValue?.trim() || defaults[profile];
 }
@@ -181,44 +188,43 @@ export default (): ExpoConfig => {
   const sentryProject = (process.env.SENTRY_MOBILE_PROJECT ?? process.env.SENTRY_PROJECT)?.trim();
   const shouldConfigureNativeSentry = releaseProfile !== "local" && sentryOrg && sentryProject;
   if (apiMode === "offline-demo" && releaseProfile !== "local") {
-    throw new Error(
-      "Sample mode is only available for local mobile builds."
-    );
+    throw new Error("Sample mode is only available for local mobile builds.");
   }
   const expoProjectId =
     process.env.EXPO_PROJECT_ID ??
     process.env.EAS_PROJECT_ID ??
-    ((baseConfig.extra?.eas as { projectId?: string } | undefined)?.projectId ?? undefined);
+    (baseConfig.extra?.eas as { projectId?: string } | undefined)?.projectId ??
+    undefined;
 
   return {
     ...baseConfig,
-    plugins:
-      shouldConfigureNativeSentry
-        ? [
-            ...(baseConfig.plugins ?? []),
-            [
-              "@sentry/react-native/expo",
-              {
-                url: "https://sentry.io/",
-                organization: sentryOrg,
-                project: sentryProject
-              }
-            ]
-          ]
-        : baseConfig.plugins,
+    plugins: shouldConfigureNativeSentry
+      ? [
+          ...(baseConfig.plugins ?? []),
+          [
+            "@sentry/react-native/expo",
+            {
+              url: "https://sentry.io/",
+              organization: sentryOrg,
+              project: sentryProject,
+            },
+          ],
+        ]
+      : baseConfig.plugins,
     scheme: "zook",
     version: appVersion,
     runtimeVersion: {
-      policy: "appVersion"
+      policy: "appVersion",
     },
     ios: {
       ...baseConfig.ios,
       bundleIdentifier: "com.zook.app",
-      icon: "./assets/icons/AppIcon-1024.png"
+      usesAppleSignIn: true,
+      icon: "./assets/icons/AppIcon-1024.png",
     },
     android: {
       ...baseConfig.android,
-      package: "com.zook.app"
+      package: "com.zook.app",
     },
     extra: {
       ...(baseConfig.extra ?? {}),
@@ -229,24 +235,27 @@ export default (): ExpoConfig => {
       appScheme: "zook",
       appVersion,
       runtimeVersion,
+      googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || "",
+      googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim() || "",
+      googleAndroidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID?.trim() || "",
       offlineDemo: apiMode === "offline-demo",
       easBuildProfile: process.env.EAS_BUILD_PROFILE ?? "local",
       pushEnvironment: resolvePushEnvironment(releaseProfile),
       ...(expoProjectId ? { expoProjectId } : {}),
       eas: {
         ...((baseConfig.extra?.eas as Record<string, unknown> | undefined) ?? {}),
-        ...(expoProjectId ? { projectId: expoProjectId } : {})
+        ...(expoProjectId ? { projectId: expoProjectId } : {}),
       },
       mobileApiBaseUrl: resolveUrl(
         process.env.MOBILE_API_BASE_URL ?? process.env.EXPO_PUBLIC_API_BASE_URL,
         releaseProfile,
-        apiBaseUrlByProfile
+        apiBaseUrlByProfile,
       ),
       webUrl: resolveUrl(
         process.env.EXPO_PUBLIC_WEB_URL ?? process.env.NEXT_PUBLIC_WEB_URL,
         releaseProfile,
-        webUrlByProfile
-      )
-    }
+        webUrlByProfile,
+      ),
+    },
   };
 };

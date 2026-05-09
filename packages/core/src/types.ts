@@ -241,6 +241,7 @@ export interface AuthSessionUser {
   name: string;
   privateHandle?: string;
   phone?: string;
+  dateOfBirth?: string | Date | null;
   profilePhotoUrl?: string;
   isMinor: boolean;
   guardianPending: boolean;

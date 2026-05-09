@@ -1,5 +1,4 @@
-import { spawnSync } from "node:child_process";
-import { loadLocalEnvironment, rootDir } from "./shared";
+import { loadLocalEnvironment, rootDir, spawnPnpm } from "./shared";
 
 loadLocalEnvironment();
 
@@ -10,10 +9,10 @@ if (prismaArgs.length === 0) {
   process.exit(1);
 }
 
-const result = spawnSync("pnpm", ["--filter", "@zook/db", "exec", "prisma", ...prismaArgs], {
+const result = spawnPnpm(["--filter", "@zook/db", "exec", "prisma", ...prismaArgs], {
   cwd: rootDir,
   env: process.env,
-  stdio: "inherit"
+  stdio: "inherit",
 });
 
 if (result.error) {

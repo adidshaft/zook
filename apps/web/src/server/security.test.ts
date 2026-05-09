@@ -26,7 +26,7 @@ function createMutationRequest(input: {
       },
     },
     nextUrl: {
-      origin: input.nextOrigin ?? "https://zook.app",
+      origin: input.nextOrigin ?? "https://zookfit.in",
     },
   };
 }
@@ -36,7 +36,7 @@ describe("mutation safety", () => {
     expect(() =>
       assertSafeMutationRequest(
         createMutationRequest({
-          origin: "https://zook.app",
+          origin: "https://zookfit.in",
           fetchSite: "same-origin",
           hasCookieSession: true,
         }) as never,

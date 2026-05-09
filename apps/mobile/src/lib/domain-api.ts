@@ -90,10 +90,10 @@ export const authClient = {
       body: { identifier, code },
     });
   },
-  signInWithApple(identityToken: string) {
+  signInWithApple(identityToken: string, fullName?: string) {
     return mobileApiFetch<SsoCallbackResult>("/auth/apple/callback", {
       method: "POST",
-      body: { identityToken },
+      body: { identityToken, ...(fullName ? { fullName } : {}) },
     });
   },
   signInWithGoogle(idToken: string) {

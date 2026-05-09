@@ -183,9 +183,9 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
       <p>© 2026 Zook. India-first gym operations.</p>
       <div>
         <a href="${appHref("/status")}">Status</a>
-        <a href="mailto:legal@zook.app?subject=Privacy%20policy">Privacy</a>
-        <a href="mailto:legal@zook.app?subject=Terms%20of%20service">Terms</a>
-        <a href="mailto:hello@zook.app">Contact</a>
+        <a href="https://zookfit.in/privacy">Privacy</a>
+        <a href="https://zookfit.in/terms">Terms</a>
+        <a href="mailto:support@zookfit.in">Contact</a>
       </div>
     </footer>
   </div>

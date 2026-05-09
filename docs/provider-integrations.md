@@ -17,6 +17,7 @@ Factory accessors:
 - `getAIProvider()`
 - `getStorageProvider()`
 - `getPushProvider()`
+- `getSmsProvider()`
 
 Diagnostics accessors:
 
@@ -26,6 +27,7 @@ Diagnostics accessors:
 - `getAIProviderDiagnostics()`
 - `getStorageProviderDiagnostics()`
 - `getPushProviderDiagnostics()`
+- `getSmsProviderDiagnostics()`
 - `getProviderRegistryDiagnostics()`
 
 ## Configured-State Rules
@@ -67,6 +69,28 @@ Current behavior:
 - `mock`: supported and default
 - `resend`: supported when `RESEND_API_KEY` is present
 - `smtp`: supported when `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM` or `EMAIL_FROM` are present
+
+## SMS
+
+Selector env:
+
+- `SMS_PROVIDER=mock|webhook|msg91|disabled`
+
+Known envs:
+
+- `SMS_WEBHOOK_URL`
+- `SMS_WEBHOOK_SECRET`
+- `MSG91_AUTH_KEY`
+- `MSG91_TEMPLATE_ID`
+- `MSG91_SENDER_ID`
+- `MSG91_OTP_EXPIRY_MINUTES`
+
+Current behavior:
+
+- `mock`: supported and default outside production.
+- `webhook`: supported when `SMS_WEBHOOK_URL` is present; `SMS_WEBHOOK_SECRET` is sent as a bearer token when configured.
+- `msg91`: supported when `MSG91_AUTH_KEY` and `MSG91_TEMPLATE_ID` are present. Zook generates and verifies OTP codes internally, then uses MSG91 only to deliver the code.
+- `disabled`: supported as an explicit unavailable state and the default in production if no SMS provider is selected.
 
 ## Payments
 
