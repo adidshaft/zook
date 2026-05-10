@@ -16,6 +16,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import {
   BrandMark,
   GlassCard,
@@ -394,7 +395,10 @@ export default function Login() {
           contentContainerStyle: styles.content,
         }}
       >
-        <View style={styles.heroSection}>
+        <Animated.View 
+          entering={FadeInDown.delay(100).duration(600)} 
+          style={styles.heroSection}
+        >
           <View style={styles.heroGlow} />
           <Text style={styles.heroEyebrow}>{t("auth.heroEyebrow")}</Text>
           <View style={styles.logoRow}>
@@ -402,16 +406,19 @@ export default function Login() {
             <Text style={[styles.heroTitle, { fontSize: heroFontSize }]}>Zook</Text>
           </View>
           <Text style={styles.heroBody}>{t("auth.heroBody")}</Text>
-        </View>
+        </Animated.View>
 
-        <GlassCard contentStyle={styles.formContent}>
+        <Animated.View entering={FadeInDown.delay(250).duration(600)}>
+          <GlassCard contentStyle={styles.formContent}>
           <View style={styles.formHeader}>
             <Text style={styles.formTitle}>
               {stage === "identifier" ? t("auth.signIn") : t("auth.verifyCode")}
             </Text>
             <Text style={styles.formSubtitle}>
               {stage === "identifier"
-                ? "Use your mobile number. Email can be added later."
+                ? method === "phone"
+                  ? "Enter your registered mobile number."
+                  : "Enter your registered email address."
                 : t("auth.otpSubtitle")}
             </Text>
           </View>
@@ -567,6 +574,7 @@ export default function Login() {
             </>
           )}
         </GlassCard>
+        </Animated.View>
 
         {/* Local test OTP banner - only visible in __DEV__ */}
         {devOtp ? (

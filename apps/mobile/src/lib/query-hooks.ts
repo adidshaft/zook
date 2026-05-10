@@ -45,6 +45,18 @@ export interface MemberHomeData {
   assignedPlans: number;
   streakDays?: number;
   todayPlanName?: string | null;
+  todayPlanTrainer?: {
+    id?: string;
+    name: string;
+    email?: string | null;
+    profilePhotoUrl?: string | null;
+  } | null;
+  assignedTrainer?: {
+    id?: string;
+    name: string;
+    email?: string | null;
+    profilePhotoUrl?: string | null;
+  } | null;
   nextCheckInEstimate?: string | null;
 }
 
@@ -77,6 +89,18 @@ export interface MemberEngagementData {
   badges: MemberBadgeRecord[];
   latestBadge?: MemberBadgeRecord | null;
   nextMilestone?: MemberNextMilestone | null;
+}
+
+export interface MemberDashboardData {
+  home: MemberHomeData;
+  engagement: MemberEngagementData;
+  referral: {
+    referralCodes: ReferralCodeRecord[];
+    rewards: ReferralRewardRecord[];
+    links?: { web?: string; short?: string; app?: string };
+    policy?: Record<string, unknown> | null;
+  };
+  preferences: NotificationPreferenceRecord[];
 }
 
 export type ActiveMembershipRecord = NonNullable<MemberHomeData["activeMembership"]> & {
@@ -602,6 +626,32 @@ export function useMemberHome() {
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
       }),
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function memberDashboardQueryOptions(input: {
+  activeOrgId?: string | null;
+  token?: string | null;
+}) {
+  return {
+    queryKey: ["me", "dashboard", input.activeOrgId ?? null],
+    queryFn: () =>
+      mobileApiFetch<MemberDashboardData>(
+        `/me/dashboard${queryString({ orgId: input.activeOrgId ?? undefined })}`,
+        {
+          token: input.token ?? undefined,
+          ...(input.activeOrgId ? { orgId: input.activeOrgId } : {}),
+        },
+      ),
+    staleTime: 30_000,
+  };
+}
+
+export function useMemberDashboard() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    ...memberDashboardQueryOptions({ activeOrgId, token }),
     enabled: status === "authenticated" && Boolean(token),
   });
 }

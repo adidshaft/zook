@@ -1,53 +1,40 @@
-import { Link, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import type { Href } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import Svg, { Circle } from "react-native-svg";
+import { RefreshControl, ScrollView, Share, StyleSheet } from "react-native";
 import { resolvePlanName } from "@zook/ui";
 import {
   BottomNav,
   ErrorState,
   GlassCard,
-  IconBubble,
   StickyActionBar,
-  Skeleton,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import {
+  ActivityCard,
+  FirstRunCard,
+  HomeActionStrip,
+  HomeHeader,
+  HomeSkeleton,
+  MemberStateHero,
+  ProfileReadyPrompt,
+  ReferralCard,
+  TodayPlanCard,
+  WorkoutLogCard,
+} from "@/components/home";
 import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
 import { syncSmartCheckInReminder } from "@/lib/check-in-reminders";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
-import {
-  useMemberHome,
-  useMyEngagement,
-  useMyNotificationPreferences,
-  useMyReferralCodes,
-} from "@/lib/query-hooks";
-import type { MemberBadgeRecord, MemberNextMilestone } from "@/lib/query-hooks";
+import { useMemberDashboard } from "@/lib/query-hooks";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
-
-function formatRenewalDate(value?: string | null) {
-  if (!value) return "Renewal date pending";
-  return `Renews ${new Date(value).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-  })}`;
-}
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
 
 function normalizeMediaUrl(value?: string | null) {
   const trimmed = value?.trim();
@@ -61,21 +48,20 @@ export default function Home() {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const { activeOrgId, session } = useAuth();
-  const homeQuery = useMemberHome();
-  const engagementQuery = useMyEngagement();
-  const referralQuery = useMyReferralCodes();
-  const notificationPreferencesQuery = useMyNotificationPreferences();
+  const dashboardQuery = useMemberDashboard();
   useAppFocusInvalidation([
+    ["me", "dashboard"],
     ["me", "home"],
     ["me", "engagement"],
     ["me", "membership"],
     ["me", "notifications"],
   ]);
-  const memberHome = homeQuery.data;
-  const engagement = engagementQuery.data;
+  const memberHome = dashboardQuery.data?.home;
+  const engagement = dashboardQuery.data?.engagement;
+  const referral = dashboardQuery.data?.referral;
   const notificationPreferences = useMemo(
-    () => mergeNotificationPreferences(notificationPreferencesQuery.data?.preferences, activeOrgId),
-    [activeOrgId, notificationPreferencesQuery.data?.preferences],
+    () => mergeNotificationPreferences(dashboardQuery.data?.preferences, activeOrgId),
+    [activeOrgId, dashboardQuery.data?.preferences],
   );
   const sessionOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
@@ -126,8 +112,8 @@ export default function Home() {
   const neverCheckedIn = hasMembership && (memberHome?.recentAttendance?.length ?? 0) === 0;
   const renewalImminent =
     hasMembership && (membershipExpired || (typeof daysLeft === "number" && daysLeft <= 7));
-  const loadingHome = homeQuery.isLoading && !memberHome;
-  const homeError = homeQuery.isError && !memberHome;
+  const loadingHome = dashboardQuery.isLoading && !memberHome;
+  const homeError = dashboardQuery.isError && !memberHome;
   const firstRunState =
     loadingHome || homeError
       ? null
@@ -143,6 +129,7 @@ export default function Home() {
   const onRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] }),
       queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
       queryClient.invalidateQueries({ queryKey: ["me", "engagement"] }),
       queryClient.invalidateQueries({ queryKey: ["me", "badges"] }),
@@ -187,10 +174,10 @@ export default function Home() {
   ]);
 
   async function shareReferral() {
-    const code = referralQuery.data?.referralCodes[0]?.code;
+    const code = referral?.referralCodes[0]?.code;
     if (!code) return;
     const webPath =
-      referralQuery.data?.links?.web ??
+      referral?.links?.web ??
       (sessionOrganization?.username ? `/join/${sessionOrganization.username}?ref=${code}` : "/");
     await Share.share({
       message: `Join my gym on Zook with referral code ${code}: ${toWebUrl(webPath)}`,
@@ -217,45 +204,13 @@ export default function Home() {
             />
           }
         >
-          <View style={styles.premiumHeader}>
-            <View style={styles.premiumGreetingBlock}>
-              <Text style={styles.premiumGreeting}>{getGreeting()},</Text>
-              <Text numberOfLines={1} style={styles.premiumName}>
-                {firstName}
-              </Text>
-            </View>
-            <Link href="/notifications" asChild>
-              <Pressable
-                style={styles.premiumBell}
-                accessibilityRole="button"
-                accessibilityLabel="Open notifications"
-              >
-                <Ionicons name="notifications-outline" size={27} color={colors.text} />
-                {unreadCount > 0 ? (
-                  <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadBadgeText}>
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </Text>
-                  </View>
-                ) : null}
-              </Pressable>
-            </Link>
-          </View>
-
-          <Link href={gymHref} asChild>
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel="Open gym details"
-              style={styles.premiumGymSelector}
-            >
-              <Ionicons name="business-outline" size={24} color={colors.text} />
-              <Text numberOfLines={1} style={styles.premiumGymText}>
-                {orgName}
-                {city ? ` · ${city}` : ""}
-              </Text>
-              <Ionicons name="chevron-down" size={19} color={colors.muted} />
-            </Pressable>
-          </Link>
+          <HomeHeader
+            firstName={firstName}
+            gymHref={gymHref}
+            orgName={orgName}
+            city={city}
+            unreadCount={unreadCount}
+          />
 
           {homeError ? (
             <GlassCard variant="danger" contentStyle={styles.stateCardContent}>
@@ -264,7 +219,7 @@ export default function Home() {
                 body="We could not refresh your membership, check-ins, or notifications. Your data may still be fine, but this screen needs a retry."
                 action={
                   <ZookButton
-                    onPress={() => void homeQuery.refetch()}
+                    onPress={() => void dashboardQuery.refetch()}
                     tone="secondary"
                     icon="refresh-outline"
                   >
@@ -285,10 +240,18 @@ export default function Home() {
 
           {hasMembership ? (
             <>
+              <HomeActionStrip
+                daysLeftLabel={daysLeftLabel}
+                expired={membershipExpired}
+                lastCheckIn={lastCheckIn}
+                planName={resolvePlanName(memberHome?.activePlan) ?? "Membership"}
+                streakDays={streakDays}
+              />
               <MemberStateHero
                 expired={membershipExpired}
                 daysLeftLabel={daysLeftLabel}
                 planName={resolvePlanName(memberHome?.activePlan) ?? "Membership"}
+                streakDays={streakDays}
                 visitLabel={remainingVisitsLabel}
                 renewalDate={memberHome?.activeMembership?.endsAt}
                 progressValue={
@@ -306,11 +269,16 @@ export default function Home() {
                     ? `${Math.max(0, visitLimit - remainingVisits)} of ${visitLimit} visits used`
                     : undefined
                 }
+                showActions={false}
                 showBillingAction={!renewalImminent}
               />
               <TodayPlanCard
                 planName={assignedPlan?.name ?? "No plan yet"}
-                trainerName="Your trainer"
+                trainerName={
+                  memberHome?.todayPlanTrainer?.name ??
+                  memberHome?.assignedTrainer?.name ??
+                  "Your trainer"
+                }
                 assigned={Boolean(assignedPlan)}
               />
               <ActivityCard
@@ -322,26 +290,13 @@ export default function Home() {
                 latestBadge={latestBadge}
                 nextMilestone={nextMilestone}
               />
-              <Link href="/tracking-entry" asChild>
-                <Pressable accessibilityRole="link" accessibilityLabel="Log today's workout">
-                  <GlassCard contentStyle={styles.secondaryActionContent}>
-                    <IconBubble icon="pulse-outline" tone="neutral" size={38} />
-                    <View style={styles.secondaryActionCopy}>
-                      <Text style={styles.secondaryActionTitle}>Log today's workout</Text>
-                      <Text numberOfLines={1} style={styles.mutedSmall}>
-                        Track sets, reps, and weights.
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-                  </GlassCard>
-                </Pressable>
-              </Link>
-              {referralQuery.data?.referralCodes[0] ? (
+              <WorkoutLogCard />
+              {referral?.referralCodes[0] ? (
                 <ReferralCard
-                  code={referralQuery.data.referralCodes[0].code}
-                  redemptions={referralQuery.data.referralCodes[0].redemptionCount ?? 0}
-                  maxUses={referralQuery.data.referralCodes[0].maxUses ?? null}
-                  rewardsCount={referralQuery.data.rewards?.length ?? 0}
+                  code={referral.referralCodes[0].code}
+                  redemptions={referral.referralCodes[0].redemptionCount ?? 0}
+                  maxUses={referral.referralCodes[0].maxUses ?? null}
+                  rewardsCount={referral.rewards?.length ?? 0}
                   onShare={() => void shareReferral()}
                 />
               ) : null}
@@ -358,391 +313,6 @@ export default function Home() {
         <BottomNav />
       </ZookScreen>
     </>
-  );
-}
-
-function ReferralCard({
-  code,
-  maxUses,
-  onShare,
-  redemptions,
-  rewardsCount,
-}: {
-  code: string;
-  maxUses?: number | null;
-  onShare: () => void;
-  redemptions: number;
-  rewardsCount: number;
-}) {
-  return (
-    <GlassCard variant="compact" contentStyle={styles.referralContent}>
-      <IconBubble icon="gift-outline" tone="amber" size={38} />
-      <View style={styles.referralCopy}>
-        <Text style={styles.secondaryActionTitle}>Refer a friend</Text>
-        <Text numberOfLines={1} style={styles.mutedSmall}>
-          {redemptions}/{maxUses ?? "unlimited"} used · {rewardsCount} reward
-          {rewardsCount === 1 ? "" : "s"}
-        </Text>
-        <Text selectable style={styles.referralCode}>
-          {code}
-        </Text>
-      </View>
-      <Pressable
-        onPress={onShare}
-        accessibilityRole="button"
-        accessibilityLabel="Share referral code"
-        style={styles.referralShareButton}
-      >
-        <Ionicons name="share-outline" size={18} color={colors.bg} />
-      </Pressable>
-    </GlassCard>
-  );
-}
-
-function safeIconName(icon?: string | null): keyof typeof Ionicons.glyphMap {
-  return icon && icon in Ionicons.glyphMap
-    ? (icon as keyof typeof Ionicons.glyphMap)
-    : "ribbon-outline";
-}
-
-function TodayPlanCard({
-  assigned,
-  planName,
-  trainerName,
-}: {
-  assigned: boolean;
-  planName: string;
-  trainerName: string;
-}) {
-  return (
-    <Link href="/plans" asChild>
-      <Pressable accessibilityRole="link" accessibilityLabel="Open today's plan">
-        <GlassCard variant="compact" contentStyle={styles.todayPlanContent}>
-          <View style={styles.todayPlanHeader}>
-            <Ionicons name="clipboard-outline" size={22} color={colors.lime} />
-            <Text style={styles.todayPlanEyebrow}>Today’s Plan</Text>
-          </View>
-          <View style={styles.todayPlanBody}>
-            <View style={styles.todayPlanCopy}>
-              <Text numberOfLines={1} style={styles.todayPlanTitle}>
-                {planName}
-              </Text>
-              <Text numberOfLines={1} style={styles.todayPlanMeta}>
-                {assigned ? `6 exercises · ${trainerName}` : "Trainer will assign one"}
-              </Text>
-            </View>
-            <View style={styles.assignedChip}>
-              <Ionicons name={assigned ? "checkmark-circle-outline" : "time-outline"} size={15} color={colors.lime} />
-              <Text style={styles.assignedChipText}>{assigned ? "Assigned" : "Open"}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color={colors.muted} />
-          </View>
-        </GlassCard>
-      </Pressable>
-    </Link>
-  );
-}
-
-function ActivityCard({
-  latestBadge,
-  lastCheckIn,
-  nextMilestone,
-  streakDays,
-  totalCheckIns,
-}: {
-  latestBadge?: MemberBadgeRecord | null;
-  lastCheckIn: string;
-  nextMilestone?: MemberNextMilestone | null;
-  streakDays: number;
-  totalCheckIns: number;
-}) {
-  const weeklyTarget = nextMilestone?.metric === "totalCheckIns" ? nextMilestone.remaining : 5;
-  const weeklyGoalLabel = `${Math.min(totalCheckIns, 5)}/${Math.max(weeklyTarget, 3)}`;
-  return (
-    <GlassCard variant="compact" contentStyle={styles.activityContent}>
-      <View style={styles.activityTitleRow}>
-        <Ionicons name="pulse-outline" size={21} color={colors.lime} />
-        <Text style={styles.activityTitle}>Activity</Text>
-      </View>
-      <View style={styles.activityStats}>
-        <View style={styles.activityStat}>
-          <Ionicons name="flame-outline" size={27} color={colors.lime} />
-          <Text style={styles.activityStatLabel}>Streak</Text>
-          <Text style={styles.activityStatValue}>{streakDays}</Text>
-          <Text style={styles.activityStatMeta}>days</Text>
-        </View>
-        <View style={styles.activityDivider} />
-        <View style={styles.activityStat}>
-          <Ionicons name="time-outline" size={27} color={colors.lime} />
-          <Text style={styles.activityStatLabel}>Last check-in</Text>
-          <Text numberOfLines={1} style={styles.activityStatValueSmall}>{lastCheckIn}</Text>
-          <Text style={styles.activityStatMeta}>{latestBadge?.name ?? "Keep moving"}</Text>
-        </View>
-        <View style={styles.activityDivider} />
-        <View style={styles.activityStat}>
-          <Ionicons name={safeIconName(nextMilestone?.icon)} size={27} color={colors.lime} />
-          <Text style={styles.activityStatLabel}>Weekly goal</Text>
-          <Text style={styles.activityStatValue}>{weeklyGoalLabel}</Text>
-          <Text style={styles.activityStatMeta}>check-ins</Text>
-        </View>
-      </View>
-    </GlassCard>
-  );
-}
-
-function ProfileReadyPrompt({ needsPhoto }: { needsPhoto: boolean }) {
-  return (
-    <Link href="/profile" asChild>
-      <Pressable accessibilityRole="link" accessibilityLabel="Complete profile for check-in">
-        <View style={styles.profilePrompt}>
-          <View style={styles.profilePromptIcon}>
-            <Ionicons
-              name={needsPhoto ? "camera-outline" : "call-outline"}
-              size={18}
-              color={colors.bg}
-            />
-          </View>
-          <View style={styles.profilePromptCopy}>
-            <Text style={styles.profilePromptTitle}>Finish your check-in profile</Text>
-            <Text numberOfLines={2} style={styles.profilePromptBody}>
-              {needsPhoto
-                ? "Add your photo so reception can verify you at entry."
-                : "Add your mobile number so the gym can reach you when needed."}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-        </View>
-      </Pressable>
-    </Link>
-  );
-}
-
-function MemberStateHero({
-  daysLeftLabel,
-  expired,
-  planName,
-  progressValue,
-  visitProgressLabel,
-  renewalDate,
-  showBillingAction,
-  visitLabel,
-}: {
-  daysLeftLabel: string;
-  expired: boolean;
-  planName: string;
-  progressValue: number;
-  visitProgressLabel?: string;
-  renewalDate?: string | null;
-  showBillingAction: boolean;
-  visitLabel: string;
-}) {
-  const mainLabel = expired ? "Membership needs renewal" : daysLeftLabel;
-  const splitLabel = mainLabel.match(/^(\d+)\s+(.+)$/);
-  const visitCount = visitLabel.match(/^(\d+)/)?.[1] ?? "—";
-  const progress = Math.max(0, Math.min(1, progressValue));
-  const [ringProgress, setRingProgress] = useState(0);
-  const progressPct = `${Math.round(progress * 100)}%`;
-  const ringSize = 104;
-  const strokeWidth = 9;
-  const radius = (ringSize - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-
-  useEffect(() => {
-    let frameId = 0;
-    const startedAt = Date.now();
-    const start = ringProgress;
-    const delta = progress - start;
-
-    function tick() {
-      const elapsed = Date.now() - startedAt;
-      const t = Math.min(1, elapsed / 600);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setRingProgress(start + delta * eased);
-      if (t < 1) {
-        frameId = requestAnimationFrame(tick);
-      }
-    }
-
-    frameId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameId);
-  }, [progress]);
-
-  return (
-    <GlassCard
-      variant={expired ? "warning" : "selected"}
-      glow={!expired}
-      contentStyle={styles.premiumMemberCard}
-    >
-      <View style={styles.premiumMemberTopRow}>
-        <View style={styles.premiumMemberCopy}>
-          <View style={styles.premiumMemberEyebrowRow}>
-            <Ionicons name="person-outline" size={21} color={colors.lime} />
-            <Text style={styles.premiumMemberEyebrow}>
-              {expired ? "Renewal needed" : "Active Membership"}
-            </Text>
-          </View>
-          <Text numberOfLines={1} style={styles.premiumPlanName}>
-            {planName}
-          </Text>
-          <View style={styles.daysLeftRow}>
-            {splitLabel ? (
-              <>
-                <Text style={[styles.daysLeftText, expired ? styles.heroNumberUrgent : null]}>
-                  {splitLabel[1]} {splitLabel[2]}
-                </Text>
-                <Ionicons name="chevron-forward" size={18} color={expired ? colors.amber : colors.lime} />
-              </>
-            ) : (
-              <Text style={[styles.daysLeftText, expired ? styles.heroNumberUrgent : null]}>
-                {mainLabel}
-              </Text>
-            )}
-          </View>
-          <View style={styles.renewalRow}>
-            <Ionicons name="calendar-outline" size={15} color={colors.muted} />
-            <Text numberOfLines={1} style={styles.renewalText}>
-              {formatRenewalDate(renewalDate)}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.visitRingOuter}>
-          <Svg width={ringSize} height={ringSize} style={styles.visitRingSvg}>
-            <Circle
-              cx={ringSize / 2}
-              cy={ringSize / 2}
-              r={radius}
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth={strokeWidth}
-              fill="none"
-            />
-            <Circle
-              cx={ringSize / 2}
-              cy={ringSize / 2}
-              r={radius}
-              stroke={expired ? colors.amber : colors.lime}
-              strokeWidth={strokeWidth}
-              fill="none"
-              strokeLinecap="round"
-              strokeDasharray={`${circumference * ringProgress} ${circumference}`}
-              transform={`rotate(-90 ${ringSize / 2} ${ringSize / 2})`}
-              opacity={expired ? 0.65 : 1}
-            />
-          </Svg>
-          <View style={styles.visitRingArc}>
-            <Text style={styles.visitRingValue}>{visitCount}</Text>
-            <Text style={styles.visitRingLabel}>visits</Text>
-            <Text style={styles.visitRingLabel}>remaining</Text>
-          </View>
-          <Text style={styles.visitRingProgress}>{progressPct}</Text>
-          {visitProgressLabel ? (
-            <Text numberOfLines={1} style={styles.visitRingMeta}>
-              {visitProgressLabel}
-            </Text>
-          ) : null}
-        </View>
-      </View>
-      <View style={styles.memberEncouragement}>
-        <Ionicons name="star-outline" size={17} color={colors.lime} />
-        <Text style={styles.memberEncouragementText}>Keep going, you’re doing great!</Text>
-      </View>
-      <View style={styles.heroActions}>
-        {expired ? (
-          <ZookButton href="/membership" icon="refresh-outline" style={styles.heroPrimaryAction}>
-            Renew
-          </ZookButton>
-        ) : (
-          <ZookButton href="/scan" icon="qr-code-outline" style={styles.heroPrimaryAction}>
-            Scan QR
-          </ZookButton>
-        )}
-        {showBillingAction ? (
-          <ZookButton
-            href="/tracking-entry"
-            tone="secondary"
-            icon="play-outline"
-            style={styles.heroSecondaryAction}
-            accessibilityLabel="Open plan"
-          >
-            Start Workout
-          </ZookButton>
-        ) : null}
-      </View>
-    </GlassCard>
-  );
-}
-
-function HomeSkeleton() {
-  return (
-    <View style={styles.skeletonStack}>
-      <GlassCard variant="compact" contentStyle={styles.skeletonHero}>
-        <Skeleton width={46} height={46} borderRadius={23} />
-        <View style={styles.skeletonCopy}>
-          <Skeleton width="58%" height={18} borderRadius={9} />
-          <Skeleton width="82%" height={13} borderRadius={7} />
-        </View>
-        <Skeleton width={58} height={34} borderRadius={17} />
-      </GlassCard>
-      <GlassCard variant="compact" contentStyle={styles.skeletonMembership}>
-        <Skeleton width="45%" height={14} borderRadius={7} />
-        <Skeleton width="72%" height={24} borderRadius={12} />
-        <Skeleton width="36%" height={14} borderRadius={7} />
-      </GlassCard>
-      <GlassCard variant="compact" contentStyle={styles.skeletonMembership}>
-        <Skeleton width="34%" height={14} borderRadius={7} />
-        <Skeleton width="86%" height={18} borderRadius={9} />
-        <Skeleton width="66%" height={14} borderRadius={7} />
-      </GlassCard>
-    </View>
-  );
-}
-
-function FirstRunCard({
-  state,
-  gymUsername,
-}: {
-  state: "NO_GYM" | "NO_MEMBERSHIP" | "NEVER_CHECKED_IN";
-  gymUsername?: string | null;
-}) {
-  const copy = {
-    NO_GYM: {
-      icon: "search-outline" as const,
-      title: "No gym yet",
-      body: "Browse gyms and join one to get started.",
-      cta: "Find gyms",
-      href: "/find-gyms" as Href,
-    },
-    NO_MEMBERSHIP: {
-      icon: "card-outline" as const,
-      title: "No active membership",
-      body: "Choose a plan and activate your membership.",
-      cta: "View plans",
-      href: (gymUsername ? `/gym/${gymUsername}` : "/membership") as Href,
-    },
-    NEVER_CHECKED_IN: {
-      icon: "qr-code-outline" as const,
-      title: "Ready to check in?",
-      body: "Scan the gym QR to start your first session.",
-      cta: "Open scanner",
-      href: "/scan" as Href,
-    },
-  }[state];
-
-  return (
-    <Link href={copy.href} asChild>
-      <Pressable accessibilityRole="link" accessibilityLabel={copy.cta}>
-        <GlassCard variant="compact" contentStyle={styles.firstRunContent}>
-          <IconBubble icon={copy.icon} tone="lime" size={46} />
-          <View style={styles.firstRunCopy}>
-            <Text style={styles.firstRunTitle}>{copy.title}</Text>
-            <Text style={styles.mutedBody}>{copy.body}</Text>
-          </View>
-          <View style={styles.checkInCta}>
-            <Text style={styles.checkInCtaText}>{copy.cta}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.bg} />
-          </View>
-        </GlassCard>
-      </Pressable>
-    </Link>
   );
 }
 

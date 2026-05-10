@@ -29,6 +29,9 @@ type BottomSheetModalProps = {
   bottomInset?: number;
   enablePanDownToClose?: boolean;
   backdropComponent?: (props: BottomSheetBackdropProps) => ReactNode;
+  keyboardBehavior?: "extend" | "fillParent" | "interactive";
+  keyboardBlurBehavior?: "none" | "restore";
+  maxDynamicContentSize?: number;
   snapPoints?: Array<number | string>;
 };
 
@@ -41,7 +44,7 @@ export const BottomSheetScrollView = ScrollView;
 
 export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalProps>(
   function ExpoSafeBottomSheetModal(
-    { children, onDismiss, backgroundStyle, handleIndicatorStyle },
+    { children, onDismiss, backgroundStyle, handleIndicatorStyle, maxDynamicContentSize },
     ref,
   ) {
     const [visible, setVisible] = useState(false);
@@ -66,7 +69,13 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
       >
         <View style={styles.root}>
           <Pressable accessibilityRole="button" style={styles.backdrop} onPress={close} />
-          <View style={[styles.sheet, backgroundStyle]}>
+          <View
+            style={[
+              styles.sheet,
+              maxDynamicContentSize ? { maxHeight: maxDynamicContentSize } : null,
+              backgroundStyle,
+            ]}
+          >
             <View style={[styles.handle, handleIndicatorStyle]} />
             {children}
           </View>

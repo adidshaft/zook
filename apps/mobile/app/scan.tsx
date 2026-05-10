@@ -18,6 +18,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
@@ -34,7 +35,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { attendanceApi } from "@/lib/domain-api";
 import { usePushNotifications } from "@/lib/push-notifications";
-import { useMemberHome } from "@/lib/query-hooks";
+import { useMemberHome, type MemberDashboardData, type MemberHomeData } from "@/lib/query-hooks";
 import { getMobileAppEnv } from "@/lib/runtime-mode";
 import {
   enqueueAttendanceScan,
@@ -77,6 +78,27 @@ function CameraActiveBottomNavHider() {
   return null;
 }
 
+function AnimatedLaser() {
+  const translateY = useSharedValue(-120);
+
+  useEffect(() => {
+    translateY.value = withRepeat(
+      withSequence(
+        withTiming(120, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(-120, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+  }, [translateY]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return <Animated.View style={[styles.scanLine, animatedStyle]} />;
+}
+
 export default function Scan() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -111,17 +133,6 @@ export default function Scan() {
     void getQueuedAttendanceScans().then((queue) => setQueuedScanCount(queue.length));
   }, []);
 
-  useEffect(() => {
-    if (scanMode !== "scan" || scanState !== "failed" || !errorMessage) {
-      return undefined;
-    }
-    const timer = setTimeout(() => {
-      completedRef.current = false;
-      setScanState("idle");
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [errorMessage, scanMode, scanState]);
-
   function scanReason(result: ScanResult) {
     if (Array.isArray(result.suspiciousFlags) && result.suspiciousFlags.length) {
       return result.suspiciousFlags.join(", ");
@@ -146,6 +157,7 @@ export default function Scan() {
   }
 
   function attendanceResultHref(result: ScanResult, status: string): AttendanceResultHref {
+    applyAcceptedAttendance(result, status);
     queryClient.setQueryData(["me", "attendance", result.attendance.id], {
       attendance: {
         ...result.attendance,
@@ -160,6 +172,41 @@ export default function Scan() {
         attendanceRecordId: result.attendance.id,
       },
     };
+  }
+
+  function applyAcceptedAttendance(result: ScanResult, status: string) {
+    if (!result.attendance.checkedInAt) {
+      return;
+    }
+    const recentAttendance: MemberHomeData["recentAttendance"][number] = {
+      id: result.attendance.id,
+      checkedInAt: result.attendance.checkedInAt,
+      status,
+      source: "MOBILE",
+    };
+    const mergeHome = (home?: MemberHomeData) => {
+      if (!home) {
+        return home;
+      }
+      const existing = home.recentAttendance.filter(
+        (attendance) => attendance.id !== recentAttendance.id,
+      );
+      return {
+        ...home,
+        recentAttendance: [recentAttendance, ...existing].slice(0, 10),
+        streakDays: status === "APPROVED" ? Math.max(home.streakDays ?? 0, 1) : home.streakDays,
+      };
+    };
+    queryClient.setQueryData<MemberHomeData>(["me", "home", activeOrgId], mergeHome);
+    queryClient.setQueryData<MemberDashboardData>(
+      ["me", "dashboard", activeOrgId ?? null],
+      (current) => {
+        if (!current) {
+          return current;
+        }
+        return { ...current, home: mergeHome(current.home) ?? current.home };
+      },
+    );
   }
 
   function navigateToAttendance(href: AttendanceResultHref) {
@@ -236,6 +283,7 @@ export default function Scan() {
       if (synced > 0) {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
+          queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] }),
           queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
         ]);
         showToast({
@@ -302,6 +350,7 @@ export default function Scan() {
           : Haptics.NotificationFeedbackType.Success,
       );
       void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
+      void queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       const nextHref = attendanceResultHref(result, status);
       if (!failed && await maybeShowPushPrompt(nextHref)) {
@@ -314,10 +363,12 @@ export default function Scan() {
         const nextQueue = await enqueueAttendanceScan({ payload, kind });
         setQueuedScanCount(nextQueue.length);
         setScanState("failed");
-        setErrorMessage("No connection. Your check-in was saved and will retry automatically.");
+        setErrorMessage(
+          "No connection. Your scan is saved to retry, but entry is not confirmed yet.",
+        );
         showToast({
-          title: "Check-in saved",
-          message: "Zook will retry when the phone is online.",
+          title: "Scan saved for retry",
+          message: "Entry is not confirmed until the server accepts it.",
           tone: "amber",
           haptic: "warning",
         });
@@ -361,6 +412,7 @@ export default function Scan() {
           : Haptics.NotificationFeedbackType.Success,
       );
       void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
+      void queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       navigateToAttendance(attendanceResultHref(result, status));
     } catch (error) {
@@ -498,8 +550,8 @@ export default function Scan() {
                   </View>
                 )}
                 <View pointerEvents="none" style={styles.scannerOverlay}>
-                  <ScannerFrame tone={scanState === "failed" ? "red" : "lime"}>
-                    <View style={styles.scanLine} />
+                  <ScannerFrame size={280} tone={scanState === "failed" ? "red" : "lime"}>
+                    <AnimatedLaser />
                   </ScannerFrame>
                 </View>
                 <View style={styles.cameraBadge}>
@@ -592,7 +644,7 @@ export default function Scan() {
           )}
 
           <GlassCard variant="compact" contentStyle={styles.validationContent}>
-            {["Server validation", "Branch check", "Membership check"].map((item) => (
+            {["Ready to scan", "Secure QR", "Desk fallback"].map((item) => (
               <View key={item} style={styles.validationItem}>
                 <Ionicons name="checkmark-circle-outline" size={15} color={colors.lime} />
                 <Text style={styles.validationText}>{item}</Text>
@@ -628,7 +680,8 @@ export default function Scan() {
               <View style={styles.errorRow}>
                 <Ionicons name="cloud-upload-outline" size={18} color={colors.amber} />
                 <Text style={styles.errorText}>
-                  {queuedScanCount} saved check-in{queuedScanCount === 1 ? "" : "s"} waiting to sync.
+                  {queuedScanCount} scan{queuedScanCount === 1 ? "" : "s"} waiting for server
+                  confirmation.
                 </Text>
               </View>
               <ZookButton

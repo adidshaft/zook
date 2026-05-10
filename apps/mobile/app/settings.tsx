@@ -180,8 +180,8 @@ export default function Settings() {
           }}
         >
           <MobileHeader
-            title={t("settings.profileTitle")}
-            subtitle={t("settings.profileSubtitle")}
+            title="Settings"
+            subtitle="Notifications, language, privacy, and support"
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
@@ -367,12 +367,16 @@ export default function Settings() {
             </GlassCard>
           </CollapsibleSection>
 
-          <PrimaryButton onPress={confirmSignOut} tone="danger" style={styles.logoutButton}>
-            {t("settings.logout")}
-          </PrimaryButton>
-
+          <Pressable
+            onPress={confirmSignOut}
+            accessibilityRole="button"
+            accessibilityLabel={t("settings.logout")}
+            style={({ pressed }) => [styles.logoutLink, pressed ? styles.logoutLinkPressed : null]}
+          >
+            <Text style={styles.logoutLinkText}>{t("settings.logout")}</Text>
+          </Pressable>
         </KeyboardAwareScreen>
-        <BottomNav />
+        <BottomNav selectedPath="/profile" />
       </ZookScreen>
     </>
   );
@@ -446,8 +450,18 @@ const styles = StyleSheet.create({
   actionHalf: {
     flex: 1,
   },
-  logoutButton: {
-    marginTop: spacing.xl,
+  logoutLink: {
+    minHeight: 48,
+    marginTop: spacing.xxl,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoutLinkPressed: {
+    opacity: 0.72,
+  },
+  logoutLinkText: {
+    color: colors.red,
+    ...typography.caption,
   },
   statusText: {
     color: colors.lime,

@@ -28,6 +28,7 @@ import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { checkRouteAccess, requiredRolesForPath, routeForRole } from "@/lib/route-guards";
 import { initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
+import { memberDashboardQueryOptions } from "@/lib/query-hooks";
 import { colors, layout } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -111,6 +112,7 @@ function isPaymentReturnDeepLink(url: string) {
 
 function LayoutContent() {
   const {
+    activeOrgId,
     activeRole,
     clearExpiredSession,
     defaultRoute,
@@ -119,9 +121,11 @@ function LayoutContent() {
     logout,
     offlineBanner,
     proactiveLogin,
+    refresh,
     session,
     setActiveRole,
     status,
+    token,
   } = useAuth();
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -140,6 +144,10 @@ function LayoutContent() {
   useEffect(() => {
     return setApiAuthHandlers({
       onExpired: async () => {
+        const nextToken = await refresh().catch(() => undefined);
+        if (nextToken) {
+          return nextToken;
+        }
         await clearExpiredSession();
         queryClient.clear();
         showToast({
@@ -160,7 +168,7 @@ function LayoutContent() {
         }
       },
     });
-  }, [clearExpiredSession, queryClient, router]);
+  }, [clearExpiredSession, queryClient, refresh, router]);
 
   useEffect(() => {
     const handleUrl = (url: string | null) => {
@@ -170,6 +178,7 @@ function LayoutContent() {
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "membership"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
         queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
@@ -184,6 +193,13 @@ function LayoutContent() {
     void Linking.getInitialURL().then(handleUrl);
     return () => subscription.remove();
   }, [queryClient, router]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !token) {
+      return;
+    }
+    void queryClient.prefetchQuery(memberDashboardQueryOptions({ activeOrgId, token }));
+  }, [activeOrgId, queryClient, status, token]);
 
   useEffect(() => {
     if (status !== "authenticated" || !proactiveLogin) {
@@ -363,9 +379,9 @@ function LayoutContent() {
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
         <Stack.Screen name="plans/index" options={{ animation: "none" }} />
-        <Stack.Screen name="more" options={{ animation: "none" }} />
         <Stack.Screen name="scan" options={{ animation: "none" }} />
         <Stack.Screen name="tracking" options={{ animation: "none" }} />
+        <Stack.Screen name="profile" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="membership" options={{ animation: "slide_from_right" }} />
@@ -424,7 +440,17 @@ function LayoutContent() {
 }
 
 export default function Layout() {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+            gcTime: 10 * 60_000,
+          },
+        },
+      }),
+  );
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,

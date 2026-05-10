@@ -20,14 +20,16 @@ import { applySessionLocalePreference } from "./i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const SESSION_STORAGE_KEY = "zook_session";
+const REFRESH_SESSION_STORAGE_KEY = "zook_refresh_session";
 const SESSION_EXPIRES_AT_STORAGE_KEY = "zook_session_expires_at";
+const REFRESH_SESSION_EXPIRES_AT_STORAGE_KEY = "zook_refresh_session_expires_at";
 const BIOMETRIC_ENABLED_STORAGE_KEY = "zook_biometric_enabled";
 const BIOMETRIC_PROMPTED_STORAGE_KEY = "zook_biometric_prompted";
 const ACTIVE_ORG_STORAGE_KEY = "zook_active_org";
 const ACTIVE_ROLE_STORAGE_KEY = "zook_active_role";
 const OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY = "zook_offline_demo_logged_out";
 const SESSION_FALLBACK_MS = 30 * 24 * 60 * 60 * 1000;
-const SESSION_PROACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000;
+const SESSION_PROACTIVE_WINDOW_MS = 60 * 1000;
 const ORG_ROLE_PRIORITY: Role[] = ["OWNER", "ADMIN", "RECEPTIONIST", "TRAINER", "MEMBER"];
 type LogoutCleanup = () => Promise<void> | void;
 let authQueryClient: QueryClient | undefined;
@@ -70,7 +72,7 @@ interface AuthContextValue {
   signInWithGoogle: (idToken: string) => Promise<void>;
   verifyOtp: (identifier: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<string | void>;
   clearExpiredSession: () => Promise<void>;
   setActiveOrgId: (orgId: string) => Promise<void>;
   setActiveRole: (role: Role) => Promise<void>;
@@ -193,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   >();
   const logoutCleanupsRef = useRef(new Set<LogoutCleanup>());
   const tokenRef = useRef<string | undefined>(undefined);
+  const refreshTokenRef = useRef<string | undefined>(undefined);
   const sessionRef = useRef<AuthSessionSummary | undefined>(undefined);
   const activeOrgIdRef = useRef<string | undefined>(undefined);
   const activeRoleRef = useRef<Role | undefined>(undefined);
@@ -244,7 +247,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback(async () => {
     await Promise.all([
       deleteStoredValue(SESSION_STORAGE_KEY),
+      deleteStoredValue(REFRESH_SESSION_STORAGE_KEY),
       deleteStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY),
+      deleteStoredValue(REFRESH_SESSION_EXPIRES_AT_STORAGE_KEY),
       deleteStoredValue(ACTIVE_ORG_STORAGE_KEY),
       deleteStoredValue(ACTIVE_ROLE_STORAGE_KEY),
     ]);
@@ -253,6 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setActiveOrgIdState(undefined);
     setActiveRoleState(undefined);
     tokenRef.current = undefined;
+    refreshTokenRef.current = undefined;
     sessionRef.current = undefined;
     activeOrgIdRef.current = undefined;
     activeRoleRef.current = undefined;
@@ -265,6 +271,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await clearSession();
     setError("Your session expired. Sign in again to continue.");
   }, [clearSession]);
+
+  const refreshAccessToken = useCallback(
+    async (refreshTokenValue = refreshTokenRef.current) => {
+      if (!refreshTokenValue) {
+        return undefined;
+      }
+      const result = await authClient.refresh(refreshTokenValue);
+      const expiresAt = normalizeSessionExpiresAt(result.expiresAt);
+      const nextRefreshToken = result.refreshToken ?? refreshTokenValue;
+      await Promise.all([
+        setStoredValue(SESSION_STORAGE_KEY, result.token),
+        setStoredValue(REFRESH_SESSION_STORAGE_KEY, nextRefreshToken),
+        setStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY, expiresAt),
+        result.refreshExpiresAt
+          ? setStoredValue(REFRESH_SESSION_EXPIRES_AT_STORAGE_KEY, result.refreshExpiresAt)
+          : Promise.resolve(),
+      ]);
+      refreshTokenRef.current = nextRefreshToken;
+      await hydrate(result.token, activeOrgIdRef.current, activeRoleRef.current);
+      return result.token;
+    },
+    [hydrate],
+  );
 
   const maybePromptForBiometric = useCallback(async () => {
     if ((await getStoredValue(BIOMETRIC_PROMPTED_STORAGE_KEY)) === "1") {
@@ -297,12 +326,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (Date.now() >= expiresAt - SESSION_PROACTIVE_WINDOW_MS) {
-      setProactiveLogin({
-        identifier: session?.user.email ?? session?.user.phone ?? undefined,
-        triggeredAt: Date.now(),
-      });
+      try {
+        await refreshAccessToken();
+      } catch {
+        setProactiveLogin({
+          identifier: session?.user.email ?? session?.user.phone ?? undefined,
+          triggeredAt: Date.now(),
+        });
+      }
     }
-  }, [session?.user.email, session?.user.phone, status, token]);
+  }, [refreshAccessToken, session?.user.email, session?.user.phone, status, token]);
 
   const refresh = useCallback(async () => {
     setStatus("loading");
@@ -348,13 +381,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const [storedToken, storedOrgId, storedRole] = await Promise.all([
+    const [storedToken, storedRefreshToken, storedOrgId, storedRole] = await Promise.all([
       getStoredValue(SESSION_STORAGE_KEY),
+      getStoredValue(REFRESH_SESSION_STORAGE_KEY),
       getStoredValue(ACTIVE_ORG_STORAGE_KEY),
       getStoredValue(ACTIVE_ROLE_STORAGE_KEY),
     ]);
 
     if (!storedToken) {
+      if (storedRefreshToken) {
+        try {
+          return await refreshAccessToken(storedRefreshToken);
+        } catch {
+          await clearSession();
+          return;
+        }
+      }
       setStatus("unauthenticated");
       setToken(undefined);
       setSession(undefined);
@@ -368,13 +410,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      refreshTokenRef.current = storedRefreshToken ?? undefined;
       await hydrate(
         storedToken,
         storedOrgId ?? undefined,
         (storedRole as Role | null) ?? undefined,
       );
+      return storedToken;
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
+        if (storedRefreshToken) {
+          try {
+            return await refreshAccessToken(storedRefreshToken);
+          } catch {
+            await clearSession();
+            return;
+          }
+        }
         await clearSession();
         return;
       }
@@ -383,6 +435,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActiveOrgIdState(storedOrgId ?? undefined);
       setActiveRoleState((storedRole as Role | null) ?? undefined);
       tokenRef.current = storedToken;
+      refreshTokenRef.current = storedRefreshToken ?? undefined;
       sessionRef.current = undefined;
       activeOrgIdRef.current = storedOrgId ?? undefined;
       activeRoleRef.current = (storedRole as Role | null) ?? undefined;
@@ -390,7 +443,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setOfflineMode(true);
       setOfflineBanner("Couldn't reach server - working offline");
     }
-  }, [clearSession, hydrate]);
+  }, [clearSession, hydrate, refreshAccessToken]);
 
   useEffect(() => {
     void refresh();
@@ -419,11 +472,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const normalizedCode = sanitizeOtpCode(code);
       const result = await authClient.verifyOtp(identifier, normalizedCode);
       const expiresAt = normalizeSessionExpiresAt(result.expiresAt);
+      const refreshTokenValue = result.refreshToken;
       await deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY);
       await Promise.all([
         setStoredValue(SESSION_STORAGE_KEY, result.token),
         setStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY, expiresAt),
+        refreshTokenValue
+          ? setStoredValue(REFRESH_SESSION_STORAGE_KEY, refreshTokenValue)
+          : Promise.resolve(),
+        result.refreshExpiresAt
+          ? setStoredValue(REFRESH_SESSION_EXPIRES_AT_STORAGE_KEY, result.refreshExpiresAt)
+          : Promise.resolve(),
       ]);
+      refreshTokenRef.current = refreshTokenValue;
       await hydrate(result.token);
       await maybePromptForBiometric();
     },
@@ -431,13 +492,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const completeTokenSignIn = useCallback(
-    async (tokenValue: string, expiresAtValue?: string | null) => {
+    async (
+      tokenValue: string,
+      expiresAtValue?: string | null,
+      refreshTokenValue?: string | null,
+      refreshExpiresAtValue?: string | null,
+    ) => {
       const expiresAt = normalizeSessionExpiresAt(expiresAtValue);
       await deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY);
       await Promise.all([
         setStoredValue(SESSION_STORAGE_KEY, tokenValue),
         setStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY, expiresAt),
+        refreshTokenValue
+          ? setStoredValue(REFRESH_SESSION_STORAGE_KEY, refreshTokenValue)
+          : Promise.resolve(),
+        refreshExpiresAtValue
+          ? setStoredValue(REFRESH_SESSION_EXPIRES_AT_STORAGE_KEY, refreshExpiresAtValue)
+          : Promise.resolve(),
       ]);
+      refreshTokenRef.current = refreshTokenValue ?? undefined;
       await hydrate(tokenValue, activeOrgId, activeRole);
       await maybePromptForBiometric();
     },
@@ -447,7 +520,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithApple = useCallback(
     async (identityToken: string, fullName?: string) => {
       const result = await authClient.signInWithApple(identityToken, fullName);
-      await completeTokenSignIn(result.token, result.expiresAt);
+      await completeTokenSignIn(
+        result.token,
+        result.expiresAt,
+        result.refreshToken,
+        result.refreshExpiresAt,
+      );
     },
     [completeTokenSignIn],
   );
@@ -455,7 +533,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(
     async (idToken: string) => {
       const result = await authClient.signInWithGoogle(idToken);
-      await completeTokenSignIn(result.token, result.expiresAt);
+      await completeTokenSignIn(
+        result.token,
+        result.expiresAt,
+        result.refreshToken,
+        result.refreshExpiresAt,
+      );
     },
     [completeTokenSignIn],
   );

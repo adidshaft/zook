@@ -98,7 +98,7 @@ export const typography = {
   caption: { fontSize: 11.5, fontFamily: "Inter_600SemiBold", lineHeight: 15 },
   small: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
   metric: { fontSize: 28, fontFamily: "Inter_700Bold", lineHeight: 32 },
-  navLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", lineHeight: 14 },
+  navLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", lineHeight: 15 },
   button: { fontSize: 13.5, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
 
   // Compatibility aliases used by existing screens.
@@ -116,7 +116,7 @@ export const typography = {
   eyebrow: {
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
-    letterSpacing: 1.2,
+    letterSpacing: 0,
     textTransform: "uppercase" as const,
   },
 };

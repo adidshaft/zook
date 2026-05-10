@@ -15,7 +15,9 @@ type OtpResult = {
 
 type VerifyOtpResult = {
   token: string;
+  refreshToken?: string;
   expiresAt: string;
+  refreshExpiresAt?: string;
   session?: AuthSessionSummary;
 };
 
@@ -106,6 +108,13 @@ export const authClient = {
     return mobileApiFetch<AuthSessionSummary>("/auth/me", {
       token: options.token,
       ...(options.orgId ? { orgId: options.orgId } : {}),
+    });
+  },
+  refresh(refreshToken: string) {
+    return mobileApiFetch<VerifyOtpResult>("/auth/refresh", {
+      method: "POST",
+      body: { refreshToken },
+      skipAuthRefresh: true,
     });
   },
   logout(token?: string) {
