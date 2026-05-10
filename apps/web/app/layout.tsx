@@ -3,7 +3,7 @@ import { QueryProvider } from "@/components/query-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_WEB_URL ?? "https://app.zook.kyokasuigetsu.xyz"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_WEB_URL ?? "https://zookfit.in"),
   title: {
     default: "Zook - Gym OS",
     template: "%s | Zook",

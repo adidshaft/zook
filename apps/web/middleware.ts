@@ -1,6 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const sessionCookieName = "zook_session";
+const canonicalHost = "zookfit.in";
+const canonicalRedirectHosts = new Set([
+  "app.zookfit.in",
+  "dashboard.zookfit.in",
+  "www.zookfit.in",
+  "app.zook.kyokasuigetsu.xyz",
+  "zook-gym-app.vercel.app",
+]);
 
 function originFromEnv(value: string | undefined) {
   if (!value?.trim()) {
@@ -65,6 +73,14 @@ function buildContentSecurityPolicy(nonce: string) {
 }
 
 export function middleware(request: NextRequest) {
+  const host = request.nextUrl.hostname.toLowerCase();
+  if (canonicalRedirectHosts.has(host)) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.protocol = "https:";
+    redirectUrl.hostname = canonicalHost;
+    return NextResponse.redirect(redirectUrl, 308);
+  }
+
   const nonce = btoa(crypto.randomUUID());
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
   const requestHeaders = new Headers(request.headers);

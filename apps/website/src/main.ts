@@ -1,6 +1,6 @@
 import "./style.css";
 
-const appUrl = import.meta.env.VITE_ZOOK_APP_URL ?? "https://app.zook.kyokasuigetsu.xyz";
+const appUrl = import.meta.env.VITE_ZOOK_APP_URL ?? "https://zookfit.in";
 const appHref = (path: string) => `${appUrl}${path}`;
 const asset = (name: string) => `/assets/zook-redesign/${name}`;
 
