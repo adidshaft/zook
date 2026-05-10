@@ -195,10 +195,6 @@ export default function Settings() {
             showProfileShortcut={false}
           />
 
-          <PrimaryButton onPress={confirmSignOut} tone="danger">
-            {t("settings.logout")}
-          </PrimaryButton>
-
           <CollapsibleSection
             title={t("settings.notifications")}
             subtitle={t("settings.notificationScope", {
@@ -371,6 +367,10 @@ export default function Settings() {
             </GlassCard>
           </CollapsibleSection>
 
+          <PrimaryButton onPress={confirmSignOut} tone="danger" style={styles.logoutButton}>
+            {t("settings.logout")}
+          </PrimaryButton>
+
         </KeyboardAwareScreen>
         <BottomNav />
       </ZookScreen>
@@ -445,6 +445,9 @@ const styles = StyleSheet.create({
   },
   actionHalf: {
     flex: 1,
+  },
+  logoutButton: {
+    marginTop: spacing.xl,
   },
   statusText: {
     color: colors.lime,

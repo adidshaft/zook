@@ -158,6 +158,22 @@ export default function Shop() {
       return categoryMatch && queryMatch;
     });
   }, [category, products, query]);
+  const categoryCounts = useMemo(() => {
+    const counts: Record<Category, number> = {
+      ALL: products.length,
+      WATER: 0,
+      PROTEIN_SHAKE: 0,
+      SHAKER: 0,
+      TOWEL: 0,
+      SUPPLEMENT: 0,
+      OTHER: 0,
+    };
+    products.forEach((product) => {
+      const productCategory = (product.category as Category) ?? "OTHER";
+      counts[productCategory] = (counts[productCategory] ?? 0) + 1;
+    });
+    return counts;
+  }, [products]);
   const cartItems = Object.entries(cart)
     .map(([productId, quantity]) => {
       const product = products.find((candidate) => candidate.id === productId);
@@ -747,6 +763,7 @@ export default function Shop() {
       >
         {categories.map((option) => {
           const selected = option.value === category;
+          const count = categoryCounts[option.value] ?? 0;
           return (
             <Pressable
               key={option.value}
@@ -765,6 +782,16 @@ export default function Shop() {
               >
                 {option.label}
               </Text>
+              <View style={[styles.categoryCount, selected ? styles.categoryCountActive : null]}>
+                <Text
+                  style={[
+                    styles.categoryCountText,
+                    selected ? styles.categoryCountTextActive : null,
+                  ]}
+                >
+                  {count}
+                </Text>
+              </View>
             </Pressable>
           );
         })}
@@ -1039,6 +1066,27 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   categoryChipTextActive: {
+    color: colors.bg,
+  },
+  categoryCount: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    paddingHorizontal: 5,
+  },
+  categoryCountActive: {
+    backgroundColor: "rgba(7,9,8,0.18)",
+  },
+  categoryCountText: {
+    color: colors.muted,
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    lineHeight: 12,
+  },
+  categoryCountTextActive: {
     color: colors.bg,
   },
   miniCart: {

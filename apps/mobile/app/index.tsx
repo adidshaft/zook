@@ -32,6 +32,7 @@ import type { MemberBadgeRecord, MemberNextMilestone } from "@/lib/query-hooks";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 
 function formatRenewalDate(value?: string | null) {
   if (!value) return "Renewal date pending";
@@ -39,6 +40,13 @@ function formatRenewalDate(value?: string | null) {
     day: "numeric",
     month: "short",
   })}`;
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
 }
 
 function normalizeMediaUrl(value?: string | null) {
@@ -129,7 +137,8 @@ export default function Home() {
           ? "NO_MEMBERSHIP"
           : neverCheckedIn
             ? "NEVER_CHECKED_IN"
-            : null;
+        : null;
+  const contentPaddingBottom = useBottomScrollPadding({ hasStickyAction: renewalImminent });
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -197,7 +206,7 @@ export default function Home() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.content,
-            renewalImminent ? styles.contentWithRenewalBar : null,
+            { paddingBottom: contentPaddingBottom },
           ]}
           refreshControl={
             <RefreshControl
@@ -210,7 +219,7 @@ export default function Home() {
         >
           <View style={styles.premiumHeader}>
             <View style={styles.premiumGreetingBlock}>
-              <Text style={styles.premiumGreeting}>Good morning,</Text>
+              <Text style={styles.premiumGreeting}>{getGreeting()},</Text>
               <Text numberOfLines={1} style={styles.premiumName}>
                 {firstName}
               </Text>
@@ -287,10 +296,10 @@ export default function Home() {
                     ? Math.max(0, Math.min(1, (visitLimit - remainingVisits) / visitLimit))
                     : typeof daysLeft === "number" && memberHome?.activePlan?.durationDays
                     ? Math.max(
-                        0.08,
+                        0,
                         Math.min(1, daysLeft / Math.max(memberHome.activePlan.durationDays, 1)),
                       )
-                    : 0.72
+                    : 0
                 }
                 visitProgressLabel={
                   typeof remainingVisits === "number" && typeof visitLimit === "number" && visitLimit > 0
@@ -301,7 +310,7 @@ export default function Home() {
               />
               <TodayPlanCard
                 planName={assignedPlan?.name ?? "No plan yet"}
-                trainerName="Coach Rhea"
+                trainerName="Your trainer"
                 assigned={Boolean(assignedPlan)}
               />
               <ActivityCard
@@ -346,7 +355,7 @@ export default function Home() {
             </ZookButton>
           </StickyActionBar>
         ) : null}
-        {!renewalImminent ? <BottomNav /> : null}
+        <BottomNav />
       </ZookScreen>
     </>
   );
@@ -531,11 +540,32 @@ function MemberStateHero({
   const splitLabel = mainLabel.match(/^(\d+)\s+(.+)$/);
   const visitCount = visitLabel.match(/^(\d+)/)?.[1] ?? "—";
   const progress = Math.max(0, Math.min(1, progressValue));
+  const [ringProgress, setRingProgress] = useState(0);
   const progressPct = `${Math.round(progress * 100)}%`;
   const ringSize = 104;
   const strokeWidth = 9;
   const radius = (ringSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
+
+  useEffect(() => {
+    let frameId = 0;
+    const startedAt = Date.now();
+    const start = ringProgress;
+    const delta = progress - start;
+
+    function tick() {
+      const elapsed = Date.now() - startedAt;
+      const t = Math.min(1, elapsed / 600);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setRingProgress(start + delta * eased);
+      if (t < 1) {
+        frameId = requestAnimationFrame(tick);
+      }
+    }
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [progress]);
 
   return (
     <GlassCard
@@ -593,7 +623,7 @@ function MemberStateHero({
               strokeWidth={strokeWidth}
               fill="none"
               strokeLinecap="round"
-              strokeDasharray={`${circumference * progress} ${circumference}`}
+              strokeDasharray={`${circumference * ringProgress} ${circumference}`}
               transform={`rotate(-90 ${ringSize / 2} ${ringSize / 2})`}
               opacity={expired ? 0.65 : 1}
             />
@@ -724,9 +754,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: layout.bottomNavContentPadding,
     gap: 12,
-  },
-  contentWithRenewalBar: {
-    paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
   },
   premiumHeader: {
     minHeight: 94,

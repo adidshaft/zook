@@ -21,7 +21,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
-  ChipGroup,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -73,11 +72,6 @@ type AttendanceResultHref = {
 
 const PUSH_PROMPTED_STORAGE_KEY = "zook_push_prompted";
 
-const scanModeOptions: Array<{ label: string; value: ScanMode; icon: "qr-code-outline" | "keypad-outline" }> = [
-  { label: "Scan QR", value: "scan", icon: "qr-code-outline" },
-  { label: "Enter code", value: "code", icon: "keypad-outline" },
-];
-
 function CameraActiveBottomNavHider() {
   useHideBottomNav();
   return null;
@@ -92,7 +86,6 @@ export default function Scan() {
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>("scan");
-  const [modeLocked, setModeLocked] = useState(false);
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [codePrefix, setCodePrefix] = useState("");
   const [codeDigits, setCodeDigits] = useState("");
@@ -423,13 +416,6 @@ export default function Scan() {
     setCodeDigits(compact.replace(/[^0-9]/g, "").slice(0, 4));
   }
 
-  function handleModeChange(nextMode: ScanMode) {
-    if (modeLocked || busy || nextMode === scanMode) return;
-    setModeLocked(true);
-    setScanMode(nextMode);
-    setTimeout(() => setModeLocked(false), 200);
-  }
-
   function resetScan() {
     completedRef.current = false;
     setBusy(false);
@@ -460,14 +446,6 @@ export default function Scan() {
             title="Scan Gym QR"
             subtitle="Server-authoritative check-in for your active gym"
             showProfileShortcut={false}
-          />
-
-          <ChipGroup
-            accessibilityLabel="Check-in method"
-            disabled={busy || modeLocked}
-            options={scanModeOptions}
-            value={scanMode}
-            onChange={handleModeChange}
           />
 
           {cameraBlocked ? (
@@ -535,16 +513,18 @@ export default function Scan() {
               <GlassCard variant="compact" contentStyle={styles.helpContent}>
                 <IconBubble icon="shield-checkmark-outline" tone="neutral" size={36} />
                 <View style={styles.helpCopy}>
-                  <Text style={styles.helpTitle}>Camera not working?</Text>
-                  <Text style={styles.helpBody}>Switch to Enter code or ask the desk for help.</Text>
+                  <Text style={styles.helpTitle}>Can’t scan?</Text>
+                  <Text style={styles.helpBody}>Enter the desk code manually.</Text>
                 </View>
                 <Pressable
                   onPress={() => setScanMode("code")}
                   accessibilityRole="button"
                   accessibilityLabel="Enter code instead"
                   hitSlop={8}
+                  style={styles.manualCodeLink}
                 >
-                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                  <Text style={styles.manualCodeLinkText}>Enter code</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.lime} />
                 </Pressable>
               </GlassCard>
             </>
@@ -599,6 +579,15 @@ export default function Scan() {
                   Checking code...
                 </Text>
               ) : null}
+              <Pressable
+                onPress={() => setScanMode("scan")}
+                accessibilityRole="button"
+                accessibilityLabel="Return to QR scanner"
+                style={styles.backToScannerLink}
+              >
+                <Ionicons name="qr-code-outline" size={15} color={colors.lime} />
+                <Text style={styles.manualCodeLinkText}>Back to camera scanner</Text>
+              </Pressable>
             </GlassCard>
           )}
 
@@ -750,7 +739,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   cameraCard: {
-    height: 304,
+    minHeight: 430,
     borderRadius: 28,
     overflow: "hidden",
     borderWidth: 1,
@@ -837,7 +826,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   scanLine: {
-    width: 190,
+    width: 238,
     height: 2,
     borderRadius: 2,
     backgroundColor: colors.lime,
@@ -864,6 +853,21 @@ const styles = StyleSheet.create({
   helpBody: {
     color: colors.muted,
     ...typography.small,
+  },
+  manualCodeLink: {
+    minHeight: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.24)",
+    backgroundColor: "rgba(185,244,85,0.08)",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  manualCodeLinkText: {
+    color: colors.lime,
+    ...typography.caption,
   },
   scanHint: {
     color: colors.muted,
@@ -930,6 +934,14 @@ const styles = StyleSheet.create({
   },
   checkingDot: {
     color: colors.lime,
+  },
+  backToScannerLink: {
+    alignSelf: "center",
+    minHeight: 34,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
   },
   devLink: {
     alignSelf: "center",

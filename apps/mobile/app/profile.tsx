@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ProfileExtraFields } from "@/components/profile/profile-extra-fields";
 import { ProfilePhotoControl } from "@/components/profile/profile-photo-control";
 import {
+  BottomNav,
   EmptyState,
   GlassCard,
   IconBubble,
@@ -376,7 +377,7 @@ export default function ProfileScreen() {
               orgId={activeOrgId}
               name={userName}
               profilePhotoUrl={photoUrl}
-              size={108}
+              size={72}
               onSaved={() => void refreshProfile()}
             />
             <View style={styles.identityCopy}>
@@ -560,6 +561,7 @@ export default function ProfileScreen() {
             </View>
           </View>
         </ScrollView>
+        <BottomNav selectedPath="/profile" />
       </ZookScreen>
     </>
   );
@@ -584,34 +586,36 @@ const styles = StyleSheet.create({
   },
   identityCard: {
     alignItems: "center",
-    gap: spacing.lg,
+    flexDirection: "row",
+    gap: spacing.md,
   },
   identityCopy: {
-    alignItems: "center",
+    alignItems: "flex-start",
     alignSelf: "stretch",
+    flex: 1,
     gap: spacing.xs,
   },
   name: {
     ...typography.h1,
     color: colors.text,
-    textAlign: "center",
+    textAlign: "left",
   },
   email: {
     ...typography.body,
     color: colors.muted,
-    textAlign: "center",
+    textAlign: "left",
   },
   gymLine: {
     ...typography.bodyStrong,
     color: colors.text,
     marginTop: spacing.xs,
-    textAlign: "center",
+    textAlign: "left",
   },
   roleRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     marginTop: spacing.sm,
   },
   section: {

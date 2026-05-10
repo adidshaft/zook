@@ -91,9 +91,6 @@ export function SectionHeader({
           ) : null}
           {badge}
         </div>
-        {description ? (
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/52">{description}</p>
-        ) : null}
       </div>
       {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
     </div>
@@ -248,14 +245,23 @@ export function ActionRow({
 }
 
 export function MiniTrend({
-  values = [18, 24, 21, 32, 30, 44, 40],
+  values = [],
   tone = "lime",
-  label = "Mini trend",
+  label = "No trend data yet",
 }: {
   values?: number[];
   tone?: "lime" | "blue" | "amber";
   label?: string;
 }) {
+  if (!values.length) {
+    return (
+      <div className="flex h-14 w-full items-center gap-3" role="img" aria-label={label}>
+        <span className="h-px flex-1 border-t border-dashed border-white/15" />
+        <span className="text-xs text-white/30">No trend data yet</span>
+      </div>
+    );
+  }
+
   const max = Math.max(...values, 1);
   const min = Math.min(...values, 0);
   const range = Math.max(max - min, 1);
@@ -419,7 +425,7 @@ export function DataTable<Row>({
   return (
     <div
       className={clsx(
-        "relative overflow-x-auto rounded-[24px] border border-white/10 bg-black/25 after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-10 after:bg-gradient-to-l after:from-black/65 after:to-transparent",
+        "relative overflow-x-auto rounded-[24px] border border-white/10 bg-black/25",
         className,
       )}
       aria-label="Scrollable table"

@@ -948,7 +948,7 @@ function RenewalSheet({
 }) {
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ["74%"], []);
+  const snapPoints = useMemo(() => ["82%"], []);
   const plans = availablePlans.length
     ? availablePlans
     : currentPlan?.id
@@ -982,7 +982,7 @@ function RenewalSheet({
       backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.sheetHandle}
-      bottomInset={insets.bottom}
+      bottomInset={insets.bottom + 12}
       onDismiss={onClose}
     >
       <BottomSheetView style={styles.sheet}>
@@ -1009,7 +1009,7 @@ function RenewalSheet({
         <BottomSheetScrollView
           style={styles.planSelectorScroll}
           contentContainerStyle={styles.planSelector}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator
         >
           {loadingPlans ? <PlansSkeleton /> : null}
           {!loadingPlans && !plans.length ? (
@@ -1426,7 +1426,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   planSelectorScroll: {
-    maxHeight: 310,
+    maxHeight: 380,
   },
   planOption: {
     minHeight: 64,

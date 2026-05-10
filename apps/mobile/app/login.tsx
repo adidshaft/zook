@@ -12,6 +12,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -454,25 +455,28 @@ export default function Login() {
               ) : (
                 <View style={styles.phoneGroup}>
                   <Text style={styles.inputLabel}>Mobile number</Text>
-                  <View style={styles.phoneHintRow}>
-                    <View style={styles.countryChip}>
-                      <Text style={styles.countryChipText}>+91</Text>
+                  <View style={styles.phoneInputRow}>
+                    <View style={styles.countryPrefix}>
+                      <Text style={styles.countryPrefixText}>🇮🇳 +91</Text>
                     </View>
-                    <Text style={styles.phoneHintText}>{t("auth.phoneHint")}</Text>
+                    <View style={styles.phoneDivider} />
+                    <TextInput
+                      value={phoneNumber}
+                      onChangeText={(value) => {
+                        setPhoneNumber(sanitizeIndianMobile(value));
+                        if (message === "Enter a valid 10-digit mobile number.") setMessage("");
+                      }}
+                      editable={!busy}
+                      autoComplete="tel"
+                      keyboardType="phone-pad"
+                      returnKeyType="next"
+                      placeholder="98765 43210"
+                      placeholderTextColor="rgba(244,247,239,0.34)"
+                      accessibilityLabel="Mobile number"
+                      style={styles.phoneNumberInput}
+                    />
                   </View>
-                  <GlassInput
-                    label="Number"
-                    value={phoneNumber}
-                    onChangeText={(value) => {
-                      setPhoneNumber(sanitizeIndianMobile(value));
-                      if (message === "Enter a valid 10-digit mobile number.") setMessage("");
-                    }}
-                    editable={!busy}
-                    autoComplete="tel"
-                    keyboardType="phone-pad"
-                    returnKeyType="next"
-                    placeholder="98765 43210"
-                  />
+                  <Text style={styles.phoneHintText}>{t("auth.phoneHint")}</Text>
                 </View>
               )}
             </>
@@ -732,30 +736,9 @@ const styles = StyleSheet.create({
     color: colors.red,
     ...typography.caption,
   },
-  phoneHintRow: {
+  phoneInputRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
-  },
-  countryChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.accentPanel,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-  },
-  countryChipText: {
-    color: colors.lime,
-    ...typography.caption,
-  },
-  phoneHintText: {
-    flex: 1,
-    color: colors.muted,
-    ...typography.caption,
-  },
-  phoneContainer: {
-    width: "100%",
     minHeight: 58,
     borderRadius: 16,
     borderWidth: 1,
@@ -763,25 +746,31 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
     overflow: "hidden",
   },
-  phoneTextContainer: {
-    backgroundColor: "transparent",
-    paddingVertical: 0,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.border,
+  countryPrefix: {
+    minHeight: 58,
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+    backgroundColor: "rgba(185,244,85,0.075)",
   },
-  phoneTextInput: {
+  countryPrefixText: {
+    color: colors.lime,
+    ...typography.bodyStrong,
+  },
+  phoneDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    backgroundColor: colors.border,
+  },
+  phoneNumberInput: {
+    flex: 1,
+    minHeight: 58,
     color: colors.text,
-    ...typography.body,
+    paddingHorizontal: spacing.md,
+    ...typography.bodyStrong,
   },
-  phoneCodeText: {
-    color: colors.text,
-    ...typography.body,
-  },
-  phoneFlagButton: {
-    backgroundColor: "transparent",
-  },
-  phoneCountryButton: {
-    backgroundColor: "transparent",
+  phoneHintText: {
+    color: colors.muted,
+    ...typography.caption,
   },
   otpActions: {
     flexDirection: "row",

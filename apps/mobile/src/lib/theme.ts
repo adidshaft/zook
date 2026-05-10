@@ -20,7 +20,9 @@ export const colors = {
   overlayDark: "rgba(0,0,0,0.45)",
 
   // Compatibility aliases used by existing screens.
+  /** @deprecated Prefer bgApp. */
   bg: "#070908",
+  /** @deprecated Prefer bgElevated/glassFill. */
   surfaceSolid: "#0C100E",
   surfaceRaised: "#111610",
   surface: glass(0.06),
@@ -30,12 +32,16 @@ export const colors = {
   border: glass(0.14),
   borderStrong: glass(0.2),
   limeBorder: lime(0.32),
+  /** @deprecated Prefer textPrimary. */
   text: "#F4F7EF",
+  /** @deprecated Prefer textMuted. */
   muted: "#AEB8A8",
+  /** @deprecated Prefer textSubtle. */
   subtle: "#778273",
   paper: "#F2F5EB",
   ink: "#11150F",
   inkSoft: "#6F7769",
+  /** @deprecated Prefer brandLime. */
   lime: "#B9F455",
   limeSoft: "#D7FF6A",
   amber: "#F2C94C",
@@ -92,13 +98,17 @@ export const typography = {
   caption: { fontSize: 11.5, fontFamily: "Inter_600SemiBold", lineHeight: 15 },
   small: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
   metric: { fontSize: 28, fontFamily: "Inter_700Bold", lineHeight: 32 },
-  navLabel: { fontSize: 10.5, fontFamily: "Inter_600SemiBold", lineHeight: 13 },
+  navLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", lineHeight: 14 },
   button: { fontSize: 13.5, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
 
   // Compatibility aliases used by existing screens.
+  /** @deprecated Prefer screenTitle. */
   display: { fontSize: 34, fontFamily: "Inter_700Bold", lineHeight: 39 },
+  /** @deprecated Prefer screenTitle/headerTitle. */
   h1: { fontSize: 24, fontFamily: "Inter_600SemiBold", lineHeight: 30 },
+  /** @deprecated Prefer headerTitle. */
   h2: { fontSize: 20, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
+  /** @deprecated Prefer cardTitle. */
   h3: { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 20 },
   headline: { fontSize: 24, fontFamily: "Inter_600SemiBold", lineHeight: 30 },
   title: { fontSize: 20, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
@@ -106,7 +116,7 @@ export const typography = {
   eyebrow: {
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
-    letterSpacing: 0,
+    letterSpacing: 1.2,
     textTransform: "uppercase" as const,
   },
 };
@@ -122,7 +132,7 @@ export const layout = {
   formFieldGap: 12,
   sectionGap: 24,
   bottomNavHeight: 72,
-  bottomNavContentPadding: 116,
+  bottomNavContentPadding: 132,
   bottomNavHorizontalMargin: 18,
   stickyActionHeight: 108,
   demoStripHeight: 28,
