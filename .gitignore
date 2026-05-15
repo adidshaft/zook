@@ -31,3 +31,5 @@ packages/figma-icon-builder/Android /
 packages/figma-icon-builder/dist/
 .vercel
 .env*.local
+.claude/
+.codex-pet-runs/
