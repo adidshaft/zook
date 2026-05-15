@@ -270,9 +270,12 @@ export function resolvePnpmCommand() {
 }
 
 export function withPnpmPath(envInput: NodeJS.ProcessEnv = process.env) {
+  const currentNodeBin = dirname(process.execPath);
   return {
     ...envInput,
-    PATH: ["/opt/homebrew/bin", "/usr/local/bin", envInput.PATH].filter(Boolean).join(":"),
+    PATH: [currentNodeBin, "/opt/homebrew/bin", "/usr/local/bin", envInput.PATH]
+      .filter(Boolean)
+      .join(":"),
   };
 }
 
