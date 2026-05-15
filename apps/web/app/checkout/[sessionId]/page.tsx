@@ -85,7 +85,8 @@ export default async function HostedCheckoutPage({
   );
   const returnUrl = requestedReturnUrl ?? metadataReturnUrl;
   const checkoutData = session ? readCheckoutData(session.metadata) : null;
-  const expiresInMs = session ? new Date(session.expiresAt).getTime() - Date.now() : 0;
+  const expiresAtMs = session ? new Date(session.expiresAt).getTime() : NaN;
+  const expiresInMs = Number.isFinite(expiresAtMs) ? expiresAtMs - Date.now() : 0;
   const showExpiryWarning = expiresInMs > 0 && expiresInMs < 5 * 60 * 1000;
   const expiryMinutes = Math.max(0, Math.floor(expiresInMs / 60_000));
   const expirySeconds = Math.max(0, Math.floor((expiresInMs % 60_000) / 1000));

@@ -1,4 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -322,6 +323,7 @@ export function PlanDetailScreen() {
         next.delete(name);
       } else {
         next.add(name);
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       return next;
     });

@@ -16,7 +16,6 @@ import {
   Skeleton,
   StatusPill,
   TableLoader,
-  TextInput as BaseTextInput,
   ToggleSwitch,
   toneFromSeverity,
   toneFromStatus,
@@ -156,18 +155,6 @@ export function Toggle({
   );
 }
 
-export function KpiCard(props: Parameters<typeof MetricCard>[0]) {
-  return <MetricCard {...props} />;
-}
-
-export function MemberPicker(props: Parameters<typeof Select>[0]) {
-  return <Select {...props} />;
-}
-
-export function PlanPicker(props: Parameters<typeof Select>[0]) {
-  return <Select {...props} />;
-}
-
 export {
   ConfirmDialog,
   DataTable,
@@ -182,7 +169,6 @@ export {
   Skeleton,
   StatusPill,
   TableLoader,
-  BaseTextInput,
   ToggleSwitch,
   toneFromSeverity,
   toneFromStatus,

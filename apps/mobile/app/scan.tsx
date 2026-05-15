@@ -109,12 +109,6 @@ export default function Scan() {
   const pushPromptSnapPoints = useMemo(() => ["36%"], []);
 
   useEffect(() => {
-    if (scanMode === "scan" && !permission) {
-      void requestPermission();
-    }
-  }, [permission, requestPermission, scanMode]);
-
-  useEffect(() => {
     void getQueuedAttendanceScans().then((queue) => setQueuedScanCount(queue.length));
   }, []);
 

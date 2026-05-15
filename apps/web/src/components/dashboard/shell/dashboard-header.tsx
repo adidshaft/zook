@@ -1,4 +1,5 @@
-import { ClipboardCheck, QrCode } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ClipboardCheck, QrCode } from "lucide-react";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButtonLink } from "../../zook-button";
 import { BranchSwitcher } from "./branch-switcher";
@@ -54,11 +55,11 @@ export function DashboardHeader({
               </li>
             </ol>
           </nav>
-          <div className="flex flex-wrap items-center gap-2">
-            {runtimeLabel && !data.connected ? (
+          {runtimeLabel && !data.connected ? (
+            <div className="flex flex-wrap items-center gap-2">
               <Pill tone="amber">{runtimeLabel}</Pill>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
             {pageTitle}
           </h1>
@@ -76,10 +77,19 @@ export function DashboardHeader({
             </div>
           ) : null}
           {showTrialBanner ? (
-            <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/12 px-4 py-3 text-sm font-medium text-amber-50">
-              Trial ends in {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"}. Add billing
-              before launch to keep this gym active.
-            </div>
+            <Link
+              href="/dashboard/billing"
+              className="zook-focus mt-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-300/30 bg-amber-300/12 px-4 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-300/50 hover:bg-amber-300/18"
+            >
+              <span>
+                Trial ends in {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"}. Set up
+                billing to keep this gym active.
+              </span>
+              <span className="flex shrink-0 items-center gap-1 text-amber-50/90">
+                Set up billing
+                <ArrowRight size={14} aria-hidden="true" />
+              </span>
+            </Link>
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">

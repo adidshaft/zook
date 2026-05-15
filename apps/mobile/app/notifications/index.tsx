@@ -16,6 +16,7 @@ import {
   IconBubble,
   MobileHeader,
   QueryErrorState,
+  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { NotificationsSkeleton } from "@/components/skeletons";
@@ -338,8 +339,18 @@ export default function NotificationsScreen() {
               <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={styles.emptyTitle}>No notifications</Text>
-                <Text style={styles.emptyBody}>You're all caught up.</Text>
+                <Text style={styles.emptyBody}>
+                  You're all caught up. Check your notification preferences to make sure you'll get
+                  reminders.
+                </Text>
               </View>
+              <ZookButton
+                onPress={() => router.push("/settings")}
+                tone="secondary"
+                icon="settings-outline"
+              >
+                Notification settings
+              </ZookButton>
             </GlassCard>
           ) : null}
 

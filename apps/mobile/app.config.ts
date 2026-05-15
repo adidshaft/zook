@@ -60,9 +60,36 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
     [
       "expo-camera",
       {
-        cameraPermission: "Zook uses the camera to scan gym attendance QR codes.",
+        cameraPermission:
+          "Zook uses the camera to scan gym attendance QR codes and to take your profile photo.",
         microphonePermission: false,
         recordAudioAndroid: false,
+      },
+    ],
+    [
+      "expo-image-picker",
+      {
+        photosPermission:
+          "Zook needs access to your photos so you can set a profile picture or upload supporting documents.",
+        cameraPermission:
+          "Zook uses the camera to scan gym attendance QR codes and to take your profile photo.",
+      },
+    ],
+    [
+      "expo-location",
+      {
+        locationAlwaysAndWhenInUsePermission:
+          "Zook uses your location to find nearby gyms when you choose to search by location.",
+        locationWhenInUsePermission:
+          "Zook uses your location to find nearby gyms when you choose to search by location.",
+        isAndroidBackgroundLocationEnabled: false,
+      },
+    ],
+    [
+      "expo-local-authentication",
+      {
+        faceIDPermission:
+          "Zook uses Face ID to confirm sensitive desk actions like manual payments and refunds.",
       },
     ],
   ],

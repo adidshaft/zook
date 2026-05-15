@@ -1,6 +1,7 @@
 import { Link, Stack, useRouter } from "expo-router";
 import type { Href } from "expo-router";
 import { BlurView } from "expo-blur";
+import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
@@ -208,9 +209,18 @@ export default function Home() {
     const webPath =
       referralQuery.data?.links?.web ??
       (sessionOrganization?.username ? `/join/${sessionOrganization.username}?ref=${code}` : "/");
-    await Share.share({
-      message: `Join my gym on Zook with referral code ${code}: ${toWebUrl(webPath)}`,
-    });
+    try {
+      await Share.share({
+        message: `Join my gym on Zook with referral code ${code}: ${toWebUrl(webPath)}`,
+      });
+    } catch {
+      try {
+        await Clipboard.setStringAsync(code);
+        showToast({ tone: "success", message: "Referral code copied." });
+      } catch {
+        showToast({ tone: "danger", message: "Could not share. Try again." });
+      }
+    }
   }
 
   return (
@@ -404,6 +414,16 @@ export default function Home() {
                   maxUses={referralQuery.data.referralCodes[0].maxUses ?? null}
                   rewardsCount={referralQuery.data.rewards?.length ?? 0}
                   onShare={() => void shareReferral()}
+                  onCopy={async () => {
+                    const code = referralQuery.data?.referralCodes[0]?.code;
+                    if (!code) return;
+                    try {
+                      await Clipboard.setStringAsync(code);
+                      showToast({ tone: "success", message: "Referral code copied." });
+                    } catch {
+                      showToast({ tone: "danger", message: "Could not copy code." });
+                    }
+                  }}
                 />
               ) : null}
             </>
@@ -412,7 +432,13 @@ export default function Home() {
         {renewalImminent ? (
           <StickyActionBar>
             <ZookButton href="/membership" icon="refresh-outline" fullWidth>
-              {membershipExpired ? "Renew now" : "Renew membership"}
+              {membershipExpired
+                ? "Renew now"
+                : typeof daysLeft === "number"
+                  ? daysLeft === 1
+                    ? "Renew · 1 day left"
+                    : `Renew · ${daysLeft} days left`
+                  : "Renew membership"}
             </ZookButton>
           </StickyActionBar>
         ) : null}
@@ -426,12 +452,14 @@ function ReferralCard({
   code,
   maxUses,
   onShare,
+  onCopy,
   redemptions,
   rewardsCount,
 }: {
   code: string;
   maxUses?: number | null;
   onShare: () => void;
+  onCopy: () => void;
   redemptions: number;
   rewardsCount: number;
 }) {
@@ -444,9 +472,14 @@ function ReferralCard({
           {redemptions}/{maxUses ?? "unlimited"} used · {rewardsCount} reward
           {rewardsCount === 1 ? "" : "s"}
         </Text>
-        <Text selectable style={styles.referralCode}>
-          {code}
-        </Text>
+        <Pressable
+          onPress={onCopy}
+          accessibilityRole="button"
+          accessibilityLabel={`Copy referral code ${code}`}
+          hitSlop={6}
+        >
+          <Text style={styles.referralCode}>{code}</Text>
+        </Pressable>
       </View>
       <Pressable
         onPress={onShare}

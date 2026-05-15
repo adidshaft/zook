@@ -432,7 +432,6 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
 
   return (
     <OverviewOperationalSection
-      orgId={orgId}
       organization={organization}
       summary={summary}
       auditLogCount={auditLogCount}

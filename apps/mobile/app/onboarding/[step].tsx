@@ -14,7 +14,6 @@ import {
   View,
 } from "react-native";
 import { useCameraPermissions } from "expo-camera";
-import * as Notifications from "expo-notifications";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
@@ -37,11 +36,6 @@ const permissionRows = [
     icon: "camera-outline",
     title: "Camera",
     body: "to check in",
-  },
-  {
-    icon: "notifications-outline",
-    title: "Notifications",
-    body: "for class updates and renewals",
   },
   {
     icon: "location-outline",
@@ -152,7 +146,6 @@ export function PermissionsStep() {
     setBusy(true);
     try {
       await requestCameraPermission();
-      await Notifications.requestPermissionsAsync();
       await requestLocationPermission();
       await setStoredValue(ONBOARDING_STORAGE_KEY, INTRO_COMPLETE);
       router.replace("/login" as never);

@@ -26,7 +26,7 @@ import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mo
 import { setApiAuthHandlers } from "@/lib/api";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { checkRouteAccess, requiredRolesForPath, routeForRole } from "@/lib/route-guards";
-import { initMobileSentry } from "@/lib/sentry";
+import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -143,8 +143,8 @@ function LayoutContent() {
         await clearExpiredSession();
         queryClient.clear();
         showToast({
-          title: "Session expired",
-          message: "Sign in again to continue.",
+          title: t("auth.sessionExpiredTitle"),
+          message: t("auth.sessionExpiredBody"),
           tone: "amber",
         });
         router.replace("/login?reason=expired" as never);
@@ -160,7 +160,7 @@ function LayoutContent() {
         }
       },
     });
-  }, [clearExpiredSession, queryClient, router]);
+  }, [clearExpiredSession, queryClient, router, t]);
 
   useEffect(() => {
     const handleUrl = (url: string | null) => {
@@ -454,21 +454,43 @@ export default function Layout() {
   return (
     <SafeAreaProvider>
       <View style={styles.gestureRoot}>
-        <QueryClientProvider client={queryClient}>
-          <I18nProvider>
-            <AuthProvider>
-              <BranchSelectionProvider>
-                <BottomNavVisibilityProvider>
-                  <PushNotificationsProvider>
-                    <LayoutContent />
-                  </PushNotificationsProvider>
-                </BottomNavVisibilityProvider>
-              </BranchSelectionProvider>
-            </AuthProvider>
-          </I18nProvider>
-        </QueryClientProvider>
+        <Sentry.ErrorBoundary fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}>
+          <QueryClientProvider client={queryClient}>
+            <I18nProvider>
+              <AuthProvider>
+                <BranchSelectionProvider>
+                  <BottomNavVisibilityProvider>
+                    <PushNotificationsProvider>
+                      <LayoutContent />
+                    </PushNotificationsProvider>
+                  </BottomNavVisibilityProvider>
+                </BranchSelectionProvider>
+              </AuthProvider>
+            </I18nProvider>
+          </QueryClientProvider>
+        </Sentry.ErrorBoundary>
       </View>
     </SafeAreaProvider>
+  );
+}
+
+function RootErrorFallback({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View style={styles.configError}>
+      <Text style={styles.configErrorTitle}>Something went wrong</Text>
+      <Text style={styles.configErrorBody}>
+        Zook hit an unexpected error and reported it to our team. Try again, or restart the app if
+        the problem continues.
+      </Text>
+      <Pressable
+        onPress={onRetry}
+        accessibilityRole="button"
+        accessibilityLabel="Try again"
+        style={styles.retryButton}
+      >
+        <Text style={styles.retryButtonText}>Try again</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -503,6 +525,19 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 15,
     lineHeight: 22,
+  },
+  retryButton: {
+    marginTop: 12,
+    alignSelf: "flex-start",
+    backgroundColor: colors.lime,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
+  retryButtonText: {
+    color: "#050805",
+    fontSize: 14,
+    fontWeight: "700",
   },
   demoStrip: {
     position: "absolute",

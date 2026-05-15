@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
+import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import type { ReactNode } from "react";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -511,7 +512,27 @@ export default function Shop() {
         ) : null}
         <GlassCard variant="success" contentStyle={styles.pickupContent}>
           <Text style={styles.pickupLabel}>{t("shop.pickupCode")}</Text>
-          <Text style={styles.pickupCode}>{order.pickupCode ?? t("shop.pending")}</Text>
+          <Pressable
+            onPress={async () => {
+              if (!order.pickupCode) return;
+              try {
+                await Clipboard.setStringAsync(order.pickupCode);
+                showToast({ tone: "success", message: t("shop.pickupCodeCopied") });
+              } catch {
+                showToast({ tone: "danger", message: t("shop.pickupCodeCopyFailed") });
+              }
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={
+              order.pickupCode
+                ? `Copy pickup code ${order.pickupCode}`
+                : "Pickup code pending"
+            }
+            disabled={!order.pickupCode}
+            hitSlop={6}
+          >
+            <Text style={styles.pickupCode}>{order.pickupCode ?? t("shop.pending")}</Text>
+          </Pressable>
           <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
         </GlassCard>
         {canShowPickupQr ? (

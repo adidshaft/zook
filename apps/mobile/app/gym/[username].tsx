@@ -560,6 +560,9 @@ export default function GymProfileScreen() {
                     placeholder="Invite code"
                     placeholderTextColor={colors.textMuted}
                     style={styles.inviteCodeInput}
+                    returnKeyType="done"
+                    onSubmitEditing={applyInviteCode}
+                    submitBehavior="blurAndSubmit"
                   />
                   <PrimaryButton onPress={applyInviteCode}>Apply</PrimaryButton>
                 </View>

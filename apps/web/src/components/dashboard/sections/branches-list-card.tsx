@@ -329,13 +329,16 @@ function BranchSummaryRow({
           Edit
         </button>
         {!branch.isDefault ? (
-          <button
-            onClick={() => void onUpdate(branch, { isDefault: true, active: true })}
+          <ConfirmActionButton
+            title="Make this the primary location?"
+            description="New attendance, QR displays, and operational defaults will use this location. Existing data stays intact."
+            confirmLabel="Make primary"
+            onConfirm={() => onUpdate(branch, { isDefault: true, active: true })}
             disabled={formBusy === `branch:${branch.id}`}
             className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65 disabled:opacity-50"
           >
             Make default
-          </button>
+          </ConfirmActionButton>
         ) : null}
         {!branch.isDefault && branch.active ? (
           <ConfirmActionButton

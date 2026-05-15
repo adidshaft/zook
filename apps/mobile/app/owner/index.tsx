@@ -108,6 +108,7 @@ export default function Owner() {
   const [memberSearch, setMemberSearch] = useState("");
   const [memberFilter, setMemberFilter] = useState<MemberFilter>("all");
   const [actionStatus, setActionStatus] = useState("");
+  const [batchApproveBusy, setBatchApproveBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [revealedPhones, setRevealedPhones] = useState<Set<string>>(() => new Set());
   const shellRole = activeRole === "ADMIN" ? "ADMIN" : "OWNER";
@@ -137,8 +138,8 @@ export default function Owner() {
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
   const revenuePaise =
     dashboard?.summary?.revenuePaise ??
-    payments.reduce((sum, payment) => sum + payment.amountPaise, 0) +
-      orders.reduce((sum, order) => sum + order.totalPaise, 0);
+    payments.reduce((sum, payment) => sum + (payment.amountPaise ?? 0), 0) +
+      orders.reduce((sum, order) => sum + (order.totalPaise ?? 0), 0);
   const branchName =
     dashboard?.branchScope?.selectedBranch?.name ??
     dashboard?.branchScope?.defaultBranch?.name ??
@@ -282,9 +283,8 @@ export default function Owner() {
   async function approveAttendance(attemptId: string) {
     try {
       await approveAttendanceMutation.mutateAsync(attemptId);
-      const message = "Check-in approved.";
-      setActionStatus(message);
-      showToast({ tone: "success", haptic: "success", message });
+      setActionStatus("");
+      showToast({ tone: "success", haptic: "success", message: "Check-in approved." });
     } catch (error) {
       const message = getApiErrorMessage(error) || "Could not approve check-in.";
       setActionStatus(message);
@@ -295,9 +295,8 @@ export default function Owner() {
   async function approveJoinRequest(joinRequestId: string) {
     try {
       await approveJoinRequestMutation.mutateAsync(joinRequestId);
-      const message = "Join request approved.";
-      setActionStatus(message);
-      showToast({ tone: "success", haptic: "success", message });
+      setActionStatus("");
+      showToast({ tone: "success", haptic: "success", message: "Join request approved." });
     } catch (error) {
       const message = getApiErrorMessage(error) || "Could not approve join request.";
       setActionStatus(message);
@@ -306,18 +305,22 @@ export default function Owner() {
   }
 
   async function approveAllJoinRequests() {
-    for (const request of joinRequests) {
-      if (approveJoinRequestMutation.isPending) break;
-      await approveJoinRequest(request.id);
+    if (batchApproveBusy) return;
+    setBatchApproveBusy(true);
+    try {
+      for (const request of joinRequests) {
+        await approveJoinRequest(request.id);
+      }
+    } finally {
+      setBatchApproveBusy(false);
     }
   }
 
   async function rejectJoinRequest(joinRequestId: string) {
     try {
       await rejectJoinRequestMutation.mutateAsync(joinRequestId);
-      const message = "Join request rejected.";
-      setActionStatus(message);
-      showToast({ tone: "success", haptic: "success", message });
+      setActionStatus("");
+      showToast({ tone: "success", haptic: "success", message: "Join request rejected." });
     } catch (error) {
       const message = getApiErrorMessage(error) || "Could not reject join request.";
       setActionStatus(message);
@@ -334,7 +337,21 @@ export default function Owner() {
     const body = encodeURIComponent(
       `Hi,\n\nPlease share supplier options for ${product.name}.\n\nCurrent stock: ${product.stock ?? 0}\nThreshold: ${product.lowStockThreshold ?? 0}\n\nThanks.`,
     );
-    await Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
+    const url = `mailto:?subject=${subject}&body=${body}`;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        showToast({
+          tone: "amber",
+          title: "No mail app",
+          message: "Set up a mail app to send reorder emails.",
+        });
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      showToast({ tone: "danger", message: "Could not open mail app." });
+    }
   }
 
   const onRefresh = async () => {
@@ -502,7 +519,15 @@ export default function Owner() {
                     leading={<IconBubble icon={item.icon} tone={item.tone} />}
                     trailing={
                       <View style={styles.attentionTrailing}>
-                        <Text style={item.count ? styles.attentionAction : styles.attentionQuiet}>
+                        <Text
+                          style={
+                            item.count
+                              ? item.tone === "amber"
+                                ? styles.attentionUrgent
+                                : styles.attentionAction
+                              : styles.attentionQuiet
+                          }
+                        >
                           {item.count ? "Review" : "Open"}
                         </Text>
                         <Ionicons name="chevron-forward" size={17} color={colors.muted} />
@@ -985,6 +1010,10 @@ const styles = StyleSheet.create({
   },
   attentionAction: {
     color: colors.lime,
+    ...typography.caption,
+  },
+  attentionUrgent: {
+    color: colors.amber,
     ...typography.caption,
   },
   attentionQuiet: {

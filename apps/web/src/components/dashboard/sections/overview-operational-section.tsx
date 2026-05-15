@@ -6,7 +6,6 @@ import { TopCommandSection } from "./overview/top-command-section";
 import type { OverviewOperationalSectionProps } from "./overview/types";
 
 export function OverviewOperationalSection({
-  orgId,
   organization,
   summary,
   auditLogCount,
@@ -71,8 +70,6 @@ export function OverviewOperationalSection({
   updateReferral,
   saveReferralPolicy,
 }: OverviewOperationalSectionProps) {
-  void orgId;
-
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">

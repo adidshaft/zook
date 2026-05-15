@@ -68,6 +68,18 @@ export type TranslationKey =
   | "auth.codeSent"
   | "auth.freshCodeSent"
   | "auth.signedIn"
+  | "auth.invalidEmail"
+  | "auth.invalidMobile"
+  | "auth.sessionExpired"
+  | "auth.verifyToContinue"
+  | "auth.appleUnavailable"
+  | "auth.appleNoToken"
+  | "auth.appleComingSoon"
+  | "auth.googleUnavailable"
+  | "auth.googleNoToken"
+  | "auth.googleComingSoon"
+  | "auth.sessionExpiredTitle"
+  | "auth.sessionExpiredBody"
   | "settings.profileTitle"
   | "settings.profileSubtitle"
   | "settings.goBack"
@@ -144,6 +156,8 @@ export type TranslationKey =
   | "shop.readyForPickup"
   | "shop.readyForPickupSubtitle"
   | "shop.pickupCode"
+  | "shop.pickupCodeCopied"
+  | "shop.pickupCodeCopyFailed"
   | "shop.pending"
   | "shop.paid"
   | "shop.continuePayment"
@@ -255,6 +269,18 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.codeSent": "Code sent to {{identifier}}.",
     "auth.freshCodeSent": "Fresh code sent to {{identifier}}.",
     "auth.signedIn": "Signed in.",
+    "auth.invalidEmail": "Enter a valid email address.",
+    "auth.invalidMobile": "Enter a valid 10-digit mobile number.",
+    "auth.sessionExpired": "Your session expired. Sign in again to continue.",
+    "auth.verifyToContinue": "Verify it's you to continue.",
+    "auth.appleUnavailable": "Apple sign-in is not available on this device.",
+    "auth.appleNoToken": "Apple did not return an identity token. Try again.",
+    "auth.appleComingSoon": "Apple sign-in coming soon.",
+    "auth.googleUnavailable": "Google sign-in is not available in Expo Go.",
+    "auth.googleNoToken": "Google did not return an ID token. Try again.",
+    "auth.googleComingSoon": "Google sign-in coming soon.",
+    "auth.sessionExpiredTitle": "Session expired",
+    "auth.sessionExpiredBody": "Sign in again to continue.",
     "settings.profileTitle": "Profile",
     "settings.profileSubtitle": "Account, notifications, and support",
     "settings.goBack": "Go back",
@@ -332,6 +358,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.readyForPickup": "Ready for pickup",
     "shop.readyForPickupSubtitle": "Show this code at the front desk.",
     "shop.pickupCode": "Pickup code",
+    "shop.pickupCodeCopied": "Pickup code copied.",
+    "shop.pickupCodeCopyFailed": "Could not copy pickup code.",
     "shop.pending": "Pending",
     "shop.paid": "Paid",
     "shop.continuePayment": "Continue to payment",
@@ -441,6 +469,18 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.codeSent": "{{identifier}} पर कोड भेजा गया.",
     "auth.freshCodeSent": "{{identifier}} पर नया कोड भेजा गया.",
     "auth.signedIn": "साइन इन हो गया.",
+    "auth.invalidEmail": "मान्य ईमेल पता दर्ज करें.",
+    "auth.invalidMobile": "मान्य 10-digit मोबाइल नंबर दर्ज करें.",
+    "auth.sessionExpired": "आपका session expire हो गया है. जारी रखने के लिए फिर से sign in करें.",
+    "auth.verifyToContinue": "जारी रखने के लिए verify करें.",
+    "auth.appleUnavailable": "इस device पर Apple sign-in उपलब्ध नहीं है.",
+    "auth.appleNoToken": "Apple ने identity token नहीं दिया. फिर से प्रयास करें.",
+    "auth.appleComingSoon": "Apple sign-in जल्द आ रहा है.",
+    "auth.googleUnavailable": "Expo Go में Google sign-in उपलब्ध नहीं है.",
+    "auth.googleNoToken": "Google ने ID token नहीं दिया. फिर से प्रयास करें.",
+    "auth.googleComingSoon": "Google sign-in जल्द आ रहा है.",
+    "auth.sessionExpiredTitle": "Session expire हो गया",
+    "auth.sessionExpiredBody": "जारी रखने के लिए फिर से sign in करें.",
     "settings.profileTitle": "प्रोफाइल",
     "settings.profileSubtitle": "अकाउंट, नोटिफिकेशन और सपोर्ट",
     "settings.goBack": "वापस जाएं",
@@ -519,6 +559,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.readyForPickup": "पिकअप के लिए तैयार",
     "shop.readyForPickupSubtitle": "यह कोड फ्रंट डेस्क पर दिखाएं.",
     "shop.pickupCode": "पिकअप कोड",
+    "shop.pickupCodeCopied": "पिकअप कोड कॉपी हुआ।",
+    "shop.pickupCodeCopyFailed": "पिकअप कोड कॉपी नहीं हो सका।",
     "shop.pending": "पेंडिंग",
     "shop.paid": "पेड",
     "shop.continuePayment": "पेमेंट जारी रखें",

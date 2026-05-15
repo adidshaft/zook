@@ -65,24 +65,9 @@ export function DashboardOverview({
   ];
   const helpCards = [
     {
-      label: "Open the entry QR",
-      href: checkInQrHref,
-      detail: "Use this at reception or on a phone placed near the entry desk.",
-    },
-    {
-      label: "Approve join requests",
-      href: "/dashboard/members",
-      detail: "Review new members, plans, and expiring memberships from one place.",
-    },
-    {
       label: "Run payments and refunds",
       href: "/dashboard/payments",
       detail: "Record payments, review receipts, and open the refund tracker.",
-    },
-    {
-      label: "Manage shop pickup",
-      href: "/dashboard/shop",
-      detail: "Add products, track low stock, and hand over ready pickup orders.",
     },
     {
       label: "Invite your team",
@@ -260,8 +245,8 @@ export function DashboardOverview({
       <GlassCard>
         <SectionHeader
           eyebrow="Help book"
-          title="Common tasks"
-          description="Quick paths for the work owners, admins, reception, and trainers do most often."
+          title="More for owners"
+          description="Set up billing, your team, and the public profile that members see."
         />
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {helpCards.map((card) => (

@@ -9,6 +9,7 @@ import {
   SectionHeader,
   StatusPill,
 } from "../../dashboard-primitives";
+import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
 import { formatCompactNumber, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
@@ -503,14 +504,16 @@ export function PaymentsPanel({
                       {label}
                     </button>
                   ))}
-                  <button
-                    type="button"
+                  <ConfirmActionButton
                     disabled={!selectedReadyOrders.length || bulkBusy}
-                    onClick={() => void bulkFulfillReadyOrders()}
+                    onConfirm={() => bulkFulfillReadyOrders()}
+                    title={`Settle ${selectedReadyOrders.length} ${selectedReadyOrders.length === 1 ? "order" : "orders"}?`}
+                    description="Each order will be marked as fulfilled without a pickup code. This action is logged."
+                    confirmLabel="Settle"
                     className="zook-focus ml-auto rounded-full bg-lime-300 px-4 py-2 text-xs font-semibold text-black disabled:opacity-50"
                   >
                     {bulkBusy ? "Settling..." : `Settle ${selectedReadyOrders.length || ""}`.trim()}
-                  </button>
+                  </ConfirmActionButton>
                 </div>
                 <DataTable
                   columns={[

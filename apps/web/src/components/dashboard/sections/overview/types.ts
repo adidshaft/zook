@@ -73,7 +73,6 @@ export type OverviewWorkflowCard = {
 };
 
 export type OverviewOperationalSectionProps = {
-  orgId: string;
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
   auditLogCount: number;

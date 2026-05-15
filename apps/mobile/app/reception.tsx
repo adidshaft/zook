@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { Image } from "expo-image";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -62,7 +63,11 @@ type ReceptionCodeVerification = {
     record?: { status?: string | null; entryCode?: string | null } | null;
     pickupCode?: { status?: string | null; code?: string | null } | null;
     order?: { status?: string | null; totalPaise?: number | null } | null;
-    user?: { name?: string | null; email?: string | null } | null;
+    user?: {
+      name?: string | null;
+      email?: string | null;
+      profilePhotoUrl?: string | null;
+    } | null;
   };
 };
 
@@ -121,6 +126,7 @@ export default function Reception() {
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const canRecordManualAttendance = useHasPermission("ATTENDANCE_MANUAL_OVERRIDE");
   const canRecordOfflinePayment = useHasPermission("PAYMENTS_RECORD_OFFLINE");
+  const canViewMembers = useHasPermission("MEMBERS_VIEW");
   const view = normalizeView(params.view);
   const [reason, setReason] = useState("");
   const [decisionReason, setDecisionReason] = useState("");
@@ -128,6 +134,10 @@ export default function Reception() {
     useState<ReceptionQueueRecord | null>(null);
   const [verifyCode, setVerifyCode] = useState("");
   const [verifyMessage, setVerifyMessage] = useState("");
+  const [verifiedUser, setVerifiedUser] = useState<{
+    name?: string | null;
+    profilePhotoUrl?: string | null;
+  } | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
   const [paymentMode, setPaymentMode] = useState<DeskPaymentMode>("DIRECT_UPI");
   const [amount, setAmount] = useState("");
@@ -156,7 +166,7 @@ export default function Reception() {
   const flaggedCount = approvalQueue.filter((attempt) => attempt.status === "FLAGGED").length;
   const todayRecords = todayAttendanceQuery.data?.records ?? [];
   const todayCount = todayRecords.length;
-  const recentScans = todayRecords.slice(0, 5);
+  const recentScans = todayRecords.slice(0, 20);
   const readyOrders = ordersQuery.data?.orders ?? [];
   const fulfilledCount = ordersQuery.data?.summary?.fulfilledToday ?? 0;
   const amountPaise = Math.round(Number(amount || "0") * 100);
@@ -240,6 +250,10 @@ export default function Reception() {
   }
 
   function revealMemberPhone(memberId: string) {
+    if (!canViewMembers) {
+      showToast({ tone: "amber", title: "Permission required", message: "You don't have access to reveal member contact info." });
+      return;
+    }
     setRevealedPhones((current) => {
       const next = new Set(current);
       next.add(memberId);
@@ -254,7 +268,13 @@ export default function Reception() {
           orgId: activeOrgId,
           body: { action: "MEMBER_PHONE_REVEALED", targetId: memberId },
         })
-        .catch(() => undefined);
+        .catch(() => {
+          showToast({
+            tone: "amber",
+            title: "Audit not recorded",
+            message: "Phone shown locally, but the audit log could not be saved.",
+          });
+        });
     }
   }
 
@@ -283,6 +303,7 @@ export default function Reception() {
 
   useEffect(() => {
     setVerifyMessage("");
+    setVerifiedUser(null);
   }, [view]);
 
   const onRefresh = useCallback(async () => {
@@ -301,6 +322,7 @@ export default function Reception() {
   function handleVerifyCodeChange(value: string) {
     setVerifyCode(value.toUpperCase());
     setVerifyMessage("");
+    setVerifiedUser(null);
   }
 
   async function approveAttendance(attemptId: string, approvalReason: string) {
@@ -309,9 +331,8 @@ export default function Reception() {
         recordId: attemptId,
         reason: approvalReason || "Reception approved scan after review",
       });
-      const message = "Check-in approved.";
-      setAttendanceStatus(message);
-      showToast({ tone: "success", haptic: "success", message });
+      setAttendanceStatus("");
+      showToast({ tone: "success", haptic: "success", message: "Check-in approved." });
       closeDecisionSheet();
     } catch (error) {
       const message = getApiErrorMessage(error) || "Could not approve. Please try again.";
@@ -326,9 +347,8 @@ export default function Reception() {
         recordId: attemptId,
         reason: rejectionReason || "Reception rejected scan after review",
       });
-      const message = "Check-in rejected.";
-      setAttendanceStatus(message);
-      showToast({ tone: "success", haptic: "success", message });
+      setAttendanceStatus("");
+      showToast({ tone: "success", haptic: "success", message: "Check-in rejected." });
       closeDecisionSheet();
     } catch (error) {
       const message = getApiErrorMessage(error) || "Could not reject. Please try again.";
@@ -341,10 +361,12 @@ export default function Reception() {
     const normalized = verifyCode.trim().toUpperCase();
     if (!normalized) {
       setVerifyMessage("Enter a code first.");
+      setVerifiedUser(null);
       return;
     }
     if (!token || !activeOrgId) {
       setVerifyMessage("Sign in and select a gym before verifying.");
+      setVerifiedUser(null);
       return;
     }
     let result: ReceptionCodeVerification;
@@ -355,31 +377,52 @@ export default function Reception() {
         code: normalized,
       });
     } catch (error) {
-      setVerifyMessage(getApiErrorMessage(error) || "Could not verify this code.");
+      const message = getApiErrorMessage(error) || "Could not verify this code.";
+      setVerifyMessage(message);
+      setVerifiedUser(null);
+      showToast({ tone: "danger", haptic: "error", title: "Verify failed", message });
       return;
     }
     if (!result.match) {
-      setVerifyMessage("No active entry or pickup code found.");
+      const message = "No active entry or pickup code found.";
+      setVerifyMessage(message);
+      setVerifiedUser(null);
+      showToast({ tone: "amber", haptic: "warning", message });
       return;
     }
+    setVerifiedUser(
+      result.match.user
+        ? { name: result.match.user.name, profilePhotoUrl: result.match.user.profilePhotoUrl }
+        : null,
+    );
     const name = result.match.user?.name ?? result.match.user?.email ?? "member";
     if (result.match.type === "attendance") {
-      setVerifyMessage(
-        result.match.valid
-          ? `Entry code verified for ${name}. Status: ${(result.match.record?.status ?? "approved").replace(/_/g, " ")}.`
-          : `Entry code found for ${name}, but it is not valid for entry.`,
-      );
+      if (result.match.valid) {
+        const message = `Entry code verified for ${name}. Status: ${(result.match.record?.status ?? "approved").replace(/_/g, " ")}.`;
+        setVerifyMessage(message);
+        showToast({ tone: "success", haptic: "success", message: `Verified ${name}` });
+      } else {
+        const message = `Entry code found for ${name}, but it is not valid for entry.`;
+        setVerifyMessage(message);
+        showToast({ tone: "amber", haptic: "warning", title: "Not valid for entry", message: name });
+      }
       return;
     }
-    setVerifyMessage(
-      result.match.valid
-        ? `Pickup code verified for ${name}. Match the member before giving out the order.`
-        : `Pickup code found for ${name}, but status is ${(result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready").replace(/_/g, " ")}.`,
-    );
+    if (result.match.valid) {
+      const message = `Pickup code verified for ${name}. Match the member before giving out the order.`;
+      setVerifyMessage(message);
+      showToast({ tone: "success", haptic: "success", message: `Pickup ready for ${name}` });
+    } else {
+      const status = (result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready").replace(/_/g, " ");
+      const message = `Pickup code found for ${name}, but status is ${status}.`;
+      setVerifyMessage(message);
+      showToast({ tone: "amber", haptic: "warning", title: `Pickup ${status}`, message: name });
+    }
   }
 
   async function recordPayment() {
     if (!member?.id || !membership?.id) return;
+    if (recordPaymentMutation.isPending) return;
     setPaymentStatus("");
     if (!(await requirePrivilegedAuth("Record manual payment"))) {
       showAuthenticationRequired();
@@ -394,9 +437,12 @@ export default function Reception() {
         ...(referenceId ? { receiptNumber: referenceId } : {}),
         notes: [paymentReason, paymentNote].filter(Boolean).join(" · "),
       });
-      const message = `Recorded ${formatInr(payment.payment.amountPaise)} by ${payment.payment.mode.replace(/_/g, " ")}.`;
-      setPaymentStatus(message);
-      showToast({ tone: "success", haptic: "success", message });
+      setPaymentStatus("");
+      showToast({
+        tone: "success",
+        haptic: "success",
+        message: `Recorded ${formatInr(payment.payment.amountPaise)} by ${payment.payment.mode.replace(/_/g, " ")}.`,
+      });
     } catch (error) {
       const message = getApiErrorMessage(error);
       const statusMessage =
@@ -409,6 +455,7 @@ export default function Reception() {
   }
 
   async function fulfillOrder(orderId: string) {
+    if (fulfillOrderMutation.isPending) return;
     if (!(await requirePrivilegedAuth("Fulfill pickup without code"))) {
       showAuthenticationRequired();
       return;
@@ -419,9 +466,8 @@ export default function Reception() {
         skipCode: true,
         skipReason: "Reception manually fulfilled pickup after local re-auth.",
       });
-      const message = "Pickup fulfilled.";
-      setPaymentStatus(message);
-      showToast({ tone: "success", haptic: "success", message });
+      setPaymentStatus("");
+      showToast({ tone: "success", haptic: "success", message: "Pickup fulfilled." });
     } catch (error) {
       const message = getApiErrorMessage(error) || "Could not fulfill this order.";
       setPaymentStatus(message);
@@ -433,6 +479,7 @@ export default function Reception() {
     if (!member?.id) {
       return;
     }
+    if (manualAttendanceMutation.isPending) return;
     setAttendanceStatus("");
     if (!(await requirePrivilegedAuth("Record manual attendance"))) {
       showAuthenticationRequired();
@@ -440,9 +487,8 @@ export default function Reception() {
     }
     try {
       await manualAttendanceMutation.mutateAsync({ memberUserId: member.id, reason });
-      const message = "Manual attendance recorded.";
-      setAttendanceStatus(message);
-      showToast({ tone: "success", haptic: "success", message });
+      setAttendanceStatus("");
+      showToast({ tone: "success", haptic: "success", message: "Manual attendance recorded." });
     } catch (error) {
       const message = getApiErrorMessage(error);
       const statusMessage =
@@ -585,7 +631,9 @@ export default function Reception() {
               >
                 Verify Code
               </PrimaryButton>
-              {verifyMessage ? <VerificationResult message={verifyMessage} /> : null}
+              {verifyMessage ? (
+                <VerificationResult message={verifyMessage} user={verifiedUser} />
+              ) : null}
             </GlassCard>
 
             <SectionHeader
@@ -736,7 +784,7 @@ export default function Reception() {
                   <EmptyState title="No members found" body="Try a different name or email." />
                 </GlassCard>
               ) : null}
-              {filteredMembers.slice(0, 4).map((user) => {
+              {filteredMembers.slice(0, 25).map((user) => {
                 const selected = user.profile.userId === selectedMemberRecord?.profile.userId;
                 const phone = user.user?.phone ?? null;
                 const phoneRevealed = revealedPhones.has(user.profile.userId);
@@ -794,6 +842,11 @@ export default function Reception() {
                   </GlassCard>
                 );
               })}
+              {filteredMembers.length > 25 ? (
+                <Text style={styles.memberOverflowHint}>
+                  Showing 25 of {filteredMembers.length}. Refine search to narrow.
+                </Text>
+              ) : null}
             </View>
             <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
@@ -980,7 +1033,9 @@ export default function Reception() {
               >
                 Verify Pickup Code
               </PrimaryButton>
-              {verifyMessage ? <VerificationResult message={verifyMessage} /> : null}
+              {verifyMessage ? (
+                <VerificationResult message={verifyMessage} user={verifiedUser} />
+              ) : null}
             </GlassCard>
             <SectionHeader title="Fulfillment Queue" subtitle="Paid orders ready at the desk." />
             <View style={styles.stack}>
@@ -1134,7 +1189,13 @@ export default function Reception() {
   );
 }
 
-function VerificationResult({ message }: { message: string }) {
+function VerificationResult({
+  message,
+  user,
+}: {
+  message: string;
+  user?: { name?: string | null; profilePhotoUrl?: string | null } | null;
+}) {
   const success =
     /verified|match/i.test(message) && !/not valid|no active|not ready/i.test(message);
   const { animatedStyle: pulseStyle, pulse } = useScalePulse();
@@ -1143,6 +1204,7 @@ function VerificationResult({ message }: { message: string }) {
     if (success) pulse();
     else shake();
   }, [pulse, shake, success]);
+  const photo = user?.profilePhotoUrl;
   return (
     <Reanimated.View style={success ? pulseStyle : shakeStyle}>
       <GlassCard
@@ -1150,11 +1212,20 @@ function VerificationResult({ message }: { message: string }) {
         padding={12}
         contentStyle={styles.verificationResult}
       >
-        <IconBubble
-          icon={success ? "checkmark-circle-outline" : "alert-circle-outline"}
-          tone={success ? "lime" : "amber"}
-          size={34}
-        />
+        {photo ? (
+          <Image
+            source={{ uri: photo }}
+            contentFit="cover"
+            style={styles.verificationPhoto}
+            accessibilityIgnoresInvertColors
+          />
+        ) : (
+          <IconBubble
+            icon={success ? "checkmark-circle-outline" : "alert-circle-outline"}
+            tone={success ? "lime" : "amber"}
+            size={34}
+          />
+        )}
         <Text style={styles.verificationText}>{message}</Text>
       </GlassCard>
     </Reanimated.View>
@@ -1379,6 +1450,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
   },
+  verificationPhoto: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+  },
   verificationText: {
     flex: 1,
     color: colors.text,
@@ -1404,6 +1481,12 @@ const styles = StyleSheet.create({
   },
   memberPhoneText: {
     color: colors.muted,
+    ...typography.small,
+  },
+  memberOverflowHint: {
+    color: colors.muted,
+    textAlign: "center",
+    paddingVertical: spacing.sm,
     ...typography.small,
   },
   revealPhoneButton: {
