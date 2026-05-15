@@ -1,8 +1,8 @@
 import { createHash, createPublicKey, createVerify, randomBytes } from "node:crypto";
 import { fileTypeFromBuffer } from "file-type";
+import { Parser } from "htmlparser2";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import sanitizeHtml from "sanitize-html";
 import { z } from "zod";
 import {
   bodyProgressEntrySchema,
@@ -645,38 +645,113 @@ const aiStructuredPlanContentSchema = z.object({
 
 const uploadCategorySchema = z.enum(storageFileCategories);
 
-const richTextSanitizeOptions: sanitizeHtml.IOptions = {
-  allowedTags: [
-    "b",
-    "strong",
-    "i",
-    "em",
-    "u",
-    "s",
-    "p",
-    "br",
-    "ul",
-    "ol",
-    "li",
-    "blockquote",
-    "code",
-    "pre",
-    "a",
-  ],
-  allowedAttributes: {
-    a: ["href", "target", "rel"],
-  },
-  allowedSchemes: ["http", "https", "mailto"],
-  transformTags: {
-    a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer" }),
-  },
-};
+const allowedRichTextTags = new Set([
+  "b",
+  "strong",
+  "i",
+  "em",
+  "u",
+  "s",
+  "p",
+  "br",
+  "ul",
+  "ol",
+  "li",
+  "blockquote",
+  "code",
+  "pre",
+  "a",
+]);
+const richTextVoidTags = new Set(["br"]);
+
+function escapeRichTextHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function normalizeRichTextHref(value: string | undefined) {
+  if (!value) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const schemeMatch = trimmed.match(/^([a-z][a-z0-9+.-]*):/i);
+  if (!schemeMatch) {
+    return undefined;
+  }
+  const scheme = schemeMatch[1]?.toLowerCase();
+  if (scheme !== "http" && scheme !== "https" && scheme !== "mailto") {
+    return undefined;
+  }
+  return trimmed;
+}
+
+function sanitizeAllowedRichText(value: string) {
+  const output: string[] = [];
+  const openTags: string[] = [];
+  const parser = new Parser(
+    {
+      onopentag(name, attributes) {
+        const tag = name.toLowerCase();
+        if (!allowedRichTextTags.has(tag)) {
+          return;
+        }
+        if (tag === "a") {
+          const href = normalizeRichTextHref(attributes.href);
+          const target =
+            attributes.target && ["_blank", "_self", "_parent", "_top"].includes(attributes.target)
+              ? attributes.target
+              : undefined;
+          output.push("<a");
+          if (href) output.push(` href="${escapeRichTextHtml(href)}"`);
+          if (target) output.push(` target="${escapeRichTextHtml(target)}"`);
+          output.push(' rel="noopener noreferrer">');
+        } else {
+          output.push(`<${tag}>`);
+        }
+        if (!richTextVoidTags.has(tag)) {
+          openTags.push(tag);
+        }
+      },
+      ontext(text) {
+        output.push(escapeRichTextHtml(text));
+      },
+      onclosetag(name) {
+        const tag = name.toLowerCase();
+        if (!allowedRichTextTags.has(tag) || richTextVoidTags.has(tag)) {
+          return;
+        }
+        const index = openTags.lastIndexOf(tag);
+        if (index === -1) {
+          return;
+        }
+        for (let cursor = openTags.length - 1; cursor >= index; cursor -= 1) {
+          output.push(`</${openTags[cursor]}>`);
+        }
+        openTags.splice(index);
+      },
+    },
+    { decodeEntities: true },
+  );
+  parser.write(value);
+  parser.end();
+  for (let cursor = openTags.length - 1; cursor >= 0; cursor -= 1) {
+    output.push(`</${openTags[cursor]}>`);
+  }
+  return output.join("");
+}
 
 function sanitizeRichText(value: string | undefined) {
   if (value === undefined) {
     return undefined;
   }
-  return sanitizeHtml(value, richTextSanitizeOptions).trim();
+  return sanitizeAllowedRichText(value).trim();
 }
 
 function sanitizeJsonRichText(value: unknown): unknown {
@@ -14661,34 +14736,59 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
     const registry = getProviderRegistryDiagnostics();
+    const normalizeProviderDiagnostics = (name: string, value: unknown) => {
+      const record = value as {
+        selectedProvider?: unknown;
+        activeProvider?: unknown;
+        status?: unknown;
+        missingEnv?: unknown;
+        env?: unknown;
+        provider?: unknown;
+        mode?: unknown;
+        configured?: unknown;
+        lastCheckedAt?: unknown;
+        notes?: unknown;
+        metadata?: unknown;
+      };
+      const selectedProvider =
+        typeof record.selectedProvider === "string" ? record.selectedProvider : name;
+      const activeProvider =
+        typeof record.activeProvider === "string" ? record.activeProvider : null;
+      const missingEnv = Array.isArray(record.missingEnv)
+        ? record.missingEnv.filter((item): item is string => typeof item === "string")
+        : [];
+      return {
+        selectedProvider,
+        activeProvider,
+        status: typeof record.status === "string" ? record.status : "unknown",
+        configured: Boolean(record.configured),
+        missingEnv,
+        env:
+          record.env && typeof record.env === "object"
+            ? (record.env as Record<string, boolean>)
+            : {},
+        provider: typeof record.provider === "string" ? record.provider : selectedProvider,
+        mode: typeof record.mode === "string" ? record.mode : selectedProvider,
+        ...(typeof record.lastCheckedAt === "string"
+          ? { lastCheckedAt: record.lastCheckedAt }
+          : {}),
+        ...(typeof record.notes === "string" ? { notes: record.notes } : {}),
+        ...(record.metadata && typeof record.metadata === "object"
+          ? { metadata: record.metadata as Record<string, string | number | boolean | null> }
+          : {}),
+      };
+    };
     const coarseProviders = Object.fromEntries(
-      Object.entries(registry).map(([name, value]) => {
-        const record = value as {
-          status?: unknown;
-          configured?: unknown;
-          activeProvider?: unknown;
-        };
-        return [
-          name,
-          {
-            status: typeof record.status === "string" ? record.status : "unknown",
-            configured: Boolean(record.configured),
-            active: Boolean(record.activeProvider),
-          },
-        ];
-      }),
+      Object.entries(registry).map(([name, value]) => [
+        name,
+        normalizeProviderDiagnostics(name, value),
+      ]),
     );
     return ok({
       providers: {
         ...coarseProviders,
-        rateLimit: {
-          status: getRateLimitDiagnostics().status,
-          configured: getRateLimitDiagnostics().configured,
-        },
-        cache: {
-          status: getServerCacheDiagnostics().status,
-          configured: getServerCacheDiagnostics().configured,
-        },
+        rateLimit: normalizeProviderDiagnostics("rateLimit", getRateLimitDiagnostics()),
+        cache: normalizeProviderDiagnostics("cache", getServerCacheDiagnostics()),
       },
     });
   }

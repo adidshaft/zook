@@ -8,6 +8,7 @@ import { useContext, useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Keyboard,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -484,7 +485,9 @@ export function GlassCard({
   ];
   const inner = (
     <>
-      <BlurView intensity={14} tint="dark" style={StyleSheet.absoluteFillObject} />
+      {Platform.OS === "ios" ? (
+        <BlurView pointerEvents="none" intensity={14} tint="dark" style={StyleSheet.absoluteFillObject} />
+      ) : null}
       <View style={[styles.glassContent, padding !== undefined ? { padding } : null, contentStyle]}>
         {children}
       </View>

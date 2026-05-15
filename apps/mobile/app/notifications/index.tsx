@@ -7,7 +7,8 @@ import {
   type BottomSheetBackdropProps,
 } from "@/components/expo-safe-bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
+import type * as NotificationsModule from "expo-notifications";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,6 +30,18 @@ import { useMyNotifications } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
+
+const NativeNotifications =
+  Constants.executionEnvironment === "storeClient"
+    ? null
+    : (() => {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports -- Expo Go crashes if this native module is imported eagerly.
+          return require("expo-notifications") as typeof NotificationsModule;
+        } catch {
+          return null;
+        }
+      })();
 
 type InboxNotification = {
   id: string;
@@ -285,7 +298,7 @@ export default function NotificationsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void Notifications.setBadgeCountAsync(unreadCount).catch(() => undefined);
+      void NativeNotifications?.setBadgeCountAsync(unreadCount).catch(() => undefined);
     }, [unreadCount]),
   );
 

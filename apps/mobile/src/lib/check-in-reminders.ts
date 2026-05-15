@@ -1,9 +1,21 @@
 import Constants from "expo-constants";
-import * as Notifications from "expo-notifications";
+import type * as NotificationsModule from "expo-notifications";
 import { Platform } from "react-native";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const REMINDER_STORAGE_KEY = "zook_smart_check_in_reminder_id";
+const isExpoGoEnvironment = Constants.executionEnvironment === "storeClient";
+const NativeNotifications = (() => {
+  if (isExpoGoEnvironment) {
+    return null;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Expo Go crashes if this native module is imported eagerly.
+    return require("expo-notifications") as typeof NotificationsModule;
+  } catch {
+    return null;
+  }
+})();
 
 export type ReminderAttendance = {
   checkedInAt?: string | null;
@@ -29,13 +41,13 @@ export async function syncSmartCheckInReminder(input: {
   gymName?: string | null;
   recentAttendance: ReminderAttendance[];
 }) {
-  if (Platform.OS === "web" || Constants.executionEnvironment === "storeClient") {
+  if (Platform.OS === "web" || isExpoGoEnvironment || !NativeNotifications) {
     return "unsupported" as const;
   }
 
   const existingId = await getStoredValue(REMINDER_STORAGE_KEY);
   if (existingId) {
-    await Notifications.cancelScheduledNotificationAsync(existingId).catch(() => undefined);
+    await NativeNotifications.cancelScheduledNotificationAsync(existingId).catch(() => undefined);
     await deleteStoredValue(REMINDER_STORAGE_KEY);
   }
 
@@ -43,7 +55,7 @@ export async function syncSmartCheckInReminder(input: {
     return "disabled" as const;
   }
 
-  const permission = await Notifications.getPermissionsAsync();
+  const permission = await NativeNotifications.getPermissionsAsync();
   if (!permission.granted) {
     return "permission-needed" as const;
   }
@@ -53,7 +65,7 @@ export async function syncSmartCheckInReminder(input: {
     return "not-enough-history" as const;
   }
 
-  const id = await Notifications.scheduleNotificationAsync({
+  const id = await NativeNotifications.scheduleNotificationAsync({
     content: {
       title: "Gym time soon",
       body: input.gymName
@@ -61,7 +73,7 @@ export async function syncSmartCheckInReminder(input: {
         : "You usually check in around this time.",
       data: { href: "/scan", type: "check_in_reminder" },
     },
-    trigger: reminderAt as unknown as Notifications.NotificationTriggerInput,
+    trigger: reminderAt as unknown as NotificationsModule.NotificationTriggerInput,
   });
   await setStoredValue(REMINDER_STORAGE_KEY, id);
   return "scheduled" as const;

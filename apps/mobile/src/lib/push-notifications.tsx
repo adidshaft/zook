@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
-import * as Notifications from "expo-notifications";
+import type * as NotificationsModule from "expo-notifications";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -25,9 +25,20 @@ import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 const INSTALLATION_ID_STORAGE_KEY = "zook_mobile_installation_id";
 const REGISTERED_PUSH_TOKEN_STORAGE_KEY = "zook_registered_push_token";
 const isExpoGoEnvironment = Constants.executionEnvironment === "storeClient";
+const NativeNotifications = (() => {
+  if (isExpoGoEnvironment) {
+    return null;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Expo Go crashes if this native module is imported eagerly.
+    return require("expo-notifications") as typeof NotificationsModule;
+  } catch {
+    return null;
+  }
+})();
 
-if (!isExpoGoEnvironment) {
-  Notifications.setNotificationHandler({
+if (NativeNotifications) {
+  NativeNotifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
       shouldShowBanner: true,
@@ -36,6 +47,13 @@ if (!isExpoGoEnvironment) {
       shouldSetBadge: true,
     }),
   });
+}
+
+function getNativeNotifications() {
+  if (!NativeNotifications) {
+    throw new Error("Push alerts need a signed phone build. In-app alerts still work here.");
+  }
+  return NativeNotifications;
 }
 
 type PushPermissionState = "unknown" | "undetermined" | "granted" | "denied" | "unsupported";
@@ -90,7 +108,7 @@ const expoGoPushValue: PushNotificationsContextValue = {
 };
 
 function normalizePermissionState(
-  status: Notifications.NotificationPermissionsStatus,
+  status: NotificationsModule.NotificationPermissionsStatus,
 ): PushPermissionState {
   if (status.granted) {
     return "granted";
@@ -147,6 +165,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
     );
   }
 
+  const notifications = getNativeNotifications();
   const { activeOrgId, registerLogoutCleanup, status, token } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -233,36 +252,36 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       return;
     }
     await Promise.all([
-      Notifications.setNotificationChannelAsync("payments", {
+      notifications.setNotificationChannelAsync("payments", {
         name: "Payments",
-        importance: Notifications.AndroidImportance.HIGH,
+        importance: notifications.AndroidImportance.HIGH,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#B9F455",
       }),
-      Notifications.setNotificationChannelAsync("ops", {
+      notifications.setNotificationChannelAsync("ops", {
         name: "Operations",
-        importance: Notifications.AndroidImportance.HIGH,
+        importance: notifications.AndroidImportance.HIGH,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#B9F455",
       }),
-      Notifications.setNotificationChannelAsync("reminders", {
+      notifications.setNotificationChannelAsync("reminders", {
         name: "Reminders",
-        importance: Notifications.AndroidImportance.DEFAULT,
+        importance: notifications.AndroidImportance.DEFAULT,
         sound: "default",
       }),
-      Notifications.setNotificationChannelAsync("marketing", {
+      notifications.setNotificationChannelAsync("marketing", {
         name: "Marketing",
-        importance: Notifications.AndroidImportance.LOW,
+        importance: notifications.AndroidImportance.LOW,
       }),
-      Notifications.setNotificationChannelAsync("default", {
+      notifications.setNotificationChannelAsync("default", {
         name: "Default",
-        importance: Notifications.AndroidImportance.DEFAULT,
+        importance: notifications.AndroidImportance.DEFAULT,
         sound: "default",
       }),
     ]);
-  }, []);
+  }, [notifications]);
 
   const registerExpoPushToken = useCallback(
     async (tokenValue: string) => {
@@ -326,11 +345,11 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
 
       setSyncStatus("checking");
 
-      let permissionStatus = await Notifications.getPermissionsAsync();
+      let permissionStatus = await notifications.getPermissionsAsync();
       setPermissionState(normalizePermissionState(permissionStatus));
 
       if (!permissionStatus.granted && promptForPermission) {
-        permissionStatus = await Notifications.requestPermissionsAsync({
+        permissionStatus = await notifications.requestPermissionsAsync({
           ios: {
             allowAlert: true,
             allowBadge: true,
@@ -352,7 +371,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
 
       try {
         await ensureAndroidChannels();
-        const nextToken = await Notifications.getExpoPushTokenAsync({
+        const nextToken = await notifications.getExpoPushTokenAsync({
           projectId,
           ...(Platform.OS === "ios"
             ? { development: getMobilePushEnvironment() === "development" }
@@ -397,7 +416,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
   }, [ensureRegistered]);
 
   const handleNotificationResponse = useCallback(
-    async (response: Notifications.NotificationResponse | null) => {
+    async (response: NotificationsModule.NotificationResponse | null) => {
       if (!response) {
         return;
       }
@@ -416,12 +435,12 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       }
 
       try {
-        await Notifications.clearLastNotificationResponseAsync();
+        await notifications.clearLastNotificationResponseAsync();
       } catch {
         // Clearing cached responses is best effort only.
       }
     },
-    [router, status],
+    [notifications, router, status],
   );
 
   useEffect(() => {
@@ -433,7 +452,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       }
 
       try {
-        const permissionStatus = await Notifications.getPermissionsAsync();
+        const permissionStatus = await notifications.getPermissionsAsync();
         if (!cancelled) {
           setPermissionState(normalizePermissionState(permissionStatus));
           if (!pushEnabledRef.current) {
@@ -452,7 +471,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
     return () => {
       cancelled = true;
     };
-  }, [status]);
+  }, [notifications, status]);
 
   useEffect(() => {
     if (status !== "authenticated" || !effectivePreferences.pushEnabled) {
@@ -466,7 +485,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
   }, [effectivePreferences.pushEnabled, ensureRegistered, status, activeOrgId]);
 
   useEffect(() => {
-    const subscription = Notifications.addPushTokenListener((nextToken) => {
+    const subscription = notifications.addPushTokenListener((nextToken) => {
       if (!pushEnabledRef.current) {
         return;
       }
@@ -476,27 +495,27 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
     return () => {
       subscription.remove();
     };
-  }, [registerExpoPushToken]);
+  }, [notifications, registerExpoPushToken]);
 
   useEffect(() => {
     if (Platform.OS === "web") {
       return;
     }
 
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
+    const responseSubscription = notifications.addNotificationResponseReceivedListener(
       (response) => {
         void handleNotificationResponse(response);
       },
     );
 
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
+    void notifications.getLastNotificationResponseAsync().then((response) => {
       void handleNotificationResponse(response);
     });
 
     return () => {
       responseSubscription.remove();
     };
-  }, [handleNotificationResponse]);
+  }, [handleNotificationResponse, notifications]);
 
   useEffect(() => {
     if (status === "authenticated" && pendingHref) {

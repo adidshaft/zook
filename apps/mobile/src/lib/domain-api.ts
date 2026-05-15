@@ -108,6 +108,7 @@ export const authClient = {
     return mobileApiFetch<AuthSessionSummary>("/auth/me", {
       token: options.token,
       ...(options.orgId ? { orgId: options.orgId } : {}),
+      skipAuthRefresh: true,
     });
   },
   refresh(refreshToken: string) {

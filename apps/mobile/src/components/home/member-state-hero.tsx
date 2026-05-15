@@ -1,6 +1,6 @@
 import type { ComponentProps, ComponentType } from "react";
 import { useEffect } from "react";
-import { StyleSheet, Text, View, TextInput, type TextInputProps } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedProps, useSharedValue, withSpring } from "@/lib/reanimated-lite";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
@@ -12,9 +12,6 @@ type AnimatedCircleProps = ComponentProps<typeof Circle> & {
 };
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle) as ComponentType<AnimatedCircleProps>;
-const AnimatedTextInput = Animated.createAnimatedComponent(TextInput) as ComponentType<
-  TextInputProps & { animatedProps?: Record<string, unknown> }
->;
 
 function formatRenewalDate(value?: string | null) {
   if (!value) return "Renewal date pending";
@@ -58,7 +55,14 @@ export function MemberStateHero({
 }) {
   const mainLabel = expired ? "Membership needs renewal" : daysLeftLabel;
   const splitLabel = mainLabel.match(/^(\d+)\s+(.+)$/);
-  const visitCount = visitLabel.match(/^(\d+)/)?.[1] ?? "-";
+  const visitCountMatch = visitLabel.match(/^(\d+)/);
+  const dayCountMatch = daysLeftLabel.match(/^(\d+)/);
+  const ringValue = visitCountMatch?.[1] ?? dayCountMatch?.[1] ?? "-";
+  const ringLabel = visitCountMatch
+    ? (["visits", "remaining"] as const)
+    : expired
+    ? (["renewal", "needed"] as const)
+    : (["days", "left"] as const);
   const progress = Math.max(0, Math.min(1, progressValue));
   const progressPct = `${Math.round(progress * 100)}%`;
   const ringSize = 104;
@@ -71,21 +75,9 @@ export function MemberStateHero({
   }));
   const encouragement = getMemberEncouragement(streakDays, expired);
 
-  const numericVisitCount = parseInt(visitCount, 10);
-  const animatedVisitCount = useSharedValue(0);
-
   useEffect(() => {
     ringProgress.value = withSpring(progress, { mass: 1, damping: 15, stiffness: 100 });
-    if (!isNaN(numericVisitCount)) {
-      animatedVisitCount.value = withSpring(numericVisitCount, { mass: 1, damping: 15, stiffness: 100 });
-    }
-  }, [progress, ringProgress, numericVisitCount, animatedVisitCount]);
-
-  const animatedVisitProps = useAnimatedProps(() => {
-    return {
-      text: isNaN(numericVisitCount) ? visitCount : `${Math.round(animatedVisitCount.value)}`,
-    } as any;
-  });
+  }, [progress, ringProgress]);
 
   return (
     <GlassCard
@@ -153,14 +145,9 @@ export function MemberStateHero({
             />
           </Svg>
           <View style={styles.visitRingArc}>
-            <AnimatedTextInput
-              underlineColorAndroid="transparent"
-              editable={false}
-              animatedProps={animatedVisitProps}
-              style={[styles.visitRingValue, { padding: 0, margin: 0 }]}
-            />
-            <Text style={styles.visitRingLabel}>visits</Text>
-            <Text style={styles.visitRingLabel}>remaining</Text>
+            <Text style={styles.visitRingValue}>{ringValue}</Text>
+            <Text style={styles.visitRingLabel}>{ringLabel[0]}</Text>
+            <Text style={styles.visitRingLabel}>{ringLabel[1]}</Text>
           </View>
           <Text style={styles.visitRingProgress}>{progressPct}</Text>
           {visitProgressLabel ? (

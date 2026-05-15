@@ -28,6 +28,7 @@ import {
   useMyProfile,
 } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 
 type ActivityItem = {
   id: string;
@@ -97,6 +98,7 @@ function percentFromMembership(input: {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const bottomPadding = useBottomScrollPadding({ hasStickyAction: true });
   const {
     activeOrgId,
     activeRole,
@@ -345,7 +347,7 @@ export default function ProfileScreen() {
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

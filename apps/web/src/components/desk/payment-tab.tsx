@@ -53,7 +53,7 @@ export function PaymentTab({
           <p className="mt-1 text-sm text-white/48">{copy.paymentDescription}</p>
         </div>
       </div>
-      <form className="mt-5 grid gap-4" onSubmit={onSubmit}>
+      <form className="mt-5 grid gap-4 pb-24" onSubmit={onSubmit}>
         <fieldset className="grid gap-2">
           <legend className="text-sm text-white/62">{copy.paymentPurpose}</legend>
           <div className="grid gap-2 sm:grid-cols-3">

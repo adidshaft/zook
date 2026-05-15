@@ -59,13 +59,13 @@ type PlatformUsageRow = {
 
 type ProviderDiagnostics = {
   category: string;
-  selectedProvider: string;
+  selectedProvider?: string;
   activeProvider: string | null;
   status: string;
-  missingEnv: string[];
-  env: Record<string, boolean>;
-  provider: string;
-  mode: string;
+  missingEnv?: string[];
+  env?: Record<string, boolean>;
+  provider?: string;
+  mode?: string;
   configured: boolean;
   lastCheckedAt?: string;
   requestId?: string;
@@ -225,13 +225,14 @@ export function PlatformOperationsPanel({
                 {
                   id: "mode",
                   header: "Mode",
-                  render: ([, provider]) => formatEnumLabel(provider.mode),
+                  render: ([category, provider]) =>
+                    formatEnumLabel(provider.mode ?? provider.selectedProvider ?? category),
                 },
                 {
                   id: "env",
                   header: "Needs",
                   render: ([, provider]) =>
-                    provider.missingEnv.length ? "Setup required" : "Nothing",
+                    (provider.missingEnv?.length ?? 0) ? "Setup required" : "Nothing",
                 },
                 {
                   id: "last",

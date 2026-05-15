@@ -34,7 +34,9 @@ export function HomeActionStrip({
         <ZookButton
           href={expired ? "/membership" : "/scan"}
           icon={expired ? "refresh-outline" : "qr-code-outline"}
+          tone="secondary"
           style={styles.scanButton}
+          textStyle={styles.scanButtonText}
           accessibilityLabel={expired ? "Renew membership" : "Scan gym QR"}
         >
           {expired ? "Renew" : "Scan QR"}
@@ -82,6 +84,9 @@ const styles = StyleSheet.create({
   scanButton: {
     flex: 1,
     minHeight: 86,
+  },
+  scanButtonText: {
+    color: colors.lime,
   },
   streakRow: {
     minHeight: 28,
