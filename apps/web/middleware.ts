@@ -4,7 +4,6 @@ const sessionCookieName = "zook_session";
 const refreshSessionCookieName = "zook_refresh";
 const canonicalHost = "zookfit.in";
 const canonicalRedirectHosts = new Set([
-  "www.zookfit.in",
   "app.zookfit.in",
   "dashboard.zookfit.in",
   "app.zook.kyokasuigetsu.xyz",
