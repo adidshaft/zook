@@ -6177,6 +6177,26 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
     });
     return ok({ gyms: results, nextCursor: gyms.length > limit ? gyms[limit]?.id : null });
   }
+  if (request.method === "GET" && pathMatches(path, ["platform-referrals", "lookup"])) {
+    const code = request.nextUrl.searchParams.get("code")?.trim().toLowerCase();
+    if (!code) {
+      return ok({ match: null });
+    }
+    const sourceOrg = await prisma.organization.findUnique({
+      where: { username: code },
+      select: { id: true, name: true, username: true, city: true },
+    });
+    if (!sourceOrg) {
+      return ok({ match: null });
+    }
+    return ok({
+      match: {
+        code: sourceOrg.username.toUpperCase(),
+        sourceOrgName: sourceOrg.name,
+        sourceOrgCity: sourceOrg.city,
+      },
+    });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", "public", /.+/])) {
     const username = path[2]!;
     const ctx = await getRequestContext(request);
@@ -6420,6 +6440,33 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
       await tx.saaSSubscription.create({
         data: { orgId: created.id, trialStartAt: trial.trialStartAt, trialEndAt: trial.trialEndAt },
       });
+      if (body.platformReferralCode) {
+        const normalizedReferral = body.platformReferralCode.toLowerCase();
+        if (normalizedReferral !== username) {
+          const sourceOrg = await tx.organization.findUnique({
+            where: { username: normalizedReferral },
+            select: { id: true },
+          });
+          if (sourceOrg) {
+            await tx.orgReferralPartnership.upsert({
+              where: {
+                sourceOrgId_targetOrgId: { sourceOrgId: sourceOrg.id, targetOrgId: created.id },
+              },
+              create: {
+                sourceOrgId: sourceOrg.id,
+                targetOrgId: created.id,
+                referralPolicySnapshot: {
+                  code: body.platformReferralCode,
+                  redeemedAt: new Date().toISOString(),
+                  rewardTier: "trial_extension_30d",
+                } as Prisma.InputJsonValue,
+                status: "pending",
+              },
+              update: {},
+            });
+          }
+        }
+      }
       await tx.organizationSetting.create({
         data: {
           orgId: created.id,
@@ -6541,6 +6588,68 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
         invoiceReady: missingBillingDetails(org, "invoice").length === 0,
         receiptMissing: missingBillingDetails(org, "receipt"),
         invoiceMissing: missingBillingDetails(org, "invoice"),
+      },
+    });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "billing", "subscription"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
+    const [org, subscription, mandate] = await Promise.all([
+      prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { id: true, username: true, status: true, trialStartAt: true, trialEndAt: true },
+      }),
+      prisma.saaSSubscription.findUnique({ where: { orgId } }),
+      prisma.saaSBillingMandate.findUnique({ where: { orgId } }),
+    ]);
+    if (!org) {
+      throw notFoundError("Organization not found");
+    }
+    const referralPartnerships = await prisma.orgReferralPartnership.findMany({
+      where: { sourceOrgId: orgId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    return ok({
+      subscription: {
+        orgStatus: org.status,
+        trialStartAt: org.trialStartAt,
+        trialEndAt: org.trialEndAt,
+        status: subscription?.status ?? org.status,
+        billingEmail: subscription?.billingEmail ?? null,
+        nextBillingAt: subscription?.nextBillingAt ?? null,
+        cancelledAt: subscription?.cancelledAt ?? null,
+      },
+      mandate: mandate
+        ? {
+            id: mandate.id,
+            status: mandate.status,
+            provider: mandate.provider,
+            providerMandateId: mandate.providerMandateId,
+            amountPaise: mandate.amountPaise,
+            currency: mandate.currency,
+            billingPeriod: mandate.billingPeriod,
+            billingInterval: mandate.billingInterval,
+            paidCount: mandate.paidCount,
+            totalCount: mandate.totalCount,
+            nextChargeAt: mandate.nextChargeAt,
+            currentEndAt: mandate.currentEndAt,
+            authenticatedAt: mandate.authenticatedAt,
+            activatedAt: mandate.activatedAt,
+            cancelledAt: mandate.cancelledAt,
+            checkoutUrl: mandate.checkoutUrl,
+          }
+        : null,
+      platformReferral: {
+        code: org.username.toUpperCase(),
+        referredCount: referralPartnerships.length,
+        recent: referralPartnerships.slice(0, 5).map((row) => ({
+          id: row.id,
+          targetOrgId: row.targetOrgId,
+          status: row.status,
+          createdAt: row.createdAt,
+        })),
       },
     });
   }
@@ -14460,6 +14569,67 @@ async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, pa
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
     return ok({ orgs: await prisma.organization.findMany({ orderBy: { createdAt: "desc" } }) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "subscriptions"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    const [orgs, subscriptions, mandates, referrals] = await Promise.all([
+      prisma.organization.findMany({
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          status: true,
+          trialEndAt: true,
+          createdAt: true,
+          contactEmail: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 500,
+      }),
+      prisma.saaSSubscription.findMany(),
+      prisma.saaSBillingMandate.findMany(),
+      prisma.orgReferralPartnership.findMany(),
+    ]);
+    const subByOrg = new Map(subscriptions.map((sub) => [sub.orgId, sub]));
+    const mandateByOrg = new Map(mandates.map((mandate) => [mandate.orgId, mandate]));
+    const referralCountBySource = new Map<string, number>();
+    for (const partnership of referrals) {
+      referralCountBySource.set(
+        partnership.sourceOrgId,
+        (referralCountBySource.get(partnership.sourceOrgId) ?? 0) + 1,
+      );
+    }
+    return ok({
+      summary: {
+        totalOrgs: orgs.length,
+        onTrial: orgs.filter((o) => o.status === "TRIAL_ACTIVE" || o.status === "TRIAL_EXPIRING")
+          .length,
+        active: orgs.filter((o) => o.status === "ACTIVE").length,
+        suspended: orgs.filter((o) => o.status === "SUSPENDED").length,
+        cancelled: orgs.filter((o) => o.status === "CANCELLED").length,
+        totalReferrals: referrals.length,
+      },
+      rows: orgs.map((org) => {
+        const subscription = subByOrg.get(org.id);
+        const mandate = mandateByOrg.get(org.id);
+        return {
+          orgId: org.id,
+          orgName: org.name,
+          username: org.username,
+          orgStatus: org.status,
+          trialEndAt: org.trialEndAt,
+          createdAt: org.createdAt,
+          contactEmail: org.contactEmail,
+          subscriptionStatus: subscription?.status ?? null,
+          nextBillingAt: subscription?.nextBillingAt ?? null,
+          mandateStatus: mandate?.status ?? null,
+          mandateNextChargeAt: mandate?.nextChargeAt ?? null,
+          mandatePaidCount: mandate?.paidCount ?? 0,
+          referredCount: referralCountBySource.get(org.id) ?? 0,
+        };
+      }),
+    });
   }
   if (request.method === "PATCH" && pathMatches(path, ["platform", "orgs", /.+/, "status"])) {
     const ctx = await getRequestContext(request);

@@ -130,6 +130,13 @@ export const createOrganizationSchema = z.object({
   equipment: z.array(z.string().trim().min(2).max(80)).max(60).default([]),
   joinMode: z.enum(["OPEN_JOIN", "APPROVAL_REQUIRED", "INVITE_ONLY"]).default("OPEN_JOIN"),
   visibility: z.enum(["PUBLIC", "INVITE_ONLY", "HIDDEN"]).default("PUBLIC"),
+  platformReferralCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .min(3)
+    .max(60)
+    .optional(),
 });
 
 export const membershipPlanSchema = z.object({

@@ -456,6 +456,8 @@ export function PlatformOperationsPanel({
           </GlassCard>
         </div>
 
+        <PlatformSubscriptionsSection />
+
         <div id="abuse-flags" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
@@ -517,6 +519,197 @@ export function PlatformOperationsPanel({
           </GlassCard>
         </div>
       </div>
+    </div>
+  );
+}
+
+type SubscriptionSummary = {
+  totalOrgs: number;
+  onTrial: number;
+  active: number;
+  suspended: number;
+  cancelled: number;
+  totalReferrals: number;
+};
+
+type SubscriptionRow = {
+  orgId: string;
+  orgName: string;
+  username: string;
+  orgStatus: string;
+  trialEndAt: string | Date | null;
+  createdAt: string | Date;
+  contactEmail: string | null;
+  subscriptionStatus: string | null;
+  nextBillingAt: string | Date | null;
+  mandateStatus: string | null;
+  mandateNextChargeAt: string | Date | null;
+  mandatePaidCount: number;
+  referredCount: number;
+};
+
+function PlatformSubscriptionsSection() {
+  const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
+  const [rows, setRows] = useState<SubscriptionRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    webApiFetch<{ summary: SubscriptionSummary; rows: SubscriptionRow[] }>(
+      "/api/platform/subscriptions",
+    )
+      .then((payload) => {
+        if (!mounted) return;
+        setSummary(payload.summary);
+        setRows(payload.rows);
+      })
+      .catch((cause) => {
+        if (!mounted) return;
+        setError(cause instanceof Error ? cause.message : "Unable to load subscriptions.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  return (
+    <div id="subscriptions" className="scroll-mt-5">
+      <GlassCard>
+        <SectionHeader
+          eyebrow="Subscriptions"
+          title="Gym subscriptions"
+          description="SaaS billing status, autopay mandates, and platform referrals across every gym."
+        />
+        {summary ? (
+          <ReadoutGrid
+            className="mt-5"
+            items={[
+              {
+                label: "Total gyms",
+                value: formatCompactNumber(summary.totalOrgs),
+                meta: "All accounts",
+              },
+              {
+                label: "On trial",
+                value: formatCompactNumber(summary.onTrial),
+                meta: "Active + expiring",
+              },
+              {
+                label: "Paying",
+                value: formatCompactNumber(summary.active),
+                meta: "Status active",
+              },
+              {
+                label: "Suspended",
+                value: formatCompactNumber(summary.suspended),
+                meta: "Needs review",
+              },
+              {
+                label: "Cancelled",
+                value: formatCompactNumber(summary.cancelled),
+                meta: "Off platform",
+              },
+              {
+                label: "Referrals",
+                value: formatCompactNumber(summary.totalReferrals),
+                meta: "Gym-to-gym",
+              },
+            ]}
+            columns={3}
+          />
+        ) : null}
+        <div className="mt-5">
+          {error ? (
+            <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
+              {error}
+            </p>
+          ) : loading ? (
+            <p className="text-sm text-white/45">Loading subscriptions...</p>
+          ) : rows.length ? (
+            <DataTable<SubscriptionRow>
+              columns={[
+                {
+                  id: "name",
+                  header: "Gym",
+                  render: (row: SubscriptionRow) => (
+                    <div>
+                      <p className="font-medium text-white">{row.orgName}</p>
+                      <p className="mt-1 text-xs text-white/45">
+                        {row.username} · {row.contactEmail ?? "no email"}
+                      </p>
+                    </div>
+                  ),
+                },
+                {
+                  id: "status",
+                  header: "Status",
+                  render: (row: SubscriptionRow) => (
+                    <StatusPill
+                      value={formatEnumLabel(row.orgStatus)}
+                      tone={toneFromStatus(row.orgStatus)}
+                    />
+                  ),
+                },
+                {
+                  id: "trial",
+                  header: "Trial end",
+                  render: (row: SubscriptionRow) => (row.trialEndAt ? formatDate(row.trialEndAt) : "—"),
+                },
+                {
+                  id: "mandate",
+                  header: "Autopay",
+                  render: (row: SubscriptionRow) =>
+                    row.mandateStatus ? (
+                      <div>
+                        <StatusPill
+                          value={formatEnumLabel(row.mandateStatus)}
+                          tone={toneFromStatus(row.mandateStatus)}
+                        />
+                        <p className="mt-1 text-xs text-white/45">
+                          {row.mandatePaidCount} cycles paid
+                        </p>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-white/45">Not set up</span>
+                    ),
+                },
+                {
+                  id: "nextCharge",
+                  header: "Next charge",
+                  render: (row: SubscriptionRow) =>
+                    row.mandateNextChargeAt
+                      ? formatDate(row.mandateNextChargeAt)
+                      : row.nextBillingAt
+                        ? formatDate(row.nextBillingAt)
+                        : "—",
+                },
+                {
+                  id: "referred",
+                  header: "Gyms referred",
+                  render: (row: SubscriptionRow) =>
+                    row.referredCount > 0 ? (
+                      <Pill tone="blue">{row.referredCount}</Pill>
+                    ) : (
+                      <span className="text-xs text-white/45">0</span>
+                    ),
+                },
+              ]}
+              rows={rows}
+              rowKey={(row) => row.orgId}
+              empty="No gyms found."
+            />
+          ) : (
+            <EmptyState
+              title="No subscriptions yet"
+              description="When gyms sign up they'll appear here with trial and billing state."
+            />
+          )}
+        </div>
+      </GlassCard>
     </div>
   );
 }

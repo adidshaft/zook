@@ -76,6 +76,46 @@ type BillingMandateResponse = {
   };
 };
 
+type SubscriptionDetail = {
+  subscription: {
+    orgStatus: string;
+    trialStartAt: string | Date;
+    trialEndAt: string | Date;
+    status: string;
+    billingEmail: string | null;
+    nextBillingAt: string | Date | null;
+    cancelledAt: string | Date | null;
+  };
+  mandate: {
+    id: string;
+    status: string;
+    provider: string;
+    providerMandateId: string | null;
+    amountPaise: number;
+    currency: string;
+    billingPeriod: string;
+    billingInterval: number;
+    paidCount: number;
+    totalCount: number;
+    nextChargeAt: string | Date | null;
+    currentEndAt: string | Date | null;
+    authenticatedAt: string | Date | null;
+    activatedAt: string | Date | null;
+    cancelledAt: string | Date | null;
+    checkoutUrl: string | null;
+  } | null;
+  platformReferral: {
+    code: string;
+    referredCount: number;
+    recent: Array<{
+      id: string;
+      targetOrgId: string;
+      status: string;
+      createdAt: string | Date;
+    }>;
+  };
+};
+
 const billingProfileFields: Array<[string, keyof Pick<
   BillingProfile,
   "legalName" | "gstNumber" | "billingEmail" | "contactPhone" | "address" | "city" | "state" | "pincode"
@@ -101,8 +141,10 @@ export function BillingSection({
 }) {
   const [profile, setProfile] = useState<BillingProfile | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
+  const [subscription, setSubscription] = useState<SubscriptionDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [mandateBusy, setMandateBusy] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("");
   const [status, setStatus] = useState("");
 
   useEffect(() => {
@@ -110,11 +152,13 @@ export function BillingSection({
     Promise.all([
       webApiFetch<{ billingProfile: BillingProfile }>(`/api/orgs/${orgId}/billing-profile`),
       webApiFetch<{ invoices: InvoiceRow[] }>(`/api/orgs/${orgId}/invoices`),
+      webApiFetch<SubscriptionDetail>(`/api/orgs/${orgId}/billing/subscription`),
     ])
-      .then(([profilePayload, invoicePayload]) => {
+      .then(([profilePayload, invoicePayload, subscriptionPayload]) => {
         if (!mounted) return;
         setProfile(profilePayload.billingProfile);
         setInvoices(invoicePayload.invoices);
+        setSubscription(subscriptionPayload);
       })
       .catch((cause) => {
         if (!mounted) return;
@@ -124,6 +168,18 @@ export function BillingSection({
       mounted = false;
     };
   }, [orgId]);
+
+  async function copyReferralCode() {
+    const code = subscription?.platformReferral.code;
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopyStatus("Referral code copied. Share it with another gym owner.");
+      window.setTimeout(() => setCopyStatus(""), 4000);
+    } catch {
+      setCopyStatus("Could not copy. Select the code manually.");
+    }
+  }
 
   async function saveBillingProfile() {
     if (!profile) return;
@@ -286,6 +342,89 @@ export function BillingSection({
           </button>
         </div>
       </GlassCard>
+      {subscription?.mandate ? (
+        <GlassCard className="xl:col-span-2">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <Pill
+                tone={
+                  subscription.mandate.status === "ACTIVE"
+                    ? "lime"
+                    : subscription.mandate.status === "CANCELLED"
+                      ? "amber"
+                      : "neutral"
+                }
+              >
+                Autopay {formatEnumLabel(subscription.mandate.status)}
+              </Pill>
+              <h2 className="mt-3 text-xl font-semibold text-white">Active subscription</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/52">
+                {formatInr(subscription.mandate.amountPaise)} per {subscription.mandate.billingPeriod}
+                {" "}via {formatEnumLabel(subscription.mandate.provider)} mandate.
+              </p>
+              <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm text-white/62 sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.18em] text-white/35">Next charge</dt>
+                  <dd className="font-medium text-white">
+                    {subscription.mandate.nextChargeAt
+                      ? formatDate(subscription.mandate.nextChargeAt)
+                      : "Pending activation"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.18em] text-white/35">Cycles paid</dt>
+                  <dd className="font-medium text-white">
+                    {subscription.mandate.paidCount} of {subscription.mandate.totalCount}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+            {subscription.mandate.checkoutUrl &&
+            subscription.mandate.status !== "ACTIVE" &&
+            subscription.mandate.status !== "CANCELLED" ? (
+              <a
+                href={subscription.mandate.checkoutUrl}
+                className="zook-focus rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
+              >
+                Complete setup
+              </a>
+            ) : null}
+          </div>
+        </GlassCard>
+      ) : null}
+      {subscription?.platformReferral ? (
+        <GlassCard className="xl:col-span-2">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <Pill tone="blue">Refer another gym</Pill>
+              <h2 className="mt-3 text-xl font-semibold text-white">Your platform referral code</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/52">
+                Share this code with another gym owner. When they sign up using it, both gyms get
+                an extended free trial.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <code className="rounded-xl border border-white/10 bg-black/40 px-4 py-2 font-mono text-base text-lime-200">
+                  {subscription.platformReferral.code}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => void copyReferralCode()}
+                  className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/8"
+                >
+                  Copy code
+                </button>
+              </div>
+              {copyStatus ? <p className="mt-3 text-xs text-white/55">{copyStatus}</p> : null}
+            </div>
+            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm md:min-w-[180px]">
+              <p className="text-xs uppercase tracking-[0.18em] text-white/35">Gyms referred</p>
+              <p className="mt-2 text-3xl font-semibold text-white">
+                {subscription.platformReferral.referredCount}
+              </p>
+            </div>
+          </div>
+        </GlassCard>
+      ) : null}
       <GlassCard className="xl:col-span-2">
         <h2 className="text-xl font-semibold text-white">{copy.invoicesTitle}</h2>
         <p className="mt-2 text-sm leading-6 text-white/52">
