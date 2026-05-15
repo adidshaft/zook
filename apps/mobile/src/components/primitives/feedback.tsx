@@ -7,4 +7,4 @@ export {
   QueryErrorState,
   Skeleton,
 } from "./legacy";
-export { NetworkBanner } from "@/components/primitives/network-banner";
+export { NetworkBanner } from "./network-banner";

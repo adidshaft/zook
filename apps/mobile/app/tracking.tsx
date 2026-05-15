@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import type { ComponentProps, ComponentType } from "react";
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { useAnimatedProps, useSharedValue, withTiming } from "@/lib/reanimated-lite";
 import Svg, { Circle } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import type { WorkoutLogEntry } from "@zook/core";

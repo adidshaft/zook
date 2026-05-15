@@ -15,7 +15,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown } from "@/lib/reanimated-lite";
 import {
   BrandMark,
   GlassCard,

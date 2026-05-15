@@ -36,7 +36,6 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 import { formatInr } from "@/lib/formatting";
 import {
@@ -978,17 +977,16 @@ function ShopShell({
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
-        <KeyboardAwareScreen
-          scrollViewProps={{
-            style: styles.scroller,
-            contentInsetAdjustmentBehavior: "never",
-            showsVerticalScrollIndicator: false,
-            contentContainerStyle: { paddingBottom: contentPaddingBottom },
-            refreshControl,
-          }}
+        <ScrollView
+          style={styles.scroller}
+          contentInsetAdjustmentBehavior="never"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
+          refreshControl={refreshControl}
         >
           <View style={styles.content}>{children}</View>
-        </KeyboardAwareScreen>
+        </ScrollView>
         {floatingAction ? (
           <View
             pointerEvents="box-none"

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
-import { OfflineBanner } from "@/components/primitives";
+import { OfflineBanner } from "./legacy";
 import { useT } from "@/lib/i18n";
 
 export function NetworkBanner() {

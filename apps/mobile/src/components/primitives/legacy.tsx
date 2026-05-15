@@ -32,7 +32,7 @@ import Animated, {
   useAnimatedStyle as useRealAnimatedStyle,
   useSharedValue as useRealSharedValue,
   withSpring as withRealSpring,
-} from "react-native-reanimated";
+} from "@/lib/reanimated-lite";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -2531,7 +2531,6 @@ export function LoadingSkeleton(props: Parameters<typeof Skeleton>[0]) {
 }
 
 export { DatePickerField } from "@/components/primitives/date-picker-field";
-export { NetworkBanner } from "@/components/primitives/network-banner";
 export { OtpInput } from "@/components/primitives/otp-input";
 export type { OtpInputHandle } from "@/components/primitives/otp-input";
 

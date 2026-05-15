@@ -18,7 +18,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing } from "@/lib/reanimated-lite";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,

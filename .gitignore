@@ -33,3 +33,4 @@ packages/figma-icon-builder/dist/
 .env*.local
 .claude/
 .codex-pet-runs/
+apps/web/.local/

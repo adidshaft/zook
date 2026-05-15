@@ -1,7 +1,7 @@
 import type { ComponentProps, ComponentType } from "react";
 import { useEffect } from "react";
-import { StyleSheet, Text, View, TextInput } from "react-native";
-import Animated, { useAnimatedProps, useSharedValue, withSpring } from "react-native-reanimated";
+import { StyleSheet, Text, View, TextInput, type TextInputProps } from "react-native";
+import Animated, { useAnimatedProps, useSharedValue, withSpring } from "@/lib/reanimated-lite";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 import { GlassCard, ZookButton } from "@/components/primitives";
@@ -12,7 +12,9 @@ type AnimatedCircleProps = ComponentProps<typeof Circle> & {
 };
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle) as ComponentType<AnimatedCircleProps>;
-const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput) as ComponentType<
+  TextInputProps & { animatedProps?: Record<string, unknown> }
+>;
 
 function formatRenewalDate(value?: string | null) {
   if (!value) return "Renewal date pending";

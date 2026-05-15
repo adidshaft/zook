@@ -1,4 +1,6 @@
-import { View } from "react-native";
+import { createElement } from "react";
+import { TextInput, View } from "react-native";
+import type { ComponentType } from "react";
 
 type EasingFn = (value: number) => number;
 
@@ -15,6 +17,10 @@ export function useSharedValue<T>(initialValue: T) {
 
 export function useAnimatedStyle<T>(styleFactory: () => T): T {
   return styleFactory();
+}
+
+export function useAnimatedProps<T>(propsFactory: () => T): T {
+  return propsFactory();
 }
 
 export function withTiming<T>(value: T, ..._args: unknown[]): T {
@@ -48,6 +54,33 @@ export function interpolate(value: number, inputRange: number[], outputRange: nu
   return startOutput + progress * (endOutput - startOutput);
 }
 
-const Reanimated = { View };
+function createAnimatedComponent<T extends ComponentType<any>>(component: T): T & ComponentType<any> {
+  function AnimatedComponent({ animatedProps, entering: _entering, ...props }: any) {
+    const mergedProps = { ...animatedProps, ...props };
+    if ("text" in mergedProps && !("value" in mergedProps)) {
+      mergedProps.value = String(mergedProps.text ?? "");
+    }
+    delete mergedProps.text;
+    return createElement(component, mergedProps);
+  }
+
+  return AnimatedComponent as T & ComponentType<any>;
+}
+
+function makeAnimationBuilder() {
+  const builder = {
+    delay: (..._args: unknown[]) => builder,
+    duration: (..._args: unknown[]) => builder,
+  };
+  return builder;
+}
+
+export const FadeInDown = makeAnimationBuilder();
+
+const Reanimated = {
+  View: View as ComponentType<any>,
+  TextInput: TextInput as ComponentType<any>,
+  createAnimatedComponent,
+};
 
 export default Reanimated;
