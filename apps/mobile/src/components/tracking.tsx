@@ -2,17 +2,19 @@ import { Link } from "expo-router";
 import type { Href } from "expo-router";
 import type { TrackingSummaryMetric, WorkoutHistorySeries, WorkoutLogEntry } from "@zook/core";
 import { StyleSheet, Text, View } from "react-native";
+import { useT } from "@/lib/i18n";
 import { colors, radii } from "@/lib/theme";
 
 export function TrackingSectionHeader({
   title,
   href,
-  linkLabel = "See all"
+  linkLabel
 }: {
   title: string;
   href?: Href;
   linkLabel?: string;
 }) {
+  const t = useT();
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>
@@ -21,7 +23,7 @@ export function TrackingSectionHeader({
       {href ? (
         <Link href={href}>
           <Text style={styles.sectionLink}>
-            {linkLabel}
+            {linkLabel ?? t("common.seeAll")}
           </Text>
         </Link>
       ) : null}
@@ -57,6 +59,7 @@ export function WorkoutLogCard({
   entry: WorkoutLogEntry;
   compact?: boolean;
 }) {
+  const t = useT();
   const visibleExercises = compact ? entry.exercises.slice(0, 3) : entry.exercises;
 
   return (
@@ -78,13 +81,13 @@ export function WorkoutLogCard({
       </View>
 
       <View style={[styles.metaRow, compact ? styles.metaRowCompact : null]}>
-        <MetaPill label="Start" value={entry.startTimeLabel} compact={compact} />
-        <MetaPill label="End" value={entry.endTimeLabel} compact={compact} />
-        <MetaPill label="Duration" value={entry.durationLabel} compact={compact} />
+        <MetaPill label={t("tracking.start")} value={entry.startTimeLabel} compact={compact} />
+        <MetaPill label={t("tracking.end")} value={entry.endTimeLabel} compact={compact} />
+        <MetaPill label={t("tracking.duration")} value={entry.durationLabel} compact={compact} />
       </View>
 
       <Text style={styles.focusText}>
-        Focus: {entry.focusLabel}
+        {t("tracking.focus")}: {entry.focusLabel}
       </Text>
 
       <View style={styles.exerciseList}>
@@ -125,6 +128,7 @@ export function WorkoutLogCard({
 }
 
 export function WorkoutHistorySummary({ series }: { series: WorkoutHistorySeries }) {
+  const t = useT();
   return (
     <View style={styles.historyCard}>
       <Text style={styles.historyLabel}>
@@ -136,7 +140,7 @@ export function WorkoutHistorySummary({ series }: { series: WorkoutHistorySeries
             {series.totalDurationLabel}
           </Text>
           <Text style={styles.historyMetricLabel}>
-            Total duration
+            {t("tracking.totalDuration")}
           </Text>
         </View>
         <View style={styles.historyMetricBlock}>
@@ -144,7 +148,7 @@ export function WorkoutHistorySummary({ series }: { series: WorkoutHistorySeries
             {series.sessionCountLabel}
           </Text>
           <Text style={styles.historyMetricLabel}>
-            Sessions
+            {t("tracking.sessions")}
           </Text>
         </View>
       </View>

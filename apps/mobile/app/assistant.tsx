@@ -25,6 +25,7 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { aiApi } from "@/lib/domain-api";
 import { useMyPlans, useMyProfile, useTrainerClients } from "@/lib/query-hooks";
+import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -239,7 +240,7 @@ export default function AssistantScreen() {
 
   const suggestedPrompts = isTrainer ? trainerPrompts : memberPrompts;
   const composerBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + spacing.lg;
-  const assistantComingSoon = true;
+  const assistantEnabled = isMobileFeatureEnabled("AI_CHAT_ENABLED");
 
   if (!canUseAi) {
     return (
@@ -260,7 +261,7 @@ export default function AssistantScreen() {
     );
   }
 
-  if (assistantComingSoon) {
+  if (!assistantEnabled) {
     return (
       <ZookScreen>
         <ScrollView

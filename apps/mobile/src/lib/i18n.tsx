@@ -37,10 +37,12 @@ export type TranslationKey =
   | "nav.payments"
   | "nav.orders"
   | "nav.owner"
+  | "nav.command"
   | "nav.needs"
   | "nav.approvals"
   | "nav.revenue"
   | "nav.stock"
+  | "nav.profile"
   | "notifications.today"
   | "notifications.yesterday"
   | "notifications.earlierThisWeek"
@@ -53,7 +55,6 @@ export type TranslationKey =
   | "auth.otpSubtitle"
   | "auth.identifierLabel"
   | "auth.identifierPlaceholder"
-  | "auth.phoneHint"
   | "auth.otpLabel"
   | "auth.otpAccessibility"
   | "auth.sendCode"
@@ -64,22 +65,9 @@ export type TranslationKey =
   | "auth.changeSignIn"
   | "auth.testCode"
   | "auth.enterIdentifier"
-  | "auth.enterIndiaMobile"
   | "auth.codeSent"
   | "auth.freshCodeSent"
   | "auth.signedIn"
-  | "auth.invalidEmail"
-  | "auth.invalidMobile"
-  | "auth.sessionExpired"
-  | "auth.verifyToContinue"
-  | "auth.appleUnavailable"
-  | "auth.appleNoToken"
-  | "auth.appleComingSoon"
-  | "auth.googleUnavailable"
-  | "auth.googleNoToken"
-  | "auth.googleComingSoon"
-  | "auth.sessionExpiredTitle"
-  | "auth.sessionExpiredBody"
   | "settings.profileTitle"
   | "settings.profileSubtitle"
   | "settings.goBack"
@@ -156,10 +144,9 @@ export type TranslationKey =
   | "shop.readyForPickup"
   | "shop.readyForPickupSubtitle"
   | "shop.pickupCode"
-  | "shop.pickupCodeCopied"
-  | "shop.pickupCodeCopyFailed"
   | "shop.pending"
   | "shop.paid"
+  | "shop.signedPickupQrCode"
   | "shop.continuePayment"
   | "shop.confirming"
   | "shop.backToShop"
@@ -206,7 +193,34 @@ export type TranslationKey =
   | "tracking.bodyComposition"
   | "tracking.latestEntry"
   | "tracking.weight"
-  | "tracking.bodyFat";
+  | "tracking.bodyFat"
+  | "tracking.start"
+  | "tracking.end"
+  | "tracking.duration"
+  | "tracking.focus"
+  | "tracking.totalDuration"
+  | "tracking.sessions"
+  | "common.seeAll"
+  | "more.title"
+  | "more.subtitle"
+  | "more.accountSubtitle"
+  | "more.signOut"
+  | "more.signOutConfirmTitle"
+  | "more.signOutConfirmBody"
+  | "more.signOutCancel"
+  | "more.tracking.title"
+  | "more.tracking.subtitle"
+  | "more.shop.title"
+  | "more.shop.subtitle"
+  | "more.inbox.title"
+  | "more.inbox.subtitle"
+  | "more.assistant.title"
+  | "more.assistant.subtitle"
+  | "more.profile.title"
+  | "more.profile.subtitle"
+  | "more.settings.title"
+  | "more.settings.subtitle"
+  | "more.fallbackName";
 
 type TranslationValues = Record<string, string | number>;
 
@@ -238,10 +252,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.payments": "Payments",
     "nav.orders": "Orders",
     "nav.owner": "Owner",
+    "nav.command": "Command",
     "nav.needs": "Needs",
     "nav.approvals": "Approvals",
     "nav.revenue": "Revenue",
     "nav.stock": "Stock",
+    "nav.profile": "Profile",
     "notifications.today": "Today",
     "notifications.yesterday": "Yesterday",
     "notifications.earlierThisWeek": "Earlier this week",
@@ -250,11 +266,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.heroBody": "Your gym, your membership, your rhythm. Sign in to get started.",
     "auth.signIn": "Sign in",
     "auth.verifyCode": "Verify Code",
-    "auth.identifierSubtitle": "Use your email or phone number.",
+    "auth.identifierSubtitle": "Use your email address.",
     "auth.otpSubtitle": "Check your messages.",
-    "auth.identifierLabel": "Email or Phone",
-    "auth.identifierPlaceholder": "+91 98765 43210 or you@example.com",
-    "auth.phoneHint": "India mobile numbers are sent with the +91 country code.",
+    "auth.identifierLabel": "Email",
+    "auth.identifierPlaceholder": "you@example.com",
     "auth.otpLabel": "One-time code",
     "auth.otpAccessibility": "One-time code",
     "auth.sendCode": "Send Code",
@@ -264,23 +279,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.resendIn": "Resend in {{seconds}}s",
     "auth.changeSignIn": "Change sign-in",
     "auth.testCode": "TEST CODE",
-    "auth.enterIdentifier": "Enter your email or phone number.",
-    "auth.enterIndiaMobile": "Enter a 10-digit India mobile number or use email.",
+    "auth.enterIdentifier": "Enter your email address.",
     "auth.codeSent": "Code sent to {{identifier}}.",
     "auth.freshCodeSent": "Fresh code sent to {{identifier}}.",
     "auth.signedIn": "Signed in.",
-    "auth.invalidEmail": "Enter a valid email address.",
-    "auth.invalidMobile": "Enter a valid 10-digit mobile number.",
-    "auth.sessionExpired": "Your session expired. Sign in again to continue.",
-    "auth.verifyToContinue": "Verify it's you to continue.",
-    "auth.appleUnavailable": "Apple sign-in is not available on this device.",
-    "auth.appleNoToken": "Apple did not return an identity token. Try again.",
-    "auth.appleComingSoon": "Apple sign-in coming soon.",
-    "auth.googleUnavailable": "Google sign-in is not available in Expo Go.",
-    "auth.googleNoToken": "Google did not return an ID token. Try again.",
-    "auth.googleComingSoon": "Google sign-in coming soon.",
-    "auth.sessionExpiredTitle": "Session expired",
-    "auth.sessionExpiredBody": "Sign in again to continue.",
     "settings.profileTitle": "Profile",
     "settings.profileSubtitle": "Account, notifications, and support",
     "settings.goBack": "Go back",
@@ -358,10 +360,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.readyForPickup": "Ready for pickup",
     "shop.readyForPickupSubtitle": "Show this code at the front desk.",
     "shop.pickupCode": "Pickup code",
-    "shop.pickupCodeCopied": "Pickup code copied.",
-    "shop.pickupCodeCopyFailed": "Could not copy pickup code.",
     "shop.pending": "Pending",
     "shop.paid": "Paid",
+    "shop.signedPickupQrCode": "Signed pickup QR code",
     "shop.continuePayment": "Continue to payment",
     "shop.confirming": "Confirming...",
     "shop.backToShop": "Back to Shop",
@@ -410,6 +411,33 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.latestEntry": "Latest entry",
     "tracking.weight": "Weight",
     "tracking.bodyFat": "Body fat",
+    "tracking.start": "Start",
+    "tracking.end": "End",
+    "tracking.duration": "Duration",
+    "tracking.focus": "Focus",
+    "tracking.totalDuration": "Total duration",
+    "tracking.sessions": "Sessions",
+    "common.seeAll": "See all",
+    "more.title": "More",
+    "more.subtitle": "Everything else in one place.",
+    "more.accountSubtitle": "Zook member account",
+    "more.signOut": "Sign out",
+    "more.signOutConfirmTitle": "Sign out?",
+    "more.signOutConfirmBody": "You can sign back in with OTP any time.",
+    "more.signOutCancel": "Cancel",
+    "more.tracking.title": "Tracking",
+    "more.tracking.subtitle": "Log workouts, weight, and habits.",
+    "more.shop.title": "Shop",
+    "more.shop.subtitle": "Order gym essentials for desk pickup.",
+    "more.inbox.title": "Inbox",
+    "more.inbox.subtitle": "Payments, plans, and gym updates.",
+    "more.assistant.title": "Plan assistant",
+    "more.assistant.subtitle": "Ask questions about your training and plans.",
+    "more.profile.title": "Profile",
+    "more.profile.subtitle": "Membership details and personal info.",
+    "more.settings.title": "Settings",
+    "more.settings.subtitle": "Language, roles, privacy, and account.",
+    "more.fallbackName": "Member",
   },
   hi: {
     "app.demoMode": "डेमो मोड",
@@ -438,10 +466,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.payments": "पेमेंट",
     "nav.orders": "ऑर्डर",
     "nav.owner": "ओनर",
+    "nav.command": "कमांड",
     "nav.needs": "जरूरतें",
     "nav.approvals": "मंजूरी",
     "nav.revenue": "रेवेन्यू",
     "nav.stock": "स्टॉक",
+    "nav.profile": "प्रोफाइल",
     "notifications.today": "आज",
     "notifications.yesterday": "कल",
     "notifications.earlierThisWeek": "इस हफ्ते पहले",
@@ -450,11 +480,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.heroBody": "आपका जिम, आपकी मेंबरशिप, आपकी लय. शुरू करने के लिए साइन इन करें.",
     "auth.signIn": "साइन इन",
     "auth.verifyCode": "कोड वेरिफाई करें",
-    "auth.identifierSubtitle": "अपना ईमेल या फोन नंबर इस्तेमाल करें.",
+    "auth.identifierSubtitle": "अपना ईमेल पता इस्तेमाल करें.",
     "auth.otpSubtitle": "अपने संदेश देखें.",
-    "auth.identifierLabel": "ईमेल या फोन",
-    "auth.identifierPlaceholder": "+91 98765 43210 या you@example.com",
-    "auth.phoneHint": "भारत के मोबाइल नंबर +91 देश कोड के साथ भेजे जाते हैं.",
+    "auth.identifierLabel": "ईमेल",
+    "auth.identifierPlaceholder": "you@example.com",
     "auth.otpLabel": "वन-टाइम कोड",
     "auth.otpAccessibility": "वन-टाइम कोड",
     "auth.sendCode": "कोड भेजें",
@@ -464,23 +493,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.resendIn": "{{seconds}}s में फिर भेजें",
     "auth.changeSignIn": "साइन-इन बदलें",
     "auth.testCode": "टेस्ट कोड",
-    "auth.enterIdentifier": "अपना ईमेल या फोन नंबर डालें.",
-    "auth.enterIndiaMobile": "10 अंकों का भारतीय मोबाइल नंबर डालें या ईमेल इस्तेमाल करें.",
+    "auth.enterIdentifier": "अपना ईमेल पता डालें.",
     "auth.codeSent": "{{identifier}} पर कोड भेजा गया.",
     "auth.freshCodeSent": "{{identifier}} पर नया कोड भेजा गया.",
     "auth.signedIn": "साइन इन हो गया.",
-    "auth.invalidEmail": "मान्य ईमेल पता दर्ज करें.",
-    "auth.invalidMobile": "मान्य 10-digit मोबाइल नंबर दर्ज करें.",
-    "auth.sessionExpired": "आपका session expire हो गया है. जारी रखने के लिए फिर से sign in करें.",
-    "auth.verifyToContinue": "जारी रखने के लिए verify करें.",
-    "auth.appleUnavailable": "इस device पर Apple sign-in उपलब्ध नहीं है.",
-    "auth.appleNoToken": "Apple ने identity token नहीं दिया. फिर से प्रयास करें.",
-    "auth.appleComingSoon": "Apple sign-in जल्द आ रहा है.",
-    "auth.googleUnavailable": "Expo Go में Google sign-in उपलब्ध नहीं है.",
-    "auth.googleNoToken": "Google ने ID token नहीं दिया. फिर से प्रयास करें.",
-    "auth.googleComingSoon": "Google sign-in जल्द आ रहा है.",
-    "auth.sessionExpiredTitle": "Session expire हो गया",
-    "auth.sessionExpiredBody": "जारी रखने के लिए फिर से sign in करें.",
     "settings.profileTitle": "प्रोफाइल",
     "settings.profileSubtitle": "अकाउंट, नोटिफिकेशन और सपोर्ट",
     "settings.goBack": "वापस जाएं",
@@ -543,7 +559,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.system": "सिस्टम",
     "settings.systemSubtitle": "मदद, पॉलिसी और ऐप जानकारी",
     "settings.contactSupport": "सपोर्ट से संपर्क करें",
-    "settings.contactSupportSubtitle": "अकाउंट या जिम समस्या के लिए support@zookfit.in पर ईमेल करें",
+    "settings.contactSupportSubtitle":
+      "अकाउंट या जिम समस्या के लिए support@zookfit.in पर ईमेल करें",
     "settings.aboutZook": "Zook के बारे में",
     "settings.aboutZookSubtitle": "जिम ऑपरेशन, मेंबरशिप, PT और मेंबर अनुभव",
     "settings.signedInGym": "साइन-इन जिम",
@@ -559,10 +576,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.readyForPickup": "पिकअप के लिए तैयार",
     "shop.readyForPickupSubtitle": "यह कोड फ्रंट डेस्क पर दिखाएं.",
     "shop.pickupCode": "पिकअप कोड",
-    "shop.pickupCodeCopied": "पिकअप कोड कॉपी हुआ।",
-    "shop.pickupCodeCopyFailed": "पिकअप कोड कॉपी नहीं हो सका।",
     "shop.pending": "पेंडिंग",
     "shop.paid": "पेड",
+    "shop.signedPickupQrCode": "साइन किया हुआ पिकअप QR कोड",
     "shop.continuePayment": "पेमेंट जारी रखें",
     "shop.confirming": "कन्फर्म हो रहा है...",
     "shop.backToShop": "शॉप पर वापस",
@@ -611,6 +627,33 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.latestEntry": "नयी एंट्री",
     "tracking.weight": "वजन",
     "tracking.bodyFat": "बॉडी फैट",
+    "tracking.start": "शुरू",
+    "tracking.end": "खत्म",
+    "tracking.duration": "अवधि",
+    "tracking.focus": "फोकस",
+    "tracking.totalDuration": "कुल अवधि",
+    "tracking.sessions": "सेशन",
+    "common.seeAll": "सभी देखें",
+    "more.title": "और",
+    "more.subtitle": "बाकी सब कुछ एक जगह.",
+    "more.accountSubtitle": "Zook मेंबर अकाउंट",
+    "more.signOut": "साइन आउट",
+    "more.signOutConfirmTitle": "साइन आउट करें?",
+    "more.signOutConfirmBody": "आप कभी भी OTP से वापस साइन इन कर सकते हैं.",
+    "more.signOutCancel": "रद्द करें",
+    "more.tracking.title": "ट्रैकिंग",
+    "more.tracking.subtitle": "वर्कआउट, वजन और आदतें लॉग करें.",
+    "more.shop.title": "शॉप",
+    "more.shop.subtitle": "जिम के सामान का ऑर्डर डेस्क पर लें.",
+    "more.inbox.title": "इनबॉक्स",
+    "more.inbox.subtitle": "पेमेंट, प्लान और जिम अपडेट.",
+    "more.assistant.title": "प्लान असिस्टेंट",
+    "more.assistant.subtitle": "अपनी ट्रेनिंग और प्लान के बारे में पूछें.",
+    "more.profile.title": "प्रोफाइल",
+    "more.profile.subtitle": "मेम्बरशिप और व्यक्तिगत जानकारी.",
+    "more.settings.title": "सेटिंग्स",
+    "more.settings.subtitle": "भाषा, रोल, प्राइवेसी और अकाउंट.",
+    "more.fallbackName": "मेंबर",
   },
 };
 

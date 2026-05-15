@@ -21,6 +21,7 @@ import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { plansApi, trainerApi } from "@/lib/domain-api";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
+import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -116,6 +117,7 @@ export default function TrainerAiDraftReview() {
   const clientId = id;
   const { activeOrgId, token } = useAuth();
   const canGeneratePlan = useHasPermission("AI_GENERATE_PLAN");
+  const aiDraftEnabled = isMobileFeatureEnabled("AI_DRAFT_ENABLED");
   const clientsQuery = useTrainerClients();
   const client =
     clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
@@ -186,61 +188,6 @@ export default function TrainerAiDraftReview() {
   if (!clientId) {
     return null;
   }
-
-  return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
-        <KeyboardAwareScreen
-          scrollViewProps={{
-            contentInsetAdjustmentBehavior: "never",
-            showsVerticalScrollIndicator: false,
-            contentContainerStyle: styles.content,
-          }}
-        >
-          <MobileHeader
-            title="Plan Assistant"
-            subtitle="AI plan generation is coming soon."
-            leading={
-              <Pressable
-                onPress={() =>
-                  router.canGoBack()
-                    ? router.back()
-                    : router.replace(`/trainer/client/${client?.memberUserId ?? clientId}`)
-                }
-                accessibilityRole="button"
-                accessibilityLabel="Back to client detail"
-                style={styles.iconButton}
-              >
-                <Text style={styles.backIcon}>‹</Text>
-              </Pressable>
-            }
-            chip={<StatusChip status="Coming soon" tone="neutral" />}
-          />
-
-          <GlassCard variant="compact" contentStyle={styles.emptyContent}>
-            <IconBubble icon="sparkles-outline" tone="neutral" size={46} />
-            <View style={styles.summaryCopy}>
-              <Text style={styles.cardTitle}>AI plan assistant coming soon</Text>
-              <Text style={styles.cardBody}>
-                Create the client plan manually for launch. You can save a draft, review it, and
-                assign it from the client plan builder.
-              </Text>
-            </View>
-            <ZookButton
-              onPress={() =>
-                router.replace(`/trainer/client/${client?.memberUserId ?? clientId}?tab=plans` as Href)
-              }
-              icon="reader-outline"
-            >
-              Open manual plan builder
-            </ZookButton>
-          </GlassCard>
-        </KeyboardAwareScreen>
-        <BottomNav selectedPath="/trainer/client" role="TRAINER" />
-      </ZookScreen>
-    </>
-  );
 
   function updateDraft(patch: Partial<Draft>) {
     setDraft((current) => (current ? { ...current, ...patch } : current));
@@ -361,12 +308,7 @@ export default function TrainerAiDraftReview() {
     }
   }
 
-  const visibleDraft = draft ?? {
-    title: "",
-    goal: "",
-    difficulty: "",
-    sections: [],
-  };
+  const visibleDraft = draft;
 
   return (
     <>
@@ -380,8 +322,8 @@ export default function TrainerAiDraftReview() {
           }}
         >
           <MobileHeader
-            title="Draft Review"
-            subtitle="Review, edit, then approve before assigning."
+            title="AI Draft Review"
+            subtitle="AI assists trainers. Trainers stay in control."
             leading={
               <Pressable
                 onPress={() =>
@@ -399,7 +341,7 @@ export default function TrainerAiDraftReview() {
             chip={<StatusChip status="Review required" />}
           />
 
-          <AuditWarning>Review and edit this draft before assigning it.</AuditWarning>
+          <AuditWarning>AI generated this draft. Edit and approve before assigning.</AuditWarning>
 
           {visibleDraft ? (
             <>
@@ -552,16 +494,33 @@ export default function TrainerAiDraftReview() {
           ) : (
             <EmptyState
               title="No draft ready"
-              body="Generate a draft only after confirming the client goal and constraints."
+              body="Generate a draft only after confirming the client goal and constraints. AI never auto-assigns plans."
               action={
-                <ZookButton
-                  onPress={() => void generateDraft()}
-                  icon="sparkles-outline"
-                  disabled={!canGeneratePlan || generating}
-                  onLongPress={!canGeneratePlan ? showOwnerApprovalRequired : undefined}
-                >
-                  {generating ? "Generating..." : "Generate Draft"}
-                </ZookButton>
+                <View style={styles.actionRow}>
+                  <ZookButton
+                    onPress={() => void generateDraft()}
+                    icon="sparkles-outline"
+                    disabled={!aiDraftEnabled || !canGeneratePlan || generating}
+                    onLongPress={
+                      aiDraftEnabled && !canGeneratePlan ? showOwnerApprovalRequired : undefined
+                    }
+                    style={styles.actionHalf}
+                  >
+                    {generating
+                      ? "Generating..."
+                      : aiDraftEnabled
+                        ? "Generate AI Draft"
+                        : "AI Drafts Disabled"}
+                  </ZookButton>
+                  <SecondaryButton
+                    onPress={() =>
+                      router.replace(`/trainer/client/${client?.memberUserId ?? clientId}?tab=plans` as Href)
+                    }
+                    style={styles.actionHalf}
+                  >
+                    Manual plan
+                  </SecondaryButton>
+                </View>
               }
             />
           )}

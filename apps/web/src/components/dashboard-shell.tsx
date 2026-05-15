@@ -10,6 +10,7 @@ import { DashboardSidebar } from "./dashboard/shell/dashboard-sidebar";
 import { MobileDashboardMenu } from "./dashboard/shell/mobile-dashboard-menu";
 import { filterNavGroups, navGroups } from "./dashboard/shell/nav";
 import { OwnerSetupChecklist } from "./dashboard/shell/owner-setup-checklist";
+import { LayoutTransition } from "./layout-transition";
 import type { DashboardData } from "./dashboard/shell/types";
 import type { Permission, Role } from "@zook/core";
 
@@ -98,9 +99,15 @@ export function DashboardShell({
       shortLabel,
     })),
   }));
-  const canShowQr = activePermissions.has("ATTENDANCE_QR_DISPLAY");
-  const canViewReports = activePermissions.has("ORG_VIEW_REPORTS");
-  const canOpenDesk = roles.some((role) => role === "OWNER" || role === "ADMIN");
+  const roleLabel = roles.includes("OWNER")
+    ? "Owner"
+    : roles.includes("ADMIN")
+      ? "Admin"
+      : roles.includes("RECEPTIONIST")
+        ? "Reception"
+        : roles.includes("TRAINER")
+          ? "Trainer"
+          : "Member";
   const runtimeLabel = data.connected
     ? copy.dashboard.liveWorkspace
     : data.fallbackMode === "demo"
@@ -125,10 +132,10 @@ export function DashboardShell({
     );
   }
 
-  const pageTitle = sectionKey === "" ? `${copy.dashboard.todayAt} ${activeOrg.name}` : title;
+  const pageTitle = sectionKey === "" ? "Today’s Command Board" : title;
   const pageDescription =
     sectionKey === ""
-      ? copy.dashboard.todayDescription
+      ? "Real-time overview of your gym operations."
       : sectionDescriptions[locale][sectionKey] ?? "";
   const currentDashboardPath = `/dashboard${sectionKey ? `/${sectionKey}` : ""}`;
   const branchHref = (branchId: string) =>
@@ -138,11 +145,9 @@ export function DashboardShell({
     (data.summary.activeMembers === 0 || !selectedBranch || activeOrg.status !== "ACTIVE");
 
   return (
-    <main className="min-h-dvh overflow-x-hidden px-3 py-4 sm:px-5 lg:px-6 xl:px-8">
+    <main className="zook-shell-bg min-h-dvh overflow-x-hidden px-3 py-4 sm:px-5 lg:px-6 xl:px-8">
       <div className="mx-auto grid w-full max-w-[1760px] min-w-0 items-start gap-5 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
         <DashboardSidebar
-          activeOrg={activeOrg}
-          selectedBranch={selectedBranch}
           data={data}
           visibleNavGroups={visibleNavGroups}
           sectionKey={sectionKey}
@@ -161,62 +166,69 @@ export function DashboardShell({
             activeOrg={activeOrg}
             selectedBranch={selectedBranch}
             data={data}
-            pageTitle={pageTitle}
-            pageDescription={pageDescription}
             branchHref={branchHref}
             runtimeLabel={runtimeLabel}
-            canShowQr={canShowQr}
-            canViewReports={canViewReports}
-            canOpenDesk={canOpenDesk}
             user={user}
+            roleLabel={roleLabel}
             copy={copy}
           />
 
-          {showOwnerSetupChecklist ? (
-            <OwnerSetupChecklist
-              activeOrg={activeOrg}
-              hasBranch={Boolean(selectedBranch)}
-              summary={data.summary}
-              copy={copy}
-            />
-          ) : null}
+          <LayoutTransition layoutKey={sectionKey}>
+            <div className="px-1 pt-3 md:px-0">
+              <h1 className="text-3xl font-black tracking-[-0.035em] text-white md:text-4xl">
+                {pageTitle}
+              </h1>
+              {pageDescription ? (
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">{pageDescription}</p>
+              ) : null}
+            </div>
 
-          {sectionKey === "" ? (
-            <DashboardOverview
-              activeOrg={activeOrg}
-              selectedBranch={selectedBranch}
-              data={data}
-              copy={copy}
-            />
-          ) : null}
+            {showOwnerSetupChecklist ? (
+              <OwnerSetupChecklist
+                activeOrg={activeOrg}
+                hasBranch={Boolean(selectedBranch)}
+                summary={data.summary}
+                copy={copy}
+              />
+            ) : null}
 
-          {sectionKey ? (
-            <DashboardOperationalPanelShell
-              orgId={activeOrg.id}
-              sectionKey={sectionKey}
-              organization={{
-                id: activeOrg.id,
-                name: activeOrg.name,
-                city: activeOrg.city,
-                state: activeOrg.state,
-                status: activeOrg.status,
-                joinMode: activeOrg.joinMode,
-                attendanceMode: activeOrg.attendanceMode,
-                trialEndAt: activeOrg.trialEndAt,
-                contactEmail: activeOrg.contactEmail,
-                contactPhone: activeOrg.contactPhone,
-              }}
-              summary={data.summary}
-              branchScope={data.branchScope}
-              auditLogCount={data.auditLogCount}
-              initialJoinRequests={data.joinRequests}
-              initialNotifications={data.notifications}
-              initialProducts={data.products}
-              initialAiUsage={data.aiUsage}
-              roles={roles}
-              permissions={[...activePermissions]}
-            />
-          ) : null}
+            {sectionKey === "" ? (
+              <DashboardOverview
+                activeOrg={activeOrg}
+                selectedBranch={selectedBranch}
+                data={data}
+                copy={copy}
+              />
+            ) : null}
+
+            {sectionKey ? (
+              <DashboardOperationalPanelShell
+                orgId={activeOrg.id}
+                sectionKey={sectionKey}
+                organization={{
+                  id: activeOrg.id,
+                  name: activeOrg.name,
+                  city: activeOrg.city,
+                  state: activeOrg.state,
+                  status: activeOrg.status,
+                  joinMode: activeOrg.joinMode,
+                  attendanceMode: activeOrg.attendanceMode,
+                  trialEndAt: activeOrg.trialEndAt,
+                  contactEmail: activeOrg.contactEmail,
+                  contactPhone: activeOrg.contactPhone,
+                }}
+                summary={data.summary}
+                branchScope={data.branchScope}
+                auditLogCount={data.auditLogCount}
+                initialJoinRequests={data.joinRequests}
+                initialNotifications={data.notifications}
+                initialProducts={data.products}
+                initialAiUsage={data.aiUsage}
+                roles={roles}
+                permissions={[...activePermissions]}
+              />
+            ) : null}
+          </LayoutTransition>
         </section>
       </div>
     </main>

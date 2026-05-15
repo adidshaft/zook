@@ -25,9 +25,11 @@ import { I18nProvider, useI18n } from "@/lib/i18n";
 import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
 import { setApiAuthHandlers } from "@/lib/api";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
+import { PrivilegedPinProvider } from "@/components/privileged-pin-modal";
 import { checkRouteAccess, requiredRolesForPath, routeForRole } from "@/lib/route-guards";
-import { Sentry, initMobileSentry } from "@/lib/sentry";
+import { initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
+import { memberDashboardQueryOptions } from "@/lib/query-hooks";
 import { colors, layout } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -76,6 +78,16 @@ function safeRedirectTarget(value?: string | string[]) {
   return target;
 }
 
+function isPublicUnauthenticatedRoute(pathname: string) {
+  return (
+    pathname === "/find-gyms" ||
+    pathname.startsWith("/gym/") ||
+    pathname.startsWith("/g/") ||
+    pathname.startsWith("/join/") ||
+    pathname.startsWith("/r/")
+  );
+}
+
 function redirectAllowedForSession(
   target: string | null,
   helpers: {
@@ -111,6 +123,7 @@ function isPaymentReturnDeepLink(url: string) {
 
 function LayoutContent() {
   const {
+    activeOrgId,
     activeRole,
     clearExpiredSession,
     defaultRoute,
@@ -119,9 +132,11 @@ function LayoutContent() {
     logout,
     offlineBanner,
     proactiveLogin,
+    refresh,
     session,
     setActiveRole,
     status,
+    token,
   } = useAuth();
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -140,11 +155,15 @@ function LayoutContent() {
   useEffect(() => {
     return setApiAuthHandlers({
       onExpired: async () => {
+        const nextToken = await refresh().catch(() => undefined);
+        if (nextToken) {
+          return nextToken;
+        }
         await clearExpiredSession();
         queryClient.clear();
         showToast({
-          title: t("auth.sessionExpiredTitle"),
-          message: t("auth.sessionExpiredBody"),
+          title: "Session expired",
+          message: "Sign in again to continue.",
           tone: "amber",
         });
         router.replace("/login?reason=expired" as never);
@@ -160,7 +179,7 @@ function LayoutContent() {
         }
       },
     });
-  }, [clearExpiredSession, queryClient, router, t]);
+  }, [clearExpiredSession, queryClient, refresh, router]);
 
   useEffect(() => {
     const handleUrl = (url: string | null) => {
@@ -170,6 +189,7 @@ function LayoutContent() {
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "membership"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
         queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
@@ -184,6 +204,13 @@ function LayoutContent() {
     void Linking.getInitialURL().then(handleUrl);
     return () => subscription.remove();
   }, [queryClient, router]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !token) {
+      return;
+    }
+    void queryClient.prefetchQuery(memberDashboardQueryOptions({ activeOrgId, token }));
+  }, [activeOrgId, queryClient, status, token]);
 
   useEffect(() => {
     if (status !== "authenticated" || !proactiveLogin) {
@@ -213,8 +240,12 @@ function LayoutContent() {
       return;
     }
     const isOnboardingRoute = pathname.startsWith("/onboarding");
+    const isPublicRoute = isPublicUnauthenticatedRoute(pathname);
 
     if (status === "unauthenticated") {
+      if (isPublicRoute) {
+        return;
+      }
       if (onboardingFlag === null) {
         if (pathname === "/login") {
           return;
@@ -356,21 +387,21 @@ function LayoutContent() {
       <Stack
         screenOptions={{
           headerShown: false,
-          headerStyle: { backgroundColor: "#070908" },
+          headerStyle: { backgroundColor: colors.bg },
           headerTintColor: "#f4f7ef",
-          contentStyle: { backgroundColor: "#070908" },
+          contentStyle: { backgroundColor: colors.bg },
         }}
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
         <Stack.Screen name="plans/index" options={{ animation: "none" }} />
-        <Stack.Screen name="more" options={{ animation: "none" }} />
         <Stack.Screen name="scan" options={{ animation: "none" }} />
         <Stack.Screen name="tracking" options={{ animation: "none" }} />
-        <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="profile" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="membership" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="find-gyms" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="assistant" options={{ animation: "slide_from_right" }} />
         <Stack.Screen
           name="tracking-entry"
@@ -424,7 +455,17 @@ function LayoutContent() {
 }
 
 export default function Layout() {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+            gcTime: 10 * 60_000,
+          },
+        },
+      }),
+  );
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
@@ -454,43 +495,23 @@ export default function Layout() {
   return (
     <SafeAreaProvider>
       <View style={styles.gestureRoot}>
-        <Sentry.ErrorBoundary fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}>
-          <QueryClientProvider client={queryClient}>
-            <I18nProvider>
-              <AuthProvider>
-                <BranchSelectionProvider>
-                  <BottomNavVisibilityProvider>
+        <QueryClientProvider client={queryClient}>
+          <I18nProvider>
+            <AuthProvider>
+              <BranchSelectionProvider>
+                <BottomNavVisibilityProvider>
+                  <PrivilegedPinProvider>
                     <PushNotificationsProvider>
                       <LayoutContent />
                     </PushNotificationsProvider>
-                  </BottomNavVisibilityProvider>
-                </BranchSelectionProvider>
-              </AuthProvider>
-            </I18nProvider>
-          </QueryClientProvider>
-        </Sentry.ErrorBoundary>
+                  </PrivilegedPinProvider>
+                </BottomNavVisibilityProvider>
+              </BranchSelectionProvider>
+            </AuthProvider>
+          </I18nProvider>
+        </QueryClientProvider>
       </View>
     </SafeAreaProvider>
-  );
-}
-
-function RootErrorFallback({ onRetry }: { onRetry: () => void }) {
-  return (
-    <View style={styles.configError}>
-      <Text style={styles.configErrorTitle}>Something went wrong</Text>
-      <Text style={styles.configErrorBody}>
-        Zook hit an unexpected error and reported it to our team. Try again, or restart the app if
-        the problem continues.
-      </Text>
-      <Pressable
-        onPress={onRetry}
-        accessibilityRole="button"
-        accessibilityLabel="Try again"
-        style={styles.retryButton}
-      >
-        <Text style={styles.retryButtonText}>Try again</Text>
-      </Pressable>
-    </View>
   );
 }
 
@@ -525,19 +546,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 15,
     lineHeight: 22,
-  },
-  retryButton: {
-    marginTop: 12,
-    alignSelf: "flex-start",
-    backgroundColor: colors.lime,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 999,
-  },
-  retryButtonText: {
-    color: "#050805",
-    fontSize: 14,
-    fontWeight: "700",
   },
   demoStrip: {
     position: "absolute",

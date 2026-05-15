@@ -39,7 +39,9 @@ export interface AuthRepository {
   createSession(input: {
     userId: string;
     tokenHash: string;
+    refreshTokenHash?: string;
     expiresAt: Date;
+    refreshExpiresAt?: Date;
     userAgent?: string;
     ipAddress?: string;
     deviceFingerprintHash?: string;
@@ -233,7 +235,7 @@ export class AuthService {
     userId: string;
     userAgent?: string;
     ipAddress?: string;
-  }): Promise<{ token: string; expiresAt: Date }> {
+  }): Promise<{ token: string; refreshToken: string; expiresAt: Date; refreshExpiresAt: Date }> {
     const fixedOtp = process.env.OTP_FIXED_CODE_DEV?.trim();
     if (fixedOtp && getAppEnv() === "production" && input.code === fixedOtp) {
       await this.repo.recordSecurityEvent?.({
@@ -249,16 +251,20 @@ export class AuthService {
     }
     await this.consumeChallenge(input);
     const token = AuthService.createToken();
-    const expiresAt = new Date(this.now().getTime() + 30 * 24 * 60 * 60 * 1000);
+    const refreshToken = AuthService.createToken();
+    const expiresAt = new Date(this.now().getTime() + 15 * 60 * 1000);
+    const refreshExpiresAt = new Date(this.now().getTime() + 30 * 24 * 60 * 60 * 1000);
     await this.repo.createSession({
       userId: input.userId,
       tokenHash: AuthService.hash(token),
+      refreshTokenHash: AuthService.hash(refreshToken),
       expiresAt,
+      refreshExpiresAt,
       deviceFingerprintHash: AuthService.createDeviceFingerprint(input),
       ...(input.userAgent ? { userAgent: input.userAgent } : {}),
       ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
     });
-    return { token, expiresAt };
+    return { token, refreshToken, expiresAt, refreshExpiresAt };
   }
 
   async logout(token: string): Promise<void> {

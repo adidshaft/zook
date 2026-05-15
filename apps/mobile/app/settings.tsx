@@ -15,6 +15,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { SettingsSkeleton } from "@/components/skeletons";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { toWebUrl } from "@/lib/api";
 import { notificationsApi, privacyApi } from "@/lib/domain-api";
@@ -76,6 +77,7 @@ export default function Settings() {
   const [busy, setBusy] = useState<string | null>(null);
   const latestExport = privacyQuery.data?.exportRequests?.[0] ?? null;
   const latestDeletion = privacyQuery.data?.deletionRequests?.[0] ?? null;
+  const settingsLoading = privacyQuery.isLoading || notificationPreferencesQuery.isLoading;
 
   function sectionProps(section: SettingsSection) {
     return {
@@ -180,8 +182,8 @@ export default function Settings() {
           }}
         >
           <MobileHeader
-            title={t("settings.profileTitle")}
-            subtitle={t("settings.profileSubtitle")}
+            title="Settings"
+            subtitle="Notifications, language, privacy, and support"
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
@@ -195,10 +197,9 @@ export default function Settings() {
             showProfileShortcut={false}
           />
 
-          <PrimaryButton onPress={confirmSignOut} tone="danger">
-            {t("settings.logout")}
-          </PrimaryButton>
-
+          {settingsLoading ? <SettingsSkeleton /> : null}
+          {!settingsLoading ? (
+            <>
           <CollapsibleSection
             title={t("settings.notifications")}
             subtitle={t("settings.notificationScope", {
@@ -371,8 +372,18 @@ export default function Settings() {
             </GlassCard>
           </CollapsibleSection>
 
+          <Pressable
+            onPress={confirmSignOut}
+            accessibilityRole="button"
+            accessibilityLabel={t("settings.logout")}
+            style={({ pressed }) => [styles.logoutLink, pressed ? styles.logoutLinkPressed : null]}
+          >
+            <Text style={styles.logoutLinkText}>{t("settings.logout")}</Text>
+          </Pressable>
+            </>
+          ) : null}
         </KeyboardAwareScreen>
-        <BottomNav />
+        <BottomNav selectedPath="/profile" />
       </ZookScreen>
     </>
   );
@@ -445,6 +456,19 @@ const styles = StyleSheet.create({
   },
   actionHalf: {
     flex: 1,
+  },
+  logoutLink: {
+    minHeight: 48,
+    marginTop: spacing.xxl,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoutLinkPressed: {
+    opacity: 0.72,
+  },
+  logoutLinkText: {
+    color: colors.red,
+    ...typography.caption,
   },
   statusText: {
     color: colors.lime,

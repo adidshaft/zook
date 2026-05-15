@@ -1,17 +1,19 @@
 import {
   Bell,
-  Bot,
+  CalendarDays,
   ClipboardList,
   Dumbbell,
   FileText,
   Globe2,
   History,
+  LayoutGrid,
   Receipt,
-  QrCode,
   ReceiptText,
   Settings,
-  Shield,
+  ShieldCheck,
+  Sparkles,
   Store,
+  UserPlus,
   Users,
 } from "lucide-react";
 import type { Permission } from "@zook/core";
@@ -21,57 +23,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
   {
     key: "operations",
     items: [
-      { key: "today", label: "Today", href: "/dashboard", icon: Dumbbell },
-      {
-        key: "attendance",
-        label: "Attendance",
-        href: "/dashboard/attendance",
-        icon: QrCode,
-        permissions: ["ATTENDANCE_QR_DISPLAY", "ATTENDANCE_APPROVE"],
-      },
-      {
-        key: "payments",
-        label: "Payments",
-        href: "/dashboard/payments",
-        icon: ReceiptText,
-        permissions: ["PAYMENTS_VIEW"],
-      },
-      {
-        key: "refunds",
-        label: "Refunds",
-        href: "/dashboard/payments/refunds",
-        icon: Receipt,
-        permissions: ["PAYMENTS_REFUND"],
-      },
-      {
-        key: "shop",
-        label: "Shop",
-        href: "/dashboard/shop",
-        icon: Store,
-        permissions: ["SHOP_MANAGE_PRODUCTS"],
-      },
-      {
-        key: "shopOrders",
-        label: "Shop orders",
-        href: "/dashboard/shop/orders",
-        icon: Store,
-        hidden: true,
-        permissions: ["SHOP_FULFILL_ORDER"],
-      },
-      {
-        key: "reports",
-        label: "Reports",
-        href: "/dashboard/reports",
-        icon: FileText,
-        permissions: ["ORG_VIEW_REPORTS"],
-      },
-      {
-        key: "billing",
-        label: "Billing",
-        href: "/dashboard/billing",
-        icon: ReceiptText,
-        permissions: ["ORG_MANAGE_BILLING"],
-      },
+      { key: "today", label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
     ],
   },
   {
@@ -82,6 +34,14 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         label: "Members",
         href: "/dashboard/members",
         icon: Users,
+        permissions: ["MEMBERS_VIEW"],
+      },
+      {
+        key: "joinRequests",
+        label: "Join Requests",
+        href: "/dashboard/members?view=join-requests",
+        icon: UserPlus,
+        badgeKey: "joinRequests",
         permissions: ["MEMBERS_VIEW"],
       },
       {
@@ -116,17 +76,41 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         permissions: ["REFERRALS_MANAGE"],
       },
       {
-        key: "team",
-        label: "Team",
-        href: "/dashboard/staff",
-        icon: Shield,
+        key: "payments",
+        label: "Payments",
+        href: "/dashboard/payments",
+        icon: ReceiptText,
+        permissions: ["PAYMENTS_VIEW"],
+      },
+      {
+        key: "refunds",
+        label: "Refunds",
+        href: "/dashboard/payments/refunds",
+        icon: Receipt,
+        hidden: true,
+        permissions: ["PAYMENTS_REFUND"],
+      },
+      {
+        key: "attendance",
+        label: "Attendance",
+        href: "/dashboard/attendance",
+        icon: CalendarDays,
+        permissions: ["ATTENDANCE_QR_DISPLAY", "ATTENDANCE_APPROVE"],
+      },
+      {
+        key: "trainers",
+        label: "Trainers & PT",
+        href: "/dashboard/trainers",
+        icon: Dumbbell,
         permissions: ["ORG_MANAGE_STAFF"],
       },
-    ],
-  },
-  {
-    key: "messages",
-    items: [
+      {
+        key: "ai",
+        label: "Plans & AI",
+        href: "/dashboard/ai",
+        icon: Sparkles,
+        permissions: ["ORG_VIEW_REPORTS", "AI_MANAGE_SETTINGS"],
+      },
       {
         key: "messages",
         label: "Notifications",
@@ -135,10 +119,40 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         permissions: ["NOTIFICATION_CREATE_DRAFT"],
       },
       {
+        key: "shop",
+        label: "Shop",
+        href: "/dashboard/shop",
+        icon: Store,
+        permissions: ["SHOP_MANAGE_PRODUCTS"],
+      },
+      {
+        key: "shopOrders",
+        label: "Shop orders",
+        href: "/dashboard/shop/orders",
+        icon: Store,
+        hidden: true,
+        permissions: ["SHOP_FULFILL_ORDER"],
+      },
+      {
+        key: "reports",
+        label: "Reports",
+        href: "/dashboard/reports",
+        icon: FileText,
+        permissions: ["ORG_VIEW_REPORTS"],
+      },
+      {
+        key: "team",
+        label: "Staff",
+        href: "/dashboard/staff",
+        icon: Users,
+        permissions: ["ORG_MANAGE_STAFF"],
+      },
+      {
         key: "templates",
         label: "Templates",
         href: "/dashboard/notifications/templates",
         icon: Bell,
+        hidden: true,
         permissions: ["NOTIFICATION_MANAGE_TEMPLATES"],
       },
       {
@@ -146,6 +160,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         label: "History",
         href: "/dashboard/notifications/history",
         icon: History,
+        hidden: true,
         permissions: ["NOTIFICATION_CREATE_DRAFT"],
       },
     ],
@@ -154,10 +169,26 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
     key: "settings",
     items: [
       {
+        key: "settings",
+        label: "Settings",
+        href: "/dashboard/settings",
+        icon: Settings,
+        permissions: ["ORG_MANAGE_PROFILE"],
+      },
+      {
+        key: "activity",
+        label: "Audit",
+        href: "/dashboard/audit",
+        icon: ShieldCheck,
+        shortLabel: "Activity",
+        permissions: ["PRIVACY_VIEW_AUDIT"],
+      },
+      {
         key: "branches",
         label: "Branches",
         href: "/dashboard/branches",
         icon: Globe2,
+        hidden: true,
         permissions: ["ORG_MANAGE_LOCATION"],
       },
       {
@@ -165,28 +196,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         label: "Gym profile",
         href: "/dashboard/public-profile",
         icon: Globe2,
-        permissions: ["ORG_MANAGE_PROFILE"],
-      },
-      {
-        key: "activity",
-        label: "Activity log",
-        href: "/dashboard/audit",
-        icon: History,
-        shortLabel: "Activity",
-        permissions: ["PRIVACY_VIEW_AUDIT"],
-      },
-      {
-        key: "ai",
-        label: "AI",
-        href: "/dashboard/ai",
-        icon: Bot,
-        permissions: ["ORG_VIEW_REPORTS", "AI_MANAGE_SETTINGS"],
-      },
-      {
-        key: "settings",
-        label: "Settings",
-        href: "/dashboard/settings",
-        icon: Settings,
+        hidden: true,
         permissions: ["ORG_MANAGE_PROFILE"],
       },
     ],
@@ -210,7 +220,11 @@ export function isActiveNav(href: string, sectionKey: string) {
   if (href === "/dashboard") {
     return sectionKey === "";
   }
-  const hrefKey = href.replace("/dashboard/", "");
+  const [pathWithoutQuery] = href.split("?");
+  const hrefKey = (pathWithoutQuery ?? href).replace("/dashboard/", "");
+  if (href.includes("view=join-requests")) {
+    return false;
+  }
   if (hrefKey === "plans") {
     return sectionKey === "plans" || sectionKey.startsWith("plans/");
   }

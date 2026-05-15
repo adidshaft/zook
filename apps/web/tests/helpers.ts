@@ -78,11 +78,13 @@ export async function getLatestOtpFromMockOrUseDevCode(page: Page, _identifier: 
 
 export async function loginWithOtp(page: Page, identifier: string) {
   await page.goto("/login");
-  await page.getByLabel(/email|phone/i).fill(identifier);
+  await page.getByLabel(/email/i).fill(identifier);
   await page.getByRole("button", { name: /send (otp|code)/i }).click();
   const code = await getLatestOtpFromMockOrUseDevCode(page, identifier);
   await page.getByLabel(/otp|one-time code/i).fill(code);
-  await page.waitForURL(/\/(?:dashboard|platform|gyms|me)(?:$|[/?#])/, { timeout: 10_000 });
+  await page.waitForURL(/\/(?:dashboard|platform|gyms|me|desk|coach)(?:$|[/?#])/, {
+    timeout: 10_000,
+  });
 }
 
 export async function loginWithSessionCookie(page: Page, email: string) {

@@ -1,22 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BodyCompositionTimeline } from "../body-composition-timeline";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn, SearchableSelect } from "../../ui";
 import {
-  formatPlanShape,
   type JoinRequestRow,
   type MemberDetailPayload,
   type MemberRow,
   type MembershipPlanRow,
   type OrganizationSnapshot,
 } from "../../dashboard-operational-model";
-import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
+import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
+import { BulkImportCard as ExtractedBulkImportCard } from "./members/bulk-import-card";
+import { JoinRequestQueue } from "./members/join-request-queue";
+import { MembershipPlanLadder } from "./members/membership-plan-ladder";
+
+type MemberFilter = "All" | "Active" | "Pending Payment" | "Expired" | "Paused" | "Visit Pack" | "Trial";
+
+const memberFilters: MemberFilter[] = [
+  "All",
+  "Active",
+  "Pending Payment",
+  "Expired",
+  "Paused",
+  "Visit Pack",
+  "Trial",
+];
+
+function normalizeMemberText(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
+}
 
 type MembersState = {
   error: string;
@@ -71,11 +91,50 @@ export function MembersSection({
   const [subscriptionStatus, setSubscriptionStatus] = useState("");
   const [switchPlanId, setSwitchPlanId] = useState("");
   const [pauseReason, setPauseReason] = useState("");
+  const [memberFilter, setMemberFilter] = useState<MemberFilter>("All");
+  const [memberSearch, setMemberSearch] = useState("");
   const [selectedBulkMemberIds, setSelectedBulkMemberIds] = useState<string[]>([]);
   const selectedSubscription = memberDetailState.data?.member.subscriptions[0] ?? null;
   const selectedBulkMembers = members.filter((member) =>
     selectedBulkMemberIds.includes(member.user?.id ?? ""),
   );
+  const filteredMembers = useMemo(
+    () =>
+      members.filter((member) => {
+        const status = normalizeMemberText(member.activeSubscription?.status);
+        const planName = normalizeMemberText(member.activeSubscription?.plan?.name);
+        const planType = normalizeMemberText(member.activeSubscription?.plan?.type);
+        const statusAndPlan = `${status} ${planName} ${planType}`;
+        const filterMatch =
+          memberFilter === "All" ||
+          (memberFilter === "Active" && status.includes("active")) ||
+          (memberFilter === "Expired" && status.includes("expired")) ||
+          (memberFilter === "Paused" && status.includes("paused")) ||
+          (memberFilter === "Pending Payment" &&
+            /(pending|payment|past due|past_due|unpaid|due)/.test(statusAndPlan)) ||
+          (memberFilter === "Visit Pack" && /(visit|pack)/.test(statusAndPlan)) ||
+          (memberFilter === "Trial" && /trial/.test(statusAndPlan));
+
+        const search = normalizeMemberText(memberSearch);
+        const searchText = [
+          member.user?.name,
+          member.user?.email,
+          member.user?.phone,
+          member.user?.id,
+          member.profile.id,
+          member.user?.fitnessGoal,
+          member.activeSubscription?.status,
+          planName,
+          planType,
+        ]
+          .map(normalizeMemberText)
+          .join(" ");
+
+        return filterMatch && (!search || searchText.includes(search));
+      }),
+    [memberFilter, memberSearch, members],
+  );
+  const filtersActive = memberFilter !== "All" || memberSearch.trim().length > 0;
 
   function toggleBulkMember(userId: string | undefined) {
     if (!userId) return;
@@ -150,7 +209,11 @@ export function MembersSection({
             eyebrow="Members"
             title="Member roster"
             description="Profiles come from the member directory."
-            badge={<Pill tone="lime">{members.length} profiles</Pill>}
+            badge={
+              <Pill tone="lime">
+                {filtersActive ? `${filteredMembers.length}/${members.length}` : members.length} profiles
+              </Pill>
+            }
             action={<CsvExportButton href={`/api/orgs/${orgId}/reports/members.csv`} />}
           />
           {selectedMemberId ? (
@@ -276,6 +339,42 @@ export function MembersSection({
               )}
             </div>
           ) : null}
+          <div className="mt-5 flex flex-col gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {memberFilters.map((filter) => {
+                const active = filter === memberFilter;
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setMemberFilter(filter)}
+                    className="zook-focus rounded-full"
+                    aria-pressed={active}
+                  >
+                    <Pill
+                      tone={
+                        active
+                          ? "lime"
+                          : filter === "Pending Payment"
+                            ? "amber"
+                            : "neutral"
+                      }
+                      className={active ? "border-lime-300/45 bg-lime-300/10" : "hover:bg-white/12"}
+                    >
+                      {filter}
+                    </Pill>
+                  </button>
+                );
+              })}
+            </div>
+            <input
+              type="search"
+              value={memberSearch}
+              onChange={(event) => setMemberSearch(event.target.value)}
+              placeholder="Search name, email, phone, member ID"
+              className="zook-focus min-h-11 min-w-0 rounded-full border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/38 lg:w-[360px]"
+            />
+          </div>
           <div className="mt-5">
             {membersState.error ? (
               <ErrorNotice message={membersState.error} />
@@ -367,19 +466,25 @@ export function MembersSection({
                       ),
                     },
                   ]}
-                  rows={members}
+                  rows={filteredMembers}
                   rowKey={(row) => row.profile.id}
                   empty={
                     <EmptyState
-                      title="No members yet"
-                      description="Create your first membership plan and share your join link to start accepting members."
+                      title={filtersActive ? "No loaded members match" : "No members yet"}
+                      description={
+                        filtersActive
+                          ? "Try a different filter or search term. This filters the currently loaded roster."
+                          : "Create your first membership plan and share your join link to start accepting members."
+                      }
                       action={
-                        <Link
-                          href="/dashboard/plans"
-                          className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
-                        >
-                          Create a plan
-                        </Link>
+                        filtersActive ? null : (
+                          <Link
+                            href="/dashboard/plans"
+                            className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
+                          >
+                            Create a plan
+                          </Link>
+                        )
                       }
                     />
                   }
@@ -418,143 +523,22 @@ export function MembersSection({
           </div>
         </GlassCard>
 
-        <GlassCard>
-          <SectionHeader
-            eyebrow="Pipeline"
-            title="Join request queue"
-            description="Approval-required requests appear here so owners can approve or reject memberships before payment."
-            badge={
-              <Pill tone={joinRequests.length ? "amber" : "lime"}>
-                {joinRequests.length} pending
-              </Pill>
-            }
-          />
-          {queueError ? (
-            <div className="mt-5">
-              <ErrorNotice message={queueError} />
-            </div>
-          ) : null}
-          <div className="mt-5 grid gap-3">
-            {joinRequestsState.error ? (
-              <ErrorNotice message={joinRequestsState.error} />
-            ) : joinRequests.length ? (
-              joinRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="rounded-[22px] border border-white/10 bg-black/20 p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-white">
-                          {planNamesById.get(request.planId ?? "") ?? "Membership request"}
-                        </p>
-                        <StatusPill value={formatEnumLabel(request.status)} />
-                      </div>
-                      <p className="mt-2 text-xs text-white/45">
-                        Created {formatDateTime(request.createdAt)}
-                        {request.referralCode ? ` · Referral ${request.referralCode}` : ""}
-                      </p>
-                      <p className="mt-2 text-sm text-white/60">
-                        {request.message ?? "No intake note. Consider WhatsApp-ing the member before approving."}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => void updateJoinRequest(request.id, "approve")}
-                        disabled={queueBusyId === request.id}
-                        className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => void updateJoinRequest(request.id, "reject")}
-                        disabled={queueBusyId === request.id}
-                        className="zook-focus rounded-full border border-red-300/30 bg-red-300/10 px-4 py-2 text-sm text-red-100 disabled:opacity-60"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <EmptyState
-                title="Queue is clear"
-                description="Open-join or already-reviewed memberships will not stack up here."
-              />
-            )}
-          </div>
-        </GlassCard>
+        <JoinRequestQueue
+          joinRequests={joinRequests}
+          joinRequestsState={joinRequestsState}
+          queueError={queueError}
+          queueBusyId={queueBusyId}
+          planNamesById={planNamesById}
+          updateJoinRequest={updateJoinRequest}
+        />
       </div>
 
-      <GlassCard>
-        <SectionHeader
-          eyebrow="Membership setup"
-          title="Membership plan ladder"
-          description="Use the live pricing ladder below to see which plans are public, how they are shaped, and which ones are currently active."
-          badge={<Pill tone="blue">{membershipPlans.length} plans</Pill>}
-        />
-        <div className="mt-5">
-          {membershipPlansState.error ? (
-            <ErrorNotice message={membershipPlansState.error} />
-          ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
-            <EmptyState
-              title="Loading plan ladder"
-              description="Pulling the latest membership plans for this organization."
-            />
-          ) : (
-            <DataTable
-              columns={[
-                {
-                  id: "plan",
-                  header: "Plan",
-                  render: (plan) => (
-                    <div>
-                      <p className="font-medium text-white">{plan.name}</p>
-                      <p className="mt-1 text-xs text-white/45">{formatEnumLabel(plan.type)}</p>
-                    </div>
-                  ),
-                },
-                {
-                  id: "shape",
-                  header: "Shape",
-                  render: (plan) => formatPlanShape(plan),
-                },
-                {
-                  id: "price",
-                  header: "Price",
-                  align: "right",
-                  render: (plan) => (
-                    <span className="font-medium text-white">{formatInr(plan.pricePaise)}</span>
-                  ),
-                },
-                {
-                  id: "state",
-                  header: "State",
-                  render: (plan) => (
-                    <div className="flex flex-wrap gap-2">
-                      <StatusPill
-                        value={plan.active ? "Active" : "Paused"}
-                        tone={plan.active ? "lime" : "amber"}
-                      />
-                      <StatusPill
-                        value={plan.publicVisible ? "Public" : "Private"}
-                        tone={plan.publicVisible ? "blue" : "neutral"}
-                      />
-                    </div>
-                  ),
-                },
-              ]}
-              rows={membershipPlans}
-              rowKey={(plan) => plan.id}
-              empty="No membership plans are available yet."
-            />
-          )}
-        </div>
-      </GlassCard>
+      <MembershipPlanLadder
+        membershipPlans={membershipPlans}
+        membershipPlansState={membershipPlansState}
+      />
 
-      <BulkImportCard
+      <ExtractedBulkImportCard
         orgId={orgId}
         membershipPlans={membershipPlans}
         onImportComplete={() => {
@@ -565,7 +549,7 @@ export function MembersSection({
   );
 }
 
-function BulkImportCard({
+function _BulkImportCard({
   orgId,
   membershipPlans,
   onImportComplete,

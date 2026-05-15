@@ -1,6 +1,5 @@
 import { Stack, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import type { ReactNode } from "react";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -59,6 +58,15 @@ import { getMobileApiMode } from "@/lib/runtime-mode";
 
 type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
 type CheckoutState = "browse" | "cart" | "checkout" | "pickup";
+type OptimisticShopOrder = Pick<
+  ShopOrderRecord,
+  "id" | "status" | "pickupCode" | "totalPaise" | "items"
+>;
+type ShopOrderViewRecord = ShopOrderRecord | OptimisticShopOrder;
+type CartItemDraft = Array<{
+  product: NonNullable<ShopOrderRecord["items"][number]["product"]>;
+  quantity: number;
+}>;
 
 const categories: Array<{ label: string; value: Category }> = [
   { label: "All", value: "ALL" },
@@ -99,12 +107,31 @@ function checkoutUrlWithReturnUrl(url: string, sessionId: string) {
 
 const mockPaymentCompletionAvailable = getMobileApiMode() !== "backend";
 
-function pickupQrPayload(order: ShopOrderRecord) {
+function pickupQrPayload(order: ShopOrderViewRecord) {
   return JSON.stringify({
     type: "shop_pickup",
     orderId: order.id,
     code: order.pickupCode,
   });
+}
+
+function optimisticOrderFromCart(input: {
+  orderId: string;
+  totalPaise: number;
+  cartItems: CartItemDraft;
+}): OptimisticShopOrder {
+  return {
+    id: input.orderId,
+    status: "PENDING_PAYMENT",
+    pickupCode: null,
+    totalPaise: input.totalPaise,
+    items: input.cartItems.map((item) => ({
+      productId: item.product.id,
+      quantity: item.quantity,
+      unitPaise: item.product.pricePaise,
+      product: item.product,
+    })),
+  };
 }
 
 export default function Shop() {
@@ -126,7 +153,7 @@ export default function Shop() {
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [cartHydrated, setCartHydrated] = useState(false);
-  const [order, setOrder] = useState<ShopOrderRecord | null>(null);
+  const [order, setOrder] = useState<ShopOrderViewRecord | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [checkoutSession, setCheckoutSession] = useState<{
     id: string;
@@ -159,6 +186,22 @@ export default function Shop() {
       return categoryMatch && queryMatch;
     });
   }, [category, products, query]);
+  const categoryCounts = useMemo(() => {
+    const counts: Record<Category, number> = {
+      ALL: products.length,
+      WATER: 0,
+      PROTEIN_SHAKE: 0,
+      SHAKER: 0,
+      TOWEL: 0,
+      SUPPLEMENT: 0,
+      OTHER: 0,
+    };
+    products.forEach((product) => {
+      const productCategory = (product.category as Category) ?? "OTHER";
+      counts[productCategory] = (counts[productCategory] ?? 0) + 1;
+    });
+    return counts;
+  }, [products]);
   const cartItems = Object.entries(cart)
     .map(([productId, quantity]) => {
       const product = products.find((candidate) => candidate.id === productId);
@@ -275,18 +318,13 @@ export default function Shop() {
       return;
     }
     if (checkoutState === "checkout" && !order) {
-      setOrder({
-        id: urlOrderId,
-        status: "PENDING_PAYMENT",
-        pickupCode: null,
-        totalPaise: Number.isFinite(urlTotalPaise) ? urlTotalPaise : totalPaise,
-        items: cartItems.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-          unitPaise: item.product.pricePaise,
-          product: item.product,
-        })),
-      } as ShopOrderRecord);
+      setOrder(
+        optimisticOrderFromCart({
+          orderId: urlOrderId,
+          totalPaise: Number.isFinite(urlTotalPaise) ? urlTotalPaise : totalPaise,
+          cartItems,
+        }),
+      );
     }
   }, [
     cartItems,
@@ -512,27 +550,7 @@ export default function Shop() {
         ) : null}
         <GlassCard variant="success" contentStyle={styles.pickupContent}>
           <Text style={styles.pickupLabel}>{t("shop.pickupCode")}</Text>
-          <Pressable
-            onPress={async () => {
-              if (!order.pickupCode) return;
-              try {
-                await Clipboard.setStringAsync(order.pickupCode);
-                showToast({ tone: "success", message: t("shop.pickupCodeCopied") });
-              } catch {
-                showToast({ tone: "danger", message: t("shop.pickupCodeCopyFailed") });
-              }
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={
-              order.pickupCode
-                ? `Copy pickup code ${order.pickupCode}`
-                : "Pickup code pending"
-            }
-            disabled={!order.pickupCode}
-            hitSlop={6}
-          >
-            <Text style={styles.pickupCode}>{order.pickupCode ?? t("shop.pending")}</Text>
-          </Pressable>
+          <Text style={styles.pickupCode}>{order.pickupCode ?? t("shop.pending")}</Text>
           <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
         </GlassCard>
         {canShowPickupQr ? (
@@ -768,6 +786,7 @@ export default function Shop() {
       >
         {categories.map((option) => {
           const selected = option.value === category;
+          const count = categoryCounts[option.value] ?? 0;
           return (
             <Pressable
               key={option.value}
@@ -786,6 +805,16 @@ export default function Shop() {
               >
                 {option.label}
               </Text>
+              <View style={[styles.categoryCount, selected ? styles.categoryCountActive : null]}>
+                <Text
+                  style={[
+                    styles.categoryCountText,
+                    selected ? styles.categoryCountTextActive : null,
+                  ]}
+                >
+                  {count}
+                </Text>
+              </View>
             </Pressable>
           );
         })}
@@ -863,9 +892,9 @@ function BrowserReturnCard({
     <GlassCard variant="compact" contentStyle={styles.browserReturnContent}>
       <Ionicons name="open-outline" size={22} color={colors.amber} />
       <View style={styles.browserReturnCopy}>
-        <Text style={styles.browserReturnTitle}>Continuing in your browser</Text>
+        <Text style={styles.browserReturnTitle}>Continue in browser</Text>
         <Text style={styles.browserReturnBody}>
-          Return when done. We will refresh your order as soon as you come back.
+          Come back after payment. We will refresh your order status automatically.
         </Text>
       </View>
       <ZookButton
@@ -1060,6 +1089,27 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   categoryChipTextActive: {
+    color: colors.bg,
+  },
+  categoryCount: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    paddingHorizontal: 5,
+  },
+  categoryCountActive: {
+    backgroundColor: "rgba(7,9,8,0.18)",
+  },
+  categoryCountText: {
+    color: colors.muted,
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    lineHeight: 12,
+  },
+  categoryCountTextActive: {
     color: colors.bg,
   },
   miniCart: {

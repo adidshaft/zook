@@ -23,7 +23,7 @@ export function getOfflineDemoSession(): AuthSessionSummary {
         state: organization.state,
         roles: sessionRoles,
         permissions: [],
-        joinedAt: new Date("2026-04-01T00:00:00.000Z"),
+        joinedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
       }
     : undefined;
 
@@ -31,7 +31,7 @@ export function getOfflineDemoSession(): AuthSessionSummary {
     user: {
       id: user?.id ?? "offline-demo-user",
       email: user?.email ?? DEMO_MEMBER_EMAIL,
-      name: user?.name ?? "Demo Member",
+      name: user?.name ?? "ZK",
       phone: user?.phone,
       isMinor: user?.isMinor ?? false,
       guardianPending: user?.guardianPending ?? false,

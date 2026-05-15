@@ -18,10 +18,10 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomNav,
-  ChipGroup,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -35,7 +35,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { attendanceApi } from "@/lib/domain-api";
 import { usePushNotifications } from "@/lib/push-notifications";
-import { useMemberHome } from "@/lib/query-hooks";
+import { useMemberHome, type MemberDashboardData, type MemberHomeData } from "@/lib/query-hooks";
 import { getMobileAppEnv } from "@/lib/runtime-mode";
 import {
   enqueueAttendanceScan,
@@ -73,14 +73,30 @@ type AttendanceResultHref = {
 
 const PUSH_PROMPTED_STORAGE_KEY = "zook_push_prompted";
 
-const scanModeOptions: Array<{ label: string; value: ScanMode; icon: "qr-code-outline" | "keypad-outline" }> = [
-  { label: "Scan QR", value: "scan", icon: "qr-code-outline" },
-  { label: "Enter code", value: "code", icon: "keypad-outline" },
-];
-
 function CameraActiveBottomNavHider() {
   useHideBottomNav();
   return null;
+}
+
+function AnimatedLaser() {
+  const translateY = useSharedValue(-120);
+
+  useEffect(() => {
+    translateY.value = withRepeat(
+      withSequence(
+        withTiming(120, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(-120, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+  }, [translateY]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return <Animated.View style={[styles.scanLine, animatedStyle]} />;
 }
 
 export default function Scan() {
@@ -91,8 +107,7 @@ export default function Scan() {
   const { permissionState, requestEnablePush } = usePushNotifications();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
-  const [scanMode, setScanMode] = useState<ScanMode>("code");
-  const [modeLocked, setModeLocked] = useState(false);
+  const [scanMode, setScanMode] = useState<ScanMode>("scan");
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [codePrefix, setCodePrefix] = useState("");
   const [codeDigits, setCodeDigits] = useState("");
@@ -111,17 +126,6 @@ export default function Scan() {
   useEffect(() => {
     void getQueuedAttendanceScans().then((queue) => setQueuedScanCount(queue.length));
   }, []);
-
-  useEffect(() => {
-    if (scanMode !== "scan" || scanState !== "failed" || !errorMessage) {
-      return undefined;
-    }
-    const timer = setTimeout(() => {
-      completedRef.current = false;
-      setScanState("idle");
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [errorMessage, scanMode, scanState]);
 
   function scanReason(result: ScanResult) {
     if (Array.isArray(result.suspiciousFlags) && result.suspiciousFlags.length) {
@@ -147,6 +151,7 @@ export default function Scan() {
   }
 
   function attendanceResultHref(result: ScanResult, status: string): AttendanceResultHref {
+    applyAcceptedAttendance(result, status);
     queryClient.setQueryData(["me", "attendance", result.attendance.id], {
       attendance: {
         ...result.attendance,
@@ -161,6 +166,41 @@ export default function Scan() {
         attendanceRecordId: result.attendance.id,
       },
     };
+  }
+
+  function applyAcceptedAttendance(result: ScanResult, status: string) {
+    if (!result.attendance.checkedInAt) {
+      return;
+    }
+    const recentAttendance: MemberHomeData["recentAttendance"][number] = {
+      id: result.attendance.id,
+      checkedInAt: result.attendance.checkedInAt,
+      status,
+      source: "MOBILE",
+    };
+    const mergeHome = (home?: MemberHomeData) => {
+      if (!home) {
+        return home;
+      }
+      const existing = home.recentAttendance.filter(
+        (attendance) => attendance.id !== recentAttendance.id,
+      );
+      return {
+        ...home,
+        recentAttendance: [recentAttendance, ...existing].slice(0, 10),
+        streakDays: status === "APPROVED" ? Math.max(home.streakDays ?? 0, 1) : home.streakDays,
+      };
+    };
+    queryClient.setQueryData<MemberHomeData>(["me", "home", activeOrgId], mergeHome);
+    queryClient.setQueryData<MemberDashboardData>(
+      ["me", "dashboard", activeOrgId ?? null],
+      (current) => {
+        if (!current) {
+          return current;
+        }
+        return { ...current, home: mergeHome(current.home) ?? current.home };
+      },
+    );
   }
 
   function navigateToAttendance(href: AttendanceResultHref) {
@@ -237,6 +277,7 @@ export default function Scan() {
       if (synced > 0) {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
+          queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] }),
           queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
         ]);
         showToast({
@@ -303,6 +344,7 @@ export default function Scan() {
           : Haptics.NotificationFeedbackType.Success,
       );
       void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
+      void queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       const nextHref = attendanceResultHref(result, status);
       if (!failed && await maybeShowPushPrompt(nextHref)) {
@@ -315,10 +357,12 @@ export default function Scan() {
         const nextQueue = await enqueueAttendanceScan({ payload, kind });
         setQueuedScanCount(nextQueue.length);
         setScanState("failed");
-        setErrorMessage("No connection. Your check-in was saved and will retry automatically.");
+        setErrorMessage(
+          "No connection. Your scan is saved to retry, but entry is not confirmed yet.",
+        );
         showToast({
-          title: "Check-in saved",
-          message: "Zook will retry when the phone is online.",
+          title: "Scan saved for retry",
+          message: "Entry is not confirmed until the server accepts it.",
           tone: "amber",
           haptic: "warning",
         });
@@ -362,6 +406,7 @@ export default function Scan() {
           : Haptics.NotificationFeedbackType.Success,
       );
       void queryClient.invalidateQueries({ queryKey: ["me", "attendance"] });
+      void queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       navigateToAttendance(attendanceResultHref(result, status));
     } catch (error) {
@@ -417,13 +462,6 @@ export default function Scan() {
     setCodeDigits(compact.replace(/[^0-9]/g, "").slice(0, 4));
   }
 
-  function handleModeChange(nextMode: ScanMode) {
-    if (modeLocked || busy || nextMode === scanMode) return;
-    setModeLocked(true);
-    setScanMode(nextMode);
-    setTimeout(() => setModeLocked(false), 200);
-  }
-
   function resetScan() {
     completedRef.current = false;
     setBusy(false);
@@ -451,17 +489,9 @@ export default function Scan() {
           }}
         >
           <MobileHeader
-            title="Check in"
-            subtitle="Scan QR or enter code"
+            title="Scan Gym QR"
+            subtitle="Server-authoritative check-in for your active gym"
             showProfileShortcut={false}
-          />
-
-          <ChipGroup
-            accessibilityLabel="Check-in method"
-            disabled={busy || modeLocked}
-            options={scanModeOptions}
-            value={scanMode}
-            onChange={handleModeChange}
           />
 
           {cameraBlocked ? (
@@ -514,8 +544,8 @@ export default function Scan() {
                   </View>
                 )}
                 <View pointerEvents="none" style={styles.scannerOverlay}>
-                  <ScannerFrame tone={scanState === "failed" ? "red" : "lime"}>
-                    <View style={styles.scanLine} />
+                  <ScannerFrame size={280} tone={scanState === "failed" ? "red" : "lime"}>
+                    <AnimatedLaser />
                   </ScannerFrame>
                 </View>
                 <View style={styles.cameraBadge}>
@@ -529,16 +559,18 @@ export default function Scan() {
               <GlassCard variant="compact" contentStyle={styles.helpContent}>
                 <IconBubble icon="shield-checkmark-outline" tone="neutral" size={36} />
                 <View style={styles.helpCopy}>
-                  <Text style={styles.helpTitle}>Camera not working?</Text>
-                  <Text style={styles.helpBody}>Switch to Enter code or ask the desk for help.</Text>
+                  <Text style={styles.helpTitle}>Can’t scan?</Text>
+                  <Text style={styles.helpBody}>Enter the desk code manually.</Text>
                 </View>
                 <Pressable
                   onPress={() => setScanMode("code")}
                   accessibilityRole="button"
                   accessibilityLabel="Enter code instead"
                   hitSlop={8}
+                  style={styles.manualCodeLink}
                 >
-                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                  <Text style={styles.manualCodeLinkText}>Enter code</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.lime} />
                 </Pressable>
               </GlassCard>
             </>
@@ -593,8 +625,26 @@ export default function Scan() {
                   Checking code...
                 </Text>
               ) : null}
+              <Pressable
+                onPress={() => setScanMode("scan")}
+                accessibilityRole="button"
+                accessibilityLabel="Return to QR scanner"
+                style={styles.backToScannerLink}
+              >
+                <Ionicons name="qr-code-outline" size={15} color={colors.lime} />
+                <Text style={styles.manualCodeLinkText}>Back to camera scanner</Text>
+              </Pressable>
             </GlassCard>
           )}
+
+          <GlassCard variant="compact" contentStyle={styles.validationContent}>
+            {["Ready to scan", "Secure QR", "Desk fallback"].map((item) => (
+              <View key={item} style={styles.validationItem}>
+                <Ionicons name="checkmark-circle-outline" size={15} color={colors.lime} />
+                <Text style={styles.validationText}>{item}</Text>
+              </View>
+            ))}
+          </GlassCard>
 
           {errorMessage ? (
             <GlassCard variant="warning" contentStyle={styles.errorContent}>
@@ -624,7 +674,8 @@ export default function Scan() {
               <View style={styles.errorRow}>
                 <Ionicons name="cloud-upload-outline" size={18} color={colors.amber} />
                 <Text style={styles.errorText}>
-                  {queuedScanCount} saved check-in{queuedScanCount === 1 ? "" : "s"} waiting to sync.
+                  {queuedScanCount} scan{queuedScanCount === 1 ? "" : "s"} waiting for server
+                  confirmation.
                 </Text>
               </View>
               <ZookButton
@@ -711,10 +762,31 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     paddingBottom: layout.bottomNavContentPadding,
-    gap: 10,
+    gap: 12,
+  },
+  validationContent: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    padding: 12,
+  },
+  validationItem: {
+    minHeight: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.18)",
+    backgroundColor: "rgba(185,244,85,0.075)",
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  validationText: {
+    color: colors.text,
+    ...typography.caption,
   },
   cameraCard: {
-    height: 304,
+    minHeight: 430,
     borderRadius: 28,
     overflow: "hidden",
     borderWidth: 1,
@@ -801,7 +873,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   scanLine: {
-    width: 190,
+    width: 238,
     height: 2,
     borderRadius: 2,
     backgroundColor: colors.lime,
@@ -828,6 +900,21 @@ const styles = StyleSheet.create({
   helpBody: {
     color: colors.muted,
     ...typography.small,
+  },
+  manualCodeLink: {
+    minHeight: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: "rgba(185,244,85,0.24)",
+    backgroundColor: "rgba(185,244,85,0.08)",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  manualCodeLinkText: {
+    color: colors.lime,
+    ...typography.caption,
   },
   scanHint: {
     color: colors.muted,
@@ -894,6 +981,14 @@ const styles = StyleSheet.create({
   },
   checkingDot: {
     color: colors.lime,
+  },
+  backToScannerLink: {
+    alignSelf: "center",
+    minHeight: 34,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
   },
   devLink: {
     alignSelf: "center",

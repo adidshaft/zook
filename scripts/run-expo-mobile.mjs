@@ -31,6 +31,14 @@ for (const fileName of orderedRootEnvFiles(process.env.NODE_ENV)) {
   }
 }
 
+if (process.env.MOBILE_API_MODE && !process.env.EXPO_PUBLIC_API_MODE) {
+  process.env.EXPO_PUBLIC_API_MODE = process.env.MOBILE_API_MODE;
+}
+
+if (process.env.MOBILE_API_BASE_URL && !process.env.EXPO_PUBLIC_API_BASE_URL) {
+  process.env.EXPO_PUBLIC_API_BASE_URL = process.env.MOBILE_API_BASE_URL;
+}
+
 const expoBinPath = requireFromMobile.resolve("expo/bin/cli");
 const mobileApiBaseUrl =
   process.env.MOBILE_API_BASE_URL ?? process.env.EXPO_PUBLIC_API_BASE_URL ?? "(profile default)";

@@ -3,6 +3,7 @@ import { isOrgRole, platformPermissions, type RequestContext } from "@zook/core"
 import { resolveSessionSummaryFromToken } from "./session";
 
 export const sessionCookieName = "zook_session";
+export const refreshSessionCookieName = "zook_refresh";
 
 export function extractSessionToken(request: Pick<NextRequest, "headers" | "cookies">): string | undefined {
   const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");

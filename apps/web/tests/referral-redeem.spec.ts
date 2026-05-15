@@ -16,7 +16,7 @@ function requireDb() {
 
 test("dedicated referral redeem endpoint creates an idempotent redemption", async ({ page }) => {
   requireDb();
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
 
   await loginWithSessionCookie(page, "owner@zook.local");
   const referralPayload = await expectApiOk<{ referral: { id: string; code: string } }>(
@@ -56,7 +56,7 @@ test("dedicated referral redeem endpoint creates an idempotent redemption", asyn
 
 test("referral redeem endpoint requires authentication", async ({ request }) => {
   requireDb();
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const response = await request.post(`/api/orgs/${org.id}/referrals/redeem`, {
     data: { code: "NOPE" },
   });

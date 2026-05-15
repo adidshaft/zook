@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { redirect } from "next/navigation";
 import { AttendanceQrPanel } from "@/components/attendance-qr-panel";
 import { getDashboardData } from "@/lib/data";
-import { hasOwnerDashboardAccess } from "@/lib/auth-destinations";
+import { hasOwnerDashboardAccess, resolvePostLoginPath } from "@/lib/auth-destinations";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata = {
@@ -19,7 +19,7 @@ export default async function DashboardQrDisplayPage({
   const resolvedSearch = await searchParams;
   const session = await requireDashboardSession();
   if (!session.activeOrgId) {
-    redirect("/login");
+    redirect(resolvePostLoginPath(session));
   }
   if (!session.user.isPlatformAdmin && !hasOwnerDashboardAccess(session)) {
     redirect("/desk");

@@ -29,6 +29,7 @@ import {
   MobileHeader,
   Pill,
   PrimaryButton,
+  QueryErrorState,
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
@@ -153,7 +154,13 @@ export default function GymProfileScreen() {
   }, [queryClient]);
 
   async function requestMembership() {
-    if (!gym || !token) {
+    if (!gym) {
+      return;
+    }
+    if (!token) {
+      const redirectPath = `/gym/${username}${effectiveReferral ? `?ref=${effectiveReferral}` : ""}`;
+      const redirect = encodeURIComponent(redirectPath);
+      router.push(`/login?redirect=${redirect}` as never);
       return;
     }
     setBusyAction("join-request");
@@ -288,7 +295,17 @@ export default function GymProfileScreen() {
 
         {gymQuery.isLoading ? <GymDetailSkeleton /> : null}
 
-        {!gymQuery.isLoading && !gym ? (
+        {gymQuery.isError ? (
+          <GlassCard variant="compact">
+            <QueryErrorState
+              error={gymQuery.error}
+              onRetry={() => void gymQuery.refetch()}
+              title="Could not load this gym"
+            />
+          </GlassCard>
+        ) : null}
+
+        {!gymQuery.isLoading && !gymQuery.isError && !gym ? (
           <EmptyState
             title="Gym not found"
             body="This link may be expired or the gym may have moved."
@@ -560,9 +577,6 @@ export default function GymProfileScreen() {
                     placeholder="Invite code"
                     placeholderTextColor={colors.textMuted}
                     style={styles.inviteCodeInput}
-                    returnKeyType="done"
-                    onSubmitEditing={applyInviteCode}
-                    submitBehavior="blurAndSubmit"
                   />
                   <PrimaryButton onPress={applyInviteCode}>Apply</PrimaryButton>
                 </View>

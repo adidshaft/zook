@@ -1,6 +1,9 @@
+"use client";
+
 import clsx from "clsx";
+import { motion, type Variants } from "framer-motion";
 import { AlertTriangle, Check, Circle, X } from "lucide-react";
-import { GlassCard, Pill, type PillTone } from "./glass-card";
+import { GlassCard, Pill, ProductPanel, type PillTone } from "./glass-card";
 import { HelpHint } from "./ui";
 
 export function toneFromStatus(value: string | null | undefined): PillTone {
@@ -57,6 +60,26 @@ export function toneFromSeverity(value: string | null | undefined): PillTone {
   return "neutral";
 }
 
+export const staggerContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+export const fadeUpVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { type: "spring", stiffness: 400, damping: 30 } 
+  },
+};
+
 export function SectionHeader({
   eyebrow,
   title,
@@ -73,7 +96,8 @@ export function SectionHeader({
   className?: string | undefined;
 }) {
   return (
-    <div
+    <motion.div
+      variants={fadeUpVariants}
       className={clsx("flex flex-col justify-between gap-4 md:flex-row md:items-start", className)}
     >
       <div>
@@ -91,12 +115,9 @@ export function SectionHeader({
           ) : null}
           {badge}
         </div>
-        {description ? (
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/52">{description}</p>
-        ) : null}
       </div>
       {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
-    </div>
+    </motion.div>
   );
 }
 
@@ -124,8 +145,14 @@ export function MetricCard({
   };
 
   return (
-    <GlassCard variant="strong" className={clsx("relative overflow-hidden", className)}>
-      <div className={clsx("absolute inset-0 bg-gradient-to-br", accents[tone])} />
+    <motion.div variants={fadeUpVariants}>
+      <GlassCard 
+        variant="strong" 
+        className={clsx("group relative overflow-hidden", className)}
+        whileHover={{ scale: 1.01 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      >
+      <div className={clsx("absolute inset-0 bg-gradient-to-br opacity-70 transition-all duration-300 group-hover:scale-110 group-hover:opacity-100", accents[tone])} />
       <div className="relative">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-white/48">{label}</p>
@@ -135,7 +162,173 @@ export function MetricCard({
         {delta ? <p className="mt-3 text-xs leading-5 text-white/55">{delta}</p> : null}
       </div>
     </GlassCard>
+    </motion.div>
   );
+}
+
+export function DashboardPageShell({
+  children,
+  eyebrow,
+  title,
+  description,
+  action,
+  className,
+}: {
+  children: React.ReactNode;
+  eyebrow?: string;
+  title: string;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string | undefined;
+}) {
+  return (
+    <ProductPanel 
+      className={className} 
+      variants={staggerContainerVariants} 
+      initial="hidden" 
+      animate="show"
+    >
+      <SectionHeader
+        {...(eyebrow ? { eyebrow } : {})}
+        title={title}
+        {...(description ? { description } : {})}
+        {...(action ? { action } : {})}
+      />
+      <div className="mt-5">{children}</div>
+    </ProductPanel>
+  );
+}
+
+export function MetricChip({
+  children,
+  tone = "neutral",
+  icon,
+  className,
+}: {
+  children: React.ReactNode;
+  tone?: PillTone;
+  icon?: React.ReactNode;
+  className?: string | undefined;
+}) {
+  return (
+    <Pill tone={tone} className={clsx("px-3.5 py-1.5", className)}>
+      {icon}
+      {children}
+    </Pill>
+  );
+}
+
+export function StatusDot({
+  tone = "neutral",
+  pulse = false,
+}: {
+  tone?: PillTone;
+  pulse?: boolean;
+}) {
+  const tones: Record<PillTone, string> = {
+    neutral: "bg-white/45 shadow-[0_0_0_4px_rgba(255,255,255,0.08)]",
+    lime: "bg-lime-300 shadow-[0_0_0_4px_rgba(185,244,85,0.12)]",
+    amber: "bg-amber-300 shadow-[0_0_0_4px_rgba(242,201,76,0.12)]",
+    red: "bg-[#ff5a3d] shadow-[0_0_0_4px_rgba(255,90,61,0.12)]",
+    blue: "bg-sky-300 shadow-[0_0_0_4px_rgba(125,211,252,0.12)]",
+  };
+  return (
+    <span
+      className={clsx(
+        "inline-block h-2.5 w-2.5 rounded-full",
+        tones[tone],
+        pulse ? "animate-pulse" : null,
+      )}
+      aria-hidden="true"
+    />
+  );
+}
+
+export function AvatarInitials({
+  name,
+  className,
+}: {
+  name?: string | null;
+  className?: string | undefined;
+}) {
+  const initials =
+    name
+      ?.trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "ZK";
+  return (
+    <span
+      className={clsx(
+        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/12 bg-white/8 text-xs font-semibold text-white",
+        className,
+      )}
+    >
+      {initials}
+    </span>
+  );
+}
+
+export function ActionRow({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string | undefined;
+}) {
+  return <div className={clsx("flex flex-wrap items-center gap-2", className)}>{children}</div>;
+}
+
+export function MiniTrend({
+  values = [],
+  tone = "lime",
+  label = "No data yet",
+}: {
+  values?: number[];
+  tone?: "lime" | "blue" | "amber";
+  label?: string;
+}) {
+  if (!values.length) {
+    return (
+      <div className="flex h-14 w-full items-center gap-3" role="img" aria-label={label}>
+        <span className="h-px flex-1 border-t border-dashed border-white/15" />
+        <span className="text-xs text-white/30">No data yet</span>
+      </div>
+    );
+  }
+
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const range = Math.max(max - min, 1);
+  const points = values
+    .map((value, index) => {
+      const x = (index / Math.max(values.length - 1, 1)) * 100;
+      const y = 42 - ((value - min) / range) * 34;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  const stroke = tone === "blue" ? "#7dd3fc" : tone === "amber" ? "#f2c94c" : "#b9f455";
+  return (
+    <svg viewBox="0 0 100 48" role="img" aria-label={label} className="h-14 w-full overflow-visible">
+      <defs>
+        <linearGradient id={`mini-trend-${tone}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polyline
+        points={`0,48 ${points} 100,48`}
+        fill={`url(#mini-trend-${tone})`}
+        stroke="none"
+      />
+      <polyline points={points} fill="none" stroke={stroke} strokeLinecap="round" strokeWidth="3" />
+    </svg>
+  );
+}
+
+export function RevenueMiniChart(props: Parameters<typeof MiniTrend>[0]) {
+  return <MiniTrend {...props} />;
 }
 
 export function EmptyState({
@@ -266,9 +459,10 @@ export function DataTable<Row>({
   className?: string | undefined;
 }) {
   return (
-    <div
+    <motion.div
+      variants={fadeUpVariants}
       className={clsx(
-        "relative overflow-x-auto rounded-[24px] border border-white/10 bg-black/25 after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-10 after:bg-gradient-to-l after:from-black/65 after:to-transparent",
+        "relative overflow-x-auto rounded-[24px] border border-white/10 bg-black/25",
         className,
       )}
       aria-label="Scrollable table"
@@ -298,7 +492,7 @@ export function DataTable<Row>({
         <tbody className="divide-y divide-white/10">
           {rows.length ? (
             rows.map((row) => (
-              <tr key={rowKey(row)} className="align-top">
+              <tr key={rowKey(row)} className="align-top transition-colors duration-200 hover:bg-white/[0.04]">
                 {columns.map((column) => (
                   <td
                     key={column.id}
@@ -326,7 +520,7 @@ export function DataTable<Row>({
           )}
         </tbody>
       </table>
-    </div>
+    </motion.div>
   );
 }
 

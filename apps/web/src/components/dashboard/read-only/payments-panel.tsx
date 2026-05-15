@@ -337,6 +337,22 @@ export function PaymentsPanel({
             }
           />
           <form className="mt-5 grid gap-3" onSubmit={(event) => void recordOfflinePayment(event)}>
+            <div className="flex flex-wrap gap-2">
+              {modeOptions.map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setManualPayment((current) => ({ ...current, mode }))}
+                  className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    manualPayment.mode === mode
+                      ? "border-lime-300/45 bg-lime-300/14 text-lime-100"
+                      : "border-white/10 bg-black/25 text-white/55 hover:bg-white/8"
+                  }`}
+                >
+                  {formatPaymentMode(mode)}
+                </button>
+              ))}
+            </div>
             <SearchableSelect
               label="Choose member"
               placeholder="Choose member"
@@ -430,6 +446,10 @@ export function PaymentsPanel({
             >
               {manualPaymentBusy ? "Recording..." : "Record payment"}
             </button>
+            <div className="rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50/82">
+              Manual/offline payments are recorded with audit logs. Membership activation still
+              follows the server confirmation rules for the selected payment path.
+            </div>
             {manualPaymentStatus ? (
               <p className="text-sm text-white/58">{manualPaymentStatus}</p>
             ) : null}

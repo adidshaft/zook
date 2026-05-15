@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -7,6 +7,7 @@ import {
   type BottomSheetBackdropProps,
 } from "@/components/expo-safe-bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as Notifications from "expo-notifications";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,7 +17,6 @@ import {
   IconBubble,
   MobileHeader,
   QueryErrorState,
-  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { NotificationsSkeleton } from "@/components/skeletons";
@@ -101,8 +101,10 @@ export default function NotificationsScreen() {
   const notificationsQuery = useMyNotifications();
   useAppFocusInvalidation([["me", "notifications"], ["me", "home"]]);
   const detailSheetRef = useRef<BottomSheetModal>(null);
-  const detailSnapPoints = useMemo(() => ["46%"], []);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const autoMarkedNotificationRef = useRef<string | null>(null);
+  const detailSnapPoints = useMemo(() => ["34%"], []);
+  const [busyIds, setBusyIds] = useState<Set<string>>(() => new Set());
+  const [markAllBusy, setMarkAllBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [olderExpanded, setOlderExpanded] = useState(false);
   const notifications = (notificationsQuery.data?.notifications ?? []) as InboxNotification[];
@@ -122,7 +124,7 @@ export default function NotificationsScreen() {
   );
 
   async function markRead(id: string) {
-    if (!token || busyId) {
+    if (!token || busyIds.has(id)) {
       return;
     }
     const previous = queryClient.getQueryData<{ notifications: InboxNotification[] }>([
@@ -130,7 +132,7 @@ export default function NotificationsScreen() {
       "notifications",
     ]);
     try {
-      setBusyId(id);
+      setBusyIds((current) => new Set(current).add(id));
       queryClient.setQueryData<{ notifications: InboxNotification[] }>(
         ["me", "notifications"],
         (current) => ({
@@ -161,12 +163,16 @@ export default function NotificationsScreen() {
         haptic: "error",
       });
     } finally {
-      setBusyId(null);
+      setBusyIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
     }
   }
 
   async function markAllRead() {
-    if (!token || busyId) return;
+    if (!token || markAllBusy) return;
     const unread = notifications.filter((item) => !item.readAt);
     if (!unread.length) {
       return;
@@ -177,6 +183,8 @@ export default function NotificationsScreen() {
     ]);
     const now = new Date().toISOString();
     try {
+      setMarkAllBusy(true);
+      setBusyIds((current) => new Set([...current, ...unread.map((item) => item.id)]));
       queryClient.setQueryData<{ notifications: InboxNotification[] }>(
         ["me", "notifications"],
         (current) => ({
@@ -202,6 +210,13 @@ export default function NotificationsScreen() {
         message: error instanceof Error ? error.message : "Notifications could not be updated.",
         tone: "danger",
         haptic: "error",
+      });
+    } finally {
+      setMarkAllBusy(false);
+      setBusyIds((current) => {
+        const next = new Set(current);
+        unread.forEach((item) => next.delete(item.id));
+        return next;
       });
     }
   }
@@ -236,12 +251,17 @@ export default function NotificationsScreen() {
   }, [queryClient, routeParams.notificationId]);
 
   useEffect(() => {
+    if (!routeParams.notificationId) {
+      autoMarkedNotificationRef.current = null;
+      return;
+    }
     const matchingUnread = notifications.find(
       (item) =>
         (item.id === routeParams.notificationId || item.notification?.id === routeParams.notificationId) &&
         !item.readAt,
     );
-    if (matchingUnread) {
+    if (matchingUnread && autoMarkedNotificationRef.current !== matchingUnread.id) {
+      autoMarkedNotificationRef.current = matchingUnread.id;
       void markRead(matchingUnread.id);
     }
   }, [notifications, routeParams.notificationId]);
@@ -262,6 +282,12 @@ export default function NotificationsScreen() {
   };
 
   const dateGroups = groupByDate(notifications);
+
+  useFocusEffect(
+    useCallback(() => {
+      void Notifications.setBadgeCountAsync(unreadCount).catch(() => undefined);
+    }, [unreadCount]),
+  );
 
   return (
     <>
@@ -302,8 +328,10 @@ export default function NotificationsScreen() {
               unreadCount > 0 ? (
                 <Pressable
                   onPress={() => void markAllRead()}
+                  disabled={markAllBusy}
                   accessibilityRole="button"
                   accessibilityLabel="Mark all read"
+                  accessibilityState={{ busy: markAllBusy }}
                   style={styles.markAllButton}
                 >
                   <Ionicons name="checkmark-done" size={18} color={colors.lime} />
@@ -339,18 +367,8 @@ export default function NotificationsScreen() {
               <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={styles.emptyTitle}>No notifications</Text>
-                <Text style={styles.emptyBody}>
-                  You're all caught up. Check your notification preferences to make sure you'll get
-                  reminders.
-                </Text>
+                <Text style={styles.emptyBody}>You're all caught up.</Text>
               </View>
-              <ZookButton
-                onPress={() => router.push("/settings")}
-                tone="secondary"
-                icon="settings-outline"
-              >
-                Notification settings
-              </ZookButton>
             </GlassCard>
           ) : null}
 
@@ -366,7 +384,7 @@ export default function NotificationsScreen() {
                     <NotificationRow
                       key={item.id}
                       item={item}
-                      busy={busyId === item.id}
+                      busy={busyIds.has(item.id)}
                       highlighted={item.notification?.id === routeParams.notificationId}
                       onPress={() => void openNotification(item)}
                     />
@@ -394,7 +412,7 @@ export default function NotificationsScreen() {
           backdropComponent={renderDetailBackdrop}
           backgroundStyle={styles.sheetBackground}
           handleIndicatorStyle={styles.sheetHandle}
-          bottomInset={insets.bottom}
+          bottomInset={Math.max(insets.bottom, 12) + 84}
         >
           <BottomSheetView style={styles.detailSheet}>
             <View style={styles.detailHeader}>
@@ -419,7 +437,7 @@ export default function NotificationsScreen() {
             </Text>
           </BottomSheetView>
         </BottomSheetModal>
-        <BottomNav />
+        <BottomNav selectedPath="/notifications" />
       </ZookScreen>
     </>
   );
@@ -643,6 +661,7 @@ const styles = StyleSheet.create({
   detailSheet: {
     gap: spacing.lg,
     padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   detailHeader: {
     flexDirection: "row",

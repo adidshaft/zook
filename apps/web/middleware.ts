@@ -1,6 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const sessionCookieName = "zook_session";
+const refreshSessionCookieName = "zook_refresh";
+const canonicalHost = "zookfit.in";
+const canonicalRedirectHosts = new Set([
+  "www.zookfit.in",
+  "app.zookfit.in",
+  "dashboard.zookfit.in",
+  "app.zook.kyokasuigetsu.xyz",
+  "zook-gym-app.vercel.app",
+]);
 
 function originFromEnv(value: string | undefined) {
   if (!value?.trim()) {
@@ -17,6 +26,8 @@ function buildContentSecurityPolicy(nonce: string) {
   const scriptSources = [
     "'self'",
     `'nonce-${nonce}'`,
+    "https://accounts.google.com",
+    "https://appleid.cdn-apple.com",
     "https://maps.googleapis.com",
     "https://maps.gstatic.com",
     "https://checkout.razorpay.com",
@@ -64,23 +75,48 @@ function buildContentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
+function matchesPathPrefix(pathname: string, prefix: string) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+function isPrivatePath(pathname: string) {
+  if (matchesPathPrefix(pathname, "/staff/invite")) {
+    return false;
+  }
+  return ["/dashboard", "/desk", "/coach", "/me", "/platform", "/staff", "/start-gym"].some(
+    (prefix) => matchesPathPrefix(pathname, prefix),
+  );
+}
+
 export function middleware(request: NextRequest) {
+  const host = request.nextUrl.hostname.toLowerCase();
+  if (canonicalRedirectHosts.has(host)) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.protocol = "https:";
+    redirectUrl.hostname = canonicalHost;
+    return NextResponse.redirect(redirectUrl, 308);
+  }
+
   const nonce = btoa(crypto.randomUUID());
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
   const responseInit = { request: { headers: requestHeaders } };
-  const privatePathPrefixes = ["/dashboard", "/desk", "/coach", "/staff", "/me", "/platform"];
   let response: NextResponse;
   const hasSession = Boolean(request.cookies.get(sessionCookieName)?.value);
-  const isPrivatePath = privatePathPrefixes.some((prefix) =>
-    request.nextUrl.pathname.startsWith(prefix),
-  );
-  if (isPrivatePath && !hasSession) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
-    response = NextResponse.redirect(loginUrl);
+  const hasRefreshSession = Boolean(request.cookies.get(refreshSessionCookieName)?.value);
+  if (isPrivatePath(request.nextUrl.pathname) && !hasSession) {
+    const redirectTarget = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    if (hasRefreshSession) {
+      const refreshUrl = new URL("/api/auth/refresh", request.url);
+      refreshUrl.searchParams.set("redirect", redirectTarget);
+      response = NextResponse.redirect(refreshUrl);
+    } else {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", redirectTarget);
+      response = NextResponse.redirect(loginUrl);
+    }
   } else {
     response = NextResponse.next(responseInit);
   }

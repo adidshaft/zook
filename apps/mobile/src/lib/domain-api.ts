@@ -15,7 +15,9 @@ type OtpResult = {
 
 type VerifyOtpResult = {
   token: string;
+  refreshToken?: string;
   expiresAt: string;
+  refreshExpiresAt?: string;
   session?: AuthSessionSummary;
 };
 
@@ -106,6 +108,13 @@ export const authClient = {
     return mobileApiFetch<AuthSessionSummary>("/auth/me", {
       token: options.token,
       ...(options.orgId ? { orgId: options.orgId } : {}),
+    });
+  },
+  refresh(refreshToken: string) {
+    return mobileApiFetch<VerifyOtpResult>("/auth/refresh", {
+      method: "POST",
+      body: { refreshToken },
+      skipAuthRefresh: true,
     });
   },
   logout(token?: string) {
@@ -324,6 +333,13 @@ export const plansApi = {
       token: options.token,
       orgId: options.orgId,
       body: options.body,
+    });
+  },
+  delete<T = unknown>(options: RequestOptions & { planId: string }) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/plans/${options.planId}`, {
+      method: "DELETE",
+      token: options.token,
+      orgId: options.orgId,
     });
   },
   assign(
@@ -553,6 +569,14 @@ export const ownerApi = {
         orgId: options.orgId,
       },
     );
+  },
+  approveJoinRequestsBatch<T = unknown>(options: RequestOptions & { joinRequestIds: string[] }) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/join-requests/approve-batch`, {
+      method: "POST",
+      token: options.token,
+      orgId: options.orgId,
+      body: { joinRequestIds: options.joinRequestIds },
+    });
   },
 };
 

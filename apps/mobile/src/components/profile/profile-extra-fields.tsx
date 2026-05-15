@@ -86,7 +86,7 @@ export function ProfileExtraFields() {
   const profileUser = profileQuery.data?.user;
   const sessionUser = session?.user;
   const [dob, setDob] = useState<Date | null>(parseDate(profileUser?.dateOfBirth ?? null));
-  const [showDobPicker, setShowDobPicker] = useState(Platform.OS === "ios");
+  const [showDobPicker, setShowDobPicker] = useState(false);
   const [gender, setGender] = useState<GenderValue>(normalizeGender(profileUser?.gender));
   const [emergencyName, setEmergencyName] = useState(profileUser?.emergencyContact?.name ?? "");
   const [emergencyPhone, setEmergencyPhone] = useState(profileUser?.emergencyContact?.phone ?? "");
@@ -106,6 +106,13 @@ export function ProfileExtraFields() {
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const minor = useMemo(() => isUnder18(dob), [dob]);
+  const completedCount = [
+    dob,
+    gender !== "prefer_not_to_say",
+    emergencyName.trim() && emergencyPhone.trim(),
+    preferredLocale,
+    weeklyWorkoutGoal,
+  ].filter(Boolean).length;
 
   useEffect(() => {
     setDob(parseDate(profileUser?.dateOfBirth ?? null));
@@ -181,8 +188,11 @@ export function ProfileExtraFields() {
     <GlassCard contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.title}>Profile details</Text>
-          <Text style={styles.subtitle}>Safety, consent, and gym KYC fields.</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>Profile details</Text>
+            <View style={styles.completionDot} />
+          </View>
+          <Text style={styles.subtitle}>{completedCount}/5 safety and KYC fields complete.</Text>
         </View>
         {savedKey ? <Pill tone="lime">Saved</Pill> : null}
       </View>
@@ -368,6 +378,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md,
     justifyContent: "space-between",
+  },
+  titleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  completionDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.lime,
+    shadowColor: colors.lime,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   title: {
     ...typography.sectionTitle,

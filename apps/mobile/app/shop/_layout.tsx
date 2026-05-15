@@ -1,8 +1,9 @@
 import { Stack } from "expo-router";
+import { colors } from "@/lib/theme";
 
 export default function ShopLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#070908" } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="cart" options={{ animation: "slide_from_right" }} />
       <Stack.Screen name="checkout" options={{ animation: "slide_from_right" }} />
       <Stack.Screen name="pickup/[orderId]" options={{ animation: "slide_from_right" }} />

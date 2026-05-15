@@ -8,8 +8,8 @@ describe("gym discovery", () => {
       gyms: [
         {
           id: "org_public",
-          name: "Iron House",
-          username: "iron-house",
+          name: "Aarogya Strength",
+          username: "aarogya-strength",
           city: "Pune",
           state: "Maharashtra",
           visibility: "PUBLIC",

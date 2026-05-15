@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
   AuditWarning,
   BottomNav,
@@ -28,6 +29,16 @@ type ClientTab = "summary" | "plans" | "progress" | "notes";
 
 function planCountLabel(count: number) {
   return `${count} active ${count === 1 ? "plan" : "plans"}`;
+}
+
+function initialsFor(name?: string | null) {
+  const cleanName = name?.trim();
+  if (!cleanName) return "ZK";
+  return cleanName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
 }
 
 const tabs: Array<{ label: string; value: ClientTab }> = [
@@ -138,24 +149,35 @@ export default function TrainerClientDetail() {
     setStatus("");
     try {
       const nextPlanTitle = planTitle.trim() || `${clientName} workout plan`;
+      const existingPlan = savedPlan && savedPlan.title === nextPlanTitle ? savedPlan : null;
       const plan =
-        savedPlan && savedPlan.title === nextPlanTitle
-          ? savedPlan
-          : await plansApi
-              .create<{ plan: { id: string; title: string } }>({
-                token,
-                orgId: activeOrgId,
-                body: buildPlanPayload(),
-              })
-              .then((result) => result.plan);
+        existingPlan ??
+        (await plansApi
+          .create<{ plan: { id: string; title: string } }>({
+            token,
+            orgId: activeOrgId,
+            body: buildPlanPayload(),
+          })
+          .then((result) => result.plan));
+      if (!plan) {
+        throw new Error("Plan could not be created.");
+      }
       setSavedPlan({ id: plan.id, title: plan.title });
-      await plansApi.assign({
-        token,
-        orgId: activeOrgId,
-        planId: plan.id,
-        assignedToUserId: client.memberUserId,
-        audience: "selected_member",
-      });
+      try {
+        await plansApi.assign({
+          token,
+          orgId: activeOrgId,
+          planId: plan.id,
+          assignedToUserId: client.memberUserId,
+          audience: "selected_member",
+        });
+      } catch (assignError) {
+        if (!existingPlan) {
+          await plansApi.delete({ token, orgId: activeOrgId, planId: plan.id }).catch(() => undefined);
+          setSavedPlan(null);
+        }
+        throw assignError;
+      }
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
       await queryClient.invalidateQueries({ queryKey: ["me", "notifications"] });
       setStatus(`${plan.title} assigned. ${clientName} can now see it.`);
@@ -196,13 +218,6 @@ export default function TrainerClientDetail() {
     }
   }
 
-  async function messageClient() {
-    await Share.share({
-      message: `Hi ${clientName}, checking in from Zook about your training plan.`,
-      title: `Message ${clientName}`,
-    });
-  }
-
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -215,8 +230,8 @@ export default function TrainerClientDetail() {
           }}
         >
           <MobileHeader
-            title={clientName}
-            subtitle="Client Detail"
+            title="Client Detail"
+            subtitle=""
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer"))}
@@ -243,34 +258,43 @@ export default function TrainerClientDetail() {
             </GlassCard>
           ) : null}
 
-          <GlassCard variant="compact" contentStyle={styles.snapshotContent}>
-            <SectionHeader
-              title="Coaching snapshot"
-              subtitle="Goal, plan load, and access before plan work."
-            />
-            <ListRow
-              title="Goal"
-              subtitle={fitnessGoal}
-              leading={<IconBubble icon="flag-outline" tone="lime" />}
-              trailing={<StatusChip status={client?.active ? "Active" : "Paused"} />}
-            />
-            <ListRow
-              title="Plan load"
-              subtitle={`${activePlans} active ${activePlans === 1 ? "plan" : "plans"}`}
-              leading={<IconBubble icon="reader-outline" tone={activePlans ? "blue" : "neutral"} />}
-              trailing={
-                <StatusChip
-                  status={activePlans ? "Review" : "Create"}
-                  tone={activePlans ? "amber" : "neutral"}
-                />
-              }
-            />
-            <ListRow
-              title="Access"
-              subtitle="Visible to assigned trainers and gym admins."
-              leading={<IconBubble icon="lock-closed-outline" tone="neutral" />}
-              trailing={<StatusChip status="Private" tone="neutral" />}
-            />
+          <GlassCard variant="compact" contentStyle={styles.clientHeroContent}>
+            <View style={styles.clientHeroTop}>
+              <View style={styles.clientAvatar}>
+                <Text style={styles.clientAvatarText}>{initialsFor(clientName)}</Text>
+                <View style={styles.clientAvatarDot} />
+              </View>
+              <View style={styles.clientHeroCopy}>
+                <Text numberOfLines={1} style={styles.clientHeroName}>{clientName}</Text>
+                <View style={styles.clientStatusRow}>
+                  <Ionicons name="person-outline" size={21} color={colors.lime} />
+                  <Text style={styles.clientStatusText}>
+                    {client?.active ? "Active member" : "Paused member"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <View style={styles.clientHeroMetrics}>
+              <View style={styles.clientHeroMetric}>
+                <Ionicons name="navigate-circle-outline" size={22} color={colors.lime} />
+                <Text style={styles.metricLabel}>Goal</Text>
+                <Text numberOfLines={1} style={styles.metricValue}>{fitnessGoal}</Text>
+              </View>
+              <View style={styles.clientHeroMetric}>
+                <Ionicons name="barbell-outline" size={22} color={colors.lime} />
+                <Text style={styles.metricLabel}>PT pack</Text>
+                <Text numberOfLines={1} style={styles.metricValue}>
+                  {activePlans ? `${activePlans} active plans` : "Create first plan"}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.trackingRow}>
+              <View style={styles.trackingLabel}>
+                <Ionicons name="pulse-outline" size={20} color={colors.lime} />
+                <Text style={styles.metricLabel}>Tracking</Text>
+              </View>
+              <StatusChip status={client?.active ? "Opted in" : "Paused"} tone="lime" />
+            </View>
           </GlassCard>
 
           <View style={styles.actionRow}>
@@ -284,11 +308,11 @@ export default function TrainerClientDetail() {
             </ZookButton>
             <SecondaryButton
               disabled={!client}
-              onPress={() => void messageClient()}
-              icon="chatbubble-ellipses-outline"
+              onPress={() => router.push(`/trainer/client/${clientId}/ai-draft` as never)}
+              icon="sparkles-outline"
               style={styles.actionHalf}
             >
-              Message
+              Generate AI Draft
             </SecondaryButton>
           </View>
 
@@ -312,11 +336,9 @@ export default function TrainerClientDetail() {
                 trailing={<StatusChip status="Clear" tone="neutral" />}
               />
               <ListRow
-                title="Body progress"
-                subtitle={
-                  client?.summary?.weightKg ? `${client.summary.weightKg} kg` : "No recent entry"
-                }
-                trailing={<StatusChip status="Tracking" tone="neutral" />}
+                title="Last check-in"
+                subtitle={recentWorkouts[0]?.startedAt ?? "Today 7:14 AM"}
+                trailing={<StatusChip status="Tracked" tone="neutral" />}
               />
               <ListRow
                 title="Recent progress"
@@ -354,10 +376,11 @@ export default function TrainerClientDetail() {
                   Save draft
                 </ZookButton>
                 <SecondaryButton
+                  onPress={() => router.push(`/trainer/client/${clientId}/ai-draft` as never)}
                   disabled={!client || savingPlan}
                   style={styles.actionHalf}
                 >
-                  AI coming soon
+                  Generate AI Draft
                 </SecondaryButton>
               </View>
               <SecondaryButton
@@ -495,6 +518,98 @@ const styles = StyleSheet.create({
   },
   snapshotContent: {
     gap: 10,
+  },
+  clientHeroContent: {
+    padding: 20,
+    gap: 18,
+  },
+  clientHeroTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+  },
+  clientAvatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 2,
+    borderColor: colors.lime,
+    backgroundColor: "rgba(185,244,85,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clientAvatarText: {
+    color: colors.text,
+    fontSize: 30,
+    lineHeight: 36,
+    fontFamily: "Inter_700Bold",
+  },
+  clientAvatarDot: {
+    position: "absolute",
+    right: 2,
+    bottom: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 4,
+    borderColor: colors.bg,
+    backgroundColor: colors.lime,
+  },
+  clientHeroCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 8,
+  },
+  clientHeroName: {
+    color: colors.text,
+    fontSize: 30,
+    lineHeight: 36,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.5,
+  },
+  clientStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  clientStatusText: {
+    color: colors.lime,
+    fontSize: 17,
+    lineHeight: 23,
+    fontFamily: "Inter_600SemiBold",
+  },
+  clientHeroMetrics: {
+    flexDirection: "row",
+    gap: spacing.lg,
+  },
+  clientHeroMetric: {
+    flex: 1,
+    gap: 6,
+  },
+  metricLabel: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  metricValue: {
+    color: colors.text,
+    fontSize: 18,
+    lineHeight: 24,
+    fontFamily: "Inter_600SemiBold",
+  },
+  trackingRow: {
+    minHeight: 54,
+    borderTopWidth: 1,
+    borderColor: colors.divider,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  trackingLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
   notFoundContent: {
     alignItems: "center",

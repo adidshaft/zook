@@ -8,14 +8,18 @@ import {
   IconBubble,
   MobileHeader,
   Pill,
+  QueryErrorState,
   Skeleton,
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
-import { ownerApi } from "@/lib/domain-api";
+import { apiClient, ownerApi } from "@/lib/domain-api";
 import { formatLongDate } from "@/lib/formatting";
+import { getStoredValue, setStoredValue } from "@/lib/storage";
 import type { OrgMemberRecord } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
+import { useEffect, useState } from "react";
 
 type OrgMemberDetailResponse = {
   member: OrgMemberRecord & {
@@ -40,6 +44,15 @@ function initialsFor(name?: string | null, email?: string | null) {
     .slice(0, 2)
     .map((part) => part.charAt(0).toUpperCase())
     .join("");
+}
+
+function redactPhone(phone?: string | null) {
+  if (!phone) return "Not available";
+  return `****${phone.slice(-4)}`;
+}
+
+function phoneRevealStorageKey(orgId?: string | null) {
+  return `zook_revealed_owner_phones_${orgId ?? "none"}`;
 }
 
 function BackButton({ onPress }: { onPress: () => void }) {
@@ -82,6 +95,7 @@ export default function OwnerMemberDetail() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const id = firstParam(params.id);
   const { activeOrgId: resolvedOrgId, token } = useAuth();
+  const [phoneRevealed, setPhoneRevealed] = useState(false);
   const memberQuery = useQuery({
     queryKey: ["org", resolvedOrgId, "members", id],
     queryFn: () =>
@@ -100,6 +114,49 @@ export default function OwnerMemberDetail() {
   const phone = member?.user?.phone ?? "";
   const goal = member?.user?.fitnessGoal ?? member?.profile.fitnessGoal ?? "Not set";
   const notes = member?.profile.notes;
+
+  useEffect(() => {
+    let mounted = true;
+    setPhoneRevealed(false);
+    void getStoredValue(phoneRevealStorageKey(resolvedOrgId)).then((stored) => {
+      if (!mounted || !id || !stored) return;
+      try {
+        const parsed = JSON.parse(stored);
+        setPhoneRevealed(Array.isArray(parsed) && parsed.includes(id));
+      } catch {
+        setPhoneRevealed(false);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [id, resolvedOrgId]);
+
+  async function revealPhone() {
+    if (!id) return;
+    setPhoneRevealed(true);
+    try {
+      const stored = await getStoredValue(phoneRevealStorageKey(resolvedOrgId));
+      const parsed = stored ? JSON.parse(stored) : [];
+      const next = new Set(Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : []);
+      next.add(id);
+      await setStoredValue(phoneRevealStorageKey(resolvedOrgId), JSON.stringify(Array.from(next)));
+      if (token && resolvedOrgId) {
+        await apiClient.request("/audit-logs", {
+          method: "POST",
+          token,
+          orgId: resolvedOrgId,
+          body: { action: "MEMBER_PHONE_REVEALED", targetId: id },
+        });
+      }
+    } catch {
+      showToast({
+        title: "Reveal not logged",
+        message: "The phone was shown, but the audit log could not be saved.",
+        tone: "amber",
+      });
+    }
+  }
 
   return (
     <>
@@ -140,6 +197,16 @@ export default function OwnerMemberDetail() {
             </GlassCard>
           ) : null}
 
+          {memberQuery.isError ? (
+            <GlassCard variant="compact">
+              <QueryErrorState
+                error={memberQuery.error}
+                onRetry={() => void memberQuery.refetch()}
+                title="Could not load member"
+              />
+            </GlassCard>
+          ) : null}
+
           {member ? (
             <>
               <GlassCard variant="success" contentStyle={styles.profileContent}>
@@ -173,7 +240,27 @@ export default function OwnerMemberDetail() {
 
               <GlassCard contentStyle={styles.sectionContent}>
                 <ContactRow icon="mail-outline" label="Email" value={email || "Not available"} />
-                {phone ? <ContactRow icon="call-outline" label="Phone" value={phone} /> : null}
+                {phone ? (
+                  <View style={styles.contactRow}>
+                    <IconBubble icon="call-outline" tone="blue" size={40} />
+                    <View style={styles.contactCopy}>
+                      <Text style={styles.rowLabel}>Phone</Text>
+                      <Text selectable={phoneRevealed} style={styles.rowValue}>
+                        {phoneRevealed ? phone : redactPhone(phone)}
+                      </Text>
+                    </View>
+                    {!phoneRevealed ? (
+                      <Pressable
+                        onPress={() => void revealPhone()}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Reveal phone for ${name}`}
+                        style={styles.revealPhoneButton}
+                      >
+                        <Text style={styles.revealPhoneText}>Reveal</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                ) : null}
               </GlassCard>
             </>
           ) : null}
@@ -297,5 +384,17 @@ const styles = StyleSheet.create({
   rowValue: {
     color: colors.text,
     ...typography.bodyStrong,
+  },
+  revealPhoneButton: {
+    minHeight: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 10,
+    justifyContent: "center",
+  },
+  revealPhoneText: {
+    color: colors.lime,
+    ...typography.caption,
   },
 });

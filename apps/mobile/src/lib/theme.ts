@@ -2,17 +2,26 @@ const glass = (opacity: number) => `rgba(255,255,255,${opacity})`;
 const lime = (opacity: number) => `rgba(185,244,85,${opacity})`;
 const amber = (opacity: number) => `rgba(242,201,76,${opacity})`;
 const red = (opacity: number) => `rgba(255,90,61,${opacity})`;
+const bgApp = "#070908";
+const bgElevated = "#0B0F0D";
+const textPrimary = "#F4F7EF";
+const textMuted = "#AEB8A8";
+const textSubtle = "#778273";
+const brandLime = "#B9F455";
+const brandLimeSoft = "#D7FF6A";
+const warning = "#F2C94C";
+const danger = "#FF5A3D";
 
 export const colors = {
-  bgApp: "#070908",
-  bgElevated: "#0C100E",
-  textPrimary: "#F4F7EF",
-  textMuted: "#AEB8A8",
-  textSubtle: "#778273",
-  brandLime: "#B9F455",
-  brandLimeSoft: "#D7FF6A",
-  warning: "#F2C94C",
-  danger: "#FF5A3D",
+  bgApp,
+  bgElevated,
+  textPrimary,
+  textMuted,
+  textSubtle,
+  brandLime,
+  brandLimeSoft,
+  warning,
+  danger,
   glassFill: glass(0.06),
   glassFillStrong: glass(0.08),
   glassStroke: glass(0.14),
@@ -20,26 +29,32 @@ export const colors = {
   overlayDark: "rgba(0,0,0,0.45)",
 
   // Compatibility aliases used by existing screens.
-  bg: "#070908",
+  /** @deprecated Prefer bgApp. */
+  bg: bgApp,
+  /** @deprecated Prefer bgElevated/glassFill. */
   surfaceSolid: "#0C100E",
-  surfaceRaised: "#10150F",
+  surfaceRaised: "#111610",
   surface: glass(0.06),
   panel: glass(0.06),
   panelStrong: glass(0.08),
   accentPanel: lime(0.1),
   border: glass(0.14),
-  borderStrong: glass(0.18),
+  borderStrong: glass(0.2),
   limeBorder: lime(0.32),
-  text: "#F4F7EF",
-  muted: "#AEB8A8",
-  subtle: "#778273",
+  /** @deprecated Prefer textPrimary. */
+  text: textPrimary,
+  /** @deprecated Prefer textMuted. */
+  muted: textMuted,
+  /** @deprecated Prefer textSubtle. */
+  subtle: textSubtle,
   paper: "#F2F5EB",
   ink: "#11150F",
   inkSoft: "#6F7769",
-  lime: "#B9F455",
-  limeSoft: "#D7FF6A",
-  amber: "#F2C94C",
-  red: "#FF5A3D",
+  /** @deprecated Prefer brandLime. */
+  lime: brandLime,
+  limeSoft: brandLimeSoft,
+  amber: warning,
+  red: danger,
   blue: "#7DD3FC",
   violet: "#B9A9FF",
 };
@@ -70,11 +85,11 @@ export const radii = {
   chip: 999,
   pill: 999,
   input: 16,
-  button: 18,
+  button: 999,
   smallCard: 18,
-  card: 24,
-  mainCard: 24,
-  panel: 22,
+  card: 28,
+  mainCard: 28,
+  panel: 32,
   bottomNav: 28,
   large: 20,
   medium: 16,
@@ -83,7 +98,7 @@ export const radii = {
 };
 
 export const typography = {
-  screenTitle: { fontSize: 24, fontFamily: "Inter_600SemiBold", lineHeight: 30 },
+  screenTitle: { fontSize: 26, fontFamily: "Inter_700Bold", lineHeight: 32 },
   headerTitle: { fontSize: 20, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
   sectionTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", lineHeight: 22 },
   cardTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 20 },
@@ -91,14 +106,18 @@ export const typography = {
   bodyStrong: { fontSize: 13.5, fontFamily: "Inter_600SemiBold", lineHeight: 19 },
   caption: { fontSize: 11.5, fontFamily: "Inter_600SemiBold", lineHeight: 15 },
   small: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
-  metric: { fontSize: 26, fontFamily: "Inter_600SemiBold", lineHeight: 31 },
-  navLabel: { fontSize: 10.5, fontFamily: "Inter_600SemiBold", lineHeight: 13 },
-  button: { fontSize: 13.5, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
+  metric: { fontSize: 28, fontFamily: "Inter_700Bold", lineHeight: 32 },
+  navLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", lineHeight: 15 },
+  button: { fontSize: 14, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
 
   // Compatibility aliases used by existing screens.
-  display: { fontSize: 32, fontFamily: "Inter_700Bold", lineHeight: 38 },
+  /** @deprecated Prefer screenTitle. */
+  display: { fontSize: 34, fontFamily: "Inter_700Bold", lineHeight: 39 },
+  /** @deprecated Prefer screenTitle/headerTitle. */
   h1: { fontSize: 24, fontFamily: "Inter_600SemiBold", lineHeight: 30 },
+  /** @deprecated Prefer headerTitle. */
   h2: { fontSize: 20, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
+  /** @deprecated Prefer cardTitle. */
   h3: { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 20 },
   headline: { fontSize: 24, fontFamily: "Inter_600SemiBold", lineHeight: 30 },
   title: { fontSize: 20, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
@@ -122,7 +141,7 @@ export const layout = {
   formFieldGap: 12,
   sectionGap: 24,
   bottomNavHeight: 72,
-  bottomNavContentPadding: 116,
+  bottomNavContentPadding: 132,
   bottomNavHorizontalMargin: 18,
   stickyActionHeight: 108,
   demoStripHeight: 28,
@@ -131,9 +150,9 @@ export const layout = {
 export const shadows = {
   glowLime: {
     shadowColor: colors.lime,
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 2,
   },
   glowLimeSoft: {
@@ -145,16 +164,16 @@ export const shadows = {
   },
   glowDark: {
     shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
     elevation: 1,
   },
   glass: {
     shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
     elevation: 1,
   },
   glowAmberSoft: {
@@ -173,9 +192,9 @@ export const shadows = {
   },
   card: {
     shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
     elevation: 1,
   },
 };

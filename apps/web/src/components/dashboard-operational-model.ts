@@ -109,6 +109,11 @@ export type MemberRow = {
     status: string;
     endsAt?: string | Date | null;
     remainingVisits?: number | null;
+    plan?: {
+      id: string;
+      name: string;
+      type: MembershipPlanType;
+    } | null;
   } | null;
 };
 

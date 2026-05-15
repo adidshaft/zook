@@ -20,27 +20,32 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomNav,
-  DatePickerField,
   GlassCard,
   IconBubble,
   MobileHeader,
-  Pill,
   SectionHeader,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import {
+  ActiveMembershipCard,
+  AutopayCard,
+  MembershipHistorySection,
+  PaymentsSection,
+} from "@/components/membership";
 import { MembershipSkeleton, PlansSkeleton } from "@/components/skeletons";
 import { toWebUrl } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { memberApi, paymentsApi } from "@/lib/domain-api";
-import { formatDateTime, formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import {
   useGeneratePaymentDocument,
   useGymProfile,
@@ -117,14 +122,6 @@ type PaymentRecord = {
 
 type PaymentDocumentKind = "receipt" | "invoice";
 
-function toneForStatus(status?: string | null) {
-  if (status === "ACTIVE") return "lime" as const;
-  if (status === "PENDING" || status === "PENDING_PAYMENT" || status === "PAST_DUE")
-    return "amber" as const;
-  if (status === "EXPIRED" || status === "CANCELLED") return "red" as const;
-  return "blue" as const;
-}
-
 function daysUntil(dateStr?: string | null) {
   if (!dateStr) return null;
   const diff = new Date(dateStr).getTime() - Date.now();
@@ -178,15 +175,6 @@ function subscriptionTimestamp(subscription: MembershipRecord) {
   return new Date(
     subscription.endsAt ?? subscription.createdAt ?? "1970-01-01T00:00:00.000Z",
   ).getTime();
-}
-
-function isAutopayLive(autopay?: AutopayRecord | null) {
-  return Boolean(
-    autopay &&
-    ["CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "PAUSED"].includes(
-      autopay.status ?? "",
-    ),
-  );
 }
 
 export default function MembershipScreen() {
@@ -600,301 +588,37 @@ export default function MembershipScreen() {
           {latestSubscription ? (
             <>
               <SectionHeader title="Active membership" />
-              <GlassCard
-                variant={latestSubscription.status === "ACTIVE" ? "success" : "default"}
-                contentStyle={styles.featuredContent}
-              >
-                <View style={styles.featuredHeader}>
-                  <IconBubble
-                    icon="card-outline"
-                    tone={toneForStatus(latestSubscription.status)}
-                    size={40}
-                  />
-                  <View style={styles.featuredCopy}>
-                    <Text style={styles.featuredTitle}>
-                      {latestSubscription.plan?.name ?? "Membership"}
-                    </Text>
-                    <Text style={styles.featuredOrg}>
-                      {latestSubscription.organization?.name ?? activeOrganization?.name ?? "Gym"}
-                    </Text>
-                  </View>
-                  <Pill tone={toneForStatus(latestSubscription.status)}>
-                    {titleCaseFromCode(latestSubscription.status ?? "ACTIVE")}
-                  </Pill>
-                </View>
+              <ActiveMembershipCard
+                activeOrganizationName={activeOrganization?.name}
+                actionBusy={membershipActionBusy}
+                actionStatus={membershipActionStatus}
+                daysLeft={latestDaysLeft}
+                onOpenRenewal={openRenewal}
+                onPauseDateChange={setPauseResumesAt}
+                onPauseOrResume={(subscription) => void pauseOrResumeMembership(subscription)}
+                pauseMinimumDate={pauseMinimumDate}
+                pauseResumesAt={pauseResumesAt}
+                subscription={latestSubscription}
+              />
 
-                {latestDaysLeft !== null ? (
-                  <View style={styles.progressSection}>
-                    <View style={styles.progressBar}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          { width: `${Math.max(5, Math.min(100, (latestDaysLeft / 30) * 100))}%` },
-                          latestDaysLeft <= 7 ? styles.progressFillWarning : null,
-                        ]}
-                      />
-                    </View>
-                    <View style={styles.progressLabels}>
-                      <Text
-                        style={[
-                          styles.progressText,
-                          latestDaysLeft <= 7 ? styles.progressTextWarning : null,
-                        ]}
-                      >
-                        {latestDaysLeft} day{latestDaysLeft !== 1 ? "s" : ""} left
-                      </Text>
-                      <Text style={styles.progressTextMuted}>
-                        {latestSubscription.endsAt ? formatLongDate(latestSubscription.endsAt) : ""}
-                      </Text>
-                    </View>
-                  </View>
-                ) : null}
-
-                {latestSubscription.remainingVisits !== null &&
-                latestSubscription.remainingVisits !== undefined ? (
-                  <View style={styles.membershipMetaLine}>
-                    <Ionicons name="walk-outline" size={14} color={colors.lime} />
-                    <Text style={styles.membershipMetaText}>
-                      {latestSubscription.remainingVisits} visits remaining
-                    </Text>
-                  </View>
-                ) : null}
-
-                <ZookButton onPress={() => openRenewal(latestSubscription)} icon="refresh-outline">
-                  Renew or change plan
-                </ZookButton>
-                {latestSubscription.status !== "PAUSED" ? (
-                  <View style={styles.pausePicker}>
-                    <DatePickerField
-                      accessibilityLabel="Membership pause end date"
-                      label="Pause until"
-                      value={pauseResumesAt}
-                      minimumDate={pauseMinimumDate()}
-                      onChange={setPauseResumesAt}
-                    />
-                  </View>
-                ) : null}
-                <ZookButton
-                  tone="secondary"
-                  disabled={
-                    membershipActionBusy ||
-                    (latestSubscription.status !== "ACTIVE" && latestSubscription.status !== "PAUSED")
-                  }
-                  onPress={() => void pauseOrResumeMembership(latestSubscription)}
-                  icon={latestSubscription.status === "PAUSED" ? "play-circle-outline" : "pause-circle-outline"}
-                >
-                  {latestSubscription.status === "PAUSED"
-                    ? "Resume membership"
-                    : `Pause until ${pauseResumesAt.toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                      })}`}
-                </ZookButton>
-                {membershipActionStatus ? (
-                  <Text style={styles.statusMessage}>{membershipActionStatus}</Text>
-                ) : null}
-              </GlassCard>
-
-              <GlassCard variant="compact" contentStyle={styles.autopayContent}>
-                <View style={styles.autopayHeader}>
-                  <IconBubble
-                    icon="repeat-outline"
-                    tone={isAutopayLive(latestSubscription.autopay) ? "lime" : "blue"}
-                    size={36}
-                  />
-                  <View style={styles.autopayCopy}>
-                    <Text style={styles.autopayTitle}>Autopay</Text>
-                    <Text style={styles.autopayBody}>
-                      {isAutopayLive(latestSubscription.autopay)
-                        ? latestSubscription.autopay?.nextChargeAt
-                          ? `Next renewal ${formatLongDate(latestSubscription.autopay.nextChargeAt)}`
-                          : "Recurring renewal is enabled."
-                        : "Authorize automatic renewal to renew this plan automatically."}
-                    </Text>
-                    {autopayStatus ? (
-                      <Text style={styles.autopayStatus}>{autopayStatus}</Text>
-                    ) : null}
-                  </View>
-                  <Pill tone={isAutopayLive(latestSubscription.autopay) ? "lime" : "blue"}>
-                    {isAutopayLive(latestSubscription.autopay)
-                      ? titleCaseFromCode(latestSubscription.autopay?.status ?? "ACTIVE")
-                      : "Off"}
-                  </Pill>
-                </View>
-                {isAutopayLive(latestSubscription.autopay) ? (
-                  <ZookButton
-                    tone="secondary"
-                    disabled={autopayBusy}
-                    onPress={() => void cancelAutopay(latestSubscription)}
-                    icon="close-circle-outline"
-                  >
-                    {autopayBusy ? "Updating..." : "Cancel autopay"}
-                  </ZookButton>
-                ) : (
-                  <ZookButton
-                    disabled={autopayBusy || latestSubscription.status !== "ACTIVE"}
-                    onPress={() => void enableAutopay(latestSubscription)}
-                    icon="repeat-outline"
-                  >
-                    {autopayBusy ? "Starting..." : "Enable autopay"}
-                  </ZookButton>
-                )}
-              </GlassCard>
+              <AutopayCard
+                autopayBusy={autopayBusy}
+                autopayStatus={autopayStatus}
+                onCancel={(subscription) => void cancelAutopay(subscription)}
+                onEnable={(subscription) => void enableAutopay(subscription)}
+                subscription={latestSubscription}
+              />
             </>
           ) : null}
 
-          {sortedSubscriptions.length > 1 ? (
-            <>
-              <SectionHeader title="History" />
-              <View style={styles.stack}>
-                {sortedSubscriptions.slice(1).map((subscription) => (
-                  <GlassCard
-                    key={subscription.id}
-                    variant="compact"
-                    contentStyle={styles.historyContent}
-                  >
-                    <View style={styles.historyRow}>
-                      <View style={styles.historyCopy}>
-                        <Text numberOfLines={1} style={styles.historyTitle}>
-                          {subscription.plan?.name ?? "Membership"}
-                        </Text>
-                        <Text numberOfLines={1} style={styles.historyBody}>
-                          {subscription.organization?.name ?? "Gym"} ·{" "}
-                          {subscription.endsAt ? formatLongDate(subscription.endsAt) : "No expiry"}
-                        </Text>
-                      </View>
-                      <Pill tone={toneForStatus(subscription.status)}>
-                        {titleCaseFromCode(subscription.status ?? "ACTIVE")}
-                      </Pill>
-                    </View>
-                  </GlassCard>
-                ))}
-              </View>
-            </>
-          ) : null}
+          <MembershipHistorySection subscriptions={sortedSubscriptions} />
 
-          <SectionHeader title="Payments" />
-          {payments.length ? (
-            <View style={styles.stack}>
-              {payments.map((payment) => {
-                const canGenerate =
-                  payment.status === "SUCCEEDED" || payment.status === "PARTIALLY_REFUNDED";
-                const receiptBusy = documentBusyKey === `receipt:${payment.id}`;
-                const invoiceBusy = documentBusyKey === `invoice:${payment.id}`;
-                return (
-                  <GlassCard
-                    key={payment.id}
-                    variant="compact"
-                    contentStyle={styles.paymentContent}
-                  >
-                    <View style={styles.paymentIcon}>
-                      <IconBubble icon="receipt-outline" tone="lime" size={34} />
-                    </View>
-                    <View style={styles.paymentCopy}>
-                      <View style={styles.paymentHeader}>
-                        <Text numberOfLines={1} style={styles.paymentTitle}>
-                          {titleCaseFromCode(payment.purpose ?? "PAYMENT")}
-                        </Text>
-                        <Text style={styles.paymentAmount}>{formatInr(payment.amountPaise)}</Text>
-                      </View>
-                      <Text numberOfLines={1} style={styles.paymentBody}>
-                        {titleCaseFromCode(payment.mode ?? "ONLINE")} ·{" "}
-                        {formatDateTime(payment.recordedAt ?? payment.createdAt)}
-                      </Text>
-                      <View style={styles.paymentMetaRow}>
-                        <Pill
-                          tone={
-                            payment.status === "SUCCEEDED" ? "lime" : toneForStatus(payment.status)
-                          }
-                        >
-                          {titleCaseFromCode(payment.status ?? "CREATED")}
-                        </Pill>
-                        {payment.receiptNumber ? (
-                          <Text numberOfLines={1} style={styles.documentHint}>
-                            Receipt {payment.receiptNumber}
-                          </Text>
-                        ) : null}
-                      </View>
-                      <View style={styles.documentActions}>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel="Generate receipt"
-                          disabled={!canGenerate || receiptBusy || invoiceBusy}
-                          onPress={() => void createPaymentDocument(payment, "receipt")}
-                          style={({ pressed }) => [
-                            styles.documentButton,
-                            !canGenerate ? styles.documentButtonDisabled : null,
-                            pressed && canGenerate ? styles.documentButtonPressed : null,
-                          ]}
-                        >
-                          {receiptBusy ? (
-                            <ActivityIndicator size="small" color={colors.lime} />
-                          ) : (
-                            <Ionicons name="document-text-outline" size={14} color={colors.lime} />
-                          )}
-                          <Text style={styles.documentButtonText}>Receipt</Text>
-                        </Pressable>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel="Generate invoice"
-                          disabled={!canGenerate || invoiceBusy || receiptBusy}
-                          onPress={() => void createPaymentDocument(payment, "invoice")}
-                          style={({ pressed }) => [
-                            styles.documentButton,
-                            !canGenerate ? styles.documentButtonDisabled : null,
-                            pressed && canGenerate ? styles.documentButtonPressed : null,
-                          ]}
-                        >
-                          {invoiceBusy ? (
-                            <ActivityIndicator size="small" color={colors.lime} />
-                          ) : (
-                            <Ionicons name="newspaper-outline" size={14} color={colors.lime} />
-                          )}
-                          <Text style={styles.documentButtonText}>Invoice</Text>
-                        </Pressable>
-                      </View>
-                    </View>
-                  </GlassCard>
-                );
-              })}
-            </View>
-          ) : (
-            <GlassCard variant="compact" contentStyle={styles.emptyPaymentContent}>
-              <IconBubble icon="receipt-outline" tone="neutral" size={36} />
-              <View style={styles.emptyCopy}>
-                <Text style={styles.emptyTitle}>No payments yet</Text>
-                <Text style={styles.emptyBody}>Transaction history will appear here.</Text>
-              </View>
-            </GlassCard>
-          )}
-          {invoices.length ? (
-            <>
-              <SectionHeader title="Invoices and receipts" />
-              <View style={styles.stack}>
-                {invoices.map((invoice) => (
-                  <GlassCard
-                    key={invoice.id}
-                    variant="compact"
-                    contentStyle={styles.invoiceContent}
-                  >
-                    <IconBubble icon="newspaper-outline" tone="blue" size={34} />
-                    <View style={styles.invoiceCopy}>
-                      <Text numberOfLines={1} style={styles.paymentTitle}>
-                        {invoice.invoiceNumber ?? invoice.invoiceNo ?? "Invoice"}
-                      </Text>
-                      <Text numberOfLines={1} style={styles.paymentBody}>
-                        {formatDateTime(invoice.issueDate ?? invoice.issuedAt)} ·{" "}
-                        {titleCaseFromCode(invoice.invoiceStatus ?? invoice.status ?? "ISSUED")}
-                      </Text>
-                    </View>
-                    <Text style={styles.paymentAmount}>
-                      {formatInr(invoice.totalPaise ?? invoice.amountPaise)}
-                    </Text>
-                  </GlassCard>
-                ))}
-              </View>
-            </>
-          ) : null}
+          <PaymentsSection
+            documentBusyKey={documentBusyKey}
+            invoices={invoices}
+            onCreateDocument={(payment, kind) => void createPaymentDocument(payment, kind)}
+            payments={payments}
+          />
         </ScrollView>
         <BottomNav />
         <RenewalSheet
@@ -947,8 +671,10 @@ function RenewalSheet({
   status: string;
 }) {
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const sheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ["74%"], []);
+  const snapPoints = useMemo(() => ["CONTENT_HEIGHT"], []);
+  const maxPlanListHeight = Math.min(420, Math.max(240, screenHeight * 0.36));
   const plans = availablePlans.length
     ? availablePlans
     : currentPlan?.id
@@ -982,7 +708,10 @@ function RenewalSheet({
       backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.sheetHandle}
-      bottomInset={insets.bottom}
+      maxDynamicContentSize={screenHeight * 0.82}
+      keyboardBehavior="extend"
+      keyboardBlurBehavior="restore"
+      bottomInset={insets.bottom + 12}
       onDismiss={onClose}
     >
       <BottomSheetView style={styles.sheet}>
@@ -1006,46 +735,49 @@ function RenewalSheet({
           </Pressable>
         </View>
 
-        <BottomSheetScrollView
-          style={styles.planSelectorScroll}
-          contentContainerStyle={styles.planSelector}
-          showsVerticalScrollIndicator={false}
-        >
-          {loadingPlans ? <PlansSkeleton /> : null}
-          {!loadingPlans && !plans.length ? (
-            <Text style={styles.emptyBody}>
-              No alternate plans are published yet. Same-plan renewal will be requested.
-            </Text>
-          ) : null}
-          {plans.map((plan) => {
-            const selected = selectedPlanId === plan.id;
-            return (
-              <Pressable
-                key={plan.id}
-                onPress={() => {
-                  if (!renewing) setSelectedPlanId(plan.id);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Select ${plan.name}`}
-                accessibilityState={{ selected, disabled: renewing, busy: selected && renewing }}
-                disabled={renewing}
-                style={[styles.planOption, selected ? styles.planOptionSelected : null]}
-              >
-                <View style={styles.planOptionCopy}>
-                  <Text style={styles.planOptionTitle}>{plan.name}</Text>
-                  <Text style={styles.planOptionMeta}>
-                    {titleCaseFromCode(plan.type ?? "MEMBERSHIP")} · {formatInr(plan.pricePaise)}
-                  </Text>
-                </View>
-                {selected && renewing ? (
-                  <ActivityIndicator size="small" color={colors.lime} />
-                ) : selected ? (
-                  <Ionicons name="checkmark-circle" size={20} color={colors.lime} />
-                ) : null}
-              </Pressable>
-            );
-          })}
-        </BottomSheetScrollView>
+        <View style={[styles.planSelectorFrame, { maxHeight: maxPlanListHeight }]}>
+          <BottomSheetScrollView
+            style={styles.planSelectorScroll}
+            contentContainerStyle={styles.planSelector}
+            showsVerticalScrollIndicator
+          >
+            {loadingPlans ? <PlansSkeleton /> : null}
+            {!loadingPlans && !plans.length ? (
+              <Text style={styles.emptyBody}>
+                No alternate plans are published yet. Same-plan renewal will be requested.
+              </Text>
+            ) : null}
+            {plans.map((plan) => {
+              const selected = selectedPlanId === plan.id;
+              return (
+                <Pressable
+                  key={plan.id}
+                  onPress={() => {
+                    if (!renewing) setSelectedPlanId(plan.id);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${plan.name}`}
+                  accessibilityState={{ selected, disabled: renewing, busy: selected && renewing }}
+                  disabled={renewing}
+                  style={[styles.planOption, selected ? styles.planOptionSelected : null]}
+                >
+                  <View style={styles.planOptionCopy}>
+                    <Text style={styles.planOptionTitle}>{plan.name}</Text>
+                    <Text style={styles.planOptionMeta}>
+                      {titleCaseFromCode(plan.type ?? "MEMBERSHIP")} · {formatInr(plan.pricePaise)}
+                    </Text>
+                  </View>
+                  {selected && renewing ? (
+                    <ActivityIndicator size="small" color={colors.lime} />
+                  ) : selected ? (
+                    <Ionicons name="checkmark-circle" size={20} color={colors.lime} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </BottomSheetScrollView>
+          {plans.length > 3 ? <View pointerEvents="none" style={styles.planScrollHintBottom} /> : null}
+        </View>
 
         {selectedPlan ? (
           <GlassCard variant="compact" contentStyle={styles.renewalSummary}>
@@ -1425,8 +1157,21 @@ const styles = StyleSheet.create({
   planSelector: {
     gap: spacing.sm,
   },
+  planSelectorFrame: {
+    position: "relative",
+  },
   planSelectorScroll: {
-    maxHeight: 310,
+    flexGrow: 0,
+  },
+  planScrollHintBottom: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 20,
+    backgroundColor: "rgba(7,9,8,0.42)",
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
   },
   planOption: {
     minHeight: 64,

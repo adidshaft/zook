@@ -196,7 +196,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
           visibility,
         },
       });
-      window.location.href = `/dashboard/public-profile?created=${payload.org.id}`;
+      window.location.href = `/dashboard/billing?created=${payload.org.id}&setup=billing`;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to create gym.");
     } finally {
@@ -227,15 +227,16 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
           Start your gym on Zook.
         </h1>
         <p className="mt-5 max-w-2xl text-sm leading-6 text-white/58">
-          Create the gym, main branch, owner access, trial setup, and public profile from the web.
-          Mobile stays focused on daily execution.
+          Create the gym, main branch, owner access, two-month trial, and public profile from the
+          web. Mobile stays focused on daily execution.
         </p>
         <div className="mt-8 grid gap-3">
           {[
             "Creates the organization and default branch",
             "Assigns you as owner",
+            "Starts a two-month free trial before billing begins",
             "Publishes a public username for profile links",
-            "Unlocks the gym profile page editor and join QR",
+            "Opens billing setup next so you can add the card for month 3",
           ].map((item) => (
             <div
               key={item}
@@ -557,11 +558,11 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
               disabled={busy}
               className="zook-focus inline-flex flex-[2] items-center justify-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black disabled:opacity-60"
             >
-              {step === setupSteps.length - 1
-                ? busy
-                  ? "Creating gym..."
-                  : "Create gym"
-                : "Continue"}
+                {step === setupSteps.length - 1
+                  ? busy
+                    ? "Creating gym..."
+                    : "Create gym and add billing"
+                  : "Continue"}
               <ArrowRight size={18} />
             </button>
           </div>

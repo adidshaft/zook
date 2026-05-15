@@ -246,9 +246,9 @@ export function readPackageManagerVersion() {
 }
 
 const pnpmCandidates = [
+  "/opt/homebrew/bin/pnpm",
   "pnpm",
   "/usr/local/bin/pnpm",
-  "/opt/homebrew/bin/pnpm",
   resolve(rootDir, "node_modules/.bin/pnpm"),
 ] as const;
 
@@ -272,7 +272,7 @@ export function resolvePnpmCommand() {
 export function withPnpmPath(envInput: NodeJS.ProcessEnv = process.env) {
   return {
     ...envInput,
-    PATH: ["/usr/local/bin", "/opt/homebrew/bin", envInput.PATH].filter(Boolean).join(":"),
+    PATH: ["/opt/homebrew/bin", "/usr/local/bin", envInput.PATH].filter(Boolean).join(":"),
   };
 }
 

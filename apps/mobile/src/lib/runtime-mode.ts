@@ -64,6 +64,8 @@ function resolveAppEnv() {
 function resolveApiMode() {
   const candidates: Array<[string, string | undefined]> = [
     ["EXPO_PUBLIC_API_MODE", process.env.EXPO_PUBLIC_API_MODE],
+    ["MOBILE_API_MODE", process.env.MOBILE_API_MODE],
+    ["API_MODE", process.env.API_MODE],
   ];
   for (const [, value] of candidates) {
     const raw = value?.trim();
@@ -99,6 +101,27 @@ export function getMobileRuntimeMode() {
 
 export function isOfflineDemoMode() {
   return getMobileApiMode() === "offline-demo";
+}
+
+function normalizeBooleanFlag(value?: string | null) {
+  switch (value?.trim().toLowerCase()) {
+    case "1":
+    case "true":
+    case "yes":
+    case "on":
+    case "enabled":
+      return true;
+    default:
+      return false;
+  }
+}
+
+export function isMobileFeatureEnabled(key: string) {
+  const extraValue = Constants.expoConfig?.extra?.[key] as string | boolean | undefined;
+  if (typeof extraValue === "boolean") {
+    return extraValue;
+  }
+  return normalizeBooleanFlag(extraValue) || normalizeBooleanFlag(process.env[`EXPO_PUBLIC_${key}`]);
 }
 
 export function getMobileRuntimeConfigError() {

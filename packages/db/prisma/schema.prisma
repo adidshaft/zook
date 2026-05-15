@@ -443,6 +443,7 @@ model UserSession {
   id                    String    @id @default(cuid())
   userId                String
   tokenHash             String    @unique
+  refreshTokenHash      String?   @unique
   userAgent             String?
   ipAddress             String?
   deviceLabel           String?
@@ -451,11 +452,13 @@ model UserSession {
   lastSeenAt            DateTime?
   revokedAt             DateTime?
   expiresAt             DateTime
+  refreshExpiresAt      DateTime?
   createdAt             DateTime  @default(now())
 
   @@index([userId])
   @@index([userId, deviceFingerprintHash])
   @@index([expiresAt])
+  @@index([refreshExpiresAt])
 }
 
 model AuthIdentity {
@@ -713,6 +716,37 @@ model SaaSSubscription {
   updatedAt        DateTime           @updatedAt
 
   @@index([status])
+}
+
+model SaaSBillingMandate {
+  id                 String               @id @default(cuid())
+  provider           String               @default("mock")
+  providerMandateId  String?
+  providerPlanId     String?
+  orgId              String               @unique
+  createdByUserId    String
+  status             PaymentMandateStatus @default(CREATED)
+  amountPaise        Int
+  currency           String               @default("INR")
+  billingPeriod      String               @default("monthly")
+  billingInterval    Int                  @default(1)
+  totalCount         Int                  @default(120)
+  paidCount          Int                  @default(0)
+  checkoutUrl        String?
+  currentStartAt     DateTime?
+  currentEndAt       DateTime?
+  nextChargeAt       DateTime?
+  authenticatedAt    DateTime?
+  activatedAt        DateTime?
+  cancelledAt        DateTime?
+  paymentSessionId   String?
+  metadata           Json?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@unique([provider, providerMandateId])
+  @@index([status])
+  @@index([nextChargeAt])
 }
 
 model OrganizationSetting {

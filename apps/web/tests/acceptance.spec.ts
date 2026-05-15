@@ -56,8 +56,8 @@ test("QR display route is protected by the same auth guard", async ({ page }) =>
 });
 
 test("public gym and referral fallbacks render", async ({ page }) => {
-  await page.goto("/g/iron-house");
-  await expect(page.getByRole("heading", { name: "Iron House Fitness" })).toBeVisible();
+  await page.goto("/g/aarogya-strength");
+  await expect(page.getByRole("heading", { name: "Aarogya Strength" })).toBeVisible();
   await page.goto("/r/NISHAFIT");
   await expect(page.getByText("Open Zook to join this gym")).toBeVisible();
 });
@@ -85,7 +85,7 @@ test("owner login and membership plan creation use the live auth and api path", 
 test("owner can edit core self-serve catalog and staff records", async ({ page }) => {
   requireDb();
   const owner = await loginWithSessionCookie(page, "owner@zook.local");
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const branch = await prisma.branch.findFirstOrThrow({ where: { orgId: org.id, isDefault: true } });
 
   const plan = await createMembershipPlan(page, org.id, {
@@ -204,7 +204,7 @@ test("owner can edit core self-serve catalog and staff records", async ({ page }
 test("owner can manage branches and public offers", async ({ page }) => {
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
 
   const branchPayload = await expectApiOk<{ branch: { id: string; isDefault: boolean } }>(
     await page.request.post(`/api/orgs/${org.id}/branches`, {
@@ -261,7 +261,7 @@ test("referral checkout fulfills rewards and renewal starts after current member
 }) => {
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   await prisma.organization.update({
     where: { id: org.id },
     data: { joinMode: "OPEN_JOIN", status: "ACTIVE" },
@@ -358,7 +358,7 @@ test("pending referral rewards apply when the referrer next activates a membersh
 }) => {
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   await prisma.organization.update({
     where: { id: org.id },
     data: { joinMode: "OPEN_JOIN", status: "ACTIVE" },
@@ -442,7 +442,7 @@ test("referral checkout enforces combined discount caps and monthly referral lim
 }) => {
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   await prisma.organization.update({
     where: { id: org.id },
     data: { joinMode: "OPEN_JOIN", status: "ACTIVE" },
@@ -529,7 +529,7 @@ test("default branch scope is explicit for plans, dashboard filters, and QR toke
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
 
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const defaultBranch = await prisma.branch.findFirstOrThrow({
     where: { orgId: org.id, isDefault: true },
   });
@@ -662,7 +662,7 @@ test("member join request and tracking workout creation persist through api rout
 
 test("public gym profile hides trainers not visible to members", async ({ page }) => {
   requireDb();
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const trainerRole = await prisma.organizationRoleAssignment.findFirstOrThrow({
     where: { orgId: org.id, role: "TRAINER" },
   });
@@ -691,7 +691,7 @@ test("public gym profile hides trainers not visible to members", async ({ page }
 
 test("public join page honors backend join mode instead of query overrides", async ({ page }) => {
   requireDb();
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   await prisma.organization.update({
     where: { id: org.id },
     data: { joinMode: "APPROVAL_REQUIRED" },
@@ -706,7 +706,7 @@ test("public join page honors backend join mode instead of query overrides", asy
 test("referral creation returns username-based web links", async ({ page }) => {
   requireDb();
   await loginWithSessionCookie(page, "member@zook.local");
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
 
   const response = await page.request.post(`/api/orgs/${org.id}/referrals`);
   const payload = await expectApiOk<{
@@ -725,7 +725,7 @@ test("open join checkout activates membership and shop order success stays serve
   const email = `playwright-shop-${Date.now()}@zook.local`;
   await loginWithOtp(page, email);
 
-  const gymResponse = await page.request.get("/api/orgs/public/iron-house");
+  const gymResponse = await page.request.get("/api/orgs/public/aarogya-strength");
   const gymPayload = await expectApiOk<{
     org: { id: string };
     plans: Array<{ id: string }>;
@@ -868,7 +868,7 @@ test("payment sessions require owner or org payment access", async ({ page, requ
   const gymPayload = await expectApiOk<{
     org: { id: string };
     plans: Array<{ id: string }>;
-  }>(await page.request.get("/api/orgs/public/iron-house"));
+  }>(await page.request.get("/api/orgs/public/aarogya-strength"));
   const orgId = String(gymPayload.data.org.id);
   const planId = String(gymPayload.data.plans[0]?.id);
   await prisma.organization.update({
@@ -897,7 +897,7 @@ test("platform admins cannot perform tenant operations through org routes", asyn
   requireDb();
   await loginWithSessionCookie(page, "platform@zook.local");
 
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const memberRole = await prisma.organizationRoleAssignment.findFirstOrThrow({
     where: { orgId: org.id, role: "MEMBER" },
   });
@@ -916,7 +916,7 @@ test("receptionist approval queue updates attendance notifications and audit", a
   requireDb();
   await loginWithSessionCookie(page, "reception@zook.local");
 
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const branch = await prisma.branch.findFirstOrThrow({
     where: { orgId: org.id, isDefault: true },
   });
@@ -1024,7 +1024,7 @@ test("generic checkout cannot claim membership or shop payment targets", async (
 
   const gymPayload = await expectApiOk<{
     org: { id: string };
-  }>(await page.request.get("/api/orgs/public/iron-house"));
+  }>(await page.request.get("/api/orgs/public/aarogya-strength"));
   const orgId = String(gymPayload.data.org.id);
 
   const membershipResponse = await page.request.post("/api/payments/checkout", {
@@ -1249,26 +1249,63 @@ test("member privacy export and deletion requests create jobs and audit trail", 
 
 test("minor guardian web consent flow unblocks membership checkout", async ({ page }) => {
   requireDb();
+  const aarogyaStrength = await seedAndGetOrg({ username: "aarogya-strength" });
+  const minor = await prisma.user.findUniqueOrThrow({ where: { email: "minor@zook.local" } });
+  const staleSubscriptions = await prisma.memberSubscription.findMany({
+    where: { orgId: aarogyaStrength.id, memberUserId: minor.id },
+    select: { id: true },
+  });
+  const staleSubscriptionIds = staleSubscriptions.map((subscription) => subscription.id);
+  await prisma.$transaction([
+    prisma.membershipUsage.deleteMany({ where: { subscriptionId: { in: staleSubscriptionIds } } }),
+    prisma.subscriptionReminder.deleteMany({
+      where: { subscriptionId: { in: staleSubscriptionIds } },
+    }),
+    prisma.attendanceRecord.deleteMany({
+      where: { orgId: aarogyaStrength.id, userId: minor.id },
+    }),
+    prisma.memberSubscription.deleteMany({
+      where: { orgId: aarogyaStrength.id, memberUserId: minor.id },
+    }),
+    prisma.payment.deleteMany({
+      where: { orgId: aarogyaStrength.id, userId: minor.id, purpose: "MEMBERSHIP" },
+    }),
+    prisma.paymentSession.deleteMany({
+      where: { orgId: aarogyaStrength.id, userId: minor.id, purpose: "MEMBERSHIP" },
+    }),
+    prisma.membershipJoinRequest.deleteMany({
+      where: { orgId: aarogyaStrength.id, userId: minor.id },
+    }),
+    prisma.guardianConsentChallenge.deleteMany({ where: { minorUserId: minor.id } }),
+    prisma.guardianConsent.deleteMany({ where: { minorUserId: minor.id } }),
+    prisma.user.update({ where: { id: minor.id }, data: { guardianPending: true } }),
+  ]);
+
   await loginWithOtp(page, "minor@zook.local");
 
-  const ironHouse = await seedAndGetOrg({ username: "iron-house" });
   const publicGymPayload = await expectApiOk<{
     org: { id: string };
     plans: Array<{ id: string }>;
-  }>(await page.request.get("/api/orgs/public/iron-house"));
+  }>(await page.request.get("/api/orgs/public/aarogya-strength"));
   const planId = publicGymPayload.data.plans[0]?.id;
   expect(planId).toBeTruthy();
 
-  const blockedResponse = await page.request.post(`/api/orgs/${ironHouse.id}/subscriptions`, {
+  const blockedResponse = await page.request.post(`/api/orgs/${aarogyaStrength.id}/subscriptions`, {
     data: { planId },
   });
-  test.skip(
-    blockedResponse.status() === 409,
-    "Seeded minor already has a membership in progress; reset the DB to exercise guardian blocking.",
-  );
   expect(blockedResponse.status()).toBe(403);
   expect(await blockedResponse.text()).toContain("Guardian consent");
 
+  await expectApiOk(
+    await page.request.post("/api/me/guardian-consent/request", {
+      data: {
+        guardianName: "Zook Test Guardian",
+        guardianEmail: "guardian@zook.local",
+        guardianPhone: "+919999999999",
+        relationship: "parent",
+      },
+    }),
+  );
   const consentPayload = await expectApiOk<{
     challenges: Array<{ id: string; status: string }>;
   }>(await page.request.get("/api/me/guardian-consent"));
@@ -1286,11 +1323,11 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
   );
 
   await prisma.organization.update({
-    where: { id: ironHouse.id },
+    where: { id: aarogyaStrength.id },
     data: { joinMode: "OPEN_JOIN" },
   });
   const checkoutPayload = await expectApiOk<{ session: { id: string } }>(
-    await page.request.post(`/api/orgs/${ironHouse.id}/subscriptions`, {
+    await page.request.post(`/api/orgs/${aarogyaStrength.id}/subscriptions`, {
       data: { planId },
     }),
   );
@@ -1301,7 +1338,7 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
   }>(await page.request.get("/api/me/memberships"));
   expect(
     membershipsPayload.data.subscriptions.some(
-      (subscription) => subscription.orgId === ironHouse.id && subscription.status === "ACTIVE",
+      (subscription) => subscription.orgId === aarogyaStrength.id && subscription.status === "ACTIVE",
     ),
   ).toBe(true);
 });
@@ -1312,7 +1349,7 @@ test("AI plan assistant is launch-gated while trainer manual plans remain assign
   requireDb();
   await loginWithSessionCookie(page, "trainer@zook.local");
 
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
   const assignment = await prisma.trainerAssignment.findFirstOrThrow({
     where: { orgId: org.id, trainerUserId: trainer.id, active: true },
@@ -1378,7 +1415,7 @@ test("member workout reports are assignment-scoped and visible to the trainer", 
   page,
 }) => {
   requireDb();
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
   const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
   const minor = await prisma.user.findUniqueOrThrow({ where: { email: "minor@zook.local" } });

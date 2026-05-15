@@ -1,8 +1,6 @@
 import { Link, Stack, type Href, useLocalSearchParams, useRouter } from "expo-router";
-import * as Clipboard from "expo-clipboard";
 import { useEffect } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { showToast } from "@/lib/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -102,24 +100,6 @@ export default function AttendanceResultScreen() {
     };
   }, [attendanceRecordId, queryClient, refetchAttendance]);
 
-  useEffect(() => {
-    if (activeRole !== "MEMBER" || !recordFromApi) {
-      return undefined;
-    }
-    const statusValue = recordFromApi.status;
-    if (
-      statusValue === "PENDING_APPROVAL" ||
-      statusValue === "REJECTED" ||
-      statusValue === "FLAGGED"
-    ) {
-      return undefined;
-    }
-    const timer = setTimeout(() => {
-      router.replace("/");
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [activeRole, recordFromApi, router]);
-
   if (attendanceQuery.isLoading && !recordFromApi) {
     return (
       <>
@@ -176,7 +156,7 @@ export default function AttendanceResultScreen() {
   const blocked = record.status === "REJECTED" || record.status === "FLAGGED";
   const approved = !pending && !blocked;
   const tone = pending ? "amber" : approved ? "lime" : "red";
-  const code = record.entryCode ?? record.id.slice(-8).toUpperCase();
+  const code = record.entryCode?.trim() || null;
   const branchName =
     record.branchName === legacyDefaultBranchName
       ? "Main branch"
@@ -242,27 +222,20 @@ export default function AttendanceResultScreen() {
             <>
               <GlassCard variant="warning" contentStyle={styles.pendingCodeContent}>
                 <Text style={styles.entryLabel}>Entry Code</Text>
-                <Pressable
-                  onPress={async () => {
-                    if (!code) return;
-                    try {
-                      await Clipboard.setStringAsync(code);
-                      showToast({ tone: "success", message: "Entry code copied." });
-                    } catch {
-                      showToast({ tone: "danger", message: "Could not copy code." });
-                    }
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Copy entry code ${code}`}
-                  hitSlop={8}
-                >
-                  <Text style={styles.pendingCode}>{code}</Text>
-                </Pressable>
-                <View style={styles.pendingChips}>
-                  <StatusChip status="Pending approval" />
-                  <StatusChip status="Membership active" icon="checkmark" />
-                </View>
-                <StatusChip status="Desk confirmation needed" icon="alert-circle-outline" />
+                {code ? (
+                  <>
+                    <Text style={styles.pendingCode}>{code}</Text>
+                    <View style={styles.pendingChips}>
+                      <StatusChip status="Pending approval" />
+                      <StatusChip status="Membership active" icon="checkmark" />
+                    </View>
+                    <StatusChip status="Desk confirmation needed" icon="alert-circle-outline" />
+                  </>
+                ) : (
+                  <Text style={styles.codeUnavailable}>
+                    Entry code unavailable — please ask reception to check you in manually.
+                  </Text>
+                )}
               </GlassCard>
 
               <GlassCard contentStyle={styles.reasonContent}>
@@ -307,9 +280,17 @@ export default function AttendanceResultScreen() {
               <GlassCard glow contentStyle={styles.approvedCodeContent}>
                 <View style={styles.approvedCodeHero}>
                   <Text style={styles.entryLabel}>Entry Code</Text>
-                  <Text style={styles.approvedCode}>{code}</Text>
-                  <ZookChip tone="lime">Approved</ZookChip>
-                  <Text style={styles.codeDetail}>Show this to the front desk if asked.</Text>
+                  {code ? (
+                    <>
+                      <Text style={styles.approvedCode}>{code}</Text>
+                      <ZookChip tone="lime">Approved</ZookChip>
+                      <Text style={styles.codeDetail}>Show this to the front desk if asked.</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.codeUnavailable}>
+                      Entry code unavailable — please ask reception to check you in manually.
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.divider} />
                 <DetailLine
@@ -343,6 +324,9 @@ export default function AttendanceResultScreen() {
                   </Pressable>
                 </Link>
               </GlassCard>
+              <ZookButton onPress={() => router.replace("/")} icon="home-outline">
+                Done
+              </ZookButton>
             </>
           )}
         </ScrollView>
@@ -382,7 +366,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
+    paddingTop: 28,
     paddingBottom: layout.bottomNavContentPadding,
     gap: 12,
   },
@@ -508,6 +492,11 @@ const styles = StyleSheet.create({
   codeDetail: {
     color: colors.muted,
     ...typography.small,
+    textAlign: "center",
+  },
+  codeUnavailable: {
+    color: colors.muted,
+    ...typography.body,
     textAlign: "center",
   },
   divider: {

@@ -94,7 +94,7 @@ export class MockMapProvider implements MapProvider {
       pincode: "411001",
       latitude: coordinates?.latitude ?? 18.5362,
       longitude: coordinates?.longitude ?? 73.893,
-      googlePlaceId: "mock-place-iron-house",
+      googlePlaceId: "mock-place-aarogya-strength",
       originalGoogleMapsUrl: url,
       locationSource: "GOOGLE_MAPS_LINK"
     };

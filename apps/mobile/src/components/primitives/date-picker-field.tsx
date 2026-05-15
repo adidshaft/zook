@@ -1,7 +1,7 @@
 import { useState } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT } from "@/lib/i18n";
 import { colors, radii, shadows, spacing, typography } from "@/lib/theme";
@@ -76,7 +76,7 @@ export function DatePickerField({
             <View style={styles.card}>
               <Text style={styles.sheetTitle}>{label}</Text>
               <DateTimePicker
-                display="spinner"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
                 mode="date"
                 maximumDate={maximumDate}
                 minimumDate={minimumDate}

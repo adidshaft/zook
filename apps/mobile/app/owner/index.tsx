@@ -24,13 +24,14 @@ import {
   MetricTile,
   Pill,
   PrimaryButton,
+  QueryErrorState,
   SecondaryButton,
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
 import { OwnerDashboardSkeleton, TrainerClientsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { apiClient } from "@/lib/domain-api";
+import { apiClient, ownerApi } from "@/lib/domain-api";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
 import {
   useApproveAttendance,
@@ -73,7 +74,7 @@ function titleCase(value: string) {
 }
 
 function titleForView(view: OwnerView) {
-  if (view === "command") return "Needs attention";
+  if (view === "command") return "Command";
   if (view === "approvals") return "Approvals";
   if (view === "revenue") return "Revenue";
   if (view === "members") return "Members";
@@ -108,7 +109,6 @@ export default function Owner() {
   const [memberSearch, setMemberSearch] = useState("");
   const [memberFilter, setMemberFilter] = useState<MemberFilter>("all");
   const [actionStatus, setActionStatus] = useState("");
-  const [batchApproveBusy, setBatchApproveBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [revealedPhones, setRevealedPhones] = useState<Set<string>>(() => new Set());
   const shellRole = activeRole === "ADMIN" ? "ADMIN" : "OWNER";
@@ -136,10 +136,7 @@ export default function Owner() {
   const todayCheckIns = dashboard?.summary?.todayAttendance ?? 0;
   const expiringSoon = dashboard?.summary?.expiringMemberships ?? 0;
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
-  const revenuePaise =
-    dashboard?.summary?.revenuePaise ??
-    payments.reduce((sum, payment) => sum + (payment.amountPaise ?? 0), 0) +
-      orders.reduce((sum, order) => sum + (order.totalPaise ?? 0), 0);
+  const revenuePaise = dashboard?.summary?.revenuePaise ?? 0;
   const branchName =
     dashboard?.branchScope?.selectedBranch?.name ??
     dashboard?.branchScope?.defaultBranch?.name ??
@@ -283,8 +280,9 @@ export default function Owner() {
   async function approveAttendance(attemptId: string) {
     try {
       await approveAttendanceMutation.mutateAsync(attemptId);
-      setActionStatus("");
-      showToast({ tone: "success", haptic: "success", message: "Check-in approved." });
+      const message = "Check-in approved.";
+      setActionStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
       const message = getApiErrorMessage(error) || "Could not approve check-in.";
       setActionStatus(message);
@@ -295,8 +293,9 @@ export default function Owner() {
   async function approveJoinRequest(joinRequestId: string) {
     try {
       await approveJoinRequestMutation.mutateAsync(joinRequestId);
-      setActionStatus("");
-      showToast({ tone: "success", haptic: "success", message: "Join request approved." });
+      const message = "Join request approved.";
+      setActionStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
       const message = getApiErrorMessage(error) || "Could not approve join request.";
       setActionStatus(message);
@@ -305,22 +304,43 @@ export default function Owner() {
   }
 
   async function approveAllJoinRequests() {
-    if (batchApproveBusy) return;
-    setBatchApproveBusy(true);
+    if (!token || !activeOrgId || !joinRequests.length) {
+      return;
+    }
     try {
-      for (const request of joinRequests) {
-        await approveJoinRequest(request.id);
-      }
-    } finally {
-      setBatchApproveBusy(false);
+      const result = await ownerApi.approveJoinRequestsBatch<{
+        approved?: string[];
+        failed?: Array<{ id: string; message?: string }>;
+      }>({
+        token,
+        orgId: activeOrgId,
+        joinRequestIds: joinRequests.map((request) => request.id),
+      });
+      const approved = result.approved?.length ?? joinRequests.length;
+      const failed = result.failed?.length ?? 0;
+      const message = failed
+        ? `Approved ${approved} of ${joinRequests.length}. ${failed} failed — tap retry.`
+        : `Approved ${approved} join ${approved === 1 ? "request" : "requests"}.`;
+      setActionStatus(message);
+      showToast({ tone: failed ? "amber" : "success", haptic: failed ? "warning" : "success", message });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "join-requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "members"] }),
+      ]);
+    } catch (error) {
+      const message = getApiErrorMessage(error) || "Could not approve join requests.";
+      setActionStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
   async function rejectJoinRequest(joinRequestId: string) {
     try {
       await rejectJoinRequestMutation.mutateAsync(joinRequestId);
-      setActionStatus("");
-      showToast({ tone: "success", haptic: "success", message: "Join request rejected." });
+      const message = "Join request rejected.";
+      setActionStatus(message);
+      showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
       const message = getApiErrorMessage(error) || "Could not reject join request.";
       setActionStatus(message);
@@ -337,21 +357,7 @@ export default function Owner() {
     const body = encodeURIComponent(
       `Hi,\n\nPlease share supplier options for ${product.name}.\n\nCurrent stock: ${product.stock ?? 0}\nThreshold: ${product.lowStockThreshold ?? 0}\n\nThanks.`,
     );
-    const url = `mailto:?subject=${subject}&body=${body}`;
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (!supported) {
-        showToast({
-          tone: "amber",
-          title: "No mail app",
-          message: "Set up a mail app to send reorder emails.",
-        });
-        return;
-      }
-      await Linking.openURL(url);
-    } catch {
-      showToast({ tone: "danger", message: "Could not open mail app." });
-    }
+    await Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
   }
 
   const onRefresh = async () => {
@@ -386,7 +392,7 @@ export default function Owner() {
           <View style={styles.headerCopy}>
             <Text numberOfLines={1} style={styles.headerMeta}>
               {dashboard?.organization?.name ?? "Active gym"} ·{" "}
-              {shellRole === "ADMIN" ? "Admin" : "Owner"}
+              {shellRole === "ADMIN" ? "Admin" : "Owner"} command view
             </Text>
             <Text style={styles.title}>{titleForView(view)}</Text>
           </View>
@@ -442,7 +448,16 @@ export default function Owner() {
 
         {view === "command" && dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
 
-        {view === "command" && !dashboardQuery.isLoading ? (
+        {view === "command" && dashboardQuery.isError ? (
+          <GlassCard variant="compact">
+            <QueryErrorState
+              error={dashboardQuery.error}
+              onRetry={() => void dashboardQuery.refetch()}
+            />
+          </GlassCard>
+        ) : null}
+
+        {view === "command" && !dashboardQuery.isLoading && !dashboardQuery.isError ? (
           <>
             <View style={styles.metricGrid}>
               <Pressable
@@ -519,15 +534,7 @@ export default function Owner() {
                     leading={<IconBubble icon={item.icon} tone={item.tone} />}
                     trailing={
                       <View style={styles.attentionTrailing}>
-                        <Text
-                          style={
-                            item.count
-                              ? item.tone === "amber"
-                                ? styles.attentionUrgent
-                                : styles.attentionAction
-                              : styles.attentionQuiet
-                          }
-                        >
+                        <Text style={item.count ? styles.attentionAction : styles.attentionQuiet}>
                           {item.count ? "Review" : "Open"}
                         </Text>
                         <Ionicons name="chevron-forward" size={17} color={colors.muted} />
@@ -593,16 +600,23 @@ export default function Owner() {
             <View style={styles.membersStack}>
               {membersQuery.isLoading ? (
                 <TrainerClientsSkeleton />
+              ) : membersQuery.isError ? (
+                <GlassCard variant="compact">
+                  <QueryErrorState
+                    error={membersQuery.error}
+                    onRetry={() => void membersQuery.refetch()}
+                  />
+                </GlassCard>
               ) : null}
 
-              {!membersQuery.isLoading && !filteredMembers.length ? (
+              {!membersQuery.isLoading && !membersQuery.isError && !filteredMembers.length ? (
                 <GlassCard variant="compact" contentStyle={styles.membersStateContent}>
                   <IconBubble icon="people-outline" tone="neutral" size={40} />
                   <Text style={styles.membersStateText}>No members found</Text>
                 </GlassCard>
               ) : null}
 
-              {!membersQuery.isLoading
+              {!membersQuery.isLoading && !membersQuery.isError
                 ? filteredMembers.map((member) => {
                     const name = member.user?.name ?? "Member";
                     const email = member.user?.email ?? "No email";
@@ -684,7 +698,17 @@ export default function Owner() {
               />
             </View>
 
-            {pendingApprovals === 0 ? (
+            {joinRequestsQuery.isError || attentionQuery.isError ? (
+              <GlassCard variant="compact">
+                <QueryErrorState
+                  error={joinRequestsQuery.error ?? attentionQuery.error}
+                  onRetry={() => {
+                    void joinRequestsQuery.refetch();
+                    void attentionQuery.refetch();
+                  }}
+                />
+              </GlassCard>
+            ) : pendingApprovals === 0 ? (
               <GlassCard variant="compact">
                 <EmptyState
                   title="All caught up"
@@ -808,7 +832,15 @@ export default function Owner() {
             </View>
             <SectionHeader title="Recent transactions" subtitle="Today" />
             <GlassCard contentStyle={styles.stack}>
-              {payments.length ? (
+              {paymentsQuery.isError || ordersQuery.isError ? (
+                <QueryErrorState
+                  error={paymentsQuery.error ?? ordersQuery.error}
+                  onRetry={() => {
+                    void paymentsQuery.refetch();
+                    void ordersQuery.refetch();
+                  }}
+                />
+              ) : payments.length ? (
                 payments.map((payment) => (
                   <ListRow
                     key={payment.id}
@@ -831,7 +863,7 @@ export default function Owner() {
                   body="Desk collections and payment confirmations will appear here."
                 />
               )}
-              {orders.map((order) => (
+              {!paymentsQuery.isError && !ordersQuery.isError ? orders.map((order) => (
                 <ListRow
                   key={order.id}
                   title={order.user?.name ?? "Shop pickup order"}
@@ -839,7 +871,7 @@ export default function Owner() {
                   leading={<IconBubble icon="bag-outline" tone="lime" />}
                   trailing={<Text style={styles.rowAmount}>{formatInr(order.totalPaise)}</Text>}
                 />
-              ))}
+              )) : null}
             </GlassCard>
           </>
         ) : null}
@@ -864,7 +896,12 @@ export default function Owner() {
             </View>
             <SectionHeader title="Products to reorder" subtitle="Below threshold" />
             <GlassCard contentStyle={styles.stack}>
-              {lowStock.length ? (
+              {dashboardQuery.isError ? (
+                <QueryErrorState
+                  error={dashboardQuery.error}
+                  onRetry={() => void dashboardQuery.refetch()}
+                />
+              ) : lowStock.length ? (
                 lowStock.map((product) => (
                   <ListRow
                     key={product.id}
@@ -889,7 +926,12 @@ export default function Owner() {
             </GlassCard>
             <SectionHeader title="Orders ready for pickup" />
             <GlassCard contentStyle={styles.stack}>
-              {orders.length ? (
+              {ordersQuery.isError ? (
+                <QueryErrorState
+                  error={ordersQuery.error}
+                  onRetry={() => void ordersQuery.refetch()}
+                />
+              ) : orders.length ? (
                 orders.map((order) => (
                   <ListRow
                     key={order.id}
@@ -1010,10 +1052,6 @@ const styles = StyleSheet.create({
   },
   attentionAction: {
     color: colors.lime,
-    ...typography.caption,
-  },
-  attentionUrgent: {
-    color: colors.amber,
     ...typography.caption,
   },
   attentionQuiet: {

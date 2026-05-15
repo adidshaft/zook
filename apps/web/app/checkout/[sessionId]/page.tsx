@@ -133,7 +133,8 @@ export default async function HostedCheckoutPage({
         </div>
 
         <p className="mt-5 text-sm leading-6 text-white/60">
-          Complete payment here. Your membership or order updates automatically after confirmation.
+          Review your membership and continue through the hosted payment handoff. Your membership
+          activates only after backend payment confirmation.
         </p>
         <p className="mt-2 text-sm font-medium text-lime-100">
           Secured by{" "}
@@ -176,11 +177,16 @@ export default async function HostedCheckoutPage({
           <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
             <p className="text-xs uppercase tracking-[0.2em] text-white/35">What happens next</p>
             <div className="mt-3 grid gap-3 text-sm text-white/70 md:grid-cols-3">
-              {["Pay securely", "Zook confirms it", "Access updates"].map((step) => (
+              {[
+                "Secure hosted checkout",
+                "Backend confirms payment",
+                "Membership activates automatically",
+              ].map((step, index) => (
                 <div
                   key={step}
                   className="rounded-2xl border border-white/10 bg-black/20 p-3 text-white"
                 >
+                  <span className="mr-2 text-lime-200">{index + 1}.</span>
                   {step}
                 </div>
               ))}

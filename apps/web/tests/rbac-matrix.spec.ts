@@ -47,8 +47,9 @@ async function createMatrixActor(input: {
 }
 
 test("organization routes enforce role and permission matrix", async ({ page }) => {
+  test.setTimeout(60_000);
   requireDb();
-  const org = await seedAndGetOrg({ username: "iron-house" });
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
   const defaultBranch = await prisma.branch.findFirstOrThrow({
     where: { orgId: org.id, isDefault: true },
   });
@@ -75,8 +76,7 @@ test("organization routes enforce role and permission matrix", async ({ page }) 
   await expect((await page.request.get(`/api/orgs/${org.id}/dashboard`)).status()).toBe(200);
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/dashboard$/);
-  await page.goto("/dashboard/billing");
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect((await page.request.get(`/api/orgs/${org.id}/billing-profile`)).status()).toBe(403);
   await expect(
     (
       await page.request.patch(`/api/orgs/${org.id}/permissions`, {

@@ -1,8 +1,11 @@
 import { Link, Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { useState } from "react";
+import type { ComponentProps, ComponentType } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
+import Svg, { Circle } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import type { WorkoutLogEntry } from "@zook/core";
 import {
@@ -24,6 +27,12 @@ import { useI18n } from "@/lib/i18n";
 import { useMyBodyProgress, useMyTracking, type BodyProgressEntryRecord } from "@/lib/query-hooks";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+
+type AnimatedCircleProps = ComponentProps<typeof Circle> & {
+  animatedProps?: Partial<ComponentProps<typeof Circle>>;
+};
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle) as ComponentType<AnimatedCircleProps>;
 
 export default function TrackingDashboard() {
   const router = useRouter();
@@ -81,6 +90,7 @@ export default function TrackingDashboard() {
   const bodyProgressEntries = bodyProgressQuery.data?.entries ?? [];
   const weeklyCount = summary?.weeklyCount ?? 0;
   const weeklyGoal = coerceWeeklyWorkoutGoal(session?.user.weeklyWorkoutGoal);
+  const weeklyProgress = Math.min(1, weeklyCount / Math.max(weeklyGoal, 1));
   const totalDuration = summary?.totalDuration ?? 0;
   const currentStreak = computeWorkoutStreak(recentWorkouts);
 
@@ -143,10 +153,7 @@ export default function TrackingDashboard() {
                     : "Start your fitness journey."}
                 </Text>
               </View>
-              <View style={styles.weekRing}>
-                <Text style={styles.weekRingValue}>{weeklyCount}</Text>
-                <Text style={styles.weekRingLabel}>/ {weeklyGoal}</Text>
-              </View>
+              <WeeklyProgressRing current={weeklyCount} goal={weeklyGoal} progress={weeklyProgress} />
             </View>
             <View style={styles.streakIndicator}>
               <Ionicons name="flame-outline" size={18} color={colors.amber} />
@@ -222,7 +229,7 @@ export default function TrackingDashboard() {
             Log workout
           </ZookButton>
         </StickyActionBar>
-        <BottomNav selectedPath="/more" />
+        <BottomNav selectedPath="/tracking" />
       </ZookScreen>
     </>
   );
@@ -452,6 +459,60 @@ function HabitProgressCard({
   );
 }
 
+function WeeklyProgressRing({
+  current,
+  goal,
+  progress,
+}: {
+  current: number;
+  goal: number;
+  progress: number;
+}) {
+  const size = 72;
+  const strokeWidth = 6;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clampedProgress = Math.max(0, Math.min(1, progress));
+  const ringProgress = useSharedValue(0);
+  const animatedRingProps = useAnimatedProps(() => ({
+    strokeDasharray: `${circumference * ringProgress.value} ${circumference}`,
+  }));
+
+  useEffect(() => {
+    ringProgress.value = withTiming(clampedProgress, { duration: 600 });
+  }, [clampedProgress, ringProgress]);
+
+  return (
+    <View style={styles.weekRing}>
+      <Svg width={size} height={size} style={styles.weekRingSvg}>
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="rgba(255,255,255,0.12)"
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={colors.lime}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          animatedProps={animatedRingProps}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </Svg>
+      <View style={styles.weekRingText}>
+        <Text style={styles.weekRingValue}>{current}</Text>
+        <Text style={styles.weekRingLabel}>/ {goal}</Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   content: {
     width: "100%",
@@ -497,12 +558,17 @@ const styles = StyleSheet.create({
     ...typography.body,
   },
   weekRing: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 3,
-    borderColor: "rgba(185,244,85,0.4)",
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: "rgba(185,244,85,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  weekRingSvg: {
+    position: "absolute",
+  },
+  weekRingText: {
     alignItems: "center",
     justifyContent: "center",
   },

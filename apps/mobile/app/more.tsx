@@ -12,60 +12,65 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
-const memberMoreItems: Array<{
+type MoreEntry = {
   href: Href;
-  title: string;
-  subtitle: string;
+  titleKey: TranslationKey;
+  subtitleKey: TranslationKey;
   icon: keyof typeof Ionicons.glyphMap;
-}> = [
+};
+
+const memberMoreItems: MoreEntry[] = [
   {
     href: "/tracking",
-    title: "Tracking",
-    subtitle: "Log workouts, weight, and habits.",
+    titleKey: "more.tracking.title",
+    subtitleKey: "more.tracking.subtitle",
     icon: "pulse-outline",
   },
   {
     href: "/shop",
-    title: "Shop",
-    subtitle: "Order gym essentials for desk pickup.",
+    titleKey: "more.shop.title",
+    subtitleKey: "more.shop.subtitle",
     icon: "storefront-outline",
   },
   {
     href: "/notifications",
-    title: "Inbox",
-    subtitle: "Payments, plans, and gym updates.",
+    titleKey: "more.inbox.title",
+    subtitleKey: "more.inbox.subtitle",
     icon: "notifications-outline",
   },
   {
     href: "/assistant",
-    title: "Plan assistant",
-    subtitle: "Ask about plans, food, recovery, and progress.",
+    titleKey: "more.assistant.title",
+    subtitleKey: "more.assistant.subtitle",
     icon: "sparkles-outline",
   },
   {
     href: "/profile",
-    title: "Profile",
-    subtitle: "Membership details and personal info.",
+    titleKey: "more.profile.title",
+    subtitleKey: "more.profile.subtitle",
     icon: "person-outline",
   },
   {
     href: "/settings",
-    title: "Settings",
-    subtitle: "Language, roles, privacy, and account.",
+    titleKey: "more.settings.title",
+    subtitleKey: "more.settings.subtitle",
     icon: "settings-outline",
   },
 ];
 
 export default function More() {
   const { logout, session } = useAuth();
-  const userName = session?.user.name ?? "Member";
+  const t = useT();
+  const userName = session?.user.name?.trim() || t("more.fallbackName");
   const confirmSignOut = () => {
-    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("more.signOutConfirmTitle"), t("more.signOutConfirmBody"), [
+      { text: t("more.signOutCancel"), style: "cancel" },
       {
-        text: "Sign out",
+        text: t("more.signOut"),
         style: "destructive",
         onPress: () => {
           void logout();
@@ -83,7 +88,7 @@ export default function More() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <MobileHeader title="More" subtitle="Everything else in one place." showProfileShortcut />
+          <MobileHeader title={t("more.title")} subtitle={t("more.subtitle")} showProfileShortcut />
 
           <GlassCard variant="compact" contentStyle={styles.accountCard}>
             <IconBubble icon="person-outline" tone="lime" size={46} />
@@ -92,27 +97,30 @@ export default function More() {
                 {userName}
               </Text>
               <Text numberOfLines={1} style={styles.accountSubtitle}>
-                Zook member account
+                {t("more.accountSubtitle")}
               </Text>
             </View>
             <ZookButton
               onPress={confirmSignOut}
               tone="secondary"
               size="sm"
-              accessibilityLabel="Sign out"
+              accessibilityLabel={t("more.signOut")}
             >
-              Sign out
+              {t("more.signOut")}
             </ZookButton>
           </GlassCard>
 
           <View style={styles.list}>
-            {memberMoreItems.map((item) => (
-              <Link key={item.title} href={item.href} asChild>
-                <Pressable accessibilityRole="link" accessibilityLabel={item.title}>
-                  <ListRow title={item.title} subtitle={item.subtitle} icon={item.icon} />
-                </Pressable>
-              </Link>
-            ))}
+            {memberMoreItems.map((item) => {
+              const title = t(item.titleKey);
+              return (
+                <Link key={item.titleKey} href={item.href} asChild>
+                  <Pressable accessibilityRole="link" accessibilityLabel={title}>
+                    <ListRow title={title} subtitle={t(item.subtitleKey)} icon={item.icon} />
+                  </Pressable>
+                </Link>
+              );
+            })}
           </View>
         </ScrollView>
         <BottomNav selectedPath="/more" />

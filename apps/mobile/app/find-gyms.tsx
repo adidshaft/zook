@@ -56,10 +56,6 @@ export default function FindGyms() {
     city: debouncedCity || undefined,
   });
   const gyms = gymsQuery.data?.gyms ?? [];
-  const locationChips = [
-    { id: "device", label: t("findGyms.deviceLocation") },
-    { id: "recent", label: t("findGyms.recentSearches") },
-  ] as const;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -140,24 +136,6 @@ export default function FindGyms() {
               onChangeText={setCity}
               placeholder={t("findGyms.cityPlaceholder")}
             />
-            <View style={styles.cityRow}>
-              {locationChips.map((chip) => {
-                const active = chip.id === "device" && city.trim() === "";
-                return (
-                  <Pressable
-                    key={chip.id}
-                    onPress={() => setCity("")}
-                    accessibilityRole="button"
-                    accessibilityLabel={chip.label}
-                    style={[styles.cityChip, active ? styles.cityChipActive : null]}
-                  >
-                    <Text style={[styles.cityChipText, active ? styles.cityChipTextActive : null]}>
-                      {chip.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
           </GlassCard>
 
           <SectionHeader
@@ -315,30 +293,6 @@ const styles = StyleSheet.create({
   },
   searchContent: {
     gap: spacing.md,
-  },
-  cityRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  cityChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
-  cityChipActive: {
-    borderColor: "rgba(185,244,85,0.3)",
-    backgroundColor: "rgba(185,244,85,0.1)",
-  },
-  cityChipText: {
-    color: colors.text,
-    ...typography.caption,
-  },
-  cityChipTextActive: {
-    color: colors.lime,
   },
   loadingContent: {
     flexDirection: "row",

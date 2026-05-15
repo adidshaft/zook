@@ -1,5 +1,4 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -19,6 +18,7 @@ import {
   IconBubble,
   MobileHeader,
   ProgressBar,
+  QueryErrorState,
   SectionHeader,
   SegmentedControl,
   StickyActionBar,
@@ -36,6 +36,7 @@ import {
 } from "@/lib/query-hooks";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { plansApi } from "@/lib/domain-api";
+import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -103,6 +104,7 @@ export default function Plans() {
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
+            stickyHeaderIndices: [0],
             refreshControl: (
               <RefreshControl
                 refreshing={refreshing}
@@ -170,7 +172,17 @@ export default function Plans() {
                 <PlansSkeleton />
               </View>
             ) : null}
-            {!plansQuery.isLoading && !filteredPlans.length ? (
+            {plansQuery.isError ? (
+              <View style={styles.fullWidth}>
+                <GlassCard variant="compact">
+                  <QueryErrorState
+                    error={plansQuery.error}
+                    onRetry={() => void plansQuery.refetch()}
+                  />
+                </GlassCard>
+              </View>
+            ) : null}
+            {!plansQuery.isLoading && !plansQuery.isError && !filteredPlans.length ? (
               <GlassCard variant="compact" style={styles.emptyPlanCard}>
                 <EmptyState
                   icon="clipboard-outline"
@@ -238,6 +250,9 @@ export function PlanDetailScreen() {
   const completedCount = exercises.filter((exercise) => completed.has(exercise.name)).length;
   const progress = completedCount / Math.max(exercises.length, 1);
   const requestedAssignmentId = firstParam(params.assignmentId);
+  const progressStorageKey = selectedAssignment?.id
+    ? `zook_plan_progress_${selectedAssignment.id}`
+    : null;
 
   useEffect(() => {
     if (!requestedAssignmentId) {
@@ -280,12 +295,25 @@ export function PlanDetailScreen() {
   useEffect(() => {
     const apiExercises = exercisesQuery.data?.exercises ?? [];
     setExercises(apiExercises.map(exerciseFromApi));
-    setCompleted(
-      new Set(
-        apiExercises.filter((exercise) => exercise.completed).map((exercise) => exercise.name),
-      ),
-    );
-  }, [exercisesQuery.data?.exercises]);
+    const apiCompleted = apiExercises
+      .filter((exercise) => exercise.completed)
+      .map((exercise) => exercise.name);
+    if (!selectedAssignment?.id) {
+      setCompleted(new Set(apiCompleted));
+      return;
+    }
+    let cancelled = false;
+    void getStoredValue(`zook_plan_progress_${selectedAssignment.id}`)
+      .then((stored) => {
+        if (cancelled) return;
+        const persisted = stored ? (JSON.parse(stored) as string[]) : [];
+        setCompleted(new Set([...apiCompleted, ...persisted.filter((name) => typeof name === "string")]));
+      })
+      .catch(() => setCompleted(new Set(apiCompleted)));
+    return () => {
+      cancelled = true;
+    };
+  }, [exercisesQuery.data?.exercises, selectedAssignment?.id]);
 
   useEffect(() => {
     setFeedbackStatus("");
@@ -323,7 +351,16 @@ export function PlanDetailScreen() {
         next.delete(name);
       } else {
         next.add(name);
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      if (progressStorageKey) {
+        void setStoredValue(progressStorageKey, JSON.stringify(Array.from(next))).catch(() => {
+          showToast({
+            title: "Progress not saved",
+            message: "This device may not restore the checkbox state.",
+            tone: "amber",
+            haptic: "warning",
+          });
+        });
       }
       return next;
     });
@@ -365,14 +402,18 @@ export function PlanDetailScreen() {
     try {
       await completePlan.mutateAsync({
         assignmentId: selectedAssignment.id,
-        exercises: exercises.map((exercise) => ({
+        exercises: exercises
+          .filter((exercise) => completed.has(exercise.name))
+          .map((exercise) => ({
           name: exercise.name,
-          completed: completed.has(exercise.name),
+          completed: true,
           notes: exercise.reps,
         })),
         feedback: feedbackNote.trim() || undefined,
       });
-      setCompleted(new Set(exercises.map((exercise) => exercise.name)));
+      if (progressStorageKey) {
+        await deleteStoredValue(progressStorageKey);
+      }
       const message = "Workout marked complete.";
       setFeedbackStatus(message);
       showToast({ tone: "success", haptic: "success", message });
@@ -433,6 +474,7 @@ export function PlanDetailScreen() {
             <MobileHeader
               title={planTitle(selectedAssignment)}
               subtitle={coachName}
+              style={styles.stickyHeader}
               leading={
                 <Pressable
                   onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
@@ -480,7 +522,15 @@ export function PlanDetailScreen() {
               {exercisesQuery.isLoading ? (
                 <ExerciseListSkeleton />
               ) : null}
-              {!exercisesQuery.isLoading && !exercises.length ? (
+              {exercisesQuery.isError ? (
+                <GlassCard variant="compact">
+                  <QueryErrorState
+                    error={exercisesQuery.error}
+                    onRetry={() => void exercisesQuery.refetch()}
+                  />
+                </GlassCard>
+              ) : null}
+              {!exercisesQuery.isLoading && !exercisesQuery.isError && !exercises.length ? (
                 <GlassCard variant="compact">
                   <EmptyState
                     title="No exercises yet"
@@ -596,7 +646,13 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: 14,
     gap: 14,
-    paddingBottom: layout.bottomNavContentPadding,
+    paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
+  },
+  stickyHeader: {
+    marginHorizontal: -layout.screenPadding,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.bg,
   },
   iconButton: {
     width: 44,

@@ -103,7 +103,7 @@ import {
   validateSignedQrToken,
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
-import { extractSessionToken, sessionCookieName } from "./context";
+import { extractSessionToken, refreshSessionCookieName, sessionCookieName } from "./context";
 import {
   getRequestContext,
   requireAuth,
@@ -174,6 +174,10 @@ const joinRequestSchema = z.object({
   planId: z.string().optional(),
   referralCode: z.string().trim().toUpperCase().optional(),
   message: z.string().max(500).optional(),
+});
+
+const joinRequestBatchApproveSchema = z.object({
+  joinRequestIds: z.array(z.string().min(1)).min(1).max(100),
 });
 
 const subscriptionCheckoutSchema = z.object({
@@ -811,6 +815,10 @@ const organizationBillingDetailsSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{6}$/),
+});
+
+const saasBillingMandateSchema = z.object({
+  amountPaise: z.number().int().positive().max(2_000_000).optional(),
 });
 
 const trainerProfileAssetSchema = z.object({
@@ -1694,9 +1702,24 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
     }),
   ]);
   const usersById = new Map(users.map((user) => [user.id, user]));
+  const planIds = Array.from(new Set(subscriptions.map((subscription) => subscription.planId)));
+  const plans = planIds.length
+    ? await prisma.membershipPlan.findMany({
+        where: { orgId, id: { in: planIds } },
+        select: { id: true, name: true, type: true },
+      })
+    : [];
+  const plansById = new Map(plans.map((plan) => [plan.id, plan]));
   return {
     members: page.items.map((profile) => {
       const user = usersById.get(profile.userId) ?? null;
+      const activeSubscription =
+        subscriptions.find(
+          (subscription) =>
+            subscription.memberUserId === profile.userId && subscription.status === "ACTIVE",
+        ) ??
+        subscriptions.find((subscription) => subscription.memberUserId === profile.userId) ??
+        null;
       return {
         profile,
         user: user ? serializeUserForClient(user) : null,
@@ -1706,13 +1729,9 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
           .slice(0, 3)
           .map(attendanceWithEntryCode),
         lastPayment: payments.find((payment) => payment.userId === profile.userId) ?? null,
-        activeSubscription:
-          subscriptions.find(
-            (subscription) =>
-              subscription.memberUserId === profile.userId && subscription.status === "ACTIVE",
-          ) ??
-          subscriptions.find((subscription) => subscription.memberUserId === profile.userId) ??
-          null,
+        activeSubscription: activeSubscription
+          ? { ...activeSubscription, plan: plansById.get(activeSubscription.planId) ?? null }
+          : null,
       };
     }),
     nextCursor: page.nextCursor,
@@ -2117,13 +2136,17 @@ async function createAuthSessionResponse(
   user: Awaited<ReturnType<typeof getUserByEmailOrCreate>>,
 ) {
   const token = AuthService.createToken();
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const refreshToken = AuthService.createToken();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   const ipAddress = getClientIp(request);
   const userAgent = request.headers.get("user-agent") ?? undefined;
   await new PrismaAuthRepo().createSession({
     userId: user.id,
     tokenHash: AuthService.hash(token),
+    refreshTokenHash: AuthService.hash(refreshToken),
     expiresAt,
+    refreshExpiresAt,
     deviceFingerprintHash: AuthService.createDeviceFingerprint(clean({ userAgent, ipAddress })),
     ...(userAgent ? { userAgent } : {}),
     ipAddress,
@@ -2132,7 +2155,9 @@ async function createAuthSessionResponse(
   const response = ok({
     user: serializeUserForClient(user),
     token,
+    refreshToken,
     expiresAt,
+    refreshExpiresAt,
     ...(sessionSummary ? { session: sessionSummary } : {}),
   });
   response.cookies.set(sessionCookieName, token, {
@@ -2142,7 +2167,55 @@ async function createAuthSessionResponse(
     expires: expiresAt,
     path: "/",
   });
+  response.cookies.set(refreshSessionCookieName, refreshToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: shouldUseSecureSessionCookie(request),
+    expires: refreshExpiresAt,
+    path: "/",
+  });
   return response;
+}
+
+async function refreshAuthSession(refreshToken: string) {
+  if (!refreshToken) {
+    throw unauthorizedError("Refresh token required");
+  }
+  const now = new Date();
+  const currentSession = await prisma.userSession.findFirst({
+    where: {
+      refreshTokenHash: AuthService.hash(refreshToken),
+      revokedAt: null,
+      refreshExpiresAt: { gt: now },
+    },
+  });
+  if (!currentSession) {
+    throw unauthorizedError("Refresh token expired");
+  }
+  const token = AuthService.createToken();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  await prisma.userSession.update({
+    where: { id: currentSession.id },
+    data: { tokenHash: AuthService.hash(token), expiresAt, lastSeenAt: now },
+  });
+  const sessionSummary = await resolveSessionSummaryFromToken(token);
+  return {
+    token,
+    refreshToken,
+    expiresAt,
+    refreshExpiresAt: currentSession.refreshExpiresAt,
+    ...(sessionSummary ? { session: sessionSummary } : {}),
+  };
+}
+
+function setSessionCookie(response: NextResponse, request: NextRequest, token: string, expiresAt: Date) {
+  response.cookies.set(sessionCookieName, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: shouldUseSecureSessionCookie(request),
+    expires: expiresAt,
+    path: "/",
+  });
 }
 
 function localQaIdentitiesAllowed() {
@@ -3016,6 +3089,126 @@ function providerMandateStatusToLocal(status: string): PaymentMandateStatus {
     default:
       return "CREATED";
   }
+}
+
+async function applySaasBillingProviderEvent(input: {
+  event: {
+    provider: string;
+    eventType: string;
+    providerSubscriptionId?: string;
+    paymentStatus: string;
+    metadata?: Record<string, unknown>;
+    rawPayload: unknown;
+  };
+}) {
+  const metadata = input.event.metadata ?? {};
+  const metadataMandateId =
+    typeof metadata.saasBillingMandateId === "string" ? metadata.saasBillingMandateId : undefined;
+  const metadataOrgId = typeof metadata.orgId === "string" ? metadata.orgId : undefined;
+  const providerSubscriptionId = input.event.providerSubscriptionId;
+  const mandate =
+    (metadataMandateId
+      ? await prisma.saaSBillingMandate.findUnique({ where: { id: metadataMandateId } })
+      : null) ??
+    (providerSubscriptionId
+      ? await prisma.saaSBillingMandate.findFirst({
+          where: { provider: input.event.provider, providerMandateId: providerSubscriptionId },
+        })
+      : null);
+
+  if (!mandate) {
+    return null;
+  }
+
+  const rawPayload = input.event.rawPayload as { payload?: Record<string, { entity?: unknown }> };
+  const subscriptionEntity = rawPayload?.payload?.subscription?.entity;
+  const subscription =
+    subscriptionEntity && !Array.isArray(subscriptionEntity) && typeof subscriptionEntity === "object"
+      ? (subscriptionEntity as Record<string, unknown>)
+      : {};
+  const providerStatus = typeof subscription.status === "string" ? subscription.status : undefined;
+  const nextStatus = providerMandateStatusToLocal(
+    input.event.eventType === "invoice.paid" || input.event.eventType === "subscription.charged"
+      ? "active"
+      : providerStatus ?? input.event.paymentStatus,
+  );
+  const currentStartAt =
+    typeof subscription.current_start === "number" && subscription.current_start > 0
+      ? new Date(subscription.current_start * 1000)
+      : undefined;
+  const currentEndAt =
+    typeof subscription.current_end === "number" && subscription.current_end > 0
+      ? new Date(subscription.current_end * 1000)
+      : undefined;
+  const nextChargeAt =
+    typeof subscription.charge_at === "number" && subscription.charge_at > 0
+      ? new Date(subscription.charge_at * 1000)
+      : undefined;
+  const paidCount =
+    typeof subscription.paid_count === "number" ? subscription.paid_count : undefined;
+  const totalCount =
+    typeof subscription.total_count === "number" ? subscription.total_count : undefined;
+
+  const [updatedMandate, updatedSubscription] = await prisma.$transaction([
+    prisma.saaSBillingMandate.update({
+      where: { id: mandate.id },
+      data: clean({
+        status: nextStatus,
+        providerMandateId: providerSubscriptionId ?? mandate.providerMandateId ?? undefined,
+        providerPlanId:
+          typeof subscription.plan_id === "string"
+            ? subscription.plan_id
+            : mandate.providerPlanId ?? undefined,
+        currentStartAt,
+        currentEndAt,
+        nextChargeAt,
+        paidCount,
+        totalCount,
+        authenticatedAt:
+          nextStatus === "AUTHENTICATED" && !mandate.authenticatedAt
+            ? new Date()
+            : mandate.authenticatedAt ?? undefined,
+        activatedAt:
+          nextStatus === "ACTIVE" && !mandate.activatedAt
+            ? new Date()
+            : mandate.activatedAt ?? undefined,
+        cancelledAt:
+          nextStatus === "CANCELLED" && !mandate.cancelledAt
+            ? new Date()
+            : mandate.cancelledAt ?? undefined,
+        metadata: {
+          ...getObjectMetadata(mandate.metadata),
+          lastProviderEventType: input.event.eventType,
+          ...(metadataOrgId ? { orgId: metadataOrgId } : {}),
+        } as Prisma.InputJsonValue,
+      }),
+    }),
+    prisma.saaSSubscription.upsert({
+      where: { orgId: mandate.orgId },
+      create: {
+        orgId: mandate.orgId,
+        status: nextStatus === "ACTIVE" ? "ACTIVE" : "TRIAL_ACTIVE",
+        trialStartAt: new Date(),
+        trialEndAt: nextChargeAt ?? mandate.nextChargeAt ?? new Date(),
+        paymentSessionId: mandate.paymentSessionId,
+        nextBillingAt: nextChargeAt ?? mandate.nextChargeAt ?? null,
+      },
+      update: clean({
+        paymentSessionId: mandate.paymentSessionId,
+        nextBillingAt: nextChargeAt ?? mandate.nextChargeAt ?? undefined,
+        ...(nextStatus === "ACTIVE" ? { status: "ACTIVE" } : {}),
+      }),
+    }),
+  ]);
+
+  if (nextStatus === "ACTIVE") {
+    await prisma.organization.update({
+      where: { id: mandate.orgId },
+      data: { status: "ACTIVE" },
+    });
+  }
+
+  return { mandate: updatedMandate, subscription: updatedSubscription };
 }
 
 function deriveAutopayBillingCadence(plan: {
@@ -4543,7 +4736,9 @@ class PrismaAuthRepo {
   async createSession(input: {
     userId: string;
     tokenHash: string;
+    refreshTokenHash?: string;
     expiresAt: Date;
+    refreshExpiresAt?: Date;
     userAgent?: string;
     ipAddress?: string;
     deviceFingerprintHash?: string;
@@ -4600,7 +4795,10 @@ class PrismaAuthRepo {
   }
 
   async revokeSession(tokenHash: string) {
-    await prisma.userSession.updateMany({ where: { tokenHash }, data: { revokedAt: new Date() } });
+    await prisma.userSession.updateMany({
+      where: { OR: [{ tokenHash }, { refreshTokenHash: tokenHash }] },
+      data: { revokedAt: new Date() },
+    });
   }
 
   async recordSecurityEvent(input: {
@@ -4695,7 +4893,9 @@ async function handleAuth(request: NextRequest, path: string[]) {
     const response = ok({
       user: serializeUserForClient(user),
       token: session.token,
+      refreshToken: session.refreshToken,
       expiresAt: session.expiresAt,
+      refreshExpiresAt: session.refreshExpiresAt,
       ...(sessionSummary ? { session: sessionSummary } : {}),
     });
     response.cookies.set(sessionCookieName, session.token, {
@@ -4703,6 +4903,13 @@ async function handleAuth(request: NextRequest, path: string[]) {
       sameSite: "lax",
       secure: shouldUseSecureSessionCookie(request),
       expires: session.expiresAt,
+      path: "/",
+    });
+    response.cookies.set(refreshSessionCookieName, session.refreshToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: shouldUseSecureSessionCookie(request),
+      expires: session.refreshExpiresAt,
       path: "/",
     });
     return response;
@@ -4775,6 +4982,47 @@ async function handleAuth(request: NextRequest, path: string[]) {
     }
     const response = ok({ loggedOut: true });
     response.cookies.delete(sessionCookieName);
+    response.cookies.set(refreshSessionCookieName, "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: shouldUseSecureSessionCookie(request),
+      expires: new Date(0),
+      path: "/",
+    });
+    response.cookies.set(refreshSessionCookieName, "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: shouldUseSecureSessionCookie(request),
+      expires: new Date(0),
+      path: "/api/auth/refresh",
+    });
+    return response;
+  }
+  if (request.method === "GET" && pathMatches(path, ["auth", "refresh"])) {
+    const redirectTarget = request.nextUrl.searchParams.get("redirect");
+    const safeRedirect =
+      redirectTarget?.startsWith("/") && !redirectTarget.startsWith("//") ? redirectTarget : "/dashboard";
+    try {
+      const session = await refreshAuthSession(request.cookies.get(refreshSessionCookieName)?.value ?? "");
+      const response = NextResponse.redirect(new URL(safeRedirect, request.url));
+      setSessionCookie(response, request, session.token, session.expiresAt);
+      return response;
+    } catch {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", safeRedirect);
+      loginUrl.searchParams.set("reason", "expired");
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+  if (request.method === "POST" && pathMatches(path, ["auth", "refresh"])) {
+    const body = await readJson(request).catch(() => ({}));
+    const refreshToken =
+      typeof body === "object" && body && "refreshToken" in body
+        ? String((body as { refreshToken?: unknown }).refreshToken ?? "")
+        : request.cookies.get(refreshSessionCookieName)?.value ?? "";
+    const session = await refreshAuthSession(refreshToken);
+    const response = ok(session);
+    setSessionCookie(response, request, session.token, session.expiresAt);
     return response;
   }
   if (
@@ -4796,6 +5044,84 @@ async function handleAuth(request: NextRequest, path: string[]) {
   return undefined;
 }
 
+async function getReferralCodesPayload(input: {
+  userId: string;
+  orgId: string | undefined;
+  roles: string[];
+}) {
+  if (!input.orgId) {
+    return { referralCodes: [], rewards: [] };
+  }
+  const [org, policy] = await Promise.all([
+    prisma.organization.findUnique({ where: { id: input.orgId }, select: { username: true } }),
+    prisma.referralPolicy.upsert({
+      where: { orgId: input.orgId },
+      update: {},
+      create: { orgId: input.orgId },
+    }),
+  ]);
+  if (!org || !policy.enabled) {
+    return { referralCodes: [], rewards: [] };
+  }
+  const role = input.roles.includes("TRAINER")
+    ? "TRAINER"
+    : input.roles.includes("RECEPTIONIST")
+      ? "RECEPTIONIST"
+      : input.roles.includes("ADMIN")
+        ? "ADMIN"
+        : "MEMBER";
+  if (
+    (role === "TRAINER" && !policy.trainerReferralEnabled) ||
+    (role !== "TRAINER" && role !== "MEMBER" && !policy.staffReferralEnabled)
+  ) {
+    return { referralCodes: [], rewards: [] };
+  }
+  let referral = await prisma.referralCode.findFirst({
+    where: {
+      orgId: input.orgId,
+      referrerUserId: input.userId,
+      createdByRole: role,
+      autoGenerated: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!referral) {
+    const expiresAt =
+      policy.referralCodeExpiryDays > 0
+        ? new Date(Date.now() + policy.referralCodeExpiryDays * 24 * 60 * 60 * 1000)
+        : undefined;
+    referral = await prisma.referralCode.create({
+      data: clean({
+        orgId: input.orgId,
+        referrerUserId: input.userId,
+        code: await generateUniqueReferralCode(input.userId),
+        createdByRole: role,
+        displayName: role === "TRAINER" ? "Trainer referral" : "Member referral",
+        maxUses: policy.maxReferralsPerMonth,
+        expiresAt,
+        status: "active",
+        autoGenerated: true,
+        lastResetAt: new Date(),
+      }),
+    });
+  }
+  const rewards = await prisma.referralReward.findMany({
+    where: { orgId: input.orgId, referrerUserId: input.userId },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+  return {
+    referralCodes: [referral],
+    rewards,
+    links: {
+      web: `/join/${org.username}?ref=${referral.code}`,
+      short: `/r/${referral.code}`,
+      app: `zook://r/${referral.code}`,
+    },
+    policy,
+  };
+}
+
 async function handleMeData(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["me", "orgs"])) {
     const token = extractSessionToken(request);
@@ -4809,6 +5135,23 @@ async function handleMeData(request: NextRequest, path: string[]) {
       throw unauthorizedError();
     }
     return ok({ organizations: summary.organizations, activeOrgId: summary.activeOrgId });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "dashboard"])) {
+    const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
+    const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, requestedOrgId);
+    const orgId = requestedOrgId ?? ctx.orgId;
+    const [home, engagement, referral, preferences] = await Promise.all([
+      getMemberHomeData(userId, orgId),
+      getEngagementSummary(userId, orgId),
+      getReferralCodesPayload({ userId, orgId, roles: ctx.roles }),
+      prisma.userNotificationPreference.findMany({
+        where: { userId },
+        orderBy: { updatedAt: "desc" },
+      }),
+    ]);
+    return ok({ home, engagement, referral, preferences });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "home"])) {
     const ctx = await getRequestContext(request);
@@ -4828,68 +5171,7 @@ async function handleMeData(request: NextRequest, path: string[]) {
     const userId = requireAuth(ctx);
     assertActiveContextOrg(ctx, requestedOrgId);
     const orgId = requestedOrgId ?? ctx.orgId;
-    if (!orgId) {
-      return ok({ referralCodes: [], rewards: [] });
-    }
-    const [org, policy] = await Promise.all([
-      prisma.organization.findUnique({ where: { id: orgId }, select: { username: true } }),
-      prisma.referralPolicy.upsert({ where: { orgId }, update: {}, create: { orgId } }),
-    ]);
-    if (!org || !policy.enabled) {
-      return ok({ referralCodes: [], rewards: [] });
-    }
-    const role = ctx.roles.includes("TRAINER")
-      ? "TRAINER"
-      : ctx.roles.includes("RECEPTIONIST")
-        ? "RECEPTIONIST"
-        : ctx.roles.includes("ADMIN")
-          ? "ADMIN"
-          : "MEMBER";
-    if (
-      (role === "TRAINER" && !policy.trainerReferralEnabled) ||
-      (role !== "TRAINER" && role !== "MEMBER" && !policy.staffReferralEnabled)
-    ) {
-      return ok({ referralCodes: [], rewards: [] });
-    }
-    let referral = await prisma.referralCode.findFirst({
-      where: { orgId, referrerUserId: userId, createdByRole: role, autoGenerated: true },
-      orderBy: { createdAt: "desc" },
-    });
-    if (!referral) {
-      const expiresAt =
-        policy.referralCodeExpiryDays > 0
-          ? new Date(Date.now() + policy.referralCodeExpiryDays * 24 * 60 * 60 * 1000)
-          : undefined;
-      referral = await prisma.referralCode.create({
-        data: clean({
-          orgId,
-          referrerUserId: userId,
-          code: await generateUniqueReferralCode(userId),
-          createdByRole: role,
-          displayName: role === "TRAINER" ? "Trainer referral" : "Member referral",
-          maxUses: policy.maxReferralsPerMonth,
-          expiresAt,
-          status: "active",
-          autoGenerated: true,
-          lastResetAt: new Date(),
-        }),
-      });
-    }
-    const rewards = await prisma.referralReward.findMany({
-      where: { orgId, referrerUserId: userId },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    });
-    return ok({
-      referralCodes: [referral],
-      rewards,
-      links: {
-        web: `/join/${org.username}?ref=${referral.code}`,
-        short: `/r/${referral.code}`,
-        app: `zook://r/${referral.code}`,
-      },
-      policy,
-    });
+    return ok(await getReferralCodesPayload({ userId, orgId, roles: ctx.roles }));
   }
   if (request.method === "GET" && pathMatches(path, ["me", "referral-rewards"])) {
     const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
@@ -6230,7 +6512,7 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
           orgId,
           status: "TRIAL_ACTIVE",
           trialStartAt: new Date(),
-          trialEndAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          trialEndAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
           billingEmail: body.contactEmail,
         },
         update: { billingEmail: body.contactEmail },
@@ -6260,6 +6542,199 @@ async function handleOrganizations(request: NextRequest, path: string[]) {
         receiptMissing: missingBillingDetails(org, "receipt"),
         invoiceMissing: missingBillingDetails(org, "invoice"),
       },
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "billing", "mandate"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
+    await assertRateLimit(
+      "paymentSessionByActor",
+      `saas-billing:${orgId}:${userId}`,
+      "Too many billing setup attempts.",
+    );
+    const body = saasBillingMandateSchema.parse(await readJson(request).catch(() => ({})));
+    const [org, subscription, existingMandate] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: orgId } }),
+      prisma.saaSSubscription.findUnique({ where: { orgId } }),
+      prisma.saaSBillingMandate.findUnique({ where: { orgId } }),
+    ]);
+    if (!org) {
+      throw notFoundError("Organization not found");
+    }
+    if (existingMandate?.checkoutUrl && liveMandateStatuses.includes(existingMandate.status)) {
+      return ok({
+        mandate: existingMandate,
+        checkoutUrl: existingMandate.checkoutUrl,
+        checkoutData: null,
+        session: existingMandate.paymentSessionId
+          ? await prisma.paymentSession.findUnique({ where: { id: existingMandate.paymentSessionId } })
+          : null,
+      });
+    }
+
+    const provider = getPaymentProviderOrThrow();
+    const amountPaise = body.amountPaise ?? Number(process.env.ZOOK_SAAS_MONTHLY_AMOUNT_PAISE ?? 299900);
+    if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
+      throw validationError("Zook SaaS billing amount is not configured.");
+    }
+    const trialEndAt =
+      subscription?.trialEndAt ??
+      org.trialEndAt ??
+      new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+    const session = await prisma.paymentSession.create({
+      data: {
+        orgId,
+        userId,
+        purpose: "SAAS_BILLING",
+        amountPaise,
+        currency: "INR",
+        status: "CREATED",
+        checkoutUrl: "",
+        provider: provider.providerName,
+        metadata: clean({
+          purpose: "SAAS_BILLING",
+          orgId,
+          startsAfterTrial: true,
+        }) as Prisma.InputJsonValue,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+    let mandate = existingMandate;
+    if (!mandate) {
+      mandate = await prisma.saaSBillingMandate.create({
+        data: {
+          orgId,
+          createdByUserId: userId,
+          provider: provider.providerName,
+          status: "CREATED",
+          amountPaise,
+          currency: "INR",
+          billingPeriod: "monthly",
+          billingInterval: 1,
+          totalCount: 120,
+          nextChargeAt: trialEndAt,
+          paymentSessionId: session.id,
+          metadata: clean({
+            orgId,
+            paymentSessionId: session.id,
+          }) as Prisma.InputJsonValue,
+        },
+      });
+    }
+    let createdMandate;
+    try {
+      createdMandate = await provider.createMandate({
+        orgId,
+        userId,
+        amountPaise,
+        currency: "INR",
+        referenceId: session.id,
+        planName: "Zook Gym OS monthly",
+        description: "Zook Gym OS billing after the two-month free trial",
+        billingPeriod: "monthly",
+        billingInterval: 1,
+        totalCount: 120,
+        startAt: trialEndAt,
+        returnUrl: `/dashboard/billing`,
+        customer: clean({
+          name: org.name,
+          email: org.contactEmail ?? subscription?.billingEmail ?? undefined,
+          phone: org.contactPhone ?? undefined,
+        }),
+        metadata: {
+          purpose: "SAAS_BILLING",
+          saasBillingMandateId: mandate.id,
+          orgId,
+          paymentSessionId: session.id,
+        },
+      });
+    } catch (error) {
+      await prisma.$transaction([
+        prisma.paymentSession.update({
+          where: { id: session.id },
+          data: { status: "FAILED", completedAt: new Date() },
+        }),
+        prisma.saaSBillingMandate.update({
+          where: { id: mandate.id },
+          data: { status: "FAILED", paymentSessionId: session.id },
+        }),
+      ]);
+      throw error;
+    }
+
+    const checkoutUrl =
+      createdMandate.checkoutUrl ??
+      (provider.providerName === "mock" ? `/checkout/mock/${session.id}` : `/checkout/${session.id}`);
+    const [updatedMandate, updatedSession] = await prisma.$transaction([
+      prisma.saaSBillingMandate.update({
+        where: { id: mandate.id },
+        data: clean({
+          provider: provider.providerName,
+          status: providerMandateStatusToLocal(createdMandate.status),
+          providerMandateId: createdMandate.mandateId,
+          providerPlanId: createdMandate.providerPlanId,
+          checkoutUrl,
+          currentStartAt: createdMandate.currentStartAt,
+          currentEndAt: createdMandate.currentEndAt,
+          nextChargeAt: createdMandate.nextChargeAt ?? trialEndAt,
+          paidCount: createdMandate.paidCount,
+          totalCount: createdMandate.totalCount,
+          paymentSessionId: session.id,
+          metadata: {
+            ...getObjectMetadata(mandate.metadata),
+            orgId,
+            paymentSessionId: session.id,
+            providerCheckoutData: createdMandate.checkoutData ?? null,
+          } as Prisma.InputJsonValue,
+        }),
+      }),
+      prisma.paymentSession.update({
+        where: { id: session.id },
+        data: {
+          provider: provider.providerName,
+          providerRef: createdMandate.mandateId,
+          checkoutUrl,
+          status: "CREATED",
+          metadata: {
+            ...getObjectMetadata(session.metadata),
+            saasBillingMandateId: mandate.id,
+            providerCheckoutData: createdMandate.checkoutData ?? null,
+          } as Prisma.InputJsonValue,
+        },
+      }),
+      prisma.saaSSubscription.upsert({
+        where: { orgId },
+        create: {
+          orgId,
+          status: "TRIAL_ACTIVE",
+          trialStartAt: org.trialStartAt ?? new Date(),
+          trialEndAt,
+          billingEmail: org.contactEmail,
+          paymentSessionId: session.id,
+          nextBillingAt: createdMandate.nextChargeAt ?? trialEndAt,
+        },
+        update: {
+          billingEmail: org.contactEmail,
+          paymentSessionId: session.id,
+          nextBillingAt: createdMandate.nextChargeAt ?? trialEndAt,
+        },
+      }),
+    ]);
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "organization.billing_mandate_created",
+      entityType: "saas_billing_mandate",
+      entityId: updatedMandate.id,
+      metadata: { provider: provider.providerName },
+    });
+    return ok({
+      mandate: updatedMandate,
+      checkoutUrl,
+      checkoutData: createdMandate.checkoutData ?? null,
+      session: updatedSession,
     });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "profile"])) {
@@ -7813,6 +8288,49 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
       }),
     });
   }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "join-requests", "approve-batch"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "MEMBERS_MANAGE");
+    const body = joinRequestBatchApproveSchema.parse(await readJson(request));
+    const joinRequestIds = Array.from(new Set(body.joinRequestIds));
+    const existingJoinRequests = await prisma.membershipJoinRequest.findMany({
+      where: { id: { in: joinRequestIds }, orgId, status: "pending" },
+    });
+    if (!existingJoinRequests.length) {
+      throw notFoundError("No pending join requests found");
+    }
+    await prisma.membershipJoinRequest.updateMany({
+      where: { id: { in: existingJoinRequests.map((joinRequest) => joinRequest.id) }, orgId },
+      data: { status: "approved", reviewedById: userId, reviewedAt: new Date() },
+    });
+    const joinRequests = await prisma.membershipJoinRequest.findMany({
+      where: { id: { in: existingJoinRequests.map((joinRequest) => joinRequest.id) }, orgId },
+    });
+    await createDirectNotification({
+      orgId,
+      createdById: userId,
+      type: "TRANSACTIONAL",
+      title: "Membership request approved",
+      body: "You can now continue to payment and activate your membership in Zook.",
+      audience: "selected_member",
+      userIds: joinRequests.map((joinRequest) => joinRequest.userId),
+      metadata: { joinRequestIds: joinRequests.map((joinRequest) => joinRequest.id), orgId },
+    });
+    await Promise.all(
+      joinRequests.map((joinRequest) =>
+        writeAuditLog({
+          request,
+          orgId,
+          actorUserId: userId,
+          action: "membership_join_request.approved",
+          entityType: "membership_join_request",
+          entityId: joinRequest.id,
+        }),
+      ),
+    );
+    return ok({ joinRequests });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "payments", "recent"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -8353,6 +8871,63 @@ async function handleMembershipPayments(request: NextRequest, path: string[]) {
         },
       });
       return ok({ received: true, duplicate: true, providerEventId });
+    }
+
+    const saasBillingProcessed = parsed
+      ? await applySaasBillingProviderEvent({ event: parsed })
+      : null;
+    if (saasBillingProcessed) {
+      const shouldRecordSaasPayment =
+        parsed?.eventType === "invoice.paid" || parsed?.eventType === "subscription.charged";
+      const processedPayment =
+        shouldRecordSaasPayment && saasBillingProcessed.mandate.paymentSessionId
+          ? await applyPaymentSessionStatus({
+              sessionId: saasBillingProcessed.mandate.paymentSessionId,
+              nextStatus: "SUCCEEDED",
+              provider: parsed.provider,
+              ...(parsed.providerPaymentId || parsed.providerSubscriptionId
+                ? { providerRef: parsed.providerPaymentId ?? parsed.providerSubscriptionId }
+                : {}),
+              paymentMode: "CARD",
+              expectedAmountPaise: saasBillingProcessed.mandate.amountPaise,
+              createNotification: createDirectNotification,
+              ensureMembership: ensureOrganizationMembership,
+            })
+          : null;
+      await prisma.paymentEvent.update({
+        where: { id: event.id },
+        data: clean({
+          orgId: saasBillingProcessed.mandate.orgId,
+          sessionId: saasBillingProcessed.mandate.paymentSessionId,
+          paymentId: processedPayment?.payment?.id,
+          status: "PROCESSED",
+          processedAt: new Date(),
+          processingError: null,
+        }),
+      });
+      await prisma.paymentWebhookAttempt.update({
+        where: {
+          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+        },
+        data: {
+          status: "SUCCEEDED",
+          httpStatusCode: 200,
+          durationMs: Date.now() - startedAt,
+          completedAt: new Date(),
+          result: clean({
+            saasBillingMandateId: saasBillingProcessed.mandate.id,
+            mandateStatus: saasBillingProcessed.mandate.status,
+            subscriptionStatus: saasBillingProcessed.subscription.status,
+            paymentId: processedPayment?.payment?.id,
+          }) as Prisma.InputJsonValue,
+        },
+      });
+      return ok({
+        received: true,
+        providerEventId,
+        saasBillingMandateId: saasBillingProcessed.mandate.id,
+        status: saasBillingProcessed.mandate.status,
+      });
     }
 
     let autopayProcessed;

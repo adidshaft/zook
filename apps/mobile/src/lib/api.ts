@@ -12,7 +12,7 @@ import {
 type MobileReleaseProfile = "local" | "staging" | "production";
 type MobilePushEnvironment = "development" | "preview" | "production";
 type ApiAuthHandlers = {
-  onExpired?: () => Promise<void> | void;
+  onExpired?: () => Promise<string | void> | string | void;
   onForbidden?: () => Promise<void> | void;
 };
 
@@ -49,6 +49,13 @@ function ensureConfiguredUrl(configured: string | undefined, label: "API" | "web
     );
   }
   return value.replace(/\/$/, "");
+}
+
+function platformLocalUrl(value: string | undefined) {
+  if (configuredReleaseProfile() !== "local" || Platform.OS !== "android") {
+    return value;
+  }
+  return value?.replace("http://localhost:", "http://10.0.2.2:");
 }
 
 function attachResponseRetryAfter(error: unknown, response: Response) {
@@ -101,8 +108,8 @@ export function getMobileApiBaseUrl() {
         : "http://localhost:3000/api"
       : undefined;
   const configured =
-    (Constants.expoConfig?.extra?.mobileApiBaseUrl as string | undefined) ??
-    process.env.EXPO_PUBLIC_API_BASE_URL ??
+    platformLocalUrl(Constants.expoConfig?.extra?.mobileApiBaseUrl as string | undefined) ??
+    platformLocalUrl(process.env.EXPO_PUBLIC_API_BASE_URL) ??
     platformDefault;
 
   return ensureConfiguredUrl(configured, "API");
@@ -110,8 +117,8 @@ export function getMobileApiBaseUrl() {
 
 export function getMobileWebBaseUrl() {
   const configured =
-    (Constants.expoConfig?.extra?.webUrl as string | undefined) ??
-    process.env.EXPO_PUBLIC_WEB_URL ??
+    platformLocalUrl(Constants.expoConfig?.extra?.webUrl as string | undefined) ??
+    platformLocalUrl(process.env.EXPO_PUBLIC_WEB_URL) ??
     getMobileApiBaseUrl().replace(/\/api$/, "");
 
   return ensureConfiguredUrl(configured, "web");
@@ -128,9 +135,10 @@ export async function mobileApiFetch<T>(
     orgId?: string;
     branchId?: string;
     body?: unknown;
+    skipAuthRefresh?: boolean;
   } = {},
 ): Promise<T> {
-  const { body: rawBody, branchId, orgId, token, ...requestInit } = init;
+  const { body: rawBody, branchId, orgId, skipAuthRefresh, token, ...requestInit } = init;
   const configError = getMobileRuntimeConfigError();
   if (configError) {
     throw new Error("Zook can’t open in this build. Please update the app or contact support.");
@@ -175,7 +183,14 @@ export async function mobileApiFetch<T>(
     }
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
-      await apiAuthHandlers.onExpired?.();
+      const refreshedToken = skipAuthRefresh ? undefined : await apiAuthHandlers.onExpired?.();
+      if (refreshedToken && token && refreshedToken !== token) {
+        return mobileApiFetch<T>(path, {
+          ...init,
+          token: refreshedToken,
+          skipAuthRefresh: true,
+        });
+      }
       throw error;
     }
     if (error instanceof ApiError && error.status === 403) {
