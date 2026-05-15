@@ -55,7 +55,6 @@ export type TranslationKey =
   | "auth.otpSubtitle"
   | "auth.identifierLabel"
   | "auth.identifierPlaceholder"
-  | "auth.phoneHint"
   | "auth.otpLabel"
   | "auth.otpAccessibility"
   | "auth.sendCode"
@@ -66,7 +65,6 @@ export type TranslationKey =
   | "auth.changeSignIn"
   | "auth.testCode"
   | "auth.enterIdentifier"
-  | "auth.enterIndiaMobile"
   | "auth.codeSent"
   | "auth.freshCodeSent"
   | "auth.signedIn"
@@ -240,11 +238,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.heroBody": "Your gym, your membership, your rhythm. Sign in to get started.",
     "auth.signIn": "Sign in",
     "auth.verifyCode": "Verify Code",
-    "auth.identifierSubtitle": "Use your email or phone number.",
+    "auth.identifierSubtitle": "Use your email address.",
     "auth.otpSubtitle": "Check your messages.",
-    "auth.identifierLabel": "Email or Phone",
-    "auth.identifierPlaceholder": "+91 98765 43210 or you@example.com",
-    "auth.phoneHint": "India mobile numbers are sent with the +91 country code.",
+    "auth.identifierLabel": "Email",
+    "auth.identifierPlaceholder": "you@example.com",
     "auth.otpLabel": "One-time code",
     "auth.otpAccessibility": "One-time code",
     "auth.sendCode": "Send Code",
@@ -254,8 +251,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.resendIn": "Resend in {{seconds}}s",
     "auth.changeSignIn": "Change sign-in",
     "auth.testCode": "TEST CODE",
-    "auth.enterIdentifier": "Enter your email or phone number.",
-    "auth.enterIndiaMobile": "Enter a 10-digit India mobile number or use email.",
+    "auth.enterIdentifier": "Enter your email address.",
     "auth.codeSent": "Code sent to {{identifier}}.",
     "auth.freshCodeSent": "Fresh code sent to {{identifier}}.",
     "auth.signedIn": "Signed in.",
@@ -428,11 +424,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.heroBody": "आपका जिम, आपकी मेंबरशिप, आपकी लय. शुरू करने के लिए साइन इन करें.",
     "auth.signIn": "साइन इन",
     "auth.verifyCode": "कोड वेरिफाई करें",
-    "auth.identifierSubtitle": "अपना ईमेल या फोन नंबर इस्तेमाल करें.",
+    "auth.identifierSubtitle": "अपना ईमेल पता इस्तेमाल करें.",
     "auth.otpSubtitle": "अपने संदेश देखें.",
-    "auth.identifierLabel": "ईमेल या फोन",
-    "auth.identifierPlaceholder": "+91 98765 43210 या you@example.com",
-    "auth.phoneHint": "भारत के मोबाइल नंबर +91 देश कोड के साथ भेजे जाते हैं.",
+    "auth.identifierLabel": "ईमेल",
+    "auth.identifierPlaceholder": "you@example.com",
     "auth.otpLabel": "वन-टाइम कोड",
     "auth.otpAccessibility": "वन-टाइम कोड",
     "auth.sendCode": "कोड भेजें",
@@ -442,8 +437,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.resendIn": "{{seconds}}s में फिर भेजें",
     "auth.changeSignIn": "साइन-इन बदलें",
     "auth.testCode": "टेस्ट कोड",
-    "auth.enterIdentifier": "अपना ईमेल या फोन नंबर डालें.",
-    "auth.enterIndiaMobile": "10 अंकों का भारतीय मोबाइल नंबर डालें या ईमेल इस्तेमाल करें.",
+    "auth.enterIdentifier": "अपना ईमेल पता डालें.",
     "auth.codeSent": "{{identifier}} पर कोड भेजा गया.",
     "auth.freshCodeSent": "{{identifier}} पर नया कोड भेजा गया.",
     "auth.signedIn": "साइन इन हो गया.",

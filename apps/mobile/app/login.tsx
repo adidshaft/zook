@@ -12,7 +12,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -32,7 +31,6 @@ import { getMobileReleaseProfile } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { colors, spacing, typography } from "@/lib/theme";
 
-type LoginMethod = "email" | "phone";
 type BusyAction = "otp" | "apple" | "google" | null;
 
 const TERMS_URL = "https://zookfit.in/terms";
@@ -63,18 +61,6 @@ function sanitizeOtpCode(value: string) {
     .normalize("NFKC")
     .replace(/[^0-9]/g, "")
     .slice(0, 6);
-}
-
-function sanitizeIndianMobile(value: string) {
-  return value
-    .normalize("NFKC")
-    .replace(/[^0-9]/g, "")
-    .replace(/^91(?=[6-9][0-9]{9}$)/, "")
-    .slice(0, 10);
-}
-
-function isValidIndianMobile(value: string) {
-  return /^[6-9][0-9]{9}$/.test(value);
 }
 
 function isCanceledAuthError(error: unknown) {
@@ -136,10 +122,8 @@ export default function Login() {
   const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
   const otpInputRef = useRef<OtpInputHandle>(null);
   const verifyingRef = useRef(false);
-  const [method, setMethod] = useState<LoginMethod>("phone");
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"identifier" | "otp">("identifier");
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
@@ -156,13 +140,9 @@ export default function Login() {
       return;
     }
     if (prefill.includes("@")) {
-      setMethod("email");
       setEmail(prefill.trim().toLowerCase());
       setEmailTouched(false);
-      return;
     }
-    setMethod("phone");
-    setPhoneNumber(sanitizeIndianMobile(prefill));
   }, [params.prefill]);
 
   useEffect(() => {
@@ -209,21 +189,7 @@ export default function Login() {
   }
 
   function selectedIdentifier() {
-    if (method === "email") {
-      return email.trim().toLowerCase();
-    }
-    return `+91${sanitizeIndianMobile(phoneNumber)}`;
-  }
-
-  function selectMethod(nextMethod: LoginMethod) {
-    if (nextMethod === method || busy) return;
-    Keyboard.dismiss();
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setMethod(nextMethod);
-    setStage("identifier");
-    setMessage("");
-    setEmailTouched(false);
-    resetOtpState();
+    return email.trim().toLowerCase();
   }
 
   const emailInvalid =
@@ -249,13 +215,8 @@ export default function Login() {
       return;
     }
     const identifier = selectedIdentifier();
-    if (method === "email") {
-      if (!/^\S+@\S+\.\S+$/.test(identifier)) {
-        setMessage("Enter a valid email address.");
-        return;
-      }
-    } else if (!isValidIndianMobile(phoneNumber)) {
-      setMessage("Enter a valid 10-digit mobile number.");
+    if (!/^\S+@\S+\.\S+$/.test(identifier)) {
+      setMessage("Enter a valid email address.");
       return;
     }
     setBusyAction("otp");
@@ -395,10 +356,7 @@ export default function Login() {
           contentContainerStyle: styles.content,
         }}
       >
-        <Animated.View 
-          entering={FadeInDown.delay(100).duration(600)} 
-          style={styles.heroSection}
-        >
+        <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.heroSection}>
           <View style={styles.heroGlow} />
           <Text style={styles.heroEyebrow}>{t("auth.heroEyebrow")}</Text>
           <View style={styles.logoRow}>
@@ -410,170 +368,125 @@ export default function Login() {
 
         <Animated.View entering={FadeInDown.delay(250).duration(600)}>
           <GlassCard contentStyle={styles.formContent}>
-          <View style={styles.formHeader}>
-            <Text style={styles.formTitle}>
-              {stage === "identifier" ? t("auth.signIn") : t("auth.verifyCode")}
-            </Text>
-            <Text style={styles.formSubtitle}>
-              {stage === "identifier"
-                ? method === "phone"
-                  ? "Enter your registered mobile number."
-                  : "Enter your registered email address."
-                : t("auth.otpSubtitle")}
-            </Text>
-          </View>
-
-          {stage === "identifier" ? (
-            <>
-              <View style={styles.tabGroup} accessibilityRole="tablist">
-                <MethodTab
-                  active={method === "phone"}
-                  label="Phone"
-                  onPress={() => selectMethod("phone")}
-                />
-                <MethodTab
-                  active={method === "email"}
-                  label="Email"
-                  onPress={() => selectMethod("email")}
-                />
-              </View>
-
-              {method === "email" ? (
-                <>
-                  <GlassInput
-                    label="Email"
-                    value={email}
-                    onChangeText={(value) => {
-                      setEmail(value);
-                      if (message === "Enter a valid email address.") setMessage("");
-                    }}
-                    onBlur={() => setEmailTouched(true)}
-                    autoCapitalize="none"
-                    autoComplete="email"
-                    keyboardType="email-address"
-                    returnKeyType="next"
-                    placeholder="email@example.com"
-                    editable={!busy}
-                  />
-                  {emailInvalid ? (
-                    <Text style={styles.inlineError}>Enter a valid email address.</Text>
-                  ) : null}
-                </>
-              ) : (
-                <View style={styles.phoneGroup}>
-                  <Text style={styles.inputLabel}>Mobile number</Text>
-                  <View style={styles.phoneInputRow}>
-                    <View style={styles.countryPrefix}>
-                      <Text style={styles.countryPrefixText}>🇮🇳 +91</Text>
-                    </View>
-                    <View style={styles.phoneDivider} />
-                    <TextInput
-                      value={phoneNumber}
-                      onChangeText={(value) => {
-                        setPhoneNumber(sanitizeIndianMobile(value));
-                        if (message === "Enter a valid 10-digit mobile number.") setMessage("");
-                      }}
-                      editable={!busy}
-                      autoComplete="tel"
-                      keyboardType="phone-pad"
-                      returnKeyType="next"
-                      placeholder="98765 43210"
-                      placeholderTextColor="rgba(244,247,239,0.34)"
-                      accessibilityLabel="Mobile number"
-                      style={styles.phoneNumberInput}
-                    />
-                  </View>
-                  <Text style={styles.phoneHintText}>{t("auth.phoneHint")}</Text>
-                </View>
-              )}
-            </>
-          ) : (
-            <OtpInput
-              ref={otpInputRef}
-              value={code}
-              onChange={handleOtpChange}
-              onComplete={(nextCode) => {
-                Keyboard.dismiss();
-                void submitOtp(nextCode);
-              }}
-              disabled={busy || accountLocked || rateLimitCooldown > 0}
-              label={t("auth.otpLabel")}
-              accessibilityLabel={t("auth.otpAccessibility")}
-            />
-          )}
-
-          <ZookButton
-            onPress={handleContinue}
-            disabled={busy || accountLocked || rateLimitCooldown > 0}
-            busy={busyAction === "otp"}
-            busyLabel={t("auth.working")}
-          >
-            {stage === "identifier" ? "Send OTP" : t("auth.verifyAndSignIn")}
-          </ZookButton>
-
-          {stage === "otp" ? (
-            <View style={styles.otpActions}>
-              <ZookButton
-                onPress={() => void requestCode(true)}
-                disabled={busy || accountLocked || resendCooldown > 0 || rateLimitCooldown > 0}
-                tone="secondary"
-                style={styles.otpAction}
-              >
-                {resendCooldown > 0
-                  ? t("auth.resendIn", { seconds: resendCooldown })
-                  : t("auth.resendCode")}
-              </ZookButton>
-              <ZookButton
-                onPress={() => {
-                  Keyboard.dismiss();
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setStage("identifier");
-                  resetOtpState();
-                }}
-                disabled={busy}
-                tone="secondary"
-                style={styles.otpAction}
-              >
-                {t("auth.changeSignIn")}
-              </ZookButton>
-            </View>
-          ) : (
-            <>
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or continue with</Text>
-                <View style={styles.dividerLine} />
-              </View>
-              <View style={styles.ssoRow}>
-                <SsoButton
-                  label="Apple"
-                  mark="A"
-                  busy={busyAction === "apple"}
-                  disabled={busy}
-                  onPress={() => void handleAppleSignIn()}
-                />
-                <SsoButton
-                  label="Google"
-                  mark="G"
-                  busy={busyAction === "google"}
-                  disabled={busy}
-                  onPress={() => void handleGoogleSignIn()}
-                />
-              </View>
-              <Text style={styles.legalText}>
-                By continuing you agree to our{" "}
-                <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
-                  Terms
-                </Text>{" "}
-                and{" "}
-                <Text style={styles.legalLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
-                  Privacy Policy
-                </Text>
-                .
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>
+                {stage === "identifier" ? t("auth.signIn") : t("auth.verifyCode")}
               </Text>
-            </>
-          )}
-        </GlassCard>
+              <Text style={styles.formSubtitle}>
+                {stage === "identifier"
+                  ? "Enter your registered email address."
+                  : t("auth.otpSubtitle")}
+              </Text>
+            </View>
+
+            {stage === "identifier" ? (
+              <>
+                <GlassInput
+                  label="Email"
+                  value={email}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    if (message === "Enter a valid email address.") setMessage("");
+                  }}
+                  onBlur={() => setEmailTouched(true)}
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  returnKeyType="next"
+                  placeholder="email@example.com"
+                  editable={!busy}
+                />
+                {emailInvalid ? (
+                  <Text style={styles.inlineError}>Enter a valid email address.</Text>
+                ) : null}
+              </>
+            ) : (
+              <OtpInput
+                ref={otpInputRef}
+                value={code}
+                onChange={handleOtpChange}
+                onComplete={(nextCode) => {
+                  Keyboard.dismiss();
+                  void submitOtp(nextCode);
+                }}
+                disabled={busy || accountLocked || rateLimitCooldown > 0}
+                label={t("auth.otpLabel")}
+                accessibilityLabel={t("auth.otpAccessibility")}
+              />
+            )}
+
+            <ZookButton
+              onPress={handleContinue}
+              disabled={busy || accountLocked || rateLimitCooldown > 0}
+              busy={busyAction === "otp"}
+              busyLabel={t("auth.working")}
+            >
+              {stage === "identifier" ? "Send email code" : t("auth.verifyAndSignIn")}
+            </ZookButton>
+
+            {stage === "otp" ? (
+              <View style={styles.otpActions}>
+                <ZookButton
+                  onPress={() => void requestCode(true)}
+                  disabled={busy || accountLocked || resendCooldown > 0 || rateLimitCooldown > 0}
+                  tone="secondary"
+                  style={styles.otpAction}
+                >
+                  {resendCooldown > 0
+                    ? t("auth.resendIn", { seconds: resendCooldown })
+                    : t("auth.resendCode")}
+                </ZookButton>
+                <ZookButton
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setStage("identifier");
+                    resetOtpState();
+                  }}
+                  disabled={busy}
+                  tone="secondary"
+                  style={styles.otpAction}
+                >
+                  {t("auth.changeSignIn")}
+                </ZookButton>
+              </View>
+            ) : (
+              <>
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>or continue with</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+                <View style={styles.ssoRow}>
+                  <SsoButton
+                    label="Apple"
+                    mark="A"
+                    busy={busyAction === "apple"}
+                    disabled={busy}
+                    onPress={() => void handleAppleSignIn()}
+                  />
+                  <SsoButton
+                    label="Google"
+                    mark="G"
+                    busy={busyAction === "google"}
+                    disabled={busy}
+                    onPress={() => void handleGoogleSignIn()}
+                  />
+                </View>
+                <Text style={styles.legalText}>
+                  By continuing you agree to our{" "}
+                  <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
+                    Terms
+                  </Text>{" "}
+                  and{" "}
+                  <Text style={styles.legalLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
+                    Privacy Policy
+                  </Text>
+                  .
+                </Text>
+              </>
+            )}
+          </GlassCard>
         </Animated.View>
 
         {/* Local test OTP banner - only visible in __DEV__ */}
@@ -587,28 +500,6 @@ export default function Login() {
         {message && !devOtp ? <Text style={styles.messageText}>{message}</Text> : null}
       </KeyboardAwareScreen>
     </ZookScreen>
-  );
-}
-
-function MethodTab({
-  active,
-  label,
-  onPress,
-}: {
-  active: boolean;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      style={[styles.tabButton, active ? styles.tabButtonActive : null]}
-    >
-      <Text style={[styles.tabText, active ? styles.tabTextActive : null]}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -704,80 +595,9 @@ const styles = StyleSheet.create({
     color: colors.muted,
     ...typography.body,
   },
-  tabGroup: {
-    flexDirection: "row",
-    padding: 4,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-    gap: 4,
-  },
-  tabButton: {
-    flex: 1,
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 12,
-  },
-  tabButtonActive: {
-    backgroundColor: colors.accentPanel,
-    borderWidth: 1,
-    borderColor: colors.limeBorder,
-  },
-  tabText: {
-    color: colors.muted,
-    ...typography.button,
-  },
-  tabTextActive: {
-    color: colors.text,
-  },
-  inputLabel: {
-    color: colors.muted,
-    ...typography.caption,
-  },
-  phoneGroup: {
-    gap: spacing.sm,
-  },
   inlineError: {
     marginTop: -spacing.sm,
     color: colors.red,
-    ...typography.caption,
-  },
-  phoneInputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    minHeight: 58,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-    overflow: "hidden",
-  },
-  countryPrefix: {
-    minHeight: 58,
-    justifyContent: "center",
-    paddingHorizontal: spacing.md,
-    backgroundColor: "rgba(185,244,85,0.075)",
-  },
-  countryPrefixText: {
-    color: colors.lime,
-    ...typography.bodyStrong,
-  },
-  phoneDivider: {
-    width: 1,
-    alignSelf: "stretch",
-    backgroundColor: colors.border,
-  },
-  phoneNumberInput: {
-    flex: 1,
-    minHeight: 58,
-    color: colors.text,
-    paddingHorizontal: spacing.md,
-    ...typography.bodyStrong,
-  },
-  phoneHintText: {
-    color: colors.muted,
     ...typography.caption,
   },
   otpActions: {
