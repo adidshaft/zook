@@ -148,12 +148,12 @@ export default function Login() {
   useEffect(() => {
     const reason = Array.isArray(params.reason) ? params.reason[0] : params.reason;
     if (reason === "proactive") {
-      setMessage("Verify it's you to continue.");
+      setMessage(t("auth.verifyToContinue"));
     }
     if (reason === "expired") {
-      setMessage("Your session expired. Sign in again to continue.");
+      setMessage(t("auth.sessionExpired"));
     }
-  }, [params.reason]);
+  }, [params.reason, t]);
 
   useEffect(() => {
     if (stage === "otp") {
@@ -216,7 +216,7 @@ export default function Login() {
     }
     const identifier = selectedIdentifier();
     if (!/^\S+@\S+\.\S+$/.test(identifier)) {
-      setMessage("Enter a valid email address.");
+      setMessage(t("auth.invalidEmail"));
       return;
     }
     setBusyAction("otp");
@@ -281,7 +281,7 @@ export default function Login() {
     try {
       const available = await AppleAuthentication.isAvailableAsync();
       if (!available) {
-        setMessage("Apple sign-in is not available on this device.");
+        setMessage(t("auth.appleUnavailable"));
         return;
       }
       const credential = await AppleAuthentication.signInAsync({
@@ -291,7 +291,7 @@ export default function Login() {
         ],
       });
       if (!credential.identityToken) {
-        setMessage("Apple did not return an identity token. Try again.");
+        setMessage(t("auth.appleNoToken"));
         return;
       }
       const fullName = [
@@ -307,7 +307,7 @@ export default function Login() {
       if (isCanceledAuthError(error)) return;
       setMessage(
         error instanceof ApiError && error.status === 501
-          ? "Apple sign-in coming soon."
+          ? t("auth.appleComingSoon")
           : getApiErrorMessage(error),
       );
     } finally {
@@ -322,7 +322,7 @@ export default function Login() {
       await configureGoogleSignIn();
       const module = await getGoogleSigninModule();
       if (!module) {
-        setMessage("Google sign-in is not available in Expo Go.");
+        setMessage(t("auth.googleUnavailable"));
         return;
       }
       if (Platform.OS === "android") {
@@ -332,7 +332,7 @@ export default function Login() {
       if (response.type !== "success") return;
       const idToken = response.data.idToken ?? (await module.GoogleSignin.getTokens()).idToken;
       if (!idToken) {
-        setMessage("Google did not return an ID token. Try again.");
+        setMessage(t("auth.googleNoToken"));
         return;
       }
       await signInWithGoogle(idToken);
@@ -340,7 +340,7 @@ export default function Login() {
     } catch (error) {
       setMessage(
         error instanceof ApiError && error.status === 501
-          ? "Google sign-in coming soon."
+          ? t("auth.googleComingSoon")
           : getApiErrorMessage(error),
       );
     } finally {
@@ -386,7 +386,7 @@ export default function Login() {
                   value={email}
                   onChangeText={(value) => {
                     setEmail(value);
-                    if (message === "Enter a valid email address.") setMessage("");
+                    if (message === t("auth.invalidEmail")) setMessage("");
                   }}
                   onBlur={() => setEmailTouched(true)}
                   autoCapitalize="none"
@@ -397,7 +397,7 @@ export default function Login() {
                   editable={!busy}
                 />
                 {emailInvalid ? (
-                  <Text style={styles.inlineError}>Enter a valid email address.</Text>
+                  <Text style={styles.inlineError}>{t("auth.invalidEmail")}</Text>
                 ) : null}
               </>
             ) : (

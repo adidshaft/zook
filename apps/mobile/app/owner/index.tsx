@@ -534,7 +534,15 @@ export default function Owner() {
                     leading={<IconBubble icon={item.icon} tone={item.tone} />}
                     trailing={
                       <View style={styles.attentionTrailing}>
-                        <Text style={item.count ? styles.attentionAction : styles.attentionQuiet}>
+                        <Text
+                          style={
+                            item.count
+                              ? item.tone === "amber"
+                                ? styles.attentionUrgent
+                                : styles.attentionAction
+                              : styles.attentionQuiet
+                          }
+                        >
                           {item.count ? "Review" : "Open"}
                         </Text>
                         <Ionicons name="chevron-forward" size={17} color={colors.muted} />
@@ -1052,6 +1060,10 @@ const styles = StyleSheet.create({
   },
   attentionAction: {
     color: colors.lime,
+    ...typography.caption,
+  },
+  attentionUrgent: {
+    color: colors.amber,
     ...typography.caption,
   },
   attentionQuiet: {

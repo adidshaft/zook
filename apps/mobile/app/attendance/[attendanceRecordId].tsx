@@ -1,6 +1,8 @@
 import { Link, Stack, type Href, useLocalSearchParams, useRouter } from "expo-router";
+import * as Clipboard from "expo-clipboard";
 import { useEffect } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { showToast } from "@/lib/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -224,7 +226,21 @@ export default function AttendanceResultScreen() {
                 <Text style={styles.entryLabel}>Entry Code</Text>
                 {code ? (
                   <>
-                    <Text style={styles.pendingCode}>{code}</Text>
+                    <Pressable
+                      onPress={async () => {
+                        try {
+                          await Clipboard.setStringAsync(code);
+                          showToast({ tone: "success", message: "Entry code copied." });
+                        } catch {
+                          showToast({ tone: "danger", message: "Could not copy code." });
+                        }
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Copy entry code ${code}`}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.pendingCode}>{code}</Text>
+                    </Pressable>
                     <View style={styles.pendingChips}>
                       <StatusChip status="Pending approval" />
                       <StatusChip status="Membership active" icon="checkmark" />

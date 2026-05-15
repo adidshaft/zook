@@ -14,12 +14,14 @@ export function ReferralCard({
   code,
   maxUses,
   onShare,
+  onCopy,
   redemptions,
   rewardsCount,
 }: {
   code: string;
   maxUses?: number | null;
   onShare: () => void;
+  onCopy?: () => void;
   redemptions: number;
   rewardsCount: number;
 }) {
@@ -32,9 +34,20 @@ export function ReferralCard({
           {redemptions}/{maxUses ?? "unlimited"} used · {rewardsCount} reward
           {rewardsCount === 1 ? "" : "s"}
         </Text>
-        <Text selectable style={styles.referralCode}>
-          {code}
-        </Text>
+        {onCopy ? (
+          <Pressable
+            onPress={onCopy}
+            accessibilityRole="button"
+            accessibilityLabel={`Copy referral code ${code}`}
+            hitSlop={6}
+          >
+            <Text style={styles.referralCode}>{code}</Text>
+          </Pressable>
+        ) : (
+          <Text selectable style={styles.referralCode}>
+            {code}
+          </Text>
+        )}
       </View>
       <Pressable
         onPress={onShare}

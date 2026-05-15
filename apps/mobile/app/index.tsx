@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import type { Href } from "expo-router";
+import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -298,6 +299,16 @@ export default function Home() {
                   maxUses={referral.referralCodes[0].maxUses ?? null}
                   rewardsCount={referral.rewards?.length ?? 0}
                   onShare={() => void shareReferral()}
+                  onCopy={async () => {
+                    const code = referral.referralCodes[0]?.code;
+                    if (!code) return;
+                    try {
+                      await Clipboard.setStringAsync(code);
+                      showToast({ tone: "success", message: "Referral code copied." });
+                    } catch {
+                      showToast({ tone: "danger", message: "Could not copy code." });
+                    }
+                  }}
                 />
               ) : null}
             </>
