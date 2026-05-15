@@ -14,13 +14,16 @@ import {
   View,
 } from "react-native";
 import { useCameraPermissions } from "expo-camera";
+import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { setStoredValue } from "@/lib/storage";
+import { getMobileWebBaseUrl } from "@/lib/api";
 import { colors } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
 const INTRO_COMPLETE = "intro";
@@ -81,20 +84,41 @@ export function ValuePropsStep() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [userScrolled, setUserScrolled] = useState(false);
   const cardWidth = Math.max(280, Math.min(520, width - 48));
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    if (userScrolled) {
+      return undefined;
+    }
+    timerRef.current = setInterval(() => {
       setActiveIndex((current) => {
         const next = Math.min(current + 1, valueProps.length - 1);
+        if (next === current) {
+          return current;
+        }
         scrollRef.current?.scrollTo({ x: next * cardWidth, animated: true });
         return next;
       });
     }, 2600);
 
-    return () => clearInterval(timer);
-  }, [cardWidth]);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [cardWidth, userScrolled]);
+
+  function stopAutoScroll() {
+    setUserScrolled(true);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}>
@@ -111,6 +135,7 @@ export function ValuePropsStep() {
           showsHorizontalScrollIndicator={false}
           decelerationRate="fast"
           snapToInterval={cardWidth}
+          onScrollBeginDrag={stopAutoScroll}
           onMomentumScrollEnd={(event) => {
             setActiveIndex(Math.round(event.nativeEvent.contentOffset.x / cardWidth));
           }}
@@ -189,8 +214,17 @@ export function PermissionsStep() {
         <ZookButton
           tone="secondary"
           onPress={async () => {
-            await setStoredValue(ONBOARDING_STORAGE_KEY, INTRO_COMPLETE);
-            router.replace("/login" as never);
+            try {
+              await setStoredValue(ONBOARDING_STORAGE_KEY, INTRO_COMPLETE);
+              router.replace("/login" as never);
+            } catch {
+              showToast({
+                title: "Couldn't save preference",
+                message: "Try again.",
+                tone: "amber",
+                haptic: "warning",
+              });
+            }
           }}
           disabled={busy}
         >
@@ -206,7 +240,10 @@ async function requestLocationPermission() {
     await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
     return;
   }
-  await Linking.openSettings();
+  const result = await Location.requestForegroundPermissionsAsync();
+  if (result.status === "denied" && result.canAskAgain === false) {
+    await Linking.openSettings();
+  }
 }
 
 export function RoleQuestionStep() {
@@ -227,12 +264,19 @@ export function RoleQuestionStep() {
     setBusyAction(action);
     try {
       if (action === "owner") {
-        await Linking.openURL("https://zookfit.in/start-gym?return=zook://");
+        await Linking.openURL(`${getMobileWebBaseUrl()}/start-gym?return=zook://`);
       } else if (action !== "member") {
         await setStoredValue("zook_onboarding_role_interest", action);
       }
       await setStoredValue(ONBOARDING_STORAGE_KEY, COMPLETED);
       router.replace(action === "member" ? ("/find-gyms" as never) : ("/" as never));
+    } catch {
+      showToast({
+        title: "Couldn't save preference",
+        message: "Try again.",
+        tone: "amber",
+        haptic: "warning",
+      });
     } finally {
       setBusyAction(null);
     }

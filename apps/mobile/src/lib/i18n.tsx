@@ -146,6 +146,7 @@ export type TranslationKey =
   | "shop.pickupCode"
   | "shop.pending"
   | "shop.paid"
+  | "shop.signedPickupQrCode"
   | "shop.continuePayment"
   | "shop.confirming"
   | "shop.backToShop"
@@ -192,7 +193,34 @@ export type TranslationKey =
   | "tracking.bodyComposition"
   | "tracking.latestEntry"
   | "tracking.weight"
-  | "tracking.bodyFat";
+  | "tracking.bodyFat"
+  | "tracking.start"
+  | "tracking.end"
+  | "tracking.duration"
+  | "tracking.focus"
+  | "tracking.totalDuration"
+  | "tracking.sessions"
+  | "common.seeAll"
+  | "more.title"
+  | "more.subtitle"
+  | "more.accountSubtitle"
+  | "more.signOut"
+  | "more.signOutConfirmTitle"
+  | "more.signOutConfirmBody"
+  | "more.signOutCancel"
+  | "more.tracking.title"
+  | "more.tracking.subtitle"
+  | "more.shop.title"
+  | "more.shop.subtitle"
+  | "more.inbox.title"
+  | "more.inbox.subtitle"
+  | "more.assistant.title"
+  | "more.assistant.subtitle"
+  | "more.profile.title"
+  | "more.profile.subtitle"
+  | "more.settings.title"
+  | "more.settings.subtitle"
+  | "more.fallbackName";
 
 type TranslationValues = Record<string, string | number>;
 
@@ -334,6 +362,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.pickupCode": "Pickup code",
     "shop.pending": "Pending",
     "shop.paid": "Paid",
+    "shop.signedPickupQrCode": "Signed pickup QR code",
     "shop.continuePayment": "Continue to payment",
     "shop.confirming": "Confirming...",
     "shop.backToShop": "Back to Shop",
@@ -382,6 +411,33 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.latestEntry": "Latest entry",
     "tracking.weight": "Weight",
     "tracking.bodyFat": "Body fat",
+    "tracking.start": "Start",
+    "tracking.end": "End",
+    "tracking.duration": "Duration",
+    "tracking.focus": "Focus",
+    "tracking.totalDuration": "Total duration",
+    "tracking.sessions": "Sessions",
+    "common.seeAll": "See all",
+    "more.title": "More",
+    "more.subtitle": "Everything else in one place.",
+    "more.accountSubtitle": "Zook member account",
+    "more.signOut": "Sign out",
+    "more.signOutConfirmTitle": "Sign out?",
+    "more.signOutConfirmBody": "You can sign back in with OTP any time.",
+    "more.signOutCancel": "Cancel",
+    "more.tracking.title": "Tracking",
+    "more.tracking.subtitle": "Log workouts, weight, and habits.",
+    "more.shop.title": "Shop",
+    "more.shop.subtitle": "Order gym essentials for desk pickup.",
+    "more.inbox.title": "Inbox",
+    "more.inbox.subtitle": "Payments, plans, and gym updates.",
+    "more.assistant.title": "Plan assistant",
+    "more.assistant.subtitle": "Ask questions about your training and plans.",
+    "more.profile.title": "Profile",
+    "more.profile.subtitle": "Membership details and personal info.",
+    "more.settings.title": "Settings",
+    "more.settings.subtitle": "Language, roles, privacy, and account.",
+    "more.fallbackName": "Member",
   },
   hi: {
     "app.demoMode": "डेमो मोड",
@@ -503,7 +559,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.system": "सिस्टम",
     "settings.systemSubtitle": "मदद, पॉलिसी और ऐप जानकारी",
     "settings.contactSupport": "सपोर्ट से संपर्क करें",
-    "settings.contactSupportSubtitle": "अकाउंट या जिम समस्या के लिए support@zookfit.in पर ईमेल करें",
+    "settings.contactSupportSubtitle":
+      "अकाउंट या जिम समस्या के लिए support@zookfit.in पर ईमेल करें",
     "settings.aboutZook": "Zook के बारे में",
     "settings.aboutZookSubtitle": "जिम ऑपरेशन, मेंबरशिप, PT और मेंबर अनुभव",
     "settings.signedInGym": "साइन-इन जिम",
@@ -521,6 +578,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.pickupCode": "पिकअप कोड",
     "shop.pending": "पेंडिंग",
     "shop.paid": "पेड",
+    "shop.signedPickupQrCode": "साइन किया हुआ पिकअप QR कोड",
     "shop.continuePayment": "पेमेंट जारी रखें",
     "shop.confirming": "कन्फर्म हो रहा है...",
     "shop.backToShop": "शॉप पर वापस",
@@ -569,6 +627,33 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.latestEntry": "नयी एंट्री",
     "tracking.weight": "वजन",
     "tracking.bodyFat": "बॉडी फैट",
+    "tracking.start": "शुरू",
+    "tracking.end": "खत्म",
+    "tracking.duration": "अवधि",
+    "tracking.focus": "फोकस",
+    "tracking.totalDuration": "कुल अवधि",
+    "tracking.sessions": "सेशन",
+    "common.seeAll": "सभी देखें",
+    "more.title": "और",
+    "more.subtitle": "बाकी सब कुछ एक जगह.",
+    "more.accountSubtitle": "Zook मेंबर अकाउंट",
+    "more.signOut": "साइन आउट",
+    "more.signOutConfirmTitle": "साइन आउट करें?",
+    "more.signOutConfirmBody": "आप कभी भी OTP से वापस साइन इन कर सकते हैं.",
+    "more.signOutCancel": "रद्द करें",
+    "more.tracking.title": "ट्रैकिंग",
+    "more.tracking.subtitle": "वर्कआउट, वजन और आदतें लॉग करें.",
+    "more.shop.title": "शॉप",
+    "more.shop.subtitle": "जिम के सामान का ऑर्डर डेस्क पर लें.",
+    "more.inbox.title": "इनबॉक्स",
+    "more.inbox.subtitle": "पेमेंट, प्लान और जिम अपडेट.",
+    "more.assistant.title": "प्लान असिस्टेंट",
+    "more.assistant.subtitle": "अपनी ट्रेनिंग और प्लान के बारे में पूछें.",
+    "more.profile.title": "प्रोफाइल",
+    "more.profile.subtitle": "मेम्बरशिप और व्यक्तिगत जानकारी.",
+    "more.settings.title": "सेटिंग्स",
+    "more.settings.subtitle": "भाषा, रोल, प्राइवेसी और अकाउंट.",
+    "more.fallbackName": "मेंबर",
   },
 };
 

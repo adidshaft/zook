@@ -42,7 +42,13 @@ import {
   SubscriptionStatus,
 } from "@prisma/client";
 
-if (process.env.APP_ENV?.trim().toLowerCase() === "production") {
+const seedMode = process.env.ZOOK_SEED_MODE?.trim().toLowerCase();
+const isProductionDemoSeed =
+  process.env.APP_ENV?.trim().toLowerCase() === "production" &&
+  seedMode === "production-demo" &&
+  process.env.ZOOK_ALLOW_PRODUCTION_DEMO_SEED?.trim().toLowerCase() === "true";
+
+if (process.env.APP_ENV?.trim().toLowerCase() === "production" && !isProductionDemoSeed) {
   throw new Error("Refusing to run Prisma seed when APP_ENV=production.");
 }
 
@@ -94,7 +100,184 @@ const trainerPermissions = [
   Permission.NOTIFICATION_SEND_PLAN,
 ];
 
+const seedUserEmails = [
+  "platform@zook.local",
+  "owner@zook.local",
+  "admin@zook.local",
+  "reception@zook.local",
+  "trainer@zook.local",
+  "member@zook.local",
+  "minor@zook.local",
+];
+
+const seedUserPhones = [
+  "+919000000001",
+  "+919988777665",
+  "+919700000002",
+  "+919765432109",
+  "+919123456780",
+  "+919876543210",
+  "+919000012345",
+];
+
+const seedOrgUsernames = ["aarogya-strength", "peaklab"];
+
+async function clearProductionDemoData() {
+  const nonSeedOrgCount = await prisma.organization.count({
+    where: { username: { notIn: seedOrgUsernames } },
+  });
+  if (nonSeedOrgCount > 0) {
+    throw new Error(
+      "Refusing production demo seed because non-demo organizations already exist. Use a staging database or write a scoped migration.",
+    );
+  }
+
+  const seedOrgs = await prisma.organization.findMany({
+    where: { username: { in: seedOrgUsernames } },
+    select: { id: true },
+  });
+  const seedOrgIds = seedOrgs.map((org) => org.id);
+
+  const seedUsers = await prisma.user.findMany({
+    where: {
+      OR: [
+        { email: { in: seedUserEmails } },
+        { phone: { in: seedUserPhones } },
+        { email: { endsWith: "@zook.local" } },
+      ],
+    },
+    select: { id: true },
+  });
+  const seedUserIds = seedUsers.map((user) => user.id);
+  const orgScope = seedOrgIds.length > 0 ? { orgId: { in: seedOrgIds } } : { orgId: "__no_seed_org__" };
+  const userScope = seedUserIds.length > 0 ? { userId: { in: seedUserIds } } : { userId: "__no_seed_user__" };
+  const seedHabits = await prisma.memberHabit.findMany({
+    where: { OR: [{ organizationId: { in: seedOrgIds } }, { userId: { in: seedUserIds } }] },
+    select: { id: true },
+  });
+  const seedHabitIds = seedHabits.map((habit) => habit.id);
+  const seedWorkouts = await prisma.workoutSession.findMany({
+    where: { OR: [{ organizationId: { in: seedOrgIds } }, { userId: { in: seedUserIds } }] },
+    select: { id: true },
+  });
+  const seedWorkoutIds = seedWorkouts.map((workout) => workout.id);
+  const seedAiConversations = await prisma.aIConversation.findMany({
+    where: { OR: [orgScope, userScope] },
+    select: { id: true },
+  });
+  const seedAiConversationIds = seedAiConversations.map((conversation) => conversation.id);
+  const seedPaymentEvents = await prisma.paymentEvent.findMany({
+    where: { OR: [orgScope, userScope] },
+    select: { id: true },
+  });
+  const seedPaymentEventIds = seedPaymentEvents.map((event) => event.id);
+
+  await prisma.organizationAbuseFlag.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.platformSetting.deleteMany({ where: { key: "global_ai_limits" } });
+  await prisma.incidentLog.deleteMany({ where: orgScope });
+  await prisma.providerHealthCheck.deleteMany({ where: orgScope });
+  await prisma.accountDeletionJob.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.accountDeletionRequest.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.dataExportJob.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.dataExportRequest.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.pushDelivery.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.pushDevice.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.pickupCode.deleteMany({ where: orgScope });
+  await prisma.shopOrderItem.deleteMany({ where: orgScope });
+  await prisma.shopOrder.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.inventoryMovement.deleteMany({ where: orgScope });
+  await prisma.product.deleteMany({ where: orgScope });
+  await prisma.challengeProgress.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.challengeParticipant.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.challenge.deleteMany({ where: orgScope });
+  await prisma.memberHabitLog.deleteMany({ where: { habitId: { in: seedHabitIds } } });
+  await prisma.memberHabit.deleteMany({
+    where: { OR: [{ organizationId: { in: seedOrgIds } }, { userId: { in: seedUserIds } }] },
+  });
+  await prisma.bodyProgressEntry.deleteMany({
+    where: { OR: [{ organizationId: { in: seedOrgIds } }, { userId: { in: seedUserIds } }] },
+  });
+  await prisma.workoutExerciseEntry.deleteMany({ where: { workoutSessionId: { in: seedWorkoutIds } } });
+  await prisma.workoutSession.deleteMany({
+    where: { OR: [{ organizationId: { in: seedOrgIds } }, { userId: { in: seedUserIds } }] },
+  });
+  await prisma.userBadge.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.badge.deleteMany({ where: { code: { in: ["FIRST_CHECKIN", "SEVEN_DAY_STREAK", "TWELVE_VISITS", "PLAN_FINISHER"] } } });
+  await prisma.habitCompletion.deleteMany({ where: userScope });
+  await prisma.habitChecklist.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.userGoal.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.userNotificationPreference.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.notificationTemplate.deleteMany({ where: orgScope });
+  await prisma.notificationRecipient.deleteMany({ where: userScope });
+  await prisma.notification.deleteMany({ where: orgScope });
+  await prisma.aIQuota.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.aIUsageLog.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.aIMessage.deleteMany({ where: { conversationId: { in: seedAiConversationIds } } });
+  await prisma.aIConversation.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.resourceLibraryItem.deleteMany({ where: orgScope });
+  await prisma.planProgress.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.planAssignment.deleteMany({ where: { OR: [orgScope, { assignedToUserId: { in: seedUserIds } }] } });
+  await prisma.planVersion.deleteMany({ where: orgScope });
+  await prisma.planContent.deleteMany({ where: orgScope });
+  await prisma.personalTrainingSessionLog.deleteMany({ where: { OR: [orgScope, { memberUserId: { in: seedUserIds } }, { trainerUserId: { in: seedUserIds } }] } });
+  await prisma.personalTrainingSubscription.deleteMany({ where: { OR: [orgScope, { memberUserId: { in: seedUserIds } }, { trainerUserId: { in: seedUserIds } }] } });
+  await prisma.personalTrainingPlan.deleteMany({ where: { OR: [orgScope, { trainerUserId: { in: seedUserIds } }] } });
+  await prisma.trainerAssignment.deleteMany({ where: { OR: [orgScope, { memberUserId: { in: seedUserIds } }, { trainerUserId: { in: seedUserIds } }] } });
+  await prisma.trainerProfile.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.attendanceOverride.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.attendanceRecord.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.attendanceQrToken.deleteMany({ where: orgScope });
+  await prisma.referralRedemption.deleteMany({ where: { OR: [orgScope, { referredUserId: { in: seedUserIds } }] } });
+  await prisma.referralCode.deleteMany({ where: { OR: [orgScope, { referrerUserId: { in: seedUserIds } }] } });
+  await prisma.couponRedemption.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.coupon.deleteMany({ where: orgScope });
+  await prisma.manualPaymentAdjustment.deleteMany({ where: orgScope });
+  await prisma.invoice.deleteMany({ where: orgScope });
+  await prisma.subscriptionReminder.deleteMany({ where: orgScope });
+  await prisma.paymentWebhookAttempt.deleteMany({ where: { paymentEventId: { in: seedPaymentEventIds } } });
+  await prisma.payment.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.paymentEvent.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.paymentSession.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.membershipJoinRequest.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.membershipUsage.deleteMany({ where: orgScope });
+  await prisma.memberSubscription.deleteMany({ where: { OR: [orgScope, { memberUserId: { in: seedUserIds } }] } });
+  await prisma.membershipPlan.deleteMany({ where: orgScope });
+  await prisma.consentRecord.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.guardianConsentChallenge.deleteMany({ where: { minorUserId: { in: seedUserIds } } });
+  await prisma.guardianConsent.deleteMany({ where: { minorUserId: { in: seedUserIds } } });
+  await prisma.memberProfile.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.organizationSetting.deleteMany({ where: orgScope });
+  await prisma.saaSSubscription.deleteMany({ where: orgScope });
+  await prisma.staffInvitation.deleteMany({ where: orgScope });
+  await prisma.organizationRolePermission.deleteMany({ where: orgScope });
+  await prisma.organizationRoleAssignment.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.organizationUser.deleteMany({ where: { OR: [orgScope, userScope] } });
+  await prisma.branch.deleteMany({ where: orgScope });
+  await prisma.organizationUsernameHistory.deleteMany({ where: { orgId: { in: seedOrgIds } } });
+  await prisma.organization.deleteMany({ where: { id: { in: seedOrgIds } } });
+  await prisma.auditLog.deleteMany({ where: { OR: [{ orgId: { in: seedOrgIds } }, { actorUserId: { in: seedUserIds } }] } });
+  await prisma.fileAsset.deleteMany({ where: { OR: [orgScope, { ownerUserId: { in: seedUserIds } }] } });
+  await prisma.requestIdempotency.deleteMany({ where: { userId: { in: seedUserIds } } });
+  await prisma.authIdentity.deleteMany({ where: { userId: { in: seedUserIds } } });
+  await prisma.otpChallenge.deleteMany({
+    where: {
+      OR: [
+        { email: { in: [...seedUserEmails, "guardian@zook.local"] } },
+        { identifier: { in: [...seedUserEmails, "guardian@zook.local"] } },
+        { phone: { in: seedUserPhones } },
+      ],
+    },
+  });
+  await prisma.userSession.deleteMany({ where: { userId: { in: seedUserIds } } });
+  await prisma.user.deleteMany({ where: { id: { in: seedUserIds } } });
+}
+
 async function clear() {
+  if (isProductionDemoSeed) {
+    await clearProductionDemoData();
+    return;
+  }
+
   await prisma.organizationAbuseFlag.deleteMany();
   await prisma.platformSetting.deleteMany();
   await prisma.incidentLog.deleteMany();
@@ -220,14 +403,15 @@ async function main() {
   const member = must(users[5], "member user");
   const minor = must(users[6], "minor user");
 
-  await prisma.otpChallenge.create({
-    data: {
-      email: "member@zook.local",
-      identifier: "member@zook.local",
+  await prisma.otpChallenge.createMany({
+    data: seedUserEmails.map((email) => ({
+      email,
+      identifier: email,
       channel: "email",
       codeHash: hash("000000"),
-      expiresAt: days(1),
-    },
+      purpose: "login",
+      expiresAt: days(7),
+    })),
   });
 
   const aarogyaStrength = await prisma.organization.create({
@@ -248,7 +432,7 @@ async function main() {
       visibility: GymVisibility.PUBLIC,
       joinMode: GymJoinMode.OPEN_JOIN,
       trialStartAt: new Date(),
-      trialEndAt: days(30),
+      trialEndAt: days(60),
       createdByUserId: owner.id,
       settings: { allowReferrals: true, broadcastApprovalRequired: true },
     },
@@ -272,7 +456,7 @@ async function main() {
       visibility: GymVisibility.PUBLIC,
       joinMode: GymJoinMode.APPROVAL_REQUIRED,
       trialStartAt: new Date(),
-      trialEndAt: days(30),
+      trialEndAt: days(60),
       createdByUserId: owner.id,
     },
   });

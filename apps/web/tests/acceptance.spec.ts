@@ -1249,9 +1249,40 @@ test("member privacy export and deletion requests create jobs and audit trail", 
 
 test("minor guardian web consent flow unblocks membership checkout", async ({ page }) => {
   requireDb();
+  const aarogyaStrength = await seedAndGetOrg({ username: "aarogya-strength" });
+  const minor = await prisma.user.findUniqueOrThrow({ where: { email: "minor@zook.local" } });
+  const staleSubscriptions = await prisma.memberSubscription.findMany({
+    where: { orgId: aarogyaStrength.id, memberUserId: minor.id },
+    select: { id: true },
+  });
+  const staleSubscriptionIds = staleSubscriptions.map((subscription) => subscription.id);
+  await prisma.$transaction([
+    prisma.membershipUsage.deleteMany({ where: { subscriptionId: { in: staleSubscriptionIds } } }),
+    prisma.subscriptionReminder.deleteMany({
+      where: { subscriptionId: { in: staleSubscriptionIds } },
+    }),
+    prisma.attendanceRecord.deleteMany({
+      where: { orgId: aarogyaStrength.id, userId: minor.id },
+    }),
+    prisma.memberSubscription.deleteMany({
+      where: { orgId: aarogyaStrength.id, memberUserId: minor.id },
+    }),
+    prisma.payment.deleteMany({
+      where: { orgId: aarogyaStrength.id, userId: minor.id, purpose: "MEMBERSHIP" },
+    }),
+    prisma.paymentSession.deleteMany({
+      where: { orgId: aarogyaStrength.id, userId: minor.id, purpose: "MEMBERSHIP" },
+    }),
+    prisma.membershipJoinRequest.deleteMany({
+      where: { orgId: aarogyaStrength.id, userId: minor.id },
+    }),
+    prisma.guardianConsentChallenge.deleteMany({ where: { minorUserId: minor.id } }),
+    prisma.guardianConsent.deleteMany({ where: { minorUserId: minor.id } }),
+    prisma.user.update({ where: { id: minor.id }, data: { guardianPending: true } }),
+  ]);
+
   await loginWithOtp(page, "minor@zook.local");
 
-  const aarogyaStrength = await seedAndGetOrg({ username: "aarogya-strength" });
   const publicGymPayload = await expectApiOk<{
     org: { id: string };
     plans: Array<{ id: string }>;
@@ -1262,13 +1293,19 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
   const blockedResponse = await page.request.post(`/api/orgs/${aarogyaStrength.id}/subscriptions`, {
     data: { planId },
   });
-  test.skip(
-    blockedResponse.status() === 409,
-    "Seeded minor already has a membership in progress; reset the DB to exercise guardian blocking.",
-  );
   expect(blockedResponse.status()).toBe(403);
   expect(await blockedResponse.text()).toContain("Guardian consent");
 
+  await expectApiOk(
+    await page.request.post("/api/me/guardian-consent/request", {
+      data: {
+        guardianName: "Zook Test Guardian",
+        guardianEmail: "guardian@zook.local",
+        guardianPhone: "+919999999999",
+        relationship: "parent",
+      },
+    }),
+  );
   const consentPayload = await expectApiOk<{
     challenges: Array<{ id: string; status: string }>;
   }>(await page.request.get("/api/me/guardian-consent"));

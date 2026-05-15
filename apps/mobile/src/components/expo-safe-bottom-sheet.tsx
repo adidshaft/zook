@@ -1,14 +1,17 @@
 import { forwardRef, useImperativeHandle, useState, type ReactNode } from "react";
 import {
   Modal,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
   type ScrollViewProps,
   type ViewProps,
+  type DimensionValue,
   type ViewStyle,
 } from "react-native";
+import { colors } from "@/lib/theme";
 
 export type BottomSheetBackdropProps = ViewProps & {
   appearsOnIndex?: number;
@@ -44,10 +47,21 @@ export const BottomSheetScrollView = ScrollView;
 
 export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalProps>(
   function ExpoSafeBottomSheetModal(
-    { children, onDismiss, backgroundStyle, handleIndicatorStyle, maxDynamicContentSize },
+    {
+      children,
+      onDismiss,
+      backgroundStyle,
+      handleIndicatorStyle,
+      maxDynamicContentSize,
+      bottomInset = 0,
+      enablePanDownToClose = false,
+      backdropComponent,
+      snapPoints,
+    },
     ref,
   ) {
     const [visible, setVisible] = useState(false);
+    const sheetHeight = resolveSnapPoint(snapPoints?.[0]);
 
     function close() {
       setVisible(false);
@@ -59,6 +73,16 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
       dismiss: close,
     }));
 
+    const panResponder = PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        enablePanDownToClose && Math.abs(gesture.dy) > 12 && gesture.dy > Math.abs(gesture.dx),
+      onPanResponderRelease: (_, gesture) => {
+        if (enablePanDownToClose && gesture.dy > 72) {
+          close();
+        }
+      },
+    });
+
     return (
       <Modal
         animationType="slide"
@@ -68,11 +92,18 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
         onDismiss={onDismiss}
       >
         <View style={styles.root}>
-          <Pressable accessibilityRole="button" style={styles.backdrop} onPress={close} />
+          {backdropComponent ? (
+            backdropComponent({ style: styles.backdrop, onTouchEnd: close })
+          ) : (
+            <Pressable accessibilityRole="button" style={styles.backdrop} onPress={close} />
+          )}
           <View
+            {...panResponder.panHandlers}
             style={[
               styles.sheet,
+              sheetHeight ? { height: sheetHeight } : null,
               maxDynamicContentSize ? { maxHeight: maxDynamicContentSize } : null,
+              bottomInset ? { marginBottom: bottomInset } : null,
               backgroundStyle,
             ]}
           >
@@ -84,6 +115,16 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
     );
   },
 );
+
+function resolveSnapPoint(snapPoint?: number | string): DimensionValue | undefined {
+  if (typeof snapPoint === "number") {
+    return snapPoint;
+  }
+  if (typeof snapPoint === "string" && snapPoint.trim().endsWith("%")) {
+    return snapPoint as DimensionValue;
+  }
+  return undefined;
+}
 
 export function createBottomSheetScrollProps(props: ScrollViewProps) {
   return props;
@@ -102,7 +143,7 @@ const styles = StyleSheet.create({
     maxHeight: "86%",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: "#111510",
+    backgroundColor: colors.bgElevated,
     paddingTop: 10,
   },
   handle: {

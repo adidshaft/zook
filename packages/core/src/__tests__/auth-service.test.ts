@@ -5,7 +5,14 @@ import { AuthService, type AuthRepository, type OtpChallengeRecord } from "../se
 
 class InMemoryAuthRepo implements AuthRepository {
   challenges: OtpChallengeRecord[] = [];
-  sessions: Array<{ userId: string; tokenHash: string; expiresAt: Date; revokedAt?: Date }> = [];
+  sessions: Array<{
+    userId: string;
+    tokenHash: string;
+    refreshTokenHash?: string;
+    expiresAt: Date;
+    refreshExpiresAt?: Date;
+    revokedAt?: Date;
+  }> = [];
 
   async createOtp(
     input: Omit<OtpChallengeRecord, "id" | "attempts" | "resendCount" | "ipFailureCount">,
@@ -77,7 +84,9 @@ class InMemoryAuthRepo implements AuthRepository {
   async createSession(input: {
     userId: string;
     tokenHash: string;
+    refreshTokenHash?: string;
     expiresAt: Date;
+    refreshExpiresAt?: Date;
   }): Promise<void> {
     this.sessions.push({ ...input });
   }

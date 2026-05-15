@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
 import { StartGymPanel } from "@/components/start-gym-panel";
 import { ZookLogo } from "@/components/zook-logo";
 import { sessionCookieName } from "@/server/context";
@@ -27,12 +28,7 @@ export default async function StartGymPage() {
             >
               Dashboard
             </Link>
-            <Link
-              href="/login"
-              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
-            >
-              Switch account
-            </Link>
+            <DashboardSignOutButton compact label="Switch account" />
           </div>
         </header>
         <StartGymPanel ownerEmail={session.user.email} />

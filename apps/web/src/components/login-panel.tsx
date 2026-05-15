@@ -2,12 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { motion, type Variants } from "framer-motion";
 import { ArrowRight, Mail } from "lucide-react";
 import { ApiError, parseApiResponse } from "@zook/core";
 import { toast } from "sonner";
 import { ZookButton } from "./zook-button";
 import { resolvePostLoginPath } from "@/lib/auth-destinations";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 25 } },
+};
 
 declare global {
   interface Window {
@@ -39,6 +50,9 @@ declare global {
 
 const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const isDev = process.env.NODE_ENV === "development";
+const googleOAuthStateKey = "zook.googleOAuthState";
+const googleOAuthRedirectKey = "zook.googleOAuthRedirect";
+
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
@@ -67,6 +81,12 @@ function sanitizeOtpCode(value: string) {
 
 function isValidEmail(value: string) {
   return /^\S+@\S+\.\S+$/.test(value.trim());
+}
+
+function randomOAuthValue() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function rateLimitMessage(response: Response, locale: PublicLocale) {
@@ -100,6 +120,39 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
 
   useEffect(() => {
     setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!window.location.hash.includes("id_token=") && !window.location.hash.includes("error=")) {
+      return;
+    }
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const idToken = hashParams.get("id_token");
+    const oauthError = hashParams.get("error");
+    const returnedState = hashParams.get("state");
+    const expectedState = window.sessionStorage.getItem(googleOAuthStateKey);
+    const redirect = window.sessionStorage.getItem(googleOAuthRedirectKey);
+    window.sessionStorage.removeItem(googleOAuthStateKey);
+    window.sessionStorage.removeItem(googleOAuthRedirectKey);
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    if (oauthError) {
+      const nextMessage =
+        oauthError === "access_denied"
+          ? "Google sign-in was cancelled."
+          : "Google sign-in could not be completed.";
+      setMessage(nextMessage);
+      return;
+    }
+    if (!idToken) {
+      return;
+    }
+    if (!expectedState || returnedState !== expectedState) {
+      const nextMessage = "Google sign-in could not be verified. Please try again.";
+      setMessage(nextMessage);
+      toast.error(nextMessage);
+      return;
+    }
+    void completeSsoSignIn("google", { idToken }, redirect);
   }, []);
 
   useEffect(() => {
@@ -210,6 +263,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
   async function completeSsoSignIn(
     provider: "google" | "apple",
     body: { idToken: string } | { identityToken: string },
+    redirectOverride?: string | null,
   ) {
     setSsoSubmitting(provider);
     try {
@@ -221,7 +275,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
       const payload = await parseApiResponse<{
         session?: Parameters<typeof resolvePostLoginPath>[0];
       }>(response);
-      const redirect = searchParams.get("redirect");
+      const redirect = redirectOverride ?? searchParams.get("redirect");
       const safeRedirect =
         redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
       toast.success(t("verifyContinue"));
@@ -243,23 +297,24 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
     }
     setSsoSubmitting("google");
     try {
-      await loadScript("https://accounts.google.com/gsi/client");
-      if (!window.google?.accounts?.id) {
-        throw new Error("Google sign-in is unavailable right now.");
+      const state = randomOAuthValue();
+      const nonce = randomOAuthValue();
+      const redirect = searchParams.get("redirect");
+      if (redirect?.startsWith("/") && !redirect.startsWith("//")) {
+        window.sessionStorage.setItem(googleOAuthRedirectKey, redirect);
+      } else {
+        window.sessionStorage.removeItem(googleOAuthRedirectKey);
       }
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        ux_mode: "popup",
-        callback: (response) => {
-          if (!response.credential) {
-            setSsoSubmitting(null);
-            setMessage("Google did not return a sign-in token. Try again.");
-            return;
-          }
-          void completeSsoSignIn("google", { idToken: response.credential });
-        },
-      });
-      window.google.accounts.id.prompt();
+      window.sessionStorage.setItem(googleOAuthStateKey, state);
+      const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+      authUrl.searchParams.set("client_id", clientId);
+      authUrl.searchParams.set("redirect_uri", `${window.location.origin}/login`);
+      authUrl.searchParams.set("response_type", "id_token");
+      authUrl.searchParams.set("scope", "openid email profile");
+      authUrl.searchParams.set("prompt", "select_account");
+      authUrl.searchParams.set("state", state);
+      authUrl.searchParams.set("nonce", nonce);
+      window.location.href = authUrl.toString();
     } catch (error) {
       const nextMessage = error instanceof Error ? error.message : "Google sign-in failed.";
       setMessage(nextMessage);
@@ -313,15 +368,31 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
   }
 
   return (
-    <div className="glass-panel w-full max-w-md rounded-[28px] p-6">
-      <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-lime-300 text-black">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="glass-panel w-full max-w-md rounded-[28px] p-6"
+    >
+      <motion.div
+        variants={itemVariants}
+        className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-lime-300 text-black"
+      >
         <Mail size={22} />
-      </div>
-      <h1 className="text-3xl font-semibold tracking-tight">{t("signInTitle")}</h1>
-      <p className="mt-2 text-sm leading-6 text-white/55" role="alert" aria-live="polite">
+      </motion.div>
+      <motion.h1 variants={itemVariants} className="text-3xl font-semibold tracking-tight">
+        {t("signInTitle")}
+      </motion.h1>
+      <motion.p
+        variants={itemVariants}
+        className="mt-2 text-sm leading-6 text-white/55"
+        role="alert"
+        aria-live="polite"
+      >
         {message}
-      </p>
-      <form
+      </motion.p>
+      <motion.form
+        variants={itemVariants}
         className="mt-6 grid gap-3"
         onSubmit={(event) => {
           event.preventDefault();
@@ -410,9 +481,9 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
                 ? t("sendOtp")
                 : t("verifyContinue")}
         </ZookButton>
-      </form>
+      </motion.form>
       {stage === "identifier" ? (
-        <div className="mt-5 grid gap-3">
+        <motion.div variants={itemVariants} className="mt-5 grid gap-3">
           <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.18em] text-white/35">
             <span className="h-px flex-1 bg-white/10" />
             <span>or</span>
@@ -440,10 +511,10 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
               Google
             </ZookButton>
           </div>
-        </div>
+        </motion.div>
       ) : null}
       {stage === "otp" ? (
-        <div className="mt-3">
+        <motion.div variants={itemVariants} className="mt-3">
           <div className="grid gap-2 sm:grid-cols-2">
             <ZookButton
               type="button"
@@ -469,8 +540,8 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
               {t("changeSignIn")}
             </ZookButton>
           </div>
-        </div>
+        </motion.div>
       ) : null}
-    </div>
+    </motion.div>
   );
 }

@@ -1,14 +1,18 @@
+"use client";
+
 import clsx from "clsx";
+import { motion, type HTMLMotionProps } from "framer-motion";
 
 export function GlassCard({
   children,
   className,
   variant = "default",
+  ...props
 }: {
   children: React.ReactNode;
   className?: string | undefined;
   variant?: "default" | "strong" | "muted" | "selected" | "success" | "warning" | "danger";
-}) {
+} & HTMLMotionProps<"section">) {
   const variants = {
     default: "zook-glass rounded-[28px] p-5",
     strong:
@@ -23,7 +27,16 @@ export function GlassCard({
     danger:
       "rounded-[28px] border border-[rgba(255,90,61,0.28)] bg-[rgba(255,90,61,0.1)] p-5 shadow-[var(--zook-shadow-glass)] backdrop-blur-2xl",
   };
-  return <section className={clsx(variants[variant], className)}>{children}</section>;
+  return (
+    <motion.section 
+      {...props} 
+      className={clsx(variants[variant], className)}
+      whileHover={props.whileHover ?? { scale: 1.005 }}
+      transition={props.transition ?? { type: "spring", stiffness: 400, damping: 25 }}
+    >
+      {children}
+    </motion.section>
+  );
 }
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue";
@@ -62,18 +75,22 @@ export function Pill({
 export function ProductPanel({
   children,
   className,
+  ...props
 }: {
   children: React.ReactNode;
   className?: string | undefined;
-}) {
+} & HTMLMotionProps<"section">) {
   return (
-    <section
+    <motion.section
+      {...props}
       className={clsx(
         "zook-glass-strong relative overflow-hidden rounded-[32px] p-5 before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-lime-200/35 before:to-transparent md:p-6",
         className,
       )}
+      whileHover={props.whileHover ?? { scale: 1.005 }}
+      transition={props.transition ?? { type: "spring", stiffness: 400, damping: 25 }}
     >
       {children}
-    </section>
+    </motion.section>
   );
 }

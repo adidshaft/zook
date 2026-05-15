@@ -222,6 +222,20 @@ export function GymDetailSkeleton() {
   );
 }
 
+export function SettingsSkeleton() {
+  return (
+    <View style={styles.stack}>
+      {[0, 1, 2].map((item) => (
+        <GlassCard key={item} variant="compact" contentStyle={styles.listCard}>
+          <RowSkeleton iconSize={34} action="chip" surface={false} />
+          <View style={styles.divider} />
+          <RowSkeleton iconSize={34} action="chip" surface={false} />
+        </GlassCard>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   stack: {
     gap: 10,

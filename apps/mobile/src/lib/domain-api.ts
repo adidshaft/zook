@@ -335,6 +335,13 @@ export const plansApi = {
       body: options.body,
     });
   },
+  delete<T = unknown>(options: RequestOptions & { planId: string }) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/plans/${options.planId}`, {
+      method: "DELETE",
+      token: options.token,
+      orgId: options.orgId,
+    });
+  },
   assign(
     options: RequestOptions & { planId: string; assignedToUserId?: string; audience?: string },
   ) {
@@ -562,6 +569,14 @@ export const ownerApi = {
         orgId: options.orgId,
       },
     );
+  },
+  approveJoinRequestsBatch<T = unknown>(options: RequestOptions & { joinRequestIds: string[] }) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/join-requests/approve-batch`, {
+      method: "POST",
+      token: options.token,
+      orgId: options.orgId,
+      body: { ids: options.joinRequestIds },
+    });
   },
 };
 

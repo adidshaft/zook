@@ -24,13 +24,14 @@ import {
   MetricTile,
   Pill,
   PrimaryButton,
+  QueryErrorState,
   SecondaryButton,
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
 import { OwnerDashboardSkeleton, TrainerClientsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { apiClient } from "@/lib/domain-api";
+import { apiClient, ownerApi } from "@/lib/domain-api";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
 import {
   useApproveAttendance,
@@ -135,10 +136,7 @@ export default function Owner() {
   const todayCheckIns = dashboard?.summary?.todayAttendance ?? 0;
   const expiringSoon = dashboard?.summary?.expiringMemberships ?? 0;
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
-  const revenuePaise =
-    dashboard?.summary?.revenuePaise ??
-    payments.reduce((sum, payment) => sum + payment.amountPaise, 0) +
-      orders.reduce((sum, order) => sum + order.totalPaise, 0);
+  const revenuePaise = dashboard?.summary?.revenuePaise ?? 0;
   const branchName =
     dashboard?.branchScope?.selectedBranch?.name ??
     dashboard?.branchScope?.defaultBranch?.name ??
@@ -306,9 +304,34 @@ export default function Owner() {
   }
 
   async function approveAllJoinRequests() {
-    for (const request of joinRequests) {
-      if (approveJoinRequestMutation.isPending) break;
-      await approveJoinRequest(request.id);
+    if (!token || !activeOrgId || !joinRequests.length) {
+      return;
+    }
+    try {
+      const result = await ownerApi.approveJoinRequestsBatch<{
+        approved?: string[];
+        failed?: Array<{ id: string; message?: string }>;
+      }>({
+        token,
+        orgId: activeOrgId,
+        joinRequestIds: joinRequests.map((request) => request.id),
+      });
+      const approved = result.approved?.length ?? joinRequests.length;
+      const failed = result.failed?.length ?? 0;
+      const message = failed
+        ? `Approved ${approved} of ${joinRequests.length}. ${failed} failed — tap retry.`
+        : `Approved ${approved} join ${approved === 1 ? "request" : "requests"}.`;
+      setActionStatus(message);
+      showToast({ tone: failed ? "amber" : "success", haptic: failed ? "warning" : "success", message });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "join-requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "members"] }),
+      ]);
+    } catch (error) {
+      const message = getApiErrorMessage(error) || "Could not approve join requests.";
+      setActionStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -425,7 +448,16 @@ export default function Owner() {
 
         {view === "command" && dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
 
-        {view === "command" && !dashboardQuery.isLoading ? (
+        {view === "command" && dashboardQuery.isError ? (
+          <GlassCard variant="compact">
+            <QueryErrorState
+              error={dashboardQuery.error}
+              onRetry={() => void dashboardQuery.refetch()}
+            />
+          </GlassCard>
+        ) : null}
+
+        {view === "command" && !dashboardQuery.isLoading && !dashboardQuery.isError ? (
           <>
             <View style={styles.metricGrid}>
               <Pressable
@@ -568,16 +600,23 @@ export default function Owner() {
             <View style={styles.membersStack}>
               {membersQuery.isLoading ? (
                 <TrainerClientsSkeleton />
+              ) : membersQuery.isError ? (
+                <GlassCard variant="compact">
+                  <QueryErrorState
+                    error={membersQuery.error}
+                    onRetry={() => void membersQuery.refetch()}
+                  />
+                </GlassCard>
               ) : null}
 
-              {!membersQuery.isLoading && !filteredMembers.length ? (
+              {!membersQuery.isLoading && !membersQuery.isError && !filteredMembers.length ? (
                 <GlassCard variant="compact" contentStyle={styles.membersStateContent}>
                   <IconBubble icon="people-outline" tone="neutral" size={40} />
                   <Text style={styles.membersStateText}>No members found</Text>
                 </GlassCard>
               ) : null}
 
-              {!membersQuery.isLoading
+              {!membersQuery.isLoading && !membersQuery.isError
                 ? filteredMembers.map((member) => {
                     const name = member.user?.name ?? "Member";
                     const email = member.user?.email ?? "No email";
@@ -659,7 +698,17 @@ export default function Owner() {
               />
             </View>
 
-            {pendingApprovals === 0 ? (
+            {joinRequestsQuery.isError || attentionQuery.isError ? (
+              <GlassCard variant="compact">
+                <QueryErrorState
+                  error={joinRequestsQuery.error ?? attentionQuery.error}
+                  onRetry={() => {
+                    void joinRequestsQuery.refetch();
+                    void attentionQuery.refetch();
+                  }}
+                />
+              </GlassCard>
+            ) : pendingApprovals === 0 ? (
               <GlassCard variant="compact">
                 <EmptyState
                   title="All caught up"
@@ -783,7 +832,15 @@ export default function Owner() {
             </View>
             <SectionHeader title="Recent transactions" subtitle="Today" />
             <GlassCard contentStyle={styles.stack}>
-              {payments.length ? (
+              {paymentsQuery.isError || ordersQuery.isError ? (
+                <QueryErrorState
+                  error={paymentsQuery.error ?? ordersQuery.error}
+                  onRetry={() => {
+                    void paymentsQuery.refetch();
+                    void ordersQuery.refetch();
+                  }}
+                />
+              ) : payments.length ? (
                 payments.map((payment) => (
                   <ListRow
                     key={payment.id}
@@ -806,7 +863,7 @@ export default function Owner() {
                   body="Desk collections and payment confirmations will appear here."
                 />
               )}
-              {orders.map((order) => (
+              {!paymentsQuery.isError && !ordersQuery.isError ? orders.map((order) => (
                 <ListRow
                   key={order.id}
                   title={order.user?.name ?? "Shop pickup order"}
@@ -814,7 +871,7 @@ export default function Owner() {
                   leading={<IconBubble icon="bag-outline" tone="lime" />}
                   trailing={<Text style={styles.rowAmount}>{formatInr(order.totalPaise)}</Text>}
                 />
-              ))}
+              )) : null}
             </GlassCard>
           </>
         ) : null}
@@ -839,7 +896,12 @@ export default function Owner() {
             </View>
             <SectionHeader title="Products to reorder" subtitle="Below threshold" />
             <GlassCard contentStyle={styles.stack}>
-              {lowStock.length ? (
+              {dashboardQuery.isError ? (
+                <QueryErrorState
+                  error={dashboardQuery.error}
+                  onRetry={() => void dashboardQuery.refetch()}
+                />
+              ) : lowStock.length ? (
                 lowStock.map((product) => (
                   <ListRow
                     key={product.id}
@@ -864,7 +926,12 @@ export default function Owner() {
             </GlassCard>
             <SectionHeader title="Orders ready for pickup" />
             <GlassCard contentStyle={styles.stack}>
-              {orders.length ? (
+              {ordersQuery.isError ? (
+                <QueryErrorState
+                  error={ordersQuery.error}
+                  onRetry={() => void ordersQuery.refetch()}
+                />
+              ) : orders.length ? (
                 orders.map((order) => (
                   <ListRow
                     key={order.id}

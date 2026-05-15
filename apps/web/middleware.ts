@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const sessionCookieName = "zook_session";
-const canonicalHost = "zookfit.in";
+const canonicalHost = "www.zookfit.in";
 const canonicalRedirectHosts = new Set([
+  "zookfit.in",
   "app.zookfit.in",
   "dashboard.zookfit.in",
-  "www.zookfit.in",
   "app.zook.kyokasuigetsu.xyz",
   "zook-gym-app.vercel.app",
 ]);
@@ -25,6 +25,8 @@ function buildContentSecurityPolicy(nonce: string) {
   const scriptSources = [
     "'self'",
     `'nonce-${nonce}'`,
+    "https://accounts.google.com",
+    "https://appleid.cdn-apple.com",
     "https://maps.googleapis.com",
     "https://maps.gstatic.com",
     "https://checkout.razorpay.com",
@@ -72,6 +74,19 @@ function buildContentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
+function matchesPathPrefix(pathname: string, prefix: string) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+function isPrivatePath(pathname: string) {
+  if (matchesPathPrefix(pathname, "/staff/invite")) {
+    return false;
+  }
+  return ["/dashboard", "/desk", "/coach", "/me", "/platform", "/staff", "/start-gym"].some(
+    (prefix) => matchesPathPrefix(pathname, prefix),
+  );
+}
+
 export function middleware(request: NextRequest) {
   const host = request.nextUrl.hostname.toLowerCase();
   if (canonicalRedirectHosts.has(host)) {
@@ -87,13 +102,9 @@ export function middleware(request: NextRequest) {
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
   const responseInit = { request: { headers: requestHeaders } };
-  const privatePathPrefixes = ["/dashboard", "/desk", "/coach", "/staff", "/me", "/platform"];
   let response: NextResponse;
   const hasSession = Boolean(request.cookies.get(sessionCookieName)?.value);
-  const isPrivatePath = privatePathPrefixes.some((prefix) =>
-    request.nextUrl.pathname.startsWith(prefix),
-  );
-  if (isPrivatePath && !hasSession) {
+  if (isPrivatePath(request.nextUrl.pathname) && !hasSession) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
     response = NextResponse.redirect(loginUrl);

@@ -1,34 +1,22 @@
 import * as LocalAuthentication from "expo-local-authentication";
-import { Alert, Platform } from "react-native";
+import { Alert } from "react-native";
 
-function promptForOrgPin(label: string): Promise<boolean> {
+type PrivilegedPinPrompt = (label: string) => Promise<boolean>;
+
+let privilegedPinPrompt: PrivilegedPinPrompt | null = null;
+
+export function setPrivilegedPinPrompt(prompt: PrivilegedPinPrompt | null) {
+  privilegedPinPrompt = prompt;
+}
+
+async function promptForOrgPin(label: string): Promise<boolean> {
+  if (privilegedPinPrompt) {
+    return privilegedPinPrompt(label);
+  }
   return new Promise((resolve) => {
-    if (Platform.OS !== "ios") {
-      Alert.alert(label, "Org PIN fallback is not available on this device yet.", [
-        { text: "OK", onPress: () => resolve(false) },
-      ]);
-      return;
-    }
-
-    Alert.prompt(
-      label,
-      "Enter the 4-digit org PIN to continue.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => resolve(false),
-        },
-        {
-          text: "Continue",
-          onPress: (value?: string) => resolve(/^\d{4}$/.test(String(value ?? "").trim())),
-        },
-      ],
-      "secure-text",
-      "",
-      "number-pad",
-      { cancelable: true, onDismiss: () => resolve(false) },
-    );
+    Alert.alert(label, "PIN entry is not ready yet. Try again after the app finishes loading.", [
+      { text: "OK", onPress: () => resolve(false) },
+    ]);
   });
 }
 

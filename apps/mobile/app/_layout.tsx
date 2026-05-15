@@ -25,6 +25,7 @@ import { I18nProvider, useI18n } from "@/lib/i18n";
 import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
 import { setApiAuthHandlers } from "@/lib/api";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
+import { PrivilegedPinProvider } from "@/components/privileged-pin-modal";
 import { checkRouteAccess, requiredRolesForPath, routeForRole } from "@/lib/route-guards";
 import { initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
@@ -372,9 +373,9 @@ function LayoutContent() {
       <Stack
         screenOptions={{
           headerShown: false,
-          headerStyle: { backgroundColor: "#070908" },
+          headerStyle: { backgroundColor: colors.bg },
           headerTintColor: "#f4f7ef",
-          contentStyle: { backgroundColor: "#070908" },
+          contentStyle: { backgroundColor: colors.bg },
         }}
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
@@ -485,9 +486,11 @@ export default function Layout() {
             <AuthProvider>
               <BranchSelectionProvider>
                 <BottomNavVisibilityProvider>
-                  <PushNotificationsProvider>
-                    <LayoutContent />
-                  </PushNotificationsProvider>
+                  <PrivilegedPinProvider>
+                    <PushNotificationsProvider>
+                      <LayoutContent />
+                    </PushNotificationsProvider>
+                  </PrivilegedPinProvider>
                 </BottomNavVisibilityProvider>
               </BranchSelectionProvider>
             </AuthProvider>

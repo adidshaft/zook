@@ -1,4 +1,7 @@
+"use client";
+
 import clsx from "clsx";
+import { motion, type Variants } from "framer-motion";
 import { AlertTriangle, Check, Circle, X } from "lucide-react";
 import { GlassCard, Pill, ProductPanel, type PillTone } from "./glass-card";
 import { HelpHint } from "./ui";
@@ -57,6 +60,26 @@ export function toneFromSeverity(value: string | null | undefined): PillTone {
   return "neutral";
 }
 
+export const staggerContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+export const fadeUpVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { type: "spring", stiffness: 400, damping: 30 } 
+  },
+};
+
 export function SectionHeader({
   eyebrow,
   title,
@@ -73,7 +96,8 @@ export function SectionHeader({
   className?: string | undefined;
 }) {
   return (
-    <div
+    <motion.div
+      variants={fadeUpVariants}
       className={clsx("flex flex-col justify-between gap-4 md:flex-row md:items-start", className)}
     >
       <div>
@@ -93,7 +117,7 @@ export function SectionHeader({
         </div>
       </div>
       {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
-    </div>
+    </motion.div>
   );
 }
 
@@ -121,8 +145,14 @@ export function MetricCard({
   };
 
   return (
-    <GlassCard variant="strong" className={clsx("relative overflow-hidden", className)}>
-      <div className={clsx("absolute inset-0 bg-gradient-to-br", accents[tone])} />
+    <motion.div variants={fadeUpVariants}>
+      <GlassCard 
+        variant="strong" 
+        className={clsx("group relative overflow-hidden", className)}
+        whileHover={{ scale: 1.01 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      >
+      <div className={clsx("absolute inset-0 bg-gradient-to-br opacity-70 transition-all duration-300 group-hover:scale-110 group-hover:opacity-100", accents[tone])} />
       <div className="relative">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-white/48">{label}</p>
@@ -132,6 +162,7 @@ export function MetricCard({
         {delta ? <p className="mt-3 text-xs leading-5 text-white/55">{delta}</p> : null}
       </div>
     </GlassCard>
+    </motion.div>
   );
 }
 
@@ -151,7 +182,12 @@ export function DashboardPageShell({
   className?: string | undefined;
 }) {
   return (
-    <ProductPanel className={className}>
+    <ProductPanel 
+      className={className} 
+      variants={staggerContainerVariants} 
+      initial="hidden" 
+      animate="show"
+    >
       <SectionHeader
         {...(eyebrow ? { eyebrow } : {})}
         title={title}
@@ -247,7 +283,7 @@ export function ActionRow({
 export function MiniTrend({
   values = [],
   tone = "lime",
-  label = "No trend data yet",
+  label = "No data yet",
 }: {
   values?: number[];
   tone?: "lime" | "blue" | "amber";
@@ -257,7 +293,7 @@ export function MiniTrend({
     return (
       <div className="flex h-14 w-full items-center gap-3" role="img" aria-label={label}>
         <span className="h-px flex-1 border-t border-dashed border-white/15" />
-        <span className="text-xs text-white/30">No trend data yet</span>
+        <span className="text-xs text-white/30">No data yet</span>
       </div>
     );
   }
@@ -423,7 +459,8 @@ export function DataTable<Row>({
   className?: string | undefined;
 }) {
   return (
-    <div
+    <motion.div
+      variants={fadeUpVariants}
       className={clsx(
         "relative overflow-x-auto rounded-[24px] border border-white/10 bg-black/25",
         className,
@@ -455,7 +492,7 @@ export function DataTable<Row>({
         <tbody className="divide-y divide-white/10">
           {rows.length ? (
             rows.map((row) => (
-              <tr key={rowKey(row)} className="align-top">
+              <tr key={rowKey(row)} className="align-top transition-colors duration-200 hover:bg-white/[0.04]">
                 {columns.map((column) => (
                   <td
                     key={column.id}
@@ -483,7 +520,7 @@ export function DataTable<Row>({
           )}
         </tbody>
       </table>
-    </div>
+    </motion.div>
   );
 }
 

@@ -73,6 +73,15 @@ function pickDefinedEnv(keys: readonly string[], overrides: Record<string, strin
 
 loadOrderedEnvironment();
 
+if (
+  process.env.RUN_DB_WEB_TESTS === "1" &&
+  !process.env.OTP_FIXED_CODE_DEV?.trim() &&
+  process.env.ENV_PROFILE !== "production" &&
+  process.env.APP_ENV !== "production"
+) {
+  process.env.OTP_FIXED_CODE_DEV = "000000";
+}
+
 const webServerUrl = "http://127.0.0.1:3120";
 
 export default defineConfig({

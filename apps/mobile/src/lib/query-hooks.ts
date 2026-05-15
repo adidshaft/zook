@@ -1573,6 +1573,9 @@ export function useCompletePlanAssignment() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "plans"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "plans", input.assignmentId] }),
+        queryClient.invalidateQueries({
+          queryKey: ["me", "plans", input.assignmentId, "exercises"],
+        }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
       ]);
       notifyMutationSuccess("Plan progress saved.");

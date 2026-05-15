@@ -3,8 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, QrCode, ShieldCheck, Star } from "lucide-react";
 import { resolvePlanName } from "@zook/ui";
+import { AccountAwarePublicNav } from "@/components/account-aware-public-nav";
 import { GlassCard, Pill } from "@/components/glass-card";
-import { PublicNav } from "@/components/public-nav";
 import { PublicGymActions } from "@/components/public-gym-actions";
 import { ShareButton } from "@/components/share-button";
 import { formatInr } from "@/lib/format";
@@ -92,9 +92,8 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
         className="min-h-dvh py-1"
       >
         <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
-          <PublicNav
-            loginHref={localizedPath("/login", locale)}
-            loginLabel={t("login")}
+          <AccountAwarePublicNav
+            locale={locale}
             languageHref={localizedPath(`/g/${username}`, nextLocale)}
             languageLabel={t("languageSwitch")}
           />
@@ -164,9 +163,8 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:px-6">
-        <PublicNav
-          loginHref={localizedPath("/login", locale)}
-          loginLabel={t("login")}
+        <AccountAwarePublicNav
+          locale={locale}
           languageHref={localizedPath(`/g/${org.username}`, nextLocale)}
           languageLabel={t("languageSwitch")}
         />

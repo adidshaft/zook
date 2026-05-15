@@ -32,8 +32,8 @@ if (!isExpoGoEnvironment) {
       shouldShowAlert: true,
       shouldShowBanner: true,
       shouldShowList: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
     }),
   });
 }
@@ -236,18 +236,21 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       Notifications.setNotificationChannelAsync("payments", {
         name: "Payments",
         importance: Notifications.AndroidImportance.HIGH,
+        sound: "default",
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#B9F455",
       }),
       Notifications.setNotificationChannelAsync("ops", {
         name: "Operations",
         importance: Notifications.AndroidImportance.HIGH,
+        sound: "default",
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#B9F455",
       }),
       Notifications.setNotificationChannelAsync("reminders", {
         name: "Reminders",
         importance: Notifications.AndroidImportance.DEFAULT,
+        sound: "default",
       }),
       Notifications.setNotificationChannelAsync("marketing", {
         name: "Marketing",
@@ -256,6 +259,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       Notifications.setNotificationChannelAsync("default", {
         name: "Default",
         importance: Notifications.AndroidImportance.DEFAULT,
+        sound: "default",
       }),
     ]);
   }, []);

@@ -29,6 +29,7 @@ import {
   MobileHeader,
   Pill,
   PrimaryButton,
+  QueryErrorState,
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
@@ -288,7 +289,17 @@ export default function GymProfileScreen() {
 
         {gymQuery.isLoading ? <GymDetailSkeleton /> : null}
 
-        {!gymQuery.isLoading && !gym ? (
+        {gymQuery.isError ? (
+          <GlassCard variant="compact">
+            <QueryErrorState
+              error={gymQuery.error}
+              onRetry={() => void gymQuery.refetch()}
+              title="Could not load this gym"
+            />
+          </GlassCard>
+        ) : null}
+
+        {!gymQuery.isLoading && !gymQuery.isError && !gym ? (
           <EmptyState
             title="Gym not found"
             body="This link may be expired or the gym may have moved."

@@ -10,6 +10,7 @@ import {
   ListRow,
   MetricTile,
   MobileHeader,
+  QueryErrorState,
   SectionHeader,
   StatusChip,
   ZookButton,
@@ -209,6 +210,11 @@ export default function Trainer() {
               <View style={styles.stack}>
                 {clientsQuery.isLoading ? (
                   <TrainerClientsSkeleton />
+                ) : clientsQuery.isError ? (
+                  <QueryErrorState
+                    error={clientsQuery.error}
+                    onRetry={() => void clientsQuery.refetch()}
+                  />
                 ) : clients.length ? (
                   clients.map((client) => {
                     const activePlanCount = client.summary?.activePlans ?? 0;
@@ -253,6 +259,11 @@ export default function Trainer() {
               <View style={styles.stack}>
                 {clientsQuery.isLoading ? (
                   <TrainerClientsSkeleton />
+                ) : clientsQuery.isError ? (
+                  <QueryErrorState
+                    error={clientsQuery.error}
+                    onRetry={() => void clientsQuery.refetch()}
+                  />
                 ) : plannedClients.length ? (
                   plannedClients.map((client) => (
                     <GlassCard

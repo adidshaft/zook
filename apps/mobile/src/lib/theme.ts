@@ -2,17 +2,26 @@ const glass = (opacity: number) => `rgba(255,255,255,${opacity})`;
 const lime = (opacity: number) => `rgba(185,244,85,${opacity})`;
 const amber = (opacity: number) => `rgba(242,201,76,${opacity})`;
 const red = (opacity: number) => `rgba(255,90,61,${opacity})`;
+const bgApp = "#070908";
+const bgElevated = "#0B0F0D";
+const textPrimary = "#F4F7EF";
+const textMuted = "#AEB8A8";
+const textSubtle = "#778273";
+const brandLime = "#B9F455";
+const brandLimeSoft = "#D7FF6A";
+const warning = "#F2C94C";
+const danger = "#FF5A3D";
 
 export const colors = {
-  bgApp: "#070908",
-  bgElevated: "#0B0F0D",
-  textPrimary: "#F4F7EF",
-  textMuted: "#AEB8A8",
-  textSubtle: "#778273",
-  brandLime: "#B9F455",
-  brandLimeSoft: "#D7FF6A",
-  warning: "#F2C94C",
-  danger: "#FF5A3D",
+  bgApp,
+  bgElevated,
+  textPrimary,
+  textMuted,
+  textSubtle,
+  brandLime,
+  brandLimeSoft,
+  warning,
+  danger,
   glassFill: glass(0.06),
   glassFillStrong: glass(0.08),
   glassStroke: glass(0.14),
@@ -21,7 +30,7 @@ export const colors = {
 
   // Compatibility aliases used by existing screens.
   /** @deprecated Prefer bgApp. */
-  bg: "#070908",
+  bg: bgApp,
   /** @deprecated Prefer bgElevated/glassFill. */
   surfaceSolid: "#0C100E",
   surfaceRaised: "#111610",
@@ -33,19 +42,19 @@ export const colors = {
   borderStrong: glass(0.2),
   limeBorder: lime(0.32),
   /** @deprecated Prefer textPrimary. */
-  text: "#F4F7EF",
+  text: textPrimary,
   /** @deprecated Prefer textMuted. */
-  muted: "#AEB8A8",
+  muted: textMuted,
   /** @deprecated Prefer textSubtle. */
-  subtle: "#778273",
+  subtle: textSubtle,
   paper: "#F2F5EB",
   ink: "#11150F",
   inkSoft: "#6F7769",
   /** @deprecated Prefer brandLime. */
-  lime: "#B9F455",
-  limeSoft: "#D7FF6A",
-  amber: "#F2C94C",
-  red: "#FF5A3D",
+  lime: brandLime,
+  limeSoft: brandLimeSoft,
+  amber: warning,
+  red: danger,
   blue: "#7DD3FC",
   violet: "#B9A9FF",
 };
@@ -76,11 +85,11 @@ export const radii = {
   chip: 999,
   pill: 999,
   input: 16,
-  button: 18,
+  button: 999,
   smallCard: 18,
-  card: 24,
-  mainCard: 24,
-  panel: 22,
+  card: 28,
+  mainCard: 28,
+  panel: 32,
   bottomNav: 28,
   large: 20,
   medium: 16,
@@ -99,7 +108,7 @@ export const typography = {
   small: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
   metric: { fontSize: 28, fontFamily: "Inter_700Bold", lineHeight: 32 },
   navLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", lineHeight: 15 },
-  button: { fontSize: 13.5, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
+  button: { fontSize: 14, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
 
   // Compatibility aliases used by existing screens.
   /** @deprecated Prefer screenTitle. */

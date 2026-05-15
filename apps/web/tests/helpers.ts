@@ -78,6 +78,11 @@ export async function getLatestOtpFromMockOrUseDevCode(page: Page, _identifier: 
 
 export async function loginWithOtp(page: Page, identifier: string) {
   await page.goto("/login");
+  if (identifier.includes("@")) {
+    await page.getByRole("button", { name: /^email$/i }).click();
+  } else {
+    await page.getByRole("button", { name: /^phone$/i }).click();
+  }
   await page.getByLabel(/email|phone/i).fill(identifier);
   await page.getByRole("button", { name: /send (otp|code)/i }).click();
   const code = await getLatestOtpFromMockOrUseDevCode(page, identifier);

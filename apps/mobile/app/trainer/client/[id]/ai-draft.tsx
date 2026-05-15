@@ -21,6 +21,7 @@ import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { plansApi, trainerApi } from "@/lib/domain-api";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
+import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -116,6 +117,7 @@ export default function TrainerAiDraftReview() {
   const clientId = id;
   const { activeOrgId, token } = useAuth();
   const canGeneratePlan = useHasPermission("AI_GENERATE_PLAN");
+  const aiDraftEnabled = isMobileFeatureEnabled("AI_DRAFT_ENABLED");
   const clientsQuery = useTrainerClients();
   const client =
     clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === clientId) ?? null;
@@ -498,11 +500,17 @@ export default function TrainerAiDraftReview() {
                   <ZookButton
                     onPress={() => void generateDraft()}
                     icon="sparkles-outline"
-                    disabled={!canGeneratePlan || generating}
-                    onLongPress={!canGeneratePlan ? showOwnerApprovalRequired : undefined}
+                    disabled={!aiDraftEnabled || !canGeneratePlan || generating}
+                    onLongPress={
+                      aiDraftEnabled && !canGeneratePlan ? showOwnerApprovalRequired : undefined
+                    }
                     style={styles.actionHalf}
                   >
-                    {generating ? "Generating..." : "Generate AI Draft"}
+                    {generating
+                      ? "Generating..."
+                      : aiDraftEnabled
+                        ? "Generate AI Draft"
+                        : "AI Drafts Disabled"}
                   </ZookButton>
                   <SecondaryButton
                     onPress={() =>

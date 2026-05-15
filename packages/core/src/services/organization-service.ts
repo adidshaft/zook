@@ -3,7 +3,7 @@ import { usernameSchema } from "../validators";
 
 export function createTrialWindow(now = new Date()): { trialStartAt: Date; trialEndAt: Date; status: OrganizationStatus } {
   const trialEndAt = new Date(now);
-  trialEndAt.setMonth(trialEndAt.getMonth() + 1);
+  trialEndAt.setMonth(trialEndAt.getMonth() + 2);
   return { trialStartAt: now, trialEndAt, status: "TRIAL_ACTIVE" };
 }
 

@@ -22,6 +22,9 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
     supportsTablet: true,
     bundleIdentifier: "com.zook.app",
     usesAppleSignIn: true,
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
     associatedDomains: ["applinks:zookfit.in", "applinks:app.zookfit.in"],
     icon: "./assets/icons/AppIcon-1024.png",
   },
@@ -241,6 +244,8 @@ export default (): ExpoConfig => {
       offlineDemo: apiMode === "offline-demo",
       easBuildProfile: process.env.EAS_BUILD_PROFILE ?? "local",
       pushEnvironment: resolvePushEnvironment(releaseProfile),
+      AI_CHAT_ENABLED: process.env.EXPO_PUBLIC_AI_CHAT_ENABLED?.trim() ?? "",
+      AI_DRAFT_ENABLED: process.env.EXPO_PUBLIC_AI_DRAFT_ENABLED?.trim() ?? "",
       ...(expoProjectId ? { expoProjectId } : {}),
       eas: {
         ...((baseConfig.extra?.eas as Record<string, unknown> | undefined) ?? {}),

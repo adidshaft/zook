@@ -1,5 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import clsx from "clsx";
+import { motion } from "framer-motion";
+
+const MotionLink = motion.create(Link);
 
 type ZookButtonTone = "lime" | "secondary" | "ghost" | "danger";
 type ZookButtonVariant = "primary" | "secondary" | "ghost" | "danger";
@@ -66,17 +71,20 @@ export function ZookButton({
   ...props
 }: ButtonLikeProps & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      {...props}
+    <motion.button
+      {...(props as any)}
       disabled={props.disabled || state === "loading"}
       aria-busy={state === "loading" ? true : undefined}
+      whileHover={props.disabled || state === "loading" ? {} : { scale: 1.02 }}
+      whileTap={props.disabled || state === "loading" ? {} : { scale: 0.96 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className={buttonClasses({ tone, variant, size, fullWidth, className })}
     >
       {state === "loading" ? <span className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" /> : leadingIcon}
       {state === "success" ? <span aria-hidden="true">✓</span> : null}
       {children}
       {trailingIcon}
-    </button>
+    </motion.button>
   );
 }
 
@@ -93,15 +101,18 @@ export function ZookButtonLink({
   ...props
 }: ButtonLikeProps & React.ComponentProps<typeof Link>) {
   return (
-    <Link
-      {...props}
+    <MotionLink
+      {...(props as any)}
       aria-busy={state === "loading" ? true : undefined}
+      whileHover={state === "loading" ? {} : { scale: 1.02 }}
+      whileTap={state === "loading" ? {} : { scale: 0.96 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className={buttonClasses({ tone, variant, size, fullWidth, className })}
     >
       {state === "loading" ? <span className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" /> : leadingIcon}
       {state === "success" ? <span aria-hidden="true">✓</span> : null}
       {children}
       {trailingIcon}
-    </Link>
+    </MotionLink>
   );
 }

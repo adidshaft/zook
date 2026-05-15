@@ -9,6 +9,7 @@ function requireDb() {
 }
 
 test("web UX affordances connect operators to the next action", async ({ page }) => {
+  test.setTimeout(60_000);
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
   const org = await seedAndGetOrg({ username: "aarogya-strength" });

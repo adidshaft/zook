@@ -41,7 +41,7 @@ export function DashboardHeader({
             </span>
             <ChevronDown className="h-4 w-4 shrink-0 text-white/35" aria-hidden="true" />
           </div>
-          {data.branchScope.branches.length > 1 ? (
+          {data.branchScope.branches.length > 0 ? (
             <BranchSwitcher
               branches={data.branchScope.branches}
               selectedBranchId={selectedBranch?.id}

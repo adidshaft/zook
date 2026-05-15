@@ -33,7 +33,7 @@ function planCountLabel(count: number) {
 
 function initialsFor(name?: string | null) {
   const cleanName = name?.trim();
-  if (!cleanName) return "AM";
+  if (!cleanName) return "ZK";
   return cleanName
     .split(/\s+/)
     .slice(0, 2)
@@ -149,24 +149,35 @@ export default function TrainerClientDetail() {
     setStatus("");
     try {
       const nextPlanTitle = planTitle.trim() || `${clientName} workout plan`;
+      const existingPlan = savedPlan && savedPlan.title === nextPlanTitle ? savedPlan : null;
       const plan =
-        savedPlan && savedPlan.title === nextPlanTitle
-          ? savedPlan
-          : await plansApi
-              .create<{ plan: { id: string; title: string } }>({
-                token,
-                orgId: activeOrgId,
-                body: buildPlanPayload(),
-              })
-              .then((result) => result.plan);
+        existingPlan ??
+        (await plansApi
+          .create<{ plan: { id: string; title: string } }>({
+            token,
+            orgId: activeOrgId,
+            body: buildPlanPayload(),
+          })
+          .then((result) => result.plan));
+      if (!plan) {
+        throw new Error("Plan could not be created.");
+      }
       setSavedPlan({ id: plan.id, title: plan.title });
-      await plansApi.assign({
-        token,
-        orgId: activeOrgId,
-        planId: plan.id,
-        assignedToUserId: client.memberUserId,
-        audience: "selected_member",
-      });
+      try {
+        await plansApi.assign({
+          token,
+          orgId: activeOrgId,
+          planId: plan.id,
+          assignedToUserId: client.memberUserId,
+          audience: "selected_member",
+        });
+      } catch (assignError) {
+        if (!existingPlan) {
+          await plansApi.delete({ token, orgId: activeOrgId, planId: plan.id }).catch(() => undefined);
+          setSavedPlan(null);
+        }
+        throw assignError;
+      }
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
       await queryClient.invalidateQueries({ queryKey: ["me", "notifications"] });
       setStatus(`${plan.title} assigned. ${clientName} can now see it.`);

@@ -3,8 +3,8 @@ import Link from "next/link";
 import { MapPin, Search } from "lucide-react";
 import { getMapProvider } from "@zook/core/providers";
 import { prisma } from "@zook/db";
+import { AccountAwarePublicNav } from "@/components/account-aware-public-nav";
 import { GlassCard, Pill } from "@/components/glass-card";
-import { PublicNav } from "@/components/public-nav";
 import { formatInr } from "@/lib/format";
 import {
   alternatePublicLocale,
@@ -169,9 +169,8 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
       <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:px-6">
-        <PublicNav
-          loginHref={localizedPath("/login", locale)}
-          loginLabel={t("login")}
+        <AccountAwarePublicNav
+          locale={locale}
           languageHref={localizedPath("/gyms", nextLocale, { q, city, page })}
           languageLabel={t("languageSwitch")}
         />

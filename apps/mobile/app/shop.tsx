@@ -58,6 +58,11 @@ import { getMobileApiMode } from "@/lib/runtime-mode";
 
 type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
 type CheckoutState = "browse" | "cart" | "checkout" | "pickup";
+type OptimisticShopOrder = Pick<
+  ShopOrderRecord,
+  "id" | "status" | "pickupCode" | "totalPaise" | "items"
+>;
+type ShopOrderViewRecord = ShopOrderRecord | OptimisticShopOrder;
 
 const categories: Array<{ label: string; value: Category }> = [
   { label: "All", value: "ALL" },
@@ -98,13 +103,37 @@ function checkoutUrlWithReturnUrl(url: string, sessionId: string) {
 
 const mockPaymentCompletionAvailable = getMobileApiMode() !== "backend";
 
-function pickupQrPayload(order: ShopOrderRecord) {
+function pickupQrPayload(order: ShopOrderViewRecord) {
   return JSON.stringify({
     type: "shop_pickup",
     orderId: order.id,
     code: order.pickupCode,
   });
 }
+
+function optimisticOrderFromCart(input: {
+  orderId: string;
+  totalPaise: number;
+  cartItems: typeof cartItemsPlaceholder;
+}): OptimisticShopOrder {
+  return {
+    id: input.orderId,
+    status: "PENDING_PAYMENT",
+    pickupCode: null,
+    totalPaise: input.totalPaise,
+    items: input.cartItems.map((item) => ({
+      productId: item.product.id,
+      quantity: item.quantity,
+      unitPaise: item.product.pricePaise,
+      product: item.product,
+    })),
+  };
+}
+
+const cartItemsPlaceholder = [] as Array<{
+  product: NonNullable<ShopOrderRecord["items"][number]["product"]>;
+  quantity: number;
+}>;
 
 export default function Shop() {
   const router = useRouter();
@@ -125,7 +154,7 @@ export default function Shop() {
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [cartHydrated, setCartHydrated] = useState(false);
-  const [order, setOrder] = useState<ShopOrderRecord | null>(null);
+  const [order, setOrder] = useState<ShopOrderViewRecord | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [checkoutSession, setCheckoutSession] = useState<{
     id: string;
@@ -290,18 +319,13 @@ export default function Shop() {
       return;
     }
     if (checkoutState === "checkout" && !order) {
-      setOrder({
-        id: urlOrderId,
-        status: "PENDING_PAYMENT",
-        pickupCode: null,
-        totalPaise: Number.isFinite(urlTotalPaise) ? urlTotalPaise : totalPaise,
-        items: cartItems.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-          unitPaise: item.product.pricePaise,
-          product: item.product,
-        })),
-      } as ShopOrderRecord);
+      setOrder(
+        optimisticOrderFromCart({
+          orderId: urlOrderId,
+          totalPaise: Number.isFinite(urlTotalPaise) ? urlTotalPaise : totalPaise,
+          cartItems,
+        }),
+      );
     }
   }, [
     cartItems,
@@ -869,9 +893,9 @@ function BrowserReturnCard({
     <GlassCard variant="compact" contentStyle={styles.browserReturnContent}>
       <Ionicons name="open-outline" size={22} color={colors.amber} />
       <View style={styles.browserReturnCopy}>
-        <Text style={styles.browserReturnTitle}>Continuing in your browser</Text>
+        <Text style={styles.browserReturnTitle}>Continue in browser</Text>
         <Text style={styles.browserReturnBody}>
-          Return when done. We will refresh your order as soon as you come back.
+          Come back after payment. We will refresh your order status automatically.
         </Text>
       </View>
       <ZookButton

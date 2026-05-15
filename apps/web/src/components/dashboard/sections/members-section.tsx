@@ -8,15 +8,17 @@ import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboar
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn, SearchableSelect } from "../../ui";
 import {
-  formatPlanShape,
   type JoinRequestRow,
   type MemberDetailPayload,
   type MemberRow,
   type MembershipPlanRow,
   type OrganizationSnapshot,
 } from "../../dashboard-operational-model";
-import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
+import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
+import { BulkImportCard as ExtractedBulkImportCard } from "./members/bulk-import-card";
+import { JoinRequestQueue } from "./members/join-request-queue";
+import { MembershipPlanLadder } from "./members/membership-plan-ladder";
 
 type MemberFilter = "All" | "Active" | "Pending Payment" | "Expired" | "Paused" | "Visit Pack" | "Trial";
 
@@ -100,8 +102,9 @@ export function MembersSection({
     () =>
       members.filter((member) => {
         const status = normalizeMemberText(member.activeSubscription?.status);
-        const planName = "";
-        const statusAndPlan = `${status} ${planName}`;
+        const planName = normalizeMemberText(member.activeSubscription?.plan?.name);
+        const planType = normalizeMemberText(member.activeSubscription?.plan?.type);
+        const statusAndPlan = `${status} ${planName} ${planType}`;
         const filterMatch =
           memberFilter === "All" ||
           (memberFilter === "Active" && status.includes("active")) ||
@@ -122,6 +125,7 @@ export function MembersSection({
           member.user?.fitnessGoal,
           member.activeSubscription?.status,
           planName,
+          planType,
         ]
           .map(normalizeMemberText)
           .join(" ");
@@ -519,143 +523,22 @@ export function MembersSection({
           </div>
         </GlassCard>
 
-        <GlassCard>
-          <SectionHeader
-            eyebrow="Pipeline"
-            title="Join request queue"
-            description="Approval-required requests appear here so owners can approve or reject memberships before payment."
-            badge={
-              <Pill tone={joinRequests.length ? "amber" : "lime"}>
-                {joinRequests.length} pending
-              </Pill>
-            }
-          />
-          {queueError ? (
-            <div className="mt-5">
-              <ErrorNotice message={queueError} />
-            </div>
-          ) : null}
-          <div className="mt-5 grid gap-3">
-            {joinRequestsState.error ? (
-              <ErrorNotice message={joinRequestsState.error} />
-            ) : joinRequests.length ? (
-              joinRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="rounded-[22px] border border-white/10 bg-black/20 p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-white">
-                          {planNamesById.get(request.planId ?? "") ?? "Membership request"}
-                        </p>
-                        <StatusPill value={formatEnumLabel(request.status)} />
-                      </div>
-                      <p className="mt-2 text-xs text-white/45">
-                        Created {formatDateTime(request.createdAt)}
-                        {request.referralCode ? ` · Referral ${request.referralCode}` : ""}
-                      </p>
-                      <p className="mt-2 text-sm text-white/60">
-                        {request.message ?? "No intake note. Consider WhatsApp-ing the member before approving."}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => void updateJoinRequest(request.id, "approve")}
-                        disabled={queueBusyId === request.id}
-                        className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => void updateJoinRequest(request.id, "reject")}
-                        disabled={queueBusyId === request.id}
-                        className="zook-focus rounded-full border border-red-300/30 bg-red-300/10 px-4 py-2 text-sm text-red-100 disabled:opacity-60"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <EmptyState
-                title="Queue is clear"
-                description="Open-join or already-reviewed memberships will not stack up here."
-              />
-            )}
-          </div>
-        </GlassCard>
+        <JoinRequestQueue
+          joinRequests={joinRequests}
+          joinRequestsState={joinRequestsState}
+          queueError={queueError}
+          queueBusyId={queueBusyId}
+          planNamesById={planNamesById}
+          updateJoinRequest={updateJoinRequest}
+        />
       </div>
 
-      <GlassCard>
-        <SectionHeader
-          eyebrow="Membership setup"
-          title="Membership plan ladder"
-          description="Use the live pricing ladder below to see which plans are public, how they are shaped, and which ones are currently active."
-          badge={<Pill tone="blue">{membershipPlans.length} plans</Pill>}
-        />
-        <div className="mt-5">
-          {membershipPlansState.error ? (
-            <ErrorNotice message={membershipPlansState.error} />
-          ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
-            <EmptyState
-              title="Loading plan ladder"
-              description="Pulling the latest membership plans for this organization."
-            />
-          ) : (
-            <DataTable
-              columns={[
-                {
-                  id: "plan",
-                  header: "Plan",
-                  render: (plan) => (
-                    <div>
-                      <p className="font-medium text-white">{plan.name}</p>
-                      <p className="mt-1 text-xs text-white/45">{formatEnumLabel(plan.type)}</p>
-                    </div>
-                  ),
-                },
-                {
-                  id: "shape",
-                  header: "Shape",
-                  render: (plan) => formatPlanShape(plan),
-                },
-                {
-                  id: "price",
-                  header: "Price",
-                  align: "right",
-                  render: (plan) => (
-                    <span className="font-medium text-white">{formatInr(plan.pricePaise)}</span>
-                  ),
-                },
-                {
-                  id: "state",
-                  header: "State",
-                  render: (plan) => (
-                    <div className="flex flex-wrap gap-2">
-                      <StatusPill
-                        value={plan.active ? "Active" : "Paused"}
-                        tone={plan.active ? "lime" : "amber"}
-                      />
-                      <StatusPill
-                        value={plan.publicVisible ? "Public" : "Private"}
-                        tone={plan.publicVisible ? "blue" : "neutral"}
-                      />
-                    </div>
-                  ),
-                },
-              ]}
-              rows={membershipPlans}
-              rowKey={(plan) => plan.id}
-              empty="No membership plans are available yet."
-            />
-          )}
-        </div>
-      </GlassCard>
+      <MembershipPlanLadder
+        membershipPlans={membershipPlans}
+        membershipPlansState={membershipPlansState}
+      />
 
-      <BulkImportCard
+      <ExtractedBulkImportCard
         orgId={orgId}
         membershipPlans={membershipPlans}
         onImportComplete={() => {
@@ -666,7 +549,7 @@ export function MembersSection({
   );
 }
 
-function BulkImportCard({
+function _BulkImportCard({
   orgId,
   membershipPlans,
   onImportComplete,

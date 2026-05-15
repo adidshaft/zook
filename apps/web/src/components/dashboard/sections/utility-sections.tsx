@@ -15,6 +15,9 @@ const copy = {
   billingEyebrow: "Billing",
   billingTitle: "Receipts and invoices",
   billingDescription: "Complete billing details before receipts and GST invoices are created.",
+  trialBillingTitle: "Two-month free trial",
+  trialBillingDescription:
+    "Add a card now so the gym keeps running after the free trial. The first charge is scheduled after the trial end date.",
   gymStatus: "Gym status",
   trialEnds: "Trial ends",
   documentReadiness: "Document readiness",
@@ -64,6 +67,15 @@ type InvoiceRow = {
   user?: { name?: string | null; email?: string | null } | null;
 };
 
+type BillingMandateResponse = {
+  checkoutUrl?: string | null;
+  mandate: {
+    id: string;
+    status: string;
+    nextChargeAt?: string | Date | null;
+  };
+};
+
 const billingProfileFields: Array<[string, keyof Pick<
   BillingProfile,
   "legalName" | "gstNumber" | "billingEmail" | "contactPhone" | "address" | "city" | "state" | "pincode"
@@ -90,6 +102,7 @@ export function BillingSection({
   const [profile, setProfile] = useState<BillingProfile | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [busy, setBusy] = useState(false);
+  const [mandateBusy, setMandateBusy] = useState(false);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
@@ -140,6 +153,30 @@ export function BillingSection({
       setStatus(cause instanceof Error ? cause.message : "Unable to save billing details.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function setupBillingMandate() {
+    try {
+      setMandateBusy(true);
+      setStatus("");
+      const payload = await webApiFetch<BillingMandateResponse>(
+        `/api/orgs/${orgId}/billing/mandate`,
+        {
+          method: "POST",
+          body: {},
+          feedback: { success: "Billing setup started." },
+        },
+      );
+      if (payload.checkoutUrl) {
+        window.location.assign(payload.checkoutUrl);
+        return;
+      }
+      setStatus(`Billing mandate is ${formatEnumLabel(payload.mandate.status)}.`);
+    } catch (cause) {
+      setStatus(cause instanceof Error ? cause.message : "Unable to start billing setup.");
+    } finally {
+      setMandateBusy(false);
     }
   }
 
@@ -223,6 +260,31 @@ export function BillingSection({
           <p className="mt-4 text-sm text-white/45">Loading billing fields...</p>
         )}
         {status ? <p className="mt-4 text-sm text-white/58">{status}</p> : null}
+      </GlassCard>
+      <GlassCard className="xl:col-span-2">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <Pill tone="lime">Free trial</Pill>
+            <h2 className="mt-3 text-xl font-semibold text-white">{copy.trialBillingTitle}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/52">
+              {copy.trialBillingDescription}
+            </p>
+            <p className="mt-3 text-sm text-white/62">
+              First charge date:{" "}
+              <span className="font-medium text-white">
+                {organization.trialEndAt ? formatDate(organization.trialEndAt) : "After trial"}
+              </span>
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={mandateBusy}
+            onClick={() => void setupBillingMandate()}
+            className="zook-focus rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:cursor-wait disabled:opacity-60"
+          >
+            {mandateBusy ? "Opening..." : "Add card for month 3"}
+          </button>
+        </div>
       </GlassCard>
       <GlassCard className="xl:col-span-2">
         <h2 className="text-xl font-semibold text-white">{copy.invoicesTitle}</h2>
