@@ -1080,9 +1080,10 @@ const styles = StyleSheet.create({
     rowGap: 12,
   },
   productCard: {
-    flexBasis: "47%",
-    flexGrow: 1,
-    minHeight: 190,
+    flexBasis: "48.5%",
+    flexGrow: 0,
+    flexShrink: 0,
+    height: 206,
   },
   categoryRail: {
     gap: 8,
@@ -1147,6 +1148,8 @@ const styles = StyleSheet.create({
     },
   },
   miniCartText: {
+    flexShrink: 1,
+    minWidth: 0,
     color: colors.bg,
     ...typography.button,
   },
@@ -1225,6 +1228,7 @@ const styles = StyleSheet.create({
   },
   actionHalf: {
     flex: 1,
+    minWidth: 0,
   },
   checkoutContent: {
     gap: 10,

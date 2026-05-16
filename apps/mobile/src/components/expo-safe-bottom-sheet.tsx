@@ -62,6 +62,7 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
   ) {
     const [visible, setVisible] = useState(false);
     const sheetHeight = resolveSnapPoint(snapPoints?.[0]);
+    const safePaddingBottom = Math.max(bottomInset, 0);
 
     function close() {
       setVisible(false);
@@ -103,10 +104,11 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
               styles.sheet,
               sheetHeight ? { height: sheetHeight } : null,
               maxDynamicContentSize ? { maxHeight: maxDynamicContentSize } : null,
-              bottomInset ? { marginBottom: bottomInset } : null,
+              safePaddingBottom ? { paddingBottom: safePaddingBottom } : null,
               backgroundStyle,
             ]}
           >
+            <View pointerEvents="none" style={styles.sheetSurface} />
             <View style={[styles.handle, handleIndicatorStyle]} />
             {children}
           </View>
@@ -119,6 +121,9 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
 function resolveSnapPoint(snapPoint?: number | string): DimensionValue | undefined {
   if (typeof snapPoint === "number") {
     return snapPoint;
+  }
+  if (typeof snapPoint === "string" && snapPoint.trim() === "CONTENT_HEIGHT") {
+    return undefined;
   }
   if (typeof snapPoint === "string" && snapPoint.trim().endsWith("%")) {
     return snapPoint as DimensionValue;
@@ -145,6 +150,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     backgroundColor: colors.bgElevated,
     paddingTop: 10,
+    overflow: "hidden",
+  },
+  sheetSurface: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.bgElevated,
   },
   handle: {
     alignSelf: "center",

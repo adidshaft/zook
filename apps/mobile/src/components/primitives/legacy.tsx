@@ -995,7 +995,7 @@ export function ZookButton({
           <Text
             numberOfLines={1}
             adjustsFontSizeToFit
-            minimumFontScale={0.82}
+            minimumFontScale={0.72}
             style={[styles.buttonText, buttonTextSizeStyle, { color: palette.color }, textStyle]}
           >
             {contentLabel}
@@ -1054,7 +1054,7 @@ export function ZookButton({
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={0.82}
+        minimumFontScale={0.72}
         style={[styles.buttonText, buttonTextSizeStyle, { color: palette.color }, textStyle]}
       >
         {contentLabel}
@@ -1508,7 +1508,14 @@ export function ProductCard({
         </Text>
       </View>
       <View style={styles.productFooter}>
-        <Text style={styles.productPrice}>{price}</Text>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.72}
+          style={styles.productPrice}
+        >
+          {price}
+        </Text>
         {quantity > 0 ? (
           <View style={styles.productStepper}>
             <Pressable
@@ -2172,8 +2179,7 @@ function AnimatedPulse() {
         StyleSheet.absoluteFill,
         {
           borderRadius: 999,
-          backgroundColor: colors.lime,
-          zIndex: -1,
+          backgroundColor: "rgba(185,244,85,0.32)",
         },
         animatedStyle,
       ]}
@@ -2256,6 +2262,9 @@ function DockTabItem({
       </View>
       {showLabel ? (
         <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.72}
           style={[
             styles.bottomNavText,
             isMemberNav ? styles.memberBottomNavText : null,
@@ -2778,8 +2787,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
+    minWidth: 0,
   },
   buttonText: {
+    flexShrink: 1,
+    minWidth: 0,
+    maxWidth: "100%",
+    textAlign: "center",
     ...typography.button,
   },
   fullWidth: {
@@ -3051,12 +3065,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   productPrice: {
+    flexShrink: 1,
     color: colors.text,
     ...typography.bodyStrong,
   },
   productAdd: {
-    minWidth: 68,
-    height: 34,
+    width: 86,
+    height: 44,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.limeBorder,
@@ -3067,8 +3082,8 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   productAddCompact: {
-    minWidth: 62,
-    minHeight: 44,
+    width: 86,
+    height: 44,
   },
   productAddDisabled: {
     borderColor: colors.border,
@@ -3079,8 +3094,8 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   productStepper: {
-    height: 34,
-    minWidth: 84,
+    width: 86,
+    height: 44,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.limeBorder,
@@ -3092,7 +3107,7 @@ const styles = StyleSheet.create({
   },
   productStepperButton: {
     width: 30,
-    height: 32,
+    height: 42,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -3384,7 +3399,7 @@ const styles = StyleSheet.create({
   },
   bottomNav: {
     position: "absolute",
-    zIndex: 30,
+    zIndex: 50,
     left: layout.screenPadding,
     right: layout.screenPadding,
     height: layout.bottomNavHeight,
@@ -3395,7 +3410,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
   },
@@ -3450,14 +3465,16 @@ const styles = StyleSheet.create({
     height: 72,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
+    justifyContent: "center",
+    paddingHorizontal: 8,
     paddingVertical: 8,
     gap: 0,
     overflow: "visible",
   },
   bottomNavItem: {
-    width: 58,
+    flex: 1,
+    minWidth: 0,
+    maxWidth: 68,
     height: 54,
     borderRadius: 18,
     alignItems: "center",
@@ -3465,7 +3482,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   memberBottomNavItem: {
-    width: 68,
+    width: "100%",
     maxWidth: 68,
     minWidth: 0,
     height: 56,
@@ -3480,11 +3497,13 @@ const styles = StyleSheet.create({
   memberBottomNavItemRaised: {
     flexGrow: 0,
     flexShrink: 0,
-    flexBasis: 82,
-    width: 82,
-    height: 82,
-    marginTop: -30,
-    borderRadius: 41,
+    flexBasis: 78,
+    width: 78,
+    maxWidth: 78,
+    height: 78,
+    aspectRatio: 1,
+    marginTop: -28,
+    borderRadius: 999,
     borderWidth: 3,
     borderColor: "rgba(7,9,8,0.94)",
     backgroundColor: colors.lime,
@@ -3510,6 +3529,8 @@ const styles = StyleSheet.create({
     borderWidth: 3,
   },
   bottomNavText: {
+    maxWidth: "100%",
+    textAlign: "center",
     color: colors.subtle,
     ...typography.navLabel,
   },

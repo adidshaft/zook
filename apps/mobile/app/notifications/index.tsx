@@ -431,7 +431,7 @@ export default function NotificationsScreen() {
           backdropComponent={renderDetailBackdrop}
           backgroundStyle={styles.sheetBackground}
           handleIndicatorStyle={styles.sheetHandle}
-          bottomInset={Math.max(insets.bottom, 12) + 84}
+          bottomInset={Math.max(insets.bottom, 12)}
         >
           <BottomSheetView style={styles.detailSheet}>
             <View style={styles.detailHeader}>
