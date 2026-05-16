@@ -81,6 +81,12 @@ function resolveApiMode() {
     }
     return { apiMode: normalized };
   }
+  if (
+    normalizeBooleanFlag(process.env.EXPO_PUBLIC_OFFLINE_DEMO) ||
+    normalizeBooleanFlag(process.env.MOBILE_OFFLINE_DEMO)
+  ) {
+    return { apiMode: "offline-demo" as const };
+  }
   return { apiMode: "backend" as const };
 }
 

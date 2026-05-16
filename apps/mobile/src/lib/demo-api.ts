@@ -29,6 +29,88 @@ function activeTrainingPlan() {
   );
 }
 
+function demoMemberHomePayload() {
+  const org = activeOrg();
+  const membership = activeMembership();
+  const plan = activeTrainingPlan();
+  return {
+    activeOrganization: org
+      ? {
+          id: org.id,
+          name: org.name,
+          status: org.status,
+          city: org.city,
+          state: org.state,
+        }
+      : null,
+    activeMembership: membership
+      ? {
+          id: membership.id,
+          status: membership.status,
+          endsAt: null,
+          remainingVisits: membership.remainingVisits,
+          daysLeft: membership.daysLeft,
+          nextCheckInEstimate: "Available today",
+        }
+      : null,
+    activePlan: plan
+      ? {
+          id: plan.id,
+          name: plan.title,
+          type: plan.type,
+          durationDays: 30,
+          visitLimit: 12,
+        }
+      : null,
+    recentAttendance: zookDemoFixtures.attendanceAttempts.map((attempt) => ({
+      id: attempt.id,
+      checkedInAt: attempt.checkedInAt,
+      status: attempt.status,
+      source: "OFFLINE_DEMO",
+    })),
+    unreadNotifications: zookDemoFixtures.notifications.filter(
+      (notification) => !notification.readAt,
+    ).length,
+    activeGoals: 3,
+    assignedPlans: zookDemoFixtures.trainingPlans.length,
+    streakDays: membership?.streakDays ?? 0,
+    todayPlanName: plan?.title ?? null,
+    nextCheckInEstimate: "Available today",
+  };
+}
+
+function demoMemberEngagementPayload() {
+  const membership = activeMembership();
+  const streakDays = membership?.streakDays ?? 0;
+  const latestBadge = {
+    id: "offline-badge-first",
+    badgeId: "badge-first-checkin",
+    code: "first_checkin",
+    name: "First check-in",
+    description: "Completed the first gym check-in.",
+    icon: "checkmark-circle-outline",
+    awardedAt: zookDemoFixtures.attendanceAttempts[0]?.checkedInAt ?? nowIso(),
+    metadata: { totalCheckIns: zookDemoFixtures.attendanceAttempts.length },
+  };
+  return {
+    streakDays,
+    totalCheckIns: zookDemoFixtures.attendanceAttempts.length,
+    badges: [latestBadge],
+    latestBadge,
+    nextMilestone: {
+      code: "streak_7",
+      name: "7-day streak",
+      description: "Checked in for 7 days in a row.",
+      icon: "flame-outline",
+      metric: "streakDays",
+      target: 7,
+      current: streakDays,
+      remaining: Math.max(0, 7 - streakDays),
+      progress: Math.min(1, streakDays / 7),
+    },
+  };
+}
+
 function demoProfile() {
   const session = getOfflineDemoSession();
   const profile = zookDemoFixtures.memberProfiles.find((item) => item.userId === session.user.id);
@@ -340,6 +422,24 @@ export async function demoMobileApiFetch<T>(
   if (pathname === "/me/notification-preferences") return { preferences: [] } as T;
   if (pathname === "/me/push-devices") return { devices: [] } as T;
 
+  if (pathname === "/me/dashboard") {
+    return {
+      home: demoMemberHomePayload(),
+      engagement: demoMemberEngagementPayload(),
+      referral: {
+        referralCodes: zookDemoFixtures.referralCodes,
+        rewards: [],
+        links: {
+          web: "https://zookfit.in/r/ROHAN500",
+          short: "zook.fit/r/ROHAN500",
+          app: "zook://r/ROHAN500",
+        },
+        policy: null,
+      },
+      preferences: [],
+    } as T;
+  }
+
   if (pathname === "/me/home") {
     return {
       activeOrganization: org
@@ -479,7 +579,19 @@ export async function demoMobileApiFetch<T>(
     return { attendance: zookDemoFixtures.attendanceAttempts } as T;
   if (pathname.match(/^\/me\/attendance\/[^/]+$/)) {
     const attendanceRecordId = pathname.split("/").at(-1);
+    const rejectedAttendance =
+      attendanceRecordId === "attendance-rejected"
+        ? {
+            ...zookDemoFixtures.attendanceAttempts[1],
+            id: "attendance-rejected",
+            status: "REJECTED",
+            entryCode: "RJ-2048",
+            reason: "Desk rejected this scan after branch review.",
+            auditTrail: ["QR token valid", "Desk review required", "Rejected by reception"],
+          }
+        : undefined;
     const attendance =
+      rejectedAttendance ??
       zookDemoFixtures.attendanceAttempts.find((record) => record.id === attendanceRecordId) ??
       zookDemoFixtures.attendanceAttempts[0];
     return { attendance } as T;

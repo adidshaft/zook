@@ -529,7 +529,7 @@ export default function Reception() {
               <Text numberOfLines={1} style={styles.memberContextTitle}>
                 {member?.name ?? "No member selected"}
               </Text>
-              <Text numberOfLines={1} style={styles.memberContextBody}>
+              <Text numberOfLines={2} style={styles.memberContextBody}>
                 {member?.email ?? "Search members before recording payments or attendance"}
                 {membership?.status ? ` · ${membership.status.replace(/_/g, " ")}` : ""}
               </Text>

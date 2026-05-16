@@ -15,7 +15,12 @@ import {
 import * as LocalAuthentication from "expo-local-authentication";
 import { Alert, AppState } from "react-native";
 import { authClient } from "./domain-api";
-import { DEMO_AUTH_TOKEN, isOfflineDemoMode } from "./demo-mode";
+import {
+  DEMO_AUTH_TOKEN,
+  getOfflineDemoInitialRoute,
+  getOfflineDemoRoleOverride,
+  isOfflineDemoMode,
+} from "./demo-mode";
 import { applySessionLocalePreference } from "./i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
@@ -126,6 +131,9 @@ function sessionDefaultRoute(role?: Role) {
 }
 
 function defaultRouteForSession(session?: AuthSessionSummary, role?: Role) {
+  if (isOfflineDemoMode()) {
+    return getOfflineDemoInitialRoute(role && isOrgRole(role) ? role : undefined);
+  }
   if (role) {
     return sessionDefaultRoute(role);
   }
@@ -376,7 +384,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await hydrate(
         DEMO_AUTH_TOKEN,
         storedOrgId ?? undefined,
-        (storedRole as Role | null) ?? undefined,
+        getOfflineDemoRoleOverride() ?? (storedRole as Role | null) ?? undefined,
       );
       return;
     }

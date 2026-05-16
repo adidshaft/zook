@@ -190,6 +190,12 @@ function resolveApiMode(): MobileApiMode {
     }
     return normalized;
   }
+  if (
+    process.env.EXPO_PUBLIC_OFFLINE_DEMO?.trim().toLowerCase() === "true" ||
+    process.env.MOBILE_OFFLINE_DEMO?.trim().toLowerCase() === "true"
+  ) {
+    return "offline-demo";
+  }
   return "backend";
 }
 
