@@ -338,6 +338,7 @@ const styles = StyleSheet.create({
   },
   valueStage: {
     overflow: "hidden",
+    alignSelf: "stretch",
   },
   valueCard: {
     minHeight: 300,

@@ -1145,9 +1145,22 @@ export function MetricTile({
   return (
     <View style={[styles.metricTile, palette, style]}>
       {icon ? <IconBubble icon={icon} tone={tone} size={34} /> : null}
-      <Text style={styles.metricTileLabel}>{label}</Text>
-      <Text style={[styles.metricTileValue, { color: palette.valueColor }]}>{value}</Text>
-      {detail ? <Text style={styles.metricTileDetail}>{detail}</Text> : null}
+      <Text style={styles.metricTileLabel} numberOfLines={2}>
+        {label}
+      </Text>
+      <Text
+        style={[styles.metricTileValue, { color: palette.valueColor }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+      >
+        {value}
+      </Text>
+      {detail ? (
+        <Text style={styles.metricTileDetail} numberOfLines={2}>
+          {detail}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -2349,29 +2362,43 @@ export function BottomNav({
     );
   });
 
+  const safeAreaMaskHeight = Math.max(insets.bottom, 12);
+
   if (isMemberNav) {
     return (
-      <View style={[styles.memberBottomNavShell, { bottom }]}>
-        <BlurView intensity={18} tint="dark" style={styles.memberBottomNavBlur} />
-        <View pointerEvents="none" style={styles.memberBottomNavLowerShield} />
-        <View style={styles.memberBottomNavItems}>{navItems}</View>
-      </View>
+      <>
+        <View
+          pointerEvents="none"
+          style={[styles.bottomNavSafeAreaMask, { height: safeAreaMaskHeight }]}
+        />
+        <View style={[styles.memberBottomNavShell, { bottom }]}>
+          <BlurView intensity={18} tint="dark" style={styles.memberBottomNavBlur} />
+          <View pointerEvents="none" style={styles.memberBottomNavLowerShield} />
+          <View style={styles.memberBottomNavItems}>{navItems}</View>
+        </View>
+      </>
     );
   }
 
   return (
-    <BlurView
-      intensity={18}
-      tint="dark"
-      style={StyleSheet.flatten([
-        styles.bottomNav,
-        {
-          bottom,
-        },
-      ])}
-    >
-      {navItems}
-    </BlurView>
+    <>
+      <View
+        pointerEvents="none"
+        style={[styles.bottomNavSafeAreaMask, { height: safeAreaMaskHeight }]}
+      />
+      <BlurView
+        intensity={18}
+        tint="dark"
+        style={StyleSheet.flatten([
+          styles.bottomNav,
+          {
+            bottom,
+          },
+        ])}
+      >
+        {navItems}
+      </BlurView>
+    </>
   );
 }
 
@@ -3371,6 +3398,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
+  },
+  bottomNavSafeAreaMask: {
+    position: "absolute",
+    zIndex: 49,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.bg,
   },
   memberBottomNavShell: {
     position: "absolute",
