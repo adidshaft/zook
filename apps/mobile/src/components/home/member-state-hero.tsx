@@ -1,6 +1,6 @@
 import type { ComponentProps, ComponentType } from "react";
 import { useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedProps, useSharedValue, withSpring } from "@/lib/reanimated-lite";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -89,7 +89,7 @@ export function MemberStateHero({
   return (
     <GlassCard
       variant={expired ? "warning" : "selected"}
-      glow={!expired}
+      glow={Platform.OS !== "android" && !expired}
       contentStyle={styles.premiumMemberCard}
     >
       <View style={styles.premiumMemberTopRow}>
