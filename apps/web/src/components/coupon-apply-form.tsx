@@ -4,6 +4,7 @@ import { useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatInr } from "@/lib/format";
+import { ZookButton } from "@/components/zook-button";
 
 type CouponValidatePayload = {
   ok?: boolean;
@@ -121,13 +122,9 @@ export function CouponApplyForm({
           aria-describedby={message ? messageId : undefined}
           className="zook-focus min-h-11 flex-1 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
         />
-        <button
-          type="submit"
-          disabled={busy}
-          className="zook-focus min-h-11 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white/72 disabled:opacity-55"
-        >
+        <ZookButton type="submit" tone="ghost" state={busy ? "loading" : "idle"} disabled={busy}>
           {busy ? "Applying..." : "Apply"}
-        </button>
+        </ZookButton>
       </div>
       {message ? (
         <p

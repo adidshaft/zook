@@ -2,6 +2,7 @@
 
 import { Copy, Smartphone } from "lucide-react";
 import { useState } from "react";
+import { ZookButton } from "@/components/zook-button";
 
 export function PublicGymActions({
   username,
@@ -39,22 +40,24 @@ export function PublicGymActions({
 
   return (
     <div className="mt-3 grid gap-2">
-      <button
+      <ZookButton
         type="button"
+        tone="secondary"
+        fullWidth
         onClick={openInApp}
-        className="zook-focus inline-flex w-full items-center justify-center gap-2 rounded-xl border border-lime-300 px-5 py-3 text-sm font-medium text-lime-200 transition hover:bg-lime-300/10"
+        leadingIcon={<Smartphone size={17} />}
       >
-        <Smartphone size={17} />
         {openLabel}
-      </button>
-      <button
+      </ZookButton>
+      <ZookButton
         type="button"
+        tone="ghost"
+        fullWidth
         onClick={() => void copyJoinLink()}
-        className="zook-focus inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-5 py-3 text-sm font-medium text-white/72 transition hover:bg-white/8"
+        leadingIcon={<Copy size={16} />}
       >
-        <Copy size={16} />
         {copied ? copiedLabel : copyLabel}
-      </button>
+      </ZookButton>
     </div>
   );
 }

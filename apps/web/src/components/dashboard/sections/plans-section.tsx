@@ -7,6 +7,7 @@ import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboar
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
+import { ZookButton } from "../../zook-button";
 import {
   formatPlanShape,
   type CoachPlanRow,
@@ -204,13 +205,15 @@ export function PlansSection({
             placeholder="Short public description"
             className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
           />
-          <button
+          <ZookButton
+            type="button"
             onClick={() => void createMembershipPlan()}
             disabled={formBusy === "plan"}
-            className="zook-focus w-full rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+            state={formBusy === "plan" ? "loading" : "idle"}
+            fullWidth
           >
             {formBusy === "plan" ? "Creating..." : "Create plan"}
-          </button>
+          </ZookButton>
           {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
         </div>
         <div className="mt-5">
@@ -266,19 +269,24 @@ export function PlansSection({
                   align: "right",
                   render: (plan) => (
                     <div className="flex flex-wrap justify-end gap-2">
-                      <button
+                      <ZookButton
+                        type="button"
+                        tone="ghost"
+                        size="sm"
                         onClick={() => startPlanEdit(plan)}
-                        className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:border-lime-300/40 hover:text-lime-100"
                       >
                         Edit
-                      </button>
-                      <button
+                      </ZookButton>
+                      <ZookButton
+                        type="button"
+                        tone="ghost"
+                        size="sm"
                         onClick={() => void updateMembershipPlan(plan.id, { active: !plan.active })}
                         disabled={formBusy === `plan:${plan.id}`}
-                        className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:border-amber-300/40 hover:text-amber-100 disabled:opacity-50"
+                        state={formBusy === `plan:${plan.id}` ? "loading" : "idle"}
                       >
                         {plan.active ? "Archive" : "Restore"}
-                      </button>
+                      </ZookButton>
                       <ConfirmActionButton
                         title="Delete membership plan?"
                         description="Only unused plans can be deleted. Plans with subscriptions should be archived so member history stays intact."
@@ -307,12 +315,14 @@ export function PlansSection({
                     Updates pricing, visibility, and plan structure immediately.
                   </p>
                 </div>
-                <button
+                <ZookButton
+                  type="button"
+                  tone="ghost"
+                  size="sm"
                   onClick={() => setEditingPlanId(null)}
-                  className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/60"
                 >
                   Cancel
-                </button>
+                </ZookButton>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <input
@@ -396,13 +406,14 @@ export function PlansSection({
                 placeholder="Short public description"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               />
-              <button
+              <ZookButton
+                type="button"
                 onClick={() => void updateMembershipPlan(editingPlanId)}
                 disabled={formBusy === `plan:${editingPlanId}`}
-                className="zook-focus rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+                state={formBusy === `plan:${editingPlanId}` ? "loading" : "idle"}
               >
                 {formBusy === `plan:${editingPlanId}` ? "Saving..." : "Save plan"}
-              </button>
+              </ZookButton>
             </div>
           ) : null}
         </div>

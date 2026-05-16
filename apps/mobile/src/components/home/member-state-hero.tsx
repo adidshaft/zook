@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedProps, useSharedValue, withSpring } from "@/lib/reanimated-lite";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import Svg, { Circle } from "react-native-svg";
 import { GlassCard, ZookButton } from "@/components/primitives";
 import { colors, spacing, typography } from "@/lib/theme";
@@ -33,6 +34,7 @@ function getMemberEncouragement(streakDays: number, expired: boolean) {
 export function MemberStateHero({
   daysLeftLabel,
   expired,
+  lastCheckIn,
   planName,
   progressValue,
   visitProgressLabel,
@@ -44,6 +46,7 @@ export function MemberStateHero({
 }: {
   daysLeftLabel: string;
   expired: boolean;
+  lastCheckIn?: string;
   planName: string;
   progressValue: number;
   visitProgressLabel?: string;
@@ -53,6 +56,7 @@ export function MemberStateHero({
   streakDays: number;
   visitLabel: string;
 }) {
+  const router = useRouter();
   const mainLabel = expired ? "Membership needs renewal" : daysLeftLabel;
   const splitLabel = mainLabel.match(/^(\d+)\s+(.+)$/);
   const visitCountMatch = visitLabel.match(/^(\d+)/);
@@ -73,7 +77,10 @@ export function MemberStateHero({
   const animatedRingProps = useAnimatedProps(() => ({
     strokeDasharray: `${circumference * ringProgress.value} ${circumference}`,
   }));
-  const encouragement = getMemberEncouragement(streakDays, expired);
+  const baseEncouragement = getMemberEncouragement(streakDays, expired);
+  const encouragement = lastCheckIn && lastCheckIn !== "None" && !expired
+    ? `${baseEncouragement} · Last check-in ${lastCheckIn}`
+    : baseEncouragement;
 
   useEffect(() => {
     ringProgress.value = withSpring(progress, { mass: 1, damping: 15, stiffness: 100 });
@@ -164,17 +171,25 @@ export function MemberStateHero({
       {showActions ? (
         <View style={styles.heroActions}>
           {expired ? (
-            <ZookButton href="/membership" icon="refresh-outline" style={styles.heroPrimaryAction}>
+            <ZookButton
+              onPress={() => router.push("/membership")}
+              icon="refresh-outline"
+              style={styles.heroPrimaryAction}
+            >
               Renew
             </ZookButton>
           ) : (
-            <ZookButton href="/scan" icon="qr-code-outline" style={styles.heroPrimaryAction}>
+            <ZookButton
+              onPress={() => router.push("/scan")}
+              icon="qr-code-outline"
+              style={styles.heroPrimaryAction}
+            >
               Scan QR
             </ZookButton>
           )}
           {showBillingAction ? (
             <ZookButton
-              href="/tracking-entry"
+              onPress={() => router.push("/tracking-entry")}
               tone="secondary"
               icon="play-outline"
               style={styles.heroSecondaryAction}
@@ -246,12 +261,15 @@ const styles = StyleSheet.create({
   },
   visitRingOuter: {
     width: 124,
+    minHeight: 124,
     alignItems: "center",
     gap: 4,
   },
   visitRingSvg: {
     position: "absolute",
     top: 0,
+    left: 10,
+    backgroundColor: "transparent",
   },
   visitRingArc: {
     width: 104,
@@ -260,6 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.22)",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 1,
   },
   visitRingValue: {
     color: colors.text,

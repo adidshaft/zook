@@ -3,6 +3,7 @@ import { formatInr } from "@/lib/format";
 import type { CouponKind, MembershipPlanRow, OfferRow } from "../../../dashboard-operational-model";
 import { HelpHint } from "../../../ui";
 import { Select, TextInput } from "../../primitives";
+import { ZookButton } from "../../../zook-button";
 import type { OfferFormState } from "./types";
 
 type OfferControlsProps = {
@@ -106,13 +107,14 @@ export function OfferControls({
             inputMode="numeric"
           />
         </div>
-        <button
+        <ZookButton
+          type="button"
           onClick={() => void createOffer()}
           disabled={formBusy === "offer"}
-          className="zook-focus rounded-full bg-lime-300 px-4 py-3 text-sm font-semibold text-black disabled:opacity-60"
+          state={formBusy === "offer" ? "loading" : "idle"}
         >
           {formBusy === "offer" ? "Creating..." : "Create offer"}
-        </button>
+        </ZookButton>
         {offers.slice(0, 4).map((offer) => (
           <div key={offer.id} className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
             {editingOfferId === offer.id ? (
@@ -155,19 +157,23 @@ export function OfferControls({
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button
+                  <ZookButton
+                    type="button"
+                    size="sm"
                     onClick={() => void updateOffer(offer.id)}
                     disabled={formBusy === `offer:${offer.id}:edit`}
-                    className="zook-focus rounded-full bg-lime-300 px-3 py-1 text-xs font-semibold text-black disabled:opacity-50"
+                    state={formBusy === `offer:${offer.id}:edit` ? "loading" : "idle"}
                   >
                     Save
-                  </button>
-                  <button
+                  </ZookButton>
+                  <ZookButton
+                    type="button"
+                    tone="ghost"
+                    size="sm"
                     onClick={() => setEditingOfferId(null)}
-                    className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
                   >
                     Cancel
-                  </button>
+                  </ZookButton>
                 </div>
               </div>
             ) : (
@@ -182,19 +188,24 @@ export function OfferControls({
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
-                  <button
+                  <ZookButton
+                    type="button"
+                    tone="ghost"
+                    size="sm"
                     onClick={() => startOfferEdit(offer)}
-                    className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/65"
                   >
                     Edit
-                  </button>
-                  <button
+                  </ZookButton>
+                  <ZookButton
+                    type="button"
+                    tone="ghost"
+                    size="sm"
                     onClick={() => void toggleOffer(offer)}
                     disabled={formBusy === `offer:${offer.id}`}
-                    className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/65 disabled:opacity-50"
+                    state={formBusy === `offer:${offer.id}` ? "loading" : "idle"}
                   >
                     {offer.active ? "Deactivate" : "Restore"}
-                  </button>
+                  </ZookButton>
                 </div>
               </div>
             )}

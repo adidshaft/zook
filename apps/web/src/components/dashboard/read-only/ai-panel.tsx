@@ -10,6 +10,7 @@ import {
 } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn } from "../../ui";
+import { ZookButton } from "../../zook-button";
 import { formatCompactNumber, formatEnumLabel, formatInr } from "@/lib/format";
 import type {
   AIUsageRow,
@@ -99,13 +100,14 @@ export function AiPanel({
                   header: "Details",
                   align: "right",
                   render: (usage) => (
-                    <button
+                    <ZookButton
                       type="button"
+                      tone="ghost"
+                      size="sm"
                       onClick={() => setSelectedDraftId(usage.id)}
-                      className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
                     >
                       View
-                    </button>
+                    </ZookButton>
                   ),
                 },
               ]}
@@ -127,13 +129,14 @@ export function AiPanel({
                 <p className="text-xs uppercase tracking-[0.18em] text-white/35">Draft detail</p>
                 <p className="mt-1 font-medium text-white">{selectedDraft.promptSummary}</p>
               </div>
-              <button
+              <ZookButton
                 type="button"
+                tone="ghost"
+                size="sm"
                 onClick={() => setSelectedDraftId(null)}
-                className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/60"
               >
                 Close
-              </button>
+              </ZookButton>
             </div>
             <div className="mt-4 grid gap-3 rounded-[18px] border border-white/10 bg-black/40 p-3 text-sm leading-6 text-white/62">
               <p>{formatAiResponseSummary(selectedDraft.responseSummary)}</p>

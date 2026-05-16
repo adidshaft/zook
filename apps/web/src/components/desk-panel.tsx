@@ -8,6 +8,7 @@ import { formatInr } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
 import { Pill } from "./glass-card";
+import { ZookButton, ZookButtonLink } from "./zook-button";
 import { DashboardLocaleToggle } from "./dashboard-locale-toggle";
 import { DashboardSignOutButton } from "./dashboard-sign-out-button";
 import { deskTranslations } from "./desk/copy";
@@ -421,7 +422,7 @@ export function DeskPanel({
 
   return (
     <main className="min-h-dvh pb-28">
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#070907]/92 px-4 py-3 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#070908]/92 px-4 py-3 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold uppercase tracking-[0.14em] text-white/70">
@@ -436,12 +437,13 @@ export function DeskPanel({
           </div>
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {canOpenManagement ? (
-              <Link
+              <ZookButtonLink
+                tone="ghost"
+                size="sm"
                 href="/dashboard"
-                className="zook-focus inline-flex min-h-10 items-center justify-center rounded-full border border-white/10 px-4 text-sm font-semibold text-white/76 transition hover:bg-white/8 hover:text-white"
               >
                 {copy.backToManagement}
-              </Link>
+              </ZookButtonLink>
             ) : null}
             <DashboardLocaleToggle locale={locale ?? undefined} labels={copy.common} />
             <DashboardSignOutButton
@@ -487,20 +489,22 @@ export function DeskPanel({
               placeholder={copy.deskMessageTitle}
             />
             <div className="mt-3 flex flex-wrap justify-end gap-2">
-              <button
+              <ZookButton
                 type="button"
+                tone="ghost"
+                size="sm"
                 onClick={() => setMessageDraft(null)}
-                className="zook-focus min-h-10 rounded-full border border-white/10 px-4 text-sm text-white/70"
               >
                 {copy.common.cancel}
-              </button>
-              <button
+              </ZookButton>
+              <ZookButton
                 type="submit"
+                size="sm"
                 disabled={!messageDraft.body.trim() || busyId.startsWith("message:")}
-                className="zook-focus min-h-10 rounded-full bg-lime-300 px-4 text-sm font-semibold text-black disabled:opacity-60"
+                state={busyId.startsWith("message:") ? "loading" : "idle"}
               >
                 {busyId.startsWith("message:") ? copy.sending : copy.sendMemberMessage}
-              </button>
+              </ZookButton>
             </div>
           </form>
         ) : null}
@@ -523,20 +527,22 @@ export function DeskPanel({
               autoComplete="one-time-code"
             />
             <div className="mt-3 flex flex-wrap justify-end gap-2">
-              <button
+              <ZookButton
                 type="button"
+                tone="ghost"
+                size="sm"
                 onClick={() => setPickupDraft(null)}
-                className="zook-focus min-h-10 rounded-full border border-white/10 px-4 text-sm text-white/70"
               >
                 {copy.common.cancel}
-              </button>
-              <button
+              </ZookButton>
+              <ZookButton
                 type="submit"
+                size="sm"
                 disabled={!pickupDraft.code.trim() || busyId.startsWith("verify:")}
-                className="zook-focus min-h-10 rounded-full bg-lime-300 px-4 text-sm font-semibold text-black disabled:opacity-60"
+                state={busyId.startsWith("verify:") ? "loading" : "idle"}
               >
                 {busyId.startsWith("verify:") ? copy.verifying : copy.verifyCode}
-              </button>
+              </ZookButton>
             </div>
           </form>
         ) : null}

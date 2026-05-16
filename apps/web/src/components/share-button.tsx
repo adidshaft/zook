@@ -1,6 +1,7 @@
 "use client";
 
 import { Share2 } from "lucide-react";
+import { ZookButton } from "@/components/zook-button";
 
 export function ShareButton({
   title,
@@ -23,13 +24,14 @@ export function ShareButton({
   }
 
   return (
-    <button
+    <ZookButton
       type="button"
+      tone="ghost"
+      size="sm"
       onClick={() => void share()}
-      className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
+      leadingIcon={<Share2 size={16} />}
     >
-      <Share2 size={16} />
       {label}
-    </button>
+    </ZookButton>
   );
 }

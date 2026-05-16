@@ -2,7 +2,7 @@
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { useState } from "react";
-import clsx from "clsx";
+import { ZookButton } from "@/components/zook-button";
 
 type ConfirmActionButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> & {
   title: string;
@@ -56,28 +56,29 @@ export function ConfirmActionButton({
             <span className="mt-1 block text-xs leading-5 text-white/55">{description}</span>
           ) : null}
           <span className="mt-3 flex flex-wrap justify-end gap-2">
-            <button
+            <ZookButton
               type="button"
+              tone="ghost"
+              size="sm"
               onClick={() => setOpen(false)}
               disabled={confirming}
-              className="zook-focus min-h-9 rounded-full border border-white/10 px-3 text-xs font-semibold text-white/70 transition hover:bg-white/8 disabled:opacity-50"
             >
               {cancelLabel}
-            </button>
-            <button
+            </ZookButton>
+            <ZookButton
               type="button"
-              onClick={() => void runConfirmation()}
-              disabled={confirming}
-              className={clsx(
-                "zook-focus min-h-9 rounded-full px-3 text-xs font-semibold text-black transition disabled:opacity-50",
+              tone={
                 buttonProps["aria-label"]?.toString().toLowerCase().includes("delete") ||
-                  confirmLabel.toLowerCase().includes("delete")
-                  ? "bg-red-200"
-                  : "bg-lime-300",
-              )}
+                confirmLabel.toLowerCase().includes("delete")
+                  ? "danger"
+                  : "lime"
+              }
+              size="sm"
+              onClick={() => void runConfirmation()}
+              state={confirming ? "loading" : "idle"}
             >
               {confirming ? "Working..." : confirmLabel}
-            </button>
+            </ZookButton>
           </span>
         </span>
       ) : null}

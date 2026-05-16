@@ -30,7 +30,7 @@ export function DashboardHeader({
   const locationLabel = [activeOrg.city, activeOrg.state].filter(Boolean).join(", ");
 
   return (
-    <div className="sticky top-0 z-50 -mx-3 border-b border-white/10 bg-[#070908]/92 px-3 py-3 backdrop-blur-xl sm:-mx-5 sm:px-5 lg:mx-0 lg:px-5">
+    <div className="sticky top-0 z-40 -mx-3 border-b border-white/10 bg-[#070908]/92 px-3 py-3 backdrop-blur-xl sm:-mx-5 sm:px-5 lg:mx-0 lg:px-5">
       <div className="flex min-h-[var(--zook-header-height)] flex-col gap-3 xl:flex-row xl:items-center">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <div className="flex min-h-10 min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-1.5 text-sm text-white/75">

@@ -8,6 +8,7 @@ import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { ImageAssetUpload } from "../../image-asset-upload";
 import { HelpHint } from "../../ui";
+import { ZookButton } from "../../zook-button";
 import { ShopOrdersSection } from "./shop-orders-section";
 import { ShopStatusCard } from "./shop-status-card";
 import type {
@@ -397,13 +398,15 @@ export function ShopSection({
                 form={productForm}
                 setForm={setProductForm}
               />
-              <button
+              <ZookButton
+                type="button"
                 onClick={() => void createProduct()}
                 disabled={formBusy === "product"}
-                className="zook-focus w-full rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+                state={formBusy === "product" ? "loading" : "idle"}
+                fullWidth
               >
                 {formBusy === "product" ? "Creating..." : "Add product"}
-              </button>
+              </ZookButton>
               {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
             </div>
             <div className="mt-5 grid gap-3">
@@ -452,19 +455,24 @@ export function ShopSection({
                       </span>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <button
+                      <ZookButton
+                        type="button"
+                        tone="ghost"
+                        size="sm"
                         onClick={() => startProductEdit(product)}
-                        className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:border-lime-300/40 hover:text-lime-100"
                       >
                         Edit
-                      </button>
-                      <button
+                      </ZookButton>
+                      <ZookButton
+                        type="button"
+                        tone="ghost"
+                        size="sm"
                         onClick={() => void updateProduct(product.id, { active: !product.active })}
                         disabled={formBusy === `product:${product.id}`}
-                        className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:border-amber-300/40 hover:text-amber-100 disabled:opacity-50"
+                        state={formBusy === `product:${product.id}` ? "loading" : "idle"}
                       >
                         {product.active ? "Archive" : "Restore"}
-                      </button>
+                      </ZookButton>
                       <ConfirmActionButton
                         title="Delete product?"
                         description="Only unused products can be deleted. Archive products with order history so reports stay consistent."
@@ -486,12 +494,14 @@ export function ShopSection({
                               history.
                             </p>
                           </div>
-                          <button
+                          <ZookButton
+                            type="button"
+                            tone="ghost"
+                            size="sm"
                             onClick={() => setEditingProductId(null)}
-                            className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/60"
                           >
                             Cancel
-                          </button>
+                          </ZookButton>
                         </div>
                         <div className="mt-4 grid gap-3 md:grid-cols-2">
                           <label className="grid gap-1 text-xs font-medium text-white/50">
@@ -634,21 +644,26 @@ export function ShopSection({
                             placeholder="Adjustment reason"
                             className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                           />
-                          <button
+                          <ZookButton
+                            type="button"
+                            tone="secondary"
                             onClick={() => void adjustStock(product.id)}
                             disabled={formBusy === `stock:${product.id}` || !stockAdjustment.delta}
-                            className="zook-focus rounded-full border border-white/10 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                            state={formBusy === `stock:${product.id}` ? "loading" : "idle"}
                           >
                             Adjust
-                          </button>
+                          </ZookButton>
                         </div>
-                        <button
+                        <ZookButton
+                          type="button"
                           onClick={() => void updateProduct(product.id)}
                           disabled={formBusy === `product:${product.id}`}
-                          className="zook-focus mt-3 w-full rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+                          state={formBusy === `product:${product.id}` ? "loading" : "idle"}
+                          fullWidth
+                          className="mt-3"
                         >
                           {formBusy === `product:${product.id}` ? "Saving..." : "Save product"}
-                        </button>
+                        </ZookButton>
                       </div>
                     ) : null}
                   </div>

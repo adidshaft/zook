@@ -1,6 +1,7 @@
 import { ErrorNotice } from "../../operational-shared";
 import { ReadoutGrid, SectionHeader, StatusPill } from "../../../dashboard-primitives";
 import { GlassCard, Pill } from "../../../glass-card";
+import { ZookButton } from "../../../zook-button";
 import { formatCompactNumber } from "@/lib/format";
 import type { DiscountType, RewardType } from "../../../dashboard-operational-model";
 import { CouponControls } from "./coupon-controls";
@@ -334,13 +335,16 @@ export function ReferralDiscountControls({
           className="h-4 w-4 accent-lime-300"
         />
       </label>
-      <button
+      <ZookButton
+        type="button"
+        size="sm"
         onClick={() => void saveReferralPolicy()}
         disabled={formBusy === "referral-policy"}
-        className="zook-focus ml-auto rounded-full bg-lime-300 px-5 py-2 text-xs font-semibold text-black disabled:opacity-60"
+        state={formBusy === "referral-policy" ? "loading" : "idle"}
+        className="ml-auto"
       >
         {formBusy === "referral-policy" ? "Saving..." : "Save policy"}
-      </button>
+      </ZookButton>
     </div>
   </div>
 

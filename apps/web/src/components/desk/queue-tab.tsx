@@ -1,6 +1,7 @@
 import { CheckCircle2, XCircle } from "lucide-react";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
+import { ZookButton } from "../zook-button";
 import type { DeskCopy } from "./copy";
 import type { AttendanceQueueRecord } from "./types";
 import { ageLabel } from "./utils";
@@ -87,24 +88,27 @@ export function QueueTab({
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <ZookButton
                       type="button"
+                      size="sm"
                       disabled={busyId === record.id}
+                      state={busyId === record.id ? "loading" : "idle"}
                       onClick={() => onUpdateAttendance(record.id, "approve")}
-                      className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+                      leadingIcon={<CheckCircle2 size={16} />}
                     >
-                      <CheckCircle2 size={16} />
                       {copy.approve}
-                    </button>
-                    <button
+                    </ZookButton>
+                    <ZookButton
                       type="button"
+                      tone="ghost"
+                      size="sm"
                       disabled={busyId === record.id}
+                      state={busyId === record.id ? "loading" : "idle"}
                       onClick={() => onUpdateAttendance(record.id, "reject")}
-                      className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/72 disabled:opacity-50"
+                      leadingIcon={<XCircle size={16} />}
                     >
-                      <XCircle size={16} />
                       {copy.reject}
-                    </button>
+                    </ZookButton>
                   </div>
                 </div>
               </div>

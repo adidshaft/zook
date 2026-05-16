@@ -5,6 +5,7 @@ import { getMapProvider } from "@zook/core/providers";
 import { prisma } from "@zook/db";
 import { AccountAwarePublicNav } from "@/components/account-aware-public-nav";
 import { GlassCard, Pill } from "@/components/glass-card";
+import { ZookButtonLink } from "@/components/zook-button";
 import { formatInr } from "@/lib/format";
 import {
   alternatePublicLocale,
@@ -295,19 +296,21 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/55">
               {t("noGymsCopy")}
             </p>
-            <Link
+            <ZookButtonLink
               href={localizedPath("/start-gym", locale)}
-              className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
+              className="mt-6"
             >
               {t("shareGymOwner")}
-            </Link>
+            </ZookButtonLink>
           </GlassCard>
         )}
 
         {totalPages > 1 ? (
           <nav className="flex items-center justify-center gap-3" aria-label="Gym results pages">
             {page > 1 ? (
-              <Link
+              <ZookButtonLink
+                tone="ghost"
+                size="sm"
                 href={{
                   pathname: "/gyms",
                   query: {
@@ -317,16 +320,17 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
                     page: page - 1,
                   },
                 }}
-                className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
               >
                 {t("previous")}
-              </Link>
+              </ZookButtonLink>
             ) : null}
             <span className="text-sm text-white/45">
               {t("page")} {page} {t("of")} {totalPages}
             </span>
             {page < totalPages ? (
-              <Link
+              <ZookButtonLink
+                tone="ghost"
+                size="sm"
                 href={{
                   pathname: "/gyms",
                   query: {
@@ -336,10 +340,9 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
                     page: page + 1,
                   },
                 }}
-                className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
               >
                 {t("next")}
-              </Link>
+              </ZookButtonLink>
             ) : null}
           </nav>
         ) : null}

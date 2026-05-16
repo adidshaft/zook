@@ -5,6 +5,7 @@ import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
 import { GlassCard, Pill } from "../../glass-card";
 import { HelpHint } from "../../ui";
+import { ZookButton } from "../../zook-button";
 import type {
   OrganizationSnapshot,
   OrganizationSummary,
@@ -295,14 +296,14 @@ export function BillingSection({
                 />
               </label>
             ))}
-            <button
+            <ZookButton
               type="button"
               disabled={busy}
+              state={busy ? "loading" : "idle"}
               onClick={() => void saveBillingProfile()}
-              className="zook-focus rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
             >
               {busy ? "Saving..." : "Save billing details"}
-            </button>
+            </ZookButton>
             <div className="grid gap-2">
               <Pill tone={profile.receiptReady ? "lime" : "amber"}>
                 {profile.receiptReady ? "Receipts enabled" : "Receipts need details"}
@@ -406,13 +407,14 @@ export function BillingSection({
                 <code className="rounded-xl border border-white/10 bg-black/40 px-4 py-2 font-mono text-base text-lime-200">
                   {subscription.platformReferral.code}
                 </code>
-                <button
+                <ZookButton
                   type="button"
+                  tone="ghost"
+                  size="sm"
                   onClick={() => void copyReferralCode()}
-                  className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/8"
                 >
                   Copy code
-                </button>
+                </ZookButton>
               </div>
               {copyStatus ? <p className="mt-3 text-xs text-white/55">{copyStatus}</p> : null}
             </div>
@@ -638,24 +640,26 @@ export function RefundsSection({
             </label>
           </div>
           <div className="mt-3 flex flex-wrap justify-end gap-2">
-            <button
+            <ZookButton
               type="button"
+              tone="ghost"
+              size="sm"
               onClick={() => setRefundDraft(null)}
-              className="zook-focus min-h-10 rounded-full border border-white/10 px-4 text-sm text-white/70"
             >
               Cancel
-            </button>
-            <button
+            </ZookButton>
+            <ZookButton
               type="submit"
+              size="sm"
               disabled={
                 !refundDraft.reason.trim() ||
                 !refundDraft.amountRupees.trim() ||
                 busyPaymentId === refundDraft.payment.id
               }
-              className="zook-focus min-h-10 rounded-full bg-lime-300 px-4 text-sm font-semibold text-black disabled:opacity-60"
+              state={busyPaymentId === refundDraft.payment.id ? "loading" : "idle"}
             >
               {busyPaymentId === refundDraft.payment.id ? "Submitting..." : "Submit refund"}
-            </button>
+            </ZookButton>
           </div>
         </form>
       ) : null}
@@ -675,22 +679,23 @@ export function RefundsSection({
               </p>
             </div>
             <span className="inline-flex flex-wrap items-center gap-2">
-              <button
+              <ZookButton
                 type="button"
+                size="sm"
                 onClick={() => {
                   setError("");
                   setStatus("");
-              setRefundDraft({
-                payment,
-                reason: "Owner requested refund",
-                amountRupees: (remainingRefundAmount(payment) / 100).toFixed(2),
-              });
-            }}
+                  setRefundDraft({
+                    payment,
+                    reason: "Owner requested refund",
+                    amountRupees: (remainingRefundAmount(payment) / 100).toFixed(2),
+                  });
+                }}
                 disabled={busyPaymentId === payment.id}
-                className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-xs font-semibold text-black disabled:opacity-60"
+                state={busyPaymentId === payment.id ? "loading" : "idle"}
               >
                 {busyPaymentId === payment.id ? "Refunding..." : "Refund"}
-              </button>
+              </ZookButton>
               <HelpHint label="Refund access" title="Refund access">
                 Refunds are sent to the payment partner when a payment reference exists. Zook then
                 marks the payment as refunded or partly refunded.

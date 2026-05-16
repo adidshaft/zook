@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn } from "../../ui";
+import { ZookButton } from "../../zook-button";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import type { AIUsageRow, AuditLogRow } from "../../dashboard-operational-model";
 import {
@@ -101,14 +102,15 @@ export function AuditPanel({
                     header: "Diff",
                     align: "right",
                     render: (log) => (
-                      <button
+                      <ZookButton
                         type="button"
+                        tone="ghost"
+                        size="sm"
                         onClick={() => setSelectedAuditId(log.id)}
-                        className="zook-focus inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
+                        trailingIcon={<span aria-hidden="true">→</span>}
                       >
                         Details
-                        <span aria-hidden="true">→</span>
-                      </button>
+                      </ZookButton>
                     ),
                   },
                 ]}
@@ -139,13 +141,14 @@ export function AuditPanel({
                   {formatEnumLabel(selectedAuditLog.action)}
                 </p>
               </div>
-              <button
+              <ZookButton
                 type="button"
+                tone="ghost"
+                size="sm"
                 onClick={() => setSelectedAuditId(null)}
-                className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/60"
               >
                 Close
-              </button>
+              </ZookButton>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div className="rounded-[18px] border border-white/10 bg-black/40 p-3">
@@ -269,13 +272,14 @@ export function AuditPanel({
                 <p className="text-xs uppercase tracking-[0.18em] text-white/35">Draft details</p>
                 <p className="mt-1 font-medium text-white">{selectedAiUsage.promptSummary}</p>
               </div>
-              <button
+              <ZookButton
                 type="button"
+                tone="ghost"
+                size="sm"
                 onClick={() => setSelectedAiId(null)}
-                className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/60"
               >
                 Close
-              </button>
+              </ZookButton>
             </div>
             <div className="mt-4 grid gap-3 rounded-[18px] border border-white/10 bg-black/40 p-3 text-sm leading-6 text-white/62">
               <p>{formatAiResponseSummary(selectedAiUsage.responseSummary)}</p>

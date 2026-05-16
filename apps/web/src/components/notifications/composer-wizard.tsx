@@ -6,6 +6,7 @@ import type { Permission, Role } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
 import { ConfirmDialog } from "../dashboard-primitives";
 import { GlassCard, Pill } from "../glass-card";
+import { ZookButton } from "../zook-button";
 import {
   AudienceStep,
   ComposerDeliveryHistory,
@@ -405,42 +406,45 @@ export function NotificationComposerPanel({
             />
           ) : null}
           <div className="flex flex-wrap justify-between gap-3">
-            <button
+            <ZookButton
               type="button"
+              tone="ghost"
+              size="sm"
               onClick={() => setStep(Math.max(1, step - 1))}
-              className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
             >
               Back
-            </button>
+            </ZookButton>
             <div className="flex flex-wrap gap-2">
               {step < 3 ? (
-                <button
+                <ZookButton
                   type="button"
+                  size="sm"
                   onClick={() => setStep(step + 1)}
-                  className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
                 >
                   Continue
-                </button>
+                </ZookButton>
               ) : null}
               {step === 3 ? (
-                <button
+                <ZookButton
                   type="button"
+                  size="sm"
                   onClick={() => void loadPreview()}
                   disabled={saving}
-                  className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+                  state={saving ? "loading" : "idle"}
                 >
                   Preview recipients
-                </button>
+                </ZookButton>
               ) : null}
               {step === 4 ? (
-                <button
+                <ZookButton
                   type="button"
+                  size="sm"
                   onClick={() => setSendConfirmationOpen(true)}
                   disabled={saving || !preview?.willDeliver}
-                  className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+                  state={saving ? "loading" : "idle"}
                 >
                   Send to {preview?.willDeliver ?? 0} members
-                </button>
+                </ZookButton>
               ) : null}
             </div>
           </div>

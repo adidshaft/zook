@@ -6,6 +6,7 @@ import { webApiFetch } from "@/lib/api-client";
 import type { ShopOrderRow } from "../../dashboard-operational-model";
 import { PaymentProofUpload } from "../../payment-proof-upload";
 import { formatPaymentMode, modeOptions, type PaymentReceiptState } from "./payments-utils";
+import { ZookButton } from "../../zook-button";
 
 export function ShopOrderPaymentControl({
   orgId,
@@ -63,15 +64,16 @@ export function ShopOrderPaymentControl({
 
   if (!open) {
     return (
-      <button
+      <ZookButton
         type="button"
+        tone="secondary"
+        size="sm"
         disabled={disabled}
         title={disabled ? disabledTitle : undefined}
         onClick={() => setOpen(true)}
-        className="zook-focus rounded-full border border-lime-300/40 px-3 py-1 text-xs font-semibold text-lime-100 transition hover:bg-lime-300/10 disabled:opacity-50"
       >
         Record payment · Mode: {formatPaymentMode(form.mode)}
-      </button>
+      </ZookButton>
     );
   }
 
@@ -117,14 +119,15 @@ export function ShopOrderPaymentControl({
         className="zook-focus min-h-16 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white"
       />
       {status ? <p className="text-xs text-amber-100">{status}</p> : null}
-      <button
+      <ZookButton
         type="button"
+        size="sm"
         disabled={busy || disabled}
+        state={busy ? "loading" : "idle"}
         onClick={() => void recordPayment()}
-        className="zook-focus min-h-10 rounded-full bg-lime-300 px-3 text-xs font-semibold text-black disabled:opacity-50"
       >
         {busy ? "Recording..." : "Confirm payment"}
-      </button>
+      </ZookButton>
     </div>
   );
 }

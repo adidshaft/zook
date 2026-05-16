@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorState } from "../dashboard-primitives";
+import { ZookButton } from "../zook-button";
 import { formatEnumLabel } from "@/lib/format";
 
 export function ErrorNotice({ message }: { message: string }) {
@@ -34,14 +35,15 @@ export function LoadMoreButton({
     <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-white/45">
       <span>Showing {count} rows</span>
       {hasMore ? (
-        <button
+        <ZookButton
           type="button"
+          tone="ghost"
           onClick={onLoadMore}
           disabled={loading}
-          className="zook-focus min-h-11 rounded-full border border-white/10 px-4 text-sm font-semibold text-white/70 hover:border-lime-300/35 hover:text-lime-100 disabled:opacity-50"
+          state={loading ? "loading" : "idle"}
         >
           {loading ? "Fetching more" : "Load more"}
-        </button>
+        </ZookButton>
       ) : null}
     </div>
   );

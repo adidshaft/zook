@@ -1,6 +1,7 @@
 "use client";
 
 import { HelpHint, RadioCardGroup } from "../../ui";
+import { ZookButton } from "../../zook-button";
 
 type BranchDayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 type BranchDayHours = { closed: true } | { open: string; close: string };
@@ -175,13 +176,14 @@ export function BranchHoursEditor({
             </HelpHint>
           </p>
         </div>
-        <button
+        <ZookButton
           type="button"
+          tone="ghost"
+          size="sm"
           onClick={copyMondayToAll}
-          className="zook-focus rounded-full border border-white/10 px-3 py-2 text-xs text-white/70 transition hover:bg-white/8"
         >
           Copy Mon
-        </button>
+        </ZookButton>
       </div>
       <RadioCardGroup
         name="branch-hours-preset"

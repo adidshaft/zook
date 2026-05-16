@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { webApiFetch } from "@/lib/api-client";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
+import { ZookButton } from "../zook-button";
 import type { NotificationRecipientRow, NotificationRow } from "./shared";
 
 export function NotificationHistoryPanel({
@@ -180,16 +181,19 @@ export function NotificationHistoryPanel({
                 {undeliveredCount} undelivered
               </Pill>
             </div>
-            <button
+            <ZookButton
               type="button"
+              size="sm"
               onClick={() => void resendUndelivered(selectedNotification)}
               disabled={busy === `resend:${selectedNotification.id}` || undeliveredCount === 0}
-              className="zook-focus mt-4 w-full rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+              state={busy === `resend:${selectedNotification.id}` ? "loading" : "idle"}
+              fullWidth
+              className="mt-4"
             >
               {busy === `resend:${selectedNotification.id}`
                 ? "Sending again..."
                 : "Resend undelivered"}
-            </button>
+            </ZookButton>
             <div className="mt-5 grid max-h-[620px] gap-2 overflow-y-auto pr-1">
               {recipients.map((recipient) => (
                 <div

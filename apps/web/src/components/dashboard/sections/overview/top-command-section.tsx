@@ -4,6 +4,7 @@ import { ConfirmActionButton } from "../../../confirm-action-button";
 import { ReadoutGrid, SectionHeader, StatusPill } from "../../../dashboard-primitives";
 import { GlassCard, Pill } from "../../../glass-card";
 import { HelpHint, RadioCardGroup } from "../../../ui";
+import { ZookButton, ZookButtonLink } from "../../../zook-button";
 import { BranchHoursEditor } from "../branch-hours-editor";
 import {
   formatCompactNumber,
@@ -95,12 +96,13 @@ export function TopCommandSection({
           description="Today's check-ins, revenue, stock, and member requests in one view."
           badge={<StatusPill value={formatEnumLabel(organization.status)} />}
           action={
-            <Link
+            <ZookButtonLink
+              tone="ghost"
+              size="sm"
               href="/dashboard/reports"
-              className="zook-focus inline-flex items-center rounded-full border border-white/10 px-4 py-2 text-sm text-white/72 transition hover:bg-white/10"
             >
               Open reports
-            </Link>
+            </ZookButtonLink>
           }
         />
         <ReadoutGrid
@@ -236,13 +238,14 @@ export function TopCommandSection({
                 placeholder="Pincode"
                 className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
               />
-              <button
+              <ZookButton
+                type="button"
                 onClick={() => void createBranch()}
                 disabled={formBusy === "branch"}
-                className="zook-focus rounded-full bg-lime-300 px-4 py-3 text-sm font-semibold text-black disabled:opacity-60"
+                state={formBusy === "branch" ? "loading" : "idle"}
               >
                 Add
-              </button>
+              </ZookButton>
             </div>
             <input
               value={branchForm.contactPhone}
@@ -408,13 +411,14 @@ export function TopCommandSection({
                         placeholder="Pincode"
                         className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
                       />
-                      <button
+                      <ZookButton
+                        type="button"
                         onClick={() => void saveBranchEdit(branch)}
                         disabled={formBusy === `branch:${branch.id}`}
-                        className="zook-focus rounded-full bg-lime-300 px-4 py-3 text-sm font-semibold text-black disabled:opacity-60"
+                        state={formBusy === `branch:${branch.id}` ? "loading" : "idle"}
                       >
                         Save
-                      </button>
+                      </ZookButton>
                     </div>
                     <input
                       value={branchEditForm.contactPhone}
@@ -498,12 +502,15 @@ export function TopCommandSection({
                       compact
                     />
                   </div>
-                  <button
+                  <ZookButton
+                    type="button"
+                    tone="ghost"
+                    size="sm"
                     onClick={() => setEditingBranchId(null)}
-                    className="zook-focus justify-self-start rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
+                    className="justify-self-start"
                   >
                     Cancel
-                  </button>
+                  </ZookButton>
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-3">
@@ -527,23 +534,28 @@ export function TopCommandSection({
                       value={branch.isDefault ? "Default" : branch.active ? "Active" : "Paused"}
                       tone={branch.isDefault ? "lime" : branch.active ? "blue" : "amber"}
                     />
-                    <button
+                    <ZookButton
+                      type="button"
+                      tone="ghost"
+                      size="sm"
                       onClick={() => startBranchEdit(branch)}
-                      className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
                     >
                       Edit
-                    </button>
+                    </ZookButton>
                     {!branch.isDefault ? (
                       <>
-                        <button
+                        <ZookButton
+                          type="button"
+                          tone="ghost"
+                          size="sm"
                           onClick={() =>
                             void updateBranch(branch, { isDefault: true, active: true })
                           }
                           disabled={formBusy === `branch:${branch.id}`}
-                          className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65 disabled:opacity-50"
+                          state={formBusy === `branch:${branch.id}` ? "loading" : "idle"}
                         >
                           Make default
-                        </button>
+                        </ZookButton>
                         {branch.active ? (
                           <ConfirmActionButton
                             title="Deactivate branch?"

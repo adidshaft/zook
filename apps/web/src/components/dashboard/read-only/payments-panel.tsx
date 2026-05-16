@@ -12,6 +12,7 @@ import {
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
+import { ZookButton } from "../../zook-button";
 import { formatCompactNumber, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
 import type {
   MembershipPlanRow,
@@ -282,22 +283,26 @@ export function PaymentsPanel({
                       align: "right",
                       render: (payment) => (
                         <div className="flex flex-wrap justify-end gap-2">
-                          <button
+                          <ZookButton
                             type="button"
+                            tone="ghost"
+                            size="sm"
                             onClick={() => void generatePaymentDocument(payment, "receipt")}
                             disabled={documentBusyId === `receipt:${payment.id}`}
-                            className="zook-focus rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/8 disabled:opacity-50"
+                            state={documentBusyId === `receipt:${payment.id}` ? "loading" : "idle"}
                           >
                             {documentBusyId === `receipt:${payment.id}` ? "Making..." : "Receipt"}
-                          </button>
-                          <button
+                          </ZookButton>
+                          <ZookButton
                             type="button"
+                            tone="ghost"
+                            size="sm"
                             onClick={() => void generatePaymentDocument(payment, "invoice")}
                             disabled={documentBusyId === `invoice:${payment.id}`}
-                            className="zook-focus rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/8 disabled:opacity-50"
+                            state={documentBusyId === `invoice:${payment.id}` ? "loading" : "idle"}
                           >
                             {documentBusyId === `invoice:${payment.id}` ? "Making..." : "Invoice"}
-                          </button>
+                          </ZookButton>
                         </div>
                       ),
                     },
@@ -438,14 +443,14 @@ export function PaymentsPanel({
               placeholder="Notes"
               className="zook-focus min-h-24 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white"
             />
-            <button
+            <ZookButton
               type="submit"
               disabled={manualPaymentBusy || !canRecordOffline}
+              state={manualPaymentBusy ? "loading" : "idle"}
               title={!canRecordOffline ? permissionMessage : undefined}
-              className="zook-focus min-h-11 rounded-full bg-lime-300 px-5 text-sm font-semibold text-black disabled:opacity-50"
             >
               {manualPaymentBusy ? "Recording..." : "Record payment"}
-            </button>
+            </ZookButton>
             <div className="rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50/82">
               Manual/offline payments are recorded with audit logs. Membership activation still
               follows the server confirmation rules for the selected payment path.
@@ -466,13 +471,15 @@ export function PaymentsPanel({
                 <p>Reference: {lastReceipt.reference || "Not added"}</p>
                 <p>Recorded: {formatDateTime(lastReceipt.recordedAt)}</p>
               </div>
-              <button
+              <ZookButton
                 type="button"
+                tone="ghost"
+                size="sm"
                 onClick={() => window.print()}
-                className="zook-focus mt-4 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72 transition hover:bg-white/8"
+                className="mt-4"
               >
                 Print receipt
-              </button>
+              </ZookButton>
             </div>
           ) : null}
         </GlassCard>

@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
 import { ApiError } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
 import { GlassCard, Pill } from "./glass-card";
+import { ZookButton, ZookButtonLink } from "./zook-button";
 
 type StaffInvitePayload = {
   invite: {
@@ -111,21 +111,19 @@ export function StaffInvitePanel({ token }: { token: string }) {
       ) : null}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <Link
-          href={loginHref}
-          className="zook-focus inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white/70"
-        >
+        <ZookButtonLink href={loginHref} tone="ghost" fullWidth>
           Sign in
-        </Link>
-        <button
+        </ZookButtonLink>
+        <ZookButton
           type="button"
+          fullWidth
           disabled={busy || accepted || !payload}
+          state={busy ? "loading" : accepted ? "success" : "idle"}
           onClick={() => void acceptInvite()}
-          className="zook-focus inline-flex items-center justify-center gap-2 rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+          trailingIcon={<ArrowRight size={17} />}
         >
           {busy ? "Accepting..." : accepted ? "Accepted" : "Accept invite"}
-          <ArrowRight size={17} />
-        </button>
+        </ZookButton>
       </div>
     </GlassCard>
   );

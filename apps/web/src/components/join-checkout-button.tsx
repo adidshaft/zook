@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { ZookButton } from "@/components/zook-button";
 
 type ApiEnvelope<T> = {
   ok?: boolean;
@@ -77,14 +78,15 @@ export function JoinCheckoutButton({
 
   return (
     <div className="mt-6 grid gap-3">
-      <button
+      <ZookButton
         type="button"
+        fullWidth
         onClick={() => void startCheckout()}
         disabled={busy}
-        className="zook-focus inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black disabled:opacity-55"
+        state={busy ? "loading" : "idle"}
       >
         {busy ? "Starting payment..." : "Pay securely"}
-      </button>
+      </ZookButton>
       {error ? (
         <p
           role="alert"

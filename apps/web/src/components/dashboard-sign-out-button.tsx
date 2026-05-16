@@ -3,8 +3,8 @@
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import clsx from "clsx";
 import { useQueryClient } from "@tanstack/react-query";
+import { ZookButton } from "@/components/zook-button";
 
 export function DashboardSignOutButton({
   className,
@@ -30,19 +30,18 @@ export function DashboardSignOutButton({
   }
 
   return (
-    <button
+    <ZookButton
       type="button"
+      tone="ghost"
+      size={compact ? "sm" : "md"}
+      fullWidth={!compact}
       disabled={signingOut}
+      state={signingOut ? "loading" : "idle"}
       onClick={() => void signOut()}
-      className={clsx(
-        compact
-          ? "zook-focus inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 text-sm font-medium text-white/68 transition hover:bg-white/8 hover:text-white disabled:cursor-wait disabled:opacity-60"
-          : "flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white/62 transition hover:bg-white/8 hover:text-white disabled:cursor-wait disabled:opacity-60",
-        className,
-      )}
+      leadingIcon={<LogOut size={18} />}
+      {...(className ? { className } : {})}
     >
-      <LogOut size={18} />
       {signingOut ? busyLabel : label}
-    </button>
+    </ZookButton>
   );
 }

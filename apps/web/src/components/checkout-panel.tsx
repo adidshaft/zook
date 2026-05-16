@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatEnumLabel, formatInr } from "@/lib/format";
+import { ZookButtonLink } from "@/components/zook-button";
 
 type CheckoutSessionSummary = {
   id: string;
@@ -132,12 +133,11 @@ export function CheckoutPanel({
         </button>
       </div>
       {status === "SUCCEEDED" ? (
-        <a
-          href={returnUrl ?? "zook://"}
-          className="zook-focus mt-5 inline-flex w-full items-center justify-center rounded-full border border-lime-300/40 bg-lime-300/10 px-5 py-3 text-sm font-semibold text-lime-100 transition hover:bg-lime-300/16"
-        >
-          Open in Zook app
-        </a>
+        <div className="mt-5">
+          <ZookButtonLink href={returnUrl ?? "zook://"} tone="secondary" fullWidth>
+            Open in Zook app
+          </ZookButtonLink>
+        </div>
       ) : null}
     </div>
   );

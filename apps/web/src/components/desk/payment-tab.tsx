@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { CreditCard } from "lucide-react";
 import { formatInr } from "@/lib/format";
 import { GlassCard } from "../glass-card";
+import { ZookButton } from "../zook-button";
 import type { DeskCopy } from "./copy";
 import type { MemberRow, PaymentFormState, PaymentPurpose, PlanRow, ReceiptDetails, ShopOrder } from "./types";
 import { memberLabel, orderItemsSummary } from "./utils";
@@ -241,13 +242,13 @@ export function PaymentTab({
             className="zook-focus min-h-24 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white"
           />
         </label>
-        <button
+        <ZookButton
           type="submit"
           disabled={busyId === "payment"}
-          className="zook-focus min-h-12 rounded-full bg-lime-300 px-5 text-sm font-semibold text-black disabled:opacity-50"
+          state={busyId === "payment" ? "loading" : "idle"}
         >
           {busyId === "payment" ? copy.recording : copy.recordPayment}
-        </button>
+        </ZookButton>
       </form>
       {lastReceipt ? <ReceiptCard copy={copy} receipt={lastReceipt} /> : null}
     </GlassCard>

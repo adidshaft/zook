@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { GlassCard, Pill } from "./glass-card";
 import { HelpHint } from "./ui";
+import { ZookButton } from "./zook-button";
 import { webApiFetch } from "@/lib/api-client";
 
 type AttendanceQueueRecord = {
@@ -121,22 +122,27 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
                 ) : null}
               </div>
               <div className="flex gap-2">
-                <button
+                <ZookButton
+                  type="button"
+                  size="sm"
                   onClick={() => void updateRecord(record.id, "approve")}
                   disabled={busyId === record.id}
-                  className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+                  state={busyId === record.id ? "loading" : "idle"}
+                  leadingIcon={<CheckCircle2 size={16} />}
                 >
-                  <CheckCircle2 size={16} />
                   Approve
-                </button>
-                <button
+                </ZookButton>
+                <ZookButton
+                  type="button"
+                  tone="danger"
+                  size="sm"
                   onClick={() => void updateRecord(record.id, "reject")}
                   disabled={busyId === record.id}
-                  className="zook-focus inline-flex items-center gap-2 rounded-full border border-red-300/30 bg-red-300/10 px-4 py-2 text-sm text-red-100 disabled:opacity-60"
+                  state={busyId === record.id ? "loading" : "idle"}
+                  leadingIcon={<XCircle size={16} />}
                 >
-                  <XCircle size={16} />
                   Reject
-                </button>
+                </ZookButton>
               </div>
             </div>
           </div>

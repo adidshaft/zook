@@ -11,6 +11,7 @@ import {
 } from "./dashboard-primitives";
 import { GlassCard, Pill } from "./glass-card";
 import { ImageAssetUpload } from "./image-asset-upload";
+import { ZookButton } from "./zook-button";
 import { webApiFetch } from "@/lib/api-client";
 import { formatEnumLabel } from "@/lib/format";
 import {
@@ -264,23 +265,25 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               <ExternalLink size={16} />
               Public page
             </a>
-            <button
+            <ZookButton
               type="button"
+              tone="ghost"
+              size="sm"
               onClick={() => void navigator.clipboard.writeText(joinUrl)}
-              className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72 hover:bg-white/8"
+              leadingIcon={<Copy size={16} />}
             >
-              <Copy size={16} />
               Copy membership link
-            </button>
-            <button
+            </ZookButton>
+            <ZookButton
               type="button"
+              size="sm"
               disabled={busy}
+              state={busy ? "loading" : "idle"}
               onClick={() => void saveProfile()}
-              className="zook-focus inline-flex items-center gap-2 rounded-full bg-lime-300 px-5 py-2 text-sm font-semibold text-black disabled:opacity-60"
+              leadingIcon={<Save size={16} />}
             >
-              <Save size={16} />
               {busy ? "Saving..." : "Save profile"}
-            </button>
+            </ZookButton>
           </div>
         </div>
         {status ? (

@@ -7,3 +7,4 @@ export * from "./nav";
 export * from "./bottom-nav-context";
 export * from "./keyboard-aware-screen";
 export * from "./pickup-qr";
+export * from "./animated-appear";

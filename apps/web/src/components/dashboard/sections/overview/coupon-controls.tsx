@@ -3,6 +3,7 @@ import { formatInr } from "@/lib/format";
 import type { CouponKind, CouponRow } from "../../../dashboard-operational-model";
 import { HelpHint } from "../../../ui";
 import { Select, TextInput } from "../../primitives";
+import { ZookButton } from "../../../zook-button";
 import type { CouponFormState } from "./types";
 
 type CouponControlsProps = {
@@ -92,13 +93,15 @@ export function CouponControls({
             placeholder="Max uses"
             inputMode="numeric"
           />
-          <button
+          <ZookButton
+            type="button"
             onClick={() => void createCoupon()}
             disabled={formBusy === "coupon"}
-            className="zook-focus self-end rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+            state={formBusy === "coupon" ? "loading" : "idle"}
+            className="self-end"
           >
             {formBusy === "coupon" ? "Creating..." : "Create coupon"}
-          </button>
+          </ZookButton>
         </div>
         {coupons.slice(0, 4).map((coupon) => (
           <div key={coupon.id} className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
@@ -142,19 +145,23 @@ export function CouponControls({
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button
+                  <ZookButton
+                    type="button"
+                    size="sm"
                     onClick={() => void updateCoupon(coupon.id)}
                     disabled={formBusy === `coupon:${coupon.id}:edit`}
-                    className="zook-focus rounded-full bg-lime-300 px-3 py-1 text-xs font-semibold text-black disabled:opacity-50"
+                    state={formBusy === `coupon:${coupon.id}:edit` ? "loading" : "idle"}
                   >
                     Save
-                  </button>
-                  <button
+                  </ZookButton>
+                  <ZookButton
+                    type="button"
+                    tone="ghost"
+                    size="sm"
                     onClick={() => setEditingCouponId(null)}
-                    className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
                   >
                     Cancel
-                  </button>
+                  </ZookButton>
                 </div>
               </div>
             ) : (
@@ -169,19 +176,24 @@ export function CouponControls({
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
-                  <button
+                  <ZookButton
+                    type="button"
+                    tone="ghost"
+                    size="sm"
                     onClick={() => startCouponEdit(coupon)}
-                    className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/65"
                   >
                     Edit
-                  </button>
-                  <button
+                  </ZookButton>
+                  <ZookButton
+                    type="button"
+                    tone="ghost"
+                    size="sm"
                     onClick={() => void toggleCoupon(coupon)}
                     disabled={formBusy === `coupon:${coupon.id}`}
-                    className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/65 disabled:opacity-50"
+                    state={formBusy === `coupon:${coupon.id}` ? "loading" : "idle"}
                   >
                     {coupon.active ? "Deactivate" : "Restore"}
-                  </button>
+                  </ZookButton>
                 </div>
               </div>
             )}

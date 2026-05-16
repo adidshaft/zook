@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { ErrorNotice } from "../operational-shared";
 import { SectionHeader } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
+import { ZookButton } from "../../zook-button";
 import type {
   BranchRow,
   MembershipPlanRow,
@@ -151,13 +152,15 @@ export function BranchesSection({
           ) : null}
           <div className="grid gap-2 rounded-[22px] border border-white/10 bg-black/20 p-4">
             <Pill tone="blue">Step 1 · Location</Pill>
-            <button
+            <ZookButton
               type="button"
+              tone="ghost"
+              size="sm"
               onClick={useCurrentLocation}
-              className="zook-focus w-fit rounded-full border border-white/10 px-3 py-2 text-xs text-white/70 transition hover:bg-white/8"
+              className="w-fit"
             >
               Use current location
-            </button>
+            </ZookButton>
             <div className="grid gap-3 md:grid-cols-2">
               <input
                 value={branchForm.latitude}
@@ -332,13 +335,15 @@ export function BranchesSection({
             value={branchForm.hoursText}
             onChange={(hoursText) => setBranchForm((current) => ({ ...current, hoursText }))}
           />
-          <button
+          <ZookButton
+            type="button"
             onClick={() => void createBranch()}
             disabled={formBusy === "branch"}
-            className="zook-focus min-h-11 w-full rounded-full bg-lime-300 px-5 text-sm font-semibold text-black disabled:opacity-60"
+            state={formBusy === "branch" ? "loading" : "idle"}
+            fullWidth
           >
             {formBusy === "branch" ? "Adding..." : "Add branch"}
-          </button>
+          </ZookButton>
         </div>
       </GlassCard>
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Clock3, QrCode, RefreshCcw, ShieldCheck, Users } from "lucide-react";
+import { ZookButton } from "@/components/zook-button";
 import QRCode from "qrcode";
 import { GlassCard, Pill } from "./glass-card";
 import { AvatarInitials, StatusDot } from "./dashboard-primitives";
@@ -135,13 +136,14 @@ export function AttendanceQrPanel({
             Scan the QR code to mark attendance for {branchName ?? "this branch"}.
           </p>
         </div>
-        <button
+        <ZookButton
+          tone="ghost"
+          size="sm"
           onClick={() => void loadToken()}
-          className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
+          leadingIcon={<RefreshCcw size={16} />}
         >
-          <RefreshCcw size={16} />
           Refresh
-        </button>
+        </ZookButton>
       </div>
       <div className="mt-5 rounded-[24px] border border-white/10 bg-black/30 p-5">
         <div className="flex items-center gap-2 text-lime-200">

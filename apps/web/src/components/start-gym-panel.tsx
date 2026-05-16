@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { GlassCard, Pill } from "./glass-card";
+import { ZookButton } from "./zook-button";
 import { equipmentOptions } from "./gym-profile-fields";
 import { webApiFetch } from "@/lib/api-client";
 import { joinModeLabel } from "@/lib/format";
@@ -545,26 +546,30 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             {step > 0 ? (
-              <button
+              <ZookButton
                 type="button"
+                tone="ghost"
+                fullWidth
                 onClick={() => setStep((current) => Math.max(current - 1, 0))}
-                className="zook-focus inline-flex flex-1 items-center justify-center rounded-full border border-white/10 px-5 py-3 font-semibold text-white/70"
+                className="sm:flex-1"
               >
                 Back
-              </button>
+              </ZookButton>
             ) : null}
-            <button
+            <ZookButton
               type="submit"
+              fullWidth
               disabled={busy}
-              className="zook-focus inline-flex flex-[2] items-center justify-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black disabled:opacity-60"
+              state={busy ? "loading" : "idle"}
+              trailingIcon={<ArrowRight size={18} />}
+              className="sm:flex-[2]"
             >
-                {step === setupSteps.length - 1
-                  ? busy
-                    ? "Creating gym..."
-                    : "Create gym and add billing"
-                  : "Continue"}
-              <ArrowRight size={18} />
-            </button>
+              {step === setupSteps.length - 1
+                ? busy
+                  ? "Creating gym..."
+                  : "Create gym and add billing"
+                : "Continue"}
+            </ZookButton>
           </div>
         </form>
       </GlassCard>

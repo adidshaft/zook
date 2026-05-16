@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, Share, StyleSheet } from "react-native";
 import { resolvePlanName } from "@zook/ui";
 import {
+  AnimatedAppear,
   BottomNav,
   ErrorState,
   GlassCard,
@@ -17,7 +18,6 @@ import {
 import {
   ActivityCard,
   FirstRunCard,
-  HomeActionStrip,
   HomeHeader,
   HomeSkeleton,
   MemberStateHero,
@@ -234,20 +234,20 @@ export default function Home() {
           {loadingHome ? <HomeSkeleton /> : null}
 
           {firstRunState ? (
-            <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} />
+            <AnimatedAppear>
+              <FirstRunCard state={firstRunState} gymUsername={sessionOrganization?.username} />
+            </AnimatedAppear>
           ) : null}
 
-          {profileNeedsWork ? <ProfileReadyPrompt needsPhoto={!profilePhotoUrl} /> : null}
+          {profileNeedsWork ? (
+            <AnimatedAppear delay={60}>
+              <ProfileReadyPrompt needsPhoto={!profilePhotoUrl} />
+            </AnimatedAppear>
+          ) : null}
 
           {hasMembership ? (
             <>
-              <HomeActionStrip
-                daysLeftLabel={daysLeftLabel}
-                expired={membershipExpired}
-                lastCheckIn={lastCheckIn}
-                planName={resolvePlanName(memberHome?.activePlan) ?? "Membership"}
-                streakDays={streakDays}
-              />
+              <AnimatedAppear delay={40}>
               <MemberStateHero
                 expired={membershipExpired}
                 daysLeftLabel={daysLeftLabel}
@@ -270,9 +270,12 @@ export default function Home() {
                     ? `${Math.max(0, visitLimit - remainingVisits)} of ${visitLimit} visits used`
                     : undefined
                 }
-                showActions={false}
+                lastCheckIn={lastCheckIn}
+                showActions
                 showBillingAction={!renewalImminent}
               />
+              </AnimatedAppear>
+              <AnimatedAppear delay={120}>
               <TodayPlanCard
                 planName={assignedPlan?.name ?? "No plan yet"}
                 trainerName={
@@ -282,6 +285,8 @@ export default function Home() {
                 }
                 assigned={Boolean(assignedPlan)}
               />
+              </AnimatedAppear>
+              <AnimatedAppear delay={200}>
               <ActivityCard
                 streakDays={streakDays}
                 lastCheckIn={lastCheckIn}
@@ -291,8 +296,12 @@ export default function Home() {
                 latestBadge={latestBadge}
                 nextMilestone={nextMilestone}
               />
-              <WorkoutLogCard />
+              </AnimatedAppear>
+              <AnimatedAppear delay={280}>
+                <WorkoutLogCard />
+              </AnimatedAppear>
               {referral?.referralCodes[0] ? (
+                <AnimatedAppear delay={340}>
                 <ReferralCard
                   code={referral.referralCodes[0].code}
                   redemptions={referral.referralCodes[0].redemptionCount ?? 0}
@@ -310,6 +319,7 @@ export default function Home() {
                     }
                   }}
                 />
+                </AnimatedAppear>
               ) : null}
             </>
           ) : null}

@@ -1,6 +1,7 @@
 import { formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
 import type { DeskCopy } from "./copy";
 import type { ReceiptDetails } from "./types";
+import { ZookButton } from "../zook-button";
 
 export function ReceiptCard({
   copy,
@@ -32,13 +33,15 @@ export function ReceiptCard({
       <p className="mt-1 text-sm text-white/65">
         {copy.receiptDate}: {formatDateTime(receipt.recordedAt)}
       </p>
-      <button
+      <ZookButton
         type="button"
+        tone="ghost"
+        size="sm"
         onClick={() => window.print()}
-        className="zook-focus mt-4 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
+        className="mt-4"
       >
         {copy.printReceipt}
-      </button>
+      </ZookButton>
     </div>
   );
 }

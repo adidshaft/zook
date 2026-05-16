@@ -1,6 +1,7 @@
 import { formatEnumLabel, formatInr } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
 import { HelpHint, ManagedOn } from "../ui";
+import { ZookButton } from "../zook-button";
 import type { DeskCopy } from "./copy";
 import type { ShopOrder } from "./types";
 import { orderItemsSummary } from "./utils";
@@ -87,41 +88,47 @@ export function PickupTab({
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button
+                  <ZookButton
                     type="button"
+                    tone="ghost"
+                    size="sm"
                     disabled={busyId === `verify:${order.id}` || payAtDesk}
+                    state={busyId === `verify:${order.id}` ? "loading" : "idle"}
                     onClick={() => onVerifyPickupCode(order)}
-                    className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/72"
                   >
                     {copy.verifyCode}
-                  </button>
+                  </ZookButton>
                   {payAtDesk ? (
-                    <button
+                    <ZookButton
                       type="button"
+                      tone="secondary"
+                      size="sm"
                       disabled={busyId === `pay:${order.id}`}
+                      state={busyId === `pay:${order.id}` ? "loading" : "idle"}
                       onClick={() => onJumpToShopPayment(order)}
-                      className="zook-focus rounded-full border border-lime-300/40 px-4 py-2 text-sm font-semibold text-lime-100 disabled:opacity-50"
                     >
                       {copy.recordPayment}
-                    </button>
+                    </ZookButton>
                   ) : null}
                   {!payAtDesk && !verified && !codeSkipped ? (
-                    <button
+                    <ZookButton
                       type="button"
+                      tone="ghost"
+                      size="sm"
                       onClick={() => onSkipCode(order.id)}
-                      className="zook-focus rounded-full border border-amber-200/30 px-4 py-2 text-sm font-semibold text-amber-100"
                     >
                       {copy.skipCode}
-                    </button>
+                    </ZookButton>
                   ) : null}
-                  <button
+                  <ZookButton
                     type="button"
+                    size="sm"
                     disabled={busyId === order.id || payAtDesk || (!verified && !codeSkipped)}
+                    state={busyId === order.id ? "loading" : "idle"}
                     onClick={() => onFulfillOrder(order.id)}
-                    className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-45"
                   >
                     {copy.markFulfilled}
-                  </button>
+                  </ZookButton>
                 </div>
               </div>
             </div>

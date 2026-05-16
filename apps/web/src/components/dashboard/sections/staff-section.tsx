@@ -6,6 +6,7 @@ import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboar
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
+import { ZookButton } from "../../zook-button";
 import type {
   BranchRow,
   CoachPlanRow,
@@ -169,13 +170,15 @@ export function StaffSection({
                 .map((branch) => ({ value: branch.id, label: branch.name }))}
             />
           ) : null}
-          <button
+          <ZookButton
+            type="button"
             onClick={() => void inviteStaff()}
             disabled={formBusy === "staff"}
-            className="zook-focus w-full rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+            state={formBusy === "staff" ? "loading" : "idle"}
+            fullWidth
           >
             {formBusy === "staff" ? "Inviting..." : "Invite staff"}
-          </button>
+          </ZookButton>
           {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
           {formStatus ? <p className="text-sm text-lime-100">{formStatus}</p> : null}
         </div>
@@ -283,31 +286,37 @@ export function StaffSection({
                     <div className="flex flex-wrap justify-end gap-2">
                       {editingStaffId === assignment.id ? (
                         <>
-                          <button
+                          <ZookButton
+                            type="button"
+                            size="sm"
                             onClick={() => void updateStaffRole(assignment.id)}
                             disabled={formBusy === `staff:${assignment.id}`}
-                            className="zook-focus rounded-full bg-lime-300 px-3 py-1 text-xs font-semibold text-black disabled:opacity-50"
+                            state={formBusy === `staff:${assignment.id}` ? "loading" : "idle"}
                           >
                             Save
-                          </button>
-                          <button
+                          </ZookButton>
+                          <ZookButton
+                            type="button"
+                            tone="ghost"
+                            size="sm"
                             onClick={() => setEditingStaffId(null)}
-                            className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/60"
                           >
                             Cancel
-                          </button>
+                          </ZookButton>
                         </>
                       ) : (
-                        <button
+                        <ZookButton
+                          type="button"
+                          tone="ghost"
+                          size="sm"
                           onClick={() => {
                             setEditingStaffId(assignment.id);
                             setStaffRoleDraft(assignment.role as StaffRole);
                             setStaffBranchDraft(assignment.branchId ?? "");
                           }}
-                          className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:border-lime-300/40 hover:text-lime-100"
                         >
                           Role
-                        </button>
+                        </ZookButton>
                       )}
                       {assignment.role !== "OWNER" ? (
                         <ConfirmActionButton

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatCompactNumber } from "@/lib/format";
 import { Pill } from "../../glass-card";
 import { ReadoutGrid, Section, StatusPill, Toggle, TextInput, Select } from "../primitives";
+import { ZookButton, ZookButtonLink } from "../../zook-button";
 import type { DiscountType, RewardType } from "../../dashboard-operational-model";
 import { CouponControls } from "./overview/coupon-controls";
 import { OfferControls } from "./overview/offer-controls";
@@ -229,21 +230,24 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                       tone={item.code.status === "active" ? "lime" : "amber"}
                     />
                     <div className="flex flex-wrap justify-end gap-2">
-                      <button
+                      <ZookButton
                         type="button"
+                        tone="ghost"
+                        size="sm"
                         disabled={props.formBusy === `referral:${item.code.id}`}
+                        state={props.formBusy === `referral:${item.code.id}` ? "loading" : "idle"}
                         onClick={() => void props.updateReferral(item.code, "paused")}
-                        className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65 disabled:opacity-50"
                       >
                         Pause code
-                      </button>
+                      </ZookButton>
                       {item.code.referrerUserId ? (
-                        <Link
+                        <ZookButtonLink
+                          tone="secondary"
+                          size="sm"
                           href={`/dashboard/notifications?audience=single_member&userId=${encodeURIComponent(item.code.referrerUserId)}`}
-                          className="zook-focus rounded-full border border-lime-300/30 px-3 py-1 text-xs text-lime-100"
                         >
                           Notify
-                        </Link>
+                        </ZookButtonLink>
                       ) : (
                         <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/35">
                           Member not linked
@@ -378,13 +382,15 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                 }))
               }
             />
-            <button
+            <ZookButton
+              type="button"
               onClick={() => void props.saveReferralPolicy()}
               disabled={props.formBusy === "referral-policy"}
-              className="zook-focus ml-auto rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+              state={props.formBusy === "referral-policy" ? "loading" : "idle"}
+              className="ml-auto"
             >
               {props.formBusy === "referral-policy" ? "Saving..." : "Save policy"}
-            </button>
+            </ZookButton>
           </div>
           <ReferralCodeControls
             coupons={props.coupons}

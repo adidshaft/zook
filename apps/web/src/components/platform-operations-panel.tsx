@@ -10,6 +10,7 @@ import {
   toneFromStatus,
 } from "./dashboard-primitives";
 import { GlassCard, Pill } from "./glass-card";
+import { ZookButton } from "./zook-button";
 import {
   formatCompactNumber,
   formatDate,
@@ -157,12 +158,9 @@ export function PlatformOperationsPanel({
               </Pill>
             }
             action={
-              <button
-                className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
-                onClick={() => providersState.reload()}
-              >
+              <ZookButton size="sm" onClick={() => providersState.reload()}>
                 Check again
-              </button>
+              </ZookButton>
             }
           />
           <div className="mt-5 grid gap-4">
@@ -315,18 +313,19 @@ export function PlatformOperationsPanel({
                     render: (org) => (
                       <div className="flex flex-wrap justify-end gap-2">
                         {(["ACTIVE", "SUSPENDED", "CANCELLED"] as const).map((nextStatus) => (
-                          <button
+                          <ZookButton
                             key={nextStatus}
+                            tone={nextStatus === "CANCELLED" ? "danger" : "ghost"}
+                            size="sm"
                             onClick={() => void updateOrganizationStatus(org.id, nextStatus)}
                             disabled={busyOrgId === org.id || org.status === nextStatus}
-                            className="zook-focus rounded-full border border-white/10 px-3 py-2 text-xs text-white/72 disabled:opacity-45"
                           >
                             {nextStatus === "ACTIVE"
                               ? "Activate"
                               : nextStatus === "SUSPENDED"
                                 ? "Suspend"
                                 : "Cancel"}
-                          </button>
+                          </ZookButton>
                         ))}
                       </div>
                     ),

@@ -5,6 +5,7 @@ import { ErrorNotice } from "../operational-shared";
 import { EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
+import { ZookButton } from "../../zook-button";
 import type {
   BranchRow,
   StaffAssignmentRow,
@@ -231,19 +232,23 @@ export function BranchesListCard({
                   }
                 />
                 <div className="flex flex-wrap gap-2">
-                  <button
+                  <ZookButton
+                    type="button"
+                    size="sm"
                     onClick={() => void saveBranchEdit(branch)}
                     disabled={formBusy === `branch:${branch.id}`}
-                    className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+                    state={formBusy === `branch:${branch.id}` ? "loading" : "idle"}
                   >
                     Save branch
-                  </button>
-                  <button
+                  </ZookButton>
+                  <ZookButton
+                    type="button"
+                    tone="ghost"
+                    size="sm"
                     onClick={() => setEditingBranchId(null)}
-                    className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
                   >
                     Cancel
-                  </button>
+                  </ZookButton>
                 </div>
               </div>
             ) : (
@@ -322,12 +327,14 @@ function BranchSummaryRow({
           value={branch.isDefault ? "Default" : branch.active ? "Active" : "Paused"}
           tone={branch.isDefault ? "lime" : branch.active ? "blue" : "amber"}
         />
-        <button
+        <ZookButton
+          type="button"
+          tone="ghost"
+          size="sm"
           onClick={() => onEdit(branch)}
-          className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65"
         >
           Edit
-        </button>
+        </ZookButton>
         {!branch.isDefault ? (
           <ConfirmActionButton
             title="Make this the primary location?"

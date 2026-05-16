@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SectionHeader } from "../../../dashboard-primitives";
 import { GlassCard, Pill } from "../../../glass-card";
 import { SearchableSelect } from "../../../ui";
+import { ZookButton } from "../../../zook-button";
 import type { MembershipPlanRow } from "../../../dashboard-operational-model";
 import { formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
@@ -152,27 +153,27 @@ export function BulkImportCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
+          <ZookButton
             type="button"
             disabled={!csvText.trim() || busy}
+            state={busy ? "loading" : "idle"}
             onClick={() => void runImport()}
-            className="zook-focus rounded-full bg-lime-300 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-lime-200 disabled:opacity-50"
           >
             {busy ? "Importing..." : "Import members"}
-          </button>
+          </ZookButton>
           {importResult ? (
-            <button
+            <ZookButton
               type="button"
+              tone="ghost"
               onClick={() => {
                 setCsvText("");
                 setImportResult(null);
                 setPlanId("");
                 setActivateSub(false);
               }}
-              className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
             >
               Reset
-            </button>
+            </ZookButton>
           ) : null}
         </div>
 

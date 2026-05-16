@@ -2,6 +2,7 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
+import { ZookButton } from "../zook-button";
 import type { DeskCopy } from "./copy";
 import type { MemberRow } from "./types";
 import { ageLabel, memberLabel, phoneLast4 } from "./utils";
@@ -150,29 +151,33 @@ export function MemberTab({
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button
+                <ZookButton
                   type="button"
+                  size="sm"
                   onClick={() => onRecordPayment(selectedMember)}
-                  className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
                 >
                   {copy.recordPayment}
-                </button>
-                <button
+                </ZookButton>
+                <ZookButton
                   type="button"
+                  tone="ghost"
+                  size="sm"
                   disabled={busyId === `override:${selectedMember.user?.id}`}
+                  state={busyId === `override:${selectedMember.user?.id}` ? "loading" : "idle"}
                   onClick={() => onOverrideEntry(selectedMember)}
-                  className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 disabled:opacity-45"
                 >
                   {copy.overrideEntry}
-                </button>
-                <button
+                </ZookButton>
+                <ZookButton
                   type="button"
+                  tone="ghost"
+                  size="sm"
                   disabled={busyId === `message:${selectedMember.user?.id}`}
+                  state={busyId === `message:${selectedMember.user?.id}` ? "loading" : "idle"}
                   onClick={() => onSendMessage(selectedMember)}
-                  className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 disabled:opacity-45"
                 >
                   {copy.sendMemberMessage}
-                </button>
+                </ZookButton>
               </div>
             </div>
           </>

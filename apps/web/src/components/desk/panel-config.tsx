@@ -26,7 +26,7 @@ export function DeskBottomNav({
   onChange: (tab: TabKey) => void;
 }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#070907]/94 px-3 py-2 backdrop-blur-xl">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#070908]/94 px-3 py-2 backdrop-blur-xl">
       <div className="mx-auto grid max-w-5xl grid-cols-4 gap-2">
         {deskTabs.map((tab) => (
           <button

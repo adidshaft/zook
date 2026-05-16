@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ZookButton } from "@/components/zook-button";
 
 type RazorpayCheckoutData = {
   provider?: unknown;
@@ -139,14 +140,14 @@ export function RazorpayCheckoutPanel({
             <p className="mt-2 text-sm text-white/70">{statusText}</p>
           )}
         </div>
-        <button
+        <ZookButton
           type="button"
           disabled={!canOpen || handoffState === "opening"}
+          state={handoffState === "opening" ? "loading" : "idle"}
           onClick={openCheckout}
-          className="zook-focus inline-flex items-center justify-center rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black transition hover:bg-lime-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isRecurring ? "Authorize autopay" : "Pay securely"}
-        </button>
+        </ZookButton>
       </div>
     </div>
   );

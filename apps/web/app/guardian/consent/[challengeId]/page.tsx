@@ -2,6 +2,7 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, LoaderCircle, RefreshCw, ShieldCheck } from "lucide-react";
+import { ZookButton } from "@/components/zook-button";
 
 type GuardianConsentPayload = {
   challenge: {
@@ -227,26 +228,26 @@ export default function GuardianConsentPage({
                       placeholder="Enter 6-digit code"
                     />
                   </label>
-                  <button
+                  <ZookButton
+                    type="button"
                     onClick={verify}
                     disabled={submitting || code.trim().length !== 6}
-                    className="zook-focus flex w-full items-center justify-center gap-2 rounded-full bg-lime-300 px-5 py-3 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-60"
+                    state={submitting ? "loading" : "idle"}
+                    fullWidth
+                    leadingIcon={<ShieldCheck size={16} />}
                   >
-                    {submitting ? (
-                      <LoaderCircle className="animate-spin" size={16} />
-                    ) : (
-                      <ShieldCheck size={16} />
-                    )}
                     Verify consent
-                  </button>
-                  <button
+                  </ZookButton>
+                  <ZookButton
+                    type="button"
+                    tone="secondary"
                     onClick={resend}
                     disabled={submitting || data?.challenge.canResend === false}
-                    className="zook-focus flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    fullWidth
+                    leadingIcon={<RefreshCw size={16} />}
                   >
-                    <RefreshCw size={16} />
                     Request a fresh code
-                  </button>
+                  </ZookButton>
                 </>
               )}
             </div>

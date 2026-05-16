@@ -7,6 +7,7 @@ import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-sha
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn, SearchableSelect } from "../../ui";
+import { ZookButton, ZookButtonLink } from "../../zook-button";
 import {
   type JoinRequestRow,
   type MemberDetailPayload,
@@ -277,30 +278,35 @@ export function MembersSection({
                         />
                         <p className="text-[11px] text-white/40">{pauseReason.length}/180</p>
                         <div className="flex flex-wrap gap-2">
-                          <button
+                          <ZookButton
                             type="button"
+                            size="sm"
                             disabled={!switchPlanId || Boolean(subscriptionBusy)}
+                            state={subscriptionBusy === "switch" ? "loading" : "idle"}
                             onClick={() => void updateSubscription("switch")}
-                            className="zook-focus rounded-full bg-lime-300 px-3 py-1 text-xs font-semibold text-black disabled:opacity-50"
                           >
                             Switch
-                          </button>
-                          <button
+                          </ZookButton>
+                          <ZookButton
                             type="button"
+                            tone="ghost"
+                            size="sm"
                             disabled={Boolean(subscriptionBusy) || selectedSubscription.status !== "ACTIVE"}
+                            state={subscriptionBusy === "pause" ? "loading" : "idle"}
                             onClick={() => void updateSubscription("pause")}
-                            className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 disabled:opacity-50"
                           >
                             Pause 7d
-                          </button>
-                          <button
+                          </ZookButton>
+                          <ZookButton
                             type="button"
+                            tone="ghost"
+                            size="sm"
                             disabled={Boolean(subscriptionBusy) || selectedSubscription.status !== "PAUSED"}
+                            state={subscriptionBusy === "resume" ? "loading" : "idle"}
                             onClick={() => void updateSubscription("resume")}
-                            className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 disabled:opacity-50"
                           >
                             Resume
-                          </button>
+                          </ZookButton>
                         </div>
                         {subscriptionStatus ? (
                           <p className="text-xs text-white/50">{subscriptionStatus}</p>
@@ -325,12 +331,15 @@ export function MembersSection({
                     <p className="mt-2 text-sm text-white/70">
                       {memberDetailState.data.member.payments.length} recent records
                     </p>
-                    <button
+                    <ZookButton
+                      type="button"
+                      tone="ghost"
+                      size="sm"
                       onClick={() => setSelectedMemberId(null)}
-                      className="zook-focus mt-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/60"
+                      className="mt-2"
                     >
                       Close
-                    </button>
+                    </ZookButton>
                   </div>
                   <BodyCompositionTimeline
                     entries={memberDetailState.data.member.bodyProgress ?? []}
@@ -456,13 +465,15 @@ export function MembersSection({
                       header: "Detail",
                       align: "right",
                       render: (row) => (
-                        <button
+                        <ZookButton
+                          type="button"
+                          tone="ghost"
+                          size="sm"
                           onClick={() => row.user?.id && setSelectedMemberId(row.user.id)}
                           disabled={!row.user?.id}
-                          className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/65 hover:bg-white/8 disabled:opacity-40"
                         >
                           View
-                        </button>
+                        </ZookButton>
                       ),
                     },
                   ]}
@@ -478,12 +489,9 @@ export function MembersSection({
                       }
                       action={
                         filtersActive ? null : (
-                          <Link
-                            href="/dashboard/plans"
-                            className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
-                          >
+                          <ZookButtonLink href="/dashboard/plans">
                             Create a plan
-                          </Link>
+                          </ZookButtonLink>
                         )
                       }
                     />
@@ -495,20 +503,21 @@ export function MembersSection({
                       {selectedBulkMemberIds.length} selected
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <button
+                      <ZookButton
                         type="button"
+                        size="sm"
                         onClick={exportSelectedMembers}
-                        className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black"
                       >
                         Export selected
-                      </button>
-                      <button
+                      </ZookButton>
+                      <ZookButton
                         type="button"
+                        tone="ghost"
+                        size="sm"
                         onClick={() => setSelectedBulkMemberIds([])}
-                        className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
                       >
                         Clear
-                      </button>
+                      </ZookButton>
                     </div>
                   </div>
                 ) : null}

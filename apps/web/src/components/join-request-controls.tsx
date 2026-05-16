@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { toast } from "sonner";
+import { ZookButton } from "@/components/zook-button";
 
 type ApiEnvelope<T> = {
   ok?: boolean;
@@ -67,14 +68,15 @@ export function JoinRequestButton({
 
   return (
     <div className="mt-6 grid gap-3">
-      <button
+      <ZookButton
         type="button"
+        fullWidth
         onClick={() => void submitRequest()}
         disabled={busy}
-        className="zook-focus inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-55"
+        state={busy ? "loading" : "idle"}
       >
         {busy ? labels.submitting : labels.submit}
-      </button>
+      </ZookButton>
       {message ? (
         <p
           role="status"
@@ -134,12 +136,7 @@ export function InviteCodeForm({
           placeholder={labels.placeholder}
           className="zook-focus min-h-12 rounded-full border border-white/10 bg-black/30 px-4 text-sm text-white placeholder:text-white/35"
         />
-        <button
-          type="submit"
-          className="zook-focus rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
-        >
-          {labels.submit}
-        </button>
+        <ZookButton type="submit">{labels.submit}</ZookButton>
       </div>
     </form>
   );

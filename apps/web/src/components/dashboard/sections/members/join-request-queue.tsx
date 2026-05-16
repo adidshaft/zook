@@ -3,6 +3,7 @@
 import { ErrorNotice } from "../../operational-shared";
 import { EmptyState, SectionHeader, StatusPill } from "../../../dashboard-primitives";
 import { GlassCard, Pill } from "../../../glass-card";
+import { ZookButton } from "../../../zook-button";
 import type { JoinRequestRow } from "../../../dashboard-operational-model";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 
@@ -65,20 +66,25 @@ export function JoinRequestQueue({
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <button
+                  <ZookButton
+                    type="button"
+                    size="sm"
                     onClick={() => void updateJoinRequest(request.id, "approve")}
                     disabled={queueBusyId === request.id}
-                    className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+                    state={queueBusyId === request.id ? "loading" : "idle"}
                   >
                     Approve
-                  </button>
-                  <button
+                  </ZookButton>
+                  <ZookButton
+                    type="button"
+                    tone="danger"
+                    size="sm"
                     onClick={() => void updateJoinRequest(request.id, "reject")}
                     disabled={queueBusyId === request.id}
-                    className="zook-focus rounded-full border border-red-300/30 bg-red-300/10 px-4 py-2 text-sm text-red-100 disabled:opacity-60"
+                    state={queueBusyId === request.id ? "loading" : "idle"}
                   >
                     Reject
-                  </button>
+                  </ZookButton>
                 </div>
               </div>
             </div>

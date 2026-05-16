@@ -13,6 +13,7 @@ import {
   useState,
 } from "react";
 import { Linking, Platform } from "react-native";
+import { colors } from "@/lib/theme";
 import { getExpoProjectId, getMobilePushEnvironment } from "./api";
 import { getApiErrorMessage, useAuth } from "./auth";
 import { isOfflineDemoMode } from "./demo-mode";
@@ -257,14 +258,14 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
         importance: notifications.AndroidImportance.HIGH,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#B9F455",
+        lightColor: colors.brandLime,
       }),
       notifications.setNotificationChannelAsync("ops", {
         name: "Operations",
         importance: notifications.AndroidImportance.HIGH,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#B9F455",
+        lightColor: colors.brandLime,
       }),
       notifications.setNotificationChannelAsync("reminders", {
         name: "Reminders",

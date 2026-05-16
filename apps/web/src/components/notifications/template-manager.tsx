@@ -5,6 +5,7 @@ import { webApiFetch } from "@/lib/api-client";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import { ConfirmDialog } from "../dashboard-primitives";
 import { GlassCard, Pill } from "../glass-card";
+import { ZookButton } from "../zook-button";
 import { messageTypes, type NotificationType, type TemplateRow } from "./shared";
 
 export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
@@ -129,23 +130,26 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
           />
           <p className="text-xs text-white/42">{form.body.length}/1000 characters</p>
           <div className="flex flex-wrap gap-2">
-            <button
+            <ZookButton
+              type="submit"
+              size="sm"
               disabled={busy}
-              className="zook-focus rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+              state={busy ? "loading" : "idle"}
             >
               {busy ? "Saving..." : editingId ? "Update template" : "Save template"}
-            </button>
+            </ZookButton>
             {editingId ? (
-              <button
+              <ZookButton
                 type="button"
+                tone="ghost"
+                size="sm"
                 onClick={() => {
                   setEditingId("");
                   setForm({ name: "", title: "", body: "", type: "OPERATIONAL" });
                 }}
-                className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
               >
                 Cancel
-              </button>
+              </ZookButton>
             ) : null}
           </div>
           {status ? <p className="text-sm text-white/58">{status}</p> : null}
@@ -174,20 +178,22 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
                   <Pill tone="blue">{formatEnumLabel(template.type)}</Pill>
-                  <button
+                  <ZookButton
                     type="button"
+                    tone="ghost"
+                    size="sm"
                     onClick={() => startEdit(template)}
-                    className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
                   >
                     Edit
-                  </button>
-                  <button
+                  </ZookButton>
+                  <ZookButton
                     type="button"
+                    tone="danger"
+                    size="sm"
                     onClick={() => setTemplateToDelete(template)}
-                    className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs text-red-100/80"
                   >
                     Remove
-                  </button>
+                  </ZookButton>
                 </div>
               </div>
             </div>

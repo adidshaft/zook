@@ -5,6 +5,7 @@ import type {
   StaffUserRow,
 } from "../../../dashboard-operational-model";
 import { Select, TextInput } from "../../primitives";
+import { ZookButton } from "../../../zook-button";
 import type { ReferralFormState } from "./types";
 
 type ReferralCodeControlsProps = {
@@ -72,13 +73,14 @@ export function ReferralCodeControls({
             placeholder="Max uses"
             inputMode="numeric"
           />
-          <button
+          <ZookButton
+            type="button"
             onClick={() => void createReferral()}
             disabled={formBusy === "referral"}
-            className="zook-focus rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+            state={formBusy === "referral" ? "loading" : "idle"}
           >
             {formBusy === "referral" ? "Creating..." : "Create code"}
-          </button>
+          </ZookButton>
         </div>
         {referrals.slice(0, 4).map((referral) => (
           <div
@@ -92,15 +94,18 @@ export function ReferralCodeControls({
                 {referral.redemptionCount}/{referral.maxUses ?? "∞"} used · {referral.status}
               </p>
             </div>
-            <button
+            <ZookButton
+              type="button"
+              tone="ghost"
+              size="sm"
               onClick={() =>
                 void updateReferral(referral, referral.status === "active" ? "paused" : "active")
               }
               disabled={formBusy === `referral:${referral.id}`}
-              className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/65 disabled:opacity-50"
+              state={formBusy === `referral:${referral.id}` ? "loading" : "idle"}
             >
               {referral.status === "active" ? "Pause" : "Restore"}
-            </button>
+            </ZookButton>
           </div>
         ))}
       </div>
