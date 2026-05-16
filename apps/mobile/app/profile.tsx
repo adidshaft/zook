@@ -37,6 +37,31 @@ type ActivityItem = {
   icon: keyof typeof Ionicons.glyphMap;
 };
 
+/**
+ * Compose "org · branch, city" without duplicating the org name when the
+ * branch already starts with it (common in single-location gyms where the
+ * branch label is e.g. "Aarogya Strength Koregaon Park").
+ */
+function formatOrgLocationLine(
+  orgName: string | null | undefined,
+  branchName: string | null | undefined,
+  city: string | null | undefined,
+): string {
+  const org = orgName?.trim();
+  const branch = branchName?.trim();
+  if (!org && !branch) return "No active gym";
+  let location: string;
+  if (org && branch) {
+    const branchWithoutOrgPrefix = branch.startsWith(org)
+      ? branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim()
+      : branch;
+    location = branchWithoutOrgPrefix ? `${org} · ${branchWithoutOrgPrefix}` : org;
+  } else {
+    location = org || branch || "";
+  }
+  return city ? `${location}, ${city}` : location;
+}
+
 function titleCaseRole(role: Role | string) {
   if (role === "RECEPTIONIST") return "Reception";
   if (role === "PLATFORM_ADMIN") return "Platform operator";
@@ -392,9 +417,11 @@ export default function ProfileScreen() {
                 </Text>
               ) : null}
               <Text numberOfLines={2} style={styles.gymLine}>
-                {activeOrganization?.name ?? "No active gym"}
-                {selectedBranch?.name ? ` - ${selectedBranch.name}` : ""}
-                {activeOrganization?.city ? `, ${activeOrganization.city}` : ""}
+                {formatOrgLocationLine(
+                  activeOrganization?.name,
+                  selectedBranch?.name,
+                  activeOrganization?.city,
+                )}
               </Text>
               <View style={styles.roleRow}>
                 {roles.length ? (

@@ -80,20 +80,24 @@ export function TodayPlanCard({
           </View>
           <View style={styles.todayPlanBody}>
             <View style={styles.todayPlanCopy}>
-              <Text numberOfLines={1} style={styles.todayPlanTitle}>
+              <Text numberOfLines={2} style={styles.todayPlanTitle}>
                 {planName}
               </Text>
-              <Text numberOfLines={1} style={styles.todayPlanMeta}>
-                {assigned ? `6 exercises · ${trainerName}` : "Trainer will assign one"}
-              </Text>
-            </View>
-            <View style={styles.assignedChip}>
-              <Ionicons
-                name={assigned ? "checkmark-circle-outline" : "time-outline"}
-                size={15}
-                color={colors.lime}
-              />
-              <Text style={styles.assignedChipText}>{assigned ? "Assigned" : "Open"}</Text>
+              <View style={styles.todayPlanMetaRow}>
+                <Text numberOfLines={1} style={styles.todayPlanMeta}>
+                  {assigned ? `6 exercises · ${trainerName}` : "Trainer will assign one"}
+                </Text>
+                <View style={styles.assignedChip}>
+                  <Ionicons
+                    name={assigned ? "checkmark-circle-outline" : "time-outline"}
+                    size={14}
+                    color={colors.lime}
+                  />
+                  <Text style={styles.assignedChipText}>
+                    {assigned ? "Assigned" : "Open"}
+                  </Text>
+                </View>
+              </View>
             </View>
             <Ionicons name="chevron-forward" size={22} color={colors.muted} />
           </View>
@@ -324,32 +328,41 @@ const styles = StyleSheet.create({
   },
   todayPlanCopy: {
     flex: 1,
-    gap: 4,
+    minWidth: 0,
+    gap: 6,
   },
   todayPlanTitle: {
     color: colors.text,
-    fontSize: 22,
-    lineHeight: 27,
+    fontSize: 19,
+    lineHeight: 24,
     fontFamily: "Inter_700Bold",
   },
-  todayPlanMeta: {
-    color: colors.muted,
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  assignedChip: {
-    minHeight: 36,
-    borderRadius: 18,
+  todayPlanMetaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
+    gap: spacing.sm,
+  },
+  todayPlanMeta: {
+    flex: 1,
+    minWidth: 0,
+    color: colors.muted,
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  assignedChip: {
+    minHeight: 28,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
     backgroundColor: "rgba(185,244,85,0.14)",
+    flexShrink: 0,
   },
   assignedChipText: {
     color: colors.lime,
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 12,
+    lineHeight: 16,
     fontFamily: "Inter_600SemiBold",
   },
   activityContent: {

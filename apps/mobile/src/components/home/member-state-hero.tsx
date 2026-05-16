@@ -57,8 +57,6 @@ export function MemberStateHero({
   visitLabel: string;
 }) {
   const router = useRouter();
-  const mainLabel = expired ? "Membership needs renewal" : daysLeftLabel;
-  const splitLabel = mainLabel.match(/^(\d+)\s+(.+)$/);
   const visitCountMatch = visitLabel.match(/^(\d+)/);
   const dayCountMatch = daysLeftLabel.match(/^(\d+)/);
   const ringValue = visitCountMatch?.[1] ?? dayCountMatch?.[1] ?? "-";
@@ -67,6 +65,12 @@ export function MemberStateHero({
     : expired
     ? (["renewal", "needed"] as const)
     : (["days", "left"] as const);
+  // Only show the supplemental status text on the left when the ring is
+  // showing visit data — otherwise the ring already conveys "days left"
+  // and rendering it again on the left creates a duplicate.
+  const showSupplementalDaysLeft = Boolean(visitCountMatch) || expired;
+  const supplementalLabel = expired ? "Membership needs renewal" : daysLeftLabel;
+  const splitLabel = supplementalLabel.match(/^(\d+)\s+(.+)$/);
   const progress = Math.max(0, Math.min(1, progressValue));
   const progressPct = `${Math.round(progress * 100)}%`;
   const ringSize = 104;
@@ -100,27 +104,29 @@ export function MemberStateHero({
               {expired ? "Renewal needed" : "Active Membership"}
             </Text>
           </View>
-          <Text numberOfLines={1} style={styles.premiumPlanName}>
+          <Text numberOfLines={2} style={styles.premiumPlanName}>
             {planName}
           </Text>
-          <View style={styles.daysLeftRow}>
-            {splitLabel ? (
-              <>
+          {showSupplementalDaysLeft ? (
+            <View style={styles.daysLeftRow}>
+              {splitLabel ? (
+                <>
+                  <Text style={[styles.daysLeftText, expired ? styles.heroNumberUrgent : null]}>
+                    {splitLabel[1]} {splitLabel[2]}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={expired ? colors.amber : colors.lime}
+                  />
+                </>
+              ) : (
                 <Text style={[styles.daysLeftText, expired ? styles.heroNumberUrgent : null]}>
-                  {splitLabel[1]} {splitLabel[2]}
+                  {supplementalLabel}
                 </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={expired ? colors.amber : colors.lime}
-                />
-              </>
-            ) : (
-              <Text style={[styles.daysLeftText, expired ? styles.heroNumberUrgent : null]}>
-                {mainLabel}
-              </Text>
-            )}
-          </View>
+              )}
+            </View>
+          ) : null}
           <View style={styles.renewalRow}>
             <Ionicons name="calendar-outline" size={15} color={colors.muted} />
             <Text numberOfLines={1} style={styles.renewalText}>
@@ -179,23 +185,26 @@ export function MemberStateHero({
               Renew
             </ZookButton>
           ) : (
-            <ZookButton
-              onPress={() => router.push("/scan")}
-              icon="qr-code-outline"
-              style={styles.heroPrimaryAction}
-            >
-              Scan QR
-            </ZookButton>
-          )}
-          {showBillingAction ? (
+            // Scan QR is permanently available via the floating bottom-nav
+            // FAB — repeating it on the hero created a visible duplicate
+            // action. Start Workout is the better contextual primary here.
             <ZookButton
               onPress={() => router.push("/tracking-entry")}
-              tone="secondary"
               icon="play-outline"
-              style={styles.heroSecondaryAction}
-              accessibilityLabel="Open plan"
+              style={styles.heroPrimaryAction}
             >
               Start Workout
+            </ZookButton>
+          )}
+          {showBillingAction && !expired ? (
+            <ZookButton
+              onPress={() => router.push("/membership")}
+              tone="secondary"
+              icon="card-outline"
+              style={styles.heroSecondaryAction}
+              accessibilityLabel="View membership"
+            >
+              Membership
             </ZookButton>
           ) : null}
         </View>
@@ -231,8 +240,8 @@ const styles = StyleSheet.create({
   },
   premiumPlanName: {
     color: colors.text,
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 20,
+    lineHeight: 25,
     fontFamily: "Inter_700Bold",
   },
   daysLeftRow: {

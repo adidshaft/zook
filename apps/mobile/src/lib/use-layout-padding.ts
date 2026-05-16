@@ -7,7 +7,12 @@ import { layout, spacing } from "@/lib/theme";
 export function useBottomScrollPadding(opts?: { hasStickyAction?: boolean }): number {
   const insets = useSafeAreaInsets();
   const { visible: bottomNavVisible } = useContext(BottomNavVisibilityContext);
-  const navHeight = bottomNavVisible ? layout.bottomNavHeight : 0;
+  // The member bottom nav has a centered Scan-QR FAB that protrudes above
+  // the nav shell. We need to reserve enough scroll padding so the last
+  // card doesn't get clipped under the FAB. `bottomNavContentPadding`
+  // accounts for shell + FAB protrusion; `bottomNavHeight` is just the
+  // shell. Always reserve the larger of the two when the nav is visible.
+  const navHeight = bottomNavVisible ? layout.bottomNavContentPadding : 0;
   const sticky = opts?.hasStickyAction ? layout.stickyActionHeight : 0;
   return navHeight + sticky + Math.max(insets.bottom, 12) + spacing.md;
 }
