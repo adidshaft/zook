@@ -3,11 +3,12 @@
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { QrCode } from "lucide-react";
+import { CheckCircle2, Clock, IndianRupee, QrCode, Users } from "lucide-react";
 import { formatInr } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
 import { Pill } from "./glass-card";
+import { KPITile, PulseDot } from "./dashboard/charts";
 import { ZookButton, ZookButtonLink } from "./zook-button";
 import { DashboardLocaleToggle } from "./dashboard-locale-toggle";
 import { DashboardSignOutButton } from "./dashboard-sign-out-button";
@@ -429,7 +430,10 @@ export function DeskPanel({
               {orgName}
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Pill tone="lime">{branch?.name ?? copy.mainBranch}</Pill>
+              <Pill tone="lime">
+                <PulseDot tone="lime" size={6} />
+                <span className="ml-1.5">{branch?.name ?? copy.mainBranch}</span>
+              </Pill>
               <Pill>
                 {todayRecords.length} {copy.checkInsToday}
               </Pill>
@@ -454,6 +458,36 @@ export function DeskPanel({
           </div>
         </div>
       </header>
+
+      <section className="mx-auto grid max-w-5xl grid-cols-2 gap-3 px-4 pt-5 sm:grid-cols-4">
+        <KPITile
+          label="Today's check-ins"
+          value={todayRecords.length}
+          icon={CheckCircle2}
+          tone="lime"
+        />
+        <KPITile
+          label="Pending review"
+          value={pendingRecords.length}
+          icon={Clock}
+          tone={pendingRecords.length > 0 ? "amber" : "lime"}
+          caption={pendingRecords.length > 0 ? "Needs eyes" : "Clear"}
+        />
+        <KPITile
+          label="Member directory"
+          value={members.length}
+          icon={Users}
+          tone="sky"
+          caption="Active in this branch"
+        />
+        <KPITile
+          label="Desk handoffs"
+          value={payAtDeskOrders.length}
+          icon={IndianRupee}
+          tone="violet"
+          caption={payAtDeskOrders.length > 0 ? "Awaiting pickup" : "All clear"}
+        />
+      </section>
 
       <section className="mx-auto grid max-w-5xl gap-4 px-4 py-5">
         {redirectedFromDashboard ? (
