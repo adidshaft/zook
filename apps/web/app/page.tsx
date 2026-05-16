@@ -20,7 +20,19 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
-import { Counter, Float, Reveal, Stagger, StaggerItem } from "@/components/motion-primitives";
+import {
+  Counter,
+  Float,
+  PointerSpotlight,
+  Reveal,
+  Stagger,
+  StaggerItem,
+} from "@/components/motion-primitives";
+import {
+  GridBackdrop,
+  HeroRingOrnament,
+  MiniSparkline,
+} from "@/components/hero-ornaments";
 import { ZookButtonLink } from "@/components/zook-button";
 import { ZookLogo } from "@/components/zook-logo";
 import {
@@ -86,6 +98,7 @@ export default async function HomePage({
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
+        <GridBackdrop className="opacity-90" />
         <Float amplitude={18} duration={11} className="absolute -top-32 left-1/4">
           <div className="h-[520px] w-[520px] rounded-full bg-lime-300/[0.07] blur-[120px]" />
         </Float>
@@ -215,7 +228,9 @@ export default async function HomePage({
               aria-hidden
               className="absolute -inset-8 -z-10 rounded-[40px] bg-gradient-to-br from-lime-300/10 via-transparent to-transparent blur-2xl"
             />
-            <GlassCard variant="strong" className="relative overflow-hidden p-6">
+            <HeroRingOrnament className="absolute -right-6 -top-12 z-0 hidden lg:block" />
+            <GlassCard variant="strong" className="group relative overflow-hidden p-6">
+              <PointerSpotlight className="hidden lg:block" />
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.22em] text-white/40">
@@ -254,9 +269,15 @@ export default async function HomePage({
               </div>
 
               {/* Mini KPI bar */}
-              <div className="mt-5 flex items-center gap-2 rounded-2xl border border-white/8 bg-black/30 px-4 py-3">
+              <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/8 bg-black/30 px-4 py-3">
                 <Zap size={14} className="text-lime-300" />
                 <span className="text-[11px] uppercase tracking-[0.18em] text-white/40">Today</span>
+                <MiniSparkline
+                  values={[3, 6, 4, 7, 9, 8, 12, 10, 14, 11, 13, 16]}
+                  width={56}
+                  height={18}
+                  className="ml-1 hidden sm:block"
+                />
                 <div className="ml-auto flex items-center gap-4 text-[12px]">
                   <span className="text-white/70">
                     <span className="font-semibold text-white">

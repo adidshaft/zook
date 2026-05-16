@@ -470,28 +470,52 @@ export function GlassCard({
 }) {
   const palette = glassCardVariants[variant];
   const resolvedGlowTone = glowTone ?? (glow ? "lime" : undefined);
-  const cardStyle = [
-    styles.glassCard,
+  const resolvedRadius = radius ?? (variant === "compact" ? radii.smallCard : radii.mainCard);
+  // Android draws `elevation` shadows behind the view; when the same view
+  // has `overflow: hidden`, the shadow gets clipped *inside* the card and
+  // shows up as a phantom dark rectangle behind the content. Split the
+  // shadow onto an outer wrapper (no clipping) and keep border + bg + clip
+  // on an inner card so the shadow renders cleanly on both platforms.
+  const outerStyle: StyleProp<ViewStyle> = [
+    { borderRadius: resolvedRadius },
     palette.shadow,
     resolvedGlowTone ? glassGlowStyles[resolvedGlowTone] : null,
-    {
-      backgroundColor: palette.backgroundColor,
-      borderColor: palette.borderColor,
-      borderRadius: radius ?? (variant === "compact" ? radii.smallCard : radii.mainCard),
-    },
-    resolvedGlowTone ? styles.glassCardGlow : null,
     disabled ? styles.disabled : null,
     style,
   ];
+  const innerStyle: StyleProp<ViewStyle> = [
+    styles.glassCard,
+    {
+      backgroundColor: palette.backgroundColor,
+      borderColor: palette.borderColor,
+      borderRadius: resolvedRadius,
+    },
+    resolvedGlowTone ? styles.glassCardGlowBorder : null,
+  ];
   const inner = (
-    <>
+    <View style={innerStyle}>
       {Platform.OS === "ios" ? (
-        <BlurView pointerEvents="none" intensity={14} tint="dark" style={StyleSheet.absoluteFillObject} />
+        <BlurView
+          pointerEvents="none"
+          intensity={14}
+          tint="dark"
+          // iOS composes BlurView above sibling flex children unless we
+          // explicitly pin it behind — without this, primary buttons inside
+          // a tinted card lose contrast under the blur overlay.
+          style={[StyleSheet.absoluteFillObject, styles.glassCardBlurLayer]}
+        />
       ) : null}
-      <View style={[styles.glassContent, padding !== undefined ? { padding } : null, contentStyle]}>
+      <View
+        style={[
+          styles.glassContent,
+          styles.glassContentLayer,
+          padding !== undefined ? { padding } : null,
+          contentStyle,
+        ]}
+      >
         {children}
       </View>
-    </>
+    </View>
   );
 
   if (pressable || onPress) {
@@ -501,14 +525,14 @@ export function GlassCard({
         onPress={() => pressWithHaptics(onPress)}
         accessibilityRole="button"
         accessibilityState={{ disabled }}
-        style={({ pressed }) => [cardStyle, pressed && !disabled ? styles.pressed : null]}
+        style={({ pressed }) => [outerStyle, pressed && !disabled ? styles.pressed : null]}
       >
         {inner}
       </Pressable>
     );
   }
 
-  return <View style={cardStyle}>{inner}</View>;
+  return <View style={outerStyle}>{inner}</View>;
 }
 
 export function Card(props: Parameters<typeof GlassCard>[0]) {
@@ -2608,6 +2632,16 @@ const styles = StyleSheet.create({
   glassCardGlow: {
     borderColor: colors.limeBorder,
     ...shadows.glowLimeSoft,
+  },
+  glassCardGlowBorder: {
+    borderColor: colors.limeBorder,
+  },
+  glassCardBlurLayer: {
+    zIndex: 0,
+  },
+  glassContentLayer: {
+    position: "relative",
+    zIndex: 1,
   },
   glassContent: {
     padding: 18,

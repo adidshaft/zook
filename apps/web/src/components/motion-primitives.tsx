@@ -1,7 +1,16 @@
 "use client";
 
-import { motion, useInView, useMotionValue, useSpring, useTransform } from "framer-motion";
+import {
+  motion,
+  useInView,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 import { useEffect, useRef, type ReactNode } from "react";
+
+const SMOOTH_EASE = [0.22, 1, 0.36, 1] as const;
 
 type RevealProps = {
   children: ReactNode;
@@ -12,15 +21,30 @@ type RevealProps = {
   as?: "div" | "section" | "header" | "footer" | "ol" | "ul" | "dl";
 };
 
+/**
+ * Smooth on-mount reveal. We deliberately avoid `whileInView` and
+ * opacity-from-0 initials because both leave content invisible in SSR
+ * snapshots and Playwright fullPage screenshots (the IntersectionObserver
+ * or animation hasn't fired by capture time). Animating only the transform
+ * + a soft opacity ramp from 0.4 keeps the cascade feel for users while
+ * keeping every element legible to static renderers.
+ */
 export function Reveal({ children, delay = 0, y = 24, className, id, as = "div" }: RevealProps) {
+  const reduceMotion = useReducedMotion();
   const Component = motion[as] as typeof motion.div;
+  if (reduceMotion) {
+    return (
+      <Component id={id} className={className}>
+        {children}
+      </Component>
+    );
+  }
   return (
     <Component
       id={id}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0.4, y }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, delay, ease: SMOOTH_EASE }}
       className={className}
     >
       {children}
@@ -39,11 +63,14 @@ export function Stagger({
   gap?: number;
   delay?: number;
 }) {
+  const reduceMotion = useReducedMotion();
+  if (reduceMotion) {
+    return <div className={className}>{children}</div>;
+  }
   return (
     <motion.div
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-60px" }}
+      animate="visible"
       variants={{
         hidden: {},
         visible: { transition: { staggerChildren: gap, delayChildren: delay } },
@@ -64,14 +91,18 @@ export function StaggerItem({
   className?: string;
   y?: number;
 }) {
+  const reduceMotion = useReducedMotion();
+  if (reduceMotion) {
+    return <div className={className}>{children}</div>;
+  }
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0, y },
+        hidden: { opacity: 0.4, y },
         visible: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+          transition: { duration: 0.55, ease: SMOOTH_EASE },
         },
       }}
       className={className}
@@ -81,7 +112,7 @@ export function StaggerItem({
   );
 }
 
-/** Animated number that counts up to `value` when scrolled into view. */
+/** Animated number that counts up to `value` once it enters view. */
 export function Counter({
   value,
   suffix = "",
@@ -96,7 +127,8 @@ export function Counter({
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const reduceMotion = useReducedMotion();
+  const inView = useInView(ref, { once: true, margin: "0px 0px 200px 0px" });
   const mv = useMotionValue(0);
   const spring = useSpring(mv, { duration: duration * 1000, bounce: 0 });
   const rounded = useTransform(spring, (v) => {
@@ -106,8 +138,22 @@ export function Counter({
   });
 
   useEffect(() => {
+    if (reduceMotion) {
+      mv.set(value);
+      return;
+    }
     if (inView) mv.set(value);
-  }, [inView, mv, value]);
+  }, [inView, mv, reduceMotion, value]);
+
+  if (reduceMotion) {
+    return (
+      <span ref={ref} className={className}>
+        {prefix}
+        {value.toLocaleString()}
+        {suffix}
+      </span>
+    );
+  }
 
   return (
     <span ref={ref} className={className}>
@@ -130,6 +176,10 @@ export function Float({
   duration?: number;
   className?: string;
 }) {
+  const reduceMotion = useReducedMotion();
+  if (reduceMotion) {
+    return <div className={className}>{children}</div>;
+  }
   return (
     <motion.div
       animate={{ y: [0, -amplitude, 0, amplitude * 0.6, 0] }}
@@ -152,15 +202,63 @@ export function Marquee({
   className?: string;
 }) {
   return (
-    <div className={className} style={{ overflow: "hidden" }}>
+    <div className={`relative overflow-hidden ${className ?? ""}`}>
       <motion.div
         animate={{ x: ["0%", "-50%"] }}
         transition={{ duration, repeat: Infinity, ease: "linear" }}
-        style={{ display: "flex", width: "max-content", gap: "3rem" }}
+        className="flex w-max gap-12"
       >
         {children}
         {children}
       </motion.div>
+    </div>
+  );
+}
+
+/**
+ * Spotlight that follows the cursor inside a container — adds a subtle
+ * radial glow for premium feel on hero cards.
+ */
+export function PointerSpotlight({
+  className,
+  size = 320,
+  color = "rgba(185,244,85,0.10)",
+}: {
+  className?: string;
+  size?: number;
+  color?: string;
+}) {
+  const x = useMotionValue(-1000);
+  const y = useMotionValue(-1000);
+  const ref = useRef<HTMLDivElement>(null);
+  return (
+    <div
+      ref={ref}
+      onPointerMove={(e) => {
+        const rect = ref.current?.getBoundingClientRect();
+        if (!rect) return;
+        x.set(e.clientX - rect.left);
+        y.set(e.clientY - rect.top);
+      }}
+      onPointerLeave={() => {
+        x.set(-1000);
+        y.set(-1000);
+      }}
+      className={`pointer-events-auto absolute inset-0 ${className ?? ""}`}
+    >
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute rounded-full blur-2xl"
+        style={{
+          x,
+          y,
+          width: size,
+          height: size,
+          translateX: "-50%",
+          translateY: "-50%",
+          background: `radial-gradient(closest-side, ${color}, transparent)`,
+        }}
+      />
     </div>
   );
 }
