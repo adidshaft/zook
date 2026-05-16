@@ -22,7 +22,7 @@ import {
 import { GlassCard, Pill } from "@/components/glass-card";
 import {
   Counter,
-  Float,
+  MotionSurface,
   PointerSpotlight,
   Reveal,
   Stagger,
@@ -87,6 +87,12 @@ export default async function HomePage({
     [Bell, t("notifications")],
   ];
   const proofPoints = [t("proofOwnerWeb"), t("proofMemberMobile"), t("proofSharedRecord")];
+  const operationsLoop: Array<{ icon: LucideIcon; label: string; copy: string; tone: string }> = [
+    { icon: Users, label: t("loopJoin"), copy: t("loopJoinCopy"), tone: "lime" },
+    { icon: QrCode, label: t("loopCheckIn"), copy: t("loopCheckInCopy"), tone: "amber" },
+    { icon: Dumbbell, label: t("loopCoach"), copy: t("loopCoachCopy"), tone: "sky" },
+    { icon: ChartNoAxesColumnIncreasing, label: t("loopGrow"), copy: t("loopGrowCopy"), tone: "lime" },
+  ];
 
   return (
     <main
@@ -99,15 +105,11 @@ export default async function HomePage({
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
         <GridBackdrop className="opacity-90" />
-        <Float amplitude={18} duration={11} className="absolute -top-32 left-1/4">
-          <div className="h-[520px] w-[520px] rounded-full bg-lime-300/[0.07] blur-[120px]" />
-        </Float>
-        <Float amplitude={14} duration={13} className="absolute top-[40%] -right-32">
-          <div className="h-[480px] w-[480px] rounded-full bg-amber-200/[0.05] blur-[120px]" />
-        </Float>
-        <Float amplitude={20} duration={15} className="absolute bottom-[10%] left-[10%]">
-          <div className="h-[420px] w-[420px] rounded-full bg-sky-300/[0.04] blur-[120px]" />
-        </Float>
+        <div className="absolute inset-x-0 top-0 h-[680px] bg-[linear-gradient(180deg,rgba(185,244,85,0.08),rgba(185,244,85,0)_66%)]" />
+        <div className="absolute left-0 top-24 h-px w-full bg-gradient-to-r from-transparent via-lime-200/18 to-transparent" />
+        <div className="absolute bottom-[18%] left-0 h-px w-full bg-gradient-to-r from-transparent via-amber-100/10 to-transparent" />
+        <div className="absolute inset-y-0 left-[12%] w-px bg-gradient-to-b from-transparent via-white/[0.07] to-transparent" />
+        <div className="absolute inset-y-0 right-[14%] w-px bg-gradient-to-b from-transparent via-white/[0.05] to-transparent" />
       </div>
 
       <div className="mx-auto flex max-w-7xl flex-col gap-10">
@@ -115,10 +117,12 @@ export default async function HomePage({
         <header className="sticky top-3 z-30 flex items-center justify-between rounded-full border border-white/8 bg-black/40 px-3 py-2 backdrop-blur-xl">
           <div className="flex items-center gap-2 pl-2">
             <ZookLogo />
-            <Pill tone="lime" className="hidden md:inline-flex">
-              <Sparkles size={12} />
-              {t("indiaOps")}
-            </Pill>
+            <div className="hidden md:block">
+              <Pill tone="lime">
+                <Sparkles size={12} />
+                {t("indiaOps")}
+              </Pill>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Link
@@ -133,13 +137,11 @@ export default async function HomePage({
             >
               {t("navGyms")}
             </Link>
-            <ZookButtonLink
-              href={localizedPath("/start-gym", locale)}
-              size="sm"
-              className="hidden sm:inline-flex"
-            >
-              {t("startGym")}
-            </ZookButtonLink>
+            <div className="hidden sm:block">
+              <ZookButtonLink href={localizedPath("/start-gym", locale)} size="sm">
+                {t("startGym")}
+              </ZookButtonLink>
+            </div>
             {accountLink ? (
               <ZookButtonLink href={localizedPath(accountLink.href, locale)} tone="ghost" size="sm">
                 {accountLink.label}
@@ -159,14 +161,13 @@ export default async function HomePage({
               <span className="h-px w-8 bg-lime-200/40" />
               {t("indiaOps")}
             </div>
-            <h1 className="mt-6 max-w-3xl text-[clamp(3rem,8vw,7rem)] font-semibold leading-[0.95] tracking-[-0.03em]">
+            <h1 className="mt-6 max-w-3xl text-[clamp(3rem,8vw,6.8rem)] font-semibold leading-[0.95]">
               {t("homeHeroTitle").split(" ").map((word, i) => (
                 <span
                   key={i}
                   className={
-                    word.toLowerCase().includes("operating") ||
-                    word.toLowerCase().includes("modern")
-                      ? "bg-gradient-to-br from-lime-200 to-lime-400 bg-clip-text text-transparent"
+                    word.toLowerCase().includes("zook")
+                      ? "text-lime-200"
                       : ""
                   }
                 >
@@ -193,7 +194,7 @@ export default async function HomePage({
               </ZookButtonLink>
               <div className="flex items-center gap-2 pl-1 text-xs text-white/45">
                 <CheckCircle2 size={14} className="text-lime-300" />
-                No card required
+                {t("pilotReady")}
               </div>
             </div>
 
@@ -226,7 +227,7 @@ export default async function HomePage({
           <Reveal y={32} delay={0.15} className="relative">
             <div
               aria-hidden
-              className="absolute -inset-8 -z-10 rounded-[40px] bg-gradient-to-br from-lime-300/10 via-transparent to-transparent blur-2xl"
+              className="absolute -inset-6 -z-10 rounded-[40px] border border-lime-200/10"
             />
             <HeroRingOrnament className="absolute -right-6 -top-12 z-0 hidden lg:block" />
             <GlassCard variant="strong" className="group relative overflow-hidden p-6">
@@ -246,7 +247,7 @@ export default async function HomePage({
               </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                <div className="group rounded-2xl border border-white/10 bg-black/25 p-4 transition hover:border-amber-200/30">
+                <MotionSurface className="group rounded-2xl border border-white/10 bg-black/25 p-4 transition-colors hover:border-amber-200/30">
                   <div className="flex items-center justify-between">
                     <Store size={18} className="text-amber-100" />
                     <ArrowUpRight
@@ -255,8 +256,8 @@ export default async function HomePage({
                     />
                   </div>
                   <p className="mt-6 text-[13px] leading-5 text-white/55">{t("sellMemberships")}</p>
-                </div>
-                <div className="group rounded-2xl border border-white/10 bg-black/25 p-4 transition hover:border-lime-200/30">
+                </MotionSurface>
+                <MotionSurface className="group rounded-2xl border border-white/10 bg-black/25 p-4 transition-colors hover:border-lime-200/30">
                   <div className="flex items-center justify-between">
                     <QrCode size={18} className="text-lime-200" />
                     <ArrowUpRight
@@ -265,7 +266,7 @@ export default async function HomePage({
                     />
                   </div>
                   <p className="mt-6 text-[13px] leading-5 text-white/55">{t("publishJoin")}</p>
-                </div>
+                </MotionSurface>
               </div>
 
               {/* Mini KPI bar */}
@@ -299,22 +300,24 @@ export default async function HomePage({
             <Stagger className="mt-4 grid grid-cols-3 gap-3" delay={0.3}>
               {pillars.map(({ icon: Icon, label, value, tone }) => (
                 <StaggerItem key={label}>
-                <GlassCard className="p-4">
-                  <Icon
-                    size={18}
-                    className={
-                      tone === "lime"
-                        ? "text-lime-200"
-                        : tone === "amber"
-                          ? "text-amber-100"
-                          : "text-sky-200"
-                    }
-                  />
-                  <p className="mt-4 text-[11px] uppercase tracking-[0.18em] text-white/40">
-                    {label}
-                  </p>
-                  <p className="mt-1 text-[13px] font-medium leading-5 text-white/85">{value}</p>
-                </GlassCard>
+                  <MotionSurface>
+                    <GlassCard className="p-4">
+                      <Icon
+                        size={18}
+                        className={
+                          tone === "lime"
+                            ? "text-lime-200"
+                            : tone === "amber"
+                              ? "text-amber-100"
+                              : "text-sky-200"
+                        }
+                      />
+                      <p className="mt-4 text-[11px] uppercase tracking-[0.18em] text-white/40">
+                        {label}
+                      </p>
+                      <p className="mt-1 text-[13px] font-medium leading-5 text-white/85">{value}</p>
+                    </GlassCard>
+                  </MotionSurface>
                 </StaggerItem>
               ))}
             </Stagger>
@@ -332,7 +335,7 @@ export default async function HomePage({
               <p className="text-xs font-medium uppercase tracking-[0.24em] text-lime-200/70">
                 {t("socialProof")}
               </p>
-              <h2 className="mt-4 text-[clamp(1.6rem,3.4vw,2.6rem)] font-semibold leading-[1.05] tracking-tight">
+              <h2 className="mt-4 text-[clamp(1.6rem,3.4vw,2.6rem)] font-semibold leading-[1.05]">
                 {t("socialTitle")}
               </h2>
               <p className="mt-4 max-w-md text-sm leading-7 text-white/55">{t("socialCopy")}</p>
@@ -340,16 +343,50 @@ export default async function HomePage({
             <Stagger className="grid gap-3" gap={0.1}>
               {proofPoints.map((point, idx) => (
                 <StaggerItem key={point}>
-                  <div className="flex items-start gap-4 rounded-[20px] border border-white/8 bg-white/[0.025] p-4 text-sm leading-6 text-white/72 transition hover:border-lime-200/20 hover:bg-white/[0.04]">
+                  <MotionSurface className="flex items-start gap-4 rounded-[20px] border border-white/8 bg-white/[0.025] p-4 text-sm leading-6 text-white/72 transition-colors hover:border-lime-200/20 hover:bg-white/[0.04]">
                     <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-lime-200/30 bg-lime-200/10 text-[11px] font-semibold text-lime-200">
                       0{idx + 1}
                     </span>
                     <span>{point}</span>
-                  </div>
+                  </MotionSurface>
                 </StaggerItem>
               ))}
             </Stagger>
           </div>
+        </Reveal>
+
+        {/* OPERATING LOOP */}
+        <Reveal as="section" className="grid gap-5 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+          <div className="rounded-[32px] border border-white/8 bg-black/28 p-7">
+            <p className="text-xs font-medium uppercase tracking-[0.24em] text-lime-200/70">
+              {t("opsLoopLabel")}
+            </p>
+            <h2 className="mt-4 text-[clamp(1.7rem,3.2vw,2.45rem)] font-semibold leading-[1.08] text-white">
+              {t("opsLoopTitle")}
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-white/56">{t("opsLoopCopy")}</p>
+          </div>
+          <Stagger className="grid gap-3 sm:grid-cols-2" gap={0.06}>
+            {operationsLoop.map(({ icon: Icon, label, copy, tone }) => (
+              <StaggerItem key={label}>
+                <MotionSurface className="h-full rounded-[24px] border border-white/8 bg-white/[0.025] p-5 transition-colors hover:border-white/18 hover:bg-white/[0.04]">
+                  <div
+                    className={
+                      tone === "amber"
+                        ? "flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200/30 bg-amber-200/10 text-amber-100"
+                        : tone === "sky"
+                          ? "flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-200/25 bg-sky-200/10 text-sky-100"
+                          : "flex h-10 w-10 items-center justify-center rounded-2xl border border-lime-200/30 bg-lime-200/10 text-lime-200"
+                    }
+                  >
+                    <Icon size={18} />
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold text-white">{label}</h3>
+                  <p className="mt-2 text-sm leading-6 text-white/56">{copy}</p>
+                </MotionSurface>
+              </StaggerItem>
+            ))}
+          </Stagger>
         </Reveal>
 
         {/* FEATURE PILLARS */}
@@ -358,13 +395,13 @@ export default async function HomePage({
           <GlassCard variant="strong" className="relative overflow-hidden p-7">
             <div
               aria-hidden
-              className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-lime-300/8 blur-3xl"
+              className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-lime-200/35 to-transparent"
             />
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-lime-200/30 bg-lime-200/10">
                 <Users size={18} className="text-lime-200" />
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-white">
+              <h2 className="text-2xl font-semibold text-white">
                 {t("forOwners")}
               </h2>
             </div>
@@ -393,13 +430,13 @@ export default async function HomePage({
             <GlassCard variant="strong" className="relative h-full overflow-hidden p-7">
               <div
                 aria-hidden
-                className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-amber-200/8 blur-3xl"
+                className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-amber-100/30 to-transparent"
               />
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200/30 bg-amber-200/10">
                   <Smartphone size={18} className="text-amber-100" />
                 </div>
-                <h2 className="text-2xl font-semibold tracking-tight text-white">
+                <h2 className="text-2xl font-semibold text-white">
                   {t("forMembers")}
                 </h2>
               </div>
@@ -442,7 +479,7 @@ export default async function HomePage({
               <Smartphone size={11} />
               {t("memberApps")}
             </Pill>
-            <h2 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
+            <h2 className="text-3xl font-semibold text-white md:text-4xl">
               {t("memberApps")}
             </h2>
             <p className="mt-3 max-w-xl text-sm leading-7 text-white/55">{t("memberAppsCopy")}</p>

@@ -1,90 +1,113 @@
-# 🛠️ Platform Status Handbook
+# 🛠️ Platform Operator Handbook
 
-> **You are an internal platform operator.** You can see provider health, org status, and engineering-level diagnostics that no gym owner ever sees. This access is controlled by `User.isPlatformAdmin`; it is not a Zook gym role.
+> **You are an internal platform operator.** You can see cross-gym health, provider readiness, SaaS subscriptions, and safety controls. This is controlled by `User.isPlatformAdmin`; it is not a gym role.
 
 ---
 
 ## 🌐 Operator Entry Points
 
-| URL | What it shows |
-|-----|--------------|
-| `/platform` | All organisations, status, plan, created date |
-| `/platform/provider-status` | Live provider health — safe read-only view |
-| `/api/platform/provider-status` | JSON provider readiness (same data, machine-readable) |
+| URL | What it shows | Production safety |
+| --- | --- | --- |
+| `/platform` | Organisations, SaaS plan/status, safety and usage | Read-only smoke is safe |
+| `/platform/gyms` | Gym list and org status | Suspend/reactivate only test orgs |
+| `/platform/subscriptions` | SaaS subscription and mandate state | Verify billing status carefully |
+| `/platform/provider-status` | Provider health | Read-only |
+| `/api/platform/provider-status` | JSON provider readiness | Read-only |
 
 ---
 
-## 🔍 Provider Status Explained
+## 🚦 Provider Status Explained
 
-```
-Provider Health Card:
-
-  ✅ READY      — Configured and responding
-  ⚠️  DEGRADED  — Configured but returning errors
-  ❌ MISSING    — Env var not set or wrong
-  🔒 MOCK       — Local/staging mock, not production-ready
+| Symbol | Status | Meaning |
+| --- | --- | --- |
+| ✅ | READY | Configured and responding |
+| ⚠️ | DEGRADED | Configured but slow/failing |
+| ❌ | MISSING | Required config is absent |
+| 🔒 | MOCK | Safe for local/staging, not normal production |
 
 Providers checked:
-  ├── 📧 Email        (Resend / SMTP)
-  ├── 💳 Payment      (Razorpay)
-  ├── 🗄️  Storage     (Supabase / S3 / R2 / Local)
-  ├── 🤖 AI           (OpenAI / Mock)
-  ├── 🔔 Push         (Expo / Mock)
-  ├── 💬 SMS          (Webhook / Mock)
-  ├── 🗺️  Maps        (Google / Mock)
-  ├── 📊 Monitoring   (Sentry)
-  └── ⚡ Rate Limits  (Upstash / In-memory)
+
+```
+📧 Email      Resend / SMTP / mock
+💳 Payments   Razorpay / mock / disabled
+🗄 Storage    Supabase / S3 / R2 / local
+🤖 AI         OpenAI / disabled / mock
+🔔 Push       Expo / mock
+💬 SMS        MSG91 / webhook / mock
+🗺 Maps       Google / mock
+📊 Sentry     Error reporting
+⚡ Rate limit Upstash / memory
 ```
 
-**Security note:** The status page shows request IDs and missing env-var *names* only. It **never** exposes secret values.
+**Security rule:** show missing env-var names and request IDs only. Never expose secret values.
 
 ---
 
 ## 🏢 Organisation Management
 
-| Action | Where |
-|--------|-------|
-| View all orgs | `/platform` |
-| See org plan / status | Org row in platform table |
-| Suspend an org | Platform → Org → Change status to SUSPENDED |
-| Reactivate an org | Platform → Org → Change status to ACTIVE |
-| Review AI usage | Platform → Org → AI tab |
+| Action | Where | Test expectation |
+| --- | --- | --- |
+| View all gyms | `/platform` | Search/sort/filter works |
+| Review org status | Org row/detail | Trial/active/suspended/churned are clear |
+| Suspend test org | Platform org action | Gym access blocks safely |
+| Reactivate test org | Platform org action | Gym access returns |
+| Review subscription | `/platform/subscriptions` | Mandate/payment state matches owner billing |
+| Review assistant/safety | Platform assistant/safety areas | No customer secrets exposed |
 
-**Org statuses:**
-
-| Status | Meaning |
-|--------|---------|
-| `TRIAL` | Free trial, time-limited |
-| `ACTIVE` | Paid and running |
-| `SUSPENDED` | Access blocked — owner notified |
-| `CHURNED` | Cancelled / lapsed |
+Org statuses:
+- `TRIAL` — free trial, time-limited
+- `ACTIVE` — paid and running
+- `SUSPENDED` — access blocked; owner notified
+- `CHURNED` — cancelled/lapsed
 
 ---
 
-## 📢 User-Facing Status Page
-
-> Gym owners see a simplified status page — plain language, no infra labels.
+## 💳 SaaS Billing Checks
 
 ```
-What gym owners see:          What this actually means:
-────────────────────────────────────────────────────────
-✅ Check-ins working         →  QR, scan, attendance APIs healthy
-✅ Payments working          →  Razorpay webhooks + checkout healthy
-✅ App & web working         →  Next.js, API, push all healthy
-⚠️  Payments degraded        →  Razorpay returning errors or slow
-❌ Check-ins down            →  QR or attendance service failing
+Owner Billing page ↔ Platform Subscriptions page ↔ Database subscription/mandate state
 ```
 
-**Drafting incident copy rules:**
-- Plain language: "Some members may not be able to check in" not "QR token service 503"
-- Sandbox / mock mode → translate to user impact: "Payments processing in test mode"
-- Keep cards calm, factual, one sentence
+Verify:
+- Owner sees the same status the platform sees.
+- Missing mandate/payment does not crash the page.
+- Suspended orgs cannot keep using operational features.
+- Trial countdown and renewal language are clear.
 
 ---
 
-## ✅ Good-to-Know Rules
+## 📢 User-Facing Status Copy
 
-- **Platform operator access is hidden.** It doesn't overlap with gym owner permissions and never appears in product role pickers.
-- **Provider status is read-only.** It shows health; it does not change config.
-- **Never expose secret values** in any status UI, even in engineering view.
-- **Diagnostics endpoints are rate-limited** and require an internal platform session.
+| User-facing text | Internal meaning |
+| --- | --- |
+| ✅ Check-ins working | QR, attendance APIs, and DB are healthy |
+| ✅ Payments working | Checkout and webhooks are healthy |
+| ✅ App & web working | Web/API/mobile handoff is healthy |
+| ⚠️ Payments degraded | Payment provider slow/failing |
+| ❌ Check-ins down | QR or attendance service failing |
+
+Incident copy rules:
+- Use plain language.
+- Say who is affected and what they can do.
+- Do not mention raw provider internals unless the audience is engineering.
+
+---
+
+## ✅ Platform Production Smoke Checklist
+
+- [ ] `/platform` opens only for platform operator.
+- [ ] Owner/admin/reception/trainer/member accounts cannot open `/platform`.
+- [ ] Provider status loads without secret values.
+- [ ] Subscriptions page loads without 500s.
+- [ ] Test org suspend/reactivate works in staging or test data only.
+- [ ] Production logs show no Prisma engine, auth, or provider errors after deploy.
+- [ ] Public `/status` renders and uses calm user-facing language.
+
+---
+
+## ⚠️ Good-to-Know Rules
+
+- **Platform admin is separate from gym roles.**
+- **Provider status is diagnostic, not configuration.**
+- **Production destructive actions need a test org or explicit business approval.**
+- **Logs and request IDs are useful; secrets never belong in UI, docs, or screenshots.**

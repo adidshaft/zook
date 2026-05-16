@@ -1,113 +1,125 @@
-# 🎫 Reception Handbook
+# 🎫 Receptionist Handbook
 
-> **You run the front desk.** The mobile app is a tablet-first desk tool. Speed and confidence matter — one active member at a time.
+> **You run the front desk.** The desk surface is built for speed, confidence, and one member at a time.
 
 ---
 
 ## 🚀 Daily Desk Flow
 
 ```
-Start of shift:
-  📱 /reception → Today tab → See check-ins so far + pending items + collected amount
-
-When someone walks in:
-  📱 Search bar (always visible at top) → Name / Phone / Code → Member card opens
-
-At end of shift:
-  📱 Today tab → Confirm totals match cash-on-hand
+Start shift → Open /desk or mobile /reception
+Walk-in arrives → Search member / enter code
+Action needed → Approve scan, record payment, fulfil order, or escalate
+End shift → Confirm totals and pending queue
 ```
+
+**Production testing rule:** use a test member/order for payments and pickup fulfilment. Do not mark a real customer order fulfilled unless the item is actually handed over.
+
+---
+
+## 🖥️ Web Desk
+
+| URL | Use for | Healthy state |
+| --- | --- | --- |
+| `/desk` | Queue, member lookup, manual payment, pickup fulfilment | Fast search, clear active member panel |
+| `/desk/qr` | Desk QR route | Shows QR display or routes correctly |
+| `/dashboard/attendance` | Owner/admin attendance review | Only if you have permission |
+| `/dashboard/attendance/qr-display` | Entrance QR display | Useful on a larger screen |
 
 ---
 
 ## 📱 Mobile Desk Screens
 
 ```
-Bottom Nav:  🟢 Desk  ·  👥 Members  ·  💳 Payments  ·  📦 Orders
+Bottom Nav:  Desk · Members · Payments · Orders
 ```
 
-| Screen | What you'll see |
-|--------|----------------|
-| **Desk** `/reception` | Live check-in card + today's totals (ambient, not primary focus) |
-| **Members** `?view=members` | Search + member status, plan, last check-in |
-| **Payments** `?view=payments` | Record & review payments, renewals |
-| **Orders** `?view=orders` | Shop orders ready for pickup handoff |
+| Screen | What to verify | Healthy state |
+| --- | --- | --- |
+| 🟢 **Desk** `/reception` | Verify code, recent scans, active member card | Outcome toast + haptic feedback |
+| 👥 **Members** | Search, phone reveal, member status | Phone reveal permission gate works |
+| 💳 **Payments** | Record renewal/offline payment | Double-tap does not duplicate payment |
+| 📦 **Orders** | Verify pickup code, fulfil order | Confirm action protects fulfilment |
 
 ---
 
 ## 🔄 Core Desk Actions
 
-### Check-in a member
+### 1. Verify attendance code
 
 ```
-📱 Search → Member card opens → Large "Approve / Hold / Deny" buttons
-
-  ✅ Approve  →  Check-in logged, member gets notification
-  ⏸  Hold     →  Queued for owner review
-  ❌ Deny     →  Denied with reason, logged in audit
-
-Fallback when camera isn't being used:
-  Member tells you their code → Desk → Enter Code manually
+Desk → Enter member/attendance code → Verify
+   ✅ Approved: member may enter
+   ⏳ Pending: wait for owner/admin review
+   ❌ Rejected: tell member the reason and next step
 ```
 
-### Recording a payment
+Verify:
+- Success clears stale error/status text.
+- Toast appears for every outcome.
+- Double-submit is blocked.
+
+### 2. Record payment
 
 ```
-📱 Payments tab → Record Payment
-  ├── Select member
-  ├── Enter amount (₹)
-  ├── Pick mode: Cash / UPI / Card / Bank Transfer
-  ├── Add reference note (optional)
-  └── Confirm → Audit entry created  ✓
+Payments → Select member → Enter amount → Pick mode → Add reference → Confirm
 ```
 
-### Shop pickup handoff
+Modes:
+- Cash
+- UPI
+- Card
+- Bank transfer
+- Other
+
+Verify:
+- Amount field handles invalid input safely.
+- Confirmation is required.
+- Audit log entry is created.
+
+### 3. Fulfil shop pickup
 
 ```
-📱 Orders tab → Find order (READY FOR PICKUP)
-  ├── Ask member for their pickup code
-  ├── Enter code → Verify  →  ✅ Match: mark fulfilled
-  │                         →  ❌ No match: re-ask / escalate
-  └── If member lost code: tap "Skip code check" → log reason
+Orders → Select READY order → Ask for pickup code → Verify → Fulfil
 ```
 
-### Walk-in / day pass
+If code does not match:
+- Re-ask member to open Shop → Order detail.
+- Escalate to owner/admin if the member cannot prove the order.
+
+Verify:
+- Pickup code entry fits.
+- Fulfil action has a confirmation step.
+- Order status updates once only.
+
+### 4. Phone reveal
 
 ```
-📱 Desk → New Walk-in
-  └── Enter name + phone → Set plan (day pass / trial) → Confirm
-  └── Creates a temporary membership active for the day
+Members → Open member → Reveal phone → Permission gate → Audit log
 ```
+
+Verify:
+- Staff without permission cannot reveal.
+- Audit-log failure shows a toast.
 
 ---
 
-## 🌐 Web Entry Points (when at a desktop)
+## ✅ Reception Production Smoke Checklist
 
-| URL | Use for |
-|-----|---------|
-| `/dashboard/attendance` | Attendance records, bulk exception review |
-| `/dashboard/attendance/qr-display` | Show the desk / entrance QR on a big screen |
-| `/dashboard/payments` | Payment history, settlement review |
-| `/dashboard/shop/products` | Shop handoff support (if permitted) |
-| `/desk` | Full desk panel with Queue / Member / Payment / Pickup tabs |
-
----
-
-## ⚡ Quick Reference
-
-| Situation | Action |
-|-----------|--------|
-| Member has no membership | Record walk-in OR tell them to join via app / web |
-| Membership expired | Reception can collect renewal payment directly |
-| Scan flagged / exception | Approve or hold — owner sees it in audit |
-| Cash collected at desk | Payments → Record (cap: 2 manual per staff per day) |
-| Order at pickup | Orders tab → verify code → fulfil |
-| Camera not working | Desk → Enter Code tab |
+- [ ] `/desk` opens for receptionist account.
+- [ ] Mobile Desk, Members, Payments, Orders tabs open.
+- [ ] Code verify shows success/pending/rejected states using demo/test data.
+- [ ] Manual payment form blocks duplicate taps.
+- [ ] Pickup fulfilment requires confirmation.
+- [ ] Phone reveal permission gate is visible.
+- [ ] Bottom nav is evenly distributed and does not clip text.
+- [ ] No black-on-black text in cards, sheets, or toasts.
 
 ---
 
-## ✅ Good-to-Know Rules
+## ⚠️ Good-to-Know Rules
 
-- **One active member dominates the screen.** Everything else is ambient.
-- **Search is always at the top.** You should never need to navigate away from desk to find someone.
-- **Manual code + desk fallback are always visible.** Never hidden behind menus.
-- **Sync indicator in the header** tells you if you're online. Transaction confidence stays visible at all times.
+- **One active member dominates the screen.**
+- **Search should always be easy to reach.**
+- **When unsure, hold/escalate instead of forcing approval.**
+- **Every sensitive desk action should leave an audit trail.**

@@ -1,106 +1,123 @@
 # 🏃 Trainer Handbook
 
-> **You guide members.** The mobile app is your primary tool. The web dashboard lets the gym owner see your coaching library.
+> **You coach members.** Your primary workplace is the mobile trainer surface. Web `/coach` is a lightweight command view and handoff surface.
 
 ---
 
-## 🚀 Daily Workflow
+## 🚀 Daily Trainer Flow
 
 ```
-Morning:
-  📱 /trainer → Today tab → See who's coming in today + anyone slipping
-
-During shift:
-  📱 Open a client → Check 14-day adherence grid → Add note if needed
-
-After session:
-  📱 Client detail → Update plan → Log offline PT session if applicable
-
-Weekly:
-  📱 Plans tab → Review AI draft (if pending) → Edit → Publish to client
+Morning → Open /trainer → Check clients needing attention
+Before session → Open client detail → Review plan + recent progress
+After session → Add note / update plan / log progress
+Weekly → Review AI draft → Edit → Publish only when correct
 ```
+
+**Production testing rule:** use a test client before publishing plans or notes. Trainer notes may be private, but they still affect the member record.
 
 ---
 
-## 📱 Mobile Screens
+## 📱 Mobile Trainer Screens
 
 ```
-Bottom Nav:  📅 Today  ·  👥 Clients  ·  📋 Plans  ·  ⋯ More
+Trainer tabs:  Home · Clients · Plans · Inbox
+Client detail tabs:  Summary · Plans · Progress · Notes · AI Draft
 ```
 
-| Screen | What you'll see |
-|--------|----------------|
-| **Today** `/trainer` | Sessions now, clients needing attention, adherence alerts |
-| **Clients** `?view=clients` | Full client list — sort by: Needs Attention / Expiring Plan / Low Adherence |
-| **Plans** `?view=plans` | Plan templates and active assignments |
-| **Client Detail** `/trainer/client/[id]` | Adherence grid, assigned plan, notes, next session |
-| **AI Draft Review** `/trainer/client/[id]/ai-draft` | Review → edit → publish (never auto-assigns) |
+| Screen | What to verify | Healthy state |
+| --- | --- | --- |
+| 🏠 **Home** `/trainer` | Today summary, attention cards, schedule | Cards are stable and readable |
+| 👥 **Clients** | Client list, search/sort, status chips | Long names do not clip awkwardly |
+| 📋 **Plans** | Templates, assignments, drafts | Actions are gated by permission |
+| 📬 **Inbox** | Member messages / nudges | Empty state is clear |
+| 👤 **Client detail** `/trainer/client/[id]` | Summary, plan, progress, notes | Tabs fit and preserve state |
+| 🤖 **AI Draft** | Draft review/edit/publish | Nothing reaches member before publish |
 
 ---
 
-## 🔄 Core Flows
+## 🌐 Web Trainer Surface
 
-### Assigning a plan to a client
+| URL | Use for |
+| --- | --- |
+| `/coach` | Trainer command overview, assigned clients, quick actions |
+| `/me` | Account/profile handoff |
 
-```
-📱 Clients → Pick client → Assign Plan
-  ├── Choose plan type: Workout / Diet / Habits
-  ├── Set duration and cadence
-  └── Publish → Member sees it immediately in their Plans tab  ✓
-```
-
-### Reviewing an AI draft
-
-```
-📱 Client detail → AI Draft card appears (orange badge = pending review)
-  ├── Read full draft
-  ├── Edit any day / exercise / rep / set
-  ├── Tap Publish → Confirm  →  Sent to member + push notification
-  └── ⚠️  Drafts NEVER reach members without trainer approval
-```
-
-### Logging a note
-
-```
-📱 Client detail → Notes tab → Add note
-  ├── Trainer-only notes: owner and trainer can see, member cannot
-  └── Plan notes: visible to member inside their plan
-```
+Verify tomorrow:
+- `/coach` loads without Server Component or icon serialization errors.
+- KPI tiles render for assigned clients, plans, sessions, notes.
+- Quick action rows route correctly.
+- Sign out works.
 
 ---
 
-## 📋 What Clients See vs. What You See
+## 🔄 Core Trainer Flows
 
-| Item | Member sees | Trainer sees |
-|------|-------------|-------------|
-| Assigned plan | ✅ Full plan with days | ✅ Full plan + edit controls |
-| Trainer notes | ❌ Private | ✅ All notes |
-| Adherence grid | ❌ (their own tracking) | ✅ 14-day colour grid |
-| AI draft | ❌ Only after publish | ✅ Full draft before publish |
-| Progress photos | ❌ (member's own) | ✅ If shared |
+### 1. Assign a plan
+
+```
+Clients → Pick client → Plans tab → Assign Plan
+   → Choose type → Set cadence/duration → Publish → Member sees it
+```
+
+Plan types:
+- Workout
+- Diet
+- Habits
+- Hybrid / custom where enabled
+
+Verify:
+- Member receives the plan in their Plans tab.
+- Long exercise names and rep text wrap cleanly.
+- Publish button cannot be double-fired.
+
+### 2. Review an AI draft
+
+```
+Client detail → AI Draft → Read → Edit → Confirm publish
+```
+
+Rules:
+- AI draft is never visible to the member until published.
+- Trainer remains accountable for correctness.
+- If AI provider is disabled, the UI should show an unavailable state, not a crash.
+
+### 3. Add notes
+
+```
+Client detail → Notes → Add note → Choose visibility → Save
+```
+
+Visibility:
+- **Trainer-only:** visible to owner/trainer, not member.
+- **Plan/member note:** visible inside member plan where supported.
+
+### 4. Check progress
+
+```
+Client detail → Progress → Review adherence / body progress / recent sessions
+```
+
+Verify:
+- Graphs/cards are readable on small phones.
+- Empty progress states explain what the member should do next.
 
 ---
 
-## 👁️ Adherence Grid Guide
+## ✅ Trainer Production Smoke Checklist
 
-```
-14-day grid per client:
-
-  ██ = Logged workout      (lime)
-  ▒▒ = Partial session     (amber)
-  ░░ = No activity         (grey)
-  ── = Rest day / planned  (dim)
-
-Sort clients by:
-  "Needs Attention" = most grey squares recently
-  "Low Adherence"   = < 50% completion rate in last 14 days
-```
+- [ ] Login as trainer routes to `/coach` on web or `/trainer` on mobile.
+- [ ] Home, Clients, Plans, Inbox all open.
+- [ ] Client detail opens every tab.
+- [ ] Notes save with the correct visibility.
+- [ ] AI draft unavailable/review/publish states are clear.
+- [ ] Member can see published plan.
+- [ ] No clipped tab labels, card headers, or bottom nav labels.
 
 ---
 
-## ✅ Good-to-Know Rules
+## ⚠️ Good-to-Know Rules
 
-- **AI drafts require manual publish.** No plan reaches a member without you approving it.
-- **Client detail starts with adherence**, not gym-level analytics.
-- **Notifications to clients** only work when you have permission for assigned-client messaging.
-- **Web dashboard** shows your coaching library to the gym owner (read-only). All plan editing is on mobile.
+- **AI is an assistant, not an autopilot.**
+- **Trainer access is client-scoped.** Trainers should not see unrelated members.
+- **Owners/admins can manage trainers**, but trainer day-to-day work stays mobile-first.
+- **Permission errors should be friendly** and explain who can help.

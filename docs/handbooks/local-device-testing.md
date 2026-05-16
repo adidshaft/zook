@@ -1,6 +1,6 @@
 # 📱 Testing on Local Device
 
-> A step-by-step guide for running and testing the full Zook stack — web dashboard, mobile app, and API — on your local machine and physical devices.
+> A practical guide for running and testing the full Zook stack: backend/API, web dashboard, iOS, Android, and Expo.
 
 ---
 
@@ -8,8 +8,8 @@
 
 | Requirement        | Version / Notes                                                  |
 | ------------------ | ---------------------------------------------------------------- |
-| **Node.js**        | 22+                                                              |
-| **pnpm**           | 9+                                                               |
+| **Node.js**        | 22+; repo is currently tested on Node 24                         |
+| **pnpm**           | 10.16.0                                                          |
 | **Docker Desktop** | Running — needed for the local Postgres container                |
 | **Expo Go**        | Install on your iPhone/Android from the App Store / Play Store   |
 | **Xcode**          | (iOS simulator only) macOS + Xcode 15+                           |
@@ -50,14 +50,17 @@ pnpm dev:web
 
 Opens at **http://localhost:3000**. Key pages to test:
 
-| URL                                    | What to test                       |
-| -------------------------------------- | ---------------------------------- |
-| `/login`                               | OTP login flow (use code `000000`) |
-| `/dashboard`                           | Owner/admin command board          |
-| `/dashboard/attendance/qr-display`     | Live QR for mobile scan testing    |
-| `/platform`                            | Platform admin diagnostics         |
-| `/g/aarogya-strength`                  | Public gym page                    |
-| `/find`                                | Gym discovery search               |
+| URL | What to test |
+| --- | --- |
+| `/login` | OTP login flow; local/staging code is `000000` |
+| `/dashboard` | Owner/admin command board |
+| `/desk` | Reception desk |
+| `/coach` | Trainer web surface |
+| `/me` | Member web handoff |
+| `/dashboard/attendance/qr-display` | Live QR for mobile scan testing |
+| `/platform` | Platform diagnostics and subscriptions |
+| `/g/aarogya-strength` | Public gym page |
+| `/gyms` | Gym discovery search |
 
 ---
 
@@ -119,18 +122,18 @@ EXPO_PUBLIC_WEB_URL="http://10.0.2.2:3000"
 
 ## 🔑 Test Accounts
 
-All accounts use OTP code **`000000`** in local/staging environments.
+All accounts use OTP code **`000000`** in local/staging environments. Production uses real OTP/SSO.
 
-| Role           | Email                  | Phone             | What you get                             |
-| -------------- | ---------------------- | ----------------- | ---------------------------------------- |
-| **Owner**      | `owner@zook.local`     | —                 | Full dashboard for Aarogya Strength      |
-| **Admin**      | `admin@zook.local`     | —                 | Org-wide ops without owner-only settings |
-| **Reception**  | `reception@zook.local` | —                 | Desk, check-ins, payments                |
-| **Trainer**    | `trainer@zook.local`   | —                 | Client list, plans, AI drafts            |
-| **Member**     | `member@zook.local`    | `+91 98765 43210` | Full demo — membership, attendance, shop |
-| **Minor**      | `minor@zook.local`     | —                 | Blocked until guardian consent            |
-| **Platform**   | `platform@zook.local`  | —                 | `/platform` admin diagnostics            |
-| **Fresh user** | `fresh@zook.local`     | `+91 90000 11111` | Blank slate — resets every login          |
+| Role | Email | Phone | Primary routes | What you get |
+| --- | --- | --- | --- | --- |
+| 👑 **Owner** | `owner@zook.local` | — | `/dashboard`, mobile `/owner` | Full dashboard for Aarogya Strength |
+| 🧑‍💼 **Admin** | `admin@zook.local` | — | `/dashboard`, mobile `/owner` | Org-wide ops without owner-only settings |
+| 🎫 **Reception** | `reception@zook.local` | — | `/desk`, mobile `/reception` | Desk, check-ins, payments, pickup |
+| 🏃 **Trainer** | `trainer@zook.local` | — | `/coach`, mobile `/trainer` | Client list, plans, AI drafts |
+| 🏋️ **Member** | `member@zook.local` | `+91 98765 43210` | `/me`, mobile member tabs | Membership, attendance, shop |
+| 🧒 **Minor** | `minor@zook.local` | — | Member consent flow | Blocked until guardian consent |
+| 🛠️ **Platform** | `platform@zook.local` | — | `/platform` | Platform diagnostics |
+| ✨ **Fresh user** | `fresh@zook.local` | `+91 90000 11111` | Onboarding | Blank slate; resets every login |
 
 ---
 
@@ -183,17 +186,18 @@ Web:
 3. Complete mock payment at /checkout/mock/{sessionId}
 ```
 
-### Flow 4: Receptionist desk (web)
+### Flow 4: Receptionist desk (web + mobile)
 
 ```
 1. Login as reception@zook.local at /login
-2. Open /dashboard → Desk section
+2. Open /desk
 3. See pending attendance scans → Approve/Reject
 4. Record a manual offline payment (cash/UPI)
 5. Fulfil a shop pickup order → mark as fulfilled
+6. Mobile: /reception → Desk / Members / Payments / Orders
 ```
 
-### Flow 5: Owner dashboard (web)
+### Flow 5: Owner/Admin dashboard (web)
 
 ```
 1. Login as owner@zook.local at /login
@@ -203,10 +207,12 @@ Web:
    name,email,phone
    Test User,test@example.com,9876543210
 5. Reports → download CSV exports
-6. Settings → update gym profile, location, plans
+6. Billing → confirm subscription page loads
+7. Settings → update gym profile, location, plans
+8. Repeat with admin@zook.local and confirm owner-only restrictions are clear
 ```
 
-### Flow 6: Trainer plans (mobile)
+### Flow 6: Trainer plans (mobile + web)
 
 ```
 1. Login as trainer@zook.local on mobile
@@ -214,6 +220,17 @@ Web:
 3. Open client list → Nisha Menon
 4. View/create workout plan → Publish to client
 5. Client (member) sees the plan under Plans tab
+6. Web: open /coach and confirm command view loads
+```
+
+### Flow 7: Platform operator (web)
+
+```
+1. Login as platform@zook.local
+2. Open /platform
+3. Check provider status and subscriptions
+4. Confirm non-platform roles cannot open /platform
+5. Suspend/reactivate only a test org
 ```
 
 ---
@@ -259,7 +276,7 @@ pnpm test:db:prepare
 RUN_DB_WEB_TESTS=1 pnpm test:web
 
 # Full acceptance (all roles E2E)
-pnpm test:acceptance
+pnpm test:acceptance:db
 
 # Headed mode (see the browser)
 pnpm test:acceptance:db:headed
@@ -373,6 +390,11 @@ Test payment:
 Reset data:
   pnpm db:local:setup
 
-Run all checks:
-  pnpm typecheck && pnpm test:unit && pnpm check:launch-gates
+Run release checks:
+  pnpm typecheck
+  pnpm lint
+  pnpm test:unit
+  pnpm test:acceptance:db
+  pnpm build
+  pnpm release:preflight
 ```

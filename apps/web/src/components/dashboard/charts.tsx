@@ -212,14 +212,12 @@ export function KPITile({
   caption?: string | undefined;
 }) {
   const color = TONE_COLORS[tone];
-  const Wrapper = href ? "a" : "div";
-  return (
-    <Wrapper
-      {...(href ? { href } : {})}
-      className={`group relative overflow-hidden rounded-[22px] border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-5 transition hover:border-white/20 ${
-        href ? "cursor-pointer" : ""
-      }`}
-    >
+  const reduce = useReducedMotion();
+  const className = `group relative overflow-hidden rounded-[22px] border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-5 transition-colors hover:border-white/20 ${
+    href ? "cursor-pointer" : ""
+  }`;
+  const content = (
+    <>
       {/* tone accent line */}
       <div
         aria-hidden
@@ -260,7 +258,45 @@ export function KPITile({
           <DeltaChip delta={delta} {...(invertDelta != null ? { invert: invertDelta } : {})} />
         ) : null}
       </div>
-    </Wrapper>
+    </>
+  );
+
+  if (href) {
+    if (reduce) {
+      return (
+        <motion.a href={href} className={className}>
+          {content}
+        </motion.a>
+      );
+    }
+    return (
+      <motion.a
+        href={href}
+        className={className}
+        layout
+        whileHover={{ y: -2, scale: 1.002 }}
+        whileTap={{ scale: 0.992 }}
+        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+      >
+        {content}
+      </motion.a>
+    );
+  }
+
+  if (reduce) {
+    return <motion.div className={className}>{content}</motion.div>;
+  }
+
+  return (
+    <motion.div
+      className={className}
+      layout
+      whileHover={{ y: -2, scale: 1.002 }}
+      whileTap={{ scale: 0.992 }}
+      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+    >
+      {content}
+    </motion.div>
   );
 }
 

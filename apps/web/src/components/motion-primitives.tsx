@@ -112,6 +112,38 @@ export function StaggerItem({
   );
 }
 
+/** Transitions.dev-inspired surface motion: subtle lift, shared layout, no noisy theatrics. */
+export function MotionSurface({
+  children,
+  className,
+  intensity = "lift",
+}: {
+  children: ReactNode;
+  className?: string;
+  intensity?: "lift" | "press" | "steady";
+}) {
+  const reduceMotion = useReducedMotion();
+  if (reduceMotion || intensity === "steady") {
+    return (
+      <motion.div layout className={className}>
+        {children}
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      layout
+      className={className}
+      whileHover={intensity === "press" ? { scale: 0.995 } : { y: -3, scale: 1.004 }}
+      whileTap={{ scale: 0.985 }}
+      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 /** Animated number that counts up to `value` once it enters view. */
 export function Counter({
   value,

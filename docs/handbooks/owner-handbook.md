@@ -1,129 +1,142 @@
 # 👑 Owner Handbook
 
-> **You run the gym.** The web dashboard is your control room. The mobile app is your on-the-go command center.
+> **You own the business.** Use the web dashboard for setup, reporting, billing, and control. Use the mobile owner view for quick daily decisions.
 
 ---
 
-## 🚀 Quick Start — Setting Up Your Gym
+## 🧭 Where Owners Work
+
+| Surface | Use it for | Best device |
+| --- | --- | --- |
+| `/dashboard` | Daily command board, members, staff, plans, reports, billing | Laptop / desktop |
+| `/dashboard/attendance/qr-display` | Entrance QR display | Tablet / desktop screen |
+| Mobile `/owner` | Approvals, revenue pulse, stock, quick member checks | Phone |
+| `/g/[username]` | Public gym profile members see | Any browser |
+
+**Production testing rule:** read-only checks are safe anywhere. Create/update/delete/payment/refund/suspend tests should be done only on a test gym or staging data.
+
+---
+
+## 🚀 First 15 Minutes
 
 ```
-1. /start-gym  →  Enter gym name, city, handle (e.g. "iron-house")
-2. Dashboard → Settings → Branch Hours + Location
-3. Dashboard → Plans → Create first membership plan
-4. Dashboard → Staff → Invite Reception / Trainer
-5. Dashboard → Public Profile → Enable public page  ✓  Members can now find & join
+1. Sign in → /dashboard
+2. Confirm gym profile: Settings + Public Profile
+3. Confirm membership plans: Plans
+4. Confirm staff access: Staff
+5. Confirm QR entry: Attendance → QR Display
+6. Confirm billing: Billing
+7. Confirm reports: Reports → Export CSV
 ```
+
+✅ A healthy owner account should show: active members, revenue, renewals due, check-ins, approvals, staff, branch context, and audit history.
 
 ---
 
 ## 🖥️ Web Dashboard Map
 
-```
-/dashboard
-├── 🏠  Today          — Live floor: check-ins, amount collected, renewals due
-├── 👥  Members        — All subscriptions, approvals, bulk actions
-├── 📋  Plans          — Create / edit / price membership plans
-├── 📅  Attendance     — QR display, exception review, approvals
-├── 💳  Payments       — Revenue, offline records, settlement queue
-├── 🛍  Shop           — Products, stock, orders
-├── 📊  Reports        — CSV exports: attendance, revenue, memberships, staff
-├── 👨‍💼  Staff          — Roles, invitations, coaching library
-├── 🔔  Notifications  — Compose & schedule member messages
-├── 🤖  AI             — Draft usage, AI settings (launch-gated)
-├── 🌐  Public Profile — Edit join page, plans, trust signals
-└── 🗂  Audit          — Full action log with diff viewer
-```
+| Section | What to verify tomorrow | Notes |
+| --- | --- | --- |
+| 🏠 Today | Metrics load, alerts make sense, quick actions open the right area | This is the owner command board |
+| 👥 Members | Search, filters, member detail, approvals, bulk actions | Check expired and active members |
+| 📋 Plans | Plans list, create/edit form, public visibility, pricing | Avoid changing real production prices unless intended |
+| 🎟 Coupons / Offers / Referrals | Codes display, create forms open, reward rules are clear | Use test codes for production smoke |
+| 📅 Attendance | Recent scans, exceptions, QR display | QR refresh should be visible |
+| 💳 Payments | Revenue rows, offline payment form, refunds view | Do not issue real refunds in smoke |
+| 🛍 Shop | Products, stock, orders, pickup status | Confirm cart-facing items are public where expected |
+| 📊 Reports | Attendance/revenue/member exports download | CSV should open cleanly |
+| 👨‍💼 Staff | Invite admin/reception/trainer, branch assignment | Reception must have a branch |
+| 🏢 Branches | Branch list, hours, location, primary branch | "Primary" is the user-facing term |
+| 🔔 Notifications | Templates, history, composer, targeting | Do not send mass messages in production smoke |
+| 🌐 Public Profile | Cover, logo, amenities, trainers, public plans | Check mobile width too |
+| 🧾 Billing | SaaS subscription status, plan, mandate state | Owner-only / billing permission |
+| 🗂 Audit | Sensitive actions show before/after details | Use this to verify staff actions |
 
 ---
 
 ## 📱 Mobile Owner App
 
 ```
-Bottom Nav:  📋 Today  ·  👥 Members  ·  💰 Revenue  ·  📦 Stock  ·  ⚙️ More
+Bottom Nav:  Command · Approvals · Revenue · Stock
 ```
 
-| View | Focus |
-|------|-------|
-| **Today** `/owner` | Is anything on fire right now? Expiring plans, failed payments, approvals |
-| **Approvals** `?view=approvals` | Join requests waiting for your decision |
-| **Revenue** `?view=revenue` | Collections today, pending payments |
-| **Stock** `?view=stock` | Low-stock alerts, quick restock notes |
-| **Members** `?view=members` | Search any member, view detail |
-| **Member Detail** `/owner/member/[id]` | Subscription, attendance, payments for one member |
+| View | What it answers | Test expectation |
+| --- | --- | --- |
+| **Command** `/owner` | "What needs my attention right now?" | Metrics fit, no clipped cards |
+| **Approvals** | "Who is waiting on me?" | Double-tap should not duplicate action |
+| **Revenue** | "What was collected?" | Empty/error states are readable |
+| **Stock** | "What might run out?" | Product rows keep stable size |
+| **Member detail** | "Can I understand one member fast?" | Phone reveal permission gate works |
 
 ---
 
-## 🔄 Key Flows
+## 🔄 Core Owner Flows
 
-### Member joins your gym
-
-```
-Member taps Join  ──►  Checkout (Razorpay) ──► Webhook confirms ──► Subscription active
-                                                      └── Approval-required:
-                                                          Owner/Admin approves in dashboard
-                                                          Member gets notified ──► Active ✓
-```
-
-### Attendance & exceptions
+### 1. Member joins your gym
 
 ```
-Member scans QR ──► Check-in logged
-                └── Flagged? (expired, wrong branch, rapid-repeat)
-                    └──► Dashboard → Attendance → Review → Approve / Reject
+Public gym page → Plan → Checkout → Payment confirmed → Membership active
+                                  └─ Approval-required gym:
+                                     Owner/Admin approves → Member notified → Active
 ```
 
-### Recording an offline payment
+Verify:
+- Plan price and duration are correct.
+- Referral/coupon discount is visible before payment.
+- New subscription appears in Members and Reports.
+
+### 2. Attendance exception review
 
 ```
-Dashboard → Payments → Record Payment
-  └── Select member + amount + mode (Cash / UPI / Card)
-  └── Add reference note
-  └── Audit entry created automatically  ✓
-  ⚠️  Cap: 2 manual payments per staff per org per day
+Member scan → Exception flagged → Attendance review → Approve / Reject → Audit log
 ```
 
-### Inviting staff
+Verify:
+- Reason is visible before acting.
+- Approved/rejected status clears stale warning text.
+- Action appears in audit history.
+
+### 3. Staff invite
 
 ```
-Dashboard → Staff → Invite
-  └── Enter email → Pick role (Owner / Admin / Reception / Trainer)
-  └── Pick branch (or org-wide)
-  └── Staff receives magic-link email → Joins with that role  ✓
+Staff → Invite → Pick role → Pick branch if Reception → Send invite
 ```
+
+Role rules:
+- **Admin** can run operations but should not become platform admin.
+- **Reception** needs a branch for front-desk work.
+- **Trainer** should see coaching/client tools.
+
+### 4. Billing and SaaS subscription
+
+```
+Billing → Review plan → Payment/mandate status → Renewal state
+```
+
+Verify:
+- Billing page does not show internal errors.
+- Trial/active/suspended language is clear.
+- Platform subscription state matches what platform operator sees.
 
 ---
 
-## 📊 Reports Available (CSV Export)
+## ✅ Owner Production Smoke Checklist
 
-| Report | Covers |
-|--------|--------|
-| Attendance | Check-ins by date, branch, member |
-| Revenue | Payments, plan revenue, refunds |
-| Memberships | Active, expired, paused, trial |
-| Shop | Orders, fulfilment, stock movements |
-| Staff Operations | Role actions, audit events |
+Use this before telling staff to start real production testing:
 
-All reports available at:  `Dashboard → Reports → Export CSV`
-
----
-
-## 🏢 Multi-Branch Setup
-
-```
-Each branch can have:
-  ├── Its own hours                (Branch Hours editor)
-  ├── Its own manager              (Staff → assign branch)
-  ├── Shared OR custom commerce    (Settings → Branch → Commerce: Shared / Custom)
-  └── Its own QR token            (Attendance → QR Display)
-
-Branch switcher is top-left in every dashboard view.
-```
+- [ ] `/dashboard` loads without console/server errors.
+- [ ] Members, Plans, Attendance, Payments, Shop, Reports, Staff, Branches, Notifications, Public Profile, Billing all open.
+- [ ] Public profile at `/g/[username]` looks correct on mobile and desktop.
+- [ ] QR display opens and shows a fresh code.
+- [ ] CSV export downloads at least one report.
+- [ ] Audit log opens and has recent entries.
+- [ ] Mobile owner views have no clipped bottom nav, black-on-black text, or unstable card heights.
 
 ---
 
-## ✅ Good-to-Know Rules
+## ⚠️ Good-to-Know Rules
 
-- **Today ≠ generic dashboard.** It answers: *is anything on fire right now?*
-- **Audit log captures everything.** Every sensitive action has a before/after diff — click "Details" on any row.
-- **AI drafts never assign automatically.** Trainers must review before a plan reaches any member.
-- **Provider readiness** (Razorpay, storage, push, email) is visible at `/platform/provider-status`.
+- **Owner and Admin are not the same.** Owner can control business-critical settings and billing; Admin is operational.
+- **Audit is the source of truth** for sensitive actions.
+- **AI drafts never auto-publish.** A trainer or permitted staff member must review first.
+- **Mock providers are not production behavior.** Production OTP, payment, push, and email must use live configured providers.
