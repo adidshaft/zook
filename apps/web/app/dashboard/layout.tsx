@@ -4,6 +4,8 @@ import enMessages from "../../messages/dashboard/en.json";
 import hiMessages from "../../messages/dashboard/hi.json";
 import { requireDashboardSession } from "@/lib/server-auth";
 
+export const dynamic = "force-dynamic";
+
 function resolveDashboardMessages(locale?: string | null) {
   return locale === "hi" ? hiMessages : enMessages;
 }

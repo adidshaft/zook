@@ -27,6 +27,11 @@ export function PaymentsSection({
               payment.status === "SUCCEEDED" || payment.status === "PARTIALLY_REFUNDED";
             const receiptBusy = documentBusyKey === `receipt:${payment.id}`;
             const invoiceBusy = documentBusyKey === `invoice:${payment.id}`;
+            const documentHint = canGenerate
+              ? payment.receiptNumber
+                ? `Receipt ${payment.receiptNumber}`
+                : "Receipt and invoice are available for confirmed payments."
+              : `Documents unlock after payment succeeds. Current status: ${titleCaseFromCode(payment.status ?? "CREATED")}.`;
             return (
               <GlassCard key={payment.id} variant="compact" contentStyle={styles.paymentContent}>
                 <View style={styles.paymentIcon}>
@@ -49,11 +54,7 @@ export function PaymentsSection({
                     >
                       {titleCaseFromCode(payment.status ?? "CREATED")}
                     </Pill>
-                    {payment.receiptNumber ? (
-                      <Text numberOfLines={1} style={styles.documentHint}>
-                        Receipt {payment.receiptNumber}
-                      </Text>
-                    ) : null}
+                    <Text numberOfLines={2} style={styles.documentHint}>{documentHint}</Text>
                   </View>
                   <View style={styles.documentActions}>
                     <DocumentButton

@@ -22,6 +22,14 @@ import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type TrainerView = "home" | "clients" | "plans";
+type TodayTask = {
+  title: string;
+  body: string;
+  icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap;
+  tone: "lime" | "amber" | "blue";
+  href?: string;
+  clientId?: string;
+};
 
 function planCountLabel(count: number) {
   return `${count} active ${count === 1 ? "plan" : "plans"}`;
@@ -47,6 +55,7 @@ export default function Trainer() {
     (client) => (client.summary?.activePlans ?? 0) > 0,
   ).length;
   const plannedClients = clients.filter((client) => (client.summary?.activePlans ?? 0) > 0);
+  const clientsNeedingPlans = Math.max(clients.length - clientsWithPlans, 0);
   const recentFeedback = clients
     .flatMap((client) =>
       (client.summary?.recentFeedback ?? []).map((feedback) => ({
@@ -60,8 +69,37 @@ export default function Trainer() {
         new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime(),
     )
     .slice(0, 3);
+  const todayTasks: TodayTask[] = [];
+  if (clientsNeedingPlans) {
+    todayTasks.push({
+      title: `${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} need a plan`,
+      body: "Open Plan work and assign a starter template before the next session.",
+      icon: "reader-outline",
+      tone: "amber",
+      href: "/trainer?view=plans",
+    });
+  }
+  if (recentFeedback[0]) {
+    todayTasks.push({
+      title: `Review ${recentFeedback[0].clientName}`,
+      body:
+        recentFeedback[0].feedback ??
+        `${recentFeedback[0].completionPct}% plan completion logged.`,
+      icon: "chatbubble-ellipses-outline",
+      tone: "blue",
+      clientId: recentFeedback[0].clientId,
+    });
+  }
+  if (plannedClients[0]) {
+    todayTasks.push({
+      title: `Coach ${plannedClients[0].user?.name ?? "priority client"}`,
+      body: `${plannedClients[0].summary?.activePlans ?? 0} active plan${(plannedClients[0].summary?.activePlans ?? 0) === 1 ? "" : "s"} · ${plannedClients[0].summary?.fitnessGoal ?? plannedClients[0].profile?.fitnessGoal ?? "General fitness"}`,
+      icon: "barbell-outline",
+      tone: "lime",
+      clientId: plannedClients[0].memberUserId,
+    });
+  }
   const firstPlannedClientId = plannedClients[0]?.memberUserId ?? firstClientId;
-  const clientsNeedingPlans = Math.max(clients.length - clientsWithPlans, 0);
   const title = view === "clients" ? "Clients" : view === "plans" ? "Plan work" : "Trainer home";
 
   function openClient(clientId?: string) {
@@ -176,6 +214,37 @@ export default function Trainer() {
                   </View>
                 </GlassCard>
               ) : null}
+
+              <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
+              <GlassCard variant="compact" contentStyle={styles.stack}>
+                {todayTasks.length ? (
+                  todayTasks.map((task) => (
+                    <Pressable
+                      key={task.title}
+                      accessibilityRole="button"
+                      onPress={() =>
+                        task.clientId
+                          ? openClient(task.clientId)
+                          : task.href
+                            ? router.push(task.href as never)
+                            : undefined
+                      }
+                    >
+                      <ListRow
+                        title={task.title}
+                        subtitle={task.body}
+                        leading={<IconBubble icon={task.icon} tone={task.tone} />}
+                        trailing={<StatusChip status="Next" tone={task.tone} />}
+                      />
+                    </Pressable>
+                  ))
+                ) : (
+                  <EmptyState
+                    title="Coaching queue clear"
+                    body="No plan or feedback follow-up is waiting right now."
+                  />
+                )}
+              </GlassCard>
 
               <SectionHeader title="Recent feedback" />
               <GlassCard variant="compact" contentStyle={styles.stack}>

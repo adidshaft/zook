@@ -1,10 +1,24 @@
 # Zook Production Readiness Handoff
 
-Last updated: 2026-05-03
-Branch: `ui-ux-production-polish-pass`
-Audit commit: `973080cd3ea0f76e090dc4601a323e4ab33a0c66`
-Runtime hardening commit: `ce0f9f1`
-Security/rate-limit hardening commit: `ca81cab`
+Last updated: 2026-05-17
+Branch: `main`
+Latest committed baseline before this pass: `14c4aad`
+
+## 2026-05-17 Production Rehearsal Update
+
+The current pass adds product-readiness surfaces rather than new schemas:
+
+- Platform health cockpit and incident checklist on `/platform`.
+- Owner/admin next-best-action cards and payment reconciliation lane.
+- Member roster render cap for large loaded lists, with search/load-more guidance.
+- Mobile reception verification debounce/copy, trainer day view/templates/progress timeline, and clearer membership/payment status guidance.
+- Public gym trust, pricing, and after-joining explanation.
+- Release evidence docs:
+  - `docs/production-provider-certification.md`
+  - `docs/production-incident-checklist.md`
+  - `docs/real-device-qa-log.md`
+  - `docs/store-readiness.md`
+  - `docs/api-router-split-plan.md`
 
 ## Current Status
 

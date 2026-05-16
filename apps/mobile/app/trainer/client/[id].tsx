@@ -26,6 +26,51 @@ import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type ClientTab = "summary" | "plans" | "progress" | "notes";
+type PlanTemplateId = "workout" | "diet" | "routine" | "machine" | "recovery";
+
+const planTemplates: Array<{
+  id: PlanTemplateId;
+  label: string;
+  title: string;
+  body: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}> = [
+  {
+    id: "workout",
+    label: "Workout",
+    title: "Workout focus",
+    body: "Add exercises, sets, rest periods, and coaching cues before assignment.",
+    icon: "barbell-outline",
+  },
+  {
+    id: "diet",
+    label: "Diet",
+    title: "Nutrition focus",
+    body: "Add meal timing, protein targets, hydration notes, and restriction-safe guidance.",
+    icon: "nutrition-outline",
+  },
+  {
+    id: "routine",
+    label: "Routine",
+    title: "Weekly routine",
+    body: "Map training days, recovery days, mobility work, and check-in cadence.",
+    icon: "calendar-outline",
+  },
+  {
+    id: "machine",
+    label: "Machine Guide",
+    title: "Machine guide",
+    body: "List machine setup, safe range of motion, warm-up load, and progression rules.",
+    icon: "construct-outline",
+  },
+  {
+    id: "recovery",
+    label: "Recovery",
+    title: "Recovery plan",
+    body: "Add sleep, mobility, deload, and soreness-management notes for the week.",
+    icon: "leaf-outline",
+  },
+];
 
 function planCountLabel(count: number) {
   return `${count} active ${count === 1 ? "plan" : "plans"}`;
@@ -68,6 +113,7 @@ export default function TrainerClientDetail() {
   const tab: ClientTab = isClientTab(tabParam) ? tabParam : "summary";
   const [status, setStatus] = useState("");
   const [planTitle, setPlanTitle] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<PlanTemplateId>("workout");
   const [savingPlan, setSavingPlan] = useState(false);
   const [savedPlan, setSavedPlan] = useState<{ id: string; title: string } | null>(null);
   const [noteText, setNoteText] = useState("");
@@ -81,6 +127,36 @@ export default function TrainerClientDetail() {
   const activePlans = client?.summary?.activePlans ?? 0;
   const recentFeedback = client?.summary?.recentFeedback ?? [];
   const recentWorkouts = client?.summary?.recentWorkouts ?? [];
+  const averageCompletion = recentFeedback.length
+    ? Math.round(
+        recentFeedback.reduce((sum, entry) => sum + (entry.completionPct ?? 0), 0) /
+          recentFeedback.length,
+      )
+    : null;
+  const progressTimeline = [
+    ...recentFeedback.map((entry) => ({
+      id: `feedback-${entry.assignmentId}-${entry.updatedAt ?? "latest"}`,
+      at: entry.updatedAt ?? "",
+      title: entry.feedback ? "Plan feedback" : "Plan progress",
+      body: entry.feedback ?? `${entry.completionPct}% complete`,
+      status: `${entry.completionPct}%`,
+      tone: "lime" as const,
+    })),
+    ...recentWorkouts.map((workout) => ({
+      id: `workout-${workout.id}`,
+      at: workout.startedAt ?? "",
+      title: workout.title,
+      body: [
+        workout.workoutType,
+        workout.durationMinutes ? `${workout.durationMinutes} min` : null,
+        workout.notes,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      status: "Logged",
+      tone: "blue" as const,
+    })),
+  ].sort((left, right) => new Date(right.at || 0).getTime() - new Date(left.at || 0).getTime());
   const showOwnerApprovalRequired = () => {
     showToast({ title: "Owner approval required", tone: "amber" });
   };
@@ -94,18 +170,20 @@ export default function TrainerClientDetail() {
   }, [client?.memberUserId, client?.summary?.trainerNote]);
 
   function buildPlanPayload() {
+    const template = planTemplates.find((item) => item.id === selectedTemplate) ?? planTemplates[0]!;
     return {
-      title: planTitle.trim() || `${clientName} workout plan`,
+      title: planTitle.trim() || `${clientName} ${template.label.toLowerCase()} plan`,
       type: "WORKOUT",
       description: `Trainer-created plan for ${clientName}. Goal: ${fitnessGoal}.`,
       visibility: "selected",
       aiGenerated: false,
       content: {
         goal: fitnessGoal,
+        template: template.id,
         sections: [
           {
-            title: "Workout focus",
-            body: "Edit this draft with exercises, sets, recovery notes, and coaching cues before assignment.",
+            title: template.title,
+            body: template.body,
           },
         ],
         exercises: [],
@@ -342,8 +420,12 @@ export default function TrainerClientDetail() {
               />
               <ListRow
                 title="Recent progress"
-                subtitle={planCountLabel(activePlans)}
-                trailing={<StatusChip status="Review" tone="amber" />}
+                subtitle={
+                  averageCompletion === null
+                    ? planCountLabel(activePlans)
+                    : `${averageCompletion}% average plan completion`
+                }
+                trailing={<StatusChip status={averageCompletion === null ? "Review" : `${averageCompletion}%`} tone="amber" />}
               />
             </GlassCard>
           ) : null}
@@ -356,15 +438,27 @@ export default function TrainerClientDetail() {
               />
               <FormField label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
               <View style={styles.chipRow}>
-                {["Workout", "Diet", "Routine", "Trainer Note", "Machine Guide", "Recovery"].map(
-                  (label) => (
-                    <StatusChip
-                      key={label}
-                      status={label}
-                      tone={label === "Workout" ? "lime" : "neutral"}
-                    />
-                  ),
-                )}
+                {planTemplates.map((template) => {
+                  const selected = template.id === selectedTemplate;
+                  return (
+                    <Pressable
+                      key={template.id}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      onPress={() => setSelectedTemplate(template.id)}
+                      style={[styles.templateChip, selected ? styles.templateChipSelected : null]}
+                    >
+                      <Ionicons
+                        name={template.icon}
+                        size={15}
+                        color={selected ? colors.lime : colors.muted}
+                      />
+                      <Text style={[styles.templateChipText, selected ? styles.templateChipTextSelected : null]}>
+                        {template.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
               <View style={styles.actionRow}>
                 <ZookButton
@@ -400,13 +494,23 @@ export default function TrainerClientDetail() {
 
           {tab === "progress" ? (
             <GlassCard variant="compact" contentStyle={styles.stack}>
-              {recentFeedback.length ? (
-                recentFeedback.map((entry) => (
+              <ListRow
+                title="Adherence"
+                subtitle={
+                  averageCompletion === null
+                    ? "Waiting for member feedback and workout logs."
+                    : `${averageCompletion}% average completion across recent plan feedback.`
+                }
+                leading={<IconBubble icon="analytics-outline" tone="lime" />}
+                trailing={<StatusChip status={averageCompletion === null ? "Waiting" : `${averageCompletion}%`} tone={averageCompletion === null ? "neutral" : "lime"} />}
+              />
+              {progressTimeline.length ? (
+                progressTimeline.map((entry) => (
                   <ListRow
-                    key={`${entry.assignmentId}-${entry.updatedAt ?? "feedback"}`}
-                    title={entry.feedback ? "Plan feedback" : "Plan progress"}
-                    subtitle={entry.feedback ?? `${entry.completionPct}% complete`}
-                    trailing={<StatusChip status={`${entry.completionPct}%`} tone="lime" />}
+                    key={entry.id}
+                    title={entry.title}
+                    subtitle={entry.body || "No details added."}
+                    trailing={<StatusChip status={entry.status} tone={entry.tone} />}
                   />
                 ))
               ) : (
@@ -416,20 +520,6 @@ export default function TrainerClientDetail() {
                   trailing={<StatusChip status="Waiting" tone="neutral" />}
                 />
               )}
-              {recentWorkouts.map((workout) => (
-                <ListRow
-                  key={workout.id}
-                  title={workout.title}
-                  subtitle={[
-                    workout.workoutType,
-                    workout.durationMinutes ? `${workout.durationMinutes} min` : null,
-                    workout.notes,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                  trailing={<StatusChip status="Logged" tone="blue" />}
-                />
-              ))}
               <ListRow
                 title="Plans"
                 subtitle={`${activePlans} active for client`}
@@ -640,6 +730,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
+  },
+  templateChip: {
+    minHeight: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 11,
+  },
+  templateChipSelected: {
+    borderColor: colors.lime,
+    backgroundColor: "rgba(185,244,85,0.13)",
+  },
+  templateChipText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  templateChipTextSelected: {
+    color: colors.lime,
   },
   actionRow: {
     flexDirection: "row",

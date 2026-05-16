@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { DatePickerField, GlassCard, IconBubble, Pill, ZookButton } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { colors, spacing, typography } from "@/lib/theme";
-import { toneForStatus } from "./helpers";
+import { membershipStatusGuidance, toneForStatus } from "./helpers";
 import type { MembershipRecord } from "./types";
 
 export function ActiveMembershipCard({
@@ -29,6 +29,9 @@ export function ActiveMembershipCard({
   pauseResumesAt: Date;
   subscription: MembershipRecord;
 }) {
+  const guidance = membershipStatusGuidance(subscription.status, daysLeft);
+  const guidanceTone = toneForStatus(subscription.status);
+
   return (
     <GlassCard
       variant={subscription.status === "ACTIVE" ? "success" : "default"}
@@ -78,8 +81,16 @@ export function ActiveMembershipCard({
         </View>
       ) : null}
 
+      <View style={styles.guidanceCard}>
+        <IconBubble icon="information-circle-outline" tone={guidanceTone} size={32} />
+        <View style={styles.guidanceCopy}>
+          <Text style={styles.guidanceTitle}>{guidance.title}</Text>
+          <Text style={styles.guidanceBody}>{guidance.body}</Text>
+        </View>
+      </View>
+
       <ZookButton onPress={() => onOpenRenewal(subscription)} icon="refresh-outline">
-        Renew or change plan
+        {guidance.action}
       </ZookButton>
       {subscription.status !== "PAUSED" ? (
         <View style={styles.pausePicker}>
@@ -170,6 +181,29 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   membershipMetaText: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  guidanceCard: {
+    minHeight: 72,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(0,0,0,0.18)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  guidanceCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  guidanceTitle: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  guidanceBody: {
     color: colors.muted,
     ...typography.small,
   },

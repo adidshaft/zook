@@ -7,6 +7,8 @@ import { requirePlatformSession } from "@/lib/server-auth";
 import { ZookLogo } from "@/components/zook-logo";
 import { getDashboardData } from "@/lib/data";
 
+export const dynamic = "force-dynamic";
+
 function serializePlatformOrganization(org: {
   id: string;
   name: string;
@@ -63,6 +65,7 @@ const platformSectionAnchors: Record<string, string> = {
   subscriptions: "subscriptions",
   assistant: "ai-traffic",
   safety: "abuse-flags",
+  incidents: "incident-checklist",
 };
 
 export default async function PlatformPage({
@@ -123,6 +126,7 @@ export default async function PlatformPage({
               ["Subscriptions", "/platform/subscriptions", "subscriptions"],
               ["Assistant", "/platform/assistant", "assistant"],
               ["Safety", "/platform/safety", "safety"],
+              ["Incidents", "/platform/incidents", "incidents"],
             ] as Array<[string, string, string]>
           ).map(([item, href, key]) => (
             <Link

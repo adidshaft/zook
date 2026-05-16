@@ -145,6 +145,7 @@ export default function Reception() {
   const [paymentStatus, setPaymentStatus] = useState("");
   const [attendanceStatus, setAttendanceStatus] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [revealedPhones, setRevealedPhones] = useState<Set<string>>(() => new Set());
   const queueQuery = useReceptionQueue();
@@ -177,6 +178,9 @@ export default function Reception() {
       return !query || name.includes(query) || email.includes(query) || phone.includes(query);
     });
   }, [memberSearch, membersQuery.data?.members]);
+  const memberResultLimit = memberSearch.trim().length ? 25 : 10;
+  const visibleMembers = filteredMembers.slice(0, memberResultLimit);
+  const hiddenMemberCount = Math.max(0, filteredMembers.length - visibleMembers.length);
   const selectedMemberRecord =
     (membersQuery.data?.members ?? []).find(
       (record) => record.profile.userId === selectedMemberId,
@@ -335,6 +339,7 @@ export default function Reception() {
   }
 
   async function verifyEntryCode() {
+    if (verifyingCode) return;
     const normalized = verifyCode.trim().toUpperCase();
     if (!normalized) {
       setVerifyMessage("Enter a code first.");
@@ -346,54 +351,59 @@ export default function Reception() {
       setVerifiedUser(null);
       return;
     }
-    let result: ReceptionCodeVerification;
+    setVerifyingCode(true);
     try {
-      result = await receptionApi.verifyCode<ReceptionCodeVerification>({
-        token,
-        orgId: activeOrgId,
-        code: normalized,
-      });
-    } catch (error) {
-      const message = getApiErrorMessage(error) || "Could not verify this code.";
-      setVerifyMessage(message);
-      setVerifiedUser(null);
-      showToast({ tone: "danger", haptic: "error", title: "Verify failed", message });
-      return;
-    }
-    if (!result.match) {
-      const message = "No active entry or pickup code found.";
-      setVerifyMessage(message);
-      setVerifiedUser(null);
-      showToast({ tone: "amber", haptic: "warning", message });
-      return;
-    }
-    setVerifiedUser(
-      result.match.user
-        ? { name: result.match.user.name, profilePhotoUrl: result.match.user.profilePhotoUrl }
-        : null,
-    );
-    const name = result.match.user?.name ?? result.match.user?.email ?? "member";
-    if (result.match.type === "attendance") {
-      if (result.match.valid) {
-        const message = `Entry code verified for ${name}. Status: ${(result.match.record?.status ?? "approved").replace(/_/g, " ")}.`;
+      let result: ReceptionCodeVerification;
+      try {
+        result = await receptionApi.verifyCode<ReceptionCodeVerification>({
+          token,
+          orgId: activeOrgId,
+          code: normalized,
+        });
+      } catch (error) {
+        const message = getApiErrorMessage(error) || "Could not verify this code.";
         setVerifyMessage(message);
-        showToast({ tone: "success", haptic: "success", message: `Verified ${name}` });
-      } else {
-        const message = `Entry code found for ${name}, but it is not valid for entry.`;
-        setVerifyMessage(message);
-        showToast({ tone: "amber", haptic: "warning", title: "Not valid for entry", message: name });
+        setVerifiedUser(null);
+        showToast({ tone: "danger", haptic: "error", title: "Verify failed", message });
+        return;
       }
-      return;
-    }
-    if (result.match.valid) {
-      const message = `Pickup code verified for ${name}. Match the member before giving out the order.`;
-      setVerifyMessage(message);
-      showToast({ tone: "success", haptic: "success", message: `Pickup ready for ${name}` });
-    } else {
-      const status = (result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready").replace(/_/g, " ");
-      const message = `Pickup code found for ${name}, but status is ${status}.`;
-      setVerifyMessage(message);
-      showToast({ tone: "amber", haptic: "warning", title: `Pickup ${status}`, message: name });
+      if (!result.match) {
+        const message = "No active entry or pickup code found.";
+        setVerifyMessage(message);
+        setVerifiedUser(null);
+        showToast({ tone: "amber", haptic: "warning", message });
+        return;
+      }
+      setVerifiedUser(
+        result.match.user
+          ? { name: result.match.user.name, profilePhotoUrl: result.match.user.profilePhotoUrl }
+          : null,
+      );
+      const name = result.match.user?.name ?? result.match.user?.email ?? "member";
+      if (result.match.type === "attendance") {
+        if (result.match.valid) {
+          const message = `Entry code verified for ${name}. Status: ${(result.match.record?.status ?? "approved").replace(/_/g, " ")}.`;
+          setVerifyMessage(message);
+          showToast({ tone: "success", haptic: "success", message: `Verified ${name}` });
+        } else {
+          const message = `Entry code found for ${name}, but it is not valid for entry.`;
+          setVerifyMessage(message);
+          showToast({ tone: "amber", haptic: "warning", title: "Not valid for entry", message: name });
+        }
+        return;
+      }
+      if (result.match.valid) {
+        const message = `Pickup code verified for ${name}. Match the member before giving out the order.`;
+        setVerifyMessage(message);
+        showToast({ tone: "success", haptic: "success", message: `Pickup ready for ${name}` });
+      } else {
+        const status = (result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready").replace(/_/g, " ");
+        const message = `Pickup code found for ${name}, but status is ${status}.`;
+        setVerifyMessage(message);
+        showToast({ tone: "amber", haptic: "warning", title: `Pickup ${status}`, message: name });
+      }
+    } finally {
+      setVerifyingCode(false);
     }
   }
 
@@ -590,10 +600,10 @@ export default function Reception() {
               />
               <PrimaryButton
                 icon="scan-outline"
-                disabled={!canVerifyCode}
+                disabled={!canVerifyCode || verifyingCode}
                 onPress={verifyEntryCode}
               >
-                Verify Code
+                {verifyingCode ? "Verifying..." : "Verify Code"}
               </PrimaryButton>
               {verifyMessage ? (
                 <VerificationResult message={verifyMessage} user={verifiedUser} />
@@ -715,7 +725,7 @@ export default function Reception() {
                         onPress={() => openDecisionSheet(attempt)}
                         style={styles.actionHalf}
                       >
-                        Review
+                        Reject / Review
                       </SecondaryButton>
                     </View>
                   </GlassCard>
@@ -748,7 +758,7 @@ export default function Reception() {
                   <EmptyState title="No members found" body="Try a different name or email." />
                 </GlassCard>
               ) : null}
-              {filteredMembers.slice(0, 4).map((user) => {
+              {visibleMembers.map((user) => {
                 const selected = user.profile.userId === selectedMemberRecord?.profile.userId;
                 const phone = user.user?.phone ?? null;
                 const phoneRevealed = revealedPhones.has(user.profile.userId);
@@ -806,6 +816,12 @@ export default function Reception() {
                   </GlassCard>
                 );
               })}
+              {hiddenMemberCount ? (
+                <Text style={styles.resultHint}>
+                  Showing {visibleMembers.length} of {filteredMembers.length} matches. Refine the search
+                  to find a specific member faster.
+                </Text>
+              ) : null}
             </View>
             <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
@@ -1015,10 +1031,10 @@ export default function Reception() {
               />
               <PrimaryButton
                 icon="scan-outline"
-                disabled={!canVerifyCode}
+                disabled={!canVerifyCode || verifyingCode}
                 onPress={verifyEntryCode}
               >
-                Verify Pickup Code
+                {verifyingCode ? "Verifying..." : "Verify Pickup Code"}
               </PrimaryButton>
               {verifyMessage ? (
                 <VerificationResult message={verifyMessage} user={verifiedUser} />
@@ -1554,6 +1570,10 @@ const styles = StyleSheet.create({
   revealPhoneText: {
     color: colors.lime,
     ...typography.caption,
+  },
+  resultHint: {
+    color: colors.muted,
+    ...typography.small,
   },
   sheetBackground: {
     borderWidth: 1,

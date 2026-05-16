@@ -118,6 +118,69 @@ export function PlatformOperationsPanel({
   const openFlags = flags.filter(
     (flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved",
   );
+  const trialRiskOrganizations = organizations.filter((org) => {
+    const trialEndAt = new Date(org.trialEndAt).getTime();
+    if (!Number.isFinite(trialEndAt) || org.status !== "ACTIVE") return false;
+    const daysLeft = Math.ceil((trialEndAt - Date.now()) / (1000 * 60 * 60 * 24));
+    return daysLeft >= 0 && daysLeft <= 7;
+  });
+  const cockpitItems = [
+    {
+      label: "Ready providers",
+      value: formatCompactNumber(readyProviders.length),
+      meta: "Can serve production traffic",
+    },
+    {
+      label: "Provider setup gaps",
+      value: formatCompactNumber(misconfiguredProviders.length),
+      meta: "Check env + partner dashboards",
+    },
+    {
+      label: "Active gyms",
+      value: formatCompactNumber(
+        organizations.filter((org) => org.status === "ACTIVE").length,
+      ),
+      meta: "Currently allowed to operate",
+    },
+    {
+      label: "Trial risk",
+      value: formatCompactNumber(trialRiskOrganizations.length),
+      meta: "Active gyms with <= 7 days left",
+    },
+    {
+      label: "Open safety",
+      value: formatCompactNumber(openFlags.length),
+      meta: "Needs platform decision",
+    },
+  ];
+  const incidentChecklist = [
+    {
+      step: "Confirm blast radius",
+      owner: "Platform",
+      signal: `${misconfiguredProviders.length} provider gap${misconfiguredProviders.length === 1 ? "" : "s"} · ${openFlags.length} safety review${openFlags.length === 1 ? "" : "s"}`,
+    },
+    {
+      step: "Check provider dashboards",
+      owner: "Ops",
+      signal: misconfiguredProviders.length
+        ? misconfiguredProviders.map(([category]) => formatEnumLabel(category)).join(", ")
+        : "All configured providers report ready/default",
+    },
+    {
+      step: "Freeze risky tenant actions",
+      owner: "Support",
+      signal: suspendedOrganizations.length
+        ? `${suspendedOrganizations.length} paused gym${suspendedOrganizations.length === 1 ? "" : "s"}`
+        : "No gym is paused right now",
+    },
+    {
+      step: "Notify pilot owners",
+      owner: "Business",
+      signal: trialRiskOrganizations.length
+        ? `${trialRiskOrganizations.length} active trial${trialRiskOrganizations.length === 1 ? "" : "s"} near conversion`
+        : "No active trial expires this week",
+    },
+  ];
 
   useEffect(() => {
     document.getElementById(initialSection)?.scrollIntoView({ block: "start" });
@@ -146,6 +209,51 @@ export function PlatformOperationsPanel({
 
   return (
     <div className="grid gap-4">
+      <GlassCard>
+        <SectionHeader
+          eyebrow="Command"
+          title="Platform health cockpit"
+          description="Production-facing signal for provider setup, tenant health, conversion risk, and safety load."
+          badge={
+            <Pill tone={misconfiguredProviders.length || openFlags.length ? "amber" : "lime"}>
+              {misconfiguredProviders.length || openFlags.length ? "Review needed" : "Healthy"}
+            </Pill>
+          }
+        />
+        <ReadoutGrid className="mt-5" items={cockpitItems} columns={4} />
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          {[
+            {
+              title: "Provider alerts",
+              body: misconfiguredProviders.length
+                ? `${misconfiguredProviders.length} service${misconfiguredProviders.length === 1 ? "" : "s"} need setup before full production confidence.`
+                : "Core providers are not reporting setup blockers.",
+              tone: misconfiguredProviders.length ? "amber" : "lime",
+            },
+            {
+              title: "Gym activation",
+              body: `${organizations.length} gym account${organizations.length === 1 ? "" : "s"} visible. ${trialRiskOrganizations.length} active trial${trialRiskOrganizations.length === 1 ? "" : "s"} need renewal follow-up.`,
+              tone: trialRiskOrganizations.length ? "amber" : "blue",
+            },
+            {
+              title: "Safety queue",
+              body: openFlags.length
+                ? "Review open reports before expanding pilot traffic."
+                : "No unresolved safety reports in the loaded queue.",
+              tone: openFlags.length ? "amber" : "lime",
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+            >
+              <StatusPill value={item.title} tone={item.tone as "amber" | "blue" | "lime"} />
+              <p className="mt-3 text-sm leading-6 text-white/58">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </GlassCard>
+
       <div id="readiness" className="scroll-mt-5">
         <GlassCard>
           <SectionHeader
@@ -243,6 +351,38 @@ export function PlatformOperationsPanel({
               rowKey={([category]) => category}
               empty="Service status is not available yet."
             />
+          </div>
+        </GlassCard>
+      </div>
+
+      <div id="incident-checklist" className="scroll-mt-5">
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Incident mode"
+            title="Production incident checklist"
+            description="A simple first-response lane for provider outages, payment trouble, safety escalations, and tenant-impacting issues."
+            badge={<Pill tone="amber">Use during live support</Pill>}
+          />
+          <div className="mt-5 grid gap-3">
+            {incidentChecklist.map((item, index) => (
+              <div
+                key={item.step}
+                className="grid gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4 md:grid-cols-[80px_1fr_0.85fr]"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Step {index + 1}
+                </p>
+                <div>
+                  <p className="font-medium text-white">{item.step}</p>
+                  <p className="mt-1 text-xs text-white/45">Owner: {item.owner}</p>
+                </div>
+                <p className="text-sm leading-6 text-white/58">{item.signal}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 rounded-[22px] border border-amber-300/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50/82">
+            In production, keep destructive tenant actions paused until provider status, audit
+            trail, customer impact, and rollback owner are all known.
           </div>
         </GlassCard>
       </div>

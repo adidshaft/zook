@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Users, UserCheck, UserPlus, AlertCircle } from "lucide-react";
 import { BodyCompositionTimeline } from "../body-composition-timeline";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-shared";
@@ -33,6 +33,7 @@ const memberFilters: MemberFilter[] = [
   "Visit Pack",
   "Trial",
 ];
+const MEMBER_RENDER_BATCH = 80;
 
 function normalizeMemberText(value: unknown) {
   return String(value ?? "")
@@ -95,6 +96,7 @@ export function MembersSection({
   const [pauseReason, setPauseReason] = useState("");
   const [memberFilter, setMemberFilter] = useState<MemberFilter>("All");
   const [memberSearch, setMemberSearch] = useState("");
+  const [visibleMemberCount, setVisibleMemberCount] = useState(MEMBER_RENDER_BATCH);
   const [selectedBulkMemberIds, setSelectedBulkMemberIds] = useState<string[]>([]);
   const selectedSubscription = memberDetailState.data?.member.subscriptions[0] ?? null;
   const selectedBulkMembers = members.filter((member) =>
@@ -137,6 +139,12 @@ export function MembersSection({
     [memberFilter, memberSearch, members],
   );
   const filtersActive = memberFilter !== "All" || memberSearch.trim().length > 0;
+  const renderedMembers = filteredMembers.slice(0, visibleMemberCount);
+  const hiddenLoadedMemberCount = Math.max(0, filteredMembers.length - renderedMembers.length);
+
+  useEffect(() => {
+    setVisibleMemberCount(MEMBER_RENDER_BATCH);
+  }, [memberFilter, memberSearch, members.length]);
 
   function toggleBulkMember(userId: string | undefined) {
     if (!userId) return;
@@ -544,7 +552,7 @@ export function MembersSection({
                       ),
                     },
                   ]}
-                  rows={filteredMembers}
+                  rows={renderedMembers}
                   rowKey={(row) => row.profile.id}
                   empty={
                     <EmptyState
@@ -564,6 +572,29 @@ export function MembersSection({
                     />
                   }
                 />
+                {filteredMembers.length ? (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
+                    <p className="text-sm text-white/55">
+                      Showing {renderedMembers.length} of {filteredMembers.length} loaded match
+                      {filteredMembers.length === 1 ? "" : "es"}. Refine search for faster
+                      action at large scale.
+                    </p>
+                    {hiddenLoadedMemberCount ? (
+                      <ZookButton
+                        type="button"
+                        tone="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setVisibleMemberCount((current) =>
+                            Math.min(current + MEMBER_RENDER_BATCH, filteredMembers.length),
+                          )
+                        }
+                      >
+                        Show next {Math.min(MEMBER_RENDER_BATCH, hiddenLoadedMemberCount)}
+                      </ZookButton>
+                    ) : null}
+                  </div>
+                ) : null}
                 {selectedBulkMemberIds.length ? (
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-lime-200/15 bg-lime-200/8 px-4 py-3">
                     <p className="text-sm text-white/70">

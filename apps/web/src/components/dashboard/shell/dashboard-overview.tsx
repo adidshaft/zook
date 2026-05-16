@@ -74,6 +74,8 @@ function shapeWeeklyTrend(latest: number, opts?: { amplitude?: number; floor?: n
 }
 
 export function DashboardOverview({
+  activeOrg,
+  selectedBranch,
   data,
 }: {
   activeOrg: DashboardData["orgs"][number];
@@ -137,6 +139,94 @@ export function DashboardOverview({
       href: "/dashboard/attendance",
     },
   ];
+  const nextBestActions: AttentionRow[] = [
+    ...(activeOrg.status !== "ACTIVE"
+      ? [
+          {
+            icon: AlertTriangle,
+            title: "Gym is not active",
+            subtitle: `Current status: ${activeOrg.status.replaceAll("_", " ").toLowerCase()}`,
+            tone: "rose" as const,
+            href: "/dashboard/settings",
+          },
+        ]
+      : []),
+    ...(!selectedBranch
+      ? [
+          {
+            icon: ClipboardList,
+            title: "Finish branch setup",
+            subtitle: "Choose a primary branch so inventory and attendance stay scoped.",
+            tone: "amber" as const,
+            href: "/dashboard/branches",
+          },
+        ]
+      : []),
+    ...(summary.joinRequests > 0
+      ? [
+          {
+            icon: UserPlus,
+            title: "Approve new join requests",
+            subtitle: `${summary.joinRequests} member${summary.joinRequests === 1 ? "" : "s"} waiting for access.`,
+            tone: "rose" as const,
+            href: "/dashboard/members?view=join-requests",
+          },
+        ]
+      : []),
+    ...(summary.expiringMemberships > 0
+      ? [
+          {
+            icon: CalendarClock,
+            title: "Nudge renewals",
+            subtitle: `${summary.expiringMemberships} membership${summary.expiringMemberships === 1 ? "" : "s"} expire in the next 7 days.`,
+            tone: "amber" as const,
+            href: "/dashboard/members",
+          },
+        ]
+      : []),
+    ...(summary.pendingAttendanceApprovals > 0
+      ? [
+          {
+            icon: Dumbbell,
+            title: "Clear desk approvals",
+            subtitle: `${summary.pendingAttendanceApprovals} attendance check${summary.pendingAttendanceApprovals === 1 ? "" : "s"} need review.`,
+            tone: "sky" as const,
+            href: "/dashboard/attendance",
+          },
+        ]
+      : []),
+    ...(summary.lowStockProducts > 0
+      ? [
+          {
+            icon: Package,
+            title: "Restock shop items",
+            subtitle: `${summary.lowStockProducts} product${summary.lowStockProducts === 1 ? "" : "s"} below threshold.`,
+            tone: "amber" as const,
+            href: "/dashboard/shop",
+          },
+        ]
+      : []),
+    ...(summary.revenuePaise === 0 && summary.cashCollectedPaise === 0
+      ? [
+          {
+            icon: IndianRupee,
+            title: "Confirm first payment path",
+            subtitle: "Run a small membership payment before tomorrow's pilot traffic.",
+            tone: "lime" as const,
+            href: "/dashboard/payments",
+          },
+        ]
+      : [
+          {
+            icon: IndianRupee,
+            title: "Reconcile today's money",
+            subtitle: `${formatInr(summary.cashCollectedPaise)} collected at desk today.`,
+            tone: "lime" as const,
+            href: "/dashboard/payments",
+          },
+        ]),
+  ].slice(0, 5);
+  const setupComplete = nextBestActions.length === 1 && nextBestActions[0]?.title === "Reconcile today's money";
 
   const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const todayLabel = new Date().toLocaleDateString("en-IN", {
@@ -166,6 +256,39 @@ export function DashboardOverview({
           </div>
         }
       />
+
+      <GlassCard className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+              Next best actions
+            </p>
+            <h2 className="mt-1 text-base font-semibold text-white">
+              {setupComplete ? "Keep the operating rhythm clean" : "What needs attention today"}
+            </h2>
+          </div>
+          <Link
+            href="/dashboard/reports"
+            className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/70 transition hover:border-white/25 hover:text-white"
+          >
+            Open reports →
+          </Link>
+        </div>
+        <div className="mt-4 grid gap-2 lg:grid-cols-2">
+          {nextBestActions.map((row, index) => (
+            <ActivityRow
+              key={row.title}
+              icon={row.icon}
+              iconTone={row.tone}
+              title={row.title}
+              subtitle={row.subtitle}
+              href={row.href}
+              trailing={<ChevronRight size={16} className="text-white/30" />}
+              index={index}
+            />
+          ))}
+        </div>
+      </GlassCard>
 
       {/* KPI row */}
       <div className={`grid gap-3 sm:gap-4 ${

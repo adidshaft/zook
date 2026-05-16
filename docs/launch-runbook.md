@@ -6,7 +6,7 @@
 2. Run the full release suite:
 
    ```bash
-   pnpm install
+   pnpm install --frozen-lockfile
    pnpm typecheck
    pnpm test:unit
    pnpm test:services
@@ -34,6 +34,10 @@
 4. Re-run `pnpm release:preflight` and provider readiness checks before retrying promotion.
 
 ## Provider Certificates
+
+Use `docs/production-provider-certification.md` as the evidence checklist and
+`docs/production-incident-checklist.md` as the live support checklist. Do not
+mark a provider certified from code inspection alone.
 
 Razorpay:
 - Configure live key ID, secret, and webhook secret.

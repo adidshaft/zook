@@ -178,6 +178,21 @@ export const publicMessages = {
     seeAllPlansSuffix: "plans at the gym desk. Custom add-ons are available after sign-up.",
     securePayment: "Secure payment",
     paymentActivation: "Your membership is activated after payment confirmation.",
+    afterJoining: "What happens after you join",
+    afterJoiningCopy:
+      "Zook keeps the next steps visible, so you know when payment, entry, training, and pickup are ready.",
+    afterJoinScan: "Scan at entry",
+    afterJoinScanCopy: "Use the mobile QR code; reception can approve edge cases from the desk.",
+    afterJoinTrain: "Follow your plan",
+    afterJoinTrainCopy: "Trainer plans, progress, notes, and feedback stay attached to your membership.",
+    afterJoinPickup: "Pick up orders",
+    afterJoinPickupCopy: "Shop orders use pickup codes so the desk knows exactly what is ready.",
+    trustTitle: "Trust, pricing, and support",
+    trustCopy:
+      "Plan prices are shown before checkout, payment status is visible after payment, and the gym team can help from the same operating record.",
+    transparentPricing: "Transparent pricing",
+    transparentPricingCopy:
+      "You see duration, visits, discounts, and final amount before moving into payment.",
     facilities: "Facilities",
     facilitiesPending: "Facilities will appear once the gym publishes them.",
     equipment: "Equipment",
@@ -394,6 +409,21 @@ export const publicMessages = {
     seeAllPlansSuffix: "प्लान जिम डेस्क पर देखें. साइन-अप के बाद कस्टम ऐड-ऑन उपलब्ध हैं.",
     securePayment: "सुरक्षित भुगतान",
     paymentActivation: "भुगतान पुष्टि के बाद सदस्यता सक्रिय होगी.",
+    afterJoining: "जुड़ने के बाद क्या होगा",
+    afterJoiningCopy:
+      "Zook अगले कदम साफ दिखाता है, ताकि भुगतान, एंट्री, ट्रेनिंग और पिकअप की स्थिति समझ में रहे.",
+    afterJoinScan: "एंट्री पर स्कैन",
+    afterJoinScanCopy: "मोबाइल QR इस्तेमाल करें; ज़रूरत पड़ने पर रिसेप्शन डेस्क से समीक्षा कर सकता है.",
+    afterJoinTrain: "अपना प्लान फॉलो करें",
+    afterJoinTrainCopy: "ट्रेनर प्लान, प्रगति, नोट्स और फीडबैक आपकी सदस्यता से जुड़े रहते हैं.",
+    afterJoinPickup: "ऑर्डर पिकअप करें",
+    afterJoinPickupCopy: "शॉप ऑर्डर पिकअप कोड से चलते हैं ताकि डेस्क को पता रहे क्या तैयार है.",
+    trustTitle: "भरोसा, कीमत और सहायता",
+    trustCopy:
+      "चेकआउट से पहले प्लान कीमत दिखती है, भुगतान के बाद स्थिति दिखती है, और जिम टीम उसी रिकॉर्ड से मदद कर सकती है.",
+    transparentPricing: "साफ कीमत",
+    transparentPricingCopy:
+      "भुगतान से पहले अवधि, विज़िट, छूट और अंतिम राशि साफ दिखती है.",
     facilities: "सुविधाएं",
     facilitiesPending: "जिम प्रकाशित करेगा तो सुविधाएं यहां दिखेंगी.",
     equipment: "उपकरण",

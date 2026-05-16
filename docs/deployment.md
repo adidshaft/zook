@@ -13,6 +13,14 @@ Zook keeps local development mock-first while making staging realistic enough fo
 - production still requires stricter env validation through `pnpm release:preflight`
 - provider-ready integrations are not production-certified until their staging/device checks are recorded
 
+Release evidence lives in:
+
+- `docs/production-provider-certification.md`
+- `docs/production-incident-checklist.md`
+- `docs/real-device-qa-log.md`
+- `docs/store-readiness.md`
+- `docs/api-router-split-plan.md`
+
 ## Runtime Profiles
 
 ### Local
