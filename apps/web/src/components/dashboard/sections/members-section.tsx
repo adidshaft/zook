@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Users, UserCheck, UserPlus, AlertCircle } from "lucide-react";
 import { BodyCompositionTimeline } from "../body-composition-timeline";

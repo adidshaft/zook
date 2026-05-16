@@ -16,6 +16,25 @@ function serializeUserForReadModel<T extends { id: string; email: string } | nul
   };
 }
 
+function serializeOrganizationForReadModel<
+  T extends { latitude?: unknown; longitude?: unknown } | null | undefined,
+>(organization: T) {
+  if (!organization) {
+    return organization;
+  }
+  return {
+    ...organization,
+    latitude:
+      organization.latitude === null || organization.latitude === undefined
+        ? null
+        : Number(organization.latitude),
+    longitude:
+      organization.longitude === null || organization.longitude === undefined
+        ? null
+        : Number(organization.longitude),
+  };
+}
+
 function toDateKey(date: Date) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
@@ -362,7 +381,7 @@ async function getOrganizationDashboardDataUncached(
   );
 
   return {
-    organization,
+    organization: serializeOrganizationForReadModel(organization),
     branchScope,
     metrics: [
       {
@@ -434,7 +453,7 @@ export async function getPlatformDashboardData() {
   const counts = new Map(statusGroups.map((group) => [group.status, group._count._all]));
 
   return {
-    orgs,
+    orgs: orgs.map(serializeOrganizationForReadModel),
     aiUsageThisMonth,
     abuseFlags,
     metrics: [
@@ -583,7 +602,7 @@ export async function getMemberHomeData(userId: string, preferredOrgId?: string)
   const checkedInToday = attendanceKeys.has(toDateKey(new Date()));
 
   return {
-    activeOrganization: organization,
+    activeOrganization: serializeOrganizationForReadModel(organization),
     activeMembership: subscription
       ? {
           ...subscription,
@@ -627,7 +646,7 @@ export async function getActiveMembershipData(userId: string, preferredOrgId?: s
   return {
     ...subscription,
     plan,
-    organization,
+    organization: serializeOrganizationForReadModel(organization),
     daysLeft: daysUntil(subscription.endsAt),
     nextCheckInEstimate: checkedInToday ? "Tomorrow" : "Available today",
     recentAttendance: attendance,

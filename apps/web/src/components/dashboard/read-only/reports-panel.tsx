@@ -67,9 +67,6 @@ export function ReportsPanel({
   const sevenDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 10);
-  const thirtyDaysAgo = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
   const [dateRange, setDateRange] = useState({ from: sevenDaysAgo, to: today });
   const invalidRange = dateRange.to < dateRange.from;
   const [revenueWindow, setRevenueWindow] = useState<"7d" | "30d">("7d");

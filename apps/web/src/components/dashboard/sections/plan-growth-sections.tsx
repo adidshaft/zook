@@ -1,7 +1,6 @@
 "use client";
 
 import { ErrorNotice } from "../operational-shared";
-import Link from "next/link";
 import { formatCompactNumber } from "@/lib/format";
 import { Pill } from "../../glass-card";
 import { ReadoutGrid, Section, StatusPill, Toggle, TextInput, Select } from "../primitives";
