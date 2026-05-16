@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Users, UserCheck, UserPlus, AlertCircle } from "lucide-react";
 import { BodyCompositionTimeline } from "../body-composition-timeline";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-shared";
+import { KPITile, PulseDot, SectionHero } from "../charts";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn, SearchableSelect } from "../../ui";
@@ -202,8 +204,74 @@ export function MembersSection({
     }
   }
 
+  const activeCount = members.filter((member) => {
+    const status = (member.activeSubscription?.status ?? "").toUpperCase();
+    return status === "ACTIVE";
+  }).length;
+  const expiringCount = members.filter((member) => {
+    const endsAt = member.activeSubscription?.endsAt;
+    if (!endsAt) return false;
+    const days = Math.ceil((new Date(endsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return days >= 0 && days <= 7;
+  }).length;
+
   return (
     <div className="grid gap-4">
+      <SectionHero
+        eyebrow="Members"
+        title="Member roster"
+        description="Manage joins, payments, plans, and personal records — all of one member, in one place."
+        icon={Users}
+        tone="lime"
+        meta={
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-lime-300/30 bg-lime-300/10 px-3 py-1 text-xs font-medium text-lime-100">
+              <PulseDot tone="lime" size={6} />
+              {members.length} {members.length === 1 ? "member" : "members"}
+            </span>
+            {joinRequests.length > 0 ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/30 bg-rose-300/10 px-3 py-1 text-xs font-medium text-rose-100">
+                <UserPlus size={11} />
+                {joinRequests.length} pending
+              </span>
+            ) : null}
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <KPITile
+          label="Total members"
+          value={members.length}
+          icon={Users}
+          tone="lime"
+          caption="In your roster"
+        />
+        <KPITile
+          label="Active"
+          value={activeCount}
+          icon={UserCheck}
+          tone="sky"
+          caption={`${
+            members.length > 0 ? Math.round((activeCount / members.length) * 100) : 0
+          }% of roster`}
+        />
+        <KPITile
+          label="Join requests"
+          value={joinRequests.length}
+          icon={UserPlus}
+          tone="amber"
+          caption={joinRequests.length > 0 ? "Needs approval" : "Inbox clear"}
+        />
+        <KPITile
+          label="Expiring soon"
+          value={expiringCount}
+          icon={AlertCircle}
+          tone={expiringCount > 0 ? "rose" : "lime"}
+          caption={expiringCount > 0 ? "In next 7 days" : "All current"}
+        />
+      </div>
+
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <GlassCard className="xl:col-span-1">
           <SectionHeader

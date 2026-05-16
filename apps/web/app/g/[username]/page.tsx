@@ -196,8 +196,41 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
                   />
                 </div>
               ) : (
-                <div className="mb-5 flex h-32 w-full items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-zinc-800 to-zinc-950">
-                  <span className="text-4xl font-black text-zinc-500">{org.name[0]}</span>
+                <div className="relative mb-5 h-40 w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black">
+                  <svg
+                    aria-hidden
+                    viewBox="0 0 400 160"
+                    preserveAspectRatio="xMidYMid slice"
+                    className="absolute inset-0 h-full w-full"
+                  >
+                    <defs>
+                      <radialGradient id="gym-glow" cx="50%" cy="100%" r="80%">
+                        <stop offset="0%" stopColor="#B9F455" stopOpacity="0.18" />
+                        <stop offset="60%" stopColor="#B9F455" stopOpacity="0.04" />
+                        <stop offset="100%" stopColor="#B9F455" stopOpacity="0" />
+                      </radialGradient>
+                      <pattern id="gym-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+                        <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#gym-grid)" />
+                    <rect width="100%" height="100%" fill="url(#gym-glow)" />
+                    {/* stylised dumbbell */}
+                    <g transform="translate(200 80)" stroke="#B9F455" strokeLinecap="round" fill="none">
+                      <line x1="-50" y1="0" x2="50" y2="0" strokeWidth="6" opacity="0.8" />
+                      <rect x="-66" y="-14" width="14" height="28" rx="3" strokeWidth="3" opacity="0.9" />
+                      <rect x="-78" y="-22" width="10" height="44" rx="3" strokeWidth="3" opacity="0.65" />
+                      <rect x="52" y="-14" width="14" height="28" rx="3" strokeWidth="3" opacity="0.9" />
+                      <rect x="68" y="-22" width="10" height="44" rx="3" strokeWidth="3" opacity="0.65" />
+                    </g>
+                  </svg>
+                  <div className="relative grid h-full place-items-center">
+                    <span
+                      className="rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-white/55 backdrop-blur"
+                    >
+                      Cover photo coming soon
+                    </span>
+                  </div>
                 </div>
               )}
               <div className="flex flex-wrap items-center gap-3">

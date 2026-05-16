@@ -1,8 +1,25 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Dumbbell, Smartphone } from "lucide-react";
+import {
+  Activity,
+  BarChart3,
+  Bell,
+  Calendar,
+  ClipboardList,
+  Dumbbell,
+  PinIcon,
+  Smartphone,
+  Users,
+} from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
+import {
+  ActivityRow,
+  KPITile,
+  PulseDot,
+  SectionHero,
+} from "@/components/dashboard/charts";
+import { TrainerCustomisationPanel } from "@/components/trainer-customisation-panel";
 import { hasCoachAccess, hasOwnerDashboardAccess } from "@/lib/auth-destinations";
 import { requireDashboardSession } from "@/lib/server-auth";
 
@@ -20,43 +37,161 @@ export default async function CoachPage() {
     redirect("/me");
   }
 
+  const firstName = (session.user.name ?? "Coach").trim().split(/\s+/)[0] ?? "Coach";
+
+  // Server-side placeholders until the trainer mobile API surfaces these
+  // server-truth. Keeps the surface visually meaningful without misleading
+  // any number — counts of 0 read as "no data" rather than fake activity.
+  const stats = {
+    assignedClients: 0,
+    plansAssigned: 0,
+    sessionsThisWeek: 0,
+    progressNotes: 0,
+  };
+
   return (
-    <main className="min-h-dvh px-5 py-5">
-      <div className="mx-auto grid max-w-3xl gap-5">
-        <div className="flex items-center justify-between gap-3">
+    <main className="relative min-h-dvh px-5 py-5">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+      >
+        <div className="absolute -top-32 left-1/4 h-[420px] w-[420px] rounded-full bg-lime-300/[0.05] blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 h-[380px] w-[380px] rounded-full bg-sky-300/[0.04] blur-[120px]" />
+      </div>
+
+      <div className="mx-auto grid max-w-5xl gap-5">
+        <header className="flex items-center justify-between gap-3">
           <Link href="/" className="text-sm font-semibold text-white/70">
             Zook
           </Link>
           <DashboardSignOutButton compact />
-        </div>
-        <GlassCard variant="strong" className="p-6 md:p-8">
-          <Pill tone="lime">Trainer account</Pill>
-          <div className="mt-5 flex items-start gap-4">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-lime-300 text-black">
-              <Dumbbell size={24} />
+        </header>
+
+        <SectionHero
+          eyebrow={`Good day, ${firstName}`}
+          title="Trainer command"
+          description="Your assigned clients, week schedule, and progress notes live in the Zook app. The web view gives you a quick read on what's active right now."
+          icon={Dumbbell}
+          tone="lime"
+          meta={
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-lime-300/30 bg-lime-300/10 px-3 py-1 text-xs font-medium text-lime-100">
+                <PulseDot tone="lime" size={6} />
+                Live signal
+              </span>
+              <Pill tone="lime">Trainer</Pill>
             </div>
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-white">
-                Use the Zook app for coaching.
-              </h1>
-              <p className="mt-3 text-sm leading-6 text-white/55">
-                Trainer workflows are mobile-first: assigned clients, plans, workout updates, and
-                member progress stay in the app where coaching happens.
-              </p>
+          }
+        />
+
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <KPITile
+            label="Assigned clients"
+            value={stats.assignedClients}
+            icon={Users}
+            tone="lime"
+            caption="Active on your roster"
+          />
+          <KPITile
+            label="Plans assigned"
+            value={stats.plansAssigned}
+            icon={ClipboardList}
+            tone="sky"
+            caption="Live programs"
+          />
+          <KPITile
+            label="Sessions this week"
+            value={stats.sessionsThisWeek}
+            icon={Calendar}
+            tone="amber"
+            caption="Logged on the app"
+          />
+          <KPITile
+            label="Progress notes"
+            value={stats.progressNotes}
+            icon={Activity}
+            tone="violet"
+            caption="Last 30 days"
+          />
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <GlassCard className="p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-white">Pinned for today</h2>
+              <Link
+                href="/me"
+                className="text-xs font-medium text-lime-300 hover:underline"
+              >
+                Open my profile →
+              </Link>
             </div>
-          </div>
-        </GlassCard>
-        <GlassCard className="p-5">
-          <div className="flex items-center gap-3">
-            <Smartphone className="text-lime-200" size={20} />
-            <div>
-              <p className="font-medium text-white">Mobile app links are coming soon.</p>
-              <p className="mt-1 text-sm text-white/48">
-                Until store links are published, ask the gym owner for the test app invite.
-              </p>
+            <p className="mt-2 text-sm leading-6 text-white/55">
+              Use the Zook mobile app to pin a client here and pull up their plan with one tap from
+              the dashboard.
+            </p>
+            <div className="mt-4 grid gap-2">
+              {stats.assignedClients === 0 ? (
+                <div className="flex items-start gap-3 rounded-xl border border-dashed border-white/12 bg-white/[0.02] px-4 py-4 text-sm text-white/55">
+                  <PinIcon size={16} className="mt-0.5 shrink-0 text-white/35" />
+                  <span>
+                    No clients pinned yet. Pin from the mobile app and they appear here
+                    automatically.
+                  </span>
+                </div>
+              ) : (
+                <ActivityRow
+                  icon={Users}
+                  iconTone="lime"
+                  title="Pinned clients will appear here"
+                  subtitle="One-tap access"
+                />
+              )}
             </div>
-          </div>
-        </GlassCard>
+          </GlassCard>
+
+          <GlassCard className="p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-white">Today's quick actions</h2>
+            </div>
+            <div className="mt-4 grid gap-2">
+              <ActivityRow
+                icon={ClipboardList}
+                iconTone="lime"
+                title="Assign a new plan"
+                subtitle="Open the assigned-plans builder in the app"
+                href="/me"
+                index={0}
+              />
+              <ActivityRow
+                icon={Bell}
+                iconTone="sky"
+                title="Notify a member"
+                subtitle="Send a quick check-in nudge"
+                href="/me"
+                index={1}
+              />
+              <ActivityRow
+                icon={BarChart3}
+                iconTone="amber"
+                title="Log this week's progress"
+                subtitle="Capture weights, reps, body comp"
+                href="/me"
+                index={2}
+              />
+              <ActivityRow
+                icon={Smartphone}
+                iconTone="violet"
+                title="Open in the Zook app"
+                subtitle="Full coaching surface lives on mobile"
+                href="/me"
+                index={3}
+              />
+            </div>
+          </GlassCard>
+        </section>
+
+        <TrainerCustomisationPanel trainerName={firstName} />
       </div>
     </main>
   );

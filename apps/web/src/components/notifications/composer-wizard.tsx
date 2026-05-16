@@ -5,7 +5,9 @@ import { useSearchParams } from "next/navigation";
 import type { Permission, Role } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
 import { ConfirmDialog } from "../dashboard-primitives";
+import { Send } from "lucide-react";
 import { GlassCard, Pill } from "../glass-card";
+import { PulseDot, SectionHero } from "../dashboard/charts";
 import { ZookButton } from "../zook-button";
 import {
   AudienceStep,
@@ -313,7 +315,23 @@ export function NotificationComposerPanel({
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+    <div className="grid gap-4">
+      <SectionHero
+        eyebrow="Notifications"
+        title="Send a message"
+        description="Choose the purpose, audience, message, then review delivery. Drafts stay private until you confirm."
+        icon={Send}
+        tone="sky"
+        meta={
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/80">
+              <PulseDot tone="sky" size={6} />
+              Step {step} of 4
+            </span>
+          </div>
+        }
+      />
+      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
       <GlassCard>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -455,6 +473,7 @@ export function NotificationComposerPanel({
         <h2 className="text-xl font-semibold">Delivery history</h2>
         <ComposerDeliveryHistory notifications={notifications} />
       </GlassCard>
+      </div>
     </div>
   );
 }

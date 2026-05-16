@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -19,6 +21,7 @@ import { GlassCard } from "../../glass-card";
 import {
   ActivityRow,
   BarChart,
+  type ChartTone,
   DeltaChip,
   Donut,
   KPITile,
@@ -27,6 +30,10 @@ import {
   PulseDot,
   SectionHero,
 } from "../charts";
+import {
+  OwnerCustomisationPanel,
+  useOwnerPrefs,
+} from "../../owner-customisation-panel";
 import type { DashboardCopy, DashboardData } from "./types";
 
 type AttentionRow = {
@@ -74,6 +81,8 @@ export function DashboardOverview({
   data: DashboardData;
   copy: DashboardCopy;
 }) {
+  const prefs = useOwnerPrefs();
+  const accent: ChartTone = prefs.accent;
   const summary = data.summary;
   const aiQuota = 50;
   const aiUsagePercent = Math.min(100, Math.round((summary.aiUsageThisMonth / aiQuota) * 100));
@@ -144,11 +153,11 @@ export function DashboardOverview({
         title="Run the gym, not the spreadsheet"
         description={`Live signal across ${summary.activeMembers} active member${summary.activeMembers === 1 ? "" : "s"}. ${todayLabel}.`}
         icon={TrendingUp}
-        tone="lime"
+        tone={accent}
         meta={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-lime-300/30 bg-lime-300/10 px-3 py-1 text-xs font-medium text-lime-100">
-              <PulseDot tone="lime" size={6} />
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/80">
+              <PulseDot tone={accent} size={6} />
               Live
             </span>
             <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-white/55">
@@ -159,12 +168,16 @@ export function DashboardOverview({
       />
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+      <div className={`grid gap-3 sm:gap-4 ${
+        prefs.density === "compact"
+          ? "grid-cols-2 md:grid-cols-5"
+          : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+      }`}>
         <KPITile
           label="Active members"
           value={summary.activeMembers}
           icon={Users}
-          tone="lime"
+          tone={accent}
           trend={memberTrend}
           delta={3.2}
           caption="Server-recorded"
@@ -207,39 +220,45 @@ export function DashboardOverview({
       </div>
 
       {/* Revenue + Attention split */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <GlassCard className="overflow-hidden p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
-                Revenue · last 7 days
-              </p>
-              <div className="mt-2 flex items-baseline gap-3">
-                <span className="text-3xl font-bold tabular-nums text-white">
-                  {formatInr(summary.revenuePaise)}
-                </span>
-                <DeltaChip delta={summary.revenuePaise > 0 ? 12.3 : 0} />
+      <div
+        className={`grid grid-cols-1 gap-4 ${
+          prefs.widgets.revenueChart ? "lg:grid-cols-[1.4fr_1fr]" : ""
+        }`}
+      >
+        {prefs.widgets.revenueChart ? (
+          <GlassCard className="overflow-hidden p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                  Revenue · last 7 days
+                </p>
+                <div className="mt-2 flex items-baseline gap-3">
+                  <span className="text-3xl font-bold tabular-nums text-white">
+                    {formatInr(summary.revenuePaise)}
+                  </span>
+                  <DeltaChip delta={summary.revenuePaise > 0 ? 12.3 : 0} />
+                </div>
+                <p className="mt-1 text-xs text-white/45">Today is the latest mark</p>
               </div>
-              <p className="mt-1 text-xs text-white/45">Today is the latest mark</p>
+              <Link
+                href="/dashboard/reports"
+                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/70 transition hover:border-white/25 hover:text-white"
+              >
+                Open reports →
+              </Link>
             </div>
-            <Link
-              href="/dashboard/reports"
-              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/70 transition hover:border-white/25 hover:text-white"
-            >
-              Open reports →
-            </Link>
-          </div>
-          <div className="mt-4 h-56">
-            <LineChart
-              series={revenueTrend}
-              labels={weekDays}
-              tone="lime"
-              formatY={(v) => formatInrCompact(v * 100)}
-              formatTooltip={(v, label) => `${label}: ${formatInrCompact(v * 100)}`}
-              ariaLabel="Revenue across the last 7 days"
-            />
-          </div>
-        </GlassCard>
+            <div className="mt-4 h-56">
+              <LineChart
+                series={revenueTrend}
+                labels={weekDays}
+                tone={accent}
+                formatY={(v) => formatInrCompact(v * 100)}
+                formatTooltip={(v, label) => `${label}: ${formatInrCompact(v * 100)}`}
+                ariaLabel="Revenue across the last 7 days"
+              />
+            </div>
+          </GlassCard>
+        ) : null}
 
         <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
@@ -269,7 +288,13 @@ export function DashboardOverview({
       </div>
 
       {/* Member growth + plan mix */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr]">
+      {prefs.widgets.attendanceBars || prefs.widgets.planMix ? (
+      <div
+        className={`grid grid-cols-1 gap-4 ${
+          prefs.widgets.attendanceBars && prefs.widgets.planMix ? "lg:grid-cols-[1fr_1fr]" : ""
+        }`}
+      >
+        {prefs.widgets.attendanceBars ? (
         <GlassCard className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -294,7 +319,9 @@ export function DashboardOverview({
             <BarChart series={attendanceTrend} labels={weekDays} tone="sky" />
           </div>
         </GlassCard>
+        ) : null}
 
+        {prefs.widgets.planMix ? (
         <GlassCard className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -338,10 +365,14 @@ export function DashboardOverview({
             </div>
           </div>
         </GlassCard>
+        ) : null}
       </div>
+      ) : null}
 
       {/* AI + Staff + Tip — bottom strip */}
+      {prefs.widgets.aiUsage || prefs.widgets.staffActivity || prefs.widgets.tip ? (
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        {prefs.widgets.aiUsage ? (
         <GlassCard className="p-5 lg:col-span-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-white">AI usage</h2>
@@ -382,7 +413,9 @@ export function DashboardOverview({
             </div>
           </div>
         </GlassCard>
+        ) : null}
 
+        {prefs.widgets.staffActivity ? (
         <GlassCard className="p-5 lg:col-span-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-white">Recent staff activity</h2>
@@ -407,7 +440,9 @@ export function DashboardOverview({
             <ChevronRight size={16} className="text-white/35" />
           </Link>
         </GlassCard>
+        ) : null}
 
+        {prefs.widgets.tip ? (
         <GlassCard className="relative overflow-hidden p-5 lg:col-span-3">
           <div className="absolute -right-12 -bottom-12 h-40 w-40 rounded-full bg-lime-300/8 blur-3xl" />
           <div className="flex items-center gap-2">
@@ -429,7 +464,11 @@ export function DashboardOverview({
             View members
           </Link>
         </GlassCard>
+        ) : null}
       </div>
+      ) : null}
+
+      <OwnerCustomisationPanel />
     </div>
   );
 }
