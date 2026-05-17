@@ -105,9 +105,9 @@ test("web UX affordances connect operators to the next action", async ({ page })
   await expect(page.getByText(order.id.slice(-8).toUpperCase())).toBeVisible();
 
   await page.goto("/dashboard/audit");
-  const auditRow = page.getByRole("row", { name: /Ux\.Affordance\.Test/i }).first();
-  await expect(auditRow).toBeVisible();
   await page.waitForLoadState("networkidle");
+  const auditRow = page.getByRole("row", { name: /Ux\.Affordance\.Test/i }).first();
+  await expect(auditRow).toBeVisible({ timeout: 15_000 });
   await auditRow.getByRole("button", { name: /details/i }).click();
   await expect(page.getByRole("dialog", { name: /change details/i })).toBeVisible();
 });

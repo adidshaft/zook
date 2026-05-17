@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Users, UserCheck, UserPlus, AlertCircle } from "lucide-react";
 import { BodyCompositionTimeline } from "../body-composition-timeline";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-shared";
 import { KPITile, PulseDot, SectionHero } from "../charts";
-import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import {
+  DataTable,
+  EmptyState,
+  SectionHeader,
+  StatusPill,
+  VirtualizedDataTable,
+} from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn, SearchableSelect } from "../../ui";
 import { ZookButton, ZookButtonLink } from "../../zook-button";
@@ -33,7 +39,7 @@ const memberFilters: MemberFilter[] = [
   "Visit Pack",
   "Trial",
 ];
-const MEMBER_RENDER_BATCH = 80;
+const MEMBER_VIRTUALIZATION_THRESHOLD = 120;
 
 function normalizeMemberText(value: unknown) {
   return String(value ?? "")
@@ -96,7 +102,6 @@ export function MembersSection({
   const [pauseReason, setPauseReason] = useState("");
   const [memberFilter, setMemberFilter] = useState<MemberFilter>("All");
   const [memberSearch, setMemberSearch] = useState("");
-  const [visibleMemberCount, setVisibleMemberCount] = useState(MEMBER_RENDER_BATCH);
   const [selectedBulkMemberIds, setSelectedBulkMemberIds] = useState<string[]>([]);
   const selectedSubscription = memberDetailState.data?.member.subscriptions[0] ?? null;
   const selectedBulkMembers = members.filter((member) =>
@@ -139,12 +144,84 @@ export function MembersSection({
     [memberFilter, memberSearch, members],
   );
   const filtersActive = memberFilter !== "All" || memberSearch.trim().length > 0;
-  const renderedMembers = filteredMembers.slice(0, visibleMemberCount);
-  const hiddenLoadedMemberCount = Math.max(0, filteredMembers.length - renderedMembers.length);
-
-  useEffect(() => {
-    setVisibleMemberCount(MEMBER_RENDER_BATCH);
-  }, [memberFilter, memberSearch, members.length]);
+  const useVirtualizedRoster = filteredMembers.length >= MEMBER_VIRTUALIZATION_THRESHOLD;
+  const memberRosterColumns = useMemo(
+    () => [
+      {
+        id: "select",
+        header: "Select",
+        render: (row: MemberRow) => (
+          <input
+            type="checkbox"
+            checked={Boolean(row.user?.id && selectedBulkMemberIds.includes(row.user.id))}
+            onChange={() => toggleBulkMember(row.user?.id)}
+            aria-label={`Select ${row.user?.name ?? "member"}`}
+            className="zook-focus h-4 w-4 rounded border-white/20 bg-black/40 accent-lime-300"
+          />
+        ),
+      },
+      {
+        id: "member",
+        header: "Member",
+        render: (row: MemberRow) => (
+          <div>
+            <p className="font-medium text-white">{row.user?.name ?? "Member profile"}</p>
+            <p className="mt-1 text-xs text-white/45">{row.user?.email ?? "No email recorded"}</p>
+          </div>
+        ),
+      },
+      {
+        id: "contact",
+        header: "Contact",
+        render: (row: MemberRow) => (
+          <div>
+            <p>{row.user?.phone ?? organization.contactPhone ?? "Desk follow-up needed"}</p>
+            <p className="mt-1 text-xs text-white/45">
+              {row.user?.fitnessGoal ?? "Goal capture pending"}
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "profile",
+        header: "Profile state",
+        render: (row: MemberRow) => (
+          <div className="flex flex-wrap gap-2">
+            <StatusPill
+              value={row.profile.publicVisibility ? "Visible" : "Private"}
+              tone={row.profile.publicVisibility ? "blue" : "neutral"}
+            />
+            <StatusPill
+              value={row.profile.marketingOptIn ? "Marketing on" : "Marketing off"}
+              tone={row.profile.marketingOptIn ? "lime" : "amber"}
+            />
+          </div>
+        ),
+      },
+      {
+        id: "joined",
+        header: "Created",
+        render: (row: MemberRow) => formatDate(row.profile.createdAt),
+      },
+      {
+        id: "detail",
+        header: "Detail",
+        align: "right" as const,
+        render: (row: MemberRow) => (
+          <ZookButton
+            type="button"
+            tone="ghost"
+            size="sm"
+            onClick={() => row.user?.id && setSelectedMemberId(row.user.id)}
+            disabled={!row.user?.id}
+          >
+            View
+          </ZookButton>
+        ),
+      },
+    ],
+    [organization.contactPhone, selectedBulkMemberIds, setSelectedMemberId],
+  );
 
   function toggleBulkMember(userId: string | undefined) {
     if (!userId) return;
@@ -469,130 +546,61 @@ export function MembersSection({
               />
             ) : (
               <>
-                <DataTable
-                  columns={[
-                    {
-                      id: "select",
-                      header: "Select",
-                      render: (row) => (
-                        <input
-                          type="checkbox"
-                          checked={Boolean(row.user?.id && selectedBulkMemberIds.includes(row.user.id))}
-                          onChange={() => toggleBulkMember(row.user?.id)}
-                          aria-label={`Select ${row.user?.name ?? "member"}`}
-                          className="zook-focus h-4 w-4 rounded border-white/20 bg-black/40 accent-lime-300"
-                        />
-                      ),
-                    },
-                    {
-                      id: "member",
-                      header: "Member",
-                      render: (row) => (
-                        <div>
-                          <p className="font-medium text-white">
-                            {row.user?.name ?? "Member profile"}
-                          </p>
-                          <p className="mt-1 text-xs text-white/45">
-                            {row.user?.email ?? "No email recorded"}
-                          </p>
-                        </div>
-                      ),
-                    },
-                    {
-                      id: "contact",
-                      header: "Contact",
-                      render: (row) => (
-                        <div>
-                          <p>
-                            {row.user?.phone ??
-                              organization.contactPhone ??
-                              "Desk follow-up needed"}
-                          </p>
-                          <p className="mt-1 text-xs text-white/45">
-                            {row.user?.fitnessGoal ?? "Goal capture pending"}
-                          </p>
-                        </div>
-                      ),
-                    },
-                    {
-                      id: "profile",
-                      header: "Profile state",
-                      render: (row) => (
-                        <div className="flex flex-wrap gap-2">
-                          <StatusPill
-                            value={row.profile.publicVisibility ? "Visible" : "Private"}
-                            tone={row.profile.publicVisibility ? "blue" : "neutral"}
-                          />
-                          <StatusPill
-                            value={row.profile.marketingOptIn ? "Marketing on" : "Marketing off"}
-                            tone={row.profile.marketingOptIn ? "lime" : "amber"}
-                          />
-                        </div>
-                      ),
-                    },
-                    {
-                      id: "joined",
-                      header: "Created",
-                      render: (row) => formatDate(row.profile.createdAt),
-                    },
-                    {
-                      id: "detail",
-                      header: "Detail",
-                      align: "right",
-                      render: (row) => (
-                        <ZookButton
-                          type="button"
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => row.user?.id && setSelectedMemberId(row.user.id)}
-                          disabled={!row.user?.id}
-                        >
-                          View
-                        </ZookButton>
-                      ),
-                    },
-                  ]}
-                  rows={renderedMembers}
-                  rowKey={(row) => row.profile.id}
-                  empty={
-                    <EmptyState
-                      title={filtersActive ? "No loaded members match" : "No members yet"}
-                      description={
-                        filtersActive
-                          ? "Try a different filter or search term. This filters the currently loaded roster."
-                          : "Create your first membership plan and share your join link to start accepting members."
-                      }
-                      action={
-                        filtersActive ? null : (
-                          <ZookButtonLink href="/dashboard/plans">
-                            Create a plan
-                          </ZookButtonLink>
-                        )
-                      }
-                    />
-                  }
-                />
+                {useVirtualizedRoster ? (
+                  <VirtualizedDataTable
+                    columns={memberRosterColumns}
+                    rows={filteredMembers}
+                    rowKey={(row) => row.profile.id}
+                    rowHeight={92}
+                    maxHeight={620}
+                    tableMinWidth="980px"
+                    gridTemplateColumns="56px minmax(220px,1.2fr) minmax(220px,1fr) minmax(180px,1fr) minmax(120px,0.7fr) 96px"
+                    empty={
+                      <EmptyState
+                        title={filtersActive ? "No loaded members match" : "No members yet"}
+                        description={
+                          filtersActive
+                            ? "Try a different filter or search term. This filters the currently loaded roster."
+                            : "Create your first membership plan and share your join link to start accepting members."
+                        }
+                        action={
+                          filtersActive ? null : (
+                            <ZookButtonLink href="/dashboard/plans">Create a plan</ZookButtonLink>
+                          )
+                        }
+                      />
+                    }
+                  />
+                ) : (
+                  <DataTable
+                    columns={memberRosterColumns}
+                    rows={filteredMembers}
+                    rowKey={(row) => row.profile.id}
+                    empty={
+                      <EmptyState
+                        title={filtersActive ? "No loaded members match" : "No members yet"}
+                        description={
+                          filtersActive
+                            ? "Try a different filter or search term. This filters the currently loaded roster."
+                            : "Create your first membership plan and share your join link to start accepting members."
+                        }
+                        action={
+                          filtersActive ? null : (
+                            <ZookButtonLink href="/dashboard/plans">Create a plan</ZookButtonLink>
+                          )
+                        }
+                      />
+                    }
+                  />
+                )}
                 {filteredMembers.length ? (
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
                     <p className="text-sm text-white/55">
-                      Showing {renderedMembers.length} of {filteredMembers.length} loaded match
-                      {filteredMembers.length === 1 ? "" : "es"}. Refine search for faster
-                      action at large scale.
+                      {useVirtualizedRoster
+                        ? `Virtualized roster active for ${filteredMembers.length} loaded matches.`
+                        : `Showing ${filteredMembers.length} loaded match${filteredMembers.length === 1 ? "" : "es"}.`}{" "}
+                      Refine search for faster action at large scale.
                     </p>
-                    {hiddenLoadedMemberCount ? (
-                      <ZookButton
-                        type="button"
-                        tone="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setVisibleMemberCount((current) =>
-                            Math.min(current + MEMBER_RENDER_BATCH, filteredMembers.length),
-                          )
-                        }
-                      >
-                        Show next {Math.min(MEMBER_RENDER_BATCH, hiddenLoadedMemberCount)}
-                      </ZookButton>
-                    ) : null}
                   </div>
                 ) : null}
                 {selectedBulkMemberIds.length ? (

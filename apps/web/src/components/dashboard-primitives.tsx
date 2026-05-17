@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { motion, type Variants } from "framer-motion";
 import { AlertTriangle, Check, Circle, X } from "lucide-react";
@@ -520,6 +521,163 @@ export function DataTable<Row>({
           )}
         </tbody>
       </table>
+    </motion.div>
+  );
+}
+
+export function VirtualizedDataTable<Row>({
+  columns,
+  rows,
+  rowKey,
+  empty,
+  className,
+  rowHeight = 88,
+  maxHeight = 560,
+  overscan = 6,
+  gridTemplateColumns,
+  tableMinWidth = "720px",
+}: {
+  columns: Array<DataTableColumn<Row>>;
+  rows: Row[];
+  rowKey: (row: Row) => string;
+  empty: React.ReactNode;
+  className?: string | undefined;
+  rowHeight?: number | undefined;
+  maxHeight?: number | undefined;
+  overscan?: number | undefined;
+  gridTemplateColumns?: string | undefined;
+  tableMinWidth?: string | undefined;
+}) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [viewport, setViewport] = useState({ height: maxHeight, top: 0 });
+  const totalHeight = rows.length * rowHeight;
+  const bodyHeight = rows.length ? Math.min(maxHeight, totalHeight) : undefined;
+  const template = gridTemplateColumns ?? `repeat(${columns.length}, minmax(120px, 1fr))`;
+  const visibleRange = useMemo(() => {
+    if (!rows.length) {
+      return { start: 0, end: 0 };
+    }
+    const visibleStart = Math.floor(viewport.top / rowHeight);
+    const visibleEnd = Math.ceil((viewport.top + viewport.height) / rowHeight);
+    return {
+      start: Math.max(0, visibleStart - overscan),
+      end: Math.min(rows.length, visibleEnd + overscan),
+    };
+  }, [overscan, rowHeight, rows.length, viewport.height, viewport.top]);
+  const visibleRows = rows.slice(visibleRange.start, visibleRange.end);
+
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) {
+      return;
+    }
+
+    const syncViewport = () => {
+      setViewport({ height: node.clientHeight || maxHeight, top: node.scrollTop });
+    };
+    syncViewport();
+    node.addEventListener("scroll", syncViewport, { passive: true });
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(syncViewport);
+      resizeObserver.observe(node);
+    }
+
+    return () => {
+      node.removeEventListener("scroll", syncViewport);
+      resizeObserver?.disconnect();
+    };
+  }, [maxHeight]);
+
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (node) {
+      node.scrollTop = 0;
+      setViewport({ height: node.clientHeight || maxHeight, top: 0 });
+    }
+  }, [maxHeight, rows]);
+
+  return (
+    <motion.div
+      variants={fadeUpVariants}
+      className={clsx(
+        "relative overflow-x-auto rounded-[24px] border border-white/10 bg-black/25",
+        className,
+      )}
+      aria-label="Virtualized scrollable table"
+    >
+      <div style={{ minWidth: tableMinWidth }}>
+        <div
+          className="grid border-b border-white/10 bg-white/6 text-sm text-white/42"
+          style={{ gridTemplateColumns: template }}
+        >
+          {columns.map((column) => (
+            <div
+              key={column.id}
+              role="columnheader"
+              className={clsx(
+                "px-4 py-3 font-medium",
+                column.align === "right"
+                  ? "text-right"
+                  : column.align === "center"
+                    ? "text-center"
+                    : "text-left",
+                column.className,
+              )}
+            >
+              {column.header}
+            </div>
+          ))}
+        </div>
+
+        {rows.length ? (
+          <div
+            ref={scrollRef}
+            className="relative overflow-y-auto"
+            style={{ height: bodyHeight, maxHeight }}
+            role="rowgroup"
+          >
+            <div style={{ height: totalHeight, position: "relative" }}>
+              {visibleRows.map((row, index) => {
+                const rowIndex = visibleRange.start + index;
+                return (
+                  <div
+                    key={rowKey(row)}
+                    role="row"
+                    className="absolute left-0 right-0 grid border-b border-white/10 text-sm transition-colors duration-200 hover:bg-white/[0.04]"
+                    style={{
+                      gridTemplateColumns: template,
+                      minHeight: rowHeight,
+                      transform: `translateY(${rowIndex * rowHeight}px)`,
+                    }}
+                  >
+                    {columns.map((column) => (
+                      <div
+                        key={column.id}
+                        role="cell"
+                        className={clsx(
+                          "min-w-0 self-center break-words px-4 py-3 text-white/72",
+                          column.align === "right"
+                            ? "text-right"
+                            : column.align === "center"
+                              ? "text-center"
+                              : "text-left",
+                          column.className,
+                        )}
+                      >
+                        {column.render(row)}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="px-4 py-5 text-sm text-white/45">{empty}</div>
+        )}
+      </div>
     </motion.div>
   );
 }

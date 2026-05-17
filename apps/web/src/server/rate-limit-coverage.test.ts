@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const routerSource = readFileSync(new URL("./api-router.ts", import.meta.url), "utf8");
+const routerSource = readFileSync(new URL("./api-router/core.ts", import.meta.url), "utf8");
 
 const sensitiveRoutes = [
   { label: "OTP request", needle: 'pathMatches(path, ["auth", "request-otp"])' },
@@ -24,7 +24,7 @@ const sensitiveRoutes = [
 describe("rate-limit route coverage", () => {
   it.each(sensitiveRoutes)("$label consumes a rate-limit bucket", ({ needle }) => {
     const routeStart = routerSource.indexOf(needle);
-    expect(routeStart, `${needle} was not found in api-router.ts`).toBeGreaterThanOrEqual(0);
+    expect(routeStart, `${needle} was not found in api-router/core.ts`).toBeGreaterThanOrEqual(0);
     const routeBody = routerSource.slice(routeStart, routeStart + 1800);
     expect(routeBody).toContain("assertRateLimit");
   });

@@ -2,7 +2,7 @@
 
 Last updated: 2026-05-17
 
-`apps/web/src/server/api-router.ts` remains intentionally large. It is working, but it is now a maintainability risk. Split it mechanically after the current production rehearsal, not during a provider or UI stabilization pass.
+`apps/web/src/server/api-router.ts` is now a compatibility shim. Runtime wrapping and handler ordering live in `apps/web/src/server/api-router/runtime.ts` and `apps/web/src/server/api-router/registry.ts`; the behavior-preserving handler body lives in `apps/web/src/server/api-router/core.ts`.
 
 ## Goal
 
@@ -15,7 +15,14 @@ Keep the public API contract unchanged while moving handler groups into focused 
 - Do not change auth, org-scope, audit, or permission behavior.
 - Keep the existing top-level route wrapper as the contract boundary until every moved handler has tests.
 
-## Suggested Order
+## Completed Mechanical Split
+
+1. Public import path preserved at `apps/web/src/server/api-router.ts`.
+2. Request ID, CSRF/mutation guard, idempotency, error reporting, and logging moved to `runtime.ts`.
+3. Handler dispatch order moved to `registry.ts`.
+4. Existing handler implementation moved without route-path or response-shape changes to `core.ts`.
+
+## Remaining Suggested Order
 
 1. Extract pure helpers and shared response utilities.
 2. Extract auth/session handlers.

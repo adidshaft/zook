@@ -36,6 +36,22 @@ Production posture:
 - Never enable mock payment completion in production.
 - Keep one small live smoke transaction documented with payment ID, Zook payment ID, webhook event ID, and rollback/refund decision.
 
+## QR Attendance
+
+Certification evidence:
+
+- Reception QR scan succeeds on iOS physical device in normal lighting.
+- Reception QR scan succeeds on Android physical device in normal lighting.
+- QR low-light scan succeeds with the gym's real desk lighting after at least three attempts.
+- Expired, wrong-branch, and repeated QR scans show the correct member-facing state.
+- The desk can fall back to entry-code verify when camera permission is denied or lighting is poor.
+- Scan records match the dashboard attendance queue and audit log.
+
+Production posture:
+
+- Do not certify QR from simulator screenshots only.
+- Record device model, OS version, app build, gym branch, lighting notes, and one attendance record ID.
+
 ## Push Notifications
 
 Provider: Expo
@@ -123,3 +139,15 @@ Production posture:
 
 - Use a production Upstash database and environment-specific namespace.
 - Record the Upstash database ID and namespace in release notes.
+
+## Release Evidence Variables
+
+When evidence exists outside the repo, pass references into the static gate so the release log shows them:
+
+```bash
+ZOOK_REAL_DEVICE_PUSH_EVIDENCE=/tmp/zook-qa/.../push.md \
+ZOOK_QR_LOW_LIGHT_EVIDENCE=/tmp/zook-qa/.../qr-low-light.md \
+ZOOK_CHECKOUT_WEBHOOK_EVIDENCE=razorpay:event-id-or-runbook-link \
+ZOOK_MOBILE_RELEASE_ENV_FILE=.env.production.local \
+pnpm mobile:release:check
+```
