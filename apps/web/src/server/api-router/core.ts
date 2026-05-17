@@ -28,8 +28,10 @@ import {
   isMockPaymentCompletionAllowed,
   isQaDemoIdentifier,
   isQaFreshIdentifier,
+  isSeededDemoIdentifier,
   QA_DEMO_ACCOUNT_EMAIL,
   QA_DEMO_ACCOUNT_PHONE,
+  QA_TEST_OTP,
   normalizePhoneNumber,
   orgRoles,
   permissions,
@@ -2343,10 +2345,51 @@ async function getDemoQaUserOrCreate() {
   });
 }
 
+async function getSeededDemoUserOrThrow(identifier: { kind: "email" | "phone"; value: string }) {
+  const user =
+    identifier.kind === "email"
+      ? await prisma.user.findUnique({ where: { email: identifier.value.toLowerCase() } })
+      : await prisma.user.findFirst({ where: { phone: identifier.value } });
+  if (!user) {
+    throw validationError("Demo account is not seeded yet.");
+  }
+  return user;
+}
+
+async function createSeededDemoOtpChallenge(input: {
+  identifier: { kind: "email" | "phone"; value: string };
+  ipAddress?: string;
+}) {
+  const user = await getSeededDemoUserOrThrow(input.identifier);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
+  const row = await prisma.otpChallenge.create({
+    data: {
+      email: user.email,
+      identifier: input.identifier.value,
+      channel: input.identifier.kind,
+      ...(input.identifier.kind === "phone" ? { phone: input.identifier.value } : {}),
+      purpose: "login",
+      codeHash: AuthService.hash(QA_TEST_OTP),
+      maxAttempts: 5,
+      expiresAt,
+      createdAt: now,
+      ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
+    },
+  });
+  return {
+    id: row.id,
+    expiresAt: row.expiresAt,
+  };
+}
+
 async function getAuthUserForVerifiedIdentifier(identifier: {
   kind: "email" | "phone";
   value: string;
 }) {
+  if (isSeededDemoIdentifier(identifier)) {
+    return getSeededDemoUserOrThrow(identifier);
+  }
   if (isQaFreshIdentifier(identifier)) {
     return createFreshQaUser(identifier);
   }
@@ -4903,22 +4946,29 @@ export async function handleAuth(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["auth", "request-otp"])) {
     const body = requestOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
-    const auth = new AuthService(
-      new PrismaAuthRepo(),
-      getEmailProviderOrThrow(),
-      () => new Date(),
-      body.identifier.kind === "phone" ? getSmsProviderOrThrow() : undefined,
-    );
-    await assertRateLimit(
-      "otpRequestByIdentifier",
-      body.identifier.value,
-      "Too many one-time code requests for this account.",
-    );
+    const seededDemoLogin = isSeededDemoIdentifier(body.identifier);
+    if (!seededDemoLogin) {
+      await assertRateLimit(
+        "otpRequestByIdentifier",
+        body.identifier.value,
+        "Too many one-time code requests for this account.",
+      );
+    }
     await assertRateLimit(
       "otpRequestByIp",
       ipAddress,
       "Too many one-time code requests from this IP.",
     );
+    if (seededDemoLogin) {
+      const challenge = await createSeededDemoOtpChallenge({
+        identifier: body.identifier,
+        ...(ipAddress !== "unknown" ? { ipAddress } : {}),
+      });
+      return ok({
+        challengeId: challenge.id,
+        expiresAt: challenge.expiresAt,
+      });
+    }
     if (isQaFreshIdentifier(body.identifier)) {
       assertLocalQaIdentityAllowed();
     } else if (isQaDemoIdentifier(body.identifier)) {
@@ -4926,6 +4976,12 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     } else {
       await getUserByIdentifierOrCreate(body.identifier);
     }
+    const auth = new AuthService(
+      new PrismaAuthRepo(),
+      getEmailProviderOrThrow(),
+      () => new Date(),
+      body.identifier.kind === "phone" ? getSmsProviderOrThrow() : undefined,
+    );
     const challenge = await auth.requestOtp(
       body.identifier,
       ipAddress !== "unknown" ? { ipAddress } : {},
@@ -4940,11 +4996,13 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     const body = verifyOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
     const auth = new AuthService(new PrismaAuthRepo(), getEmailProviderOrThrow());
-    await assertRateLimit(
-      "otpVerifyByIdentifier",
-      body.identifier.value,
-      "Too many one-time code attempts for this account.",
-    );
+    if (!isSeededDemoIdentifier(body.identifier)) {
+      await assertRateLimit(
+        "otpVerifyByIdentifier",
+        body.identifier.value,
+        "Too many one-time code attempts for this account.",
+      );
+    }
     await assertRateLimit(
       "otpVerifyByIp",
       ipAddress,

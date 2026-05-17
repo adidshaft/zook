@@ -5,8 +5,11 @@ import {
   QA_DEMO_ACCOUNT_PHONE,
   QA_FRESH_ACCOUNT_EMAIL,
   QA_FRESH_ACCOUNT_PHONE,
+  SEEDED_DEMO_ACCOUNT_EMAILS,
+  SEEDED_DEMO_ACCOUNT_PHONES,
   isQaDemoIdentifier,
   isQaFreshIdentifier,
+  isSeededDemoIdentifier,
 } from "../test-identities";
 
 describe("Zook mock service facades", () => {
@@ -20,6 +23,17 @@ describe("Zook mock service facades", () => {
     expect(isQaDemoIdentifier("+91 98765 43210")).toBe(true);
     expect(isQaDemoIdentifier(QA_DEMO_ACCOUNT_PHONE)).toBe(true);
     expect(isQaDemoIdentifier(QA_FRESH_ACCOUNT_EMAIL)).toBe(false);
+
+    expect(isSeededDemoIdentifier(QA_DEMO_ACCOUNT_EMAIL)).toBe(true);
+    expect(isSeededDemoIdentifier(QA_DEMO_ACCOUNT_PHONE)).toBe(true);
+    expect(isSeededDemoIdentifier("owner@zook.local")).toBe(true);
+    expect(isSeededDemoIdentifier("prospect@zook.local")).toBe(true);
+    expect(isSeededDemoIdentifier("+91 97654 32109")).toBe(true);
+    expect(isSeededDemoIdentifier(QA_FRESH_ACCOUNT_EMAIL)).toBe(false);
+    expect(SEEDED_DEMO_ACCOUNT_EMAILS).toContain("trainer@zook.local");
+    expect(SEEDED_DEMO_ACCOUNT_EMAILS).toContain("prospect@zook.local");
+    expect(SEEDED_DEMO_ACCOUNT_PHONES).toContain("+919123456780");
+    expect(SEEDED_DEMO_ACCOUNT_PHONES).toContain("+919555000111");
   });
 
   it("keeps membership activation behind mock payment confirmation", async () => {

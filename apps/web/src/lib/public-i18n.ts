@@ -226,6 +226,10 @@ export const publicMessages = {
     pendingApprovalTitle: "Request pending",
     pendingApprovalCopy:
       "You have sent the request. The gym team will approve it before checkout opens.",
+    membershipInProgressTitle: "Membership already in progress",
+    membershipInProgressCopy:
+      "This account already has an active membership or payment in progress for this gym.",
+    viewMembership: "View membership",
     backToGym: "Back to gym",
     inviteRequired: "Invite code required",
     inviteCopy: "This gym requires an active referral or invite code before checkout can start.",
@@ -456,6 +460,10 @@ export const publicMessages = {
     joinRequestError: "आपका अनुरोध भेजा नहीं जा सका.",
     pendingApprovalTitle: "अनुरोध लंबित",
     pendingApprovalCopy: "आपने अनुरोध भेज दिया है. चेकआउट खुलने से पहले जिम टीम इसे स्वीकृत करेगी.",
+    membershipInProgressTitle: "सदस्यता पहले से जारी है",
+    membershipInProgressCopy:
+      "इस अकाउंट की इस जिम में सक्रिय सदस्यता या भुगतान प्रक्रिया पहले से जारी है.",
+    viewMembership: "सदस्यता देखें",
     backToGym: "जिम पर वापस जाएं",
     inviteRequired: "आमंत्रण कोड आवश्यक",
     inviteCopy: "इस जिम में चेकआउट शुरू करने से पहले सक्रिय रेफरल या आमंत्रण कोड चाहिए.",

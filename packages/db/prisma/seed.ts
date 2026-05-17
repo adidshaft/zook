@@ -107,6 +107,7 @@ const seedUserEmails = [
   "reception@zook.local",
   "trainer@zook.local",
   "member@zook.local",
+  "prospect@zook.local",
   "minor@zook.local",
 ];
 
@@ -117,6 +118,7 @@ const seedUserPhones = [
   "+919765432109",
   "+919123456780",
   "+919876543210",
+  "+919555000111",
   "+919000012345",
 ];
 
@@ -373,6 +375,7 @@ async function main() {
       ["reception", "Farah Khan", "reception@zook.local", "+919765432109", false, false],
       ["trainer", "Rohan Kulkarni", "trainer@zook.local", "+919123456780", false, false],
       ["member", "Nisha Menon", "member@zook.local", "+919876543210", false, false],
+      ["prospect", "Maya Prospect", "prospect@zook.local", "+919555000111", false, false],
       ["minor", "Ira Shah", "minor@zook.local", "+919000012345", false, true],
     ].map(([key, name, email, phone, isPlatformAdmin, isMinor]) =>
       prisma.user.create({
@@ -401,7 +404,8 @@ async function main() {
   const reception = must(users[3], "reception user");
   const trainer = must(users[4], "trainer user");
   const member = must(users[5], "member user");
-  const minor = must(users[6], "minor user");
+  const prospect = must(users[6], "prospect user");
+  const minor = must(users[7], "minor user");
 
   await prisma.otpChallenge.createMany({
     data: seedUserEmails.map((email) => ({
@@ -1959,6 +1963,7 @@ async function main() {
     reception: reception.email,
     trainer: trainer.email,
     member: member.email,
+    prospect: prospect.email,
     minor: minor.email,
     otp: "000000",
     aarogyaStrength: "aarogya-strength",

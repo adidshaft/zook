@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { CheckCircle2, LockKeyhole } from "lucide-react";
 import { resolvePlanName } from "@zook/ui";
+import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { CouponApplyForm } from "@/components/coupon-apply-form";
 import { JoinCheckoutButton } from "@/components/join-checkout-button";
@@ -15,11 +17,13 @@ import {
   resolvePublicLocale,
   type PublicLocale,
 } from "@/lib/public-i18n";
+import { sessionCookieName } from "@/server/context";
 import {
   getPublicCouponPreview,
   getPublicGymProfileData,
   type PublicGymReferral,
 } from "@/server/public-gym-read-models";
+import { resolveSessionSummaryFromToken } from "@/server/session";
 
 function discountFor(referral: PublicGymReferral | null, planPricePaise: number) {
   if (!referral || referral.status !== "active") {
@@ -81,6 +85,45 @@ function visitLabel(visitLimit: number | null, locale: PublicLocale) {
     : `${visitLimit} ${visitLimit === 1 ? "visit" : "visits"}`;
 }
 
+async function getViewerJoinState(orgId: string) {
+  try {
+    const cookieStore = await cookies();
+    const session = await resolveSessionSummaryFromToken(
+      cookieStore.get(sessionCookieName)?.value,
+      orgId,
+    );
+    if (!session) {
+      return null;
+    }
+
+    const [activeSubscription, pendingJoinRequest, approvedJoinRequest] = await Promise.all([
+      prisma.memberSubscription.findFirst({
+        where: {
+          orgId,
+          memberUserId: session.user.id,
+          status: { in: ["PENDING_PAYMENT", "ACTIVE"] },
+        },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, status: true },
+      }),
+      prisma.membershipJoinRequest.findFirst({
+        where: { orgId, userId: session.user.id, status: "pending" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      }),
+      prisma.membershipJoinRequest.findFirst({
+        where: { orgId, userId: session.user.id, status: "approved" },
+        orderBy: { reviewedAt: "desc" },
+        select: { id: true },
+      }),
+    ]);
+
+    return { session, activeSubscription, pendingJoinRequest, approvedJoinRequest };
+  } catch {
+    return null;
+  }
+}
+
 export default async function JoinPage({
   params,
   searchParams,
@@ -93,6 +136,7 @@ export default async function JoinPage({
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const data = await getPublicGymProfileData(username, query.ref);
   const org = data?.org;
+  const viewerJoinState = org ? await getViewerJoinState(org.id) : null;
   const selectedPlan =
     data?.plans.find((plan) => plan.handle === query.plan || plan.id === query.plan) ??
     data?.plans[0];
@@ -142,7 +186,10 @@ export default async function JoinPage({
     );
   }
 
-  if (joinMode === "APPROVAL_REQUIRED") {
+  if (joinMode === "APPROVAL_REQUIRED" && !viewerJoinState?.approvedJoinRequest) {
+    const membershipPath = viewerJoinState?.session?.user.privateHandle
+      ? `/me/${viewerJoinState.session.user.privateHandle}`
+      : "/me";
     return (
       <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen py-1">
         <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
@@ -161,27 +208,41 @@ export default async function JoinPage({
           <Pill tone="amber">{t("approvalRequired")}</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-white">{t("approvalRequired")}</h1>
           <p className="mt-3 text-sm leading-6 text-white/55">{t("approvalCopy")}</p>
-          <JoinRequestButton
-            orgId={org.id}
-            planId={selectedPlan.id}
-            referralCode={referral?.code}
-            loginPath={loginRedirect(
-              selectedPlan
-                ? joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale)
-                : localizedPath(`/g/${org.username}`, locale),
-              locale,
-            )}
-            labels={{
-              submit: t("requestAccess"),
-              submitting: t("requestingAccess"),
-              success: t("joinRequestSubmitted"),
-              defaultError: t("joinRequestError"),
-            }}
-          />
-          <div className="mt-4 rounded-[18px] border border-amber-200/20 bg-amber-200/10 px-4 py-3">
-            <p className="text-sm font-medium text-amber-100">{t("pendingApprovalTitle")}</p>
-            <p className="mt-1 text-sm leading-6 text-white/55">{t("pendingApprovalCopy")}</p>
-          </div>
+          {viewerJoinState?.activeSubscription ? (
+            <MembershipStateNotice
+              title={t("membershipInProgressTitle")}
+              copy={t("membershipInProgressCopy")}
+              href={membershipPath}
+              cta={t("viewMembership")}
+              tone="lime"
+            />
+          ) : viewerJoinState?.pendingJoinRequest ? (
+            <MembershipStateNotice
+              title={t("pendingApprovalTitle")}
+              copy={t("pendingApprovalCopy")}
+              href={localizedPath(`/g/${org.username}`, locale)}
+              cta={t("backToGym")}
+              tone="amber"
+            />
+          ) : (
+            <JoinRequestButton
+              orgId={org.id}
+              planId={selectedPlan.id}
+              referralCode={referral?.code}
+              loginPath={loginRedirect(
+                selectedPlan
+                  ? joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale)
+                  : localizedPath(`/g/${org.username}`, locale),
+                locale,
+              )}
+              labels={{
+                submit: t("requestAccess"),
+                submitting: t("requestingAccess"),
+                success: t("joinRequestSubmitted"),
+                defaultError: t("joinRequestError"),
+              }}
+            />
+          )}
           <Link
             href={localizedPath(`/g/${org.username}`, locale)}
             className="zook-focus ml-3 mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70"
@@ -382,7 +443,19 @@ export default async function JoinPage({
                 {t("razorpay")}
               </div>
             </div>
-            {data.connected ? (
+            {viewerJoinState?.activeSubscription ? (
+              <MembershipStateNotice
+                title={t("membershipInProgressTitle")}
+                copy={t("membershipInProgressCopy")}
+                href={
+                  viewerJoinState.session.user.privateHandle
+                    ? `/me/${viewerJoinState.session.user.privateHandle}`
+                    : "/me"
+                }
+                cta={t("viewMembership")}
+                tone="lime"
+              />
+            ) : data.connected ? (
               <JoinCheckoutButton
                 orgId={org.id}
                 planId={selectedPlan.id}
@@ -420,6 +493,38 @@ export default async function JoinPage({
         </section>
       </div>
     </main>
+  );
+}
+
+function MembershipStateNotice({
+  copy,
+  cta,
+  href,
+  title,
+  tone,
+}: {
+  copy: string;
+  cta: string;
+  href: string;
+  title: string;
+  tone: "amber" | "lime";
+}) {
+  const toneClass =
+    tone === "lime"
+      ? "border-lime-300/25 bg-lime-300/10 text-lime-50"
+      : "border-amber-200/20 bg-amber-200/10 text-amber-100";
+
+  return (
+    <div className={`mt-6 rounded-[22px] border px-4 py-3 ${toneClass}`}>
+      <p className="text-sm font-medium">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-white/58">{copy}</p>
+      <Link
+        href={href}
+        className="zook-focus mt-4 inline-flex rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white"
+      >
+        {cta}
+      </Link>
+    </div>
   );
 }
 

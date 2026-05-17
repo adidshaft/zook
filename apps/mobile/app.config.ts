@@ -4,6 +4,28 @@ type MobileReleaseProfile = "local" | "staging" | "production";
 type MobileApiMode = "backend" | "offline-demo";
 type MobilePushEnvironment = "development" | "preview" | "production";
 
+const googleIosClientIdSuffix = ".apps.googleusercontent.com";
+
+function resolveGoogleIosUrlScheme() {
+  const clientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim();
+  if (!clientId?.endsWith(googleIosClientIdSuffix)) {
+    return undefined;
+  }
+  return `com.googleusercontent.apps.${clientId.slice(0, -googleIosClientIdSuffix.length)}`;
+}
+
+const googleIosUrlScheme = resolveGoogleIosUrlScheme();
+const googleSignInPlugins = googleIosUrlScheme
+  ? ([
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          iosUrlScheme: googleIosUrlScheme,
+        },
+      ],
+    ] as NonNullable<ExpoConfig["plugins"]>)
+  : [];
+
 const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   name: "Zook",
   slug: "zook",
@@ -24,6 +46,15 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
     usesAppleSignIn: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
+      ...(googleIosUrlScheme
+        ? {
+            CFBundleURLTypes: [
+              {
+                CFBundleURLSchemes: ["zook", "com.zook.app", googleIosUrlScheme],
+              },
+            ],
+          }
+        : {}),
     },
     associatedDomains: ["applinks:zookfit.in", "applinks:app.zookfit.in"],
     icon: "./assets/icons/AppIcon-1024.png",
@@ -60,6 +91,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
     ],
     "expo-secure-store",
     "expo-apple-authentication",
+    ...googleSignInPlugins,
     [
       "expo-camera",
       {
@@ -76,6 +108,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
           "Zook needs access to your photos so you can set a profile picture or upload supporting documents.",
         cameraPermission:
           "Zook uses the camera to scan gym attendance QR codes and to take your profile photo.",
+        microphonePermission: false,
       },
     ],
     [
@@ -98,6 +131,9 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   ],
   experiments: {
     typedRoutes: true,
+  },
+  updates: {
+    url: "https://u.expo.dev/3ac0a41f-b9fd-4d91-accf-0e46f3313539",
   },
   extra: {
     eas: {
