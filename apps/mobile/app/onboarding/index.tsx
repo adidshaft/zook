@@ -44,7 +44,7 @@ export default function OnboardingSplash() {
     }
 
     const timer = setTimeout(() => {
-      router.push("/onboarding/value-props" as never);
+      router.push("/onboarding/language" as never);
     }, reduceMotion ? 650 : 2000);
 
     return () => clearTimeout(timer);
@@ -55,7 +55,7 @@ export default function OnboardingSplash() {
       testID="onboarding-intro-screen"
       accessibilityRole="button"
       accessibilityLabel="Skip intro"
-      onPress={() => router.push("/onboarding/value-props" as never)}
+      onPress={() => router.push("/onboarding/language" as never)}
       style={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}
     >
       <View style={styles.center}>

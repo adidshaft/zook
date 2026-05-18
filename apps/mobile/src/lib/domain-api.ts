@@ -77,6 +77,47 @@ export const filesApi = {
       body: formData,
     });
   },
+  uploadBodyProgressPhoto(
+    options: RequestOptions & { file: MobileUploadFile },
+  ) {
+    const formData = new FormData();
+    formData.append("category", "body_progress_photo");
+    formData.append("visibility", "private");
+    if (options.orgId) {
+      formData.append("orgId", options.orgId);
+    }
+    formData.append("file", options.file as unknown as Blob);
+
+    return mobileApiFetch<FileUploadResponse>("/files/upload", {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: formData,
+    });
+  },
+};
+
+export const trackingApi = {
+  recordBodyProgress(
+    options: RequestOptions & {
+      body: {
+        measuredAt: string;
+        weightKg?: number;
+        bodyFatPercent?: number;
+        photoAssetId?: string;
+        organizationId?: string;
+        notes?: string;
+        visibility?: "PRIVATE" | "TRAINER" | "GYM";
+      };
+    },
+  ) {
+    return mobileApiFetch<{ entry: { id: string } }>("/me/tracking/body-progress", {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: options.body,
+    });
+  },
 };
 
 export const authClient = {

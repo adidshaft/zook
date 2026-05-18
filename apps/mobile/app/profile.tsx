@@ -390,7 +390,13 @@ export default function ProfileScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
                 hitSlop={12}
-                onPress={() => router.back()}
+                onPress={() => {
+                  if (router.canGoBack()) {
+                    router.back();
+                  } else {
+                    router.replace(routeForRole(activeRole));
+                  }
+                }}
                 style={styles.backButton}
               >
                 <Ionicons name="chevron-back" size={22} color={colors.text} />
@@ -452,6 +458,7 @@ export default function ProfileScreen() {
 
           <ProfileExtraFields />
 
+          {activeRole === "OWNER" || activeRole === "ADMIN" ? null : (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Membership</Text>
             <GlassCard variant="compact" contentStyle={styles.membershipCard}>
@@ -516,6 +523,7 @@ export default function ProfileScreen() {
               )}
             </GlassCard>
           </View>
+          )}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Recent activity</Text>
@@ -572,7 +580,7 @@ export default function ProfileScreen() {
                 onPress={toggleBiometricUnlock}
                 style={styles.quickButton}
               >
-                Biometric {biometricEnabled ? "on" : "off"}
+                {biometricEnabled ? "Biometric on" : "Biometric"}
               </ZookButton>
               <ZookButton
                 href="/settings"
@@ -580,7 +588,7 @@ export default function ProfileScreen() {
                 icon="settings-outline"
                 style={styles.quickButton}
               >
-                Settings -&gt;
+                Settings
               </ZookButton>
               <ZookButton
                 testID="profile-sign-out"
@@ -712,7 +720,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   quickButton: {
-    flexBasis: "48%",
+    flexBasis: "47%",
     flexGrow: 1,
+    minWidth: 0,
+    paddingHorizontal: spacing.sm,
   },
 });

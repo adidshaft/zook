@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import {
   BottomSheetBackdrop,
@@ -8,7 +8,7 @@ import {
 } from "@/components/expo-safe-bottom-sheet";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Reanimated from "@/lib/reanimated-lite";
 import type { PaymentMode } from "@zook/core";
@@ -44,6 +44,7 @@ import {
   type ReceptionQueueRecord,
 } from "@/lib/query-hooks";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
+import { useBranchSelection } from "@/lib/branch-selection";
 import { apiClient, receptionApi } from "@/lib/domain-api";
 import { useScalePulse, useShake } from "@/lib/motion";
 import { requirePrivilegedAuth } from "@/lib/privileged-action";
@@ -120,8 +121,10 @@ function phoneRevealStorageKey(orgId?: string | null) {
 
 export default function Reception() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeOrgId, session, token } = useAuth();
+  const { activeOrgId, activeRole, session, setActiveRole, token } = useAuth();
+  const { branches, selectedBranch, selectBranch } = useBranchSelection();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const canRecordManualAttendance = useHasPermission("ATTENDANCE_MANUAL_OVERRIDE");
   const canRecordOfflinePayment = useHasPermission("PAYMENTS_RECORD_OFFLINE");
@@ -147,6 +150,10 @@ export default function Reception() {
   const [refreshing, setRefreshing] = useState(false);
   const [verifyingCode, setVerifyingCode] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(() => new Set());
+  const [bulkAttendanceStatus, setBulkAttendanceStatus] = useState("");
+  const [paymentMemberSearch, setPaymentMemberSearch] = useState("");
   const [revealedPhones, setRevealedPhones] = useState<Set<string>>(() => new Set());
   const queueQuery = useReceptionQueue();
   const todayAttendanceQuery = useOrgAttendanceToday();
@@ -199,9 +206,137 @@ export default function Reception() {
   const membership = memberRecord?.activeSubscription ?? null;
   const profile = memberRecord?.profile ?? null;
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
+  const availableRoles = activeOrganization?.roles ?? [];
+  const canSwitchBranches = branches.length > 1;
   const activeOrgLabel = activeOrganization
     ? `${activeOrganization.name} · ${activeOrganization.city}`
     : "Active gym";
+  const gymSelectorLabel = selectedBranch?.name ?? activeOrgLabel;
+
+  function openRoleSwitcher() {
+    if (!availableRoles.length || availableRoles.length === 1) {
+      Alert.alert("Only one role", "This account has no other role in this gym.");
+      return;
+    }
+    Alert.alert(
+      "Switch role",
+      "Choose the role to use in this gym.",
+      [
+        ...availableRoles.map((role) => ({
+          text: role === activeRole ? `${role} (active)` : role,
+          onPress: () => {
+            if (role === activeRole) return;
+            void setActiveRole(role)
+              .then(() => {
+                if (role === "OWNER" || role === "ADMIN") {
+                  router.replace("/owner");
+                } else if (role === "TRAINER") {
+                  router.replace("/trainer");
+                } else if (role === "RECEPTIONIST") {
+                  router.replace("/reception");
+                } else {
+                  router.replace("/");
+                }
+              })
+              .catch((error) => {
+                Alert.alert(
+                  "Role unavailable",
+                  error instanceof Error ? error.message : "That role is not available here.",
+                );
+              });
+          },
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ],
+    );
+  }
+
+  function openBranchSwitcher() {
+    if (!canSwitchBranches) {
+      Alert.alert("Only one branch", "This gym has no other branches to switch to.");
+      return;
+    }
+    Alert.alert(
+      "Switch branch",
+      "Choose the branch you are at.",
+      [
+        ...branches.map((branch) => ({
+          text: branch.id === selectedBranch?.id ? `${branch.name} (active)` : branch.name,
+          onPress: () => {
+            if (branch.id === selectedBranch?.id) return;
+            void selectBranch(branch.id);
+          },
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ],
+    );
+  }
+
+  function goBackFromDesk() {
+    if (activeRole === "OWNER" || activeRole === "ADMIN") {
+      router.replace("/owner");
+      return;
+    }
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/");
+    }
+  }
+
+  function toggleMemberSelection(userId: string) {
+    setSelectedMemberIds((current) => {
+      const next = new Set(current);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  }
+
+  async function recordBulkAttendance() {
+    if (!selectedMemberIds.size) {
+      return;
+    }
+    if (attendanceReason.length < 2) {
+      setBulkAttendanceStatus("Add an attendance note before recording.");
+      return;
+    }
+    if (!(await requirePrivilegedAuth("Record manual attendance"))) {
+      showAuthenticationRequired();
+      return;
+    }
+    setBulkAttendanceStatus("Recording...");
+    const ids = Array.from(selectedMemberIds);
+    let successes = 0;
+    const failures: string[] = [];
+    for (const memberUserId of ids) {
+      try {
+        await manualAttendanceMutation.mutateAsync({
+          memberUserId,
+          reason: attendanceReason,
+        });
+        successes += 1;
+      } catch (error) {
+        failures.push(getApiErrorMessage(error) || "Could not record one entry.");
+      }
+    }
+    const summary = failures.length
+      ? `Recorded ${successes} of ${ids.length}. ${failures.length} failed.`
+      : `Recorded attendance for ${successes} member${successes === 1 ? "" : "s"}.`;
+    setBulkAttendanceStatus(summary);
+    showToast({
+      tone: failures.length ? "amber" : "success",
+      haptic: failures.length ? "warning" : "success",
+      message: summary,
+    });
+    if (!failures.length) {
+      setSelectedMemberIds(new Set());
+      setMultiSelectMode(false);
+    }
+  }
   const dueAmount = amountPaise;
   const canRecordPayment =
     amountPaise > 0 &&
@@ -514,6 +649,16 @@ export default function Reception() {
         }}
       >
         <View style={styles.deskHeader}>
+          <Pressable
+            testID="reception-back"
+            onPress={goBackFromDesk}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
+          </Pressable>
           <View style={styles.headerCopy}>
             <Text style={styles.title}>
               {view === "desk"
@@ -528,18 +673,38 @@ export default function Reception() {
               {view === "desk" ? "Receptionist Desk" : session?.user.name ?? "Reception"}
             </Text>
           </View>
-          <View style={styles.roleChip}>
+          <Pressable
+            testID="reception-role-chip"
+            onPress={openRoleSwitcher}
+            accessibilityRole="button"
+            accessibilityLabel="Switch role"
+            style={styles.roleChip}
+          >
             <Ionicons name="person-outline" size={19} color={colors.lime} />
             <Text style={styles.roleChipText}>Receptionist</Text>
             <Ionicons name="chevron-down" size={16} color={colors.muted} />
-          </View>
+          </Pressable>
         </View>
 
-        <View style={styles.gymSelector}>
-          <Ionicons name="business-outline" size={25} color={colors.text} />
-          <Text numberOfLines={1} style={styles.gymSelectorText}>{activeOrgLabel}</Text>
-          <Ionicons name="chevron-down" size={18} color={colors.muted} />
-        </View>
+        <Pressable
+          testID="reception-gym-selector"
+          onPress={openBranchSwitcher}
+          accessibilityRole="button"
+          accessibilityLabel={canSwitchBranches ? "Switch branch" : "Active branch"}
+          disabled={!canSwitchBranches}
+          style={({ pressed }) => [
+            styles.gymSelector,
+            pressed && canSwitchBranches ? { opacity: 0.82 } : null,
+          ]}
+        >
+          <Ionicons name="business-outline" size={22} color={colors.text} />
+          <Text numberOfLines={1} style={styles.gymSelectorText}>
+            {gymSelectorLabel}
+          </Text>
+          {canSwitchBranches ? (
+            <Ionicons name="chevron-down" size={18} color={colors.muted} />
+          ) : null}
+        </Pressable>
 
         {view !== "desk" ? (
           <GlassCard variant="compact" padding={12} contentStyle={styles.memberContext}>
@@ -772,6 +937,131 @@ export default function Reception() {
               onChangeText={setMemberSearch}
               placeholder="Search member by name, email, phone, member ID"
             />
+            <View style={styles.membersToolbar}>
+              <Pressable
+                testID="reception-member-multi-toggle"
+                onPress={() => {
+                  setMultiSelectMode((value) => {
+                    if (value) setSelectedMemberIds(new Set());
+                    return !value;
+                  });
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: multiSelectMode }}
+                style={[
+                  styles.membersToolbarChip,
+                  multiSelectMode ? styles.membersToolbarChipActive : null,
+                ]}
+              >
+                <Ionicons
+                  name={multiSelectMode ? "checkbox-outline" : "square-outline"}
+                  size={16}
+                  color={multiSelectMode ? colors.lime : colors.muted}
+                />
+                <Text
+                  style={[
+                    styles.membersToolbarText,
+                    multiSelectMode ? styles.membersToolbarTextActive : null,
+                  ]}
+                >
+                  {multiSelectMode
+                    ? `Multi-select · ${selectedMemberIds.size}`
+                    : "Select multiple"}
+                </Text>
+              </Pressable>
+              {memberRecord && !multiSelectMode ? (
+                <Pressable
+                  onPress={() => setSelectedMemberId(null)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear selected member"
+                  style={styles.membersToolbarChip}
+                >
+                  <Ionicons name="close-outline" size={16} color={colors.muted} />
+                  <Text style={styles.membersToolbarText}>Clear</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            {multiSelectMode && selectedMemberIds.size ? (
+              <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+                <SectionHeader
+                  title={`${selectedMemberIds.size} member${selectedMemberIds.size === 1 ? "" : "s"} selected`}
+                  subtitle="Record attendance for everyone in one tap."
+                />
+                <FormField
+                  testID="reception-bulk-attendance-reason"
+                  label="Attendance note"
+                  value={reason}
+                  onChangeText={setReason}
+                  required
+                  error={attendanceReasonInvalid ? "Add at least 2 characters." : undefined}
+                />
+                <PrimaryButton
+                  testID="reception-bulk-record-attendance"
+                  icon="checkmark-done-outline"
+                  disabled={
+                    !canRecordManualAttendance ||
+                    attendanceReason.length < 2 ||
+                    manualAttendanceMutation.isPending
+                  }
+                  onLongPress={!canRecordManualAttendance ? showOwnerApprovalRequired : undefined}
+                  onPress={() => void recordBulkAttendance()}
+                >
+                  {manualAttendanceMutation.isPending ? "Recording..." : "Record for all"}
+                </PrimaryButton>
+                {bulkAttendanceStatus ? (
+                  <Text style={styles.statusText}>{bulkAttendanceStatus}</Text>
+                ) : null}
+              </GlassCard>
+            ) : null}
+            {!multiSelectMode && memberRecord ? (
+              <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+                <SectionHeader
+                  title="Desk actions"
+                  subtitle={
+                    member?.name
+                      ? `${member.name} selected · ${ageLabel(member.dateOfBirth)}`
+                      : "Search or select a member"
+                  }
+                />
+                <ListRow
+                  title="Membership"
+                  subtitle={member?.fitnessGoal ?? profile?.fitnessGoal ?? "General fitness"}
+                  trailing={
+                    <Pill tone={membership?.status === "ACTIVE" ? "lime" : "amber"}>
+                      {membership?.status ?? "No membership"}
+                    </Pill>
+                  }
+                />
+                <AuditWarning>Add a reason so the gym has a clear record.</AuditWarning>
+                <FormField
+                  testID="reception-attendance-reason"
+                  label="Attendance note"
+                  value={reason}
+                  onChangeText={setReason}
+                  required
+                  error={attendanceReasonInvalid ? "Add at least 2 characters." : undefined}
+                />
+                <PrimaryButton
+                  testID="reception-record-attendance"
+                  icon="create-outline"
+                  disabled={
+                    !canRecordManualAttendance ||
+                    !member?.id ||
+                    attendanceReason.length < 2 ||
+                    manualAttendanceMutation.isPending
+                  }
+                  onLongPress={!canRecordManualAttendance ? showOwnerApprovalRequired : undefined}
+                  onPress={recordManualAttendance}
+                >
+                  {manualAttendanceMutation.isPending ? "Recording..." : "Record Attendance"}
+                </PrimaryButton>
+                {attendanceStatus ? (
+                  <Text testID="reception-attendance-status" style={styles.statusText}>
+                    {attendanceStatus}
+                  </Text>
+                ) : null}
+              </GlassCard>
+            ) : null}
             <View style={styles.stack}>
               {membersQuery.isLoading ? <TrainerClientsSkeleton /> : null}
               {!membersQuery.isLoading && !filteredMembers.length ? (
@@ -780,7 +1070,10 @@ export default function Reception() {
                 </GlassCard>
               ) : null}
               {visibleMembers.map((user, index) => {
-                const selected = user.profile.userId === selectedMemberRecord?.profile.userId;
+                const isSelectedSingle =
+                  user.profile.userId === selectedMemberRecord?.profile.userId;
+                const isMultiChecked = selectedMemberIds.has(user.profile.userId);
+                const selected = multiSelectMode ? isMultiChecked : isSelectedSingle;
                 const phone = user.user?.phone ?? null;
                 const phoneRevealed = revealedPhones.has(user.profile.userId);
                 return (
@@ -794,16 +1087,30 @@ export default function Reception() {
                     variant={selected ? "selected" : "compact"}
                     padding={12}
                     pressable
-                    onPress={() => setSelectedMemberId(user.profile.userId)}
+                    onPress={() => {
+                      if (multiSelectMode) {
+                        toggleMemberSelection(user.profile.userId);
+                      } else {
+                        setSelectedMemberId(user.profile.userId);
+                      }
+                    }}
                   >
                     <ListRow
                       title={user.user?.name ?? "Member"}
                       subtitle={user.user?.email ?? "No email"}
                       leading={
-                        <IconBubble
-                          icon="person-outline"
-                          tone={user.activeSubscription?.status === "ACTIVE" ? "lime" : "neutral"}
-                        />
+                        multiSelectMode ? (
+                          <Ionicons
+                            name={isMultiChecked ? "checkbox" : "square-outline"}
+                            size={22}
+                            color={isMultiChecked ? colors.lime : colors.muted}
+                          />
+                        ) : (
+                          <IconBubble
+                            icon="person-outline"
+                            tone={user.activeSubscription?.status === "ACTIVE" ? "lime" : "neutral"}
+                          />
+                        )
                       }
                       trailing={
                         <Text
@@ -815,7 +1122,9 @@ export default function Reception() {
                           ]}
                         >
                           {selected
-                            ? "Selected"
+                            ? multiSelectMode
+                              ? "Picked"
+                              : "Selected"
                             : (user.activeSubscription?.status ?? "No membership")}
                         </Text>
                       }
@@ -849,67 +1158,6 @@ export default function Reception() {
                 </Text>
               ) : null}
             </View>
-            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
-              <SectionHeader
-                title="Desk actions"
-                subtitle={
-                  member?.name
-                    ? `${member.name} selected · ${ageLabel(member.dateOfBirth)}`
-                    : "Search or select a member"
-                }
-              />
-              <ListRow
-                title="Membership"
-                subtitle={member?.fitnessGoal ?? profile?.fitnessGoal ?? "General fitness"}
-                trailing={
-                  <Pill tone={membership?.status === "ACTIVE" ? "lime" : "amber"}>
-                    {membership?.status ?? "No membership"}
-                  </Pill>
-                }
-              />
-              <ListRow
-                title="Manual amount"
-                subtitle="Entered by desk"
-                trailing={<Text style={styles.rowAmount}>{formatInr(dueAmount)}</Text>}
-              />
-              <ListRow
-                title="Last check-in"
-                subtitle={formatDateTime(memberRecord?.lastCheckIn?.checkedInAt)}
-                trailing={
-                  <Text style={styles.rowStateText}>
-                    {memberRecord?.lastCheckIn?.status ?? "None"}
-                  </Text>
-                }
-              />
-              <AuditWarning>Add a reason so the gym has a clear record.</AuditWarning>
-              <FormField
-                testID="reception-attendance-reason"
-                label="Attendance note"
-                value={reason}
-                onChangeText={setReason}
-                required
-                error={attendanceReasonInvalid ? "Add at least 2 characters." : undefined}
-              />
-              <PrimaryButton
-                testID="reception-record-attendance"
-                icon="create-outline"
-                disabled={
-                  !canRecordManualAttendance ||
-                  !member?.id ||
-                  attendanceReason.length < 2 ||
-                  manualAttendanceMutation.isPending
-                }
-                onLongPress={!canRecordManualAttendance ? showOwnerApprovalRequired : undefined}
-                onPress={recordManualAttendance}
-              >
-                {manualAttendanceMutation.isPending ? "Recording..." : "Record Attendance"}
-              </PrimaryButton>
-              {attendanceStatus ? (
-                <Text testID="reception-attendance-status" style={styles.statusText}>
-                  {attendanceStatus}
-                </Text>
-              ) : null}
-            </GlassCard>
           </>
         ) : null}
 
@@ -933,6 +1181,60 @@ export default function Reception() {
                 style={styles.metricHalf}
               />
             </View>
+            {!memberRecord ? (
+              <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+                <SectionHeader
+                  title="Find a member"
+                  subtitle="Search to attach this payment to a member."
+                />
+                <SearchField
+                  testID="reception-payment-member-search"
+                  value={paymentMemberSearch}
+                  onChangeText={setPaymentMemberSearch}
+                  placeholder="Name, email, or phone"
+                />
+                {paymentMemberSearch.trim().length >= 2 ? (
+                  <View style={styles.stack}>
+                    {(membersQuery.data?.members ?? [])
+                      .filter((record) => {
+                        const term = paymentMemberSearch.toLowerCase();
+                        const name = record.user?.name?.toLowerCase() ?? "";
+                        const email = record.user?.email?.toLowerCase() ?? "";
+                        const phone = record.user?.phone?.toLowerCase() ?? "";
+                        return name.includes(term) || email.includes(term) || phone.includes(term);
+                      })
+                      .slice(0, 8)
+                      .map((record) => (
+                        <Pressable
+                          key={record.profile.userId}
+                          onPress={() => {
+                            setSelectedMemberId(record.profile.userId);
+                            setPaymentMemberSearch("");
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Select ${record.user?.name ?? "member"}`}
+                          style={styles.paymentMemberRow}
+                        >
+                          <IconBubble icon="person-outline" tone="neutral" size={32} />
+                          <View style={styles.paymentMemberCopy}>
+                            <Text numberOfLines={1} style={styles.paymentMemberName}>
+                              {record.user?.name ?? "Member"}
+                            </Text>
+                            <Text numberOfLines={1} style={styles.paymentMemberMeta}>
+                              {record.user?.email ?? record.user?.phone ?? "No contact"}
+                            </Text>
+                          </View>
+                          <Pill
+                            tone={record.activeSubscription?.status === "ACTIVE" ? "lime" : "amber"}
+                          >
+                            {record.activeSubscription?.status ?? "No plan"}
+                          </Pill>
+                        </Pressable>
+                      ))}
+                  </View>
+                ) : null}
+              </GlassCard>
+            ) : null}
             <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
                 title="Payment collection"
@@ -1320,10 +1622,20 @@ const styles = StyleSheet.create({
   deskHeader: {
     minHeight: 78,
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.md,
     paddingTop: 8,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerCopy: {
     flex: 1,
@@ -1342,9 +1654,7 @@ const styles = StyleSheet.create({
   },
   roleChipText: {
     color: colors.lime,
-    fontSize: 16,
-    lineHeight: 21,
-    fontFamily: "Inter_600SemiBold",
+    ...typography.bodyStrong,
   },
   gymSelector: {
     minHeight: 66,
@@ -1360,9 +1670,7 @@ const styles = StyleSheet.create({
   gymSelectorText: {
     flex: 1,
     color: colors.text,
-    fontSize: 18,
-    lineHeight: 23,
-    fontFamily: "Inter_600SemiBold",
+    ...typography.sectionTitle,
   },
   headerMeta: {
     color: colors.muted,
@@ -1639,6 +1947,58 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   resultHint: {
+    color: colors.muted,
+    ...typography.small,
+  },
+  membersToolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  membersToolbarChip: {
+    minHeight: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.045)",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  membersToolbarChipActive: {
+    borderColor: colors.limeBorder,
+    backgroundColor: "rgba(185,244,85,0.12)",
+  },
+  membersToolbarText: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  membersToolbarTextActive: {
+    color: colors.lime,
+  },
+  paymentMemberRow: {
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(255,255,255,0.035)",
+  },
+  paymentMemberCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  paymentMemberName: {
+    color: colors.text,
+    ...typography.bodyStrong,
+  },
+  paymentMemberMeta: {
     color: colors.muted,
     ...typography.small,
   },

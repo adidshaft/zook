@@ -42,9 +42,21 @@ export function getOfflineDemoInitialRoute(role = getOfflineDemoRoleOverride()) 
 }
 
 export function getOfflineDemoSession(): AuthSessionSummary {
-  const user = zookDemoFixtures.users.find((candidate) => candidate.email === DEMO_MEMBER_EMAIL) ?? zookDemoFixtures.users[0];
+  const role = getOfflineDemoRoleOverride();
   const organization = zookDemoFixtures.organizations[0];
-  const sessionRoles: OrgRole[] = [getOfflineDemoRoleOverride()];
+  const assignmentUserId = organization
+    ? zookDemoFixtures.roleAssignments.find(
+        (assignment) => assignment.orgId === organization.id && assignment.role === role,
+      )?.userId
+    : undefined;
+  const matchedUser = assignmentUserId
+    ? zookDemoFixtures.users.find((candidate) => candidate.id === assignmentUserId)
+    : undefined;
+  const fallbackUser =
+    zookDemoFixtures.users.find((candidate) => candidate.email === DEMO_MEMBER_EMAIL) ??
+    zookDemoFixtures.users[0];
+  const user = matchedUser ?? fallbackUser;
+  const sessionRoles: OrgRole[] = [role];
   const activeOrganization = organization
     ? {
         orgId: organization.id,

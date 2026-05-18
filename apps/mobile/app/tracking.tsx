@@ -1,9 +1,10 @@
 import { Link, Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import type { ComponentProps, ComponentType } from "react";
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedProps, useSharedValue, withTiming } from "@/lib/reanimated-lite";
 import Svg, { Circle } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,11 +23,14 @@ import {
 import { TrackingSummaryTile } from "@/components/tracking";
 import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { getApiErrorMessage } from "@/lib/auth";
+import { filesApi, trackingApi } from "@/lib/domain-api";
 import { formatShortDate } from "@/lib/formatting";
 import { useI18n } from "@/lib/i18n";
 import { useMyBodyProgress, useMyTracking, type BodyProgressEntryRecord } from "@/lib/query-hooks";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 type AnimatedCircleProps = ComponentProps<typeof Circle> & {
   animatedProps?: Partial<ComponentProps<typeof Circle>>;
@@ -40,7 +44,7 @@ export default function TrackingDashboard() {
   const trackingQuery = useMyTracking();
   const bodyProgressQuery = useMyBodyProgress();
   const [refreshing, setRefreshing] = useState(false);
-  const { session, token } = useAuth();
+  const { activeOrgId, session, token } = useAuth();
   const summary = trackingQuery.data?.summary;
   const recentWorkouts = (trackingQuery.data?.recentWorkouts ?? []) as Array<{
     id: string;
@@ -196,9 +200,17 @@ export default function TrackingDashboard() {
             </GlassCard>
           ) : null}
 
-          {bodyProgressEntries.length ? (
-            <BodyProgressTimeline entries={bodyProgressEntries} token={token} />
-          ) : null}
+          <BodyProgressTimeline
+            entries={bodyProgressEntries}
+            token={token}
+            orgId={activeOrgId}
+            onUploaded={() => {
+              void queryClient.invalidateQueries({
+                queryKey: ["me", "tracking", "body-progress"],
+              });
+            }}
+          />
+
 
           {/* Today's session */}
           <SectionHeader title="Last workout" />
@@ -343,12 +355,79 @@ function BodyProgressCard({
 function BodyProgressTimeline({
   entries,
   token,
+  orgId,
+  onUploaded,
 }: {
   entries: BodyProgressEntryRecord[];
   token?: string | null;
+  orgId?: string;
+  onUploaded?: () => void;
 }) {
   const { t } = useI18n();
   const visibleEntries = entries.slice(0, 8);
+  const [uploading, setUploading] = useState(false);
+
+  async function pickAndUploadPhoto() {
+    if (!token) {
+      Alert.alert("Sign in required", "Sign in again to upload a progress photo.");
+      return;
+    }
+    if (uploading) {
+      return;
+    }
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Photo access needed",
+        "Enable photo access to add a progress photo.",
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 0.86,
+    });
+    if (result.canceled) {
+      return;
+    }
+    const asset = result.assets[0];
+    if (!asset) {
+      return;
+    }
+    setUploading(true);
+    try {
+      const upload = await filesApi.uploadBodyProgressPhoto({
+        token,
+        ...(orgId ? { orgId } : {}),
+        file: {
+          uri: asset.uri,
+          name: asset.fileName ?? `body-progress-${Date.now()}.jpg`,
+          type: asset.mimeType ?? "image/jpeg",
+        },
+      });
+      const fileId = upload.file?.id;
+      if (!fileId) {
+        throw new Error("Upload succeeded but no file ID was returned.");
+      }
+      await trackingApi.recordBodyProgress({
+        token,
+        ...(orgId ? { orgId } : {}),
+        body: {
+          measuredAt: new Date().toISOString(),
+          photoAssetId: fileId,
+          ...(orgId ? { organizationId: orgId } : {}),
+        },
+      });
+      onUploaded?.();
+      showToast({ tone: "success", haptic: "success", message: "Progress photo saved." });
+    } catch (error) {
+      Alert.alert("Photo not saved", getApiErrorMessage(error) || "Try again in a moment.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <View style={styles.timelineSection}>
@@ -361,6 +440,30 @@ function BodyProgressTimeline({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.photoTimeline}
       >
+        <Pressable
+          testID="tracking-add-progress-photo"
+          accessibilityRole="button"
+          accessibilityLabel="Add progress photo"
+          accessibilityState={{ busy: uploading }}
+          onPress={() => void pickAndUploadPhoto()}
+          disabled={uploading}
+          style={({ pressed }) => [
+            styles.addPhotoCard,
+            pressed ? { opacity: 0.78 } : null,
+          ]}
+        >
+          <View style={styles.addPhotoIcon}>
+            <Ionicons
+              name={uploading ? "cloud-upload-outline" : "add"}
+              size={26}
+              color={colors.lime}
+            />
+          </View>
+          <Text style={styles.addPhotoTitle}>
+            {uploading ? "Uploading..." : "Add photo"}
+          </Text>
+          <Text style={styles.addPhotoSubtitle}>Snapshot today's progress</Text>
+        </Pressable>
         {visibleEntries.map((entry) => {
           const photoUrl = normalizeProgressPhotoUrl(entry);
           const bodyFat = entry.bodyFatPercent ?? entry.bodyFatPct;
@@ -655,6 +758,36 @@ const styles = StyleSheet.create({
   },
   photoTimelineCard: {
     width: 168,
+  },
+  addPhotoCard: {
+    width: 168,
+    minHeight: 220,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.limeBorder,
+    borderStyle: "dashed",
+    backgroundColor: "rgba(185,244,85,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: spacing.md,
+  },
+  addPhotoIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(185,244,85,0.16)",
+  },
+  addPhotoTitle: {
+    color: colors.lime,
+    ...typography.bodyStrong,
+  },
+  addPhotoSubtitle: {
+    color: colors.muted,
+    ...typography.small,
+    textAlign: "center",
   },
   photoTimelineCardContent: {
     gap: spacing.sm,

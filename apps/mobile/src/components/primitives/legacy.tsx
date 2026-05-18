@@ -3070,19 +3070,19 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   productInfo: {
-    minHeight: 44,
-    gap: 2,
+    minHeight: 48,
+    gap: 3,
   },
   productName: {
     color: colors.text,
-    ...typography.caption,
+    ...typography.bodyStrong,
   },
   productMeta: {
     color: colors.muted,
-    ...typography.caption,
+    ...typography.small,
   },
   productFooter: {
-    minHeight: 36,
+    minHeight: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -3091,7 +3091,7 @@ const styles = StyleSheet.create({
   productPrice: {
     flexShrink: 1,
     color: colors.text,
-    ...typography.bodyStrong,
+    ...typography.cardTitle,
   },
   productAdd: {
     width: 86,
