@@ -21,6 +21,8 @@ tags:
 - tapOn:
     id: "reception-verify-code"
 - inputText: "ZZ0000"
+- hideKeyboard:
+    optional: true
 - tapOn:
     id: "reception-verify-code-button"
 - takeScreenshot: /tmp/zook-maestro/reception/verify-code.png
@@ -47,13 +49,20 @@ tags:
 - tapOn:
     id: "reception-attendance-reason"
 - inputText: "Manual desk check-in"
+- hideKeyboard:
+    optional: true
 - scrollUntilVisible:
     element:
       id: "reception-record-attendance"
     direction: DOWN
     timeout: 10000
+    centerElement: true
 - tapOn:
     id: "reception-record-attendance"
+    optional: true
+- tapOn:
+    text: "Record Attendance"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: "privileged-pin-cells"
@@ -64,6 +73,8 @@ tags:
 - extendedWaitUntil:
     visible: "Manual attendance recorded."
     timeout: 15000
+- hideKeyboard:
+    optional: true
 - takeScreenshot: /tmp/zook-maestro/reception/member-actions.png
 
 - tapOn:
@@ -75,9 +86,19 @@ tags:
 - tapOn:
     id: "reception-payment-amount"
 - inputText: "1999"
+- hideKeyboard:
+    optional: true
+- scrollUntilVisible:
+    element:
+      id: "reception-payment-reference"
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
 - tapOn:
     id: "reception-payment-reference"
 - inputText: "MAESTRO1999"
+- hideKeyboard:
+    optional: true
 - scrollUntilVisible:
     element:
       id: "reception-record-payment"

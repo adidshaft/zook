@@ -121,6 +121,24 @@ function percentFromMembership(input: {
   return 0.72;
 }
 
+function membershipProgressLabel(input: {
+  daysLeft?: number | null;
+  durationDays?: number | null;
+  remainingVisits?: number | null;
+  visitLimit?: number | null;
+}) {
+  if (typeof input.remainingVisits === "number" && input.visitLimit) {
+    return `${input.remainingVisits} of ${input.visitLimit} visits remaining`;
+  }
+  if (typeof input.daysLeft === "number" && input.durationDays) {
+    return `${input.daysLeft} of ${input.durationDays} days remaining`;
+  }
+  if (typeof input.daysLeft === "number") {
+    return `${input.daysLeft} days remaining`;
+  }
+  return "Membership syncing";
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
   const bottomPadding = useBottomScrollPadding({ hasStickyAction: true });
@@ -195,6 +213,12 @@ export default function ProfileScreen() {
           )
         : null;
   const membershipProgress = percentFromMembership({
+    daysLeft,
+    durationDays: membershipPlan?.durationDays ?? membershipPlan?.validityDays,
+    remainingVisits: membership?.remainingVisits,
+    visitLimit: membershipPlan?.visitLimit,
+  });
+  const membershipProgressCopy = membershipProgressLabel({
     daysLeft,
     durationDays: membershipPlan?.durationDays ?? membershipPlan?.validityDays,
     remainingVisits: membership?.remainingVisits,
@@ -485,9 +509,7 @@ export default function ProfileScreen() {
                   </View>
                   <ProgressBar
                     value={membershipProgress}
-                    label={
-                      daysLeft === null ? "Membership syncing" : `${daysLeft} days remaining`
-                    }
+                    label={membershipProgressCopy}
                   />
                   <View style={styles.actionRow}>
                     <ZookButton

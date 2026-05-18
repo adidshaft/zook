@@ -13,6 +13,30 @@ tags:
       home_id: member-home-screen
 - takeScreenshot: /tmp/zook-maestro/member/home.png
 
+- openLink: zook:///tracking
+- extendedWaitUntil:
+    visible:
+      id: "tracking-screen"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "tracking-log-workout"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/member/tracking.png
+
+- openLink: zook:///notifications
+- extendedWaitUntil:
+    visible:
+      id: "notifications-screen"
+    timeout: 15000
+- tapOn:
+    id: "notification-row-first"
+- extendedWaitUntil:
+    visible:
+      id: "shop-back-to-shop"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/member/notifications.png
+
 - openLink: zook:///scan
 - extendedWaitUntil:
     visible:
@@ -85,17 +109,6 @@ tags:
     timeout: 30000
 - takeScreenshot: /tmp/zook-maestro/member/shop-pickup.png
 
-- openLink: zook:///notifications
-- extendedWaitUntil:
-    visible:
-      id: "notifications-screen"
-    timeout: 15000
-- tapOn:
-    id: "notification-row-first"
-- tapOn:
-    id: "notification-detail-close"
-- takeScreenshot: /tmp/zook-maestro/member/notifications.png
-
 - openLink: zook:///more
 - extendedWaitUntil:
     visible:
@@ -110,6 +123,8 @@ tags:
 - tapOn:
     id: "assistant-message-input"
 - inputText: "Summarize today's gym workout progress"
+- hideKeyboard:
+    optional: true
 - tapOn:
     id: "assistant-send-message"
 - extendedWaitUntil:
@@ -148,14 +163,24 @@ tags:
 - tapOn:
     id: "tracking-entry-exercise-0-name"
 - inputText: "Push press"
+- hideKeyboard:
+    optional: true
 - tapOn:
     id: "tracking-entry-exercise-0-sets"
 - inputText: "3"
+- hideKeyboard:
+    optional: true
 - tapOn:
     id: "tracking-entry-exercise-0-reps"
 - inputText: "8"
+- hideKeyboard:
+    optional: true
 - tapOn:
     id: "tracking-entry-save"
+    optional: true
+- tapOn:
+    text: "Save workout"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: "tracking-screen"

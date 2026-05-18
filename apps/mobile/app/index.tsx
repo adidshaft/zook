@@ -251,24 +251,21 @@ export default function Home() {
               <MemberStateHero
                 expired={membershipExpired}
                 daysLeftLabel={daysLeftLabel}
+                durationDays={memberHome?.activePlan?.durationDays}
                 planName={resolvePlanName(memberHome?.activePlan) ?? "Membership"}
                 streakDays={streakDays}
                 visitLabel={remainingVisitsLabel}
+                visitLimit={visitLimit}
                 renewalDate={memberHome?.activeMembership?.endsAt}
                 progressValue={
                   typeof remainingVisits === "number" && typeof visitLimit === "number" && visitLimit > 0
-                    ? Math.max(0, Math.min(1, (visitLimit - remainingVisits) / visitLimit))
+                    ? Math.max(0, Math.min(1, remainingVisits / visitLimit))
                     : typeof daysLeft === "number" && memberHome?.activePlan?.durationDays
                     ? Math.max(
                         0,
                         Math.min(1, daysLeft / Math.max(memberHome.activePlan.durationDays, 1)),
                       )
                     : 0
-                }
-                visitProgressLabel={
-                  typeof remainingVisits === "number" && typeof visitLimit === "number" && visitLimit > 0
-                    ? `${Math.max(0, visitLimit - remainingVisits)} of ${visitLimit} visits used`
-                    : undefined
                 }
                 lastCheckIn={lastCheckIn}
                 showActions

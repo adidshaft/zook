@@ -16,8 +16,14 @@ tags:
     timeout: 12000
 - tapOn:
     id: "onboarding-intro-screen"
-
-- openLink: zook:///onboarding/value-props
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-screen"
+    timeout: 12000
+- tapOn:
+    id: "onboarding-language-en"
+- tapOn:
+    id: "onboarding-language-continue"
 - extendedWaitUntil:
     visible:
       id: "onboarding-value-props-screen"
@@ -40,15 +46,16 @@ tags:
     clearState: true
     clearKeychain: true
 - openLink: zook:///onboarding/role-question
-- tapOn:
-    point: "67%,55%"
-    optional: true
+- runFlow:
+    file: _helpers/complete-language-selection-if-needed.yaml
+- openLink: zook:///onboarding/role-question
 - extendedWaitUntil:
     visible:
       id: "onboarding-role-question-screen"
     timeout: 12000
 - tapOn:
     id: "onboarding-role-member"
+- openLink: zook:///find-gyms
 - extendedWaitUntil:
     visible:
       id: "find-gyms-screen"
@@ -59,15 +66,16 @@ tags:
     clearState: true
     clearKeychain: true
 - openLink: zook:///onboarding/role-question
-- tapOn:
-    point: "67%,55%"
-    optional: true
+- runFlow:
+    file: _helpers/complete-language-selection-if-needed.yaml
+- openLink: zook:///onboarding/role-question
 - extendedWaitUntil:
     visible:
       id: "onboarding-role-question-screen"
     timeout: 12000
 - tapOn:
     id: "onboarding-role-trainer"
+- openLink: zook:///login
 - extendedWaitUntil:
     visible:
       id: "login-email"
@@ -78,15 +86,16 @@ tags:
     clearState: true
     clearKeychain: true
 - openLink: zook:///onboarding/role-question
-- tapOn:
-    point: "67%,55%"
-    optional: true
+- runFlow:
+    file: _helpers/complete-language-selection-if-needed.yaml
+- openLink: zook:///onboarding/role-question
 - extendedWaitUntil:
     visible:
       id: "onboarding-role-question-screen"
     timeout: 12000
 - tapOn:
     id: "onboarding-role-front_desk"
+- openLink: zook:///login
 - extendedWaitUntil:
     visible:
       id: "login-email"
@@ -97,9 +106,9 @@ tags:
     clearState: true
     clearKeychain: true
 - openLink: zook:///onboarding/permissions
-- tapOn:
-    point: "67%,55%"
-    optional: true
+- runFlow:
+    file: _helpers/complete-language-selection-if-needed.yaml
+- openLink: zook:///onboarding/permissions
 - extendedWaitUntil:
     visible:
       id: "onboarding-permissions-screen"
@@ -112,6 +121,7 @@ tags:
 - tapOn:
     text: "Allow While Using App"
     optional: true
+- openLink: zook:///login
 - extendedWaitUntil:
     visible:
       id: "login-email"

@@ -2,10 +2,8 @@ import { Link, Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import type { ComponentProps, ComponentType } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedProps, useSharedValue, withTiming } from "@/lib/reanimated-lite";
 import Svg, { Circle } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import type { WorkoutLogEntry } from "@zook/core";
@@ -31,12 +29,6 @@ import { useMyBodyProgress, useMyTracking, type BodyProgressEntryRecord } from "
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
-
-type AnimatedCircleProps = ComponentProps<typeof Circle> & {
-  animatedProps?: Partial<ComponentProps<typeof Circle>>;
-};
-
-const AnimatedCircle = Animated.createAnimatedComponent(Circle) as ComponentType<AnimatedCircleProps>;
 
 export default function TrackingDashboard() {
   const router = useRouter();
@@ -236,8 +228,13 @@ export default function TrackingDashboard() {
             </GlassCard>
           )}
         </ScrollView>
-        <StickyActionBar bottomOffset={layout.bottomNavHeight + 22}>
-          <ZookButton testID="tracking-log-workout" href="/tracking-entry" icon="add-outline" fullWidth>
+        <StickyActionBar>
+          <ZookButton
+            testID="tracking-log-workout"
+            onPress={() => router.push("/tracking-entry")}
+            icon="add-outline"
+            fullWidth
+          >
             Log workout
           </ZookButton>
         </StickyActionBar>
@@ -576,19 +573,12 @@ function WeeklyProgressRing({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const clampedProgress = Math.max(0, Math.min(1, progress));
-  const ringProgress = useSharedValue(0);
-  const animatedRingProps = useAnimatedProps(() => ({
-    strokeDasharray: `${circumference * ringProgress.value} ${circumference}`,
-  }));
-
-  useEffect(() => {
-    ringProgress.value = withTiming(clampedProgress, { duration: 600 });
-  }, [clampedProgress, ringProgress]);
+  const ringDashArray = `${circumference * clampedProgress} ${circumference}`;
 
   return (
     <View style={styles.weekRing}>
       <Svg width={size} height={size} style={styles.weekRingSvg}>
-        <AnimatedCircle
+        <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -596,7 +586,7 @@ function WeeklyProgressRing({
           strokeWidth={strokeWidth}
           fill="none"
         />
-        <AnimatedCircle
+        <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -604,7 +594,7 @@ function WeeklyProgressRing({
           strokeWidth={strokeWidth}
           fill="none"
           strokeLinecap="round"
-          animatedProps={animatedRingProps}
+          strokeDasharray={ringDashArray}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </Svg>

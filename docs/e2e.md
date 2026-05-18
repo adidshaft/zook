@@ -7,6 +7,7 @@ This suite is split into web dashboard actions, mobile Maestro flows, and cross-
 - Node and pnpm installed for this repo.
 - Test database is available through `DATABASE_URL`.
 - iOS simulator: iPhone 16 Pro, UDID `16E85351-C822-4E5D-8C0F-15A50B8BFA5C`.
+- Android emulator or device visible to `adb devices`.
 - Maestro CLI at `~/.maestro/bin/maestro`.
 - Metro running on `8081` before mobile tests.
 - Seeded Next.js backend running on `3000` before Maestro tests.
@@ -76,10 +77,24 @@ Confirm Maestro targets iOS:
 ~/.maestro/bin/maestro --platform ios --udid 16E85351-C822-4E5D-8C0F-15A50B8BFA5C --help
 ```
 
-Run all flows:
+Confirm Android can reach the local backend and Metro:
+
+```sh
+adb devices
+adb reverse tcp:3000 tcp:3000
+adb reverse tcp:8081 tcp:8081
+```
+
+Run all iOS flows:
 
 ```sh
 pnpm test:mobile:maestro
+```
+
+Run all Android flows:
+
+```sh
+pnpm test:mobile:maestro:android
 ```
 
 The mobile script reseeds the pilot/demo dataset before launching Maestro. This keeps the mobile leg
@@ -108,7 +123,8 @@ pnpm test:e2e
 ## Troubleshooting
 
 - `/api/auth/sessions` must return `401`, not `404` or `500`; it is a compatibility alias for `/api/auth/session`.
-- If Maestro selects Android, pass `--platform ios` and the simulator UDID explicitly.
+- If Maestro selects the wrong platform, pass `--platform ios` with the simulator UDID or `--platform android` explicitly.
+- If Android cannot authenticate, re-run `adb reverse tcp:3000 tcp:3000` and `adb reverse tcp:8081 tcp:8081`.
 - If mobile login fails, check that port `3000` is the seeded backend and `OTP_FIXED_CODE_DEV=000000` is set.
 - If trainer/member AI flows fail, confirm the seeded backend was started with `AI_FEATURES_ENABLED=true AI_PROVIDER=mock`.
 - If local `next dev` loads the wrong Node version in a detached shell, start it from a login shell such as `zsh -lic`.

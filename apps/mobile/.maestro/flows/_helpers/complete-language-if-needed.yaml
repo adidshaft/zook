@@ -1,0 +1,41 @@
+appId: com.zook.app
+name: complete-language-if-needed
+---
+- tapOn:
+    id: "onboarding-intro-screen"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: "onboarding-language-en"
+    optional: true
+- tapOn:
+    text: "English"
+    optional: true
+- tapOn:
+    id: "onboarding-language-continue"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    point: "50%,90%"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: "onboarding-value-continue"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    point: "50%,90%"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: "onboarding-skip-permissions"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000

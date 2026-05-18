@@ -31,6 +31,19 @@ export function ActiveMembershipCard({
 }) {
   const guidance = membershipStatusGuidance(subscription.status, daysLeft);
   const guidanceTone = toneForStatus(subscription.status);
+  const durationDays = subscription.plan?.durationDays ?? subscription.plan?.validityDays ?? null;
+  const daysProgress =
+    daysLeft !== null && durationDays
+      ? Math.max(5, Math.min(100, (daysLeft / Math.max(durationDays, 1)) * 100))
+      : daysLeft !== null
+        ? Math.max(5, Math.min(100, (daysLeft / 30) * 100))
+        : 0;
+  const daysLeftLabel =
+    daysLeft !== null && durationDays
+      ? `${daysLeft} of ${durationDays} days left`
+      : daysLeft !== null
+        ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`
+        : "";
 
   return (
     <GlassCard
@@ -56,14 +69,14 @@ export function ActiveMembershipCard({
             <View
               style={[
                 styles.progressFill,
-                { width: `${Math.max(5, Math.min(100, (daysLeft / 30) * 100))}%` },
+                { width: `${daysProgress}%` },
                 daysLeft <= 7 ? styles.progressFillWarning : null,
               ]}
             />
           </View>
           <View style={styles.progressLabels}>
             <Text style={[styles.progressText, daysLeft <= 7 ? styles.progressTextWarning : null]}>
-              {daysLeft} day{daysLeft !== 1 ? "s" : ""} left
+              {daysLeftLabel}
             </Text>
             <Text style={styles.progressTextMuted}>
               {subscription.endsAt ? formatLongDate(subscription.endsAt) : ""}

@@ -22,7 +22,9 @@ packages/db/prisma/migrations/*/migration_lock.toml
 
 # Generated Expo/native outputs. Regenerate with Expo prebuild/EAS when needed.
 apps/mobile/ios/
+apps/mobile/android/
 apps/mobile/screenshots/
+apps/web/.next-mobile-e2e/
 
 # Generated icon-builder exports; canonical mobile assets live in apps/mobile/assets/icons.
 packages/figma-icon-builder/AppIcon-*.png

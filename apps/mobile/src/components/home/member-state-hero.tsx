@@ -1,18 +1,9 @@
-import type { ComponentProps, ComponentType } from "react";
-import { useEffect } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedProps, useSharedValue, withSpring } from "@/lib/reanimated-lite";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Circle } from "react-native-svg";
 import { GlassCard, ZookButton } from "@/components/primitives";
 import { colors, spacing, typography } from "@/lib/theme";
-
-type AnimatedCircleProps = ComponentProps<typeof Circle> & {
-  animatedProps?: Partial<ComponentProps<typeof Circle>>;
-};
-
-const AnimatedCircle = Animated.createAnimatedComponent(Circle) as ComponentType<AnimatedCircleProps>;
 
 function formatRenewalDate(value?: string | null) {
   if (!value) return "Renewal date pending";
@@ -33,38 +24,44 @@ function getMemberEncouragement(streakDays: number, expired: boolean) {
 
 export function MemberStateHero({
   daysLeftLabel,
+  durationDays,
   expired,
   lastCheckIn,
   planName,
   progressValue,
-  visitProgressLabel,
   renewalDate,
   showActions = true,
   showBillingAction,
   streakDays,
   visitLabel,
+  visitLimit,
 }: {
   daysLeftLabel: string;
+  durationDays?: number | null;
   expired: boolean;
   lastCheckIn?: string;
   planName: string;
   progressValue: number;
-  visitProgressLabel?: string;
   renewalDate?: string | null;
   showActions?: boolean;
   showBillingAction: boolean;
   streakDays: number;
   visitLabel: string;
+  visitLimit?: number | null;
 }) {
   const router = useRouter();
   const visitCountMatch = visitLabel.match(/^(\d+)/);
   const dayCountMatch = daysLeftLabel.match(/^(\d+)/);
   const ringValue = visitCountMatch?.[1] ?? dayCountMatch?.[1] ?? "-";
   const ringLabel = visitCountMatch
-    ? (["visits", "remaining"] as const)
+    ? visitLimit
+      ? ([`of ${visitLimit}`, "visits left"] as const)
+      : (["visits", "left"] as const)
     : expired
     ? (["renewal", "needed"] as const)
-    : (["days", "left"] as const);
+    : durationDays
+      ? ([`of ${durationDays}`, "days left"] as const)
+      : (["days", "left"] as const);
   // Only show the supplemental status text on the left when the ring is
   // showing visit data — otherwise the ring already conveys "days left"
   // and rendering it again on the left creates a duplicate.
@@ -72,23 +69,16 @@ export function MemberStateHero({
   const supplementalLabel = expired ? "Membership needs renewal" : daysLeftLabel;
   const splitLabel = supplementalLabel.match(/^(\d+)\s+(.+)$/);
   const progress = Math.max(0, Math.min(1, progressValue));
-  const progressPct = `${Math.round(progress * 100)}%`;
+  const ringMetaLabel = expired && !dayCountMatch && !visitCountMatch ? "Renew to continue" : undefined;
   const ringSize = 104;
   const strokeWidth = 9;
   const radius = (ringSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const ringProgress = useSharedValue(0);
-  const animatedRingProps = useAnimatedProps(() => ({
-    strokeDasharray: `${circumference * ringProgress.value} ${circumference}`,
-  }));
+  const ringDashArray = `${circumference * progress} ${circumference}`;
   const baseEncouragement = getMemberEncouragement(streakDays, expired);
   const encouragement = lastCheckIn && lastCheckIn !== "None" && !expired
     ? `${baseEncouragement} · Last check-in ${lastCheckIn}`
     : baseEncouragement;
-
-  useEffect(() => {
-    ringProgress.value = withSpring(progress, { mass: 1, damping: 15, stiffness: 100 });
-  }, [progress, ringProgress]);
 
   return (
     <GlassCard
@@ -144,7 +134,7 @@ export function MemberStateHero({
               strokeWidth={strokeWidth}
               fill="none"
             />
-            <AnimatedCircle
+            <Circle
               cx={ringSize / 2}
               cy={ringSize / 2}
               r={radius}
@@ -152,7 +142,7 @@ export function MemberStateHero({
               strokeWidth={strokeWidth}
               fill="none"
               strokeLinecap="round"
-              animatedProps={animatedRingProps}
+              strokeDasharray={ringDashArray}
               transform={`rotate(-90 ${ringSize / 2} ${ringSize / 2})`}
               opacity={expired ? 0.65 : 1}
             />
@@ -162,10 +152,9 @@ export function MemberStateHero({
             <Text style={styles.visitRingLabel}>{ringLabel[0]}</Text>
             <Text style={styles.visitRingLabel}>{ringLabel[1]}</Text>
           </View>
-          <Text style={styles.visitRingProgress}>{progressPct}</Text>
-          {visitProgressLabel ? (
+          {ringMetaLabel ? (
             <Text numberOfLines={1} style={styles.visitRingMeta}>
-              {visitProgressLabel}
+              {ringMetaLabel}
             </Text>
           ) : null}
         </View>
@@ -299,11 +288,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 12,
     lineHeight: 15,
-  },
-  visitRingProgress: {
-    color: colors.subtle,
-    fontSize: 10,
-    lineHeight: 12,
   },
   visitRingMeta: {
     color: colors.muted,

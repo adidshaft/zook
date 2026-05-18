@@ -3,9 +3,9 @@ name: login-as
 ---
 # Reusable helper: pass `email` and `home_id`.
 - openLink: zook:///login
-- tapOn:
-    point: "67%,55%"
-    optional: true
+- runFlow:
+    file: complete-language-if-needed.yaml
+- openLink: zook:///login
 - extendedWaitUntil:
     visible:
       id: "login-email"

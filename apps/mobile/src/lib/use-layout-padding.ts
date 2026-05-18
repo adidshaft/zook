@@ -18,6 +18,12 @@ export function useBottomScrollPadding(opts?: { hasStickyAction?: boolean }): nu
 }
 
 export function useStickyActionOffset(): number {
+  const insets = useSafeAreaInsets();
   const { visible: bottomNavVisible } = useContext(BottomNavVisibilityContext);
-  return (bottomNavVisible ? layout.bottomNavHeight : 0) + spacing.md;
+  if (!bottomNavVisible) {
+    return spacing.md;
+  }
+  const bottomInset = Math.max(insets.bottom, 12);
+  const floatingNavHeight = Math.max(layout.bottomNavHeight, 92);
+  return bottomInset + floatingNavHeight + spacing.md;
 }

@@ -86,6 +86,7 @@ const webServerUrl = "http://127.0.0.1:3120";
 
 export default defineConfig({
   fullyParallel: false,
+  workers: 1,
   testDir: "./apps/web/tests",
   testMatch: ["**/*.spec.ts"],
   timeout: 30_000,

@@ -1872,18 +1872,14 @@ export function StickyActionBar({
   const insets = useSafeAreaInsets();
   const computedBottomOffset = useStickyActionOffset();
   return (
-    <BlurView
-      intensity={54}
-      tint="dark"
+    <View
       style={StyleSheet.flatten([
         styles.stickyActionBar,
         { bottom: bottomOffset ?? computedBottomOffset, paddingBottom: Math.max(insets.bottom, 14) },
       ])}
     >
-      <View pointerEvents="none" style={styles.stickyActionFadeSoft} />
-      <View pointerEvents="none" style={styles.stickyActionFade} />
       {children}
-    </BlurView>
+    </View>
   );
 }
 
@@ -2214,12 +2210,14 @@ function DockTabItem({
   active,
   badgeCount,
   isMemberNav,
+  slotStyle,
 }: {
   tab: DockTab;
   t: (key: any) => string;
   active: boolean;
   badgeCount: number;
   isMemberNav: boolean;
+  slotStyle: StyleProp<ViewStyle>;
 }) {
   const router = useRouter();
   const raised = isMemberNav && tab.raised;
@@ -2302,11 +2300,11 @@ function DockTabItem({
   );
 
   if (isMemberNav) {
-    return <View style={styles.memberBottomNavSlot}>{item}</View>;
+    return <View style={[styles.memberBottomNavSlot, slotStyle]}>{item}</View>;
   }
 
   return (
-    <View style={styles.bottomNavSlot}>
+    <View style={[styles.bottomNavSlot, slotStyle]}>
       <Link href={tab.href} asChild>
         {item}
       </Link>
@@ -2363,6 +2361,7 @@ export function BottomNav({
     return null;
   }
 
+  const slotWidth = `${100 / Math.max(resolvedTabs.length, 1)}%` as const;
   const navItems = resolvedTabs.map((tab) => {
     const currentView =
       activeTab ?? activeView ?? (Array.isArray(params.view) ? params.view[0] : params.view);
@@ -2391,6 +2390,7 @@ export function BottomNav({
         active={active}
         badgeCount={badgeCount}
         isMemberNav={isMemberNav}
+        slotStyle={{ flexBasis: slotWidth, width: slotWidth }}
       />
     );
   });
@@ -3362,30 +3362,16 @@ const styles = StyleSheet.create({
   },
   stickyActionBar: {
     position: "absolute",
+    zIndex: 60,
+    elevation: 8,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(7,9,8,0.92)",
+    backgroundColor: "transparent",
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.md,
+    paddingTop: 0,
     gap: spacing.sm,
     overflow: "visible",
-  },
-  stickyActionFadeSoft: {
-    position: "absolute",
-    top: -34,
-    left: 0,
-    right: 0,
-    height: 18,
-    backgroundColor: "rgba(7,9,8,0.16)",
-  },
-  stickyActionFade: {
-    position: "absolute",
-    top: -18,
-    left: 0,
-    right: 0,
-    height: 18,
-    backgroundColor: "rgba(7,9,8,0.42)",
   },
   collapsibleContent: {
     padding: 0,
@@ -3434,8 +3420,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.sm,
+    justifyContent: "center",
+    paddingHorizontal: 0,
     paddingVertical: 6,
     gap: 0,
   },
@@ -3491,7 +3477,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: 0,
     paddingVertical: 8,
     gap: 0,
     overflow: "visible",

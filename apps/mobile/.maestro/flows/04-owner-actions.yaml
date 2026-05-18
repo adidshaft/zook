@@ -36,12 +36,12 @@ tags:
     optional: true
 - takeScreenshot: /tmp/zook-maestro/owner/approvals.png
 
-- openLink: zook:///dashboard
+- openLink: zook:///owner
 - extendedWaitUntil:
     visible:
       id: "owner-home-screen"
     timeout: 20000
-- takeScreenshot: /tmp/zook-maestro/owner/dashboard-bridge.png
+- takeScreenshot: /tmp/zook-maestro/owner/owner-return.png
 
 - openLink: zook:///notifications
 - extendedWaitUntil:

@@ -7,6 +7,9 @@ tags:
     clearState: true
     clearKeychain: true
 - openLink: zook:///login
+- runFlow:
+    file: _helpers/complete-language-if-needed.yaml
+- openLink: zook:///login
 - extendedWaitUntil:
     visible:
       id: "login-email"
@@ -42,9 +45,10 @@ tags:
 - stopApp
 - launchApp:
     clearState: false
+- openLink: zook:///login
 - extendedWaitUntil:
     visible:
-      id: "onboarding-value-props-screen"
+      id: "login-email"
     timeout: 15000
 - assertNotVisible:
     id: "member-home-screen"

@@ -8,6 +8,9 @@ tags:
     clearKeychain: true
 
 - openLink: zook:///find-gyms
+- runFlow:
+    file: _helpers/complete-language-if-needed.yaml
+- openLink: zook:///find-gyms
 - extendedWaitUntil:
     visible:
       id: "find-gyms-screen"
