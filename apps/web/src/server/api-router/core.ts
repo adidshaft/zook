@@ -14319,6 +14319,20 @@ export async function handleAiNotificationsShopPrivacyPlatform(
         skipReason: fulfillBody.skipReason ?? null,
       },
     });
+    await createDirectNotification({
+      orgId,
+      createdById: userId,
+      type: "TRANSACTIONAL",
+      title: "Pickup completed",
+      body: "Your shop order has been marked as picked up.",
+      audience: "single_member",
+      metadata: {
+        shopOrderId: order.id,
+        branchId: order.branchId,
+        status: order.status,
+      },
+      userIds: [order.userId],
+    });
     return ok({ order });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "guardian-consent"])) {

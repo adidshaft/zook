@@ -1,0 +1,53 @@
+appId: com.zook.app
+name: integration-member-join-request
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- openLink: zook:///login
+- tapOn:
+    point: "67%,55%"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 15000
+- tapOn:
+    id: "login-email"
+- inputText: ${email}
+- tapOn:
+    id: "login-send-code"
+- extendedWaitUntil:
+    visible:
+      id: "login-otp-cells"
+    timeout: 15000
+- tapOn:
+    id: "login-otp-cells"
+- inputText: "000000"
+- extendedWaitUntil:
+    visible:
+      id: ${home_id}
+    timeout: 30000
+- tapOn:
+    id: "onboarding-role-member"
+- extendedWaitUntil:
+    visible:
+      id: "find-gyms-screen"
+    timeout: 30000
+- openLink: zook:///gym/${username}
+- extendedWaitUntil:
+    visible:
+      id: "gym-profile-screen"
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: "gym-request-membership"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "gym-request-membership"
+- scrollUntilVisible:
+    element:
+      id: "gym-status-message"
+    direction: DOWN
+    timeout: 30000

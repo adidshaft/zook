@@ -1,0 +1,35 @@
+appId: com.zook.app
+name: integration-open-link-screen
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- openLink: zook:///login
+- tapOn:
+    point: "67%,55%"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 15000
+- tapOn:
+    id: "login-email"
+- inputText: ${email}
+- tapOn:
+    id: "login-send-code"
+- extendedWaitUntil:
+    visible:
+      id: "login-otp-cells"
+    timeout: 15000
+- tapOn:
+    id: "login-otp-cells"
+- inputText: "000000"
+- extendedWaitUntil:
+    visible:
+      id: ${home_id}
+    timeout: 30000
+- openLink: ${link}
+- extendedWaitUntil:
+    visible:
+      id: ${screen_id}
+    timeout: 30000

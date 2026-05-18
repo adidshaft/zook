@@ -27,6 +27,7 @@ RUN_DB_WEB_TESTS=1 OTP_FIXED_CODE_DEV=000000 ENV_PROFILE=local \
   AI_FEATURES_ENABLED=true AI_PROVIDER=mock \
   PAYMENT_PROVIDER=mock ALLOW_MOCK_PAYMENT_COMPLETION=true \
   ERROR_REPORTER=mock RATE_LIMIT_PROVIDER=disabled \
+  NEXT_DIST_DIR=.next-mobile-e2e \
   PORT=3000 pnpm dev
 ```
 
@@ -81,6 +82,9 @@ Run all flows:
 pnpm test:mobile:maestro
 ```
 
+The mobile script reseeds the pilot/demo dataset before launching Maestro. This keeps the mobile leg
+stable when it is run after web action specs that create plans, orders, notifications, and sessions.
+
 Screenshots should be written under `/tmp/zook-maestro/<role>/<step>.png`.
 
 ## Integration
@@ -90,6 +94,10 @@ Run cross-system tests after the seeded `:3000` backend and Metro are healthy:
 ```sh
 pnpm test:integration
 ```
+
+Integration specs call focused Maestro flows from `apps/mobile/.maestro/integration/` via
+Playwright. Those flows are intentionally outside `apps/mobile/.maestro/flows/*.yaml` so the
+mobile-only suite remains independently runnable.
 
 Full suite:
 
@@ -104,5 +112,6 @@ pnpm test:e2e
 - If mobile login fails, check that port `3000` is the seeded backend and `OTP_FIXED_CODE_DEV=000000` is set.
 - If trainer/member AI flows fail, confirm the seeded backend was started with `AI_FEATURES_ENABLED=true AI_PROVIDER=mock`.
 - If local `next dev` loads the wrong Node version in a detached shell, start it from a login shell such as `zsh -lic`.
+- Keep the seeded `:3000` mobile backend on `NEXT_DIST_DIR=.next-mobile-e2e`; Playwright runs a second Next server on `:3120`, and sharing `.next` can corrupt dev chunks.
 - If web actions hit rate limits, use the scripted command so `PLAYWRIGHT_RATE_LIMIT_PROVIDER=memory` is active.
 - If SSO smoke fails, confirm the local test client IDs are present in the test command and that production secrets are not required for local callback rejection tests.

@@ -676,7 +676,7 @@ export default function GymProfileScreen() {
             </View>
 
             {statusMessage ? (
-              <GlassCard variant="compact">
+              <GlassCard testID="gym-status-message" variant="compact">
                 <Text style={styles.statusMessage}>{statusMessage}</Text>
               </GlassCard>
             ) : null}

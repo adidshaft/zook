@@ -5,6 +5,7 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@zook/core", "@zook/ui", "@zook/db"],
+  distDir: process.env.NEXT_DIST_DIR?.trim() || ".next",
   output: "standalone",
   typedRoutes: false,
   allowedDevOrigins: ["127.0.0.1"],
