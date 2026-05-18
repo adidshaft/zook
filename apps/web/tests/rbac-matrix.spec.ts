@@ -63,6 +63,19 @@ test("organization routes enforce role and permission matrix", async ({ page }) 
   });
   const trainerEmail = await createMatrixActor({ orgId: org.id, role: "TRAINER" });
   const platformEmail = await createMatrixActor({ orgId: org.id, role: "PLATFORM_ADMIN" });
+  const ownerUser = await prisma.user.findUniqueOrThrow({ where: { email: ownerEmail } });
+  const memberUser = await prisma.user.findUniqueOrThrow({ where: { email: memberEmail } });
+  const plan = await prisma.membershipPlan.create({
+    data: {
+      orgId: org.id,
+      createdById: ownerUser.id,
+      name: `RBAC Plan ${Date.now()}`,
+      type: "DURATION",
+      pricePaise: 199900,
+      durationDays: 30,
+      publicVisible: true,
+    },
+  });
 
   await loginWithSessionCookie(page, ownerEmail);
   await expect((await page.request.get(`/api/orgs/${org.id}/dashboard`)).status()).toBe(200);
@@ -101,6 +114,32 @@ test("organization routes enforce role and permission matrix", async ({ page }) 
       })
     ).status(),
   ).toBe(403);
+  await expect(
+    (
+      await page.request.post(`/api/orgs/${org.id}/manual-payments`, {
+        data: {
+          memberUserId: memberUser.id,
+          amountPaise: 199900,
+          method: "CASH",
+          planId: plan.id,
+          branchId: defaultBranch.id,
+        },
+      })
+    ).status(),
+  ).toBe(403);
+  await expect(
+    (
+      await page.request.post(`/api/orgs/${org.id}/notifications`, {
+        data: {
+          title: "Forbidden broadcast",
+          body: "Members cannot broadcast.",
+          type: "OPERATIONAL",
+          audience: "selected_members",
+          selectedUserIds: [memberUser.id],
+        },
+      })
+    ).status(),
+  ).toBe(403);
 
   await loginWithSessionCookie(page, receptionistEmail);
   await expect((await page.request.get(`/api/orgs/${org.id}/attendance/pending`)).status()).toBe(
@@ -117,10 +156,36 @@ test("organization routes enforce role and permission matrix", async ({ page }) 
       })
     ).status(),
   ).toBe(403);
+  await expect(
+    (
+      await page.request.post(`/api/orgs/${org.id}/products`, {
+        data: {
+          name: `Reception Forbidden Product ${Date.now()}`,
+          category: "OTHER",
+          pricePaise: 1000,
+          stock: 1,
+          branchId: defaultBranch.id,
+        },
+      })
+    ).status(),
+  ).toBe(403);
 
   await loginWithSessionCookie(page, trainerEmail);
   await expect((await page.request.get(`/api/orgs/${org.id}/members`)).status()).toBe(200);
   await expect((await page.request.get(`/api/orgs/${org.id}/payments/recent`)).status()).toBe(403);
+  await expect(
+    (
+      await page.request.post(`/api/orgs/${org.id}/manual-payments`, {
+        data: {
+          memberUserId: memberUser.id,
+          amountPaise: 199900,
+          method: "CASH",
+          planId: plan.id,
+          branchId: defaultBranch.id,
+        },
+      })
+    ).status(),
+  ).toBe(403);
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/coach$/);
 

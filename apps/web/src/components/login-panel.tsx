@@ -411,6 +411,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
               </label>
               <input
                 id="login-email"
+                data-testid="login-email"
                 aria-label={t("emailAddress")}
                 type="email"
                 inputMode="email"
@@ -434,6 +435,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
             </label>
             <input
               id="login-otp"
+              data-testid="login-otp"
               ref={otpRef}
               inputMode="numeric"
               autoComplete="one-time-code"
@@ -462,6 +464,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
         ) : null}
         <ZookButton
           type="submit"
+          data-testid={stage === "identifier" ? "login-send-code" : "login-verify-code"}
           className="mt-6"
           disabled={
             !hydrated ||
@@ -492,6 +495,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
           <div className="grid gap-2 sm:grid-cols-2">
             <ZookButton
               type="button"
+              data-testid="login-apple"
               tone="secondary"
               fullWidth
               onClick={() => void signInWithApple()}
@@ -502,6 +506,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
             </ZookButton>
             <ZookButton
               type="button"
+              data-testid="login-google"
               tone="secondary"
               fullWidth
               onClick={() => void signInWithGoogle()}

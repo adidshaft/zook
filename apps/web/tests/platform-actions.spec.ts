@@ -1,0 +1,98 @@
+import { expect, test } from "@playwright/test";
+import { prisma } from "@zook/db";
+import { expectApiOk, loginWithSessionCookie, seedAndGetOrg } from "./helpers";
+import { requireDb } from "./helpers/db";
+
+test.describe("platform admin actions", () => {
+  test.beforeEach(() => {
+    requireDb();
+  });
+
+  test("platform admin searches organizations and suspends/restores a gym account", async ({
+    page,
+  }) => {
+    await loginWithSessionCookie(page, "platform@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+
+    const list = await expectApiOk<{
+      orgs: Array<{ id: string; username: string; status: string }>;
+    }>(await page.request.get("/api/platform/orgs"));
+    expect(list.data.orgs.some((row) => row.id === org.id && row.username === org.username)).toBe(
+      true,
+    );
+
+    const suspended = await expectApiOk<{ org: { id: string; status: string } }>(
+      await page.request.patch(`/api/platform/orgs/${org.id}/status`, {
+        data: { status: "SUSPENDED" },
+      }),
+    );
+    expect(suspended.data.org).toMatchObject({ id: org.id, status: "SUSPENDED" });
+    await expect(
+      prisma.auditLog.findFirst({
+        where: { orgId: org.id, action: "platform.organization_status_updated" },
+        orderBy: { createdAt: "desc" },
+      }),
+    ).resolves.toMatchObject({
+      entityId: org.id,
+    });
+
+    const restored = await expectApiOk<{ org: { id: string; status: string } }>(
+      await page.request.patch(`/api/platform/orgs/${org.id}/status`, {
+        data: { status: "ACTIVE" },
+      }),
+    );
+    expect(restored.data.org).toMatchObject({ id: org.id, status: "ACTIVE" });
+
+    await page.goto("/platform?section=organizations");
+    await expect(page.getByRole("heading", { name: /Gym accounts/i })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByRole("row", { name: /aarogya-strength/i })).toBeVisible();
+    await expect(
+      page
+        .getByRole("row", { name: /aarogya-strength/i })
+        .getByRole("button", { name: /suspend/i }),
+    ).toBeEnabled();
+  });
+
+  test("platform subscriptions and provider diagnostics are protected and render operational state", async ({
+    page,
+  }) => {
+    await loginWithSessionCookie(page, "platform@zook.local");
+
+    const subscriptions = await expectApiOk<{
+      summary: { totalOrgs: number };
+      rows: Array<{ username: string; orgStatus: string }>;
+    }>(await page.request.get("/api/platform/subscriptions"));
+    expect(subscriptions.data.summary.totalOrgs).toBeGreaterThan(0);
+    expect(subscriptions.data.rows.some((row) => row.username === "aarogya-strength")).toBe(true);
+
+    const providers = await expectApiOk<{ providers: Record<string, { status: string }> }>(
+      await page.request.get("/api/platform/provider-status"),
+    );
+    expect(Object.keys(providers.data.providers).length).toBeGreaterThan(0);
+
+    await loginWithSessionCookie(page, "owner@zook.local");
+    expect((await page.request.get("/api/platform/orgs")).status()).toBe(403);
+    expect(
+      (
+        await page.request.patch("/api/platform/orgs/not-real/status", {
+          data: { status: "ACTIVE" },
+        })
+      ).status(),
+    ).toBe(403);
+  });
+
+  test("impersonation banner and billing override are visible product gaps", async ({ page }) => {
+    test.fail(
+      true,
+      "Platform impersonation and billing override controls are not currently exposed by the dashboard/API.",
+    );
+    await loginWithSessionCookie(page, "platform@zook.local");
+    await page.goto("/platform?section=organizations");
+    expect(await page.getByRole("button", { name: /impersonate/i }).count()).toBeGreaterThan(0);
+    expect(await page.getByRole("button", { name: /override billing/i }).count()).toBeGreaterThan(
+      0,
+    );
+  });
+});

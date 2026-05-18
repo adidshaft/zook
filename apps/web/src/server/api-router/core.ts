@@ -2282,7 +2282,12 @@ async function refreshAuthSession(refreshToken: string) {
   };
 }
 
-function setSessionCookie(response: NextResponse, request: NextRequest, token: string, expiresAt: Date) {
+function setSessionCookie(
+  response: NextResponse,
+  request: NextRequest,
+  token: string,
+  expiresAt: Date,
+) {
   response.cookies.set(sessionCookieName, token, {
     httpOnly: true,
     sameSite: "lax",
@@ -3238,14 +3243,16 @@ async function applySaasBillingProviderEvent(input: {
   const rawPayload = input.event.rawPayload as { payload?: Record<string, { entity?: unknown }> };
   const subscriptionEntity = rawPayload?.payload?.subscription?.entity;
   const subscription =
-    subscriptionEntity && !Array.isArray(subscriptionEntity) && typeof subscriptionEntity === "object"
+    subscriptionEntity &&
+    !Array.isArray(subscriptionEntity) &&
+    typeof subscriptionEntity === "object"
       ? (subscriptionEntity as Record<string, unknown>)
       : {};
   const providerStatus = typeof subscription.status === "string" ? subscription.status : undefined;
   const nextStatus = providerMandateStatusToLocal(
     input.event.eventType === "invoice.paid" || input.event.eventType === "subscription.charged"
       ? "active"
-      : providerStatus ?? input.event.paymentStatus,
+      : (providerStatus ?? input.event.paymentStatus),
   );
   const currentStartAt =
     typeof subscription.current_start === "number" && subscription.current_start > 0
@@ -3273,7 +3280,7 @@ async function applySaasBillingProviderEvent(input: {
         providerPlanId:
           typeof subscription.plan_id === "string"
             ? subscription.plan_id
-            : mandate.providerPlanId ?? undefined,
+            : (mandate.providerPlanId ?? undefined),
         currentStartAt,
         currentEndAt,
         nextChargeAt,
@@ -3282,15 +3289,15 @@ async function applySaasBillingProviderEvent(input: {
         authenticatedAt:
           nextStatus === "AUTHENTICATED" && !mandate.authenticatedAt
             ? new Date()
-            : mandate.authenticatedAt ?? undefined,
+            : (mandate.authenticatedAt ?? undefined),
         activatedAt:
           nextStatus === "ACTIVE" && !mandate.activatedAt
             ? new Date()
-            : mandate.activatedAt ?? undefined,
+            : (mandate.activatedAt ?? undefined),
         cancelledAt:
           nextStatus === "CANCELLED" && !mandate.cancelledAt
             ? new Date()
-            : mandate.cancelledAt ?? undefined,
+            : (mandate.cancelledAt ?? undefined),
         metadata: {
           ...getObjectMetadata(mandate.metadata),
           lastProviderEventType: input.event.eventType,
@@ -5131,9 +5138,13 @@ export async function handleAuth(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["auth", "refresh"])) {
     const redirectTarget = request.nextUrl.searchParams.get("redirect");
     const safeRedirect =
-      redirectTarget?.startsWith("/") && !redirectTarget.startsWith("//") ? redirectTarget : "/dashboard";
+      redirectTarget?.startsWith("/") && !redirectTarget.startsWith("//")
+        ? redirectTarget
+        : "/dashboard";
     try {
-      const session = await refreshAuthSession(request.cookies.get(refreshSessionCookieName)?.value ?? "");
+      const session = await refreshAuthSession(
+        request.cookies.get(refreshSessionCookieName)?.value ?? "",
+      );
       const response = NextResponse.redirect(new URL(safeRedirect, request.url));
       setSessionCookie(response, request, session.token, session.expiresAt);
       return response;
@@ -5149,7 +5160,7 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     const refreshToken =
       typeof body === "object" && body && "refreshToken" in body
         ? String((body as { refreshToken?: unknown }).refreshToken ?? "")
-        : request.cookies.get(refreshSessionCookieName)?.value ?? "";
+        : (request.cookies.get(refreshSessionCookieName)?.value ?? "");
     const session = await refreshAuthSession(refreshToken);
     const response = ok(session);
     setSessionCookie(response, request, session.token, session.expiresAt);
@@ -5157,7 +5168,9 @@ export async function handleAuth(request: NextRequest, path: string[]) {
   }
   if (
     request.method === "GET" &&
-    (pathMatches(path, ["auth", "me"]) || pathMatches(path, ["auth", "session"]))
+    (pathMatches(path, ["auth", "me"]) ||
+      pathMatches(path, ["auth", "session"]) ||
+      pathMatches(path, ["auth", "sessions"]))
   ) {
     const token = extractSessionToken(request);
     const summary = await resolveSessionSummaryFromToken(
@@ -6807,20 +6820,21 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
         checkoutUrl: existingMandate.checkoutUrl,
         checkoutData: null,
         session: existingMandate.paymentSessionId
-          ? await prisma.paymentSession.findUnique({ where: { id: existingMandate.paymentSessionId } })
+          ? await prisma.paymentSession.findUnique({
+              where: { id: existingMandate.paymentSessionId },
+            })
           : null,
       });
     }
 
     const provider = getPaymentProviderOrThrow();
-    const amountPaise = body.amountPaise ?? Number(process.env.ZOOK_SAAS_MONTHLY_AMOUNT_PAISE ?? 299900);
+    const amountPaise =
+      body.amountPaise ?? Number(process.env.ZOOK_SAAS_MONTHLY_AMOUNT_PAISE ?? 299900);
     if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
       throw validationError("Zook SaaS billing amount is not configured.");
     }
     const trialEndAt =
-      subscription?.trialEndAt ??
-      org.trialEndAt ??
-      new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+      subscription?.trialEndAt ?? org.trialEndAt ?? new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
     const session = await prisma.paymentSession.create({
       data: {
         orgId,
@@ -6904,7 +6918,9 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
 
     const checkoutUrl =
       createdMandate.checkoutUrl ??
-      (provider.providerName === "mock" ? `/checkout/mock/${session.id}` : `/checkout/${session.id}`);
+      (provider.providerName === "mock"
+        ? `/checkout/mock/${session.id}`
+        : `/checkout/${session.id}`);
     const [updatedMandate, updatedSession] = await prisma.$transaction([
       prisma.saaSBillingMandate.update({
         where: { id: mandate.id },
@@ -8527,7 +8543,10 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
       }),
     });
   }
-  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "join-requests", "approve-batch"])) {
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "join-requests", "approve-batch"])
+  ) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "MEMBERS_MANAGE");
@@ -12893,7 +12912,10 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
   return undefined;
 }
 
-export async function handleAiNotificationsShopPrivacyPlatform(request: NextRequest, path: string[]) {
+export async function handleAiNotificationsShopPrivacyPlatform(
+  request: NextRequest,
+  path: string[],
+) {
   if (request.method === "POST" && pathMatches(path, ["ai", "chat"])) {
     assertAiLaunchEnabled();
     const body = aiChatSchema.parse(await readJson(request));

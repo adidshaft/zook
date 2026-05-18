@@ -11,6 +11,7 @@ const requireFromWeb = createRequire(resolve(webDir, "package.json"));
 const rawArgs = process.argv.slice(2);
 const forwardedArgs = rawArgs[1] === "--" ? [rawArgs[0], ...rawArgs.slice(2)] : rawArgs;
 const nextCommand = forwardedArgs[0] ?? "dev";
+const defaultNodeOptions = "--max-old-space-size=6144";
 
 function resolveNodeEnv(command) {
   if (process.env.NODE_ENV) {
@@ -36,6 +37,14 @@ function orderedRootEnvFiles(nodeEnv) {
   return [`.env.${nodeEnv}.local`, ".env.local", `.env.${nodeEnv}`, ".env"];
 }
 
+function withDefaultNodeOptions(value) {
+  if (/\b--max-old-space-size=/.test(value ?? "")) {
+    return value;
+  }
+
+  return [value, defaultNodeOptions].filter(Boolean).join(" ");
+}
+
 process.env.NODE_ENV = resolveNodeEnv(nextCommand);
 
 for (const fileName of orderedRootEnvFiles(process.env.NODE_ENV)) {
@@ -46,9 +55,13 @@ for (const fileName of orderedRootEnvFiles(process.env.NODE_ENV)) {
 }
 
 const nextBinPath = requireFromWeb.resolve("next/dist/bin/next");
+const childEnv = {
+  ...process.env,
+  NODE_OPTIONS: withDefaultNodeOptions(process.env.NODE_OPTIONS)
+};
 const child = spawn(process.execPath, [nextBinPath, ...forwardedArgs], {
   cwd: webDir,
-  env: process.env,
+  env: childEnv,
   stdio: "inherit"
 });
 

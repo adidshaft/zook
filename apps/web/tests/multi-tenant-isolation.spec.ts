@@ -56,3 +56,56 @@ test("concurrent org headers keep request context isolated", async ({ page }) =>
   expect(ownPayload.data.attendance.every((record) => record.orgId === org.id)).toBe(true);
   expect(crossResponse.status()).toBe(403);
 });
+
+test("owner mutations cannot force another organization id in path or body", async ({ page }) => {
+  const org = await seedAndGetOrg({ username: "aarogya-strength" });
+  const otherOrg = await seedAndGetOrg({ username: "peaklab" });
+  const otherBranch = await prisma.branch.findFirstOrThrow({ where: { orgId: otherOrg.id } });
+  await loginWithSessionCookie(page, await createIsolatedOwner(org.id));
+
+  const crossProfile = await page.request.patch(`/api/orgs/${otherOrg.id}/profile`, {
+    headers: { "x-zook-org-id": org.id },
+    data: {
+      name: otherOrg.name,
+      username: otherOrg.username,
+      contactPhone: otherOrg.contactPhone ?? "9876543210",
+      contactEmail: otherOrg.contactEmail ?? "owner@zook.local",
+      address: otherOrg.address ?? "Other Org Street",
+      city: otherOrg.city ?? "Bengaluru",
+      state: otherOrg.state ?? "Karnataka",
+      pincode: otherOrg.pincode ?? "560001",
+      amenities: [],
+      equipment: [],
+      visibility: "PUBLIC",
+      joinMode: "OPEN_JOIN",
+      logoUrl: "",
+      coverImageUrl: "",
+      tagline: "Cross-tenant write attempt",
+      gallery: [],
+      facilities: [],
+      gymType: "",
+      openingHoursSummary: "",
+      appStoreUrl: "",
+      playStoreUrl: "",
+    },
+  });
+  expect(crossProfile.status()).toBe(403);
+
+  const crossProduct = await page.request.post(`/api/orgs/${otherOrg.id}/products`, {
+    headers: { "x-zook-org-id": org.id },
+    data: {
+      orgId: otherOrg.id,
+      branchId: otherBranch.id,
+      name: `Cross Tenant Product ${Date.now()}`,
+      category: "OTHER",
+      pricePaise: 1000,
+      stock: 1,
+    },
+  });
+  expect(crossProduct.status()).toBe(403);
+  await expect(
+    prisma.product.findFirst({
+      where: { orgId: otherOrg.id, name: { startsWith: "Cross Tenant Product" } },
+    }),
+  ).resolves.toBeNull();
+});

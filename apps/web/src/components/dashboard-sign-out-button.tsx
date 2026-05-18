@@ -1,8 +1,7 @@
 "use client";
 
 import { LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ZookButton } from "@/components/zook-button";
 
@@ -17,16 +16,19 @@ export function DashboardSignOutButton({
   label?: string | undefined;
   busyLabel?: string | undefined;
 }) {
-  const router = useRouter();
   const queryClient = useQueryClient();
+  const [ready, setReady] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
 
   async function signOut() {
     setSigningOut(true);
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
     queryClient.clear();
-    router.push("/login");
-    router.refresh();
+    window.location.assign("/login");
   }
 
   return (
@@ -35,8 +37,9 @@ export function DashboardSignOutButton({
       tone="ghost"
       size={compact ? "sm" : "md"}
       fullWidth={!compact}
-      disabled={signingOut}
+      disabled={!ready || signingOut}
       state={signingOut ? "loading" : "idle"}
+      data-testid="dashboard-sign-out"
       onClick={() => void signOut()}
       leadingIcon={<LogOut size={18} />}
       {...(className ? { className } : {})}

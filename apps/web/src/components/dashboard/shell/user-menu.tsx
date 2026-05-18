@@ -16,7 +16,7 @@ export function UserMenu({
   showSwitchOrganization: boolean;
 }) {
   return (
-    <details className="group relative z-[110]">
+    <details className="group relative z-[110]" data-testid="dashboard-user-menu">
       <summary
         className="zook-focus flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 text-sm text-white/72 transition hover:bg-white/8 hover:text-white [&::-webkit-details-marker]:hidden"
         aria-label={copy.common.account}

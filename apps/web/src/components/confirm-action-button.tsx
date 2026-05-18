@@ -58,6 +58,7 @@ export function ConfirmActionButton({
           <span className="mt-3 flex flex-wrap justify-end gap-2">
             <ZookButton
               type="button"
+              data-testid="cancel"
               tone="ghost"
               size="sm"
               onClick={() => setOpen(false)}
@@ -67,6 +68,7 @@ export function ConfirmActionButton({
             </ZookButton>
             <ZookButton
               type="button"
+              data-testid="confirm"
               tone={
                 buttonProps["aria-label"]?.toString().toLowerCase().includes("delete") ||
                 confirmLabel.toLowerCase().includes("delete")
