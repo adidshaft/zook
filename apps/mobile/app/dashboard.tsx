@@ -18,7 +18,7 @@ export default function DashboardWebBridge() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="dashboard-bridge-screen">
         <View style={styles.content}>
           <MobileHeader title="Dashboard" subtitle="Opening web management" />
           <View style={styles.panel}>
@@ -26,7 +26,11 @@ export default function DashboardWebBridge() {
             <Text style={styles.body}>
               Owner management tools live on the web dashboard. Zook is opening it now.
             </Text>
-            <ZookButton onPress={() => void Linking.openURL(dashboardUrl)} icon="open-outline">
+            <ZookButton
+              testID="dashboard-open-web"
+              onPress={() => void Linking.openURL(dashboardUrl)}
+              icon="open-outline"
+            >
               Open dashboard
             </ZookButton>
           </View>

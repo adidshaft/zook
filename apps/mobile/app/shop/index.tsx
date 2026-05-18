@@ -459,7 +459,7 @@ export default function Shop() {
       );
       return;
     }
-    if (!mockPaymentCompletionAvailable) {
+    if (!mockPaymentCompletionAvailable && checkoutSession.provider !== "mock") {
       throw new Error("Mock payment completion is not available in backend builds.");
     }
     try {
@@ -526,6 +526,7 @@ export default function Shop() {
         stickyAction={
           canContinuePayment ? (
             <ZookButton
+              testID="shop-continue-payment-sticky"
               onPress={() => void continuePayment()}
               disabled={completeMockPayment.isPending}
               icon="card-outline"
@@ -603,6 +604,7 @@ export default function Shop() {
           })}
         </GlassCard>
         <ZookButton
+          testID="shop-back-to-shop"
           onPress={() => {
             setOrder(null);
             router.replace("/shop" as never);
@@ -622,6 +624,7 @@ export default function Shop() {
         refreshControl={refreshControl}
         stickyAction={
           <ZookButton
+            testID="shop-continue-payment"
             onPress={() => void continuePayment()}
             disabled={!checkoutSession || completeMockPayment.isPending}
             icon="card-outline"
@@ -676,12 +679,14 @@ export default function Shop() {
         stickyAction={
           <View style={styles.actionRow}>
             <SecondaryButton
+              testID="shop-cart-back"
               onPress={() => router.replace("/shop" as never)}
               style={styles.actionHalf}
             >
               {t("shop.back")}
             </SecondaryButton>
             <ZookButton
+              testID="shop-cart-checkout"
               onPress={() => void createCheckout()}
               disabled={!cartItems.length || createOrder.isPending}
               style={styles.actionHalf}
@@ -721,6 +726,7 @@ export default function Shop() {
                     </Text>
                     <View style={styles.cartStepper}>
                       <Pressable
+                        testID={`shop-cart-remove-${item.product.id}`}
                         onPress={() => removeFromCart(item.product.id)}
                         accessibilityRole="button"
                         accessibilityLabel={`Remove ${item.product.name}`}
@@ -730,6 +736,7 @@ export default function Shop() {
                       </Pressable>
                       <Text style={styles.cartQuantity}>{item.quantity}</Text>
                       <Pressable
+                        testID={`shop-cart-add-${item.product.id}`}
                         onPress={() => addToCart(item.product.id)}
                         accessibilityRole="button"
                         accessibilityLabel={`Add ${item.product.name}`}
@@ -761,6 +768,7 @@ export default function Shop() {
   const miniCart =
     itemCount > 0 ? (
       <Pressable
+        testID="shop-mini-cart"
         onPress={() => router.push("/shop/cart" as never)}
         style={styles.miniCart}
         accessibilityRole="button"
@@ -782,6 +790,7 @@ export default function Shop() {
         showProfileShortcut={false}
         trailing={
           <Pressable
+            testID="shop-open-cart"
             onPress={() => router.push("/shop/cart" as never)}
             accessibilityRole="button"
             accessibilityLabel={t("shop.openCart")}
@@ -865,7 +874,7 @@ export default function Shop() {
         <ShopSkeleton />
       ) : filteredProducts.length ? (
         <View style={styles.productGrid}>
-          {filteredProducts.map((product) => {
+          {filteredProducts.map((product, index) => {
             const lowStock = product.stock <= product.lowStockThreshold;
             const fulfillmentLabel =
               product.stock > 0
@@ -876,6 +885,7 @@ export default function Shop() {
             const productImageUrl = product.imageUrl ?? product.imageUrls?.[0] ?? null;
             return (
               <ProductCard
+                testID={index === 0 ? "shop-product-first" : `shop-product-${product.id}`}
                 key={product.id}
                 name={product.name}
                 price={formatInr(product.pricePaise)}
@@ -976,7 +986,7 @@ function ShopShell({
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID={`shop-${selectedPath.replace(/\W+/g, "-").replace(/^-|-$/g, "")}-screen`}>
         <ScrollView
           style={styles.scroller}
           contentInsetAdjustmentBehavior="never"

@@ -89,7 +89,11 @@ export function ActiveMembershipCard({
         </View>
       </View>
 
-      <ZookButton onPress={() => onOpenRenewal(subscription)} icon="refresh-outline">
+      <ZookButton
+        testID="membership-renew-button"
+        onPress={() => onOpenRenewal(subscription)}
+        icon="refresh-outline"
+      >
         {guidance.action}
       </ZookButton>
       {subscription.status !== "PAUSED" ? (
@@ -104,6 +108,7 @@ export function ActiveMembershipCard({
         </View>
       ) : null}
       <ZookButton
+        testID="membership-pause-resume-button"
         tone="secondary"
         disabled={actionBusy || (subscription.status !== "ACTIVE" && subscription.status !== "PAUSED")}
         onPress={() => onPauseOrResume(subscription)}

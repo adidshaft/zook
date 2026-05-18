@@ -368,7 +368,7 @@ export default function ProfileScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="profile-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -548,6 +548,7 @@ export default function ProfileScreen() {
             <Text style={styles.sectionTitle}>Quick actions</Text>
             <View style={styles.quickGrid}>
               <ZookButton
+                testID="profile-switch-role"
                 tone="secondary"
                 icon="swap-horizontal-outline"
                 onPress={showRoleSwitcher}
@@ -556,6 +557,7 @@ export default function ProfileScreen() {
                 Switch role
               </ZookButton>
               <ZookButton
+                testID="profile-switch-gym"
                 tone="secondary"
                 icon="business-outline"
                 onPress={showGymSwitcher}
@@ -564,6 +566,7 @@ export default function ProfileScreen() {
                 Switch gym
               </ZookButton>
               <ZookButton
+                testID="profile-biometric-toggle"
                 tone="secondary"
                 icon={biometricEnabled ? "lock-closed-outline" : "lock-open-outline"}
                 onPress={toggleBiometricUnlock}
@@ -580,6 +583,7 @@ export default function ProfileScreen() {
                 Settings -&gt;
               </ZookButton>
               <ZookButton
+                testID="profile-sign-out"
                 tone="danger"
                 icon="log-out-outline"
                 onPress={confirmSignOut}

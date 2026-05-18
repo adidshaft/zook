@@ -1,0 +1,61 @@
+appId: com.zook.app
+name: 07-public-actions
+tags:
+  - public
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+- openLink: zook:///find-gyms
+- extendedWaitUntil:
+    visible:
+      id: "find-gyms-screen"
+    timeout: 15000
+- tapOn:
+    id: "find-gym-row-first"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "gym-profile-screen"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/public/find-gyms.png
+
+- openLink: zook:///g/aarogya-strength
+- extendedWaitUntil:
+    visible:
+      id: "gym-profile-screen"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/public/g-aarogya-strength.png
+
+- openLink: zook:///gym/aarogya-strength
+- extendedWaitUntil:
+    visible:
+      id: "gym-profile-screen"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "gym-choose-plan-first"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "gym-choose-plan-first"
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/public/join-routes-to-login.png
+
+- openLink: zook:///r/NISHAFIT
+- extendedWaitUntil:
+    visible:
+      id: "find-gyms-screen"
+    timeout: 15000
+- tapOn:
+    id: "find-gym-row-first"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "gym-profile-screen"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/public/referral.png

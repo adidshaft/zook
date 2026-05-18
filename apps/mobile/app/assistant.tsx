@@ -67,8 +67,8 @@ export default function AssistantScreen() {
   const { activeOrgId, activeRole, hasAnyRole, token } = useAuth();
   const profileQuery = useMyProfile();
   const plansQuery = useMyPlans();
-  const trainerClientsQuery = useTrainerClients();
   const isTrainer = hasAnyRole("TRAINER");
+  const trainerClientsQuery = useTrainerClients(undefined, undefined, isTrainer);
   const canUseAi = hasAnyRole("TRAINER", "MEMBER");
   const storageKey = `zook_assistant_messages_${activeOrgId ?? "global"}_${activeRole ?? "member"}`;
   const hydratedRef = useRef(false);
@@ -244,7 +244,7 @@ export default function AssistantScreen() {
 
   if (!canUseAi) {
     return (
-      <ZookScreen>
+      <ZookScreen testID="assistant-unavailable-screen">
         <View style={styles.content}>
           <GlassCard variant="compact" contentStyle={styles.emptyContent}>
             <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
@@ -263,7 +263,7 @@ export default function AssistantScreen() {
 
   if (!assistantEnabled) {
     return (
-      <ZookScreen>
+      <ZookScreen testID="assistant-coming-soon-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -321,7 +321,7 @@ export default function AssistantScreen() {
   }
 
   return (
-    <ZookScreen>
+    <ZookScreen testID="assistant-screen">
       <ScrollView
         ref={scrollRef}
         contentInsetAdjustmentBehavior="never"
@@ -364,6 +364,7 @@ export default function AssistantScreen() {
 
         <View style={styles.controlsRow}>
           <Pressable
+            testID="assistant-attach-summary"
             onPress={() => setAttachSummary((value) => !value)}
             style={[styles.controlChip, attachSummary ? styles.controlChipActive : null]}
             accessibilityRole="button"
@@ -381,6 +382,7 @@ export default function AssistantScreen() {
             </Text>
           </Pressable>
           <Pressable
+            testID="assistant-clear-conversation"
             onPress={resetConversation}
             style={styles.controlChip}
             accessibilityRole="button"
@@ -420,9 +422,14 @@ export default function AssistantScreen() {
         ) : null}
 
         <View style={styles.chatStack}>
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <Pressable
               key={message.id}
+              testID={
+                index === messages.length - 1
+                  ? `assistant-message-${message.role}-latest`
+                  : `assistant-message-${message.role}-${index}`
+              }
               onLongPress={() => void copyMessage(message)}
               accessibilityRole={message.role === "assistant" ? "button" : undefined}
               accessibilityHint={message.role === "assistant" ? "Long press to copy" : undefined}
@@ -459,6 +466,7 @@ export default function AssistantScreen() {
       >
         <GlassCard contentStyle={styles.composerContent}>
           <TextInput
+            testID="assistant-message-input"
             value={draft}
             onChangeText={setDraft}
             placeholder="Ask in any language..."
@@ -472,6 +480,7 @@ export default function AssistantScreen() {
           <View style={styles.composerActions}>
             {draft.trim() ? (
               <Pressable
+                testID="assistant-clear-draft"
                 onPress={() => setDraft("")}
                 accessibilityRole="button"
                 accessibilityLabel="Clear"
@@ -481,6 +490,7 @@ export default function AssistantScreen() {
               </Pressable>
             ) : null}
             <Pressable
+              testID="assistant-send-message"
               onPress={() => void askAssistant()}
               disabled={!draft.trim() || loading}
               accessibilityRole="button"

@@ -16,6 +16,7 @@ export const OtpInput = forwardRef<
     length?: number;
     onChange: (value: string) => void;
     onComplete?: (value: string) => void;
+    testID?: string;
     value: string;
   } & Pick<TextInputProps, "returnKeyType">
 >(function OtpInput(
@@ -27,6 +28,7 @@ export const OtpInput = forwardRef<
     onChange,
     onComplete,
     returnKeyType = "done",
+    testID,
     value,
   },
   ref,
@@ -46,6 +48,7 @@ export const OtpInput = forwardRef<
     <View style={styles.group}>
       <Text style={styles.label}>{label}</Text>
       <Pressable
+        testID={testID ? `${testID}-cells` : undefined}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityState={{ disabled }}
@@ -64,6 +67,7 @@ export const OtpInput = forwardRef<
         })}
       </Pressable>
       <TextInput
+        testID={testID}
         ref={inputRef}
         value={value}
         onChangeText={handleChange}

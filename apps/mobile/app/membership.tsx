@@ -499,7 +499,7 @@ export default function MembershipScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="membership-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -579,7 +579,7 @@ export default function MembershipScreen() {
                   Browse gyms and purchase a membership to get started.
                 </Text>
               </View>
-              <ZookButton href="/find-gyms" icon="search-outline">
+              <ZookButton testID="membership-find-gyms" href="/find-gyms" icon="search-outline">
                 Find gyms
               </ZookButton>
             </GlassCard>
@@ -726,6 +726,7 @@ function RenewalSheet({
             </Text>
           </View>
           <Pressable
+            testID="membership-renewal-close"
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel="Close"
@@ -793,11 +794,17 @@ function RenewalSheet({
 
         {status ? <Text style={styles.statusMessage}>{status}</Text> : null}
         <View style={styles.sheetActions}>
-          <ZookButton tone="secondary" onPress={onClose} style={styles.actionHalf}>
+          <ZookButton
+            testID="membership-renewal-cancel"
+            tone="secondary"
+            onPress={onClose}
+            style={styles.actionHalf}
+          >
             Cancel
           </ZookButton>
           {selectedPlanId && selectedPlanId !== currentPlan?.id ? (
             <ZookButton
+              testID="membership-switch-now"
               tone="secondary"
               onPress={onSwitch}
               disabled={renewing}
@@ -810,6 +817,7 @@ function RenewalSheet({
             </ZookButton>
           ) : null}
           <ZookButton
+            testID="membership-pay-securely"
             onPress={onRenew}
             disabled={renewing}
             busy={renewing}

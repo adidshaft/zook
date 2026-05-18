@@ -202,6 +202,18 @@ describe("auth service", () => {
     expect(repo.challenges[0]?.attempts).toBe(1);
   });
 
+  it("does not accept a fixed dev otp that differs from the issued challenge", async () => {
+    const service = new AuthService(repo, emailProvider, () => new Date());
+    await service.requestOtp(email);
+    process.env.OTP_FIXED_CODE_DEV = "999999";
+
+    await expect(
+      service.verifyOtp({ identifier: email, code: "999999", userId: "user_1" }),
+    ).rejects.toThrow("Invalid OTP");
+    expect(repo.challenges[0]?.attempts).toBe(1);
+    expect(repo.sessions).toHaveLength(0);
+  });
+
   it("temporarily locks repeated invalid otp attempts and sends a suspicious activity email", async () => {
     const service = new AuthService(repo, emailProvider, () => new Date());
     await service.requestOtp(email);

@@ -299,7 +299,7 @@ export default function TrainerClientDetail() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="trainer-client-detail-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
@@ -377,6 +377,7 @@ export default function TrainerClientDetail() {
 
           <View style={styles.actionRow}>
             <ZookButton
+              testID="trainer-create-plan-button"
               onPress={() => setTab("plans")}
               disabled={!client}
               style={styles.actionHalf}
@@ -385,6 +386,7 @@ export default function TrainerClientDetail() {
               Create Plan
             </ZookButton>
             <SecondaryButton
+              testID="trainer-ai-draft-button"
               disabled={!client}
               onPress={() => router.push(`/trainer/client/${clientId}/ai-draft` as never)}
               icon="sparkles-outline"
@@ -436,7 +438,12 @@ export default function TrainerClientDetail() {
                 title="Plan builder"
                 subtitle="Create a trainer-owned draft before assigning."
               />
-              <FormField label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
+              <FormField
+                testID="trainer-plan-title"
+                label="Plan title"
+                value={planTitle}
+                onChangeText={setPlanTitle}
+              />
               <View style={styles.chipRow}>
                 {planTemplates.map((template) => {
                   const selected = template.id === selectedTemplate;
@@ -462,6 +469,7 @@ export default function TrainerClientDetail() {
               </View>
               <View style={styles.actionRow}>
                 <ZookButton
+                  testID="trainer-save-draft-button"
                   onPress={() => void saveDraft()}
                   icon="save-outline"
                   disabled={savingPlan}
@@ -470,6 +478,7 @@ export default function TrainerClientDetail() {
                   Save draft
                 </ZookButton>
                 <SecondaryButton
+                  testID="trainer-generate-ai-draft-button"
                   onPress={() => router.push(`/trainer/client/${clientId}/ai-draft` as never)}
                   disabled={!client || savingPlan}
                   style={styles.actionHalf}
@@ -478,6 +487,7 @@ export default function TrainerClientDetail() {
                 </SecondaryButton>
               </View>
               <SecondaryButton
+                testID="trainer-publish-plan-button"
                 onPress={() =>
                   Alert.alert(`Publish to ${clientName}?`, "The member will see this plan immediately.", [
                     { text: "Cancel", style: "cancel" },
@@ -531,6 +541,7 @@ export default function TrainerClientDetail() {
           {tab === "notes" ? (
             <GlassCard contentStyle={styles.stack}>
               <FormField
+                testID="trainer-note"
                 label="Trainer note"
                 value={noteText}
                 onChangeText={setNoteText}
@@ -538,6 +549,7 @@ export default function TrainerClientDetail() {
                 placeholder="Add coaching note for your own follow-up..."
               />
               <ZookButton
+                testID="trainer-save-note-button"
                 onPress={() => void saveNote()}
                 disabled={!client}
                 icon={noteSaved ? "checkmark-outline" : "save-outline"}

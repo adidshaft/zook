@@ -24,7 +24,7 @@ export default function PlatformMobile() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="platform-home-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -40,6 +40,7 @@ export default function PlatformMobile() {
           />
 
           <ZookButton
+            testID="platform-open-web-dashboard"
             icon="open-outline"
             onPress={() => void Linking.openURL(platformWebUrl)}
             style={styles.primaryAction}
@@ -73,7 +74,7 @@ export default function PlatformMobile() {
             />
           </GlassCard>
 
-          <SecondaryButton icon="log-out-outline" onPress={() => void logout()}>
+          <SecondaryButton testID="platform-sign-out" icon="log-out-outline" onPress={() => void logout()}>
             Sign out
           </SecondaryButton>
         </ScrollView>

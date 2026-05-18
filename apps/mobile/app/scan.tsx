@@ -480,7 +480,7 @@ export default function Scan() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       {scanMode === "scan" ? <CameraActiveBottomNavHider /> : null}
-      <ZookScreen>
+      <ZookScreen testID="scan-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
@@ -518,6 +518,7 @@ export default function Scan() {
               <View style={styles.cameraCard}>
                 {hasCamera ? (
                   <CameraView
+                    testID="scanner-view"
                     style={styles.camera}
                     facing="back"
                     onBarcodeScanned={completedRef.current ? undefined : handleBarcode}
@@ -563,6 +564,7 @@ export default function Scan() {
                   <Text style={styles.helpBody}>Enter the desk code manually.</Text>
                 </View>
                 <Pressable
+                  testID="scan-enter-code"
                   onPress={() => setScanMode("code")}
                   accessibilityRole="button"
                   accessibilityLabel="Enter code instead"
@@ -582,6 +584,7 @@ export default function Scan() {
               </View>
               <View style={styles.codeRow}>
                 <TextInput
+                  testID="scan-code-prefix"
                   value={codePrefix}
                   onChangeText={handlePrefixChange}
                   autoCapitalize="characters"
@@ -595,6 +598,7 @@ export default function Scan() {
                 />
                 <Text style={styles.codeDivider}>-</Text>
                 <TextInput
+                  testID="scan-code-digits"
                   ref={codeDigitsRef}
                   value={codeDigits}
                   onChangeText={handleDigitsChange}
@@ -607,6 +611,7 @@ export default function Scan() {
                   onSubmitEditing={submitCode}
                 />
                 <Pressable
+                  testID="scan-submit-code"
                   onPress={submitCode}
                   disabled={busy || !codeReady}
                   accessibilityRole="button"
@@ -626,6 +631,7 @@ export default function Scan() {
                 </Text>
               ) : null}
               <Pressable
+                testID="scan-back-to-camera"
                 onPress={() => setScanMode("scan")}
                 accessibilityRole="button"
                 accessibilityLabel="Return to QR scanner"
@@ -693,6 +699,7 @@ export default function Scan() {
 
           {__DEV__ && getMobileAppEnv() === "local" ? (
             <Pressable
+              testID="scan-dev-sample"
               onPress={() => void completeDevScan()}
               accessibilityRole="button"
               accessibilityLabel="Use sample data"

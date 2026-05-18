@@ -24,6 +24,7 @@ For mobile, stop any stale `next dev` on port `3000`, then run:
 ```sh
 cd apps/web
 RUN_DB_WEB_TESTS=1 OTP_FIXED_CODE_DEV=000000 ENV_PROFILE=local \
+  AI_FEATURES_ENABLED=true AI_PROVIDER=mock \
   PAYMENT_PROVIDER=mock ALLOW_MOCK_PAYMENT_COMPLETION=true \
   ERROR_REPORTER=mock RATE_LIMIT_PROVIDER=disabled \
   PORT=3000 pnpm dev
@@ -101,5 +102,7 @@ pnpm test:e2e
 - `/api/auth/sessions` must return `401`, not `404` or `500`; it is a compatibility alias for `/api/auth/session`.
 - If Maestro selects Android, pass `--platform ios` and the simulator UDID explicitly.
 - If mobile login fails, check that port `3000` is the seeded backend and `OTP_FIXED_CODE_DEV=000000` is set.
+- If trainer/member AI flows fail, confirm the seeded backend was started with `AI_FEATURES_ENABLED=true AI_PROVIDER=mock`.
+- If local `next dev` loads the wrong Node version in a detached shell, start it from a login shell such as `zsh -lic`.
 - If web actions hit rate limits, use the scripted command so `PLAYWRIGHT_RATE_LIMIT_PROVIDER=memory` is active.
 - If SSO smoke fails, confirm the local test client IDs are present in the test command and that production secrets are not required for local callback rejection tests.

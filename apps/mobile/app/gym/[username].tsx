@@ -188,7 +188,12 @@ export default function GymProfileScreen() {
   }
 
   async function startCheckout(planId: string) {
-    if (!gym || !token) {
+    if (!gym) {
+      return;
+    }
+    if (!token) {
+      const redirectPath = `/gym/${username}${effectiveReferral ? `?ref=${effectiveReferral}` : ""}`;
+      router.push(`/login?redirect=${encodeURIComponent(redirectPath)}` as never);
       return;
     }
     setBusyAction(planId);
@@ -240,7 +245,7 @@ export default function GymProfileScreen() {
   };
 
   return (
-    <ZookScreen>
+    <ZookScreen testID="gym-profile-screen">
       <ScrollView
         style={styles.scroller}
         contentInsetAdjustmentBehavior="never"
@@ -557,7 +562,10 @@ export default function GymProfileScreen() {
                   This gym reviews new members before payment. Submit your request and the owner can
                   approve it from the web dashboard.
                 </Text>
-                <PrimaryButton onPress={() => void requestMembership()}>
+                <PrimaryButton
+                  testID="gym-request-membership"
+                  onPress={() => void requestMembership()}
+                >
                   {busyAction === "join-request" ? "Submitting..." : "Send membership request"}
                 </PrimaryButton>
               </GlassCard>
@@ -571,6 +579,7 @@ export default function GymProfileScreen() {
                 </Text>
                 <View style={styles.inviteCodeRow}>
                   <TextInput
+                    testID="gym-invite-code"
                     value={inviteCode}
                     onChangeText={setInviteCode}
                     autoCapitalize="characters"
@@ -578,7 +587,7 @@ export default function GymProfileScreen() {
                     placeholderTextColor={colors.textMuted}
                     style={styles.inviteCodeInput}
                   />
-                  <PrimaryButton onPress={applyInviteCode}>Apply</PrimaryButton>
+                  <PrimaryButton testID="gym-apply-invite-code" onPress={applyInviteCode}>Apply</PrimaryButton>
                 </View>
               </GlassCard>
             ) : null}
@@ -593,7 +602,7 @@ export default function GymProfileScreen() {
             ) : null}
 
             <View style={styles.planStack}>
-              {plans.map((plan) => {
+              {plans.map((plan, index) => {
                 const pricedPlan = plan as typeof plan & {
                   effectivePricePaise?: number | null;
                   badges?: string[] | null;
@@ -613,7 +622,11 @@ export default function GymProfileScreen() {
                 ].filter((item): item is string => Boolean(item));
 
                 return (
-                <GlassCard key={plan.id} contentStyle={styles.planCard}>
+                <GlassCard
+                  key={plan.id}
+                  testID={`gym-plan-row-${plan.id}`}
+                  contentStyle={styles.planCard}
+                >
                   <View style={styles.planHeader}>
                     <View style={styles.planCopy}>
                       <Text style={styles.planName}>{plan.name}</Text>
@@ -647,6 +660,7 @@ export default function GymProfileScreen() {
                     ))}
                   </View>
                   <PrimaryButton
+                    testID={index === 0 ? "gym-choose-plan-first" : `gym-choose-plan-${plan.id}`}
                     onPress={() => void startCheckout(plan.id)}
                     disabled={!canCheckout(plan.id)}
                   >

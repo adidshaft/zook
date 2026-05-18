@@ -287,16 +287,19 @@ export function ZookScreen({
   bottomInset = false,
   style,
   ambient = true,
+  testID,
 }: {
   children: ReactNode;
   bottomInset?: boolean;
   style?: StyleProp<ViewStyle>;
   ambient?: boolean;
+  testID?: string;
 }) {
   const insets = useSafeAreaInsets();
   const demoStripHeight = isOfflineDemoMode() ? layout.demoStripHeight : 0;
   return (
     <View
+      testID={testID}
       style={[
         styles.screen,
         {
@@ -455,6 +458,7 @@ export function GlassCard({
   pressable = false,
   disabled = false,
   onPress,
+  testID,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -467,6 +471,7 @@ export function GlassCard({
   pressable?: boolean;
   disabled?: boolean;
   onPress?: PressHandler;
+  testID?: string;
 }) {
   const palette = glassCardVariants[variant];
   const resolvedGlowTone = glowTone ?? (glow ? "lime" : undefined);
@@ -521,6 +526,7 @@ export function GlassCard({
   if (pressable || onPress) {
     return (
       <Pressable
+        testID={testID}
         disabled={disabled}
         onPress={() => pressWithHaptics(onPress)}
         accessibilityRole="button"
@@ -532,7 +538,11 @@ export function GlassCard({
     );
   }
 
-  return <View style={outerStyle}>{inner}</View>;
+  return (
+    <View testID={testID} style={outerStyle}>
+      {inner}
+    </View>
+  );
 }
 
 export function Card(props: Parameters<typeof GlassCard>[0]) {
@@ -924,6 +934,7 @@ export function ZookButton({
   busy = false,
   busyLabel,
   hapticWeight,
+  testID,
 }: {
   children: ReactNode;
   onPress?: PressHandler;
@@ -941,6 +952,7 @@ export function ZookButton({
   busy?: boolean;
   busyLabel?: string;
   hapticWeight?: HapticWeight;
+  testID?: string;
 }) {
   const resolvedVariant = variant ?? variantFromTone(tone);
   const palette = buttonPalettes[resolvedVariant];
@@ -970,6 +982,7 @@ export function ZookButton({
     return (
       <Link href={href} asChild>
         <AnimatedPressable
+          testID={testID}
           onPressIn={() => {
             if (hapticWeight !== "none") {
               pressWithHaptics(undefined, hapticWeight);
@@ -1012,6 +1025,7 @@ export function ZookButton({
 
   const button = (
     <AnimatedPressable
+      testID={testID}
       onPressIn={() => {
         if (!isDisabled) {
           scale.value = withRealSpring(0.95, { mass: 0.5, damping: 12 });
@@ -1451,6 +1465,7 @@ export function ProductCard({
   onIncrement,
   onDecrement,
   style,
+  testID,
 }: {
   name: string;
   price: string;
@@ -1466,6 +1481,7 @@ export function ProductCard({
   onIncrement?: () => void;
   onDecrement?: () => void;
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 }) {
   const palette = tonePalettes[tone];
   const increment = onIncrement ?? onPress;
@@ -1473,6 +1489,7 @@ export function ProductCard({
   const canDecrement = !disabled && Boolean(onDecrement);
   return (
     <GlassCard
+      testID={testID}
       style={[styles.productCard, style]}
       contentStyle={[styles.productContent, compact ? styles.productContentCompact : null]}
       disabled={disabled}
@@ -1519,6 +1536,7 @@ export function ProductCard({
         {quantity > 0 ? (
           <View style={styles.productStepper}>
             <Pressable
+              testID={testID ? `${testID}-decrement` : undefined}
               onPress={() => {
                 if (canDecrement) pressWithHaptics(onDecrement);
               }}
@@ -1533,6 +1551,7 @@ export function ProductCard({
             </Pressable>
             <Text style={styles.productQuantity}>{quantity}</Text>
             <Pressable
+              testID={testID ? `${testID}-increment` : undefined}
               onPress={() => {
                 if (canIncrement) pressWithHaptics(increment);
               }}
@@ -1548,6 +1567,7 @@ export function ProductCard({
           </View>
         ) : (
           <Pressable
+            testID={testID ? `${testID}-increment` : undefined}
             onPress={() => {
               if (canIncrement) pressWithHaptics(increment);
             }}
@@ -2205,6 +2225,7 @@ function DockTabItem({
   const raised = isMemberNav && tab.raised;
   const showLabel = !(raised && tab.hideLabel);
   const translatedLabel = translatedNavLabel(tab.label, t);
+  const tabTestId = `bottom-nav-${tab.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   const scale = useRealSharedValue(1);
 
   const animatedStyle = useRealAnimatedStyle(() => ({
@@ -2237,6 +2258,7 @@ function DockTabItem({
         tab.accessibilityLabel ? translatedNavLabel(tab.accessibilityLabel, t) : translatedLabel
       }
       accessibilityState={{ selected: active }}
+      testID={tabTestId}
       style={[
         styles.bottomNavItem,
         isMemberNav ? styles.memberBottomNavItem : null,
@@ -2247,7 +2269,7 @@ function DockTabItem({
         animatedStyle,
       ]}
     >
-      <View>
+      <View style={[styles.navIconShell, raised ? styles.navIconShellRaised : null]}>
         {raised ? <AnimatedPulse /> : null}
         <Ionicons
           name={active ? tab.activeIcon : tab.icon}
@@ -2284,9 +2306,11 @@ function DockTabItem({
   }
 
   return (
-    <Link href={tab.href} asChild>
-      {item}
-    </Link>
+    <View style={styles.bottomNavSlot}>
+      <Link href={tab.href} asChild>
+        {item}
+      </Link>
+    </View>
   );
 }
 
@@ -3410,9 +3434,10 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
+    gap: 0,
   },
   bottomNavSafeAreaMask: {
     position: "absolute",
@@ -3472,14 +3497,20 @@ const styles = StyleSheet.create({
     overflow: "visible",
   },
   bottomNavItem: {
-    flex: 1,
     minWidth: 0,
-    maxWidth: 68,
+    width: "100%",
+    maxWidth: 62,
     height: 54,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
+  },
+  bottomNavSlot: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "center",
+    justifyContent: "center",
   },
   memberBottomNavItem: {
     width: "100%",
@@ -3533,6 +3564,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: colors.subtle,
     ...typography.navLabel,
+  },
+  navIconShell: {
+    width: 28,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navIconShellRaised: {
+    width: 42,
+    height: 42,
+    borderRadius: 999,
   },
   memberBottomNavText: {
     fontSize: 12,

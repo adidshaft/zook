@@ -1,0 +1,119 @@
+appId: com.zook.app
+name: 02-onboarding
+tags:
+  - onboarding
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- openLink: zook:///onboarding
+- tapOn:
+    point: "67%,55%"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-intro-screen"
+    timeout: 12000
+- tapOn:
+    id: "onboarding-intro-screen"
+
+- openLink: zook:///onboarding/value-props
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-value-props-screen"
+    timeout: 12000
+- tapOn:
+    id: "onboarding-value-continue"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-permissions-screen"
+    timeout: 12000
+- tapOn:
+    id: "onboarding-skip-permissions"
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 12000
+- takeScreenshot: /tmp/zook-maestro/onboarding/skip.png
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- openLink: zook:///onboarding/role-question
+- tapOn:
+    point: "67%,55%"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-role-question-screen"
+    timeout: 12000
+- tapOn:
+    id: "onboarding-role-member"
+- extendedWaitUntil:
+    visible:
+      id: "find-gyms-screen"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/onboarding/member-role.png
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- openLink: zook:///onboarding/role-question
+- tapOn:
+    point: "67%,55%"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-role-question-screen"
+    timeout: 12000
+- tapOn:
+    id: "onboarding-role-trainer"
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/onboarding/trainer-role.png
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- openLink: zook:///onboarding/role-question
+- tapOn:
+    point: "67%,55%"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-role-question-screen"
+    timeout: 12000
+- tapOn:
+    id: "onboarding-role-front_desk"
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/onboarding/front-desk-role.png
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- openLink: zook:///onboarding/permissions
+- tapOn:
+    point: "67%,55%"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-permissions-screen"
+    timeout: 12000
+- tapOn:
+    id: "onboarding-allow-permissions"
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "Allow While Using App"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/onboarding/permissions.png

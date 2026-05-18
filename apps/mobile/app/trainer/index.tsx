@@ -120,7 +120,7 @@ export default function Trainer() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="trainer-home-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -181,7 +181,7 @@ export default function Trainer() {
                 </GlassCard>
               ) : null}
 
-              <View style={styles.metricGrid}>
+              <View testID="trainer-view-home" style={styles.metricGrid}>
                 <MetricTile
                   label="Clients"
                   value={String(clients.length)}
@@ -276,7 +276,7 @@ export default function Trainer() {
           {view === "clients" ? (
             <>
               <SectionHeader title="Clients" />
-              <View style={styles.stack}>
+              <View testID="trainer-client-list" style={styles.stack}>
                 {clientsQuery.isLoading ? (
                   <TrainerClientsSkeleton />
                 ) : clientsQuery.isError ? (
@@ -285,7 +285,7 @@ export default function Trainer() {
                     onRetry={() => void clientsQuery.refetch()}
                   />
                 ) : clients.length ? (
-                  clients.map((client) => {
+                  clients.map((client, index) => {
                     const activePlanCount = client.summary?.activePlans ?? 0;
                     return (
                       <Link
@@ -293,7 +293,14 @@ export default function Trainer() {
                         href={`/trainer/client/${client.memberUserId}`}
                         asChild
                       >
-                        <Pressable accessibilityRole="button">
+                        <Pressable
+                          testID={
+                            index === 0
+                              ? "trainer-client-row-first"
+                              : `trainer-client-row-${client.memberUserId}`
+                          }
+                          accessibilityRole="button"
+                        >
                           <ListRow
                             title={client.user?.name ?? "Client"}
                             subtitle={`${client.summary?.fitnessGoal ?? client.profile?.fitnessGoal ?? "General fitness"} · ${planCountLabel(activePlanCount)}`}
@@ -347,6 +354,7 @@ export default function Trainer() {
                         trailing={<StatusChip status="Open" tone="amber" />}
                       />
                       <ZookButton
+                        testID={`trainer-client-detail-${client.memberUserId}`}
                         onPress={() => openClient(client.memberUserId)}
                         tone="secondary"
                         icon="reader-outline"

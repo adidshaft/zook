@@ -74,6 +74,7 @@ export function PrivilegedPinProvider({ children }: { children: ReactNode }) {
             <Text style={styles.body}>Enter the 4-digit org PIN to continue.</Text>
             <OtpInput
               ref={inputRef}
+              testID="privileged-pin"
               accessibilityLabel="Org PIN"
               label="Org PIN"
               length={4}

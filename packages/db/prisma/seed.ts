@@ -109,6 +109,7 @@ const seedUserEmails = [
   "member@zook.local",
   "prospect@zook.local",
   "minor@zook.local",
+  "desk-test-member@zook.local",
 ];
 
 const seedUserPhones = [
@@ -120,6 +121,7 @@ const seedUserPhones = [
   "+919876543210",
   "+919555000111",
   "+919000012345",
+  "+919444000222",
 ];
 
 const seedOrgUsernames = ["aarogya-strength", "peaklab"];
@@ -377,6 +379,7 @@ async function main() {
       ["member", "Nisha Menon", "member@zook.local", "+919876543210", false, false],
       ["prospect", "Maya Prospect", "prospect@zook.local", "+919555000111", false, false],
       ["minor", "Ira Shah", "minor@zook.local", "+919000012345", false, true],
+      ["desk-test-member", "Karan Desk Test", "desk-test-member@zook.local", "+919444000222", false, false],
     ].map(([key, name, email, phone, isPlatformAdmin, isMinor]) =>
       prisma.user.create({
         data: {
@@ -406,6 +409,7 @@ async function main() {
   const member = must(users[5], "member user");
   const prospect = must(users[6], "prospect user");
   const minor = must(users[7], "minor user");
+  const deskTestMember = must(users[8], "desk test member user");
 
   await prisma.otpChallenge.createMany({
     data: seedUserEmails.map((email) => ({
@@ -521,6 +525,7 @@ async function main() {
     [reception.id, Role.RECEPTIONIST],
     [trainer.id, Role.TRAINER],
     [member.id, Role.MEMBER],
+    [deskTestMember.id, Role.MEMBER],
     [minor.id, Role.MEMBER],
   ] as const;
 
@@ -583,6 +588,14 @@ async function main() {
         userId: minor.id,
         profilePhotoUrl: minor.profilePhotoUrl,
         marketingOptIn: false,
+      },
+      {
+        orgId: aarogyaStrength.id,
+        userId: deskTestMember.id,
+        profilePhotoUrl: deskTestMember.profilePhotoUrl,
+        profilePhotoConsentAt: new Date(),
+        marketingOptIn: true,
+        notes: "Seeded for reception desk E2E payment and attendance flows.",
       },
     ],
   });
@@ -1106,6 +1119,19 @@ async function main() {
       endsAt: days(210),
       remainingVisits: 30,
       notes: "Early renewal starts after current plan.",
+    },
+  });
+
+  await prisma.memberSubscription.create({
+    data: {
+      orgId: aarogyaStrength.id,
+      branchId: aarogyaBranch.id,
+      memberUserId: deskTestMember.id,
+      planId: monthly.id,
+      status: SubscriptionStatus.PENDING_PAYMENT,
+      startsAt: days(0),
+      endsAt: days(30),
+      notes: "Reception E2E pending subscription for manual payment activation.",
     },
   });
 
@@ -1741,6 +1767,7 @@ async function main() {
   const shopOrder = await prisma.shopOrder.create({
     data: {
       orgId: aarogyaStrength.id,
+      branchId: aarogyaBranch.id,
       userId: member.id,
       status: OrderStatus.READY_FOR_PICKUP,
       totalPaise: paise(548),
@@ -1963,6 +1990,7 @@ async function main() {
     reception: reception.email,
     trainer: trainer.email,
     member: member.email,
+    deskTestMember: deskTestMember.email,
     prospect: prospect.email,
     minor: minor.email,
     otp: "000000",

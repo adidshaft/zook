@@ -52,6 +52,7 @@ export default function OnboardingSplash() {
 
   return (
     <Pressable
+      testID="onboarding-intro-screen"
       accessibilityRole="button"
       accessibilityLabel="Skip intro"
       onPress={() => router.push("/onboarding/value-props" as never)}

@@ -98,7 +98,7 @@ export default function Plans() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="plans-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
@@ -146,6 +146,7 @@ export default function Plans() {
               />
               <View style={styles.activePlanActions}>
                 <ZookButton
+                  testID="plans-start-session"
                   onPress={() => openAssignment(selectedAssignment.id)}
                   icon="play-outline"
                   style={styles.activePlanPrimaryAction}
@@ -153,6 +154,7 @@ export default function Plans() {
                   Start today's session
                 </ZookButton>
                 <ZookButton
+                  testID="plans-view-active"
                   onPress={() => openAssignment(selectedAssignment.id)}
                   tone="secondary"
                   style={styles.activePlanSecondaryAction}
@@ -191,8 +193,9 @@ export default function Plans() {
                 />
               </GlassCard>
             ) : null}
-            {filteredPlans.map((assignment) => (
+            {filteredPlans.map((assignment, index) => (
               <Pressable
+                testID={index === 0 ? "plan-row-first" : `plan-row-${assignment.id}`}
                 key={assignment.id}
                 onPress={() => openAssignment(assignment.id)}
                 accessibilityRole="button"
@@ -455,7 +458,7 @@ export function PlanDetailScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="plan-detail-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
@@ -487,6 +490,7 @@ export function PlanDetailScreen() {
               }
               trailing={
                 <Pressable
+                  testID="plan-detail-open-feedback"
                   onPress={openFeedbackSheet}
                   accessibilityRole="button"
                   accessibilityLabel="Tell coach"
@@ -553,6 +557,7 @@ export function PlanDetailScreen() {
           <StickyActionBar>
             <View style={styles.stickyActionRow}>
               <ZookButton
+                testID="plan-detail-send-feedback"
                 onPress={openFeedbackSheet}
                 tone="secondary"
                 icon="send-outline"
@@ -561,6 +566,7 @@ export function PlanDetailScreen() {
                 Send Feedback
               </ZookButton>
               <ZookButton
+                testID="plan-detail-complete-workout"
                 onPress={() => void completeWorkout()}
                 disabled={!selectedAssignment || completePlan.isPending}
                 icon="checkmark-circle-outline"
@@ -618,6 +624,7 @@ export function PlanDetailScreen() {
               ))}
             </View>
             <TextInput
+              testID="plan-detail-feedback-input"
               value={feedbackNote}
               onChangeText={setFeedbackNote}
               maxLength={280}
@@ -627,6 +634,7 @@ export function PlanDetailScreen() {
             />
             {feedbackStatus ? <Text style={styles.inlineStatus}>{feedbackStatus}</Text> : null}
             <ZookButton
+              testID="plan-detail-feedback-send"
               onPress={() => void sendFeedback()}
               icon="send-outline"
               style={styles.feedbackSendButton}

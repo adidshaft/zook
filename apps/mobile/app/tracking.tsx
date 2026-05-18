@@ -109,7 +109,7 @@ export default function TrackingDashboard() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="tracking-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -190,7 +190,7 @@ export default function TrackingDashboard() {
                   Sleep, water, steps. Log them daily.
                 </Text>
               </View>
-              <ZookButton href="/tracking-entry" tone="secondary" size="sm">
+              <ZookButton testID="tracking-add-habit-entry" href="/tracking-entry" tone="secondary" size="sm">
                 Add
               </ZookButton>
             </GlassCard>
@@ -225,7 +225,7 @@ export default function TrackingDashboard() {
           )}
         </ScrollView>
         <StickyActionBar bottomOffset={layout.bottomNavHeight + 22}>
-          <ZookButton href="/tracking-entry" icon="add-outline" fullWidth>
+          <ZookButton testID="tracking-log-workout" href="/tracking-entry" icon="add-outline" fullWidth>
             Log workout
           </ZookButton>
         </StickyActionBar>

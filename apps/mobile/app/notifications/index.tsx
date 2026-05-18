@@ -310,7 +310,7 @@ export default function NotificationsScreen() {
 
   return (
     <>
-      <ZookScreen>
+      <ZookScreen testID="notifications-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -346,6 +346,7 @@ export default function NotificationsScreen() {
             trailing={
               unreadCount > 0 ? (
                 <Pressable
+                  testID="notifications-mark-all-read"
                   onPress={() => void markAllRead()}
                   disabled={markAllBusy}
                   accessibilityRole="button"
@@ -399,10 +400,11 @@ export default function NotificationsScreen() {
                 {(group.label === "notifications.older" && !olderExpanded
                   ? group.items.slice(0, 3)
                   : group.items
-                ).map((item) => (
+                ).map((item, index) => (
                     <NotificationRow
                       key={item.id}
                       item={item}
+                      first={index === 0}
                       busy={busyIds.has(item.id)}
                       highlighted={item.notification?.id === routeParams.notificationId}
                       onPress={() => void openNotification(item)}
@@ -450,6 +452,15 @@ export default function NotificationsScreen() {
                     : ""}
                 </Text>
               </View>
+              <Pressable
+                testID="notification-detail-close"
+                onPress={() => router.replace("/notifications" as never)}
+                accessibilityRole="button"
+                accessibilityLabel="Close notification details"
+                style={styles.iconButton}
+              >
+                <Ionicons name="close" size={20} color={colors.text} />
+              </Pressable>
             </View>
             <Text style={styles.detailBody}>
               {focusedNotification?.notification?.body ?? "No details available."}
@@ -465,11 +476,13 @@ export default function NotificationsScreen() {
 function NotificationRow({
   item,
   busy,
+  first,
   highlighted,
   onPress,
 }: {
   item: InboxNotification;
   busy: boolean;
+  first: boolean;
   highlighted: boolean;
   onPress: () => void;
 }) {
@@ -485,6 +498,7 @@ function NotificationRow({
 
   return (
     <Pressable
+      testID={first ? "notification-row-first" : `notification-row-${item.id}`}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={notification?.title ?? "Notification"}
@@ -502,7 +516,12 @@ function NotificationRow({
               <Text numberOfLines={1} style={styles.notificationTitle}>
                 {notification?.title ?? "Notification"}
               </Text>
-              {unread ? <View style={styles.unreadDot} /> : null}
+              {unread ? (
+                <View
+                  testID={first ? "unread-dot-first" : `unread-dot-${item.id}`}
+                  style={styles.unreadDot}
+                />
+              ) : null}
             </View>
             <Text numberOfLines={2} style={styles.notificationBody}>
               {notification?.body ?? "No details available."}

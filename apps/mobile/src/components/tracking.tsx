@@ -54,16 +54,18 @@ export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric 
 
 export function WorkoutLogCard({
   entry,
-  compact = false
+  compact = false,
+  testID,
 }: {
   entry: WorkoutLogEntry;
   compact?: boolean;
+  testID?: string;
 }) {
   const t = useT();
   const visibleExercises = compact ? entry.exercises.slice(0, 3) : entry.exercises;
 
   return (
-    <View style={[styles.logCard, compact ? styles.logCardCompact : null]}>
+    <View testID={testID} style={[styles.logCard, compact ? styles.logCardCompact : null]}>
       <View style={styles.logHeader}>
         <View style={{ flex: 1, gap: 4 }}>
           <Text style={styles.logDate}>

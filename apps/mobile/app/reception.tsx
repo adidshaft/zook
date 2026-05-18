@@ -169,6 +169,15 @@ export default function Reception() {
   const readyOrders = ordersQuery.data?.orders ?? [];
   const fulfilledCount = ordersQuery.data?.summary?.fulfilledToday ?? 0;
   const amountPaise = Math.round(Number(amount || "0") * 100);
+  const attendanceReason = reason.trim();
+  const attendanceReasonInvalid = attendanceReason.length > 0 && attendanceReason.length < 2;
+
+  useEffect(() => {
+    setVerifyCode("");
+    setVerifyMessage("");
+    setVerifiedUser(null);
+  }, [view]);
+
   const filteredMembers = useMemo(() => {
     const query = memberSearch.toLowerCase();
     return (membersQuery.data?.members ?? []).filter((member) => {
@@ -463,12 +472,16 @@ export default function Reception() {
       return;
     }
     setAttendanceStatus("");
+    if (attendanceReason.length < 2) {
+      setAttendanceStatus("Add an attendance note before recording.");
+      return;
+    }
     if (!(await requirePrivilegedAuth("Record manual attendance"))) {
       showAuthenticationRequired();
       return;
     }
     try {
-      await manualAttendanceMutation.mutateAsync({ memberUserId: member.id, reason });
+      await manualAttendanceMutation.mutateAsync({ memberUserId: member.id, reason: attendanceReason });
       const message = "Manual attendance recorded.";
       setAttendanceStatus(message);
       showToast({ tone: "success", haptic: "success", message });
@@ -484,7 +497,7 @@ export default function Reception() {
   }
 
   return (
-    <ZookScreen>
+    <ZookScreen testID="reception-home-screen">
       <KeyboardAwareScreen
         scrollViewProps={{
           contentInsetAdjustmentBehavior: "never",
@@ -592,6 +605,7 @@ export default function Reception() {
                 subtitle="Enter ZK code for attendance or pickup lookup without leaving the desk."
               />
               <FormField
+                testID="reception-verify-code"
                 label="Code"
                 value={verifyCode}
                 onChangeText={handleVerifyCodeChange}
@@ -599,6 +613,7 @@ export default function Reception() {
                 autoCapitalize="characters"
               />
               <PrimaryButton
+                testID="reception-verify-code-button"
                 icon="scan-outline"
                 disabled={!canVerifyCode || verifyingCode}
                 onPress={verifyEntryCode}
@@ -659,12 +674,15 @@ export default function Reception() {
               title="Needs Approval queue"
               action={<Pill tone="amber">{pendingCount} pending</Pill>}
             />
-            <View style={styles.stack}>
+            <View testID="reception-approval-queue" style={styles.stack}>
               {queueQuery.isLoading ? (
                 <ReceptionQueueSkeleton />
               ) : approvalQueue.length ? (
                 approvalQueue.map((attempt, index) => (
                   <GlassCard
+                    testID={
+                      index === 0 ? "reception-queue-row-first" : `reception-queue-row-${attempt.id}`
+                    }
                     key={attempt.id}
                     variant={index === 0 ? "selected" : "compact"}
                     padding={14}
@@ -710,6 +728,7 @@ export default function Reception() {
                     </View>
                     <View style={styles.actionRow}>
                       <PrimaryButton
+                        testID={index === 0 ? "approve-button-first" : `approve-button-${attempt.id}`}
                         icon="checkmark-circle-outline"
                         disabled={!canApproveAttendance || approveAttendanceMutation.isPending}
                         onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}
@@ -719,6 +738,7 @@ export default function Reception() {
                         Approve
                       </PrimaryButton>
                       <SecondaryButton
+                        testID={index === 0 ? "deny-button-first" : `deny-button-${attempt.id}`}
                         icon="eye-outline"
                         disabled={!canApproveAttendance || rejectAttendanceMutation.isPending}
                         onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}
@@ -747,6 +767,7 @@ export default function Reception() {
         {view === "members" ? (
           <>
             <SearchField
+              testID="reception-member-search"
               value={memberSearch}
               onChangeText={setMemberSearch}
               placeholder="Search member by name, email, phone, member ID"
@@ -758,12 +779,17 @@ export default function Reception() {
                   <EmptyState title="No members found" body="Try a different name or email." />
                 </GlassCard>
               ) : null}
-              {visibleMembers.map((user) => {
+              {visibleMembers.map((user, index) => {
                 const selected = user.profile.userId === selectedMemberRecord?.profile.userId;
                 const phone = user.user?.phone ?? null;
                 const phoneRevealed = revealedPhones.has(user.profile.userId);
                 return (
                   <GlassCard
+                    testID={
+                      index === 0
+                        ? "reception-member-row-first"
+                        : `reception-member-row-${user.profile.userId}`
+                    }
                     key={user.profile.userId}
                     variant={selected ? "selected" : "compact"}
                     padding={12}
@@ -856,18 +882,33 @@ export default function Reception() {
                 }
               />
               <AuditWarning>Add a reason so the gym has a clear record.</AuditWarning>
-              <FormField label="Attendance note" value={reason} onChangeText={setReason} />
+              <FormField
+                testID="reception-attendance-reason"
+                label="Attendance note"
+                value={reason}
+                onChangeText={setReason}
+                required
+                error={attendanceReasonInvalid ? "Add at least 2 characters." : undefined}
+              />
               <PrimaryButton
+                testID="reception-record-attendance"
                 icon="create-outline"
                 disabled={
-                  !canRecordManualAttendance || !member?.id || manualAttendanceMutation.isPending
+                  !canRecordManualAttendance ||
+                  !member?.id ||
+                  attendanceReason.length < 2 ||
+                  manualAttendanceMutation.isPending
                 }
                 onLongPress={!canRecordManualAttendance ? showOwnerApprovalRequired : undefined}
                 onPress={recordManualAttendance}
               >
                 {manualAttendanceMutation.isPending ? "Recording..." : "Record Attendance"}
               </PrimaryButton>
-              {attendanceStatus ? <Text style={styles.statusText}>{attendanceStatus}</Text> : null}
+              {attendanceStatus ? (
+                <Text testID="reception-attendance-status" style={styles.statusText}>
+                  {attendanceStatus}
+                </Text>
+              ) : null}
             </GlassCard>
           </>
         ) : null}
@@ -907,7 +948,11 @@ export default function Reception() {
               />
               <ListRow
                 title="Invoice"
-                subtitle={membership?.id ? "Active membership selected" : "No membership selected"}
+                subtitle={
+                  membership?.status
+                    ? `${membership.status.replace(/_/g, " ")} membership selected`
+                    : "No membership selected"
+                }
                 leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />}
                 trailing={<Text style={styles.rowAmount}>{formatInr(dueAmount)} due</Text>}
               />
@@ -947,6 +992,7 @@ export default function Reception() {
                   })}
                 </View>
                 <FormField
+                  testID="reception-payment-amount"
                   label="Amount received"
                   value={amount}
                   onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
@@ -957,6 +1003,7 @@ export default function Reception() {
                   error={amountInvalid ? "Enter an amount greater than 0." : undefined}
                 />
                 <FormField
+                  testID="reception-payment-reference"
                   label="Receipt or reference"
                   value={referenceId}
                   onChangeText={setReferenceId}
@@ -965,6 +1012,7 @@ export default function Reception() {
                   placeholder="UPI ref, bank UTR, card slip"
                 />
                 <FormField
+                  testID="reception-payment-note"
                   label="Desk note"
                   value={paymentNote}
                   onChangeText={setPaymentNote}
@@ -977,12 +1025,14 @@ export default function Reception() {
                 All offline payments are recorded with audit logs. Ensure payment is received before recording.
               </AuditWarning>
               <FormField
+                testID="reception-payment-staff-note"
                 label="Staff note"
                 value={paymentReason}
                 onChangeText={setPaymentReason}
                 required
               />
               <PrimaryButton
+                testID="reception-record-payment"
                 icon="shield-checkmark-outline"
                 disabled={
                   !canRecordOfflinePayment || !canRecordPayment || recordPaymentMutation.isPending
@@ -992,7 +1042,11 @@ export default function Reception() {
               >
                 Record Payment
               </PrimaryButton>
-              {paymentStatus ? <Text style={styles.statusText}>{paymentStatus}</Text> : null}
+              {paymentStatus ? (
+                <Text testID="reception-payment-status" style={styles.statusText}>
+                  {paymentStatus}
+                </Text>
+              ) : null}
             </GlassCard>
           </>
         ) : null}
@@ -1023,6 +1077,7 @@ export default function Reception() {
                 subtitle="Match the code and member before giving out the order."
               />
               <FormField
+                testID="reception-pickup-code"
                 label="Pickup code"
                 value={verifyCode}
                 onChangeText={handleVerifyCodeChange}
@@ -1030,6 +1085,7 @@ export default function Reception() {
                 placeholder="Enter pickup code"
               />
               <PrimaryButton
+                testID="reception-verify-pickup-code"
                 icon="scan-outline"
                 disabled={!canVerifyCode || verifyingCode}
                 onPress={verifyEntryCode}
@@ -1043,8 +1099,11 @@ export default function Reception() {
             <SectionHeader title="Fulfillment Queue" subtitle="Paid orders ready at the desk." />
             <View style={styles.stack}>
               {readyOrders.length ? (
-                readyOrders.map((order) => (
+                readyOrders.map((order, index) => (
                   <GlassCard
+                    testID={
+                      index === 0 ? "reception-order-row-first" : `reception-order-row-${order.id}`
+                    }
                     key={order.id}
                     variant="compact"
                     padding={14}
@@ -1075,6 +1134,7 @@ export default function Reception() {
                       })}
                     </View>
                     <PrimaryButton
+                      testID={index === 0 ? "fulfill-button-first" : `fulfill-button-${order.id}`}
                       icon="bag-check-outline"
                       disabled={fulfillOrderMutation.isPending}
                       onPress={() => fulfillOrder(order.id)}
@@ -1094,6 +1154,11 @@ export default function Reception() {
                 </GlassCard>
               )}
             </View>
+            {paymentStatus ? (
+              <Text testID="reception-payment-status" style={styles.statusText}>
+                {paymentStatus}
+              </Text>
+            ) : null}
           </>
         ) : null}
       </KeyboardAwareScreen>
@@ -1161,6 +1226,7 @@ export default function Reception() {
           </View>
           <View style={styles.actionRow}>
             <PrimaryButton
+              testID="reception-decision-approve"
               icon="checkmark-circle-outline"
               disabled={!selectedDecisionAttempt || approveAttendanceMutation.isPending}
               onPress={() => {
@@ -1173,6 +1239,7 @@ export default function Reception() {
               {approveAttendanceMutation.isPending ? "Approving..." : "Approve"}
             </PrimaryButton>
             <SecondaryButton
+              testID="reception-decision-reject"
               icon="close-circle-outline"
               disabled={!selectedDecisionAttempt || rejectAttendanceMutation.isPending}
               onPress={() => {

@@ -227,7 +227,7 @@ export default function Login() {
       const seededDevOtp = sanitizeOtpCode(result.devOtp ?? localDevOtp ?? "");
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setStage("otp");
-      setCode(seededDevOtp);
+      setCode("");
       setMessage(t(resend ? "auth.freshCodeSent" : "auth.codeSent", { identifier }));
       setDevOtp(seededDevOtp || null);
       setRateLimitCooldown(0);
@@ -241,7 +241,7 @@ export default function Login() {
 
   async function submitOtp(overrideCode?: string) {
     const identifier = selectedIdentifier();
-    const nextCode = sanitizeOtpCode(overrideCode ?? (code || devOtp || localDevOtp || ""));
+    const nextCode = sanitizeOtpCode(overrideCode ?? code);
     if (verifyingRef.current || accountLocked || rateLimitCooldown > 0 || nextCode.length !== 6) {
       return;
     }
@@ -349,7 +349,7 @@ export default function Login() {
   }
 
   return (
-    <ZookScreen ambient={false}>
+    <ZookScreen ambient={false} testID="login-screen">
       <KeyboardAwareScreen
         scrollViewProps={{
           contentInsetAdjustmentBehavior: "never",
@@ -382,6 +382,7 @@ export default function Login() {
             {stage === "identifier" ? (
               <>
                 <GlassInput
+                  testID="login-email"
                   label="Email"
                   value={email}
                   onChangeText={(value) => {
@@ -412,11 +413,15 @@ export default function Login() {
                 disabled={busy || accountLocked || rateLimitCooldown > 0}
                 label={t("auth.otpLabel")}
                 accessibilityLabel={t("auth.otpAccessibility")}
+                testID="login-otp"
               />
             )}
 
             <ZookButton
+              testID={stage === "identifier" ? "login-send-code" : "login-verify-code"}
               onPress={handleContinue}
+              size="lg"
+              fullWidth
               disabled={busy || accountLocked || rateLimitCooldown > 0}
               busy={busyAction === "otp"}
               busyLabel={t("auth.working")}
@@ -427,6 +432,7 @@ export default function Login() {
             {stage === "otp" ? (
               <View style={styles.otpActions}>
                 <ZookButton
+                  testID="login-resend-code"
                   onPress={() => void requestCode(true)}
                   disabled={busy || accountLocked || resendCooldown > 0 || rateLimitCooldown > 0}
                   tone="secondary"
@@ -437,6 +443,7 @@ export default function Login() {
                     : t("auth.resendCode")}
                 </ZookButton>
                 <ZookButton
+                  testID="login-change-sign-in"
                   onPress={() => {
                     Keyboard.dismiss();
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -459,6 +466,7 @@ export default function Login() {
                 </View>
                 <View style={styles.ssoRow}>
                   <SsoButton
+                    testID="login-apple"
                     label="Apple"
                     mark="A"
                     busy={busyAction === "apple"}
@@ -466,6 +474,7 @@ export default function Login() {
                     onPress={() => void handleAppleSignIn()}
                   />
                   <SsoButton
+                    testID="login-google"
                     label="Google"
                     mark="G"
                     busy={busyAction === "google"}
@@ -491,13 +500,13 @@ export default function Login() {
 
         {/* Local test OTP banner - only visible in __DEV__ */}
         {devOtp ? (
-          <View style={styles.devBanner}>
+          <View testID="login-dev-otp-banner" style={styles.devBanner}>
             <Text style={styles.devBannerLabel}>{t("auth.testCode")}</Text>
             <Text style={styles.devBannerCode}>{devOtp}</Text>
           </View>
         ) : null}
 
-        {message && !devOtp ? <Text style={styles.messageText}>{message}</Text> : null}
+        {message ? <Text testID="login-message" style={styles.messageText}>{message}</Text> : null}
       </KeyboardAwareScreen>
     </ZookScreen>
   );
@@ -509,15 +518,18 @@ function SsoButton({
   label,
   mark,
   onPress,
+  testID,
 }: {
   busy: boolean;
   disabled: boolean;
   label: string;
   mark: string;
   onPress: () => void;
+  testID?: string;
 }) {
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={label}
       disabled={disabled}

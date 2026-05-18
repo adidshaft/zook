@@ -1,0 +1,64 @@
+appId: com.zook.app
+name: 05-trainer-actions
+tags:
+  - role-trainer
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: trainer@zook.local
+      home_id: trainer-home-screen
+- takeScreenshot: /tmp/zook-maestro/trainer/home.png
+
+- openLink: zook:///trainer?view=clients
+- extendedWaitUntil:
+    visible:
+      id: "trainer-home-screen"
+    timeout: 15000
+- tapOn:
+    id: "trainer-client-row-first"
+- extendedWaitUntil:
+    visible:
+      id: "trainer-client-detail-screen"
+    timeout: 15000
+- tapOn:
+    id: "trainer-ai-draft-button"
+- extendedWaitUntil:
+    visible:
+      id: "trainer-ai-draft-screen"
+    timeout: 15000
+- tapOn:
+    id: "trainer-generate-ai-draft"
+- scrollUntilVisible:
+    element:
+      id: "trainer-save-ai-edits"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "trainer-save-ai-edits"
+- extendedWaitUntil:
+    visible:
+      id: "trainer-ai-draft-status"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "trainer-assign-ai-plan"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "trainer-assign-ai-plan"
+- extendedWaitUntil:
+    visible:
+      id: "trainer-ai-draft-status"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/trainer/ai-draft.png
+
+- openLink: zook:///trainer?view=plans
+- extendedWaitUntil:
+    visible:
+      id: "trainer-home-screen"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/trainer/plans.png

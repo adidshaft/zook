@@ -195,8 +195,7 @@ export class AuthService {
     if (challenge.attempts >= challenge.maxAttempts) {
       throw new Error("OTP attempts exceeded");
     }
-    const devCodeAllowed = getAllowedFixedOtp() === input.code;
-    const matches = challenge.codeHash === AuthService.hash(input.code) || devCodeAllowed;
+    const matches = challenge.codeHash === AuthService.hash(input.code);
     if (!matches) {
       const failureCount = challenge.attempts + 1;
       const lockedUntil = this.lockUntilForFailureCount(failureCount);

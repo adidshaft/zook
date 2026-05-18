@@ -71,7 +71,7 @@ export default function TrackingHistory() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="tracking-history-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -129,7 +129,7 @@ export default function TrackingHistory() {
               <Text style={styles.calloutTitle}>Track your progress</Text>
               <Text style={styles.calloutBody}>Log when, how long, and what exercises you completed.</Text>
             </View>
-            <ZookButton href="/tracking-entry" icon="add-outline">Log workout</ZookButton>
+            <ZookButton testID="tracking-history-log-workout" href="/tracking-entry" icon="add-outline">Log workout</ZookButton>
           </GlassCard>
 
           <TrackingSectionHeader title="Logged sessions" />
@@ -144,8 +144,13 @@ export default function TrackingHistory() {
                 <Text style={styles.emptyBody}>Try a wider time range or log your first session.</Text>
               </GlassCard>
             ) : null}
-            {series.entries.map((entry) => (
-              <WorkoutLogCard key={entry.id} entry={entry} compact />
+            {series.entries.map((entry, index) => (
+              <WorkoutLogCard
+                key={entry.id}
+                entry={entry}
+                compact
+                testID={index === 0 ? "tracking-history-workout-first" : `tracking-history-workout-${entry.id}`}
+              />
             ))}
           </View>
         </ScrollView>

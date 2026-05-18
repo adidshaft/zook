@@ -1,0 +1,28 @@
+appId: com.zook.app
+name: login-as
+---
+# Reusable helper: pass `email` and `home_id`.
+- openLink: zook:///login
+- tapOn:
+    point: "67%,55%"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 15000
+- tapOn:
+    id: "login-email"
+- inputText: ${email}
+- tapOn:
+    id: "login-send-code"
+- extendedWaitUntil:
+    visible:
+      id: "login-otp-cells"
+    timeout: 15000
+- tapOn:
+    id: "login-otp-cells"
+- inputText: "000000"
+- extendedWaitUntil:
+    visible:
+      id: ${home_id}
+    timeout: 30000

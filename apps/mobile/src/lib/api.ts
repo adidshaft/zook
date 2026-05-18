@@ -197,6 +197,9 @@ export async function mobileApiFetch<T>(
       await apiAuthHandlers.onForbidden?.();
       throw error;
     }
+    if (error instanceof ApiError) {
+      throw error;
+    }
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error("Request timed out. Try again in a moment.");
     }

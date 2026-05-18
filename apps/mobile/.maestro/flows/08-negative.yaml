@@ -1,0 +1,51 @@
+appId: com.zook.app
+name: 08-negative
+tags:
+  - negative
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- openLink: zook:///login
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 15000
+- assertVisible:
+    id: "login-apple"
+- assertVisible:
+    id: "login-google"
+- tapOn:
+    id: "login-email"
+- inputText: "member@zook.local"
+- tapOn:
+    id: "login-send-code"
+- extendedWaitUntil:
+    visible:
+      id: "login-otp-cells"
+    timeout: 15000
+- tapOn:
+    id: "login-otp-cells"
+- inputText: "999999"
+- tapOn:
+    id: "login-verify-code"
+- extendedWaitUntil:
+    visible:
+      id: "login-message"
+    timeout: 15000
+- assertVisible:
+    id: "login-otp-cells"
+- assertNotVisible:
+    id: "member-home-screen"
+- takeScreenshot: /tmp/zook-maestro/negative/wrong-otp.png
+
+- stopApp
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-value-props-screen"
+    timeout: 15000
+- assertNotVisible:
+    id: "member-home-screen"
+- takeScreenshot: /tmp/zook-maestro/negative/relaunch-state.png

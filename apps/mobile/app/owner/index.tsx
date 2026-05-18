@@ -372,7 +372,7 @@ export default function Owner() {
   };
 
   return (
-    <ZookScreen>
+    <ZookScreen testID="owner-home-screen">
       <KeyboardAwareScreen
         scrollViewProps={{
           contentInsetAdjustmentBehavior: "never",
@@ -459,7 +459,7 @@ export default function Owner() {
 
         {view === "command" && !dashboardQuery.isLoading && !dashboardQuery.isError ? (
           <>
-            <View style={styles.metricGrid}>
+            <View testID="owner-view-command" style={styles.metricGrid}>
               <Pressable
                 onPress={() => router.replace("/owner?view=members")}
                 accessibilityRole="button"
@@ -605,7 +605,7 @@ export default function Owner() {
             </View>
 
             <SectionHeader title="Members" subtitle={`${filteredMembers.length} members`} />
-            <View style={styles.membersStack}>
+            <View testID="owner-view-members" style={styles.membersStack}>
               {membersQuery.isLoading ? (
                 <TrainerClientsSkeleton />
               ) : membersQuery.isError ? (
@@ -625,7 +625,7 @@ export default function Owner() {
               ) : null}
 
               {!membersQuery.isLoading && !membersQuery.isError
-                ? filteredMembers.map((member) => {
+                ? filteredMembers.map((member, index) => {
                     const name = member.user?.name ?? "Member";
                     const email = member.user?.email ?? "No email";
                     const phone = member.user?.phone ?? null;
@@ -634,6 +634,9 @@ export default function Owner() {
                     const goal = member.user?.fitnessGoal ?? member.profile.fitnessGoal;
                     return (
                       <GlassCard
+                        testID={
+                          index === 0 ? "member-row-first" : `member-row-${member.profile.userId}`
+                        }
                         key={member.profile.userId}
                         variant="compact"
                         pressable
@@ -740,10 +743,14 @@ export default function Owner() {
                 ) : undefined
               }
             />
-            <View style={styles.stack}>
+            <View testID="pending-approvals-list" style={styles.stack}>
               {joinRequests.length ? (
-                joinRequests.map((request) => (
-                  <GlassCard key={request.id} contentStyle={styles.stack}>
+                joinRequests.map((request, index) => (
+                  <GlassCard
+                    key={request.id}
+                    testID={index === 0 ? "pending-row-first" : `pending-row-${request.id}`}
+                    contentStyle={styles.stack}
+                  >
                     <ListRow
                       title={request.userName ?? "Join request"}
                       subtitle={`${request.userEmail ?? request.userId} · Referral ${request.referralCode ?? "none"}`}
@@ -752,6 +759,7 @@ export default function Owner() {
                     />
                     <View style={styles.actionRow}>
                       <PrimaryButton
+                        testID={index === 0 ? "approve-button-first" : `approve-button-${request.id}`}
                         onPress={() => void approveJoinRequest(request.id)}
                         disabled={approveJoinRequestMutation.isPending}
                         style={styles.actionHalf}
@@ -759,6 +767,7 @@ export default function Owner() {
                         Approve
                       </PrimaryButton>
                       <SecondaryButton
+                        testID={index === 0 ? "deny-button-first" : `deny-button-${request.id}`}
                         onPress={() => void rejectJoinRequest(request.id)}
                         disabled={rejectJoinRequestMutation.isPending}
                         style={styles.actionHalf}
@@ -781,8 +790,16 @@ export default function Owner() {
             <SectionHeader title="Scan review queue" subtitle="Pending and flagged scans." />
             <View style={styles.stack}>
               {attentionAttempts.length ? (
-                attentionAttempts.map((attempt) => (
-                  <GlassCard key={attempt.id} contentStyle={styles.stack}>
+                attentionAttempts.map((attempt, index) => (
+                  <GlassCard
+                    key={attempt.id}
+                    testID={
+                      index === 0
+                        ? "attendance-pending-row-first"
+                        : `attendance-pending-row-${attempt.id}`
+                    }
+                    contentStyle={styles.stack}
+                  >
                     <ListRow
                       title={attempt.user?.name ?? attempt.user?.email ?? "Member check-in"}
                       subtitle={`${attempt.branchName ?? "Main branch"} · ${titleCase(attempt.status)} · ${cleanReviewReason(Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null)}`}
@@ -799,6 +816,9 @@ export default function Owner() {
                       }
                     />
                     <PrimaryButton
+                      testID={
+                        index === 0 ? "approve-attendance-first" : `approve-attendance-${attempt.id}`
+                      }
                       onPress={() => void approveAttendance(attempt.id)}
                       disabled={!canApproveAttendance || approveAttendanceMutation.isPending}
                       onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}

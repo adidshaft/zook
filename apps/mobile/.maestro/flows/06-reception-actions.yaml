@@ -1,0 +1,143 @@
+appId: com.zook.app
+name: 06-reception-actions
+tags:
+  - role-reception
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: reception@zook.local
+      home_id: reception-home-screen
+- takeScreenshot: /tmp/zook-maestro/reception/home.png
+
+- openLink: zook:///reception
+- extendedWaitUntil:
+    visible:
+      id: "reception-home-screen"
+    timeout: 15000
+- tapOn:
+    id: "reception-verify-code"
+- inputText: "ZZ0000"
+- tapOn:
+    id: "reception-verify-code-button"
+- takeScreenshot: /tmp/zook-maestro/reception/verify-code.png
+
+- openLink: zook:///reception?view=members
+- extendedWaitUntil:
+    visible:
+      id: "reception-home-screen"
+    timeout: 15000
+- tapOn:
+    id: "reception-member-search"
+- inputText: "desk-test-member@zook.local"
+- extendedWaitUntil:
+    visible:
+      id: "reception-member-row-first"
+    timeout: 15000
+- tapOn:
+    id: "reception-member-row-first"
+- scrollUntilVisible:
+    element:
+      id: "reception-attendance-reason"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "reception-attendance-reason"
+- inputText: "Manual desk check-in"
+- scrollUntilVisible:
+    element:
+      id: "reception-record-attendance"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "reception-record-attendance"
+- extendedWaitUntil:
+    visible:
+      id: "privileged-pin-cells"
+    timeout: 10000
+- tapOn:
+    id: "privileged-pin-cells"
+- inputText: "1234"
+- extendedWaitUntil:
+    visible: "Manual attendance recorded."
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/reception/member-actions.png
+
+- tapOn:
+    id: "bottom-nav-payments"
+- extendedWaitUntil:
+    visible:
+      id: "reception-payment-amount"
+    timeout: 15000
+- tapOn:
+    id: "reception-payment-amount"
+- inputText: "1999"
+- tapOn:
+    id: "reception-payment-reference"
+- inputText: "MAESTRO1999"
+- scrollUntilVisible:
+    element:
+      id: "reception-record-payment"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "reception-record-payment"
+- extendedWaitUntil:
+    visible:
+      id: "privileged-pin-cells"
+    timeout: 10000
+- tapOn:
+    id: "privileged-pin-cells"
+- inputText: "1234"
+- extendedWaitUntil:
+    visible: "Recorded .* by DIRECT UPI\\."
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/reception/payment.png
+
+- tapOn:
+    id: "bottom-nav-orders"
+- scrollUntilVisible:
+    element:
+      id: "reception-pickup-code"
+    direction: UP
+    timeout: 15000
+- tapOn:
+    id: "reception-pickup-code"
+- inputText: "AS-PICK-101"
+- tapOn:
+    id: "reception-verify-pickup-code"
+- extendedWaitUntil:
+    visible:
+      id: "reception-order-row-first"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "fulfill-button-first"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+- tapOn:
+    id: "fulfill-button-first"
+- extendedWaitUntil:
+    visible:
+      id: "privileged-pin-cells"
+    timeout: 10000
+- tapOn:
+    id: "privileged-pin-cells"
+- inputText: "1234"
+- extendedWaitUntil:
+    visible: "Pickup fulfilled."
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/reception/orders.png
+
+- openLink: zook:///scan
+- extendedWaitUntil:
+    visible:
+      id: "scan-screen"
+    timeout: 15000
+- tapOn:
+    id: "scan-enter-code"
+- takeScreenshot: /tmp/zook-maestro/reception/scan.png

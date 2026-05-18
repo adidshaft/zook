@@ -1,4 +1,4 @@
-import { Link, Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import type { Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -21,6 +21,7 @@ type MoreEntry = {
   titleKey: TranslationKey;
   subtitleKey: TranslationKey;
   icon: keyof typeof Ionicons.glyphMap;
+  testID: string;
 };
 
 const memberMoreItems: MoreEntry[] = [
@@ -29,40 +30,47 @@ const memberMoreItems: MoreEntry[] = [
     titleKey: "more.tracking.title",
     subtitleKey: "more.tracking.subtitle",
     icon: "pulse-outline",
+    testID: "more-tracking",
   },
   {
     href: "/shop",
     titleKey: "more.shop.title",
     subtitleKey: "more.shop.subtitle",
     icon: "storefront-outline",
+    testID: "more-shop",
   },
   {
     href: "/notifications",
     titleKey: "more.inbox.title",
     subtitleKey: "more.inbox.subtitle",
     icon: "notifications-outline",
+    testID: "more-notifications",
   },
   {
     href: "/assistant",
     titleKey: "more.assistant.title",
     subtitleKey: "more.assistant.subtitle",
     icon: "sparkles-outline",
+    testID: "more-assistant",
   },
   {
     href: "/profile",
     titleKey: "more.profile.title",
     subtitleKey: "more.profile.subtitle",
     icon: "person-outline",
+    testID: "more-profile",
   },
   {
     href: "/settings",
     titleKey: "more.settings.title",
     subtitleKey: "more.settings.subtitle",
     icon: "settings-outline",
+    testID: "more-settings",
   },
 ];
 
 export default function More() {
+  const router = useRouter();
   const { logout, session } = useAuth();
   const t = useT();
   const userName = session?.user.name?.trim() || t("more.fallbackName");
@@ -82,7 +90,7 @@ export default function More() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="more-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -114,11 +122,16 @@ export default function More() {
             {memberMoreItems.map((item) => {
               const title = t(item.titleKey);
               return (
-                <Link key={item.titleKey} href={item.href} asChild>
-                  <Pressable accessibilityRole="link" accessibilityLabel={title}>
-                    <ListRow title={title} subtitle={t(item.subtitleKey)} icon={item.icon} />
-                  </Pressable>
-                </Link>
+                <Pressable
+                  key={item.titleKey}
+                  testID={item.testID}
+                  accessibilityRole="button"
+                  accessibilityLabel={title}
+                  onPress={() => router.push(item.href as never)}
+                  style={({ pressed }) => [styles.moreItem, pressed ? styles.moreItemPressed : null]}
+                >
+                  <ListRow title={title} subtitle={t(item.subtitleKey)} icon={item.icon} />
+                </Pressable>
               );
             })}
           </View>
@@ -158,5 +171,11 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: 10,
+  },
+  moreItem: {
+    borderRadius: 22,
+  },
+  moreItemPressed: {
+    opacity: 0.72,
   },
 });

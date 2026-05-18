@@ -46,6 +46,14 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
     usesAppleSignIn: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
+      NSCameraUsageDescription:
+        "Zook uses the camera to scan gym attendance QR codes and to take your profile photo.",
+      NSLocationWhenInUseUsageDescription:
+        "Zook uses your location to find nearby gyms when you choose to search by location.",
+      NSLocationAlwaysAndWhenInUseUsageDescription:
+        "Zook uses your location to find nearby gyms when you choose to search by location.",
+      NSPhotoLibraryUsageDescription:
+        "Zook needs access to your photos so you can set a profile picture or upload supporting documents.",
       ...(googleIosUrlScheme
         ? {
             CFBundleURLTypes: [

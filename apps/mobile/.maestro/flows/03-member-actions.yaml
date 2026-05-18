@@ -1,0 +1,168 @@
+appId: com.zook.app
+name: 03-member-actions
+tags:
+  - role-member
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: member@zook.local
+      home_id: member-home-screen
+- takeScreenshot: /tmp/zook-maestro/member/home.png
+
+- openLink: zook:///scan
+- extendedWaitUntil:
+    visible:
+      id: "scan-screen"
+    timeout: 15000
+- tapOn:
+    id: "scan-enter-code"
+- tapOn:
+    id: "scan-code-prefix"
+- inputText: "AB"
+- tapOn:
+    id: "scan-code-digits"
+- inputText: "1234"
+- tapOn:
+    id: "scan-submit-code"
+    optional: true
+- takeScreenshot: /tmp/zook-maestro/member/scan-code.png
+
+- openLink: zook:///membership
+- extendedWaitUntil:
+    visible:
+      id: "membership-screen"
+    timeout: 15000
+- tapOn:
+    id: "membership-renew-button"
+- tapOn:
+    id: "membership-renewal-close"
+- takeScreenshot: /tmp/zook-maestro/member/membership.png
+
+- openLink: zook:///plans
+- extendedWaitUntil:
+    visible:
+      id: "plans-screen"
+    timeout: 15000
+- tapOn:
+    id: "plan-row-first"
+    optional: true
+- tapOn:
+    id: "plan-detail-send-feedback"
+    optional: true
+- tapOn:
+    id: "plan-detail-feedback-input"
+    optional: true
+- inputText: "Felt good in E2E"
+- tapOn:
+    id: "plan-detail-feedback-send"
+    optional: true
+- takeScreenshot: /tmp/zook-maestro/member/plans.png
+
+- openLink: zook:///shop
+- extendedWaitUntil:
+    visible:
+      id: "shop-shop-screen"
+    timeout: 15000
+- tapOn:
+    id: "shop-product-first-increment"
+    optional: true
+- tapOn:
+    id: "shop-mini-cart"
+    optional: true
+- tapOn:
+    id: "shop-cart-checkout"
+    optional: true
+- tapOn:
+    id: "shop-continue-payment"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "shop-back-to-shop"
+    timeout: 30000
+- takeScreenshot: /tmp/zook-maestro/member/shop-pickup.png
+
+- openLink: zook:///notifications
+- extendedWaitUntil:
+    visible:
+      id: "notifications-screen"
+    timeout: 15000
+- tapOn:
+    id: "notification-row-first"
+- tapOn:
+    id: "notification-detail-close"
+- takeScreenshot: /tmp/zook-maestro/member/notifications.png
+
+- openLink: zook:///more
+- extendedWaitUntil:
+    visible:
+      id: "more-assistant"
+    timeout: 15000
+- tapOn:
+    id: "more-assistant"
+- extendedWaitUntil:
+    visible:
+      id: "assistant-screen"
+    timeout: 15000
+- tapOn:
+    id: "assistant-message-input"
+- inputText: "Summarize today's gym workout progress"
+- tapOn:
+    id: "assistant-send-message"
+- extendedWaitUntil:
+    visible:
+      id: "assistant-message-assistant-latest"
+    timeout: 30000
+- takeScreenshot: /tmp/zook-maestro/member/assistant.png
+
+- openLink: zook:///find-gyms
+- extendedWaitUntil:
+    visible:
+      id: "find-gyms-screen"
+    timeout: 15000
+- tapOn:
+    id: "find-gym-row-first"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "gym-profile-screen"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/member/find-gym-detail.png
+
+- openLink: zook:///tracking-entry
+- extendedWaitUntil:
+    visible:
+      id: "tracking-entry-screen"
+    timeout: 15000
+- tapOn:
+    id: "tracking-entry-title"
+- inputText: "Maestro workout"
+- scrollUntilVisible:
+    element:
+      id: "tracking-entry-exercise-0-name"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "tracking-entry-exercise-0-name"
+- inputText: "Push press"
+- tapOn:
+    id: "tracking-entry-exercise-0-sets"
+- inputText: "3"
+- tapOn:
+    id: "tracking-entry-exercise-0-reps"
+- inputText: "8"
+- tapOn:
+    id: "tracking-entry-save"
+- extendedWaitUntil:
+    visible:
+      id: "tracking-screen"
+    timeout: 30000
+- openLink: zook:///tracking-history
+- extendedWaitUntil:
+    visible:
+      id: "tracking-history-workout-first"
+    timeout: 30000
+- takeScreenshot: /tmp/zook-maestro/member/tracking-history.png

@@ -1,0 +1,54 @@
+appId: com.zook.app
+name: 04-owner-actions
+tags:
+  - role-owner
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: owner@zook.local
+      home_id: owner-home-screen
+- takeScreenshot: /tmp/zook-maestro/owner/home.png
+
+- openLink: zook:///owner?view=members
+- extendedWaitUntil:
+    visible:
+      id: "owner-home-screen"
+    timeout: 15000
+- tapOn:
+    id: "member-row-first"
+    optional: true
+- takeScreenshot: /tmp/zook-maestro/owner/members.png
+
+- openLink: zook:///owner?view=approvals
+- extendedWaitUntil:
+    visible:
+      id: "pending-approvals-list"
+    timeout: 15000
+- tapOn:
+    id: "approve-button-first"
+    optional: true
+- tapOn:
+    id: "approve-attendance-first"
+    optional: true
+- takeScreenshot: /tmp/zook-maestro/owner/approvals.png
+
+- openLink: zook:///dashboard
+- extendedWaitUntil:
+    visible:
+      id: "owner-home-screen"
+    timeout: 20000
+- takeScreenshot: /tmp/zook-maestro/owner/dashboard-bridge.png
+
+- openLink: zook:///notifications
+- extendedWaitUntil:
+    visible:
+      id: "notifications-screen"
+    timeout: 15000
+- tapOn:
+    id: "notifications-mark-all-read"
+    optional: true
+- takeScreenshot: /tmp/zook-maestro/owner/notifications.png

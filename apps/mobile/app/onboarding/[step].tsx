@@ -115,7 +115,10 @@ export function ValuePropsStep() {
   }
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}>
+    <View
+      testID="onboarding-value-props-screen"
+      style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
+    >
       <View style={styles.header}>
         <Text style={styles.brand}>Zook</Text>
         <Text style={styles.kicker}>Built for gym days</Text>
@@ -153,7 +156,10 @@ export function ValuePropsStep() {
             />
           ))}
         </View>
-        <ZookButton onPress={() => router.push("/onboarding/permissions" as never)}>
+        <ZookButton
+          testID="onboarding-value-continue"
+          onPress={() => router.push("/onboarding/permissions" as never)}
+        >
           Continue
         </ZookButton>
       </View>
@@ -180,7 +186,10 @@ export function PermissionsStep() {
   }
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}>
+    <View
+      testID="onboarding-permissions-screen"
+      style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
+    >
       <View style={styles.header}>
         <Text style={styles.brand}>Zook works best with:</Text>
         <Text style={styles.kicker}>You can change any permission later.</Text>
@@ -201,10 +210,15 @@ export function PermissionsStep() {
       </View>
 
       <View style={styles.footer}>
-        <ZookButton onPress={continueToLogin} disabled={busy}>
+        <ZookButton
+          testID="onboarding-allow-permissions"
+          onPress={continueToLogin}
+          disabled={busy}
+        >
           {busy ? "Opening prompts" : "Continue"}
         </ZookButton>
         <ZookButton
+          testID="onboarding-skip-permissions"
           tone="secondary"
           onPress={async () => {
             try {
@@ -233,10 +247,7 @@ async function requestLocationPermission() {
     await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
     return;
   }
-  const result = await Location.requestForegroundPermissionsAsync();
-  if (result.status === "denied" && result.canAskAgain === false) {
-    await Linking.openSettings();
-  }
+  await Location.requestForegroundPermissionsAsync();
 }
 
 export function RoleQuestionStep() {
@@ -276,7 +287,10 @@ export function RoleQuestionStep() {
   }
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}>
+    <View
+      testID="onboarding-role-question-screen"
+      style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
+    >
       <View style={styles.header}>
         <Text style={styles.brand}>What brings you to Zook?</Text>
         <Text style={styles.kicker}>Pick the closest fit so we can start you in the right place.</Text>
@@ -285,6 +299,7 @@ export function RoleQuestionStep() {
       <View style={styles.roleList}>
         {roleOptions.map((option) => (
           <Pressable
+            testID={`onboarding-role-${option.action}`}
             key={option.action}
             onPress={() => void chooseRole(option.action)}
             disabled={Boolean(busyAction)}

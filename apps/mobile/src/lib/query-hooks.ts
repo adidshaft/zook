@@ -3,7 +3,6 @@ import type { AuthSessionSummary, PaymentMode } from "@zook/core";
 import { mobileApiFetch } from "./api";
 import { useAuth } from "./auth";
 import { useBranchSelection } from "./branch-selection";
-import { getMobileApiMode } from "./runtime-mode";
 import { messageFromError, showToast } from "./toast";
 import type { NotificationPreferenceRecord } from "./notification-preferences";
 
@@ -1497,12 +1496,8 @@ export function useCompleteMockPayment() {
   const queryClient = useQueryClient();
   const { token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
-  const mockPaymentCompletionAvailable = getMobileApiMode() !== "backend";
   return useMutation({
     mutationFn: (input: string | { sessionId: string; branchId?: string }) => {
-      if (!mockPaymentCompletionAvailable) {
-        throw new Error("Test payment confirmation is not available in backend builds.");
-      }
       if (!token) {
         throw new Error("Authentication is required.");
       }

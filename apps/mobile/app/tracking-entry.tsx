@@ -217,7 +217,7 @@ export default function TrackingEntry() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="tracking-entry-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
@@ -254,6 +254,7 @@ export default function TrackingEntry() {
           {/* Workout details */}
           <GlassCard contentStyle={styles.formContent}>
             <GlassInput
+              testID="tracking-entry-title"
               label="Session title"
               value={title}
               onChangeText={setTitle}
@@ -277,6 +278,7 @@ export default function TrackingEntry() {
             </View>
 
             <GlassInput
+              testID="tracking-entry-notes"
               label="Notes"
               value={notes}
               onChangeText={setNotes}
@@ -308,6 +310,7 @@ export default function TrackingEntry() {
                 <View style={styles.exerciseHeader}>
                   <IconBubble icon="barbell-outline" tone="lime" size={36} />
                   <GlassInput
+                    testID={`tracking-entry-exercise-${index}-name`}
                     label={`Exercise ${index + 1}`}
                     value={exercise.exerciseName}
                     onChangeText={(value) => updateExercise(index, "exerciseName", value)}
@@ -331,6 +334,7 @@ export default function TrackingEntry() {
                 </View>
                 <View style={styles.exerciseMetrics}>
                   <GlassInput
+                    testID={`tracking-entry-exercise-${index}-sets`}
                     label="Sets"
                     value={exercise.setsCompleted}
                     onChangeText={(value) =>
@@ -342,6 +346,7 @@ export default function TrackingEntry() {
                     style={styles.metricInput}
                   />
                   <GlassInput
+                    testID={`tracking-entry-exercise-${index}-reps`}
                     label="Reps per set"
                     value={exercise.reps}
                     onChangeText={(value) => updateExercise(index, "reps", value.replace(/\D/g, ""))}
@@ -351,6 +356,7 @@ export default function TrackingEntry() {
                     style={styles.metricInput}
                   />
                   <GlassInput
+                    testID={`tracking-entry-exercise-${index}-weight`}
                     label="Weight (kg)"
                     value={exercise.weightKg}
                     onChangeText={(value) =>
@@ -418,6 +424,7 @@ export default function TrackingEntry() {
         </KeyboardAwareScreen>
         <StickyActionBar>
           <ZookButton
+            testID="tracking-entry-save"
             onPress={() => void saveWorkout()}
             disabled={saving}
             busy={saving}

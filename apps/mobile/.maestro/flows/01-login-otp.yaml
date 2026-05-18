@@ -1,0 +1,81 @@
+appId: com.zook.app
+name: 01-login-otp
+tags:
+  - auth
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: member@zook.local
+      home_id: member-home-screen
+- takeScreenshot: /tmp/zook-maestro/member/login-persisted.png
+- stopApp
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "member-home-screen"
+    timeout: 20000
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: owner@zook.local
+      home_id: owner-home-screen
+- takeScreenshot: /tmp/zook-maestro/owner/login.png
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: admin@zook.local
+      home_id: owner-home-screen
+- takeScreenshot: /tmp/zook-maestro/admin/login.png
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: reception@zook.local
+      home_id: reception-home-screen
+- takeScreenshot: /tmp/zook-maestro/reception/login.png
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: trainer@zook.local
+      home_id: trainer-home-screen
+- takeScreenshot: /tmp/zook-maestro/trainer/login.png
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: prospect@zook.local
+      home_id: onboarding-role-question-screen
+- takeScreenshot: /tmp/zook-maestro/prospect/login.png
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/login-as.yaml
+    env:
+      email: platform@zook.local
+      home_id: platform-home-screen
+- takeScreenshot: /tmp/zook-maestro/platform/login.png

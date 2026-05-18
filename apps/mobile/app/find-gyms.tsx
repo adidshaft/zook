@@ -78,7 +78,7 @@ export default function FindGyms() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="find-gyms-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
@@ -125,12 +125,14 @@ export default function FindGyms() {
 
           <GlassCard contentStyle={styles.searchContent}>
             <GlassInput
+              testID="find-gyms-query"
               label="Gym name or username"
               value={query}
               onChangeText={setQuery}
               placeholder={t("findGyms.searchPlaceholder")}
             />
             <GlassInput
+              testID="find-gyms-city"
               label="City"
               value={city}
               onChangeText={setCity}
@@ -166,7 +168,7 @@ export default function FindGyms() {
           ) : null}
 
           <View style={styles.results}>
-            {gyms.map((gym) => (
+            {gyms.map((gym, index) => (
               <Link
                 key={gym.username}
                 href={{
@@ -179,6 +181,7 @@ export default function FindGyms() {
                 asChild
               >
                 <Pressable
+                  testID={index === 0 ? "find-gym-row-first" : `find-gym-row-${gym.username}`}
                   accessibilityRole="link"
                   accessibilityLabel={`Open ${gym.name}`}
                   style={({ pressed }) => [pressed ? styles.pressed : null]}

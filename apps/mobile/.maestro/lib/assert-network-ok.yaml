@@ -1,0 +1,7 @@
+appId: com.zook.app
+name: assert-network-ok
+---
+- assertNotVisible:
+    text: ".*Couldn't reach server.*"
+- assertNotVisible:
+    text: ".*No connection.*"

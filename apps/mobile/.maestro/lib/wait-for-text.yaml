@@ -1,0 +1,6 @@
+appId: com.zook.app
+name: wait-for-text
+---
+- extendedWaitUntil:
+    visible: ${text}
+    timeout: ${timeout}

@@ -313,7 +313,7 @@ export default function TrainerAiDraftReview() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen>
+      <ZookScreen testID="trainer-ai-draft-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
@@ -464,6 +464,7 @@ export default function TrainerAiDraftReview() {
 
               <View style={styles.actionRow}>
                 <ZookButton
+                  testID="trainer-assign-ai-plan"
                   onPress={() => void assignDraft()}
                   style={styles.actionHalf}
                   icon="checkmark-circle-outline"
@@ -472,6 +473,7 @@ export default function TrainerAiDraftReview() {
                   Assign Plan
                 </ZookButton>
                 <SecondaryButton
+                  testID="trainer-save-ai-edits"
                   onPress={() => (editing ? void saveDraftEdits() : setEditing(true))}
                   style={styles.actionHalf}
                   disabled={saving || generating}
@@ -498,6 +500,7 @@ export default function TrainerAiDraftReview() {
               action={
                 <View style={styles.actionRow}>
                   <ZookButton
+                    testID="trainer-generate-ai-draft"
                     onPress={() => void generateDraft()}
                     icon="sparkles-outline"
                     disabled={!aiDraftEnabled || !canGeneratePlan || generating}
@@ -527,7 +530,9 @@ export default function TrainerAiDraftReview() {
 
           {status ? (
             <GlassCard variant="success" contentStyle={styles.statusContent}>
-              <Text style={styles.statusText}>{status}</Text>
+              <Text testID="trainer-ai-draft-status" style={styles.statusText}>
+                {status}
+              </Text>
             </GlassCard>
           ) : null}
         </KeyboardAwareScreen>
