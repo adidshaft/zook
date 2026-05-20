@@ -8,7 +8,7 @@ After plans #01–#10 land, retire the deprecated code paths, delete the redirec
 
 The strangler-fig migration leaves the old code in place at every step. This is intentional and safe — but it now needs to be cleaned up. Specifically:
 
-- `apps/mobile/src/components/primitives/legacy.tsx` (3,712 lines) still exists. Most of it should be deleted by now; the rest needs to be moved out.
+- `apps/mobile/src/components/primitives/foundation.tsx` (3,712 lines) still exists. Most of it should be deleted by now; the rest needs to be moved out.
 - Redirect stubs for `/tracking`, `/tracking-entry`, `/tracking-history`, `/plans/index`, `/more`, `/trainer/client/[id]`, `/trainer/client/[id]/ai-draft` accumulated through the rewrite. Confirm no callers and delete.
 - `apps/mobile/src/lib/query-hooks.ts` is now a re-export barrel — delete and migrate the remaining callers.
 - `apps/mobile/src/lib/theme/legacy.ts` (the back-compat color shim) blocks full re-theming for any code that imports `colors` statically. Migrate or delete.
@@ -31,10 +31,10 @@ Run the audit:
 
 ```bash
 # Count lines in legacy primitives
-wc -l apps/mobile/src/components/primitives/legacy.tsx
+wc -l apps/mobile/src/components/primitives/foundation.tsx
 
 # Count callers of legacy.tsx
-git grep -l "from.*primitives/legacy" apps/mobile
+git grep -l "from.*primitives/foundation" apps/mobile
 
 # Count callers of query-hooks
 git grep -l "from \"@/lib/query-hooks\"" apps/mobile
@@ -47,7 +47,7 @@ If counts are high, the prior plans are incomplete — fix those first, then ret
 
 ### Step 2 — Migrate remaining `legacy.tsx` exports
 
-`apps/mobile/src/components/primitives/legacy.tsx` contains:
+`apps/mobile/src/components/primitives/foundation.tsx` contains:
 - `ZookScreen` (line 296)
 - `SafeAreaScreen` (line 391) — likely a wrapper, may be unused now
 - `MobileHeader` (line 717)
@@ -72,7 +72,7 @@ Find unused exports:
 ```bash
 for sym in ZookScreen MobileHeader AppHeader BottomNav DockTabItem; do
   echo "=== $sym ==="
-  git grep -l "$sym" apps/mobile/src apps/mobile/app | grep -v primitives/legacy.tsx | head
+  git grep -l "$sym" apps/mobile/src apps/mobile/app | grep -v primitives/foundation.tsx | head
 done
 ```
 
@@ -81,7 +81,7 @@ done
 When the grep shows no callers outside `legacy.tsx` itself, delete the file:
 
 ```bash
-git rm apps/mobile/src/components/primitives/legacy.tsx
+git rm apps/mobile/src/components/primitives/foundation.tsx
 ```
 
 Update `apps/mobile/src/components/primitives/index.tsx` to remove any `export * from "./legacy"` line if present.
@@ -275,7 +275,7 @@ Run the full audit and confirm zero results:
 git grep -n "view\s*===" apps/mobile/app
 
 # No legacy primitives imports
-git grep -n "primitives/legacy" apps/mobile
+git grep -n "primitives/foundation" apps/mobile
 
 # No query-hooks.ts imports (file should not exist)
 test ! -f apps/mobile/src/lib/query-hooks.ts && echo "OK: query-hooks.ts gone"
@@ -303,7 +303,7 @@ Each of these should return empty (or nothing over budget). If any are non-empty
 
 ## Files deleted
 
-- `apps/mobile/src/components/primitives/legacy.tsx`
+- `apps/mobile/src/components/primitives/foundation.tsx`
 - `apps/mobile/src/lib/query-hooks.ts`
 - `apps/mobile/src/lib/theme/legacy.ts`
 - `apps/mobile/src/lib/theme.ts` (if moved to barrel only)
@@ -341,7 +341,7 @@ Each of these should return empty (or nothing over budget). If any are non-empty
 
 - [ ] All `git grep` audit commands in Step 15 return empty.
 - [ ] No file in `apps/mobile/app/` exceeds 400 lines.
-- [ ] `apps/mobile/src/components/primitives/legacy.tsx` does not exist.
+- [ ] `apps/mobile/src/components/primitives/foundation.tsx` does not exist.
 - [ ] `apps/mobile/src/lib/query-hooks.ts` does not exist.
 - [ ] `apps/mobile/src/lib/theme/legacy.ts` does not exist.
 - [ ] App boots and renders correctly in light and dark mode for all roles (MEMBER, TRAINER, OWNER, RECEPTIONIST).

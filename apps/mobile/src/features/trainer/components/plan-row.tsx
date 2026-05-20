@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { GlassCard, IconBubble, ListRow, StatusChip, ZookButton } from "@/components/primitives";
-import type { TrainerClientRecord } from "@/lib/query-hooks";
+import type { TrainerClientRecord } from "@/lib/domains";
 import { fitnessGoalFor } from "../helpers";
 
 export function PlanRow({ client }: { client: TrainerClientRecord }) {

@@ -55,6 +55,33 @@ function encodePathSegment(value: string) {
   return encodeURIComponent(value);
 }
 
+function canonicalizeDiscoveryRoute(path: string, params: Record<string, string>) {
+  const joinMatch = path.match(/^\/join\/([^/]+)$/);
+  if (joinMatch) {
+    return {
+      path: `/gyms/${encodePathSegment(joinMatch[1])}`,
+      params: { ...params, intent: "join" },
+    };
+  }
+
+  const gymMatch = path.match(/^\/gym\/([^/]+)$/);
+  if (gymMatch) {
+    return {
+      path: `/gyms/${encodePathSegment(gymMatch[1])}`,
+      params,
+    };
+  }
+
+  if (path === "/find-gyms") {
+    return {
+      path: "/gyms",
+      params,
+    };
+  }
+
+  return { path, params };
+}
+
 function parseInternalUrl(url: string): ParsedDeepLink | null {
   const directPath = readString(url);
   if (!directPath) {
@@ -62,8 +89,11 @@ function parseInternalUrl(url: string): ParsedDeepLink | null {
   }
   if (directPath.startsWith("/")) {
     const parsed = new URL(directPath, "https://zookfit.in");
-    const path = normalizePath(parsed.pathname);
-    const params = searchParamsToRecord(parsed.searchParams);
+    const canonical = canonicalizeDiscoveryRoute(
+      normalizePath(parsed.pathname),
+      searchParamsToRecord(parsed.searchParams),
+    );
+    const { path, params } = canonical;
     return { path, params, href: buildHref(path, params) };
   }
   return parseDeepLinkUrl(directPath);
@@ -148,8 +178,11 @@ export function parseDeepLinkUrl(url: string): ParsedDeepLink | null {
         ...parsed.hostname.split("/").filter(Boolean),
         ...parsed.pathname.split("/").filter(Boolean),
       ].map((segment) => decodeURIComponent(segment));
-      const path = normalizePath(segments.join("/"));
-      const params = searchParamsToRecord(parsed.searchParams);
+      const canonical = canonicalizeDiscoveryRoute(
+        normalizePath(segments.join("/")),
+        searchParamsToRecord(parsed.searchParams),
+      );
+      const { path, params } = canonical;
       return { path, params, href: buildHref(path, params) };
     }
 
@@ -157,8 +190,11 @@ export function parseDeepLinkUrl(url: string): ParsedDeepLink | null {
       (parsed.protocol === "https:" || parsed.protocol === "http:") &&
       trustedWebHosts.has(parsed.hostname)
     ) {
-      const path = normalizePath(parsed.pathname);
-      const params = searchParamsToRecord(parsed.searchParams);
+      const canonical = canonicalizeDiscoveryRoute(
+        normalizePath(parsed.pathname),
+        searchParamsToRecord(parsed.searchParams),
+      );
+      const { path, params } = canonical;
       return { path, params, href: buildHref(path, params) };
     }
   } catch {
@@ -230,7 +266,7 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
     assignmentId &&
     (hasNotificationKind(notificationKinds, ["PLAN_ASSIGNED"]) || notificationType === "PLAN")
   ) {
-    return `/plans/${encodePathSegment(assignmentId)}`;
+    return `/plan/${encodePathSegment(assignmentId)}`;
   }
 
   if (
@@ -238,12 +274,12 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
     (hasNotificationKind(notificationKinds, ["ENGAGEMENT_WORKOUT_REMINDER"]) ||
       (notificationType === "ENGAGEMENT" && /\bworkout\b.*\breminder\b/.test(messageText(input))))
   ) {
-    return buildHref("/tracking-entry", { prefill: templateId });
+    return buildHref("/plan", { prefill: templateId });
   }
 
   if (targetType && targetId) {
     if (targetType === "plan") {
-      return `/plans/${encodePathSegment(targetId)}`;
+      return `/plan/${encodePathSegment(targetId)}`;
     }
     if (targetType === "order") {
       return `/shop/pickup/${encodePathSegment(targetId)}`;
@@ -290,12 +326,12 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
       },
       input,
     );
-    return buildHref(`/plans/${encodePathSegment(assignmentId)}`, detailParams);
+    return buildHref(`/plan/${encodePathSegment(assignmentId)}`, detailParams);
   }
 
   if (planId || notificationType === "PLAN") {
     return buildHref(
-      "/plans",
+      "/plan",
       maybeAttachNotificationId(
         {
           ...params,
@@ -319,7 +355,7 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
   }
 
   if (hasPtContext(input)) {
-    return buildHref("/plans", maybeAttachNotificationId({ ...params, focus: "pt-update" }, input));
+    return buildHref("/plan", maybeAttachNotificationId({ ...params, focus: "pt-update" }, input));
   }
 
   if (notificationId) {

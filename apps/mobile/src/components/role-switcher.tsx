@@ -15,7 +15,7 @@ import { IconBubble, ListRow, ZookChip } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
 import { routeForRole } from "@/lib/route-guards";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type RoleCombo = {
@@ -134,7 +134,7 @@ export function RoleSwitcherChip() {
       >
         <View style={styles.interactiveChip}>
           {chip}
-          <Ionicons name="chevron-down" size={15} color={colors.lime} />
+          <Ionicons name="chevron-down" size={15} color={legacyColors.lime} />
         </View>
       </Pressable>
       <BottomSheetModal
@@ -214,10 +214,10 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     ...typography.sectionTitle,
-    color: colors.text,
+    color: legacyColors.text,
   },
   sheetSubtitle: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -229,18 +229,18 @@ const styles = StyleSheet.create({
   },
   optionSelected: {
     borderWidth: 1,
-    borderColor: colors.lime,
+    borderColor: legacyColors.lime,
   },
   optionPressed: {
     opacity: 0.84,
   },
   currentText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     fontSize: 13,
     fontFamily: "Inter_700Bold",
   },
   switchText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 13,
     fontFamily: "Inter_700Bold",
   },

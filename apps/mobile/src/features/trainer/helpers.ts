@@ -1,5 +1,5 @@
 import type { Ionicons } from "@expo/vector-icons";
-import type { TrainerClientRecord } from "@/lib/query-hooks";
+import type { TrainerClientRecord } from "@/lib/domains";
 
 export type PlanTemplateId = "workout" | "diet" | "routine" | "machine" | "recovery";
 

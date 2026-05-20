@@ -6,5 +6,5 @@ export {
   OfflineBanner,
   QueryErrorState,
   Skeleton,
-} from "./legacy";
+} from "./foundation";
 export { NetworkBanner } from "./network-banner";

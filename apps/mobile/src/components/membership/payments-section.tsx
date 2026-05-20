@@ -2,7 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import { GlassCard, IconBubble, Pill, SectionHeader } from "@/components/primitives";
 import { formatDateTime, formatInr, titleCaseFromCode } from "@/lib/formatting";
-import { colors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 import { toneForStatus } from "./helpers";
 import type { InvoiceRecord, MembershipPaymentRecord, PaymentDocumentKind } from "./types";
 
@@ -140,9 +140,9 @@ function DocumentButton({
       ]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={colors.lime} />
+        <ActivityIndicator size="small" color={legacyColors.lime} />
       ) : (
-        <Ionicons name={icon} size={14} color={colors.lime} />
+        <Ionicons name={icon} size={14} color={legacyColors.lime} />
       )}
       <Text style={styles.documentButtonText}>{label}</Text>
     </Pressable>
@@ -163,11 +163,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   emptyTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   emptyBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   paymentContent: {
@@ -191,15 +191,15 @@ const styles = StyleSheet.create({
   },
   paymentTitle: {
     flex: 1,
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   paymentAmount: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   paymentBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   paymentMetaRow: {
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   },
   documentHint: {
     flexShrink: 1,
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   documentActions: {
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
     backgroundColor: "rgba(185,244,85,0.08)",
     paddingHorizontal: 12,
   },
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   documentButtonText: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.small,
     fontWeight: "700",
   },

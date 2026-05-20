@@ -16,7 +16,7 @@ describe("parseDeepLinkUrl", () => {
 
   it("parses join links with referral context", () => {
     expect(parseDeepLinkUrl("zook://join/peaklab?ref=REF123")?.href).toBe(
-      "/join/peaklab?ref=REF123",
+      "/gyms/peaklab?ref=REF123&intent=join",
     );
   });
 
@@ -81,7 +81,7 @@ describe("mapNotificationPayloadToHref", () => {
       mapNotificationPayloadToHref({ assignmentId: "assign_1", notificationId: "notif_3" }),
     );
 
-    expect(mapped.path).toBe("/plans/assign_1");
+    expect(mapped.path).toBe("/plan/assign_1");
     expect(mapped.params).toEqual({
       focus: "plan",
       notificationId: "notif_3",
@@ -149,13 +149,13 @@ describe("mapNotificationPayloadToHref", () => {
         assignmentId: "assign_1",
         notificationId: "notif_plan",
       }),
-    ).toBe("/plans/assign_1");
+    ).toBe("/plan/assign_1");
     expect(
       mapNotificationPayloadToHref({
         type: "ENGAGEMENT_WORKOUT_REMINDER",
         templateId: "template_1",
         notificationId: "notif_workout",
       }),
-    ).toBe("/tracking-entry?prefill=template_1");
+    ).toBe("/plan?prefill=template_1");
   });
 });

@@ -6,15 +6,16 @@ export default function JoinGymAliasScreen() {
   const referralCode = Array.isArray(params.ref) ? params.ref[0] : params.ref;
 
   if (!username) {
-    return <Redirect href="/find-gyms" />;
+    return <Redirect href="/gyms" />;
   }
 
   return (
     <Redirect
       href={{
-        pathname: "/gym/[username]",
+        pathname: "/gyms/[username]",
         params: {
           username,
+          intent: "join",
           ...(referralCode ? { ref: referralCode } : {}),
         },
       }}

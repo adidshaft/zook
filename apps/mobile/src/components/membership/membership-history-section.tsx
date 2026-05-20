@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { GlassCard, Pill, SectionHeader } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
-import { colors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 import { toneForStatus } from "./helpers";
 import type { MembershipRecord } from "./types";
 
@@ -54,11 +54,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   historyTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   historyBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
 });

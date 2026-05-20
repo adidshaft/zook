@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { colors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 
 const DAY_MS = 86_400_000;
 
@@ -108,7 +108,7 @@ function Banner({
       </ZookButton>
       {onDismiss ? (
         <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel={`Dismiss ${title}`} style={styles.dismiss}>
-          <Ionicons name="close" size={16} color={colors.muted} />
+          <Ionicons name="close" size={16} color={legacyColors.muted} />
         </Pressable>
       ) : null}
     </GlassCard>
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   stack: { gap: spacing.sm },
   banner: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   copy: { flex: 1, gap: 2 },
-  title: { color: colors.text, ...typography.cardTitle },
-  body: { color: colors.muted, ...typography.small },
+  title: { color: legacyColors.text, ...typography.cardTitle },
+  body: { color: legacyColors.muted, ...typography.small },
   dismiss: { minHeight: 32, minWidth: 32, alignItems: "center", justifyContent: "center" },
 });

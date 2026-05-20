@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT } from "@/lib/i18n";
-import { colors, radii, shadows, spacing, typography } from "@/lib/theme";
+import { legacyColors, radii, shadows, spacing, typography } from "@/lib/theme";
 
 export function DatePickerField({
   accessibilityLabel,
@@ -64,7 +64,7 @@ export function DatePickerField({
         ]}
       >
         <Text style={styles.value}>{formatted}</Text>
-        <Ionicons name="calendar-outline" size={18} color={colors.muted} />
+        <Ionicons name="calendar-outline" size={18} color={legacyColors.muted} />
       </Pressable>
       <Modal animationType="fade" transparent visible={open} onRequestClose={close}>
         <Pressable accessibilityLabel={t("common.dismiss")} style={styles.backdrop} onPress={close}>
@@ -106,18 +106,18 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   label: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   required: {
-    color: colors.red,
+    color: legacyColors.red,
   },
   input: {
     minHeight: 46,
     borderRadius: radii.input,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
     paddingHorizontal: spacing.md,
     flexDirection: "row",
     alignItems: "center",
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   value: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.body,
   },
   pressed: {
@@ -146,13 +146,13 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     borderRadius: radii.card,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
     padding: spacing.lg,
     ...shadows.card,
   },
   sheetTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.headerTitle,
   },
   actions: {
@@ -164,25 +164,25 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: radii.input,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     justifyContent: "center",
     paddingHorizontal: spacing.lg,
   },
   ghostActionText: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.button,
   },
   primaryAction: {
     minHeight: 44,
     borderRadius: radii.input,
     borderWidth: 1,
-    borderColor: colors.lime,
-    backgroundColor: colors.lime,
+    borderColor: legacyColors.lime,
+    backgroundColor: legacyColors.lime,
     justifyContent: "center",
     paddingHorizontal: spacing.lg,
   },
   primaryActionText: {
-    color: colors.bg,
+    color: legacyColors.bg,
     ...typography.button,
   },
 });

@@ -1,6 +1,6 @@
 import { Text } from "react-native";
 
-import { colors, typography } from "@/lib/theme";
+import { legacyColors, typography } from "@/lib/theme";
 import { HomeCardShell } from "./card-shell";
 
 export default function NoPlanCard({ daysLeft, gymName }: { daysLeft: number; gymName: string }) {
@@ -14,7 +14,7 @@ export default function NoPlanCard({ daysLeft, gymName }: { daysLeft: number; gy
       ctaLabel="Open Plan"
       tone="amber"
     >
-      <Text style={{ color: colors.muted, ...typography.small }}>
+      <Text style={{ color: legacyColors.muted, ...typography.small }}>
         {daysLeft > 0 ? `${daysLeft} membership days left.` : "Membership status is active."}
       </Text>
     </HomeCardShell>

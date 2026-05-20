@@ -25,8 +25,8 @@ import {
   useMyAttendance,
   useMyPlans,
   useMyProfile,
-} from "@/lib/query-hooks";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+} from "@/lib/domains";
+import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 
 type ActivityItem = {
@@ -394,8 +394,8 @@ export default function ProfileScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => void refreshProfile()}
-              tintColor={colors.lime}
-              colors={[colors.lime]}
+              tintColor={legacyColors.lime}
+              colors={[legacyColors.lime]}
             />
           }
         >
@@ -416,7 +416,7 @@ export default function ProfileScreen() {
                 }}
                 style={styles.backButton}
               >
-                <Ionicons name="chevron-back" size={22} color={colors.text} />
+                <Ionicons name="chevron-back" size={22} color={legacyColors.text} />
               </Pressable>
             }
           />
@@ -530,7 +530,7 @@ export default function ProfileScreen() {
                   title="No active membership"
                   body="Your latest membership will appear here after a gym activates one."
                   action={
-                    <ZookButton href="/find-gyms" tone="secondary" icon="search-outline" size="sm">
+                    <ZookButton href="/gyms" tone="secondary" icon="search-outline" size="sm">
                       Find gyms
                     </ZookButton>
                   }
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   backButton: {
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.06)",
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     borderRadius: 16,
     borderWidth: 1,
     height: 44,
@@ -652,17 +652,17 @@ const styles = StyleSheet.create({
   },
   name: {
     ...typography.h1,
-    color: colors.text,
+    color: legacyColors.text,
     textAlign: "left",
   },
   email: {
     ...typography.body,
-    color: colors.muted,
+    color: legacyColors.muted,
     textAlign: "left",
   },
   gymLine: {
     ...typography.bodyStrong,
-    color: colors.text,
+    color: legacyColors.text,
     marginTop: spacing.xs,
     textAlign: "left",
   },
@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.sectionTitle,
-    color: colors.text,
+    color: legacyColors.text,
   },
   membershipCard: {
     gap: spacing.md,
@@ -695,11 +695,11 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     ...typography.h3,
-    color: colors.text,
+    color: legacyColors.text,
   },
   cardSubtitle: {
     ...typography.body,
-    color: colors.muted,
+    color: legacyColors.muted,
   },
   actionRow: {
     flexDirection: "row",
@@ -722,11 +722,11 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     ...typography.bodyStrong,
-    color: colors.text,
+    color: legacyColors.text,
   },
   activityMeta: {
     ...typography.small,
-    color: colors.muted,
+    color: legacyColors.muted,
   },
   quickGrid: {
     flexDirection: "row",

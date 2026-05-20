@@ -55,7 +55,7 @@ tags:
     timeout: 12000
 - tapOn:
     id: "onboarding-role-member"
-- openLink: zook:///find-gyms
+- openLink: zook:///gyms
 - extendedWaitUntil:
     visible:
       id: "find-gyms-screen"

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { OtpInput, type OtpInputHandle } from "@/components/primitives";
 import { setPrivilegedPinPrompt } from "@/lib/privileged-action";
-import { colors, radii, spacing, typography } from "@/lib/theme";
+import { legacyColors, radii, spacing, typography } from "@/lib/theme";
 
 type PendingPrompt = {
   label: string;
@@ -126,16 +126,16 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radii.card,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bgElevated,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.bgElevated,
     padding: spacing.xl,
   },
   title: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   body: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   actions: {
@@ -151,21 +151,21 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
   },
   primaryButton: {
-    backgroundColor: colors.lime,
+    backgroundColor: legacyColors.lime,
   },
   disabled: {
     opacity: 0.45,
   },
   secondaryButtonText: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   primaryButtonText: {
-    color: colors.bg,
+    color: legacyColors.bg,
     ...typography.bodyStrong,
   },
 });

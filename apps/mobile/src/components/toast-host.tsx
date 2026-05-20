@@ -6,7 +6,7 @@ import Reanimated, {
   withTiming,
 } from "@/lib/reanimated-lite";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, radii, shadows, spacing, typography } from "@/lib/theme";
+import { legacyColors, radii, shadows, spacing, typography } from "@/lib/theme";
 import { subscribeToast, type ToastPayload, type ToastTone } from "@/lib/toast";
 
 const toneStyles: Record<ToastTone, { borderColor: string; backgroundColor: string }> = {
@@ -121,12 +121,12 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   title: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   message: {
     marginTop: spacing.xs,
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
 });

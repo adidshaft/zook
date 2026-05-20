@@ -32,7 +32,7 @@ export default function YouScreen() {
     notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt).length ??
     0;
   const nextRole = ctx?.availableRoles.find((role) => role !== ctx.role);
-  const gymHref = ctx?.org?.username ? `/gym/${ctx.org.username}` : "/find-gyms";
+  const gymHref = ctx?.org?.username ? `/gyms/${ctx.org.username}` : "/gyms";
 
   function confirmSignOut() {
     Alert.alert("Sign out?", "You can sign back in with OTP any time.", [

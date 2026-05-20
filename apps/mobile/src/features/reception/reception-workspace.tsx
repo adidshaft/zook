@@ -59,7 +59,7 @@ import { useBranchSelection } from "@/lib/branch-selection";
 import { apiClient, receptionApi } from "@/lib/domain-api";
 import { useScalePulse, useShake } from "@/lib/motion";
 import { requirePrivilegedAuth } from "@/lib/privileged-action";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { paymentModes, reasonSuggestions, type DeskPaymentMode } from "./constants";
@@ -676,7 +676,7 @@ function useReceptionWorkspaceState({
     recordManualAttendance,
     recordPayment,
     recordPaymentMutation,
-    refreshControlTint: colors.lime,
+    refreshControlTint: legacyColors.lime,
     refreshing,
     rejectAttendance,
     rejectAttendanceMutation,
@@ -770,7 +770,7 @@ export function ReceptionWorkspace({
             hitSlop={12}
             style={styles.backButton}
           >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
+            <Ionicons name="chevron-back" size={22} color={legacyColors.text} />
           </Pressable>
           <View style={styles.headerCopy}>
             <Text style={styles.title}>{title}</Text>
@@ -790,12 +790,12 @@ export function ReceptionWorkspace({
             pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
           ]}
         >
-          <Ionicons name="business-outline" size={22} color={colors.text} />
+          <Ionicons name="business-outline" size={22} color={legacyColors.text} />
           <Text numberOfLines={1} style={styles.gymSelectorText}>
             {state.gymSelectorLabel}
           </Text>
           {state.canSwitchBranches ? (
-            <Ionicons name="chevron-down" size={18} color={colors.muted} />
+            <Ionicons name="chevron-down" size={18} color={legacyColors.muted} />
           ) : null}
         </Pressable>
 
@@ -1054,7 +1054,7 @@ export function ReceptionMembersBody() {
                 <Ionicons
                   name={multiSelectMode ? "checkbox-outline" : "square-outline"}
                   size={16}
-                  color={multiSelectMode ? colors.lime : colors.muted}
+                  color={multiSelectMode ? legacyColors.lime : legacyColors.muted}
                 />
                 <Text
                   style={[
@@ -1074,7 +1074,7 @@ export function ReceptionMembersBody() {
                   accessibilityLabel="Clear selected member"
                   style={styles.membersToolbarChip}
                 >
-                  <Ionicons name="close-outline" size={16} color={colors.muted} />
+                  <Ionicons name="close-outline" size={16} color={legacyColors.muted} />
                   <Text style={styles.membersToolbarText}>Clear</Text>
                 </Pressable>
               ) : null}
@@ -1343,7 +1343,7 @@ export function ReceptionPaymentsBody() {
                                     : "create-outline"
                           }
                           size={22}
-                          color={selected ? colors.lime : colors.muted}
+                          color={selected ? legacyColors.lime : legacyColors.muted}
                         />
                         <Text style={[styles.paymentModeText, selected ? styles.paymentModeTextActive : null]}>
                           {mode.label}
@@ -1723,8 +1723,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1736,7 +1736,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.04)",
     flexDirection: "row",
     alignItems: "center",
@@ -1744,14 +1744,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   roleChipText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.bodyStrong,
   },
   gymSelector: {
     minHeight: 66,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.035)",
     flexDirection: "row",
     alignItems: "center",
@@ -1760,11 +1760,11 @@ const styles = StyleSheet.create({
   },
   gymSelectorText: {
     flex: 1,
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.sectionTitle,
   },
   headerMeta: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   utilityRow: {
@@ -1776,7 +1776,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.045)",
     paddingLeft: 6,
     paddingRight: 14,
@@ -1787,7 +1787,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   utilityText: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   signOutPill: {
@@ -1795,7 +1795,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,90,61,0.08)",
   },
   signOutText: {
-    color: colors.red,
+    color: legacyColors.red,
   },
   memberContext: {
     minHeight: 62,
@@ -1808,32 +1808,32 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   memberContextTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   memberContextBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   clearMemberButton: {
     minHeight: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     paddingHorizontal: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   clearMemberText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   title: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.screenTitle,
   },
   subtitle: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   metricGrid: {
@@ -1878,11 +1878,11 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   queueTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.headerTitle,
   },
   cardBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   auditTrail: {
@@ -1891,7 +1891,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   auditText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   suggestionRow: {
@@ -1903,21 +1903,21 @@ const styles = StyleSheet.create({
     minHeight: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.045)",
     paddingHorizontal: 10,
     justifyContent: "center",
   },
   suggestionChipSelected: {
-    borderColor: colors.lime,
+    borderColor: legacyColors.lime,
     backgroundColor: "rgba(185,244,85,0.14)",
   },
   suggestionText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   suggestionTextSelected: {
-    color: colors.lime,
+    color: legacyColors.lime,
   },
   formStack: {
     gap: spacing.md,
@@ -1932,7 +1932,7 @@ const styles = StyleSheet.create({
     minHeight: 64,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.035)",
     alignItems: "center",
     justifyContent: "center",
@@ -1940,20 +1940,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   paymentModeTileActive: {
-    borderColor: colors.lime,
+    borderColor: legacyColors.lime,
     backgroundColor: "rgba(185,244,85,0.12)",
   },
   paymentModeText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 11,
     lineHeight: 14,
   },
   paymentModeTextActive: {
-    color: colors.lime,
+    color: legacyColors.lime,
     fontFamily: "Inter_600SemiBold",
   },
   fieldGroupLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.eyebrow,
   },
   itemGrid: {
@@ -1961,18 +1961,18 @@ const styles = StyleSheet.create({
   },
   itemPill: {
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: legacyColors.divider,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: "rgba(255,255,255,0.04)",
   },
   itemName: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   itemMeta: {
-    color: colors.muted,
+    color: legacyColors.muted,
     marginTop: 3,
     ...typography.small,
   },
@@ -1984,7 +1984,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statusText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.bodyStrong,
   },
   verificationResult: {
@@ -1996,19 +1996,19 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.surface,
+    backgroundColor: legacyColors.surface,
   },
   verificationText: {
     flex: 1,
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   rowAmount: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   resultHint: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   membersToolbar: {
@@ -2021,7 +2021,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.045)",
     paddingHorizontal: 12,
     flexDirection: "row",
@@ -2029,15 +2029,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   membersToolbarChipActive: {
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
     backgroundColor: "rgba(185,244,85,0.12)",
   },
   membersToolbarText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   membersToolbarTextActive: {
-    color: colors.lime,
+    color: legacyColors.lime,
   },
   paymentPersonRow: {
     minHeight: 56,
@@ -2048,7 +2048,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.035)",
   },
   paymentMemberCopy: {
@@ -2056,17 +2056,17 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   paymentMemberName: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   paymentMemberMeta: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   sheetBackground: {
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
   },
   sheetHandle: {
     backgroundColor: "rgba(255,255,255,0.22)",
@@ -2086,24 +2086,24 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   sheetEyebrow: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.eyebrow,
   },
   sheetTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.headerTitle,
   },
   sheetCloseButton: {
     minHeight: 34,
     borderRadius: 17,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     paddingHorizontal: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   sheetCloseText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
 });

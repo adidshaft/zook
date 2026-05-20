@@ -7,7 +7,7 @@ export default function FirstRunCard({ gymUsername }: { gymUsername?: string }) 
       icon="sparkles-outline"
       title="Welcome to Zook"
       body="Your membership, workouts, and check-ins will settle here as your gym gets you set up."
-      ctaHref={gymUsername ? `/gym/${gymUsername}` : "/find-gyms"}
+      ctaHref={gymUsername ? `/gyms/${gymUsername}` : "/gyms"}
       ctaLabel={gymUsername ? "Open gym" : "Find gyms"}
       tone="blue"
     />

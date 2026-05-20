@@ -7,8 +7,8 @@ import {
   IconBubble,
   Skeleton,
 } from "@/components/primitives";
-import type { MemberBadgeRecord, MemberNextMilestone } from "@/lib/query-hooks";
-import { colors, spacing, typography } from "@/lib/theme";
+import type { MemberBadgeRecord, MemberNextMilestone } from "@/lib/domains";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 
 export function ReferralCard({
   code,
@@ -55,7 +55,7 @@ export function ReferralCard({
         accessibilityLabel="Share referral code"
         style={styles.referralShareButton}
       >
-        <Ionicons name="share-outline" size={18} color={colors.bg} />
+        <Ionicons name="share-outline" size={18} color={legacyColors.bg} />
       </Pressable>
     </GlassCard>
   );
@@ -71,11 +71,11 @@ export function TodayPlanCard({
   trainerName: string;
 }) {
   return (
-    <Link href="/plans" asChild>
+    <Link href="/plan" asChild>
       <Pressable accessibilityRole="link" accessibilityLabel="Open today's plan">
         <GlassCard variant="compact" contentStyle={styles.todayPlanContent}>
           <View style={styles.todayPlanHeader}>
-            <Ionicons name="clipboard-outline" size={22} color={colors.lime} />
+            <Ionicons name="clipboard-outline" size={22} color={legacyColors.lime} />
             <Text style={styles.todayPlanEyebrow}>Today's Plan</Text>
           </View>
           <View style={styles.todayPlanBody}>
@@ -91,7 +91,7 @@ export function TodayPlanCard({
                   <Ionicons
                     name={assigned ? "checkmark-circle-outline" : "time-outline"}
                     size={14}
-                    color={colors.lime}
+                    color={legacyColors.lime}
                   />
                   <Text style={styles.assignedChipText}>
                     {assigned ? "Assigned" : "Open"}
@@ -99,7 +99,7 @@ export function TodayPlanCard({
                 </View>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={22} color={colors.muted} />
+            <Ionicons name="chevron-forward" size={22} color={legacyColors.muted} />
           </View>
         </GlassCard>
       </Pressable>
@@ -131,19 +131,19 @@ export function ActivityCard({
   return (
     <GlassCard variant="compact" contentStyle={styles.activityContent}>
       <View style={styles.activityTitleRow}>
-        <Ionicons name="pulse-outline" size={21} color={colors.lime} />
+        <Ionicons name="pulse-outline" size={21} color={legacyColors.lime} />
         <Text style={styles.activityTitle}>Activity</Text>
       </View>
       <View style={styles.activityStats}>
         <View style={styles.activityStat}>
-          <Ionicons name="flame-outline" size={27} color={colors.lime} />
+          <Ionicons name="flame-outline" size={27} color={legacyColors.lime} />
           <Text style={styles.activityStatLabel}>Streak</Text>
           <Text style={styles.activityStatValue}>{streakDays}</Text>
           <Text style={styles.activityStatMeta}>days</Text>
         </View>
         <View style={styles.activityDivider} />
         <View style={styles.activityStat}>
-          <Ionicons name="time-outline" size={27} color={colors.lime} />
+          <Ionicons name="time-outline" size={27} color={legacyColors.lime} />
           <Text style={styles.activityStatLabel}>Last check-in</Text>
           <Text numberOfLines={1} style={styles.activityStatValueSmall}>
             {lastCheckIn}
@@ -152,7 +152,7 @@ export function ActivityCard({
         </View>
         <View style={styles.activityDivider} />
         <View style={styles.activityStat}>
-          <Ionicons name={safeIconName(nextMilestone?.icon)} size={27} color={colors.lime} />
+          <Ionicons name={safeIconName(nextMilestone?.icon)} size={27} color={legacyColors.lime} />
           <Text style={styles.activityStatLabel}>Weekly goal</Text>
           <Text style={styles.activityStatValue}>{weeklyGoalLabel}</Text>
           <Text style={styles.activityStatMeta}>check-ins</Text>
@@ -171,7 +171,7 @@ export function ProfileReadyPrompt({ needsPhoto }: { needsPhoto: boolean }) {
             <Ionicons
               name={needsPhoto ? "camera-outline" : "call-outline"}
               size={18}
-              color={colors.bg}
+              color={legacyColors.bg}
             />
           </View>
           <View style={styles.profilePromptCopy}>
@@ -182,7 +182,7 @@ export function ProfileReadyPrompt({ needsPhoto }: { needsPhoto: boolean }) {
                 : "Add your mobile number so the gym can reach you when needed."}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+          <Ionicons name="chevron-forward" size={18} color={legacyColors.muted} />
         </View>
       </Pressable>
     </Link>
@@ -191,7 +191,7 @@ export function ProfileReadyPrompt({ needsPhoto }: { needsPhoto: boolean }) {
 
 export function WorkoutLogCard() {
   return (
-    <Link href="/tracking-entry" asChild>
+    <Link href="/plan" asChild>
       <Pressable accessibilityRole="link" accessibilityLabel="Log today's workout">
         <GlassCard contentStyle={styles.secondaryActionContent}>
           <IconBubble icon="pulse-outline" tone="neutral" size={38} />
@@ -201,7 +201,7 @@ export function WorkoutLogCard() {
               Track sets, reps, and weights.
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+          <Ionicons name="chevron-forward" size={18} color={legacyColors.muted} />
         </GlassCard>
       </Pressable>
     </Link>
@@ -246,14 +246,14 @@ export function FirstRunCard({
       title: "No gym yet",
       body: "Browse gyms and join one to get started.",
       cta: "Find gyms",
-      href: "/find-gyms" as Href,
+      href: "/gyms" as Href,
     },
     NO_MEMBERSHIP: {
       icon: "card-outline" as const,
       title: "No active membership",
       body: "Choose a plan and activate your membership.",
       cta: "View plans",
-      href: (gymUsername ? `/gym/${gymUsername}` : "/membership") as Href,
+      href: (gymUsername ? `/gyms/${gymUsername}` : "/membership") as Href,
     },
     NEVER_CHECKED_IN: {
       icon: "qr-code-outline" as const,
@@ -275,7 +275,7 @@ export function FirstRunCard({
           </View>
           <View style={styles.checkInCta}>
             <Text style={styles.checkInCtaText}>{copy.cta}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.bg} />
+            <Ionicons name="chevron-forward" size={16} color={legacyColors.bg} />
           </View>
         </GlassCard>
       </Pressable>
@@ -296,14 +296,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   referralCode: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.h3,
   },
   referralShareButton: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: colors.lime,
+    backgroundColor: legacyColors.lime,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   todayPlanEyebrow: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 16,
     lineHeight: 21,
   },
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   todayPlanTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 19,
     lineHeight: 24,
     fontFamily: "Inter_700Bold",
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   todayPlanMeta: {
     flex: 1,
     minWidth: 0,
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 14,
     lineHeight: 19,
   },
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   assignedChipText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     fontSize: 12,
     lineHeight: 16,
     fontFamily: "Inter_600SemiBold",
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   activityTitle: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 16,
     lineHeight: 21,
   },
@@ -392,27 +392,27 @@ const styles = StyleSheet.create({
   },
   activityDivider: {
     width: 1,
-    backgroundColor: colors.divider,
+    backgroundColor: legacyColors.divider,
   },
   activityStatLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 12,
     lineHeight: 16,
   },
   activityStatValue: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 27,
     lineHeight: 31,
     fontFamily: "Inter_700Bold",
   },
   activityStatValueSmall: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 21,
     lineHeight: 26,
     fontFamily: "Inter_700Bold",
   },
   activityStatMeta: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 12,
     lineHeight: 15,
   },
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: colors.lime,
+    backgroundColor: legacyColors.lime,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -440,11 +440,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   profilePromptTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   profilePromptBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   secondaryActionContent: {
@@ -459,15 +459,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   secondaryActionTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   mutedSmall: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   mutedBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   skeletonStack: {
@@ -498,20 +498,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   firstRunTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.h3,
   },
   checkInCta: {
     minHeight: 36,
     borderRadius: 18,
-    backgroundColor: colors.lime,
+    backgroundColor: legacyColors.lime,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 12,
   },
   checkInCtaText: {
-    color: colors.bg,
+    color: legacyColors.bg,
     ...typography.caption,
   },
 });

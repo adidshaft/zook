@@ -1,4 +1,4 @@
-import type { PublicPlanSummary, InvoiceRecord } from "@/lib/query-hooks";
+import type { PublicPlanSummary, InvoiceRecord } from "@/lib/domains";
 
 export type MembershipAutopayRecord = {
   id: string;

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { useHasPermission } from "@/lib/auth";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
-import { colors } from "@/lib/theme";
+import { legacyColors } from "@/lib/theme";
 
 const legacyViewTargets: Record<string, "/reception/members" | "/reception/payments" | "/reception/orders"> = {
   members: "/reception/members",
@@ -34,11 +34,11 @@ export default function ReceptionLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brandLime,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: legacyColors.brandLime,
+        tabBarInactiveTintColor: legacyColors.textMuted,
         tabBarStyle: {
-          backgroundColor: colors.bgElevated,
-          borderTopColor: colors.glassStroke,
+          backgroundColor: legacyColors.bgElevated,
+          borderTopColor: legacyColors.glassStroke,
         },
       }}
     >

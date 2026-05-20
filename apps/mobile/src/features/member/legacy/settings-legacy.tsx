@@ -20,8 +20,8 @@ import { toWebUrl } from "@/lib/api";
 import { notificationsApi, privacyApi } from "@/lib/domain-api";
 import { useI18n, type LocalePreference, type TranslationKey } from "@/lib/i18n";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
-import { useMyConsents, useMyNotificationPreferences } from "@/lib/query-hooks";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { useMyConsents, useMyNotificationPreferences } from "@/lib/domains";
+import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 import { useTheme, type ThemePreference } from "@/lib/theme/index";
 
 type SettingsSection = "notifications" | "language" | "appearance" | "privacy" | "system";
@@ -169,7 +169,7 @@ export default function Settings() {
 
   async function copyInviteLink() {
     const url = activeOrganization?.username
-      ? toWebUrl(`/join/${activeOrganization.username}`)
+      ? toWebUrl(`/gyms/?intent=join`)
       : toWebUrl("/");
     await Clipboard.setStringAsync(url);
     setClipboardStatus(t("settings.copied"));
@@ -198,7 +198,7 @@ export default function Settings() {
                 accessibilityLabel={t("settings.goBack")}
                 style={styles.iconButton}
               >
-                <Ionicons name="chevron-back" size={20} color={colors.text} />
+                <Ionicons name="chevron-back" size={20} color={legacyColors.text} />
               </Pressable>
             }
             showProfileShortcut={false}
@@ -459,7 +459,7 @@ function PreferenceToggle({
         disabled={disabled}
         onValueChange={onValueChange}
         trackColor={{ false: "rgba(255,255,255,0.14)", true: "rgba(185,244,85,0.35)" }}
-        thumbColor={value ? colors.lime : colors.muted}
+        thumbColor={value ? legacyColors.lime : legacyColors.muted}
       />
     </View>
   );
@@ -491,8 +491,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -513,11 +513,11 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   logoutLinkText: {
-    color: colors.red,
+    color: legacyColors.red,
     ...typography.caption,
   },
   statusText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.small,
   },
   privacyStatusCard: {
@@ -556,34 +556,34 @@ const styles = StyleSheet.create({
     minHeight: 38,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.045)",
     paddingHorizontal: 12,
     justifyContent: "center",
   },
   languageButtonActive: {
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
     backgroundColor: "rgba(185,244,85,0.14)",
   },
   languageButtonText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   languageButtonTextActive: {
-    color: colors.lime,
+    color: legacyColors.lime,
   },
   copyButton: {
     minHeight: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
     backgroundColor: "rgba(185,244,85,0.12)",
     paddingHorizontal: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   copyButtonText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.caption,
   },
   preferenceRow: {
@@ -598,11 +598,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   preferenceTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   preferenceSubtitle: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
 });

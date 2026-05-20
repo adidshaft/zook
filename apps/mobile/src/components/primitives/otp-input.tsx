@@ -1,7 +1,7 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import { sanitizeOtpValue } from "@/lib/otp";
-import { colors, radii, spacing, typography } from "@/lib/theme";
+import { legacyColors, radii, spacing, typography } from "@/lib/theme";
 
 export type OtpInputHandle = {
   focus: () => void;
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   label: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   cells: {
@@ -101,17 +101,17 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: radii.input,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
   cellActive: {
-    borderColor: colors.lime,
-    backgroundColor: colors.accentPanel,
+    borderColor: legacyColors.lime,
+    backgroundColor: legacyColors.accentPanel,
   },
   cellText: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 20,
     fontWeight: "800",
   },
