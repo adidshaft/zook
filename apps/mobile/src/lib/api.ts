@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { ApiError, parseApiResponse } from "@zook/core/api";
-import { demoMobileApiFetch } from "./demo-api";
+import { createDemoTransport } from "./demo-api";
 import {
   getMobileApiMode,
   getMobileAppEnv,
@@ -14,6 +14,16 @@ type MobilePushEnvironment = "development" | "preview" | "production";
 type ApiAuthHandlers = {
   onExpired?: () => Promise<string | void> | string | void;
   onForbidden?: () => Promise<void> | void;
+};
+type MobileApiRequestInit = Omit<RequestInit, "body"> & {
+  token?: string;
+  orgId?: string;
+  branchId?: string;
+  body?: unknown;
+  skipAuthRefresh?: boolean;
+};
+type MobileApiTransport = {
+  request<T>(path: string, init?: MobileApiRequestInit): Promise<T>;
 };
 
 let apiAuthHandlers: ApiAuthHandlers = {};
@@ -128,86 +138,90 @@ export function toWebUrl(path: string) {
   return `${getMobileWebBaseUrl()}${normalizePath(path)}`;
 }
 
+function createHttpTransport(): MobileApiTransport {
+  async function request<T>(path: string, init: MobileApiRequestInit = {}): Promise<T> {
+    const { body: rawBody, branchId, orgId, skipAuthRefresh, token, ...requestInit } = init;
+    const headers = new Headers(requestInit.headers);
+    let body = rawBody;
+    const apiBaseUrl = getMobileApiBaseUrl();
+    const requestId = `mob_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+
+    headers.set("x-request-id", requestId);
+    if (token) {
+      headers.set("authorization", `Bearer ${token}`);
+    }
+    if (orgId) {
+      headers.set("x-zook-org-id", orgId);
+    }
+    if (branchId) {
+      headers.set("x-zook-branch-id", branchId);
+    }
+    if (body && typeof body !== "string" && !(body instanceof FormData)) {
+      headers.set("content-type", "application/json");
+      body = JSON.stringify(body);
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    try {
+      const response = await fetch(`${apiBaseUrl}${normalizePath(path)}`, {
+        ...requestInit,
+        headers,
+        signal: requestInit.signal ?? controller.signal,
+        ...(body !== undefined ? { body: body as BodyInit | null } : {}),
+      });
+      try {
+        return await parseApiResponse<T>(response);
+      } catch (error) {
+        throw attachResponseRetryAfter(error, response);
+      }
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        const refreshedToken = skipAuthRefresh ? undefined : await apiAuthHandlers.onExpired?.();
+        if (refreshedToken && token && refreshedToken !== token) {
+          return request<T>(path, {
+            ...init,
+            token: refreshedToken,
+            skipAuthRefresh: true,
+          });
+        }
+        throw error;
+      }
+      if (error instanceof ApiError && error.status === 403) {
+        await apiAuthHandlers.onForbidden?.();
+        throw error;
+      }
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Request timed out. Try again in a moment.");
+      }
+      if (error instanceof Error && isLocalAddress(apiBaseUrl)) {
+        throw new Error("We cannot connect right now. Check your internet connection or try again.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  return {
+    request,
+  };
+}
+
+const transport: MobileApiTransport = isOfflineDemoMode()
+  ? createDemoTransport()
+  : createHttpTransport();
+
 export async function mobileApiFetch<T>(
   path: string,
-  init: Omit<RequestInit, "body"> & {
-    token?: string;
-    orgId?: string;
-    branchId?: string;
-    body?: unknown;
-    skipAuthRefresh?: boolean;
-  } = {},
+  init: MobileApiRequestInit = {},
 ): Promise<T> {
-  const { body: rawBody, branchId, orgId, skipAuthRefresh, token, ...requestInit } = init;
   const configError = getMobileRuntimeConfigError();
   if (configError) {
     throw new Error("Zook can’t open in this build. Please update the app or contact support.");
   }
-  if (isOfflineDemoMode()) {
-    return demoMobileApiFetch<T>(path, { body: rawBody, method: requestInit.method });
-  }
-
-  const headers = new Headers(requestInit.headers);
-  let body = rawBody;
-  const apiBaseUrl = getMobileApiBaseUrl();
-  const requestId = `mob_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-
-  headers.set("x-request-id", requestId);
-  if (token) {
-    headers.set("authorization", `Bearer ${token}`);
-  }
-  if (orgId) {
-    headers.set("x-zook-org-id", orgId);
-  }
-  if (branchId) {
-    headers.set("x-zook-branch-id", branchId);
-  }
-  if (body && typeof body !== "string" && !(body instanceof FormData)) {
-    headers.set("content-type", "application/json");
-    body = JSON.stringify(body);
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15_000);
-  try {
-    const response = await fetch(`${apiBaseUrl}${normalizePath(path)}`, {
-      ...requestInit,
-      headers,
-      signal: requestInit.signal ?? controller.signal,
-      ...(body !== undefined ? { body: body as BodyInit | null } : {}),
-    });
-    try {
-      return await parseApiResponse<T>(response);
-    } catch (error) {
-      throw attachResponseRetryAfter(error, response);
-    }
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      const refreshedToken = skipAuthRefresh ? undefined : await apiAuthHandlers.onExpired?.();
-      if (refreshedToken && token && refreshedToken !== token) {
-        return mobileApiFetch<T>(path, {
-          ...init,
-          token: refreshedToken,
-          skipAuthRefresh: true,
-        });
-      }
-      throw error;
-    }
-    if (error instanceof ApiError && error.status === 403) {
-      await apiAuthHandlers.onForbidden?.();
-      throw error;
-    }
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Request timed out. Try again in a moment.");
-    }
-    if (error instanceof Error && isLocalAddress(apiBaseUrl)) {
-      throw new Error("We cannot connect right now. Check your internet connection or try again.");
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
+  return transport.request<T>(path, init);
 }

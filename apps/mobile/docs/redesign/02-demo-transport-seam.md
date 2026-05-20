@@ -101,6 +101,9 @@ Document this in `apps/mobile/docs/redesign/02-demo-transport-seam.md` (this fil
 - Dev / Expo Go: `EXPO_PUBLIC_INCLUDE_DEMO=true` (default in `.env.development`)
 - Preview / TestFlight internal: `true`
 - App Store / Play Store: `false` (set in CI build config)
+- When `EXPO_PUBLIC_INCLUDE_DEMO=false`, Metro aliases `src/lib/demo-api.ts` and
+  `src/lib/demo-mode.ts` to empty modules so production bundles do not include
+  fixture handlers or fixture sessions.
 
 ### Step 5 — Add the persistent "Demo data" banner
 
