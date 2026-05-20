@@ -31,7 +31,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://zook:zook@localhost:5432/zook_test
-      APP_ENV: test
+      APP_ENV: local
       API_MODE: backend
       SESSION_SECRET: ci-session-secret-at-least-32-characters
       STORAGE_PROVIDER: local
