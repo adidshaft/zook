@@ -1,179 +1,102 @@
-import { Stack, useRouter } from "expo-router";
-import type { Href } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Stack, router } from "expo-router";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import {
-  GlassCard,
-  IconBubble,
-  ListRow,
-  MobileHeader,
-  ZookButton,
-  ZookScreen,
-} from "@/components/primitives";
+
+import { GlassCard, ListRow, MobileHeader, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
+import { IdentityCard } from "@/features/member/you/identity-card";
+import { MembershipSummary } from "@/features/member/you/membership-summary";
+import { QuickActionGrid } from "@/features/member/you/quick-action-grid";
 import { useAuth } from "@/lib/auth";
-import { useT } from "@/lib/i18n";
-import type { TranslationKey } from "@/lib/i18n";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { useMemberHome } from "@/lib/domains/member";
+import { useMyNotifications } from "@/lib/domains/notifications";
+import { useCanSwitchRole, useRoleContext } from "@/lib/role-context";
+import { layout, spacing, typography } from "@/lib/theme";
+import { useTheme } from "@/lib/theme/index";
 
-type MoreEntry = {
-  href: Href;
-  titleKey: TranslationKey;
-  subtitleKey: TranslationKey;
-  icon: keyof typeof Ionicons.glyphMap;
-  testID: string;
-};
+const settingsRows = [
+  { href: "/settings/account", title: "Account", icon: "person-outline" },
+  { href: "/settings/appearance", title: "Appearance", icon: "contrast-outline" },
+  { href: "/settings/notifications", title: "Notifications", icon: "notifications-outline" },
+  { href: "/settings/language", title: "Language", icon: "language-outline" },
+  { href: "/settings/privacy", title: "Privacy", icon: "lock-closed-outline" },
+  { href: "/settings/support", title: "Help & support", icon: "help-circle-outline" },
+] as const;
 
-const memberMoreItems: MoreEntry[] = [
-  {
-    href: "/plan",
-    titleKey: "more.tracking.title",
-    subtitleKey: "more.tracking.subtitle",
-    icon: "pulse-outline",
-    testID: "more-tracking",
-  },
-  {
-    href: "/shop",
-    titleKey: "more.shop.title",
-    subtitleKey: "more.shop.subtitle",
-    icon: "storefront-outline",
-    testID: "more-shop",
-  },
-  {
-    href: "/notifications",
-    titleKey: "more.inbox.title",
-    subtitleKey: "more.inbox.subtitle",
-    icon: "notifications-outline",
-    testID: "more-notifications",
-  },
-  {
-    href: "/assistant",
-    titleKey: "more.assistant.title",
-    subtitleKey: "more.assistant.subtitle",
-    icon: "sparkles-outline",
-    testID: "more-assistant",
-  },
-  {
-    href: "/profile",
-    titleKey: "more.profile.title",
-    subtitleKey: "more.profile.subtitle",
-    icon: "person-outline",
-    testID: "more-profile",
-  },
-  {
-    href: "/settings",
-    titleKey: "more.settings.title",
-    subtitleKey: "more.settings.subtitle",
-    icon: "settings-outline",
-    testID: "more-settings",
-  },
-];
+export default function YouScreen() {
+  const { logout, switchRole } = useAuth();
+  const canSwitch = useCanSwitchRole();
+  const ctx = useRoleContext();
+  const homeQuery = useMemberHome();
+  const notificationsQuery = useMyNotifications();
+  const { palette } = useTheme();
+  const unread =
+    notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt).length ??
+    0;
+  const nextRole = ctx?.availableRoles.find((role) => role !== ctx.role);
+  const gymHref = ctx?.org?.username ? `/gym/${ctx.org.username}` : "/find-gyms";
 
-export default function More() {
-  const router = useRouter();
-  const { logout, session } = useAuth();
-  const t = useT();
-  const userName = session?.user.name?.trim() || t("more.fallbackName");
-  const confirmSignOut = () => {
-    Alert.alert(t("more.signOutConfirmTitle"), t("more.signOutConfirmBody"), [
-      { text: t("more.signOutCancel"), style: "cancel" },
-      {
-        text: t("more.signOut"),
-        style: "destructive",
-        onPress: () => {
-          void logout();
-        },
-      },
+  function confirmSignOut() {
+    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign out", style: "destructive", onPress: () => void logout() },
     ]);
-  };
+  }
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen testID="more-screen">
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
-        >
-          <MobileHeader title={t("more.title")} subtitle={t("more.subtitle")} showProfileShortcut />
+      <ZookScreen testID="member-you">
+        <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <MobileHeader title="You" subtitle="Profile, membership, settings, and tools" showProfileShortcut={false} />
 
-          <GlassCard variant="compact" contentStyle={styles.accountCard}>
-            <IconBubble icon="person-outline" tone="lime" size={46} />
-            <View style={styles.accountCopy}>
-              <Text numberOfLines={1} style={styles.accountTitle}>
-                {userName}
-              </Text>
-              <Text numberOfLines={1} style={styles.accountSubtitle}>
-                {t("more.accountSubtitle")}
-              </Text>
-            </View>
-            <ZookButton
-              onPress={confirmSignOut}
-              tone="secondary"
-              size="sm"
-              accessibilityLabel={t("more.signOut")}
-            >
-              {t("more.signOut")}
-            </ZookButton>
+          <IdentityCard user={ctx?.user} org={ctx?.org} onEdit={() => router.push("/profile/edit" as never)} />
+
+          <SectionHeader title="Membership" />
+          <MembershipSummary membership={homeQuery.data?.activeMembership} onViewDetail={() => router.push("/membership" as never)} />
+
+          <SectionHeader title="Quick actions" />
+          <QuickActionGrid unreadCount={unread} gymHref={gymHref} />
+
+          <SectionHeader title="Settings" />
+          <GlassCard variant="compact" contentStyle={styles.list}>
+            {settingsRows.map((row) => (
+              <Pressable key={row.href} onPress={() => router.push(row.href as never)} accessibilityRole="button" accessibilityLabel={row.title}>
+                <ListRow title={row.title} icon={row.icon} />
+              </Pressable>
+            ))}
           </GlassCard>
 
-          <View style={styles.list}>
-            {memberMoreItems.map((item) => {
-              const title = t(item.titleKey);
-              return (
-                <Pressable
-                  key={item.titleKey}
-                  testID={item.testID}
-                  accessibilityRole="button"
-                  accessibilityLabel={title}
-                  onPress={() => router.push(item.href as never)}
-                  style={({ pressed }) => [styles.moreItem, pressed ? styles.moreItemPressed : null]}
-                >
-                  <ListRow title={title} subtitle={t(item.subtitleKey)} icon={item.icon} />
-                </Pressable>
-              );
-            })}
+          <View style={styles.actions}>
+            {canSwitch && nextRole ? (
+              <ZookButton icon="swap-horizontal-outline" tone="secondary" onPress={() => void switchRole(nextRole)}>
+                Switch to {titleCase(nextRole)}
+              </ZookButton>
+            ) : null}
+            <ZookButton icon="log-out-outline" tone="secondary" onPress={confirmSignOut}>
+              Sign out
+            </ZookButton>
           </View>
+
+          <Text style={[styles.footer, { color: palette.text.tertiary }]}>Zook account center</Text>
         </ScrollView>
       </ZookScreen>
     </>
   );
 }
 
+function titleCase(value: string) {
+  return value.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 const styles = StyleSheet.create({
   content: {
-    width: "100%",
-    maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
-    paddingBottom: layout.bottomNavContentPadding,
-    gap: 14,
-  },
-  accountCard: {
-    minHeight: 78,
-    flexDirection: "row",
-    alignItems: "center",
     gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    paddingBottom: layout.bottomNavContentPadding,
+    paddingTop: 14,
+    width: "100%",
   },
-  accountCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  accountTitle: {
-    color: colors.text,
-    ...typography.cardTitle,
-  },
-  accountSubtitle: {
-    color: colors.muted,
-    ...typography.small,
-  },
-  list: {
-    gap: 10,
-  },
-  moreItem: {
-    borderRadius: 22,
-  },
-  moreItemPressed: {
-    opacity: 0.72,
-  },
+  list: { gap: 4 },
+  actions: { gap: spacing.sm },
+  footer: { textAlign: "center", ...typography.caption },
 });
