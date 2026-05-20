@@ -18,6 +18,7 @@ export const darkPalette: Palette = {
   text: {
     primary: "#F4F7EF",
     secondary: "#C7CFC0",
+    // AA on bg.app and readable on raised surfaces; reserve tertiary for metadata only.
     tertiary: "#8B9586",
     inverse: "#11150F",
     onAccent: "#11150F",
