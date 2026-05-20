@@ -7,7 +7,17 @@ import {
   type BottomSheetBackdropProps,
 } from "@/components/expo-safe-bottom-sheet";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from "react";
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Reanimated from "@/lib/reanimated-lite";
@@ -53,12 +63,7 @@ import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { paymentModes, reasonSuggestions, type DeskPaymentMode } from "./constants";
-import {
-  ageLabel,
-  deskReasonCopy,
-  phoneRevealStorageKey,
-  type DeskView,
-} from "./helpers";
+import { ageLabel, deskReasonCopy, phoneRevealStorageKey } from "./helpers";
 
 type ReceptionCodeVerification = {
   match: null | {
@@ -77,14 +82,22 @@ type ReceptionCodeVerification = {
 
 type DomainMemberItem = ComponentProps<typeof MemberList>["items"][number];
 
-export type ReceptionSurfaceView = DeskView;
+type ReceptionWorkspaceValue = ReturnType<typeof useReceptionWorkspaceState>;
 
-export function ReceptionSurface({
+const ReceptionWorkspaceContext = createContext<ReceptionWorkspaceValue | null>(null);
+
+export function useReceptionWorkspace() {
+  const value = useContext(ReceptionWorkspaceContext);
+  if (!value) {
+    throw new Error("useReceptionWorkspace must be used inside ReceptionWorkspace");
+  }
+  return value;
+}
+
+function useReceptionWorkspaceState({
   initialMemberId = null,
-  view,
 }: {
   initialMemberId?: string | null;
-  view: ReceptionSurfaceView;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -143,12 +156,6 @@ export function ReceptionSurface({
   const amountPaise = Math.round(Number(amount || "0") * 100);
   const attendanceReason = reason.trim();
   const attendanceReasonInvalid = attendanceReason.length > 0 && attendanceReason.length < 2;
-
-  useEffect(() => {
-    setVerifyCode("");
-    setVerifyMessage("");
-    setVerifiedUser(null);
-  }, [view]);
 
   useEffect(() => {
     if (initialMemberId) {
@@ -415,11 +422,6 @@ export function ReceptionSurface({
     };
   }, [activeOrgId]);
 
-  useEffect(() => {
-    setVerifyMessage("");
-    setVerifiedUser(null);
-  }, [view]);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -622,8 +624,120 @@ export function ReceptionSurface({
     }
   }
 
+  return {
+    activeRole,
+    approvalItems,
+    approvalQueue,
+    approveAttendance,
+    approveAttendanceMutation,
+    attendanceReason,
+    attendanceReasonInvalid,
+    attendanceStatus,
+    bulkAttendanceStatus,
+    canApproveAttendance,
+    canRecordManualAttendance,
+    canRecordOfflinePayment,
+    canRecordPayment,
+    canSwitchBranches,
+    canVerifyCode,
+    closeDecisionSheet,
+    decisionReason,
+    decisionSheetRef,
+    dueAmount,
+    filteredMembers,
+    flaggedCount,
+    fulfillOrder,
+    fulfillOrderMutation,
+    fulfilledCount,
+    gymSelectorLabel,
+    handleVerifyCodeChange,
+    hiddenMemberCount,
+    member,
+    memberRecord,
+    memberSearch,
+    membersQuery,
+    membership,
+    multiSelectMode,
+    onRefresh,
+    openBranchSwitcher,
+    openDecisionSheet,
+    paymentMemberSearch,
+    paymentMode,
+    paymentNote,
+    paymentReason,
+    paymentStatus,
+    pendingCount,
+    profile,
+    queueQuery,
+    readyOrders,
+    reason,
+    recentScans,
+    recordBulkAttendance,
+    recordManualAttendance,
+    recordPayment,
+    recordPaymentMutation,
+    refreshControlTint: colors.lime,
+    refreshing,
+    rejectAttendance,
+    rejectAttendanceMutation,
+    revealMemberPhone,
+    router,
+    selectedMemberIds,
+    selectedMemberRecord,
+    selectedDecisionAttempt,
+    setAmount,
+    setMemberSearch,
+    setMultiSelectMode,
+    setPaymentMemberSearch,
+    setPaymentMode,
+    setPaymentNote,
+    setPaymentReason,
+    setReason,
+    setReferenceId,
+    setDecisionReason,
+    setSelectedMemberId,
+    setSelectedMemberIds,
+    setSelectedDecisionAttempt,
+    showOwnerApprovalRequired,
+    todayAttendanceQuery,
+    todayCount,
+    toggleMemberSelection,
+    verifyCode,
+    verifiedUser,
+    verifyingCode,
+    verifyEntryCode,
+    verifyMessage,
+    visibleMembers,
+    manualAttendanceMutation,
+    renderDecisionBackdrop,
+    receptionMemberItems,
+    amount,
+    amountInvalid,
+    referenceId,
+    paymentModes,
+  };
+}
+
+export function ReceptionWorkspace({
+  children,
+  initialMemberId = null,
+  showMemberContext = false,
+  subtitle,
+  title,
+  testID = "reception-home-screen",
+}: {
+  children: ReactNode;
+  initialMemberId?: string | null;
+  showMemberContext?: boolean;
+  subtitle: string;
+  title: string;
+  testID?: string;
+}) {
+  const state = useReceptionWorkspaceState({ initialMemberId });
+
   return (
-    <ZookScreen testID="reception-home-screen">
+    <ReceptionWorkspaceContext.Provider value={state}>
+      <ZookScreen testID={testID}>
       <KeyboardAwareScreen
         scrollViewProps={{
           contentInsetAdjustmentBehavior: "never",
@@ -631,10 +745,10 @@ export function ReceptionSurface({
           contentContainerStyle: styles.content,
           refreshControl: (
             <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.lime}
-              colors={[colors.lime]}
+              refreshing={state.refreshing}
+              onRefresh={state.onRefresh}
+              tintColor={state.refreshControlTint}
+              colors={[state.refreshControlTint]}
             />
           ),
         }}
@@ -642,7 +756,15 @@ export function ReceptionSurface({
         <View style={styles.deskHeader}>
           <Pressable
             testID="reception-back"
-            onPress={goBackFromDesk}
+            onPress={state.activeRole === "OWNER" || state.activeRole === "ADMIN"
+              ? () => state.router.replace("/owner")
+              : () => {
+                  if (state.router.canGoBack()) {
+                    state.router.back();
+                  } else {
+                    state.router.replace("/");
+                  }
+                }}
             accessibilityRole="button"
             accessibilityLabel="Go back"
             hitSlop={12}
@@ -651,61 +773,51 @@ export function ReceptionSurface({
             <Ionicons name="chevron-back" size={22} color={colors.text} />
           </Pressable>
           <View style={styles.headerCopy}>
-            <Text style={styles.title}>
-              {view === "desk"
-                ? "Desk"
-                : view === "members"
-                  ? "Members"
-                  : view === "payments"
-                    ? "Record Payment"
-                    : "Orders"}
-            </Text>
-            <Text style={styles.subtitle}>
-              {view === "desk" ? "Receptionist Desk" : session?.user.name ?? "Reception"}
-            </Text>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
           </View>
           <RoleSwitcherChip />
         </View>
 
         <Pressable
           testID="reception-gym-selector"
-          onPress={openBranchSwitcher}
+          onPress={state.openBranchSwitcher}
           accessibilityRole="button"
-          accessibilityLabel={canSwitchBranches ? "Switch branch" : "Active branch"}
-          disabled={!canSwitchBranches}
+          accessibilityLabel={state.canSwitchBranches ? "Switch branch" : "Active branch"}
+          disabled={!state.canSwitchBranches}
           style={({ pressed }) => [
             styles.gymSelector,
-            pressed && canSwitchBranches ? { opacity: 0.82 } : null,
+            pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
           ]}
         >
           <Ionicons name="business-outline" size={22} color={colors.text} />
           <Text numberOfLines={1} style={styles.gymSelectorText}>
-            {gymSelectorLabel}
+            {state.gymSelectorLabel}
           </Text>
-          {canSwitchBranches ? (
+          {state.canSwitchBranches ? (
             <Ionicons name="chevron-down" size={18} color={colors.muted} />
           ) : null}
         </Pressable>
 
-        {view !== "desk" ? (
+        {showMemberContext ? (
           <GlassCard variant="compact" padding={12} contentStyle={styles.memberContext}>
             <IconBubble
-              icon={member ? "person-outline" : "person-add-outline"}
-              tone={member ? "lime" : "amber"}
+              icon={state.member ? "person-outline" : "person-add-outline"}
+              tone={state.member ? "lime" : "amber"}
               size={34}
             />
             <View style={styles.memberContextCopy}>
               <Text numberOfLines={1} style={styles.memberContextTitle}>
-                {member?.name ?? "No member selected"}
+                {state.member?.name ?? "No member selected"}
               </Text>
               <Text numberOfLines={2} style={styles.memberContextBody}>
-                {member?.email ?? "Search members before recording payments or attendance"}
-                {membership?.status ? ` · ${membership.status.replace(/_/g, " ")}` : ""}
+                {state.member?.email ?? "Search members before recording payments or attendance"}
+                {state.membership?.status ? ` · ${state.membership.status.replace(/_/g, " ")}` : ""}
               </Text>
             </View>
-            {member ? (
+            {state.member ? (
               <Pressable
-                onPress={() => setSelectedMemberId(null)}
+                onPress={() => state.setSelectedMemberId(null)}
                 accessibilityRole="button"
                 accessibilityLabel="Clear selected member"
                 style={styles.clearMemberButton}
@@ -715,9 +827,41 @@ export function ReceptionSurface({
             ) : null}
           </GlassCard>
         ) : null}
+        {children}
+      </KeyboardAwareScreen>
+      <ApprovalDecisionSheet />
+    </ZookScreen>
+    </ReceptionWorkspaceContext.Provider>
+  );
+}
 
-        {view === "desk" ? (
-          <>
+export function ReceptionDeskBody() {
+  const {
+    approvalItems,
+    approvalQueue,
+    approveAttendanceMutation,
+    canApproveAttendance,
+    canVerifyCode,
+    flaggedCount,
+    handleVerifyCodeChange,
+    openDecisionSheet,
+    pendingCount,
+    queueQuery,
+    recentScans,
+    rejectAttendanceMutation,
+    selectedDecisionAttempt,
+    showOwnerApprovalRequired,
+    todayAttendanceQuery,
+    todayCount,
+    verifiedUser,
+    verifyingCode,
+    verifyCode,
+    verifyEntryCode,
+    verifyMessage,
+  } = useReceptionWorkspace();
+
+  return (
+    <>
             <MetricGrid
               columns={3}
               items={[
@@ -851,11 +995,46 @@ export function ReceptionSurface({
                 openDecisionSheet(attempt);
               }}
             />
-          </>
-        ) : null}
+    </>
+  );
+}
 
-        {view === "members" ? (
-          <>
+export function ReceptionMembersBody() {
+  const {
+    attendanceReason,
+    attendanceReasonInvalid,
+    attendanceStatus,
+    bulkAttendanceStatus,
+    canRecordManualAttendance,
+    filteredMembers,
+    hiddenMemberCount,
+    manualAttendanceMutation,
+    member,
+    memberRecord,
+    memberSearch,
+    membersQuery,
+    membership,
+    multiSelectMode,
+    profile,
+    reason,
+    receptionMemberItems,
+    recordBulkAttendance,
+    recordManualAttendance,
+    revealMemberPhone,
+    router,
+    selectedMemberIds,
+    setMemberSearch,
+    setMultiSelectMode,
+    setReason,
+    setSelectedMemberId,
+    setSelectedMemberIds,
+    showOwnerApprovalRequired,
+    toggleMemberSelection,
+    visibleMembers,
+  } = useReceptionWorkspace();
+
+  return (
+    <>
             <View style={styles.membersToolbar}>
               <Pressable
                 testID="reception-member-multi-toggle"
@@ -1008,11 +1187,41 @@ export function ReceptionSurface({
                 </Text>
               ) : null}
             </View>
-          </>
-        ) : null}
+    </>
+  );
+}
 
-        {view === "payments" ? (
-          <>
+export function ReceptionPaymentsBody() {
+  const {
+    amount,
+    amountInvalid,
+    canRecordOfflinePayment,
+    canRecordPayment,
+    dueAmount,
+    member,
+    memberRecord,
+    membersQuery,
+    membership,
+    paymentMemberSearch,
+    paymentMode,
+    paymentNote,
+    paymentReason,
+    paymentStatus,
+    recordPayment,
+    recordPaymentMutation,
+    referenceId,
+    setAmount,
+    setPaymentMemberSearch,
+    setPaymentMode,
+    setPaymentNote,
+    setPaymentReason,
+    setReferenceId,
+    setSelectedMemberId,
+    showOwnerApprovalRequired,
+  } = useReceptionWorkspace();
+
+  return (
+    <>
             <MetricGrid
               items={[
                 {
@@ -1200,11 +1409,28 @@ export function ReceptionSurface({
                 </Text>
               ) : null}
             </GlassCard>
-          </>
-        ) : null}
+    </>
+  );
+}
 
-        {view === "orders" ? (
-          <>
+export function ReceptionOrdersBody() {
+  const {
+    canVerifyCode,
+    fulfillOrder,
+    fulfillOrderMutation,
+    fulfilledCount,
+    handleVerifyCodeChange,
+    paymentStatus,
+    readyOrders,
+    verifiedUser,
+    verifyingCode,
+    verifyCode,
+    verifyEntryCode,
+    verifyMessage,
+  } = useReceptionWorkspace();
+
+  return (
+    <>
             <MetricGrid
               items={[
                 {
@@ -1311,9 +1537,26 @@ export function ReceptionSurface({
                 {paymentStatus}
               </Text>
             ) : null}
-          </>
-        ) : null}
-      </KeyboardAwareScreen>
+    </>
+  );
+}
+
+function ApprovalDecisionSheet() {
+  const {
+    approveAttendance,
+    approveAttendanceMutation,
+    closeDecisionSheet,
+    decisionReason,
+    decisionSheetRef,
+    rejectAttendance,
+    rejectAttendanceMutation,
+    renderDecisionBackdrop,
+    selectedDecisionAttempt,
+    setDecisionReason,
+    setSelectedDecisionAttempt,
+  } = useReceptionWorkspace();
+
+  return (
       <BottomSheetModal
         ref={decisionSheetRef}
         snapPoints={["48%"]}
@@ -1406,7 +1649,6 @@ export function ReceptionSurface({
           </View>
         </BottomSheetView>
       </BottomSheetModal>
-    </ZookScreen>
   );
 }
 

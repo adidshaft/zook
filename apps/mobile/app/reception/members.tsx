@@ -1,5 +1,10 @@
-import { ReceptionSurface } from "@/features/reception/reception-surface";
+import { ReceptionMembersScreenBody } from "@/features/reception/components/members-screen";
+import { ReceptionWorkspace } from "@/features/reception/reception-workspace";
 
 export default function ReceptionMembersScreen() {
-  return <ReceptionSurface view="members" />;
+  return (
+    <ReceptionWorkspace title="Members" subtitle="Reception" showMemberContext>
+      <ReceptionMembersScreenBody />
+    </ReceptionWorkspace>
+  );
 }
