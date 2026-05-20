@@ -24,6 +24,7 @@ import {
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { aiApi } from "@/lib/domain-api";
+import { useRoleContext } from "@/lib/role-context";
 import { useMyPlans, useMyProfile, useTrainerClients } from "@/lib/query-hooks";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
@@ -64,12 +65,16 @@ export default function AssistantScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const composerTranslateY = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
-  const { activeOrgId, activeRole, hasAnyRole, token } = useAuth();
+  const { activeOrgId, token } = useAuth();
+  const roleContext = useRoleContext();
   const profileQuery = useMyProfile();
   const plansQuery = useMyPlans();
-  const isTrainer = hasAnyRole("TRAINER");
+  const activeRole = roleContext?.role ?? "MEMBER";
+  const isTrainer = Boolean(roleContext?.availableRoles.includes("TRAINER"));
   const trainerClientsQuery = useTrainerClients(undefined, undefined, isTrainer);
-  const canUseAi = hasAnyRole("TRAINER", "MEMBER");
+  const canUseAi = Boolean(
+    roleContext?.availableRoles.some((role) => role === "TRAINER" || role === "MEMBER"),
+  );
   const storageKey = `zook_assistant_messages_${activeOrgId ?? "global"}_${activeRole ?? "member"}`;
   const hydratedRef = useRef(false);
   const [messages, setMessages] = useState<ChatMessage[]>([starterMessage(isTrainer)]);

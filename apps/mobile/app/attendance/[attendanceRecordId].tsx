@@ -21,6 +21,7 @@ import {
 import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
+import { useRoleContext } from "@/lib/role-context";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 
 type AttendanceRecord = {
@@ -61,7 +62,8 @@ export default function AttendanceResultScreen() {
   const routeParams = useLocalSearchParams<{
     attendanceRecordId?: string | string[];
   }>();
-  const { activeRole, status, token } = useAuth();
+  const { status, token } = useAuth();
+  const activeRole = useRoleContext()?.role;
   const queryClient = useQueryClient();
   const attendanceRecordId = firstParam(routeParams.attendanceRecordId);
   const attendanceQuery = useQuery({

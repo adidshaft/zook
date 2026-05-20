@@ -33,6 +33,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { RoleSwitcherChip } from "@/components/role-switcher";
 import {
   ActiveMembershipCard,
   AutopayCard,
@@ -516,6 +517,7 @@ export default function MembershipScreen() {
           <MobileHeader
             eyebrow="Membership"
             title="Your plans"
+            contextSlot={<RoleSwitcherChip />}
             subtitle={
               memberships.length
                 ? `${activeCount} active · ${expiringSoonCount} expiring soon · ${memberships.length} total`

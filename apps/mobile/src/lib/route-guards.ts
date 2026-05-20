@@ -42,7 +42,7 @@ export function requiredRoleForPath(pathname: string): Role | null {
 
 export function checkRouteAccess(
   pathname: string,
-  perms: Set<Permission>,
+  perms: ReadonlySet<Permission>,
   isPlatformAdmin: boolean,
 ) {
   const required = permissionForPath(pathname);

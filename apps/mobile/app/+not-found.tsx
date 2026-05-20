@@ -3,13 +3,14 @@ import { Text } from "react-native";
 
 import { EmptyState, ZookButton, ZookScreen } from "@/components/primitives";
 import { routeForRole } from "@/lib/route-guards";
-import { useAuth } from "@/lib/auth";
+import { useRoleContext } from "@/lib/role-context";
 
 export default function NotFoundScreen() {
   const router = useRouter();
-  const { activeRole, session } = useAuth();
-  const homeRoute =
-    session?.user.isPlatformAdmin && !activeRole ? "/platform" : routeForRole(activeRole ?? "MEMBER");
+  const roleContext = useRoleContext();
+  const homeRoute = roleContext?.isPlatformAdmin
+    ? routeForRole(roleContext.role)
+    : routeForRole(roleContext?.role ?? "MEMBER");
 
   return (
     <ZookScreen style={{ justifyContent: "center", paddingHorizontal: 20 }}>

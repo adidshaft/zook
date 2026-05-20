@@ -32,6 +32,7 @@ const BIOMETRIC_ENABLED_STORAGE_KEY = "zook_biometric_enabled";
 const BIOMETRIC_PROMPTED_STORAGE_KEY = "zook_biometric_prompted";
 const ACTIVE_ORG_STORAGE_KEY = "zook_active_org";
 const ACTIVE_ROLE_STORAGE_KEY = "zook_active_role";
+const DEFAULT_ROLE_PREFERENCE_STORAGE_KEY = "zook_default_role_preference";
 const OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY = "zook_offline_demo_logged_out";
 const SESSION_FALLBACK_MS = 30 * 24 * 60 * 60 * 1000;
 const SESSION_PROACTIVE_WINDOW_MS = 60 * 1000;
@@ -79,8 +80,10 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   refresh: () => Promise<string | void>;
   clearExpiredSession: () => Promise<void>;
-  setActiveOrgId: (orgId: string) => Promise<void>;
-  setActiveRole: (role: Role) => Promise<void>;
+  defaultRolePreference?: Role;
+  switchOrg: (orgId: string) => Promise<void>;
+  switchRole: (role: Role) => Promise<void>;
+  setDefaultRole: (role: Role) => Promise<void>;
   setBiometricEnabled: (enabled: boolean) => Promise<boolean>;
   hasAnyRole: (...roles: Role[]) => boolean;
   hasActiveRole: (...roles: Role[]) => boolean;
@@ -90,16 +93,45 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function sessionDefaultRole(session?: AuthSessionSummary): Role | undefined {
+function normalizeStoredRole(value?: string | null): Role | undefined {
+  return value && isOrgRole(value) ? value : undefined;
+}
+
+function sessionDefaultRole(
+  session?: AuthSessionSummary,
+  defaultRolePreference?: Role,
+): Role | undefined {
   return defaultRoleForOrg(
     (session?.activeOrganization?.roles ?? session?.organizations[0]?.roles ?? []).filter(
       isOrgRole,
     ),
+    defaultRolePreference,
   );
 }
 
-function defaultRoleForOrg(roles: Role[]): Role | undefined {
+function defaultRoleForOrg(
+  roles: Role[],
+  defaultRolePreference?: Role,
+): Role | undefined {
+  if (
+    defaultRolePreference &&
+    isOrgRole(defaultRolePreference) &&
+    roles.includes(defaultRolePreference)
+  ) {
+    return defaultRolePreference;
+  }
   return ORG_ROLE_PRIORITY.find((role) => roles.includes(role)) ?? roles[0];
+}
+
+function resolveActiveRole(
+  roles: Role[],
+  preferredRole?: Role,
+  defaultRolePreference?: Role,
+) {
+  if (preferredRole && isOrgRole(preferredRole) && roles.includes(preferredRole)) {
+    return preferredRole;
+  }
+  return defaultRoleForOrg(roles, defaultRolePreference);
 }
 
 async function invalidateRoleScopedQueries() {
@@ -194,6 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSessionSummary | undefined>();
   const [activeOrgId, setActiveOrgIdState] = useState<string | undefined>();
   const [activeRole, setActiveRoleState] = useState<Role | undefined>();
+  const [defaultRolePreference, setDefaultRolePreference] = useState<Role | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [offlineMode, setOfflineMode] = useState(false);
   const [offlineBanner, setOfflineBanner] = useState<string | undefined>();
@@ -208,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sessionRef = useRef<AuthSessionSummary | undefined>(undefined);
   const activeOrgIdRef = useRef<string | undefined>(undefined);
   const activeRoleRef = useRef<Role | undefined>(undefined);
+  const defaultRolePreferenceRef = useRef<Role | undefined>(undefined);
 
   const hydrate = useCallback(
     async (tokenValue: string, preferredOrgId?: string, preferredRole?: Role) => {
@@ -228,10 +262,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           []
         ).filter(isOrgRole),
       );
-      const resolvedRole =
-        preferredRole && isOrgRole(preferredRole) && availableRoles.has(preferredRole)
-          ? preferredRole
-          : sessionDefaultRole(currentSession);
+      const resolvedRole = resolveActiveRole(
+        [...availableRoles],
+        preferredRole,
+        defaultRolePreferenceRef.current,
+      );
       if (resolvedRole) {
         await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, resolvedRole);
       }
@@ -364,11 +399,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOfflineMode(false);
     setOfflineBanner(undefined);
     if (isOfflineDemoMode()) {
-      const [storedOrgId, storedRole, demoLoggedOut] = await Promise.all([
-        getStoredValue(ACTIVE_ORG_STORAGE_KEY),
-        getStoredValue(ACTIVE_ROLE_STORAGE_KEY),
-        getStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY),
-      ]);
+      const [storedOrgId, storedRole, storedDefaultRolePreference, demoLoggedOut] =
+        await Promise.all([
+          getStoredValue(ACTIVE_ORG_STORAGE_KEY),
+          getStoredValue(ACTIVE_ROLE_STORAGE_KEY),
+          getStoredValue(DEFAULT_ROLE_PREFERENCE_STORAGE_KEY),
+          getStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY),
+        ]);
+      const normalizedDefaultRolePreference = normalizeStoredRole(storedDefaultRolePreference);
+      defaultRolePreferenceRef.current = normalizedDefaultRolePreference;
+      setDefaultRolePreference(normalizedDefaultRolePreference);
       if (demoLoggedOut === "true") {
         setToken(undefined);
         setSession(undefined);
@@ -384,7 +424,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await hydrate(
         DEMO_AUTH_TOKEN,
         storedOrgId ?? undefined,
-        getOfflineDemoRoleOverride() ?? (storedRole as Role | null) ?? undefined,
+        getOfflineDemoRoleOverride() ?? normalizeStoredRole(storedRole),
       );
       return;
     }
@@ -403,12 +443,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const [storedToken, storedRefreshToken, storedOrgId, storedRole] = await Promise.all([
+    const [
+      storedToken,
+      storedRefreshToken,
+      storedOrgId,
+      storedRole,
+      storedDefaultRolePreference,
+    ] = await Promise.all([
       getStoredValue(SESSION_STORAGE_KEY),
       getStoredValue(REFRESH_SESSION_STORAGE_KEY),
       getStoredValue(ACTIVE_ORG_STORAGE_KEY),
       getStoredValue(ACTIVE_ROLE_STORAGE_KEY),
+      getStoredValue(DEFAULT_ROLE_PREFERENCE_STORAGE_KEY),
     ]);
+    const normalizedStoredRole = normalizeStoredRole(storedRole);
+    const normalizedDefaultRolePreference = normalizeStoredRole(storedDefaultRolePreference);
+    const preferredStoredRole = normalizedDefaultRolePreference ?? normalizedStoredRole;
+    defaultRolePreferenceRef.current = normalizedDefaultRolePreference;
+    setDefaultRolePreference(normalizedDefaultRolePreference);
 
     if (!storedToken) {
       if (storedRefreshToken) {
@@ -423,11 +475,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(undefined);
       setSession(undefined);
       setActiveOrgIdState(storedOrgId ?? undefined);
-      setActiveRoleState((storedRole as Role | null) ?? undefined);
+      setActiveRoleState(normalizedStoredRole);
       tokenRef.current = undefined;
       sessionRef.current = undefined;
       activeOrgIdRef.current = storedOrgId ?? undefined;
-      activeRoleRef.current = (storedRole as Role | null) ?? undefined;
+      activeRoleRef.current = normalizedStoredRole;
       return;
     }
 
@@ -436,7 +488,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await hydrate(
         storedToken,
         storedOrgId ?? undefined,
-        (storedRole as Role | null) ?? undefined,
+        preferredStoredRole,
       );
       return storedToken;
     } catch (error) {
@@ -455,12 +507,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(storedToken);
       setSession(undefined);
       setActiveOrgIdState(storedOrgId ?? undefined);
-      setActiveRoleState((storedRole as Role | null) ?? undefined);
+      setActiveRoleState(normalizedStoredRole);
       tokenRef.current = storedToken;
       refreshTokenRef.current = storedRefreshToken ?? undefined;
       sessionRef.current = undefined;
       activeOrgIdRef.current = storedOrgId ?? undefined;
-      activeRoleRef.current = (storedRole as Role | null) ?? undefined;
+      activeRoleRef.current = normalizedStoredRole;
       setStatus("authenticated");
       setOfflineMode(true);
       setOfflineBanner("Couldn't reach server - working offline");
@@ -594,7 +646,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [clearSession, token]);
 
-  const setActiveOrgId = useCallback(
+  const switchOrg = useCallback(
     async (orgId: string) => {
       const tokenValue = tokenRef.current;
       const currentSession = sessionRef.current;
@@ -607,11 +659,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!targetOrg) {
         throw new Error("Organization not available for this account");
       }
-      const currentRole = activeRoleRef.current;
-      const correctedRole =
-        currentRole && isOrgRole(currentRole) && targetOrg.roles.includes(currentRole)
-          ? currentRole
-          : defaultRoleForOrg(targetOrg.roles);
+      const correctedRole = defaultRoleForOrg(targetOrg.roles);
       await Promise.all([
         setStoredValue(ACTIVE_ORG_STORAGE_KEY, orgId),
         correctedRole
@@ -628,7 +676,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [hydrate],
   );
 
-  const setActiveRole = useCallback(
+  const switchRole = useCallback(
     async (role: Role) => {
       const tokenValue = tokenRef.current;
       const currentSession = sessionRef.current;
@@ -652,6 +700,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await invalidateRoleScopedQueries();
     },
     [hydrate],
+  );
+
+  const setDefaultRole = useCallback(
+    async (role: Role) => {
+      const currentSession = sessionRef.current;
+      const currentOrgId =
+        activeOrgIdRef.current ??
+        currentSession?.activeOrgId ??
+        currentSession?.activeOrganization?.orgId;
+      const activeOrg = currentSession?.organizations.find(
+        (organization) => organization.orgId === currentOrgId,
+      );
+      if (!isOrgRole(role) || !activeOrg?.roles.includes(role)) {
+        throw new Error("Role not available in active org");
+      }
+      await setStoredValue(DEFAULT_ROLE_PREFERENCE_STORAGE_KEY, role);
+      defaultRolePreferenceRef.current = role;
+      setDefaultRolePreference(role);
+    },
+    [],
   );
 
   const setBiometricEnabled = useCallback(async (enabled: boolean) => {
@@ -683,6 +751,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activeOrgId,
       activeRole,
       defaultRoute: defaultRouteForSession(session, activeRole),
+      defaultRolePreference,
       offlineMode,
       offlineBanner,
       proactiveLogin,
@@ -694,8 +763,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       refresh,
       clearExpiredSession,
-      setActiveOrgId,
-      setActiveRole,
+      switchOrg,
+      switchRole,
+      setDefaultRole,
       setBiometricEnabled,
       hasAnyRole,
       hasActiveRole,
@@ -707,6 +777,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activeRole,
       biometricEnabled,
       clearExpiredSession,
+      defaultRolePreference,
       error,
       hasActiveRole,
       hasAnyRole,
@@ -718,12 +789,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       registerLogoutCleanup,
       requestOtp,
       session,
-      setActiveOrgId,
-      setActiveRole,
+      setDefaultRole,
       setBiometricEnabled,
       signInWithApple,
       signInWithGoogle,
       status,
+      switchOrg,
+      switchRole,
       token,
       verifyOtp,
     ],

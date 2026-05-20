@@ -79,11 +79,45 @@ export async function getLatestOtpFromMockOrUseDevCode(page: Page, _identifier: 
 export async function loginWithOtp(page: Page, identifier: string) {
   await page.goto("/login");
   await page.getByLabel(/email/i).fill(identifier);
+  const readResponseText = (response: Awaited<ReturnType<Page["waitForResponse"]>>) =>
+    response.text().catch(() => "<response body unavailable>");
+  const waitForAuthResponse = (path: string) =>
+    page.waitForResponse(
+      (response) => response.url().includes(path) && response.request().method() === "POST",
+      { timeout: 30_000 },
+    );
+
+  const requestOtpResponsePromise = waitForAuthResponse("/api/auth/request-otp");
   await page.getByRole("button", { name: /send (otp|code)/i }).click();
+  const requestOtpResponse = await requestOtpResponsePromise;
+  if (!requestOtpResponse.ok()) {
+    throw new Error(
+      `OTP request failed with ${requestOtpResponse.status()}: ${await readResponseText(
+        requestOtpResponse,
+      )}`,
+    );
+  }
+
+  const otpInput = page.getByTestId("login-otp");
+  await expect(otpInput).toBeVisible({ timeout: 30_000 });
   const code = await getLatestOtpFromMockOrUseDevCode(page, identifier);
-  await page.getByLabel(/otp|one-time code/i).fill(code);
-  await page.waitForURL(/\/(?:dashboard|platform|gyms|me|desk|coach)(?:$|[/?#])/, {
-    timeout: 10_000,
+
+  let verifyResponsePromise = waitForAuthResponse("/api/auth/verify-otp");
+  await otpInput.fill(code);
+  const verifyResponse = await verifyResponsePromise.catch(async () => {
+    verifyResponsePromise = waitForAuthResponse("/api/auth/verify-otp");
+    await page.getByTestId("login-verify-code").click();
+    return verifyResponsePromise;
+  });
+  if (!verifyResponse.ok()) {
+    throw new Error(
+      `OTP verification failed with ${verifyResponse.status()}: ${await readResponseText(
+        verifyResponse,
+      )}`,
+    );
+  }
+  await expect(page).toHaveURL(/\/(?:dashboard|platform|gyms|me|desk|coach)(?:$|[/?#])/, {
+    timeout: 30_000,
   });
 }
 

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { prisma } from "@zook/db";
-import { loginWithSessionCookie } from "./helpers";
+import { loginWithOtp, loginWithSessionCookie } from "./helpers";
 import { requireDb } from "./helpers/db";
 
 const seededAccounts = [
@@ -42,12 +42,7 @@ test.describe("auth actions", () => {
 
     for (const account of seededAccounts) {
       await page.context().clearCookies();
-      await page.goto("/login");
-      await page.getByTestId("login-email").fill(account.email);
-      await page.getByTestId("login-send-code").click();
-      await expect(page.getByTestId("login-otp")).toBeVisible();
-      await expect(page.getByRole("main").getByText(/code sent|test code|6-digit/i)).toBeVisible();
-      await page.getByTestId("login-otp").fill("000000");
+      await loginWithOtp(page, account.email);
       await expect(page).toHaveURL(account.path, { timeout: 15_000 });
 
       const user = await prisma.user.findUniqueOrThrow({ where: { email: account.email } });

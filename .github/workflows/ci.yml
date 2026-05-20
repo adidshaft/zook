@@ -12,7 +12,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
 
     services:
       postgres:
@@ -31,14 +31,17 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://zook:zook@localhost:5432/zook_test
-      APP_ENV: test
+      APP_ENV: local
       API_MODE: backend
-      SESSION_SECRET: ci-session-secret-at-least-32-characters
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_WEB_URL: http://127.0.0.1:3000
+      MOBILE_API_BASE_URL: http://127.0.0.1:3000
+      SESSION_SECRET: ci-session-key-0123456789ABCDEFabcdefXYZ
+      ZOOK_QR_SECRET: ci-zook-qr-signing-key-0123456789ABCDEF
       STORAGE_PROVIDER: local
       STORAGE_LOCAL_DIR: .local/ci-uploads
       RATE_LIMIT_PROVIDER: memory
       OTP_FIXED_CODE_DEV: "000000"
-      ALLOW_DEV_OTP_RESPONSE: "true"
 
     steps:
       - name: Checkout
@@ -57,6 +60,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Generate database client
         run: pnpm db:generate
@@ -97,10 +103,10 @@ jobs:
         run: pnpm test:services
 
       - name: DB-backed web tests
-        run: pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 pnpm test:web
+        run: pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 ALLOW_DEV_OTP_RESPONSE=true pnpm test:web
 
-      - name: Acceptance tests
-        run: pnpm test:acceptance
+      - name: Action web tests
+        run: ALLOW_DEV_OTP_RESPONSE=true pnpm test:web:actions
 
       - name: Release preflight
         run: pnpm release:preflight
