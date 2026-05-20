@@ -1,8 +1,7 @@
-import { isOrgRole } from "@zook/core/permissions";
 import type { Role } from "@zook/core/types";
 import { resolvePlanName } from "@zook/ui";
 import { Stack, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ProfileExtraFields } from "@/components/profile/profile-extra-fields";
@@ -20,6 +19,7 @@ import {
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
+import { useRoleContext } from "@/lib/role-context";
 import {
   useActiveMembership,
   useMemberHome,
@@ -144,15 +144,15 @@ export default function ProfileScreen() {
   const bottomPadding = useBottomScrollPadding({ hasStickyAction: true });
   const {
     activeOrgId,
-    activeRole,
     biometricEnabled,
     logout,
     session,
     setBiometricEnabled,
-    setActiveOrgId,
-    setActiveRole,
+    switchOrg,
+    switchRole,
     token,
   } = useAuth();
+  const roleContext = useRoleContext();
   const profileQuery = useMyProfile();
   const homeQuery = useMemberHome();
   const activeMembershipQuery = useActiveMembership();
@@ -175,13 +175,7 @@ export default function ProfileScreen() {
       session?.user.profilePhotoUrl,
   );
   const roles = activeOrganization?.roles ?? [];
-  useEffect(() => {
-    if (!activeRole || !roles.length || (isOrgRole(activeRole) && roles.includes(activeRole))) {
-      return;
-    }
-    const fallback = roles[0];
-    void setActiveRole(fallback).catch(() => undefined);
-  }, [activeRole, roles, setActiveRole]);
+  const activeRole = roleContext?.role ?? "MEMBER";
   const rolesInOtherGyms = useMemo(() => {
     const activeRoles = new Set(roles);
     return (session?.organizations ?? [])
@@ -276,7 +270,7 @@ export default function ProfileScreen() {
         text: "Switch",
         onPress: () => {
           setRoleBusy(role);
-          void setActiveRole(role)
+          void switchRole(role)
             .then(() => router.replace(routeForRole(role)))
             .catch((error) => {
               Alert.alert(
@@ -299,8 +293,8 @@ export default function ProfileScreen() {
         {
           text: `Switch to ${input.orgName} to access ${titleCaseRole(input.role)} tools`,
           onPress: () => {
-            void setActiveOrgId(input.orgId)
-              .then(() => setActiveRole(input.role))
+            void switchOrg(input.orgId)
+              .then(() => switchRole(input.role))
               .then(() => router.replace(routeForRole(input.role)))
               .catch((error) => {
                 Alert.alert(
@@ -343,7 +337,7 @@ export default function ProfileScreen() {
       {
         text: "Switch",
         onPress: () => {
-          void setActiveOrgId(orgId);
+          void switchOrg(orgId);
         },
       },
     ]);

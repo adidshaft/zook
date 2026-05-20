@@ -134,7 +134,27 @@ function collectTsxCopy(content: string, file: string) {
   return hits;
 }
 
-const files = execFileSync("rg", ["--files", ...scanTargets], { cwd: root, encoding: "utf8" })
+function isMissingExecutable(error: unknown) {
+  return (
+    Boolean(error) &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "ENOENT"
+  );
+}
+
+function listScanFiles() {
+  try {
+    return execFileSync("rg", ["--files", ...scanTargets], { cwd: root, encoding: "utf8" });
+  } catch (error) {
+    if (!isMissingExecutable(error)) {
+      throw error;
+    }
+    return execFileSync("git", ["ls-files", ...scanTargets], { cwd: root, encoding: "utf8" });
+  }
+}
+
+const files = listScanFiles()
   .split("\n")
   .filter((file) => /\.(tsx|ts|json)$/.test(file));
 

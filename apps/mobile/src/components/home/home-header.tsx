@@ -1,5 +1,6 @@
 import { Link } from "expo-router";
 import type { Href } from "expo-router";
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, spacing } from "@/lib/theme";
@@ -13,12 +14,14 @@ function getGreeting() {
 
 export function HomeHeader({
   city,
+  contextSlot,
   firstName,
   gymHref,
   orgName,
   unreadCount,
 }: {
   city?: string | null;
+  contextSlot?: ReactNode;
   firstName: string;
   gymHref: Href;
   orgName: string;
@@ -32,6 +35,7 @@ export function HomeHeader({
           <Text numberOfLines={1} style={styles.premiumName}>
             {firstName}
           </Text>
+          {contextSlot ? <View style={styles.contextSlot}>{contextSlot}</View> : null}
         </View>
         <Link href="/notifications" asChild>
           <Pressable
@@ -79,6 +83,9 @@ const styles = StyleSheet.create({
   premiumGreetingBlock: {
     flex: 1,
     gap: 4,
+  },
+  contextSlot: {
+    alignSelf: "flex-start",
   },
   premiumGreeting: {
     color: colors.muted,

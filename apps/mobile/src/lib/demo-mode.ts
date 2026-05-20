@@ -18,8 +18,15 @@ function envValue(key: string) {
   return process.env[key]?.trim();
 }
 
+export function explicitOfflineDemoRoleOverride(): OrgRole | undefined {
+  const raw = (
+    envValue("EXPO_PUBLIC_DEMO_ROLE") ?? envValue("EXPO_PUBLIC_OFFLINE_DEMO_ROLE")
+  )?.toUpperCase();
+  return raw && isOrgRole(raw) ? raw : undefined;
+}
+
 export function getOfflineDemoRoleOverride(): OrgRole {
-  const raw = envValue("EXPO_PUBLIC_OFFLINE_DEMO_ROLE")?.toUpperCase();
+  const raw = explicitOfflineDemoRoleOverride();
   return raw && isOrgRole(raw) ? raw : "MEMBER";
 }
 

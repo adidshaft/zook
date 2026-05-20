@@ -26,6 +26,7 @@ import {
   TodayPlanCard,
   WorkoutLogCard,
 } from "@/components/home";
+import { RoleSwitcherChip } from "@/components/role-switcher";
 import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
@@ -211,6 +212,7 @@ export default function Home() {
             orgName={orgName}
             city={city}
             unreadCount={unreadCount}
+            contextSlot={<RoleSwitcherChip />}
           />
 
           {homeError ? (
