@@ -23,8 +23,9 @@ import { useI18n, type LocalePreference, type TranslationKey } from "@/lib/i18n"
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
 import { useMyConsents, useMyNotificationPreferences } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
+import { useTheme, type ThemePreference } from "@/lib/theme/index";
 
-type SettingsSection = "notifications" | "language" | "privacy" | "system";
+type SettingsSection = "notifications" | "language" | "appearance" | "privacy" | "system";
 
 const preferenceRows = [
   {
@@ -55,11 +56,18 @@ const localeOptions: Array<{ labelKey: TranslationKey; value: LocalePreference }
   { labelKey: "settings.languageHindi", value: "hi" },
 ];
 
+const themeOptions: Array<{ label: string; value: ThemePreference }> = [
+  { label: "System", value: "system" },
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+];
+
 export default function Settings() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, logout, session, token } = useAuth();
   const { preference: localePreference, setLocalePreference, t } = useI18n();
+  const { palette, preference: themePreference, setPreference: setThemePreference } = useTheme();
   const privacyQuery = useMyConsents();
   const notificationPreferencesQuery = useMyNotificationPreferences();
   const activeOrganization =
@@ -256,6 +264,46 @@ export default function Settings() {
                         ]}
                       >
                         {t(option.labelKey)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </GlassCard>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Appearance"
+            subtitle="Use your device setting or choose a fixed theme"
+            {...sectionProps("appearance")}
+          >
+            <GlassCard variant="compact" contentStyle={styles.appearanceContent}>
+              <View style={styles.appearanceRow}>
+                {themeOptions.map((option) => {
+                  const selected = themePreference === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => void setThemePreference(option.value)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      style={[
+                        styles.appearanceButton,
+                        {
+                          backgroundColor: selected
+                            ? palette.surface.accentSoft
+                            : palette.surface.raised,
+                          borderColor: selected ? palette.accent.strong : palette.border.default,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.appearanceButtonText,
+                          { color: selected ? palette.accent.strong : palette.text.secondary },
+                        ]}
+                      >
+                        {option.label}
                       </Text>
                     </Pressable>
                   );
@@ -483,10 +531,28 @@ const styles = StyleSheet.create({
   languageContent: {
     gap: spacing.sm,
   },
+  appearanceContent: {
+    gap: spacing.sm,
+  },
   languageRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
+  },
+  appearanceRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  appearanceButton: {
+    minHeight: 38,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    justifyContent: "center",
+  },
+  appearanceButtonText: {
+    ...typography.caption,
   },
   languageButton: {
     minHeight: 38,

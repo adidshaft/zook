@@ -31,6 +31,7 @@ import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberDashboardQueryOptions } from "@/lib/query-hooks";
 import { colors, layout } from "@/lib/theme";
+import { ThemeProvider, useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 
 initMobileSentry();
@@ -122,6 +123,7 @@ function isPaymentReturnDeepLink(url: string) {
 }
 
 function LayoutContent() {
+  const { mode, palette } = useTheme();
   const {
     activeOrgId,
     activeRole,
@@ -325,10 +327,9 @@ function LayoutContent() {
     }
 
     const requiredRoles = requiredRolesForPath(pathname);
-    const hasRequiredRole =
-      requiredRoles?.includes("PLATFORM_ADMIN")
-        ? Boolean(session?.user.isPlatformAdmin || hasAnyRole("PLATFORM_ADMIN"))
-        : Boolean(requiredRoles?.some((role) => hasAnyRole(role)));
+    const hasRequiredRole = requiredRoles?.includes("PLATFORM_ADMIN")
+      ? Boolean(session?.user.isPlatformAdmin || hasAnyRole("PLATFORM_ADMIN"))
+      : Boolean(requiredRoles?.some((role) => hasAnyRole(role)));
     if (requiredRoles && !hasRequiredRole) {
       router.replace(routeForRole(activeRole ?? "MEMBER") as never);
       return;
@@ -389,15 +390,15 @@ function LayoutContent() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={mode === "dark" ? "light" : "dark"} />
       <NetworkBanner />
       {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
       <Stack
         screenOptions={{
           headerShown: false,
-          headerStyle: { backgroundColor: colors.bg },
-          headerTintColor: "#f4f7ef",
-          contentStyle: { backgroundColor: colors.bg },
+          headerStyle: { backgroundColor: palette.bg.app },
+          headerTintColor: palette.text.primary,
+          contentStyle: { backgroundColor: palette.bg.app },
         }}
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
@@ -503,20 +504,24 @@ export default function Layout() {
   return (
     <SafeAreaProvider>
       <View style={styles.gestureRoot}>
-        <Sentry.ErrorBoundary fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}>
+        <Sentry.ErrorBoundary
+          fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
+        >
           <QueryClientProvider client={queryClient}>
             <I18nProvider>
-              <AuthProvider>
-                <BranchSelectionProvider>
-                  <BottomNavVisibilityProvider>
-                    <PrivilegedPinProvider>
-                      <PushNotificationsProvider>
-                        <LayoutContent />
-                      </PushNotificationsProvider>
-                    </PrivilegedPinProvider>
-                  </BottomNavVisibilityProvider>
-                </BranchSelectionProvider>
-              </AuthProvider>
+              <ThemeProvider>
+                <AuthProvider>
+                  <BranchSelectionProvider>
+                    <BottomNavVisibilityProvider>
+                      <PrivilegedPinProvider>
+                        <PushNotificationsProvider>
+                          <LayoutContent />
+                        </PushNotificationsProvider>
+                      </PrivilegedPinProvider>
+                    </BottomNavVisibilityProvider>
+                  </BranchSelectionProvider>
+                </AuthProvider>
+              </ThemeProvider>
             </I18nProvider>
           </QueryClientProvider>
         </Sentry.ErrorBoundary>
