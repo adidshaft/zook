@@ -16,7 +16,7 @@ Apply the routing template from Plan #05 to the Owner role. Split `apps/mobile/a
 - `apps/mobile/app/owner/index.tsx` — 1,226 lines. Component named `Owner`. Internal state machine on `view: OwnerView = "command" | "approvals" | "revenue" | "stock" | "members"` (line 52).
 - The 5 views branch at: 460 (command), 558 (members), 693 (approvals), and the corresponding revenue/stock blocks. Read the file to confirm exact ranges.
 - Member detail already exists at `apps/mobile/app/owner/member/[id].tsx` (400 lines) — keep, integrate.
-- Bottom nav: `ownerTabs` at `apps/mobile/src/components/primitives/legacy.tsx:2125` (Home, Approvals, Revenue, Stock — no Members, despite there being a Members view).
+- Bottom nav: `ownerTabs` at `apps/mobile/src/components/primitives/foundation.tsx:2125` (Home, Approvals, Revenue, Stock — no Members, despite there being a Members view).
 - `adminTabs` at `legacy.tsx:2159` (Home, Check in, Approvals, Stock — points at `/owner` for everything; effectively Owner with a Check-in tab).
 
 ## Architectural target
@@ -233,7 +233,7 @@ In `legacy.tsx`, mark `adminTabs` `@deprecated`. Plan #11 deletes it.
 
 ### Step 6 — Bottom nav short-circuit
 
-In `apps/mobile/src/components/primitives/legacy.tsx`, ensure `BottomNav` returns `null` when `pathname.startsWith("/owner")` (this was added in plan #05 as a single block — extend if needed).
+In `apps/mobile/src/components/primitives/foundation.tsx`, ensure `BottomNav` returns `null` when `pathname.startsWith("/owner")` (this was added in plan #05 as a single block — extend if needed).
 
 ### Step 7 — Back-compat redirects
 
@@ -304,7 +304,7 @@ Practical sequence:
 ## Files modified
 
 - `apps/mobile/app/owner/member/[id].tsx` (update back-nav target)
-- `apps/mobile/src/components/primitives/legacy.tsx` (`adminTabs`, `ownerTabs` marked `@deprecated`; BottomNav short-circuit for `/owner/*`)
+- `apps/mobile/src/components/primitives/foundation.tsx` (`adminTabs`, `ownerTabs` marked `@deprecated`; BottomNav short-circuit for `/owner/*`)
 - `apps/mobile/src/lib/route-guards.ts`
 - `apps/mobile/src/lib/route-guards.test.ts`
 

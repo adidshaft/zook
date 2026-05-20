@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BrandMark } from "@/components/primitives";
 import { useReduceMotion } from "@/lib/motion";
-import { colors } from "@/lib/theme";
+import { legacyColors } from "@/lib/theme";
 
 export default function OnboardingSplash() {
   const router = useRouter();
@@ -81,7 +81,7 @@ export default function OnboardingSplash() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: legacyColors.bg,
     paddingHorizontal: 24,
   },
   center: {
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   wordmarkText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     fontFamily: "Inter_900Black",
     fontSize: 58,
     letterSpacing: 0,
@@ -140,13 +140,13 @@ const styles = StyleSheet.create({
     borderRightWidth: 2,
   },
   scanText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
     letterSpacing: 0,
   },
   skipText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontFamily: "Inter_600SemiBold",
     textAlign: "center",
   },

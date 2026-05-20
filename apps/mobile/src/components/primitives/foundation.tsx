@@ -43,8 +43,8 @@ import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useBottomScrollPadding, useStickyActionOffset } from "@/lib/use-layout-padding";
-import { useMyNotifications, useOrgAttendancePending } from "@/lib/query-hooks";
-import { colors, layout, palettes, radii, shadows, spacing, typography } from "@/lib/theme";
+import { useMyNotifications, useOrgAttendancePending } from "@/lib/domains";
+import { legacyColors, layout, palettes, radii, shadows, spacing, typography } from "@/lib/theme";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
@@ -80,37 +80,37 @@ const tonePalettes: Record<
 > = {
   neutral: {
     borderColor: "rgba(255,255,255,0.14)",
-    color: colors.muted,
+    color: legacyColors.muted,
     backgroundColor: "rgba(255,255,255,0.06)",
     glowColor: "rgba(255,255,255,0.1)",
   },
   lime: {
     borderColor: "rgba(185,244,85,0.42)",
-    color: colors.lime,
+    color: legacyColors.lime,
     backgroundColor: "rgba(185,244,85,0.14)",
     glowColor: "rgba(185,244,85,0.26)",
   },
   amber: {
     borderColor: "rgba(242,201,76,0.4)",
-    color: colors.amber,
+    color: legacyColors.amber,
     backgroundColor: "rgba(242,201,76,0.13)",
     glowColor: "rgba(242,201,76,0.22)",
   },
   red: {
     borderColor: "rgba(255,90,61,0.4)",
-    color: colors.red,
+    color: legacyColors.red,
     backgroundColor: "rgba(255,90,61,0.13)",
     glowColor: "rgba(255,90,61,0.22)",
   },
   blue: {
     borderColor: "rgba(125,211,252,0.35)",
-    color: colors.blue,
+    color: legacyColors.blue,
     backgroundColor: "rgba(125,211,252,0.11)",
     glowColor: "rgba(125,211,252,0.18)",
   },
   violet: {
     borderColor: "rgba(185,169,255,0.35)",
-    color: colors.violet,
+    color: legacyColors.violet,
     backgroundColor: "rgba(185,169,255,0.11)",
     glowColor: "rgba(185,169,255,0.18)",
   },
@@ -121,25 +121,25 @@ const buttonPalettes: Record<
   { backgroundColor: string; borderColor: string; color: string; glow?: ViewStyle }
 > = {
   primary: {
-    backgroundColor: colors.lime,
-    borderColor: colors.lime,
-    color: colors.bg,
+    backgroundColor: legacyColors.lime,
+    borderColor: legacyColors.lime,
+    color: legacyColors.bg,
     glow: shadows.glowLimeSoft,
   },
   secondary: {
     backgroundColor: "rgba(255,255,255,0.045)",
     borderColor: "rgba(255,255,255,0.12)",
-    color: colors.text,
+    color: legacyColors.text,
   },
   ghost: {
     backgroundColor: "transparent",
     borderColor: "rgba(255,255,255,0.1)",
-    color: colors.text,
+    color: legacyColors.text,
   },
   danger: {
     backgroundColor: "rgba(255,90,61,0.1)",
     borderColor: "rgba(255,90,61,0.28)",
-    color: colors.text,
+    color: legacyColors.text,
   },
 };
 
@@ -178,13 +178,13 @@ const glassCardVariants: Record<
   { backgroundColor: string; borderColor: string; shadow?: ViewStyle }
 > = {
   default: {
-    backgroundColor: colors.glassFill,
-    borderColor: colors.glassStroke,
+    backgroundColor: legacyColors.glassFill,
+    borderColor: legacyColors.glassStroke,
     shadow: shadows.glowDark,
   },
   compact: {
-    backgroundColor: colors.glassFill,
-    borderColor: colors.divider,
+    backgroundColor: legacyColors.glassFill,
+    borderColor: legacyColors.divider,
     shadow: shadows.card,
   },
   selected: {
@@ -215,33 +215,33 @@ const glassGlowStyles: Record<GlassCardGlowTone, ViewStyle> = {
 const metricPalettes = {
   neutral: {
     backgroundColor: "rgba(255,255,255,0.05)",
-    borderColor: colors.border,
-    valueColor: colors.text,
+    borderColor: legacyColors.border,
+    valueColor: legacyColors.text,
   },
   lime: {
     backgroundColor: "rgba(185,244,85,0.1)",
     borderColor: "rgba(185,244,85,0.26)",
-    valueColor: colors.lime,
+    valueColor: legacyColors.lime,
   },
   amber: {
     backgroundColor: "rgba(242,201,76,0.1)",
     borderColor: "rgba(242,201,76,0.24)",
-    valueColor: colors.amber,
+    valueColor: legacyColors.amber,
   },
   blue: {
     backgroundColor: "rgba(125,211,252,0.1)",
     borderColor: "rgba(125,211,252,0.2)",
-    valueColor: colors.blue,
+    valueColor: legacyColors.blue,
   },
   violet: {
     backgroundColor: "rgba(185,169,255,0.1)",
     borderColor: "rgba(185,169,255,0.2)",
-    valueColor: colors.violet,
+    valueColor: legacyColors.violet,
   },
   red: {
     backgroundColor: "rgba(255,90,61,0.1)",
     borderColor: "rgba(255,90,61,0.22)",
-    valueColor: colors.red,
+    valueColor: legacyColors.red,
   },
 } satisfies Record<PillTone, { backgroundColor: string; borderColor: string; valueColor: string }>;
 
@@ -1326,7 +1326,7 @@ export function ListRow({
         <Text style={styles.listRowTitle}>{title}</Text>
         {subtitle ? <Text style={styles.listRowSubtitle}>{subtitle}</Text> : null}
       </View>
-      {trailing ?? <Ionicons name="chevron-forward" size={16} color={colors.subtle} />}
+      {trailing ?? <Ionicons name="chevron-forward" size={16} color={legacyColors.subtle} />}
     </View>
   );
 }
@@ -1417,7 +1417,7 @@ export function SearchBar({
   value,
   onChangeText,
   style,
-  trailing = <Ionicons name="options-outline" size={17} color={colors.muted} />,
+  trailing = <Ionicons name="options-outline" size={17} color={legacyColors.muted} />,
 }: {
   placeholder?: string;
   value?: string;
@@ -1432,7 +1432,7 @@ export function SearchBar({
       placeholder={placeholder}
       autoCapitalize="none"
       autoCorrect={false}
-      leading={<Ionicons name="search-outline" size={18} color={colors.subtle} />}
+      leading={<Ionicons name="search-outline" size={18} color={legacyColors.subtle} />}
       trailing={trailing}
       style={style}
     />
@@ -1446,7 +1446,7 @@ export function SearchField({
   return (
     <TextField
       label={label ?? "Search"}
-      leading={<Ionicons name="search-outline" size={18} color={colors.subtle} />}
+      leading={<Ionicons name="search-outline" size={18} color={legacyColors.subtle} />}
       {...props}
     />
   );
@@ -1549,7 +1549,7 @@ export function ProductCard({
               hitSlop={iconOnlyHitSlop}
               style={[styles.productStepperButton, !canDecrement ? styles.disabled : null]}
             >
-              <Ionicons name="remove" size={16} color={colors.lime} />
+              <Ionicons name="remove" size={16} color={legacyColors.lime} />
             </Pressable>
             <Text style={styles.productQuantity}>{quantity}</Text>
             <Pressable
@@ -1564,7 +1564,7 @@ export function ProductCard({
               hitSlop={iconOnlyHitSlop}
               style={[styles.productStepperButton, !canIncrement ? styles.disabled : null]}
             >
-              <Ionicons name="add" size={16} color={colors.lime} />
+              <Ionicons name="add" size={16} color={legacyColors.lime} />
             </Pressable>
           </View>
         ) : (
@@ -1585,7 +1585,7 @@ export function ProductCard({
             ]}
           >
             <Text style={styles.productAddText}>{disabled ? "OUT" : "ADD"}</Text>
-            <Ionicons name="add" size={16} color={colors.lime} />
+            <Ionicons name="add" size={16} color={legacyColors.lime} />
           </Pressable>
         )}
       </View>
@@ -1616,7 +1616,7 @@ export function ExerciseRow({
       style={({ pressed }) => [styles.exerciseRow, pressed ? styles.pressed : null, style]}
     >
       <View style={[styles.exerciseCheck, complete ? styles.exerciseCheckDone : null]}>
-        {complete ? <Ionicons name="checkmark" size={15} color={colors.bg} /> : null}
+        {complete ? <Ionicons name="checkmark" size={15} color={legacyColors.bg} /> : null}
       </View>
       <IconBubble icon="barbell-outline" tone={complete ? "lime" : "neutral"} size={38} />
       <View style={styles.exerciseCopy}>
@@ -1700,7 +1700,7 @@ export function ChipGroup<T extends string>({
             style={({ pressed }) => [
               styles.chipGroupOption,
               {
-                borderColor: selected ? palette.borderColor : colors.border,
+                borderColor: selected ? palette.borderColor : legacyColors.border,
                 backgroundColor: selected ? palette.backgroundColor : "rgba(255,255,255,0.035)",
               },
               selected ? styles.chipGroupOptionSelected : null,
@@ -1746,7 +1746,7 @@ export function OfflineBanner({
 }) {
   return (
     <View style={styles.offlineBanner}>
-      <Ionicons name="cloud-offline-outline" size={16} color={colors.amber} />
+      <Ionicons name="cloud-offline-outline" size={16} color={legacyColors.amber} />
       <Text style={styles.offlineBannerText}>{children}</Text>
     </View>
   );
@@ -1932,7 +1932,7 @@ export function CollapsibleSection({
           {count !== undefined ? (
             <ZookChip tone={open ? "lime" : "neutral"}>{count}</ZookChip>
           ) : null}
-          <Ionicons name={open ? "chevron-up" : "chevron-down"} size={22} color={colors.muted} />
+          <Ionicons name={open ? "chevron-up" : "chevron-down"} size={22} color={legacyColors.muted} />
         </View>
       </Pressable>
       {open ? <View style={styles.collapsibleBody}>{children}</View> : null}
@@ -2021,7 +2021,7 @@ const memberTabs: DockTab[] = [
   },
 ];
 
-/** @deprecated Trainer routes own their tab bar in app/trainer/_layout.tsx. */
+/** compat Trainer routes own their tab bar in app/trainer/_layout.tsx. */
 const trainerTabs: DockTab[] = [
   {
     href: "/trainer",
@@ -2062,7 +2062,7 @@ const trainerTabs: DockTab[] = [
   },
 ];
 
-/** @deprecated Reception owns local tabs in app/reception/_layout.tsx. */
+/** compat Reception owns local tabs in app/reception/_layout.tsx. */
 const receptionTabs: DockTab[] = [
   {
     href: "/reception",
@@ -2104,7 +2104,7 @@ const receptionTabs: DockTab[] = [
   },
 ];
 
-/** @deprecated Owner routes now render their own Expo Router tab layout. Plan #11 removes this. */
+/** compat Owner routes now render their own Expo Router tab layout. Plan #11 removes this. */
 const ownerTabs: DockTab[] = [
   {
     href: "/owner",
@@ -2139,7 +2139,7 @@ const ownerTabs: DockTab[] = [
   },
 ];
 
-/** @deprecated Admin shares Owner's Expo Router tab layout. Plan #11 removes this. */
+/** compat Admin shares Owner's Expo Router tab layout. Plan #11 removes this. */
 const adminTabs: DockTab[] = [
   {
     href: "/owner",
@@ -2278,7 +2278,7 @@ function DockTabItem({
         <Ionicons
           name={active ? tab.activeIcon : tab.icon}
           size={raised ? 31 : 21}
-          color={raised ? colors.bg : active ? colors.lime : colors.subtle}
+          color={raised ? legacyColors.bg : active ? legacyColors.lime : legacyColors.subtle}
         />
         {badgeCount > 0 ? (
           <View style={styles.navBadge}>
@@ -2459,7 +2459,7 @@ export function LoadingState({ title, body }: { title?: string; body?: string })
   const { t } = useI18n();
   return (
     <View style={styles.loadingState}>
-      <ActivityIndicator size="large" color={colors.lime} />
+      <ActivityIndicator size="large" color={legacyColors.lime} />
       <Text style={styles.stateTitle}>{title ?? t("empty.loading")}</Text>
       <Text style={styles.stateBody}>{body ?? t("empty.loadingBody")}</Text>
     </View>
@@ -2497,7 +2497,7 @@ export function BranchSelectorChip() {
       disabled={!canSwitch}
       style={[styles.branchSelectorChip, canSwitch ? styles.branchSelectorChipInteractive : null]}
     >
-      <Ionicons name="business-outline" size={14} color={colors.lime} />
+      <Ionicons name="business-outline" size={14} color={legacyColors.lime} />
       <Text numberOfLines={1} style={styles.branchSelectorText}>
         {selectedBranch.name}
       </Text>
@@ -2644,7 +2644,7 @@ export type { OtpInputHandle } from "@/components/primitives/otp-input";
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: legacyColors.bg,
   },
   skeletonShimmer: {
     position: "absolute",
@@ -2664,7 +2664,7 @@ const styles = StyleSheet.create({
     opacity: 0.82,
   },
   legacyTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.screenTitle,
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.lg,
@@ -2681,8 +2681,8 @@ const styles = StyleSheet.create({
   brandMarkFramed: {
     borderRadius: radii.icon,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
   },
   brandMarkImage: {
     width: "100%",
@@ -2690,7 +2690,7 @@ const styles = StyleSheet.create({
   },
   profileShortcut: {
     borderWidth: 1,
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
     backgroundColor: "rgba(185,244,85,0.12)",
     alignItems: "center",
     justifyContent: "center",
@@ -2701,20 +2701,20 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   profileShortcutText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.button,
   },
   glassCard: {
     borderWidth: 1,
     overflow: "hidden",
-    backgroundColor: colors.panel,
+    backgroundColor: legacyColors.panel,
   },
   glassCardGlow: {
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
     ...shadows.glowLimeSoft,
   },
   glassCardGlowBorder: {
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
   },
   glassCardBlurLayer: {
     zIndex: 0,
@@ -2728,16 +2728,16 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   glassPanel: {
-    backgroundColor: colors.panel,
-    borderColor: colors.border,
+    backgroundColor: legacyColors.panel,
+    borderColor: legacyColors.border,
     borderWidth: 1,
     borderRadius: radii.panel,
     padding: spacing.lg,
     overflow: "hidden",
   },
   glassPanelStrong: {
-    backgroundColor: colors.panelStrong,
-    borderColor: colors.borderStrong,
+    backgroundColor: legacyColors.panelStrong,
+    borderColor: legacyColors.borderStrong,
   },
   chip: {
     alignSelf: "flex-start",
@@ -2782,16 +2782,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerEyebrow: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.eyebrow,
   },
   headerTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.headerTitle,
     letterSpacing: 0,
   },
   headerSubtitle: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   centerText: {
@@ -2808,12 +2808,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sectionEyebrow: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.eyebrow,
   },
   sectionTitle: {
     flex: 1,
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 14,
     fontWeight: "600",
     textTransform: "uppercase",
@@ -2821,7 +2821,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   sectionSubtitle: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   iconBubble: {
@@ -2867,7 +2867,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   chipGroupOptionSelected: {
-    shadowColor: colors.lime,
+    shadowColor: legacyColors.lime,
     shadowOpacity: 0.16,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -2880,11 +2880,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   chipGroupLabel: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   chipGroupDescription: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   metricTile: {
@@ -2896,14 +2896,14 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   metricTileLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   metricTileValue: {
     ...typography.metric,
   },
   metricTileDetail: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   infoRow: {
@@ -2913,7 +2913,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   infoLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
     flex: 1,
   },
@@ -2941,7 +2941,7 @@ const styles = StyleSheet.create({
     ...typography.h3,
   },
   statusRingLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   entryCodeCard: {
@@ -2953,7 +2953,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   entryCodeLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   entryCodeValue: {
@@ -2961,7 +2961,7 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   entryCodeDetail: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
     textAlign: "center",
   },
@@ -2982,25 +2982,25 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   listRowTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   listRowSubtitle: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   inputGroup: {
     gap: spacing.sm,
   },
   inputLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   inputWrapper: {
     minHeight: 50,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.055)",
     flexDirection: "row",
     alignItems: "center",
@@ -3010,7 +3010,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minHeight: 44,
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.body,
     paddingVertical: 11,
   },
@@ -3033,11 +3033,11 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   inputHint: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   inputError: {
-    color: colors.red,
+    color: legacyColors.red,
     ...typography.caption,
   },
   productCard: {
@@ -3097,11 +3097,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   productName: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   productMeta: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   productFooter: {
@@ -3113,7 +3113,7 @@ const styles = StyleSheet.create({
   },
   productPrice: {
     flexShrink: 1,
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   productAdd: {
@@ -3121,7 +3121,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
     backgroundColor: "rgba(7,9,8,0.9)",
     flexDirection: "row",
     alignItems: "center",
@@ -3133,11 +3133,11 @@ const styles = StyleSheet.create({
     height: 44,
   },
   productAddDisabled: {
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.035)",
   },
   productAddText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.caption,
   },
   productStepper: {
@@ -3145,7 +3145,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
     backgroundColor: "rgba(7,9,8,0.9)",
     flexDirection: "row",
     alignItems: "center",
@@ -3160,7 +3160,7 @@ const styles = StyleSheet.create({
   },
   productQuantity: {
     minWidth: 20,
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.caption,
     textAlign: "center",
   },
@@ -3181,32 +3181,32 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 13,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
     justifyContent: "center",
   },
   exerciseCheckDone: {
-    borderColor: colors.lime,
-    backgroundColor: colors.lime,
+    borderColor: legacyColors.lime,
+    backgroundColor: legacyColors.lime,
   },
   exerciseCopy: {
     flex: 1,
     gap: 2,
   },
   exerciseTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   exerciseDetail: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   segmentedControl: {
     minHeight: 50,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.055)",
     flexDirection: "row",
     padding: 4,
@@ -3221,17 +3221,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   segmentedOptionSelected: {
-    backgroundColor: colors.accentPanel,
+    backgroundColor: legacyColors.accentPanel,
     borderWidth: 1,
     borderColor: "rgba(185,244,85,0.34)",
   },
   segmentedOptionText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
     textAlign: "center",
   },
   segmentedOptionTextSelected: {
-    color: colors.lime,
+    color: legacyColors.lime,
   },
   auditWarning: {
     flexDirection: "row",
@@ -3245,7 +3245,7 @@ const styles = StyleSheet.create({
   },
   auditWarningText: {
     flex: 1,
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.body,
   },
   offlineBanner: {
@@ -3260,7 +3260,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   offlineBannerText: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.caption,
     flex: 1,
   },
@@ -3271,11 +3271,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
+    borderBottomColor: legacyColors.divider,
     paddingVertical: spacing.sm,
   },
   detailRowLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
     flex: 1,
   },
@@ -3287,7 +3287,7 @@ const styles = StyleSheet.create({
     flex: 1.2,
   },
   detailRowValue: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
     textAlign: "right",
   },
@@ -3295,7 +3295,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   progressBarLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   progressBarTrack: {
@@ -3413,11 +3413,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   collapsibleTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   collapsibleSubtitle: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   collapsibleTrailing: {
@@ -3426,7 +3426,7 @@ const styles = StyleSheet.create({
   },
   collapsibleBody: {
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: legacyColors.border,
     padding: 14,
     gap: spacing.md,
   },
@@ -3438,7 +3438,7 @@ const styles = StyleSheet.create({
     height: layout.bottomNavHeight,
     borderRadius: radii.bottomNav,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(7,9,8,0.86)",
     overflow: "hidden",
     flexDirection: "row",
@@ -3454,7 +3454,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.bg,
+    backgroundColor: legacyColors.bg,
   },
   memberBottomNavShell: {
     position: "absolute",
@@ -3546,8 +3546,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 3,
     borderColor: "rgba(7,9,8,0.94)",
-    backgroundColor: colors.lime,
-    shadowColor: colors.lime,
+    backgroundColor: legacyColors.lime,
+    shadowColor: legacyColors.lime,
     shadowOpacity: 0.2,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
@@ -3564,14 +3564,14 @@ const styles = StyleSheet.create({
     borderColor: "rgba(185,244,85,0.2)",
   },
   memberBottomNavItemRaisedActive: {
-    backgroundColor: colors.lime,
+    backgroundColor: legacyColors.lime,
     borderColor: "rgba(7,9,8,0.94)",
     borderWidth: 3,
   },
   bottomNavText: {
     maxWidth: "100%",
     textAlign: "center",
-    color: colors.subtle,
+    color: legacyColors.subtle,
     ...typography.navLabel,
   },
   navIconShell: {
@@ -3590,13 +3590,13 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   memberBottomNavTextRaised: {
-    color: colors.bg,
+    color: legacyColors.bg,
   },
   bottomNavTextActive: {
-    color: colors.lime,
+    color: legacyColors.lime,
   },
   memberBottomNavTextRaisedActive: {
-    color: colors.bg,
+    color: legacyColors.bg,
   },
   navBadge: {
     position: "absolute",
@@ -3605,15 +3605,15 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colors.red,
+    backgroundColor: legacyColors.red,
     borderWidth: 1,
-    borderColor: colors.bg,
+    borderColor: legacyColors.bg,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
   },
   navBadgeText: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 9,
     lineHeight: 11,
     fontFamily: "Inter_800ExtraBold",
@@ -3625,7 +3625,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.055)",
     paddingLeft: 10,
     paddingRight: 6,
@@ -3639,7 +3639,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(185,244,85,0.1)",
   },
   branchSelectorText: {
-    color: colors.text,
+    color: legacyColors.text,
     maxWidth: 170,
     ...typography.caption,
   },
@@ -3653,7 +3653,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   branchSelectorCountText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     fontSize: 10,
     lineHeight: 12,
     fontFamily: "Inter_800ExtraBold",
@@ -3666,12 +3666,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   stateTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.title,
     textAlign: "center",
   },
   stateBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
     marginTop: 4,
     textAlign: "center",
@@ -3684,7 +3684,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     borderStyle: "dashed",
     borderRadius: radii.card,
     gap: spacing.sm,
@@ -3703,11 +3703,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   alertCardTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   alertCardMessage: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   actionButtonRow: {

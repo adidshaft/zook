@@ -11,7 +11,7 @@ import {
   type DimensionValue,
   type ViewStyle,
 } from "react-native";
-import { colors } from "@/lib/theme";
+import { legacyColors } from "@/lib/theme";
 
 export type BottomSheetBackdropProps = ViewProps & {
   appearsOnIndex?: number;
@@ -148,13 +148,13 @@ const styles = StyleSheet.create({
     maxHeight: "86%",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: colors.bgElevated,
+    backgroundColor: legacyColors.bgElevated,
     paddingTop: 10,
     overflow: "hidden",
   },
   sheetSurface: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.bgElevated,
+    backgroundColor: legacyColors.bgElevated,
   },
   handle: {
     alignSelf: "center",

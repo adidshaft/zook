@@ -8,7 +8,7 @@ import { titleCase } from "@/features/owner/helpers";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
 import { formatInr } from "@/lib/formatting";
-import { colors, layout, typography } from "@/lib/theme";
+import { legacyColors, layout, typography } from "@/lib/theme";
 
 export default function OwnerStockScreen() {
   const dashboardQuery = useOwnerDashboard();
@@ -37,8 +37,8 @@ export default function OwnerStockScreen() {
               <RefreshControl
                 refreshing={dashboardQuery.isRefetching || ordersQuery.isRefetching}
                 onRefresh={() => { void dashboardQuery.refetch(); void ordersQuery.refetch(); }}
-                tintColor={colors.brandLime}
-                colors={[colors.brandLime]}
+                tintColor={legacyColors.brandLime}
+                colors={[legacyColors.brandLime]}
               />
             ),
           }}
@@ -82,5 +82,5 @@ const styles = StyleSheet.create({
   stack: { gap: 12 },
   metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   metricHalf: { flexBasis: "47%", flexGrow: 1 },
-  rowAmount: { color: colors.textPrimary, ...typography.bodyStrong },
+  rowAmount: { color: legacyColors.textPrimary, ...typography.bodyStrong },
 });

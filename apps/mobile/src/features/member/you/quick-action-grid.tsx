@@ -13,7 +13,7 @@ type QuickAction = {
   meta?: string;
 };
 
-export function QuickActionGrid({ gymHref = "/find-gyms", unreadCount }: { gymHref?: string; unreadCount: number }) {
+export function QuickActionGrid({ gymHref = "/gyms", unreadCount }: { gymHref?: string; unreadCount: number }) {
   const actions: QuickAction[] = [
     { href: "/notifications", icon: "notifications-outline", label: "Notifications", meta: unreadCount ? `${unreadCount} unread` : undefined },
     { href: "/shop", icon: "storefront-outline", label: "Shop" },

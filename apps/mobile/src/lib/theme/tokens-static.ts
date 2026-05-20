@@ -41,6 +41,8 @@ const colors = {
   violet: "#B9A9FF",
 };
 
+export const legacyColors = colors;
+
 export const opacity = {
   glassLow: 0.05,
   glassDefault: 0.06,
@@ -92,13 +94,9 @@ export const typography = {
   navLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", lineHeight: 15 },
   button: { fontSize: 14, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
 
-  /** @deprecated Prefer screenTitle. */
   display: { fontSize: 34, fontFamily: "Inter_700Bold", lineHeight: 39 },
-  /** @deprecated Prefer screenTitle/headerTitle. */
   h1: { fontSize: 24, fontFamily: "Inter_600SemiBold", lineHeight: 30 },
-  /** @deprecated Prefer headerTitle. */
   h2: { fontSize: 20, fontFamily: "Inter_600SemiBold", lineHeight: 26 },
-  /** @deprecated Prefer cardTitle. */
   h3: { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 20 },
   headline: { fontSize: 24, fontFamily: "Inter_600SemiBold", lineHeight: 30 },
   title: { fontSize: 20, fontFamily: "Inter_600SemiBold", lineHeight: 26 },

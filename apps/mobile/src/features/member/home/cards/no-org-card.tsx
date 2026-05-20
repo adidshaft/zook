@@ -7,7 +7,7 @@ export default function NoOrgCard() {
       icon="business-outline"
       title="Join a gym"
       body="Find your gym to unlock membership, plans, check-ins, and trainer updates."
-      ctaHref="/find-gyms"
+      ctaHref="/gyms"
       ctaLabel="Find gyms"
       tone="blue"
     />

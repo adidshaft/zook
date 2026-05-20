@@ -32,11 +32,11 @@ import {
   usePlanExercises,
   type MyPlanRecord,
   type PlanExerciseRecord,
-} from "@/lib/query-hooks";
+} from "@/lib/domains";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { plansApi } from "@/lib/domain-api";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type PlanFilter = "workout" | "diet";
@@ -82,7 +82,7 @@ export default function Plans() {
   const coachName = selectedAssignment?.assignedById ? "Assigned by coach" : "Your coach";
 
   function openAssignment(assignmentId: string) {
-    router.push(`/plans/${assignmentId}` as never);
+    router.push(`/plan/${assignmentId}` as never);
   }
 
   const onRefresh = async () => {
@@ -108,8 +108,8 @@ export default function Plans() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={colors.lime}
-                colors={[colors.lime]}
+                tintColor={legacyColors.lime}
+                colors={[legacyColors.lime]}
               />
             ),
           }}
@@ -466,8 +466,8 @@ export function PlanDetailScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={colors.lime}
-                colors={[colors.lime]}
+                tintColor={legacyColors.lime}
+                colors={[legacyColors.lime]}
               />
             ),
           }}
@@ -483,7 +483,7 @@ export function PlanDetailScreen() {
                   accessibilityLabel="Back"
                   style={styles.iconButton}
                 >
-                  <Ionicons name="chevron-back" size={21} color={colors.text} />
+                  <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
                 </Pressable>
               }
               trailing={
@@ -497,7 +497,7 @@ export function PlanDetailScreen() {
                   <Ionicons
                     name="information-outline"
                     size={22}
-                    color={feedbackOpen ? colors.bg : colors.text}
+                    color={feedbackOpen ? legacyColors.bg : legacyColors.text}
                   />
                 </Pressable>
               }
@@ -596,7 +596,7 @@ export function PlanDetailScreen() {
                 accessibilityLabel="Close feedback"
                 style={styles.sheetCloseButton}
               >
-                <Ionicons name="close" size={18} color={colors.text} />
+                <Ionicons name="close" size={18} color={legacyColors.text} />
               </Pressable>
             </View>
             <View style={styles.feedbackOptions}>
@@ -627,7 +627,7 @@ export function PlanDetailScreen() {
               onChangeText={setFeedbackNote}
               maxLength={280}
               placeholder="Add a short note"
-              placeholderTextColor={colors.muted}
+              placeholderTextColor={legacyColors.muted}
               style={styles.feedbackInput}
             />
             {feedbackStatus ? <Text style={styles.inlineStatus}>{feedbackStatus}</Text> : null}
@@ -658,21 +658,21 @@ const styles = StyleSheet.create({
     marginHorizontal: -layout.screenPadding,
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.sm,
-    backgroundColor: colors.bg,
+    backgroundColor: legacyColors.bg,
   },
   iconButton: {
     width: 44,
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
   iconButtonActive: {
-    borderColor: colors.lime,
-    backgroundColor: colors.lime,
+    borderColor: legacyColors.lime,
+    backgroundColor: legacyColors.lime,
   },
   detailHeader: {
     flexDirection: "row",
@@ -684,17 +684,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   detailTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.headerTitle,
   },
   detailSubtitle: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   sheetBackground: {
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
   },
   sheetHandle: {
     backgroundColor: "rgba(255,255,255,0.22)",
@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -731,30 +731,30 @@ const styles = StyleSheet.create({
     minHeight: 34,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.04)",
     paddingHorizontal: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   feedbackOptionActive: {
-    borderColor: colors.lime,
+    borderColor: legacyColors.lime,
     backgroundColor: "rgba(185,244,85,0.14)",
   },
   feedbackOptionText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.caption,
   },
   feedbackOptionTextActive: {
-    color: colors.lime,
+    color: legacyColors.lime,
   },
   feedbackInput: {
     minHeight: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(0,0,0,0.22)",
-    color: colors.text,
+    color: legacyColors.text,
     paddingHorizontal: 12,
     ...typography.body,
   },
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
     minWidth: 116,
   },
   inlineStatus: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.caption,
     paddingHorizontal: 4,
   },
@@ -791,11 +791,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   activePlanTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.headerTitle,
   },
   activePlanMeta: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   activePlanPercent: {
@@ -804,14 +804,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   activePlanPercentValue: {
-    color: colors.lime,
+    color: legacyColors.lime,
     fontSize: 26,
     lineHeight: 30,
     fontFamily: "Inter_700Bold",
     fontVariant: ["tabular-nums"],
   },
   activePlanPercentSuffix: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.bodyStrong,
   },
   activePlanActions: {
@@ -838,15 +838,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   cardTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   cardBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   progressText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.metric,
   },
   featuredContent: {
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   eyebrow: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.eyebrow,
   },
   planMeta: {
@@ -869,7 +869,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   metaDot: {
-    color: colors.subtle,
+    color: legacyColors.subtle,
     ...typography.small,
   },
   libraryGrid: {
@@ -885,18 +885,18 @@ const styles = StyleSheet.create({
     minHeight: 112,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.045)",
     padding: 12,
     gap: 8,
     justifyContent: "center",
   },
   libraryTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   libraryDetail: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   emptyPlanCard: {

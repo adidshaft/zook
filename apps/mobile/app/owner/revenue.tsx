@@ -9,7 +9,7 @@ import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
 import { formatInr } from "@/lib/formatting";
-import { colors, layout, typography } from "@/lib/theme";
+import { legacyColors, layout, typography } from "@/lib/theme";
 
 export default function OwnerRevenueScreen() {
   const dashboardQuery = useOwnerDashboard();
@@ -31,8 +31,8 @@ export default function OwnerRevenueScreen() {
               <RefreshControl
                 refreshing={paymentsQuery.isRefetching || ordersQuery.isRefetching}
                 onRefresh={() => { void paymentsQuery.refetch(); void ordersQuery.refetch(); }}
-                tintColor={colors.brandLime}
-                colors={[colors.brandLime]}
+                tintColor={legacyColors.brandLime}
+                colors={[legacyColors.brandLime]}
               />
             ),
           }}
@@ -81,5 +81,5 @@ export default function OwnerRevenueScreen() {
 const styles = StyleSheet.create({
   content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
   stack: { gap: 12 },
-  rowAmount: { color: colors.textPrimary, ...typography.bodyStrong },
+  rowAmount: { color: legacyColors.textPrimary, ...typography.bodyStrong },
 });

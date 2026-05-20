@@ -34,7 +34,7 @@ name: integration-member-join-request
     visible:
       id: "find-gyms-screen"
     timeout: 30000
-- openLink: zook:///gym/${username}
+- openLink: zook:///gyms/${username}
 - extendedWaitUntil:
     visible:
       id: "gym-profile-screen"

@@ -11,8 +11,8 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { memberApi } from "@/lib/domain-api";
 import { useI18n } from "@/lib/i18n";
-import { useMyProfile } from "@/lib/query-hooks";
-import { colors, spacing, typography } from "@/lib/theme";
+import { useMyProfile } from "@/lib/domains";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 
 type GenderValue = "male" | "female" | "non_binary" | "prefer_not_to_say";
 type LocaleValue = "en" | "hi";
@@ -363,7 +363,7 @@ function PreferenceToggle({
         disabled={disabled}
         onValueChange={onValueChange}
         trackColor={{ false: "rgba(255,255,255,0.14)", true: "rgba(185,244,85,0.35)" }}
-        thumbColor={value ? colors.lime : colors.muted}
+        thumbColor={value ? legacyColors.lime : legacyColors.muted}
       />
     </View>
   );
@@ -388,18 +388,18 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: colors.lime,
-    shadowColor: colors.lime,
+    backgroundColor: legacyColors.lime,
+    shadowColor: legacyColors.lime,
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
   title: {
     ...typography.sectionTitle,
-    color: colors.text,
+    color: legacyColors.text,
   },
   subtitle: {
     ...typography.body,
-    color: colors.muted,
+    color: legacyColors.muted,
     marginTop: spacing.xs,
   },
   fieldGroup: {
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.caption,
-    color: colors.muted,
+    color: legacyColors.muted,
     textTransform: "uppercase",
   },
   dateButton: {
@@ -415,21 +415,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.05)",
     paddingHorizontal: spacing.md,
   },
   dateText: {
     ...typography.bodyStrong,
-    color: colors.text,
+    color: legacyColors.text,
   },
   datePlaceholder: {
     ...typography.body,
-    color: colors.subtle,
+    color: legacyColors.subtle,
   },
   warningText: {
     ...typography.small,
-    color: colors.amber,
+    color: legacyColors.amber,
   },
   preferenceRow: {
     alignItems: "center",
@@ -443,15 +443,15 @@ const styles = StyleSheet.create({
   },
   preferenceTitle: {
     ...typography.bodyStrong,
-    color: colors.text,
+    color: legacyColors.text,
   },
   preferenceSubtitle: {
     ...typography.small,
-    color: colors.muted,
+    color: legacyColors.muted,
   },
   errorText: {
     ...typography.body,
-    color: colors.red,
+    color: legacyColors.red,
   },
   stepperRow: {
     alignItems: "center",
@@ -460,8 +460,8 @@ const styles = StyleSheet.create({
   },
   stepperButton: {
     alignItems: "center",
-    backgroundColor: colors.panel,
-    borderColor: colors.border,
+    backgroundColor: legacyColors.panel,
+    borderColor: legacyColors.border,
     borderRadius: 16,
     borderWidth: 1,
     height: 44,
@@ -470,11 +470,11 @@ const styles = StyleSheet.create({
   },
   stepperButtonText: {
     ...typography.headerTitle,
-    color: colors.text,
+    color: legacyColors.text,
   },
   stepperValue: {
     ...typography.bodyStrong,
-    color: colors.text,
+    color: legacyColors.text,
     flex: 1,
     textAlign: "center",
   },

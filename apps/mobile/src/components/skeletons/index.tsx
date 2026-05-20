@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { GlassCard, Skeleton } from "@/components/primitives";
-import { colors, spacing } from "@/lib/theme";
+import { legacyColors, spacing } from "@/lib/theme";
 
 function CardCopySkeleton({
   titleWidth = "62%",
@@ -298,6 +298,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+    backgroundColor: legacyColors.border,
   },
 });

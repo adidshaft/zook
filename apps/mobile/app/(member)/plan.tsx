@@ -17,8 +17,8 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { PlansSkeleton } from "@/components/skeletons";
-import { useMyPlans, useMyTrackingWorkouts, type MyPlanRecord } from "@/lib/query-hooks";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { useMyPlans, useMyTrackingWorkouts, type MyPlanRecord } from "@/lib/domains";
+import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 
 type WorkoutRecord = {
   id?: string;
@@ -68,7 +68,7 @@ export default function MemberPlanScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.lime} colors={[colors.lime]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={legacyColors.lime} colors={[legacyColors.lime]} />
           }
         >
           <MobileHeader title="Plan" subtitle="Workouts, schedule, and history" showProfileShortcut={false} />
@@ -111,7 +111,7 @@ export default function MemberPlanScreen() {
                     title={planTitle(assignment)}
                     subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
                     leading={<IconBubble icon="calendar-outline" tone="blue" />}
-                    trailing={<Ionicons name="chevron-forward" size={18} color={colors.muted} />}
+                    trailing={<Ionicons name="chevron-forward" size={18} color={legacyColors.muted} />}
                   />
                 </GlassCard>
               </Pressable>
@@ -170,12 +170,12 @@ const styles = StyleSheet.create({
   todayCard: { gap: spacing.md },
   todayTop: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   todayCopy: { flex: 1, gap: 4 },
-  todayTitle: { color: colors.text, ...typography.title },
-  todayMeta: { color: colors.muted, ...typography.small },
+  todayTitle: { color: legacyColors.text, ...typography.title },
+  todayMeta: { color: legacyColors.muted, ...typography.small },
   planGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   planTile: {
-    backgroundColor: colors.panel,
-    borderColor: colors.border,
+    backgroundColor: legacyColors.panel,
+    borderColor: legacyColors.border,
     borderRadius: 18,
     borderWidth: 1,
     flexGrow: 1,
@@ -184,6 +184,6 @@ const styles = StyleSheet.create({
     minWidth: "47%",
     padding: 14,
   },
-  planTileTitle: { color: colors.text, ...typography.cardTitle },
-  planTileMeta: { color: colors.muted, ...typography.caption },
+  planTileTitle: { color: legacyColors.text, ...typography.cardTitle },
+  planTileMeta: { color: legacyColors.muted, ...typography.caption },
 });

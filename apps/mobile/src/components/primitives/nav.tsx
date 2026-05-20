@@ -8,5 +8,5 @@ export {
   RoleChip,
   StatusChip,
   ZookChip,
-} from "./legacy";
-export type { PillTone } from "./legacy";
+} from "./foundation";
+export type { PillTone } from "./foundation";

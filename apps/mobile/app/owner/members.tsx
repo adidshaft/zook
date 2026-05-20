@@ -8,7 +8,7 @@ import { ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { useAuth } from "@/lib/auth";
 import { useOrgMembers } from "@/lib/domains/owner";
-import { colors, layout } from "@/lib/theme";
+import { legacyColors, layout } from "@/lib/theme";
 
 type MemberFilter = "all" | "active" | "expiring" | "expired";
 
@@ -84,7 +84,7 @@ export default function OwnerMembersScreen() {
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
-            refreshControl: <RefreshControl refreshing={membersQuery.isRefetching} onRefresh={onRefresh} tintColor={colors.brandLime} colors={[colors.brandLime]} />,
+            refreshControl: <RefreshControl refreshing={membersQuery.isRefetching} onRefresh={onRefresh} tintColor={legacyColors.brandLime} colors={[legacyColors.brandLime]} />,
           }}
         >
           <MemberList
