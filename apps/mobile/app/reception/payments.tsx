@@ -1,5 +1,10 @@
-import { ReceptionSurface } from "@/features/reception/reception-surface";
+import { ReceptionPaymentsScreenBody } from "@/features/reception/components/payments-screen";
+import { ReceptionWorkspace } from "@/features/reception/reception-workspace";
 
 export default function ReceptionPaymentsScreen() {
-  return <ReceptionSurface view="payments" />;
+  return (
+    <ReceptionWorkspace title="Record Payment" subtitle="Reception" showMemberContext>
+      <ReceptionPaymentsScreenBody />
+    </ReceptionWorkspace>
+  );
 }

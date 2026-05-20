@@ -1,5 +1,10 @@
-import { ReceptionSurface } from "@/features/reception/reception-surface";
+import { ReceptionDeskScreenBody } from "@/features/reception/components/desk-screen";
+import { ReceptionWorkspace } from "@/features/reception/reception-workspace";
 
 export default function ReceptionVerificationScreen() {
-  return <ReceptionSurface view="desk" />;
+  return (
+    <ReceptionWorkspace title="Verification" subtitle="Receptionist Desk">
+      <ReceptionDeskScreenBody />
+    </ReceptionWorkspace>
+  );
 }

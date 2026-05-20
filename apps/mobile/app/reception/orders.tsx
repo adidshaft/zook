@@ -1,5 +1,10 @@
-import { ReceptionSurface } from "@/features/reception/reception-surface";
+import { ReceptionOrdersScreenBody } from "@/features/reception/components/orders-screen";
+import { ReceptionWorkspace } from "@/features/reception/reception-workspace";
 
 export default function ReceptionOrdersScreen() {
-  return <ReceptionSurface view="orders" />;
+  return (
+    <ReceptionWorkspace title="Orders" subtitle="Reception">
+      <ReceptionOrdersScreenBody />
+    </ReceptionWorkspace>
+  );
 }
