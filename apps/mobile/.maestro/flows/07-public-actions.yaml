@@ -7,10 +7,10 @@ tags:
     clearState: true
     clearKeychain: true
 
-- openLink: zook:///find-gyms
+- openLink: zook:///gyms
 - runFlow:
     file: _helpers/complete-language-if-needed.yaml
-- openLink: zook:///find-gyms
+- openLink: zook:///gyms
 - extendedWaitUntil:
     visible:
       id: "find-gyms-screen"
@@ -22,7 +22,7 @@ tags:
     visible:
       id: "gym-profile-screen"
     timeout: 15000
-- takeScreenshot: /tmp/zook-maestro/public/find-gyms.png
+- takeScreenshot: /tmp/zook-maestro/public/gyms.png
 
 - openLink: zook:///g/aarogya-strength
 - extendedWaitUntil:
@@ -31,7 +31,7 @@ tags:
     timeout: 15000
 - takeScreenshot: /tmp/zook-maestro/public/g-aarogya-strength.png
 
-- openLink: zook:///gym/aarogya-strength
+- openLink: zook:///gyms/aarogya-strength
 - extendedWaitUntil:
     visible:
       id: "gym-profile-screen"

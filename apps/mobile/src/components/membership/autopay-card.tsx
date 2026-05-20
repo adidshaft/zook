@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { GlassCard, IconBubble, Pill, ZookButton } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
-import { colors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 import { isAutopayLive } from "./helpers";
 import type { MembershipRecord } from "./types";
 
@@ -74,15 +74,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   autopayTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   autopayBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   autopayStatus: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.small,
   },
 });

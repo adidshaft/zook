@@ -22,7 +22,7 @@ import {
   type FileUploadResponse,
   type ProfilePhotoSaveResponse,
 } from "@/lib/domain-api";
-import { colors, typography } from "@/lib/theme";
+import { legacyColors, typography } from "@/lib/theme";
 
 const maxProfilePhotoBytes = 5 * 1024 * 1024;
 
@@ -320,9 +320,9 @@ export function ProfilePhotoControl({
       )}
       <View style={styles.badge}>
         {busy ? (
-          <ActivityIndicator color={colors.ink} size="small" />
+          <ActivityIndicator color={legacyColors.ink} size="small" />
         ) : (
-          <Ionicons name="camera" size={16} color={colors.ink} />
+          <Ionicons name="camera" size={16} color={legacyColors.ink} />
         )}
       </View>
     </Pressable>
@@ -336,9 +336,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "visible",
-    backgroundColor: colors.panelStrong,
+    backgroundColor: legacyColors.panelStrong,
     borderWidth: 1,
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
   },
   image: {
     width: "100%",
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   },
   initials: {
     ...typography.headerTitle,
-    color: colors.textPrimary,
+    color: legacyColors.textPrimary,
   },
   badge: {
     position: "absolute",
@@ -358,9 +358,9 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.brandLime,
+    backgroundColor: legacyColors.brandLime,
     borderWidth: 2,
-    borderColor: colors.bgApp,
+    borderColor: legacyColors.bgApp,
   },
   pressed: {
     transform: [{ scale: 0.98 }],

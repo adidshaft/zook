@@ -14,7 +14,7 @@ import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
-import { colors, layout, typography } from "@/lib/theme";
+import { legacyColors, layout, typography } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 
 export default function OwnerCommandScreen() {
@@ -126,8 +126,8 @@ export default function OwnerCommandScreen() {
               <RefreshControl
                 refreshing={dashboardQuery.isRefetching}
                 onRefresh={onRefresh}
-                tintColor={colors.brandLime}
-                colors={[colors.brandLime]}
+                tintColor={legacyColors.brandLime}
+                colors={[legacyColors.brandLime]}
               />
             ),
           }}
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     paddingBottom: 96,
   },
   headerMeta: {
-    color: colors.textMuted,
+    color: legacyColors.textMuted,
     ...typography.caption,
   },
 });

@@ -24,7 +24,7 @@ Split the 2,048-line `apps/mobile/app/reception.tsx` mega-screen into a `recepti
 - Inline `VerificationResult` component at line 1564.
 - `BottomNav` rendered at the bottom; uses role-based tab discovery from `legacy.tsx`.
 - The 4 "views" branch at lines 738 (desk), 932 (members), 1164 (payments), 1356 (orders).
-- Bottom nav definitions for reception live at `apps/mobile/src/components/primitives/legacy.tsx:2084` (`receptionTabs`).
+- Bottom nav definitions for reception live at `apps/mobile/src/components/primitives/foundation.tsx:2084` (`receptionTabs`).
 
 ## Architectural target
 
@@ -277,7 +277,7 @@ In `apps/mobile/app/_layout.tsx`:
 
 ### Step 12 — Update bottom nav references
 
-In `apps/mobile/src/components/primitives/legacy.tsx`, `receptionTabs` at line 2084 becomes unused once `reception/_layout.tsx` owns its own tabs. Mark it `@deprecated` but leave it — plan #11 deletes role-keyed tabs entirely.
+In `apps/mobile/src/components/primitives/foundation.tsx`, `receptionTabs` at line 2084 becomes unused once `reception/_layout.tsx` owns its own tabs. Mark it `@deprecated` but leave it — plan #11 deletes role-keyed tabs entirely.
 
 Update `getTabsForRole` (line 2192): when role is RECEPTIONIST, the old code returns `receptionTabs`. After this plan, RECEPTIONIST users live inside `reception/_layout.tsx` which has its own tabs — they should never hit the global `BottomNav`. Add an early return: if `pathname.startsWith("/reception")`, the global `BottomNav` renders nothing.
 
@@ -356,7 +356,7 @@ Every reception screen / component touched in this plan must:
 ## Files modified
 
 - `apps/mobile/app/_layout.tsx` — `<Stack.Screen name="reception" />` references the new layout
-- `apps/mobile/src/components/primitives/legacy.tsx` — `BottomNav` short-circuits for `/reception/*`, `receptionTabs` marked `@deprecated`
+- `apps/mobile/src/components/primitives/foundation.tsx` — `BottomNav` short-circuits for `/reception/*`, `receptionTabs` marked `@deprecated`
 - `apps/mobile/src/lib/route-guards.ts` — add subroute entries:
   ```ts
   "/reception/members": "MEMBERS_VIEW",

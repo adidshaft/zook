@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { useHasPermission } from "@/lib/auth";
 import { useOrgJoinRequests } from "@/lib/domains/owner";
-import { colors } from "@/lib/theme";
+import { legacyColors } from "@/lib/theme";
 
 const legacyViewTargets: Record<string, "/owner/members" | "/owner/approvals" | "/owner/revenue" | "/owner/stock"> = {
   members: "/owner/members",
@@ -36,11 +36,11 @@ export default function OwnerLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brandLime,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: legacyColors.brandLime,
+        tabBarInactiveTintColor: legacyColors.textMuted,
         tabBarStyle: {
-          backgroundColor: colors.bgElevated,
-          borderTopColor: colors.glassStroke,
+          backgroundColor: legacyColors.bgElevated,
+          borderTopColor: legacyColors.glassStroke,
         },
       }}
     >

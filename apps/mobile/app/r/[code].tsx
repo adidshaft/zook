@@ -7,7 +7,7 @@ export default function ReferralAliasScreen() {
   return (
     <Redirect
       href={{
-        pathname: "/find-gyms",
+        pathname: "/gyms",
         params: {
           ...(code ? { ref: code, focus: "referral" } : {}),
         },

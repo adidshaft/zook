@@ -133,7 +133,7 @@ tags:
     timeout: 30000
 - takeScreenshot: /tmp/zook-maestro/member/assistant.png
 
-- openLink: zook:///find-gyms
+- openLink: zook:///gyms
 - extendedWaitUntil:
     visible:
       id: "find-gyms-screen"

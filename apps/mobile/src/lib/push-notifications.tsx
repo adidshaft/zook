@@ -13,14 +13,14 @@ import {
   useState,
 } from "react";
 import { Linking, Platform } from "react-native";
-import { colors } from "@/lib/theme";
+import { legacyColors } from "@/lib/theme";
 import { getExpoProjectId, getMobilePushEnvironment } from "./api";
 import { getApiErrorMessage, useAuth } from "./auth";
 import { isOfflineDemoMode } from "./demo-mode";
 import { notificationsApi, pushApi } from "./domain-api";
 import { mergeNotificationPreferences } from "./notification-preferences";
 import { mapNotificationPayloadToHref } from "./notification-routing";
-import { useMyNotificationPreferences } from "./query-hooks";
+import { useMyNotificationPreferences } from "./domains";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 
 const INSTALLATION_ID_STORAGE_KEY = "zook_mobile_installation_id";
@@ -258,14 +258,14 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
         importance: notifications.AndroidImportance.HIGH,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: colors.brandLime,
+        lightColor: legacyColors.brandLime,
       }),
       notifications.setNotificationChannelAsync("ops", {
         name: "Operations",
         importance: notifications.AndroidImportance.HIGH,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: colors.brandLime,
+        lightColor: legacyColors.brandLime,
       }),
       notifications.setNotificationChannelAsync("reminders", {
         name: "Reminders",

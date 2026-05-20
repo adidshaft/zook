@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Circle } from "react-native-svg";
 import { GlassCard, ZookButton } from "@/components/primitives";
-import { colors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 
 function formatRenewalDate(value?: string | null) {
   if (!value) return "Renewal date pending";
@@ -89,7 +89,7 @@ export function MemberStateHero({
       <View style={styles.premiumMemberTopRow}>
         <View style={styles.premiumMemberCopy}>
           <View style={styles.premiumMemberEyebrowRow}>
-            <Ionicons name="person-outline" size={21} color={colors.lime} />
+            <Ionicons name="person-outline" size={21} color={legacyColors.lime} />
             <Text style={styles.premiumMemberEyebrow}>
               {expired ? "Renewal needed" : "Active Membership"}
             </Text>
@@ -107,7 +107,7 @@ export function MemberStateHero({
                   <Ionicons
                     name="chevron-forward"
                     size={18}
-                    color={expired ? colors.amber : colors.lime}
+                    color={expired ? legacyColors.amber : legacyColors.lime}
                   />
                 </>
               ) : (
@@ -118,7 +118,7 @@ export function MemberStateHero({
             </View>
           ) : null}
           <View style={styles.renewalRow}>
-            <Ionicons name="calendar-outline" size={15} color={colors.muted} />
+            <Ionicons name="calendar-outline" size={15} color={legacyColors.muted} />
             <Text numberOfLines={1} style={styles.renewalText}>
               {formatRenewalDate(renewalDate)}
             </Text>
@@ -138,7 +138,7 @@ export function MemberStateHero({
               cx={ringSize / 2}
               cy={ringSize / 2}
               r={radius}
-              stroke={expired ? colors.amber : colors.lime}
+              stroke={expired ? legacyColors.amber : legacyColors.lime}
               strokeWidth={strokeWidth}
               fill="none"
               strokeLinecap="round"
@@ -160,7 +160,7 @@ export function MemberStateHero({
         </View>
       </View>
       <View style={styles.memberEncouragement}>
-        <Ionicons name="star-outline" size={17} color={colors.lime} />
+        <Ionicons name="star-outline" size={17} color={legacyColors.lime} />
         <Text style={styles.memberEncouragementText}>{encouragement}</Text>
       </View>
       {showActions ? (
@@ -178,7 +178,7 @@ export function MemberStateHero({
             // FAB — repeating it on the hero created a visible duplicate
             // action. Start Workout is the better contextual primary here.
             <ZookButton
-              onPress={() => router.push("/tracking-entry")}
+              onPress={() => router.push("/plan")}
               icon="play-outline"
               style={styles.heroPrimaryAction}
             >
@@ -223,12 +223,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   premiumMemberEyebrow: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 15,
     lineHeight: 20,
   },
   premiumPlanName: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 20,
     lineHeight: 25,
     fontFamily: "Inter_700Bold",
@@ -239,13 +239,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   daysLeftText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     fontSize: 19,
     lineHeight: 24,
     fontFamily: "Inter_600SemiBold",
   },
   heroNumberUrgent: {
-    color: colors.amber,
+    color: legacyColors.amber,
   },
   renewalRow: {
     flexDirection: "row",
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   renewalText: {
     flex: 1,
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   visitRingOuter: {
@@ -279,18 +279,18 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   visitRingValue: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 28,
     lineHeight: 32,
     fontFamily: "Inter_700Bold",
   },
   visitRingLabel: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 12,
     lineHeight: 15,
   },
   visitRingMeta: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 10,
     lineHeight: 13,
     maxWidth: 122,
@@ -299,13 +299,13 @@ const styles = StyleSheet.create({
   memberEncouragement: {
     minHeight: 45,
     borderTopWidth: 1,
-    borderColor: colors.divider,
+    borderColor: legacyColors.divider,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
   },
   memberEncouragementText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   heroActions: {

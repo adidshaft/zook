@@ -11,7 +11,7 @@ import { useHasPermission, useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useApproveAttendance, useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useApproveJoinRequest, useOrgJoinRequests, useRejectJoinRequest } from "@/lib/domains/owner";
-import { colors, layout } from "@/lib/theme";
+import { legacyColors, layout } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export default function OwnerApprovalsScreen() {
@@ -67,7 +67,7 @@ export default function OwnerApprovalsScreen() {
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
-            refreshControl: <RefreshControl refreshing={joinRequestsQuery.isRefetching || attentionQuery.isRefetching} onRefresh={onRefresh} tintColor={colors.brandLime} colors={[colors.brandLime]} />,
+            refreshControl: <RefreshControl refreshing={joinRequestsQuery.isRefetching || attentionQuery.isRefetching} onRefresh={onRefresh} tintColor={legacyColors.brandLime} colors={[legacyColors.brandLime]} />,
           }}
         >
           <MetricGrid

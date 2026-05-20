@@ -1,15 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { colors } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
+
+const legacyViewTargets: Record<string, "/trainer/clients" | "/trainer/plans"> = {
+  clients: "/trainer/clients",
+  plans: "/trainer/plans",
+};
 
 export default function TrainerLayout() {
+  const { palette } = useTheme();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const router = useRouter();
 
   useEffect(() => {
     const view = Array.isArray(params.view) ? params.view[0] : params.view;
-    const target = view === "clients" ? "/trainer/clients" : view === "plans" ? "/trainer/plans" : undefined;
+    const target = view ? legacyViewTargets[view] : undefined;
     if (target) router.replace(target as never);
   }, [params.view, router]);
 
@@ -17,11 +23,11 @@ export default function TrainerLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.lime,
-        tabBarInactiveTintColor: colors.muted,
+        tabBarActiveTintColor: palette.accent.base,
+        tabBarInactiveTintColor: palette.text.tertiary,
         tabBarStyle: {
-          backgroundColor: colors.panel,
-          borderTopColor: colors.border,
+          backgroundColor: palette.bg.elevated,
+          borderTopColor: palette.border.subtle,
         },
       }}
     >

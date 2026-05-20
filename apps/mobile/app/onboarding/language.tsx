@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
 import { useI18n, type LocalePreference } from "@/lib/i18n";
-import { colors } from "@/lib/theme";
+import { legacyColors } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type LanguageOption = {
@@ -75,7 +75,7 @@ export default function OnboardingLanguageStep() {
               <Ionicons
                 name={isSelected ? "checkmark-circle" : "ellipse-outline"}
                 size={22}
-                color={isSelected ? colors.lime : colors.muted}
+                color={isSelected ? legacyColors.lime : legacyColors.muted}
               />
             </Pressable>
           );
@@ -99,20 +99,20 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     justifyContent: "space-between",
-    backgroundColor: colors.bg,
+    backgroundColor: legacyColors.bg,
     paddingHorizontal: 24,
   },
   header: {
     gap: 8,
   },
   brand: {
-    color: colors.text,
+    color: legacyColors.text,
     fontFamily: "Inter_800ExtraBold",
     fontSize: 32,
     lineHeight: 38,
   },
   kicker: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontFamily: "Inter_400Regular",
     fontSize: 15,
     lineHeight: 22,
@@ -128,25 +128,25 @@ const styles = StyleSheet.create({
     padding: 18,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
   },
   optionSelected: {
-    borderColor: colors.limeBorder,
-    backgroundColor: colors.accentPanel,
+    borderColor: legacyColors.limeBorder,
+    backgroundColor: legacyColors.accentPanel,
   },
   optionCopy: {
     flex: 1,
     gap: 4,
   },
   optionLabel: {
-    color: colors.text,
+    color: legacyColors.text,
     fontFamily: "Inter_700Bold",
     fontSize: 17,
     lineHeight: 22,
   },
   optionCaption: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     lineHeight: 18,

@@ -25,8 +25,8 @@ import {
 } from "@/features/trainer/helpers";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { plansApi } from "@/lib/domain-api";
-import { useTrainerClients } from "@/lib/query-hooks";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { useTrainerClients } from "@/lib/domains";
+import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export default function TrainerClientPlanScreen() {
@@ -159,7 +159,7 @@ export default function TrainerClientPlanScreen() {
                 const selected = template.id === selectedTemplate;
                 return (
                   <Pressable key={template.id} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => setSelectedTemplate(template.id)} style={[styles.templateChip, selected ? styles.templateChipSelected : null]}>
-                    <Ionicons name={template.icon} size={15} color={selected ? colors.lime : colors.muted} />
+                    <Ionicons name={template.icon} size={15} color={selected ? legacyColors.lime : legacyColors.muted} />
                     <Text style={[styles.templateChipText, selected ? styles.templateChipTextSelected : null]}>{template.label}</Text>
                   </Pressable>
                 );
@@ -196,19 +196,19 @@ export default function TrainerClientPlanScreen() {
 
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
-  iconButton: { alignItems: "center", backgroundColor: colors.panel, borderColor: colors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
-  backIcon: { color: colors.text, fontSize: 26, lineHeight: 28 },
+  iconButton: { alignItems: "center", backgroundColor: legacyColors.panel, borderColor: legacyColors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
+  backIcon: { color: legacyColors.text, fontSize: 26, lineHeight: 28 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  templateChip: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderColor: colors.border, borderRadius: 18, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 36, paddingHorizontal: 11 },
-  templateChipSelected: { backgroundColor: "rgba(185,244,85,0.13)", borderColor: colors.lime },
-  templateChipText: { color: colors.muted, ...typography.caption },
-  templateChipTextSelected: { color: colors.lime },
+  templateChip: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderColor: legacyColors.border, borderRadius: 18, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 36, paddingHorizontal: 11 },
+  templateChipSelected: { backgroundColor: "rgba(185,244,85,0.13)", borderColor: legacyColors.lime },
+  templateChipText: { color: legacyColors.muted, ...typography.caption },
+  templateChipTextSelected: { color: legacyColors.lime },
   actionRow: { flexDirection: "row", gap: spacing.sm },
   actionHalf: { flex: 1 },
   stack: { gap: 10 },
   attentionHeader: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   draftPromptContent: { gap: 12 },
-  cardBody: { color: colors.muted, ...typography.body },
+  cardBody: { color: legacyColors.muted, ...typography.body },
   statusContent: { padding: 14 },
-  statusText: { color: colors.lime, ...typography.bodyStrong },
+  statusText: { color: legacyColors.lime, ...typography.bodyStrong },
 });

@@ -114,7 +114,7 @@ Use existing primitives: `Sheet` or `expo-safe-bottom-sheet.tsx`, `ListRow` from
 
 ### Step 4 — Mount the switcher in the global header
 
-The header currently lives in `MobileHeader` (`apps/mobile/src/components/primitives/legacy.tsx:717`). Add a new optional `contextSlot?: ReactNode` prop. Render it in the title row between eyebrow and title.
+The header currently lives in `MobileHeader` (`apps/mobile/src/components/primitives/foundation.tsx:717`). Add a new optional `contextSlot?: ReactNode` prop. Render it in the title row between eyebrow and title.
 
 Update screen-level callers that already pass header props to optionally include `<RoleSwitcherChip />` — at minimum: `app/index.tsx`, `app/owner/index.tsx`, `app/reception.tsx`, `app/trainer/index.tsx`, `app/membership.tsx`, `app/scan.tsx`. The chip is a no-op when there's nothing to switch.
 
@@ -168,7 +168,7 @@ Expose `setDefaultRole(role: Role)` via `useAuth()`. **Do not** add UI for this 
 - `apps/mobile/src/lib/auth.tsx`
 - `apps/mobile/app/_layout.tsx`
 - `apps/mobile/src/lib/demo-mode.ts`
-- `apps/mobile/src/components/primitives/legacy.tsx` (MobileHeader prop)
+- `apps/mobile/src/components/primitives/foundation.tsx` (MobileHeader prop)
 - Top-level role screens that render `MobileHeader`: `app/index.tsx`, `app/owner/index.tsx`, `app/reception.tsx`, `app/trainer/index.tsx`, `app/membership.tsx`, `app/scan.tsx` (and any others touched by `git grep "MobileHeader"`)
 
 ## Files deleted

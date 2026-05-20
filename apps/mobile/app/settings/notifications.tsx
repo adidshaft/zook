@@ -6,7 +6,7 @@ import { GlassCard, MobileHeader, ZookScreen } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { notificationsApi } from "@/lib/domain-api";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
-import { useMyNotificationPreferences } from "@/lib/query-hooks";
+import { useMyNotificationPreferences } from "@/lib/domains";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 

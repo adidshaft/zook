@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 
 import { useRoleContext } from "@/lib/role-context";
-import { colors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 
 export function DemoBanner() {
   const ctx = useRoleContext();
@@ -10,7 +10,7 @@ export function DemoBanner() {
     <View
       accessibilityRole="alert"
       style={{
-        backgroundColor: colors.warning,
+        backgroundColor: legacyColors.warning,
         paddingHorizontal: spacing.md,
         paddingVertical: 6,
       }}
@@ -18,7 +18,7 @@ export function DemoBanner() {
       <Text
         style={{
           ...typography.caption,
-          color: colors.ink,
+          color: legacyColors.ink,
           fontWeight: "600",
           textAlign: "center",
         }}

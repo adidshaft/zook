@@ -16,8 +16,8 @@ import {
   progressTimelineFor,
   type ClientDetailTab,
 } from "@/features/trainer/helpers";
-import { useTrainerClients } from "@/lib/query-hooks";
-import { colors, layout } from "@/lib/theme";
+import { useTrainerClients } from "@/lib/domains";
+import { legacyColors, layout } from "@/lib/theme";
 
 export default function TrainerClientSessionsScreen() {
   const router = useRouter();
@@ -69,7 +69,7 @@ export default function TrainerClientSessionsScreen() {
 
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
-  iconButton: { alignItems: "center", backgroundColor: colors.panel, borderColor: colors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
-  backIcon: { color: colors.text, fontSize: 26, lineHeight: 28 },
+  iconButton: { alignItems: "center", backgroundColor: legacyColors.panel, borderColor: legacyColors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
+  backIcon: { color: legacyColors.text, fontSize: 26, lineHeight: 28 },
   stack: { gap: 10 },
 });

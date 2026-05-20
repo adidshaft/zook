@@ -11,8 +11,8 @@ import {
 } from "@/components/primitives";
 import { fitnessGoalFor, planCountLabel } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
-import { useTrainerClients } from "@/lib/query-hooks";
-import { colors, layout } from "@/lib/theme";
+import { useTrainerClients } from "@/lib/domains";
+import { legacyColors, layout } from "@/lib/theme";
 
 export default function TrainerClientsScreen() {
   const router = useRouter();
@@ -47,7 +47,7 @@ export default function TrainerClientsScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.lime} colors={[colors.lime]} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={legacyColors.lime} colors={[legacyColors.lime]} />}
         >
           <MobileHeader
             eyebrow="Trainer mode"

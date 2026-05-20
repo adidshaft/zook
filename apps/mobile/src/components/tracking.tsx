@@ -3,7 +3,7 @@ import type { Href } from "expo-router";
 import type { TrackingSummaryMetric, WorkoutHistorySeries, WorkoutLogEntry } from "@zook/core";
 import { StyleSheet, Text, View } from "react-native";
 import { useT } from "@/lib/i18n";
-import { colors, radii } from "@/lib/theme";
+import { legacyColors, radii } from "@/lib/theme";
 
 export function TrackingSectionHeader({
   title,
@@ -183,12 +183,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between"
   },
   sectionTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 24,
     fontWeight: "900"
   },
   sectionLink: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 13,
     fontWeight: "700"
   },
@@ -196,36 +196,36 @@ const styles = StyleSheet.create({
     width: "48%",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
     padding: 14,
     minHeight: 112,
     gap: 7
   },
   summaryLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 13,
     fontWeight: "800"
   },
   summaryValue: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 32,
     fontWeight: "900",
     lineHeight: 34
   },
   summaryDetail: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 13,
     lineHeight: 18
   },
   summaryDetailPositive: {
-    color: colors.lime
+    color: legacyColors.lime
   },
   logCard: {
     borderRadius: 30,
-    backgroundColor: colors.panel,
+    backgroundColor: legacyColors.panel,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     padding: 18,
     gap: 14
   },
@@ -240,12 +240,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-start"
   },
   logDate: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 12,
     fontWeight: "700"
   },
   logTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 24,
     fontWeight: "900",
     lineHeight: 28
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(185,244,85,0.28)"
   },
   effortText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     fontSize: 12,
     fontWeight: "800"
   },
@@ -287,17 +287,17 @@ const styles = StyleSheet.create({
     gap: 2
   },
   metaLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 11,
     fontWeight: "700"
   },
   metaValue: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 16,
     fontWeight: "800"
   },
   focusText: {
-    color: colors.amber,
+    color: legacyColors.amber,
     fontSize: 12,
     fontWeight: "800"
   },
@@ -310,12 +310,12 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   exerciseName: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 16,
     fontWeight: "800"
   },
   exerciseMeta: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 12
   },
   statusPill: {
@@ -337,12 +337,12 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,93,93,0.26)"
   },
   statusText: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 11,
     fontWeight: "800"
   },
   notesText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     lineHeight: 20
   },
   notesTextCompact: {
@@ -351,14 +351,14 @@ const styles = StyleSheet.create({
   },
   historyCard: {
     borderRadius: 30,
-    backgroundColor: colors.panel,
-    borderColor: colors.border,
+    backgroundColor: legacyColors.panel,
+    borderColor: legacyColors.border,
     borderWidth: 1,
     padding: 18,
     gap: 14
   },
   historyLabel: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 12,
     fontWeight: "700"
   },
@@ -371,13 +371,13 @@ const styles = StyleSheet.create({
     gap: 4
   },
   historyMetricValue: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 28,
     fontWeight: "900",
     lineHeight: 30
   },
   historyMetricLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 12,
     fontWeight: "700"
   },
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14
   },
   historyCalloutText: {
-    color: colors.violet,
+    color: legacyColors.violet,
     fontSize: 13,
     fontWeight: "700"
   }

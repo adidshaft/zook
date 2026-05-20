@@ -53,8 +53,8 @@ import {
   useMyMemberships,
   type InvoiceRecord,
   type PublicPlanSummary,
-} from "@/lib/query-hooks";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+} from "@/lib/domains";
+import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type MembershipRecord = {
@@ -508,8 +508,8 @@ export default function MembershipScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={colors.lime}
-              colors={[colors.lime]}
+              tintColor={legacyColors.lime}
+              colors={[legacyColors.lime]}
             />
           }
         >
@@ -529,7 +529,7 @@ export default function MembershipScreen() {
                 accessibilityLabel="Back"
                 style={styles.iconButton}
               >
-                <Ionicons name="chevron-back" size={21} color={colors.text} />
+                <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
               </Pressable>
             }
             showProfileShortcut={false}
@@ -580,7 +580,7 @@ export default function MembershipScreen() {
                   Browse gyms and purchase a membership to get started.
                 </Text>
               </View>
-              <ZookButton testID="membership-find-gyms" href="/find-gyms" icon="search-outline">
+              <ZookButton testID="membership-find-gyms" href="/gyms" icon="search-outline">
                 Find gyms
               </ZookButton>
             </GlassCard>
@@ -732,7 +732,7 @@ function RenewalSheet({
             accessibilityLabel="Close"
             style={styles.closeButton}
           >
-            <Ionicons name="close" size={18} color={colors.text} />
+            <Ionicons name="close" size={18} color={legacyColors.text} />
           </Pressable>
         </View>
 
@@ -769,9 +769,9 @@ function RenewalSheet({
                     </Text>
                   </View>
                   {selected && renewing ? (
-                    <ActivityIndicator size="small" color={colors.lime} />
+                    <ActivityIndicator size="small" color={legacyColors.lime} />
                   ) : selected ? (
-                    <Ionicons name="checkmark-circle" size={20} color={colors.lime} />
+                    <Ionicons name="checkmark-circle" size={20} color={legacyColors.lime} />
                   ) : null}
                 </Pressable>
               );
@@ -847,8 +847,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -862,11 +862,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   calloutTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   calloutBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   pausePicker: {
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   loadingText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   browserReturnContent: {
@@ -893,11 +893,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   browserReturnTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   browserReturnBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   emptyContent: {
@@ -910,11 +910,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   emptyTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   emptyBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
     textAlign: "center",
   },
@@ -931,11 +931,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   featuredTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.headerTitle,
   },
   featuredOrg: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   progressSection: {
@@ -950,24 +950,24 @@ const styles = StyleSheet.create({
   progressFill: {
     height: "100%",
     borderRadius: 3,
-    backgroundColor: colors.lime,
+    backgroundColor: legacyColors.lime,
   },
   progressFillWarning: {
-    backgroundColor: colors.amber,
+    backgroundColor: legacyColors.amber,
   },
   progressLabels: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
   progressText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.caption,
   },
   progressTextWarning: {
-    color: colors.amber,
+    color: legacyColors.amber,
   },
   progressTextMuted: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   membershipMetaLine: {
@@ -977,7 +977,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   membershipMetaText: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.caption,
   },
   autopayContent: {
@@ -993,15 +993,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   autopayTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   autopayBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   autopayStatus: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.small,
   },
   stack: {
@@ -1021,11 +1021,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   historyTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   historyBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   emptyPaymentContent: {
@@ -1054,15 +1054,15 @@ const styles = StyleSheet.create({
   },
   paymentTitle: {
     flex: 1,
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   paymentAmount: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   paymentBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   paymentMetaRow: {
@@ -1073,7 +1073,7 @@ const styles = StyleSheet.create({
   },
   documentHint: {
     flexShrink: 1,
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   documentActions: {
@@ -1091,7 +1091,7 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
     backgroundColor: "rgba(185,244,85,0.08)",
     paddingHorizontal: 12,
   },
@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   documentButtonText: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.small,
     fontWeight: "700",
   },
@@ -1119,8 +1119,8 @@ const styles = StyleSheet.create({
   },
   sheetBackground: {
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    borderColor: legacyColors.border,
+    backgroundColor: legacyColors.panel,
   },
   sheetHandle: {
     backgroundColor: "rgba(255,255,255,0.22)",
@@ -1142,15 +1142,15 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   sheetEyebrow: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.eyebrow,
   },
   sheetTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.headerTitle,
   },
   sheetBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   closeButton: {
@@ -1158,7 +1158,7 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1188,12 +1188,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.045)",
     padding: spacing.md,
   },
   planOptionSelected: {
-    borderColor: colors.limeBorder,
+    borderColor: legacyColors.limeBorder,
     backgroundColor: "rgba(185,244,85,0.11)",
   },
   planOptionCopy: {
@@ -1201,26 +1201,26 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   planOptionTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   planOptionMeta: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   renewalSummary: {
     gap: 4,
   },
   summaryTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   summaryBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   statusMessage: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.small,
   },
   sheetActions: {
