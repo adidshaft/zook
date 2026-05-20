@@ -30,7 +30,6 @@ import { useMyNotifications } from "@/lib/query-hooks";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
-import { isOfflineDemoMode } from "@/lib/demo-mode";
 
 const NativeNotifications =
   Constants.executionEnvironment === "storeClient"
@@ -121,10 +120,7 @@ export default function NotificationsScreen() {
   const [markAllBusy, setMarkAllBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [olderExpanded, setOlderExpanded] = useState(false);
-  const notifications =
-    isOfflineDemoMode() && routeParams.focus === "empty"
-      ? []
-      : ((notificationsQuery.data?.notifications ?? []) as InboxNotification[]);
+  const notifications = (notificationsQuery.data?.notifications ?? []) as InboxNotification[];
   const unreadCount = notifications.filter((item) => !item.readAt).length;
   const latestLabel = notifications[0]?.notification?.createdAt
     ? formatRelativeDate(notifications[0].notification.createdAt)

@@ -373,9 +373,22 @@ function demoShopOrders() {
   }));
 }
 
+type DemoTransport = {
+  request<T>(
+    path: string,
+    init?: { body?: unknown; method?: string } & Record<string, unknown>,
+  ): Promise<T>;
+};
+
+export function createDemoTransport(): DemoTransport {
+  return {
+    request: demoMobileApiFetch,
+  };
+}
+
 export async function demoMobileApiFetch<T>(
   path: string,
-  init: { body?: unknown; method?: string } = {},
+  init: { body?: unknown; method?: string } & Record<string, unknown> = {},
 ): Promise<T> {
   const parsed = new URL(normalizePath(path), "https://offline.zook.local");
   const pathname = parsed.pathname;
@@ -596,7 +609,7 @@ export async function demoMobileApiFetch<T>(
       zookDemoFixtures.attendanceAttempts[0];
     return { attendance } as T;
   }
-  if (pathname === "/attendance/scan") {
+  if (pathname === "/attendance/scan" || pathname === "/attendance/dev-scan") {
     const attempt =
       zookDemoFixtures.attendanceAttempts.find((record) => record.status === "APPROVED") ??
       zookDemoFixtures.attendanceAttempts[0];
