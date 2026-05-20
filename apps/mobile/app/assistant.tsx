@@ -16,7 +16,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  BottomNav,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -261,7 +260,6 @@ export default function AssistantScreen() {
             </View>
           </GlassCard>
         </View>
-        <BottomNav />
       </ZookScreen>
     );
   }
@@ -320,7 +318,6 @@ export default function AssistantScreen() {
             ))}
           </View>
         </ScrollView>
-        <BottomNav />
       </ZookScreen>
     );
   }
@@ -514,7 +511,6 @@ export default function AssistantScreen() {
           </View>
         </GlassCard>
       </Animated.View>
-      <BottomNav />
     </ZookScreen>
   );
 }

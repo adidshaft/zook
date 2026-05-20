@@ -382,10 +382,7 @@ function LayoutContent() {
           contentStyle: { backgroundColor: palette.bg.app },
         }}
       >
-        <Stack.Screen name="index" options={{ animation: "none" }} />
-        <Stack.Screen name="plans/index" options={{ animation: "none" }} />
-        <Stack.Screen name="scan" options={{ animation: "none" }} />
-        <Stack.Screen name="tracking" options={{ animation: "none" }} />
+        <Stack.Screen name="(member)" options={{ animation: "none" }} />
         <Stack.Screen name="profile" options={{ animation: "none" }} />
         <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
@@ -393,11 +390,6 @@ function LayoutContent() {
         <Stack.Screen name="find-gyms" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="shop" options={{ animation: "none" }} />
         <Stack.Screen name="assistant" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen
-          name="tracking-entry"
-          options={{ presentation: "modal", animation: "slide_from_bottom" }}
-        />
-        <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="owner/index" options={{ animation: "none" }} />
         <Stack.Screen name="dashboard" options={{ animation: "fade" }} />
         <Stack.Screen name="platform" options={{ animation: "none" }} />

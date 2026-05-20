@@ -25,7 +25,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  BottomNav,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -622,7 +621,6 @@ export default function MembershipScreen() {
             payments={payments}
           />
         </ScrollView>
-        <BottomNav />
         <RenewalSheet
           availablePlans={availablePlans}
           currentPlan={renewalTarget?.plan ?? null}
