@@ -105,8 +105,10 @@ jobs:
       - name: DB-backed web tests
         run: pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 ALLOW_DEV_OTP_RESPONSE=true pnpm test:web
 
-      - name: Acceptance tests
-        run: ALLOW_DEV_OTP_RESPONSE=true pnpm test:acceptance
+      - name: Action and integration web tests
+        run: |
+          ALLOW_DEV_OTP_RESPONSE=true pnpm test:web:actions
+          ALLOW_DEV_OTP_RESPONSE=true pnpm test:integration
 
       - name: Release preflight
         run: pnpm release:preflight
