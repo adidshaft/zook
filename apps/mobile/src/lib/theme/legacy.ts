@@ -38,7 +38,7 @@ export const colors = {
   subtle: defaultPalette.text.tertiary,
   paper: "#F2F5EB",
   ink: "#11150F",
-  inkSoft: "#687260",
+  inkSoft: "#6F7769",
   /** @deprecated Prefer brandLime. */
   lime: defaultPalette.accent.base,
   limeSoft: defaultPalette.accent.soft,
