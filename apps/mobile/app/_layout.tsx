@@ -32,6 +32,7 @@ import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberDashboardQueryOptions } from "@/lib/query-hooks";
 import { colors } from "@/lib/theme";
+import { ThemeProvider, useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 import { useRoleContext } from "@/lib/role-context";
 
@@ -125,6 +126,7 @@ function isPaymentReturnDeepLink(url: string) {
 }
 
 function LayoutContent() {
+  const { mode, palette } = useTheme();
   const {
     activeOrgId,
     clearExpiredSession,
@@ -368,16 +370,16 @@ function LayoutContent() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={mode === "dark" ? "light" : "dark"} />
       <NetworkBanner />
       {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
       <DemoBanner />
       <Stack
         screenOptions={{
           headerShown: false,
-          headerStyle: { backgroundColor: colors.bg },
-          headerTintColor: "#f4f7ef",
-          contentStyle: { backgroundColor: colors.bg },
+          headerStyle: { backgroundColor: palette.bg.app },
+          headerTintColor: palette.text.primary,
+          contentStyle: { backgroundColor: palette.bg.app },
         }}
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
@@ -456,20 +458,24 @@ export default function Layout() {
   return (
     <SafeAreaProvider>
       <View style={styles.gestureRoot}>
-        <Sentry.ErrorBoundary fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}>
+        <Sentry.ErrorBoundary
+          fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
+        >
           <QueryClientProvider client={queryClient}>
             <I18nProvider>
-              <AuthProvider>
-                <BranchSelectionProvider>
-                  <BottomNavVisibilityProvider>
-                    <PrivilegedPinProvider>
-                      <PushNotificationsProvider>
-                        <LayoutContent />
-                      </PushNotificationsProvider>
-                    </PrivilegedPinProvider>
-                  </BottomNavVisibilityProvider>
-                </BranchSelectionProvider>
-              </AuthProvider>
+              <ThemeProvider>
+                <AuthProvider>
+                  <BranchSelectionProvider>
+                    <BottomNavVisibilityProvider>
+                      <PrivilegedPinProvider>
+                        <PushNotificationsProvider>
+                          <LayoutContent />
+                        </PushNotificationsProvider>
+                      </PrivilegedPinProvider>
+                    </BottomNavVisibilityProvider>
+                  </BranchSelectionProvider>
+                </AuthProvider>
+              </ThemeProvider>
             </I18nProvider>
           </QueryClientProvider>
         </Sentry.ErrorBoundary>
