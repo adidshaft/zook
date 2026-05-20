@@ -1,48 +1,24 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Keyboard, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, StyleSheet } from "react-native";
 
-import { EmptyState, GlassCard, GlassInput, IconBubble, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
+import { ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { TrainerClientsSkeleton } from "@/components/skeletons";
-import { MemberRow } from "@/features/owner/components/member-row";
-import { phoneRevealStorageKey } from "@/features/owner/helpers";
-import { apiClient } from "@/lib/domain-api";
 import { useAuth } from "@/lib/auth";
 import { useOrgMembers } from "@/lib/domains/owner";
-import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { colors, layout, spacing, typography } from "@/lib/theme";
-import { useEffect } from "react";
+import { colors, layout } from "@/lib/theme";
 
 type MemberFilter = "all" | "active" | "expiring" | "expired";
 
 export default function OwnerMembersScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeOrgId, token } = useAuth();
+  const { activeOrgId } = useAuth();
   const membersQuery = useOrgMembers();
   const [memberSearch, setMemberSearch] = useState("");
   const [memberFilter, setMemberFilter] = useState<MemberFilter>("all");
-  const [revealedPhones, setRevealedPhones] = useState<Set<string>>(() => new Set());
-
-  useEffect(() => {
-    let mounted = true;
-    setRevealedPhones(new Set());
-    void getStoredValue(phoneRevealStorageKey(activeOrgId)).then((stored) => {
-      if (!mounted || !stored) return;
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) setRevealedPhones(new Set(parsed.filter((item): item is string => typeof item === "string")));
-      } catch {
-        setRevealedPhones(new Set());
-      }
-    });
-    return () => {
-      mounted = false;
-    };
-  }, [activeOrgId]);
 
   const filteredMembers = useMemo(() => {
     const term = memberSearch.trim().toLowerCase();
@@ -62,23 +38,38 @@ export default function OwnerMembersScreen() {
       );
     });
   }, [memberFilter, memberSearch, membersQuery.data?.members]);
-
-  function revealMemberPhone(memberId: string) {
-    setRevealedPhones((current) => {
-      const next = new Set(current);
-      next.add(memberId);
-      void setStoredValue(phoneRevealStorageKey(activeOrgId), JSON.stringify(Array.from(next)));
-      return next;
-    });
-    if (token && activeOrgId) {
-      void apiClient.request("/audit-logs", {
-        method: "POST",
-        token,
-        orgId: activeOrgId,
-        body: { action: "MEMBER_PHONE_REVEALED", targetId: memberId },
-      }).catch(() => undefined);
-    }
-  }
+  const memberItems = useMemo<MemberRowItem[]>(
+    () =>
+      filteredMembers.map((member) => {
+        const status = String(member.activeSubscription?.status ?? "").toLowerCase();
+        const expiresAt = member.activeSubscription?.endsAt
+          ? new Date(member.activeSubscription.endsAt)
+          : null;
+        const daysLeft = expiresAt
+          ? Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000)
+          : null;
+        const normalizedStatus: MemberRowItem["status"] =
+          status === "active" && daysLeft !== null && daysLeft > 0 && daysLeft <= 30
+            ? "expiring"
+            : status === "active"
+              ? "active"
+              : status === "pending_payment"
+                ? "pending"
+                : "expired";
+        return {
+          id: member.profile.userId,
+          name: member.user?.name ?? "Member",
+          email: member.user?.email,
+          phone: member.user?.phone,
+          avatarUrl: member.user?.profilePhotoUrl ?? member.profile.profilePhotoUrl,
+          status: normalizedStatus,
+          meta: member.user?.fitnessGoal ?? member.profile.fitnessGoal ?? undefined,
+        };
+      }),
+    [filteredMembers],
+  );
+  const selectedFilter: MemberListFilter =
+    memberFilter === "all" ? { kind: "all" } : { kind: "status", status: memberFilter };
 
   const onRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: activeOrgId ? ["org", activeOrgId] : ["org"] });
@@ -96,52 +87,30 @@ export default function OwnerMembersScreen() {
             refreshControl: <RefreshControl refreshing={membersQuery.isRefetching} onRefresh={onRefresh} tintColor={colors.brandLime} colors={[colors.brandLime]} />,
           }}
         >
-          <GlassInput
-            value={memberSearch}
-            onChangeText={setMemberSearch}
-            placeholder="Search by name or email"
-            leading={<Ionicons name="search-outline" size={17} color={colors.textMuted} />}
-            trailing={
-              memberSearch ? (
-                <Pressable onPress={() => { setMemberSearch(""); Keyboard.dismiss(); }} accessibilityRole="button" accessibilityLabel="Clear member search" style={styles.clearSearchButton}>
-                  <Ionicons name="close" size={16} color={colors.textMuted} />
-                </Pressable>
-              ) : null
+          <MemberList
+            testID="owner-view-members"
+            items={memberItems}
+            isLoading={membersQuery.isLoading}
+            isError={membersQuery.isError}
+            onRetry={() => void membersQuery.refetch()}
+            searchValue={memberSearch}
+            onSearchChange={setMemberSearch}
+            filter={selectedFilter}
+            onFilterChange={(filter) => {
+              setMemberFilter(
+                filter.kind === "status" && filter.status !== "pending" ? filter.status : "all",
+              );
+            }}
+            availableFilters={[
+              { kind: "all" },
+              { kind: "status", status: "active" },
+              { kind: "status", status: "expiring" },
+              { kind: "status", status: "expired" },
+            ]}
+            onPressMember={(member) =>
+              router.push({ pathname: "/owner/member/[id]", params: { id: member.id } })
             }
           />
-          <View style={styles.filterRow}>
-            {(["all", "active", "expiring", "expired"] as const).map((value) => {
-              const selected = memberFilter === value;
-              return (
-                <Pressable key={value} onPress={() => setMemberFilter(value)} accessibilityRole="button" accessibilityState={{ selected }} style={[styles.filterChip, selected ? styles.filterChipActive : null]}>
-                  <Text style={[styles.filterChipText, selected ? styles.filterChipTextActive : null]}>{value[0].toUpperCase() + value.slice(1)}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <SectionHeader title="Members" subtitle={`${filteredMembers.length} members`} />
-          <View testID="owner-view-members" style={styles.stack}>
-            {membersQuery.isLoading ? <TrainerClientsSkeleton /> : null}
-            {membersQuery.isError ? <QueryErrorState error={membersQuery.error} onRetry={() => void membersQuery.refetch()} /> : null}
-            {!membersQuery.isLoading && !membersQuery.isError && !filteredMembers.length ? (
-              <GlassCard variant="compact" contentStyle={styles.emptyContent}>
-                <IconBubble icon="people-outline" tone="neutral" size={40} />
-                <EmptyState title="No members found" body="Try another search or filter." />
-              </GlassCard>
-            ) : null}
-            {!membersQuery.isLoading && !membersQuery.isError
-              ? filteredMembers.map((member, index) => (
-                  <MemberRow
-                    key={member.profile.userId}
-                    testID={index === 0 ? "member-row-first" : `member-row-${member.profile.userId}`}
-                    member={member}
-                    phoneRevealed={revealedPhones.has(member.profile.userId)}
-                    onPress={() => router.push({ pathname: "/owner/member/[id]", params: { id: member.profile.userId } })}
-                    onRevealPhone={() => revealMemberPhone(member.profile.userId)}
-                  />
-                ))
-              : null}
-          </View>
         </KeyboardAwareScreen>
       </ZookScreen>
     </>
@@ -150,12 +119,4 @@ export default function OwnerMembersScreen() {
 
 const styles = StyleSheet.create({
   content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
-  stack: { gap: spacing.md },
-  clearSearchButton: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: colors.glassFill },
-  filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  filterChip: { minHeight: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.glassStroke, backgroundColor: colors.glassFill, paddingHorizontal: 12, justifyContent: "center" },
-  filterChipActive: { borderColor: colors.limeBorder, backgroundColor: colors.accentPanel },
-  filterChipText: { color: colors.textMuted, ...typography.caption },
-  filterChipTextActive: { color: colors.brandLime },
-  emptyContent: { minHeight: 72, flexDirection: "row", alignItems: "center", gap: spacing.md },
 });

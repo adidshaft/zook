@@ -7,10 +7,13 @@ import {
   type BottomSheetBackdropProps,
 } from "@/components/expo-safe-bottom-sheet";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Reanimated from "@/lib/reanimated-lite";
+import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
+import { MemberList } from "@/components/domain/member-list";
+import { MetricGrid } from "@/components/domain/metric-grid";
 import {
   AuditWarning,
   EmptyState,
@@ -18,7 +21,6 @@ import {
   GlassCard,
   IconBubble,
   ListRow,
-  MetricTile,
   Pill,
   PrimaryButton,
   SearchField,
@@ -55,7 +57,6 @@ import {
   ageLabel,
   deskReasonCopy,
   phoneRevealStorageKey,
-  redactPhone,
   type DeskView,
 } from "./helpers";
 
@@ -73,6 +74,8 @@ type ReceptionCodeVerification = {
     } | null;
   };
 };
+
+type DomainMemberItem = ComponentProps<typeof MemberList>["items"][number];
 
 export type ReceptionSurfaceView = DeskView;
 
@@ -165,6 +168,64 @@ export function ReceptionSurface({
   const memberResultLimit = memberSearch.trim().length ? 25 : 10;
   const visibleMembers = filteredMembers.slice(0, memberResultLimit);
   const hiddenMemberCount = Math.max(0, filteredMembers.length - visibleMembers.length);
+  const receptionMemberItems = useMemo<DomainMemberItem[]>(
+    () =>
+      visibleMembers.map((record) => {
+        const subscriptionStatus = String(record.activeSubscription?.status ?? "").toLowerCase();
+        const status: DomainMemberItem["status"] =
+          subscriptionStatus === "active"
+            ? "active"
+            : subscriptionStatus === "pending_payment"
+              ? "pending"
+              : "expired";
+        const isMultiChecked = selectedMemberIds.has(record.profile.userId);
+        const isSelectedSingle = record.profile.userId === selectedMemberId;
+        return {
+          id: record.profile.userId,
+          name: record.user?.name ?? "Member",
+          email: record.user?.email,
+          phone: record.user?.phone,
+          avatarUrl: record.user?.profilePhotoUrl ?? record.profile.profilePhotoUrl,
+          status,
+          meta: ageLabel(record.user?.dateOfBirth),
+          phoneRevealed: revealedPhones.has(record.profile.userId),
+          badges:
+            multiSelectMode && isMultiChecked
+              ? [{ label: "Picked", tone: "lime" }]
+              : !multiSelectMode && isSelectedSingle
+                ? [{ label: "Selected", tone: "lime" }]
+                : undefined,
+        };
+      }),
+    [multiSelectMode, revealedPhones, selectedMemberId, selectedMemberIds, visibleMembers],
+  );
+  const approvalItems = useMemo<ApprovalItem[]>(
+    () =>
+      approvalQueue.map((attempt) => {
+        const flags = Array.isArray(attempt.suspiciousFlags)
+          ? attempt.suspiciousFlags
+          : [attempt.source ?? "scan"];
+        return {
+          id: attempt.id,
+          primaryText: attempt.user?.name ?? attempt.user?.email ?? "Member check-in",
+          secondaryText: `${attempt.branchName ?? "Main branch"} · ${attempt.plan?.name ?? "Membership"}`,
+          metaText: attempt.status.replace(/_/g, " "),
+          reason: deskReasonCopy(
+            Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null,
+          ),
+          context: (
+            <View style={styles.auditTrail}>
+              {flags.slice(-3).map((item) => (
+                <Text key={item} style={styles.auditText}>
+                  {item}
+                </Text>
+              ))}
+            </View>
+          ),
+        };
+      }),
+    [approvalQueue],
+  );
   const selectedMemberRecord =
     (membersQuery.data?.members ?? []).find(
       (record) => record.profile.userId === selectedMemberId,
@@ -657,32 +718,32 @@ export function ReceptionSurface({
 
         {view === "desk" ? (
           <>
-            <View style={styles.metricGrid}>
-              <MetricTile
-                label="Today"
-                value={String(todayCount)}
-                detail="Check-ins"
-                tone="lime"
-                icon="qr-code-outline"
-                style={styles.metricThird}
-              />
-              <MetricTile
-                label="Pending"
-                value={String(pendingCount)}
-                detail="Awaiting approval"
-                tone="amber"
-                icon="flash-outline"
-                style={styles.metricThird}
-              />
-              <MetricTile
-                label="Flagged"
-                value={String(flaggedCount)}
-                detail="Needs attention"
-                tone="red"
-                icon="alert-circle-outline"
-                style={styles.metricThird}
-              />
-            </View>
+            <MetricGrid
+              columns={3}
+              items={[
+                {
+                  label: "Today",
+                  value: todayCount,
+                  hint: "Check-ins",
+                  tone: "lime",
+                  icon: "qr-code-outline",
+                },
+                {
+                  label: "Pending",
+                  value: pendingCount,
+                  hint: "Awaiting approval",
+                  tone: "amber",
+                  icon: "flash-outline",
+                },
+                {
+                  label: "Flagged",
+                  value: flaggedCount,
+                  hint: "Needs attention",
+                  tone: "red",
+                  icon: "alert-circle-outline",
+                },
+              ]}
+            />
 
             <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
@@ -759,104 +820,42 @@ export function ReceptionSurface({
               title="Needs Approval queue"
               action={<Pill tone="amber">{pendingCount} pending</Pill>}
             />
-            <View testID="reception-approval-queue" style={styles.stack}>
-              {queueQuery.isLoading ? (
-                <ReceptionQueueSkeleton />
-              ) : approvalQueue.length ? (
-                approvalQueue.map((attempt, index) => (
-                  <GlassCard
-                    testID={
-                      index === 0 ? "reception-queue-row-first" : `reception-queue-row-${attempt.id}`
-                    }
-                    key={attempt.id}
-                    variant={index === 0 ? "selected" : "compact"}
-                    padding={14}
-                    contentStyle={styles.queueCard}
-                  >
-                    <View style={styles.queueHeader}>
-                      <IconBubble
-                        icon={
-                          attempt.status === "FLAGGED" ? "alert-circle-outline" : "person-outline"
-                        }
-                        tone={attempt.status === "FLAGGED" ? "red" : "amber"}
-                        size={38}
-                      />
-                      <View style={styles.queueCopy}>
-                        <Text style={styles.queueTitle}>
-                          {attempt.user?.name ?? attempt.user?.email ?? "Member check-in"}
-                        </Text>
-                        <Text style={styles.cardBody}>
-                          {attempt.branchName ?? "Main branch"} ·{" "}
-                          {attempt.plan?.name ?? "Membership"} ·{" "}
-                          {deskReasonCopy(
-                            Array.isArray(attempt.suspiciousFlags)
-                              ? attempt.suspiciousFlags.join(", ")
-                              : null,
-                          )}
-                        </Text>
-                      </View>
-                      <Pill tone={attempt.status === "FLAGGED" ? "red" : "amber"}>
-                        {attempt.status.replace(/_/g, " ")}
-                      </Pill>
-                    </View>
-                    <View style={styles.auditTrail}>
-                      {(Array.isArray(attempt.suspiciousFlags)
-                        ? attempt.suspiciousFlags
-                        : [attempt.source ?? "scan"]
-                      )
-                        .slice(-3)
-                        .map((item) => (
-                          <Text key={item} style={styles.auditText}>
-                            {item}
-                          </Text>
-                        ))}
-                    </View>
-                    <View style={styles.actionRow}>
-                      <PrimaryButton
-                        testID={index === 0 ? "approve-button-first" : `approve-button-${attempt.id}`}
-                        icon="checkmark-circle-outline"
-                        disabled={!canApproveAttendance || approveAttendanceMutation.isPending}
-                        onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}
-                        onPress={() => openDecisionSheet(attempt)}
-                        style={styles.actionHalf}
-                      >
-                        Approve
-                      </PrimaryButton>
-                      <SecondaryButton
-                        testID={index === 0 ? "deny-button-first" : `deny-button-${attempt.id}`}
-                        icon="eye-outline"
-                        disabled={!canApproveAttendance || rejectAttendanceMutation.isPending}
-                        onLongPress={!canApproveAttendance ? showOwnerApprovalRequired : undefined}
-                        onPress={() => openDecisionSheet(attempt)}
-                        style={styles.actionHalf}
-                      >
-                        Reject / Review
-                      </SecondaryButton>
-                    </View>
-                  </GlassCard>
-                ))
-              ) : (
-                <GlassCard variant="compact" padding={14} contentStyle={styles.queueCard}>
-                  <ListRow
-                    title="Gate queue clear"
-                    subtitle="No pending or flagged scans need the desk."
-                    icon="checkmark-done-outline"
-                    tone="lime"
-                  />
-                </GlassCard>
-              )}
-            </View>
+            <ApprovalQueue
+              testID="reception-approval-queue"
+              items={approvalItems}
+              isLoading={queueQuery.isLoading}
+              isError={queueQuery.isError}
+              onRetry={() => void queueQuery.refetch()}
+              approvingId={approveAttendanceMutation.isPending ? selectedDecisionAttempt?.id : undefined}
+              rejectingId={rejectAttendanceMutation.isPending ? selectedDecisionAttempt?.id : undefined}
+              emptyState={{
+                title: "Gate queue clear",
+                subtitle: "No pending or flagged scans need the desk.",
+              }}
+              onApprove={(attemptId) => {
+                const attempt = approvalQueue.find((item) => item.id === attemptId);
+                if (!attempt) return;
+                if (!canApproveAttendance) {
+                  showOwnerApprovalRequired();
+                  return;
+                }
+                openDecisionSheet(attempt);
+              }}
+              onReject={(attemptId) => {
+                const attempt = approvalQueue.find((item) => item.id === attemptId);
+                if (!attempt) return;
+                if (!canApproveAttendance) {
+                  showOwnerApprovalRequired();
+                  return;
+                }
+                openDecisionSheet(attempt);
+              }}
+            />
           </>
         ) : null}
 
         {view === "members" ? (
           <>
-            <SearchField
-              testID="reception-member-search"
-              value={memberSearch}
-              onChangeText={setMemberSearch}
-              placeholder="Search member by name, email, phone, member ID"
-            />
             <View style={styles.membersToolbar}>
               <Pressable
                 testID="reception-member-multi-toggle"
@@ -983,95 +982,25 @@ export function ReceptionSurface({
               </GlassCard>
             ) : null}
             <View style={styles.stack}>
-              {membersQuery.isLoading ? <TrainerClientsSkeleton /> : null}
-              {!membersQuery.isLoading && !filteredMembers.length ? (
-                <GlassCard variant="compact" padding={14}>
-                  <EmptyState title="No members found" body="Try a different name or email." />
-                </GlassCard>
-              ) : null}
-              {visibleMembers.map((user, index) => {
-                const isSelectedSingle =
-                  user.profile.userId === selectedMemberRecord?.profile.userId;
-                const isMultiChecked = selectedMemberIds.has(user.profile.userId);
-                const selected = multiSelectMode ? isMultiChecked : isSelectedSingle;
-                const phone = user.user?.phone ?? null;
-                const phoneRevealed = revealedPhones.has(user.profile.userId);
-                return (
-                  <GlassCard
-                    testID={
-                      index === 0
-                        ? "reception-member-row-first"
-                        : `reception-member-row-${user.profile.userId}`
-                    }
-                    key={user.profile.userId}
-                    variant={selected ? "selected" : "compact"}
-                    padding={12}
-                    pressable
-                    onPress={() => {
-                      if (multiSelectMode) {
-                        toggleMemberSelection(user.profile.userId);
-                      } else {
-                        setSelectedMemberId(user.profile.userId);
-                        router.push(`/reception/members/${user.profile.userId}`);
-                      }
-                    }}
-                  >
-                    <ListRow
-                      title={user.user?.name ?? "Member"}
-                      subtitle={user.user?.email ?? "No email"}
-                      leading={
-                        multiSelectMode ? (
-                          <Ionicons
-                            name={isMultiChecked ? "checkbox" : "square-outline"}
-                            size={22}
-                            color={isMultiChecked ? colors.lime : colors.muted}
-                          />
-                        ) : (
-                          <IconBubble
-                            icon="person-outline"
-                            tone={user.activeSubscription?.status === "ACTIVE" ? "lime" : "neutral"}
-                          />
-                        )
-                      }
-                      trailing={
-                        <Text
-                          style={[
-                            styles.rowStateText,
-                            user.activeSubscription?.status === "ACTIVE" || selected
-                              ? styles.rowStateGood
-                              : null,
-                          ]}
-                        >
-                          {selected
-                            ? multiSelectMode
-                              ? "Picked"
-                              : "Selected"
-                            : (user.activeSubscription?.status ?? "No membership")}
-                        </Text>
-                      }
-                    />
-                    <View style={styles.memberPhoneRow}>
-                      <Text numberOfLines={1} style={styles.memberPhoneText}>
-                        {phoneRevealed ? (phone ?? "No phone") : redactPhone(phone)}
-                      </Text>
-                      <Text style={styles.memberPhoneText}>·</Text>
-                      <Text numberOfLines={1} style={styles.memberPhoneText}>
-                        {ageLabel(user.user?.dateOfBirth)}
-                      </Text>
-                      {phone && !phoneRevealed ? (
-                        <Pressable
-                          onPress={() => revealMemberPhone(user.profile.userId)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Reveal phone for ${user.user?.name ?? "member"}`}
-                          style={styles.revealPhoneButton}
-                        >
-                          <Text style={styles.revealPhoneText}>Reveal</Text>
-                        </Pressable>
-                      ) : null}
-                    </View>
-                  </GlassCard>
-                );
-              })}
+              <MemberList
+                testID="reception-member-list"
+                items={receptionMemberItems}
+                isLoading={membersQuery.isLoading}
+                isError={membersQuery.isError}
+                onRetry={() => void membersQuery.refetch()}
+                searchValue={memberSearch}
+                onSearchChange={setMemberSearch}
+                emptyState={{ title: "No members found", subtitle: "Try a different name or email." }}
+                onPressMember={(user) => {
+                  if (multiSelectMode) {
+                    toggleMemberSelection(user.id);
+                  } else {
+                    setSelectedMemberId(user.id);
+                    router.push(`/reception/members/${user.id}`);
+                  }
+                }}
+                onRevealPhone={(user) => revealMemberPhone(user.id)}
+              />
               {hiddenMemberCount ? (
                 <Text style={styles.resultHint}>
                   Showing {visibleMembers.length} of {filteredMembers.length} matches. Refine the search
@@ -1084,24 +1013,24 @@ export function ReceptionSurface({
 
         {view === "payments" ? (
           <>
-            <View style={styles.metricGrid}>
-              <MetricTile
-                label="Amount"
-                value={formatInr(dueAmount)}
-                detail="Manual entry"
-                tone="amber"
-                icon="receipt-outline"
-                style={styles.metricHalf}
-              />
-              <MetricTile
-                label="Mode"
-                value={paymentModes.find((mode) => mode.value === paymentMode)?.label ?? "Manual"}
-                detail="Offline record"
-                tone="blue"
-                icon="reader-outline"
-                style={styles.metricHalf}
-              />
-            </View>
+            <MetricGrid
+              items={[
+                {
+                  label: "Amount",
+                  value: formatInr(dueAmount),
+                  hint: "Manual entry",
+                  tone: "amber",
+                  icon: "receipt-outline",
+                },
+                {
+                  label: "Mode",
+                  value: paymentModes.find((mode) => mode.value === paymentMode)?.label ?? "Manual",
+                  hint: "Offline record",
+                  tone: "blue",
+                  icon: "reader-outline",
+                },
+              ]}
+            />
             {!memberRecord ? (
               <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
                 <SectionHeader
@@ -1134,7 +1063,7 @@ export function ReceptionSurface({
                           }}
                           accessibilityRole="button"
                           accessibilityLabel={`Select ${record.user?.name ?? "member"}`}
-                          style={styles.paymentMemberRow}
+                          style={styles.paymentPersonRow}
                         >
                           <IconBubble icon="person-outline" tone="neutral" size={32} />
                           <View style={styles.paymentMemberCopy}>
@@ -1276,24 +1205,24 @@ export function ReceptionSurface({
 
         {view === "orders" ? (
           <>
-            <View style={styles.metricGrid}>
-              <MetricTile
-                label="Ready"
-                value={String(readyOrders.length)}
-                detail="Pickup queue"
-                tone="lime"
-                icon="bag-check-outline"
-                style={styles.metricHalf}
-              />
-              <MetricTile
-                label="Done"
-                value={String(fulfilledCount)}
-                detail="Fulfilled"
-                tone="blue"
-                icon="checkmark-done-outline"
-                style={styles.metricHalf}
-              />
-            </View>
+            <MetricGrid
+              items={[
+                {
+                  label: "Ready",
+                  value: readyOrders.length,
+                  hint: "Pickup queue",
+                  tone: "lime",
+                  icon: "bag-check-outline",
+                },
+                {
+                  label: "Done",
+                  value: fulfilledCount,
+                  hint: "Fulfilled",
+                  tone: "blue",
+                  icon: "checkmark-done-outline",
+                },
+              ]}
+            />
             <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
                 title="Pickup Verification"
@@ -1836,36 +1765,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.bodyStrong,
   },
-  rowStateText: {
-    color: colors.muted,
-    ...typography.caption,
-  },
-  rowStateGood: {
-    color: colors.lime,
-  },
-  memberPhoneRow: {
-    minHeight: 24,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingLeft: 52,
-  },
-  memberPhoneText: {
-    color: colors.muted,
-    ...typography.small,
-  },
-  revealPhoneButton: {
-    minHeight: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 8,
-    justifyContent: "center",
-  },
-  revealPhoneText: {
-    color: colors.lime,
-    ...typography.caption,
-  },
   resultHint: {
     color: colors.muted,
     ...typography.small,
@@ -1898,7 +1797,7 @@ const styles = StyleSheet.create({
   membersToolbarTextActive: {
     color: colors.lime,
   },
-  paymentMemberRow: {
+  paymentPersonRow: {
     minHeight: 56,
     flexDirection: "row",
     alignItems: "center",

@@ -1,27 +1,34 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
+import { MemberList, type MemberRowItem } from "@/components/domain/member-list";
 import {
-  EmptyState,
   MobileHeader,
-  QueryErrorState,
   SectionHeader,
   StatusChip,
   ZookScreen,
 } from "@/components/primitives";
-import { TrainerClientsSkeleton } from "@/components/skeletons";
-import { ClientRow } from "@/features/trainer/components/client-row";
+import { fitnessGoalFor, planCountLabel } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
 import { colors, layout } from "@/lib/theme";
 
 export default function TrainerClientsScreen() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, session } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const clientsQuery = useTrainerClients();
   const clients = clientsQuery.data?.clients ?? [];
+  const items: MemberRowItem[] = clients.map((client) => ({
+    id: client.memberUserId,
+    name: client.user?.name ?? "Client",
+    email: client.user?.email,
+    avatarUrl: client.profile?.profilePhotoUrl,
+    status: client.active ? "active" : "pending",
+    meta: `${fitnessGoalFor(client)} · ${planCountLabel(client.summary?.activePlans ?? 0)}`,
+  }));
 
   async function onRefresh() {
     setRefreshing(true);
@@ -49,19 +56,18 @@ export default function TrainerClientsScreen() {
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SectionHeader title="Clients" />
-          <View testID="trainer-client-list" style={styles.stack}>
-            {clientsQuery.isLoading ? (
-              <TrainerClientsSkeleton />
-            ) : clientsQuery.isError ? (
-              <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} />
-            ) : clients.length ? (
-              clients.map((client, index) => (
-                <ClientRow key={client.id ?? client.memberUserId} client={client} index={index} />
-              ))
-            ) : (
-              <EmptyState title="No clients yet" body="Clients will appear here when your gym adds them." />
-            )}
-          </View>
+          <MemberList
+            testID="trainer-client-list"
+            items={items}
+            isLoading={clientsQuery.isLoading}
+            isError={clientsQuery.isError}
+            onRetry={() => void clientsQuery.refetch()}
+            onPressMember={(client) => router.push(`/trainer/clients/${client.id}` as never)}
+            emptyState={{
+              title: "No clients yet",
+              subtitle: "Clients will appear here when your gym adds them.",
+            }}
+          />
         </ScrollView>
       </ZookScreen>
     </>
@@ -77,5 +83,4 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     width: "100%",
   },
-  stack: { gap: 10 },
 });
