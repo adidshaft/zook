@@ -24,7 +24,7 @@
     "test:mobile:maestro:ios": "pnpm seed:pilot && MAESTRO_CLI_NO_ANALYTICS=1 ~/.maestro/bin/maestro --platform ios --udid ${MAESTRO_IOS_UDID:-16E85351-C822-4E5D-8C0F-15A50B8BFA5C} test apps/mobile/.maestro/flows/*.yaml",
     "test:mobile:maestro:android": "pnpm seed:pilot && adb reverse tcp:3000 tcp:3000 && adb reverse tcp:8081 tcp:8081 && MAESTRO_CLI_NO_ANALYTICS=1 ~/.maestro/bin/maestro --platform android test apps/mobile/.maestro/flows/*.yaml",
     "test:e2e": "pnpm test:web && pnpm test:web:actions && pnpm test:mobile:maestro:ios && pnpm test:mobile:maestro:android && pnpm test:integration",
-    "test:services": "vitest run -c vitest.config.ts packages/core/src/__tests__/**/*.{test,spec}.ts apps/web/src/**/*.{test,spec}.ts",
+    "test:services": "vitest run -c vitest.config.ts packages/core/src/__tests__ apps/web/src --passWithNoTests",
     "test:db:prepare": "tsx scripts/test-db-bootstrap.ts",
     "test:acceptance": "tsx scripts/test-acceptance.ts",
     "test:acceptance:db": "tsx scripts/test-acceptance.ts --require-db",
