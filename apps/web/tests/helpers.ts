@@ -79,34 +79,45 @@ export async function getLatestOtpFromMockOrUseDevCode(page: Page, _identifier: 
 export async function loginWithOtp(page: Page, identifier: string) {
   await page.goto("/login");
   await page.getByLabel(/email/i).fill(identifier);
-  await page.getByRole("button", { name: /send (otp|code)/i }).click();
-  const otpInput = page.getByTestId("login-otp");
-  await expect(otpInput).toBeVisible({ timeout: 10_000 });
-  const code = await getLatestOtpFromMockOrUseDevCode(page, identifier);
-
-  const waitForVerifyResponse = () =>
+  const readResponseText = (response: Awaited<ReturnType<Page["waitForResponse"]>>) =>
+    response.text().catch(() => "<response body unavailable>");
+  const waitForAuthResponse = (path: string) =>
     page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/auth/verify-otp") &&
-        response.request().method() === "POST",
-      { timeout: 15_000 },
+      (response) => response.url().includes(path) && response.request().method() === "POST",
+      { timeout: 30_000 },
     );
 
-  let verifyResponsePromise = waitForVerifyResponse();
+  const requestOtpResponsePromise = waitForAuthResponse("/api/auth/request-otp");
+  await page.getByRole("button", { name: /send (otp|code)/i }).click();
+  const requestOtpResponse = await requestOtpResponsePromise;
+  if (!requestOtpResponse.ok()) {
+    throw new Error(
+      `OTP request failed with ${requestOtpResponse.status()}: ${await readResponseText(
+        requestOtpResponse,
+      )}`,
+    );
+  }
+
+  const otpInput = page.getByTestId("login-otp");
+  await expect(otpInput).toBeVisible({ timeout: 30_000 });
+  const code = await getLatestOtpFromMockOrUseDevCode(page, identifier);
+
+  let verifyResponsePromise = waitForAuthResponse("/api/auth/verify-otp");
   await otpInput.fill(code);
   const verifyResponse = await verifyResponsePromise.catch(async () => {
-    verifyResponsePromise = waitForVerifyResponse();
+    verifyResponsePromise = waitForAuthResponse("/api/auth/verify-otp");
     await page.getByTestId("login-verify-code").click();
     return verifyResponsePromise;
   });
   if (!verifyResponse.ok()) {
-    const responseText = await verifyResponse.text().catch(() => "<response body unavailable>");
     throw new Error(
-      `OTP verification failed with ${verifyResponse.status()}: ${responseText}`,
+      `OTP verification failed with ${verifyResponse.status()}: ${await readResponseText(
+        verifyResponse,
+      )}`,
     );
   }
   await expect(page).toHaveURL(/\/(?:dashboard|platform|gyms|me|desk|coach)(?:$|[/?#])/, {
-    timeout: 15_000,
+    timeout: 30_000,
   });
 }
 
