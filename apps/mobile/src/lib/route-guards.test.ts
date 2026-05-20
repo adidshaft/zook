@@ -27,6 +27,13 @@ describe("mobile route guards", () => {
     expect(permissionForPath("/reception/orders")).toBe("SHOP_FULFILL_ORDER");
   });
 
+  it("maps Owner subroutes to their specific permissions", () => {
+    expect(permissionForPath("/owner/members")).toBe("MEMBERS_VIEW");
+    expect(permissionForPath("/owner/approvals")).toBe("ATTENDANCE_APPROVE");
+    expect(permissionForPath("/owner/revenue")).toBe("ORG_VIEW_REPORTS");
+    expect(permissionForPath("/owner/stock")).toBe("SHOP_MANAGE_PRODUCTS");
+  });
+
   it("keeps the platform route behind the hidden platform flag", () => {
     expect(checkRouteAccess("/platform", new Set(), false)).toBe(false);
     expect(checkRouteAccess("/platform", new Set(), true)).toBe(true);
