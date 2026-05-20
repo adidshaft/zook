@@ -6,6 +6,7 @@ import type { MetricGridProps } from "./types";
 
 export type { MetricGridProps, MetricTileItem } from "./types";
 
+// Supports populated metric states in two, three, and four-column layouts.
 export function MetricGrid({ columns = 2, items, testID }: MetricGridProps) {
   const basis = `${100 / columns - 3}%`;
   return (

@@ -7,6 +7,7 @@ import type { AttentionCardProps } from "./types";
 
 export type { AttentionCardProps, AttentionItem } from "./types";
 
+// Supports empty and populated attention states across owner and trainer surfaces.
 export function AttentionCard({
   emptyState = { title: "Nothing needs attention", subtitle: "You are all caught up." },
   items,

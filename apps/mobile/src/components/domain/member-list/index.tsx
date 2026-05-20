@@ -10,6 +10,7 @@ import type { MemberListProps } from "./types";
 
 export type { MemberListFilter, MemberListProps, MemberRowItem } from "./types";
 
+// Supports loading, error, empty, filtered, searched, and populated member states.
 export function MemberList({
   availableFilters,
   emptyState = { title: "No members found", subtitle: "Try a different search or filter." },
