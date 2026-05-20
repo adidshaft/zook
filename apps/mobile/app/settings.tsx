@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import { Alert, Linking, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import {
   AuditWarning,
-  BottomNav,
   CollapsibleSection,
   GlassCard,
   ListRow,
@@ -431,7 +430,6 @@ export default function Settings() {
             </>
           ) : null}
         </KeyboardAwareScreen>
-        <BottomNav selectedPath="/profile" />
       </ZookScreen>
     </>
   );

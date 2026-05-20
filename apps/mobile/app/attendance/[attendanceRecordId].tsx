@@ -6,7 +6,6 @@ import { showToast } from "@/lib/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  BottomNav,
   GlassCard,
   IconBubble,
   ListRow,
@@ -347,7 +346,6 @@ export default function AttendanceResultScreen() {
             </>
           )}
         </ScrollView>
-        {approved ? <BottomNav selectedPath="/scan" /> : null}
       </ZookScreen>
     </>
   );

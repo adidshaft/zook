@@ -19,7 +19,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  BottomNav,
   BranchSelectorChip,
   EmptyState,
   ErrorState,
@@ -1006,7 +1005,6 @@ function ShopShell({
           </View>
         ) : null}
         {stickyAction ? <StickyActionBar>{stickyAction}</StickyActionBar> : null}
-        <BottomNav selectedPath={selectedPath} />
       </ZookScreen>
     </>
   );

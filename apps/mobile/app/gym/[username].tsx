@@ -22,7 +22,6 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import {
-  BottomNav,
   EmptyState,
   GlassCard,
   InfoRow,
@@ -683,7 +682,6 @@ export default function GymProfileScreen() {
           </>
         ) : null}
       </ScrollView>
-      <BottomNav />
       <BottomSheetModal
         ref={trainerSheetRef}
         snapPoints={trainerSnapPoints}
