@@ -35,7 +35,7 @@ export function getOfflineDemoViewOverride() {
 export function getOfflineDemoInitialRoute(role = getOfflineDemoRoleOverride()) {
   const view = getOfflineDemoViewOverride();
   if (role === "OWNER" || role === "ADMIN") {
-    return view && ownerViews.has(view) && view !== "command" ? `/owner?view=${view}` : "/owner";
+    return view && ownerViews.has(view) && view !== "command" ? `/owner/${view}` : "/owner";
   }
   if (role === "RECEPTIONIST") {
     return view && receptionViews.has(view) && view !== "desk" ? `/reception/${view}` : "/reception";

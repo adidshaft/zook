@@ -3,6 +3,10 @@ import type { Permission, Role } from "@zook/core";
 export const routePermissions: Record<string, Permission | null> = {
   "/owner": "ORG_VIEW_REPORTS",
   "/owner/member": "MEMBERS_VIEW",
+  "/owner/members": "MEMBERS_VIEW",
+  "/owner/approvals": "ATTENDANCE_APPROVE",
+  "/owner/revenue": "ORG_VIEW_REPORTS",
+  "/owner/stock": "SHOP_MANAGE_PRODUCTS",
   "/reception": "ATTENDANCE_APPROVE",
   "/reception/members": "MEMBERS_VIEW",
   "/reception/payments": "PAYMENTS_RECORD_OFFLINE",
