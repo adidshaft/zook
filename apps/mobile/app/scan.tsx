@@ -33,7 +33,6 @@ import { RoleSwitcherChip } from "@/components/role-switcher";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
-import { isOfflineDemoMode } from "@/lib/demo-mode";
 import { attendanceApi } from "@/lib/domain-api";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { useMemberHome, type MemberDashboardData, type MemberHomeData } from "@/lib/query-hooks";
@@ -379,10 +378,6 @@ export default function Scan() {
   }
 
   async function completeDevScan() {
-    if (isOfflineDemoMode()) {
-      await completeScan("zook://qr/org-iron-temple/branch-default/demo-approved");
-      return;
-    }
     if (completedRef.current) {
       return;
     }

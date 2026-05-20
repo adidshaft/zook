@@ -5,7 +5,7 @@ import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   useFonts,
   Inter_400Regular,
@@ -17,12 +17,13 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 
 import { AuthProvider, setAuthQueryClient, useAuth } from "@/lib/auth";
+import { DemoBanner } from "@/components/demo-banner";
 import { NetworkBanner, OfflineBanner } from "@/components/primitives";
 import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
 import { ToastHost } from "@/components/toast-host";
 import { BranchSelectionProvider } from "@/lib/branch-selection";
 import { I18nProvider, useI18n } from "@/lib/i18n";
-import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mode";
+import { getMobileRuntimeConfigError } from "@/lib/runtime-mode";
 import { setApiAuthHandlers } from "@/lib/api";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { PrivilegedPinProvider } from "@/components/privileged-pin-modal";
@@ -30,7 +31,7 @@ import { checkRouteAccess, routeForRole } from "@/lib/route-guards";
 import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberDashboardQueryOptions } from "@/lib/query-hooks";
-import { colors, layout } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useRoleContext } from "@/lib/role-context";
 
@@ -128,7 +129,6 @@ function LayoutContent() {
     activeOrgId,
     clearExpiredSession,
     defaultRoute,
-    logout,
     offlineBanner,
     proactiveLogin,
     refresh,
@@ -139,7 +139,6 @@ function LayoutContent() {
   const roleContext = useRoleContext();
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const insets = useSafeAreaInsets();
   const runtimeConfigError = getMobileRuntimeConfigError();
   const pathname = usePathname();
   const router = useRouter();
@@ -372,6 +371,7 @@ function LayoutContent() {
       <StatusBar style="light" />
       <NetworkBanner />
       {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
+      <DemoBanner />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -415,28 +415,6 @@ function LayoutContent() {
         />
         <Stack.Screen name="owner/member/[id]" options={{ animation: "slide_from_right" }} />
       </Stack>
-      {isOfflineDemoMode() ? (
-        <View
-          style={[
-            styles.demoStrip,
-            {
-              height: layout.demoStripHeight + insets.top,
-              paddingTop: insets.top,
-            },
-          ]}
-        >
-          <View style={styles.demoDot} />
-          <Text style={styles.demoStripText}>Demo · sample data</Text>
-          <Pressable
-            onPress={() => void logout()}
-            accessibilityRole="button"
-            accessibilityLabel="Use real account"
-            hitSlop={8}
-          >
-            <Text style={styles.demoStripLink}>Use real account</Text>
-          </Pressable>
-        </View>
-      ) : null}
       <ToastHost />
     </>
   );
@@ -569,37 +547,5 @@ const styles = StyleSheet.create({
     color: "#050805",
     fontSize: 14,
     fontWeight: "700",
-  },
-  demoStrip: {
-    position: "absolute",
-    zIndex: 100,
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(242,201,76,0.22)",
-    backgroundColor: "rgba(242,201,76,0.1)",
-  },
-  demoDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.amber,
-  },
-  demoStripText: {
-    flex: 1,
-    color: colors.amber,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  demoStripLink: {
-    color: colors.amber,
-    fontSize: 11,
-    fontWeight: "700",
-    textDecorationLine: "underline",
   },
 });

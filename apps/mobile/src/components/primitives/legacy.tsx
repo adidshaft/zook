@@ -44,7 +44,6 @@ import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useBottomScrollPadding, useStickyActionOffset } from "@/lib/use-layout-padding";
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/query-hooks";
-import { isOfflineDemoMode } from "@/lib/runtime-mode";
 import { colors, layout, palettes, radii, shadows, spacing, typography } from "@/lib/theme";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 
@@ -297,14 +296,13 @@ export function ZookScreen({
   testID?: string;
 }) {
   const insets = useSafeAreaInsets();
-  const demoStripHeight = isOfflineDemoMode() ? layout.demoStripHeight : 0;
   return (
     <View
       testID={testID}
       style={[
         styles.screen,
         {
-          paddingTop: insets.top + demoStripHeight,
+          paddingTop: insets.top,
           paddingBottom: bottomInset ? insets.bottom : 0,
         },
         style,
