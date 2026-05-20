@@ -27,7 +27,7 @@ export default function YouScreen() {
   const ctx = useRoleContext();
   const homeQuery = useMemberHome();
   const notificationsQuery = useMyNotifications();
-  const { palette } = useTheme();
+  const { palette, preference } = useTheme();
   const unread =
     notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt).length ??
     0;
@@ -60,7 +60,11 @@ export default function YouScreen() {
           <GlassCard variant="compact" contentStyle={styles.list}>
             {settingsRows.map((row) => (
               <Pressable key={row.href} onPress={() => router.push(row.href as never)} accessibilityRole="button" accessibilityLabel={row.title}>
-                <ListRow title={row.title} icon={row.icon} />
+                <ListRow
+                  title={row.title}
+                  subtitle={row.href === "/settings/appearance" ? titleCase(preference) : undefined}
+                  icon={row.icon}
+                />
               </Pressable>
             ))}
           </GlassCard>
