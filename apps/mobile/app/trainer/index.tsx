@@ -1,7 +1,9 @@
 import { Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { AttentionCard } from "@/components/domain/attention";
+import { MetricGrid } from "@/components/domain/metric-grid";
 import {
   EmptyState,
   GlassCard,
@@ -14,11 +16,10 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { TrainerClientsSkeleton } from "@/components/skeletons";
-import { HomeMetrics } from "@/features/trainer/components/home-metrics";
 import { fitnessGoalFor } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { colors, layout, spacing } from "@/lib/theme";
 
 export default function TrainerHomeScreen() {
   const router = useRouter();
@@ -91,20 +92,44 @@ export default function TrainerHomeScreen() {
             </GlassCard>
           ) : null}
 
-          <HomeMetrics clients={clients} />
+          <MetricGrid
+            testID="trainer-view-home"
+            items={[
+              {
+                label: "Clients",
+                value: clients.length,
+                hint: "Ready for coaching",
+                tone: "blue",
+              },
+              {
+                label: "Active plans",
+                value: plannedClients.length,
+                hint: "With active plans",
+                tone: "amber",
+              },
+              {
+                label: "Needs plan",
+                value: clientsNeedingPlans,
+                hint: "Create Plan next",
+                tone: "lime",
+              },
+            ]}
+          />
 
           {plannedClients.length ? (
-            <GlassCard variant="warning" contentStyle={styles.attentionContent}>
-              <View style={styles.attentionHeader}>
-                <IconBubble icon="document-text-outline" tone="amber" />
-                <View style={styles.attentionCopy}>
-                  <Text style={styles.cardTitle}>Plans in motion</Text>
-                  <Text style={styles.cardBody}>
-                    {plannedClients.length} {plannedClients.length === 1 ? "client has" : "clients have"} active plan work.
-                  </Text>
-                </View>
-              </View>
-            </GlassCard>
+            <AttentionCard
+              title="Plans in motion"
+              items={[
+                {
+                  id: "active-plan-work",
+                  icon: "document-text-outline",
+                  tone: "amber",
+                  title: `${plannedClients.length} ${plannedClients.length === 1 ? "client has" : "clients have"} active plan work`,
+                  subtitle: "Open Plan work to review what is in motion.",
+                  cta: { label: "Open", onPress: () => router.push("/trainer/plans" as never) },
+                },
+              ]}
+            />
           ) : null}
 
           <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
@@ -171,10 +196,5 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,90,61,0.28)",
   },
   priorityClientCard: { gap: spacing.md },
-  attentionContent: { gap: 14 },
-  attentionHeader: { flexDirection: "row", gap: spacing.md },
-  attentionCopy: { flex: 1, gap: 4 },
-  cardTitle: { color: colors.text, ...typography.cardTitle },
-  cardBody: { color: colors.muted, ...typography.body },
   stack: { gap: 10 },
 });
