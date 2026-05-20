@@ -21,7 +21,6 @@ import {
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing } from "@/lib/reanimated-lite";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  BottomNav,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -706,7 +705,6 @@ export default function Scan() {
             </Pressable>
           ) : null}
         </KeyboardAwareScreen>
-        <BottomNav />
       </ZookScreen>
       <BottomSheetModal
         ref={pushPromptSheetRef}

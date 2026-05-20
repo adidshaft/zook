@@ -7,7 +7,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { ProfileExtraFields } from "@/components/profile/profile-extra-fields";
 import { ProfilePhotoControl } from "@/components/profile/profile-photo-control";
 import {
-  BottomNav,
   EmptyState,
   GlassCard,
   IconBubble,
@@ -618,7 +617,6 @@ export default function ProfileScreen() {
             </View>
           </View>
         </ScrollView>
-        <BottomNav selectedPath="/profile" />
       </ZookScreen>
     </>
   );

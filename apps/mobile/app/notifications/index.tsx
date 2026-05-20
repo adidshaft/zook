@@ -13,7 +13,6 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  BottomNav,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -463,7 +462,6 @@ export default function NotificationsScreen() {
             </Text>
           </BottomSheetView>
         </BottomSheetModal>
-        <BottomNav selectedPath="/notifications" />
       </ZookScreen>
     </>
   );
