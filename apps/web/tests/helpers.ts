@@ -80,10 +80,28 @@ export async function loginWithOtp(page: Page, identifier: string) {
   await page.goto("/login");
   await page.getByLabel(/email/i).fill(identifier);
   await page.getByRole("button", { name: /send (otp|code)/i }).click();
+  const otpInput = page.getByTestId("login-otp");
+  await expect(otpInput).toBeVisible({ timeout: 10_000 });
   const code = await getLatestOtpFromMockOrUseDevCode(page, identifier);
-  await page.getByLabel(/otp|one-time code/i).fill(code);
-  await page.waitForURL(/\/(?:dashboard|platform|gyms|me|desk|coach)(?:$|[/?#])/, {
-    timeout: 10_000,
+
+  const waitForVerifyResponse = () =>
+    page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/auth/verify-otp") &&
+        response.request().method() === "POST",
+      { timeout: 15_000 },
+    );
+
+  let verifyResponsePromise = waitForVerifyResponse();
+  await otpInput.fill(code);
+  const verifyResponse = await verifyResponsePromise.catch(async () => {
+    verifyResponsePromise = waitForVerifyResponse();
+    await page.getByTestId("login-verify-code").click();
+    return verifyResponsePromise;
+  });
+  expect(verifyResponse.ok(), await verifyResponse.text()).toBeTruthy();
+  await expect(page).toHaveURL(/\/(?:dashboard|platform|gyms|me|desk|coach)(?:$|[/?#])/, {
+    timeout: 15_000,
   });
 }
 
