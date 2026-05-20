@@ -16,6 +16,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { RoleSwitcherChip } from "@/components/role-switcher";
 import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/query-hooks";
@@ -139,6 +140,7 @@ export default function Trainer() {
             title={title}
             subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
             chip={<StatusChip status="Trainer" tone="neutral" />}
+            contextSlot={<RoleSwitcherChip />}
             trailing={
               <View style={styles.headerActions}>
                 <Pressable

@@ -28,6 +28,7 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { RoleSwitcherChip } from "@/components/role-switcher";
 import { ReceptionQueueSkeleton, TrainerClientsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { formatDateTime, formatInr } from "@/lib/formatting";
@@ -44,6 +45,7 @@ import {
   type ReceptionQueueRecord,
 } from "@/lib/query-hooks";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
+import { useRoleContext } from "@/lib/role-context";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { apiClient, receptionApi } from "@/lib/domain-api";
 import { useScalePulse, useShake } from "@/lib/motion";
@@ -123,7 +125,8 @@ export default function Reception() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeOrgId, activeRole, session, setActiveRole, token } = useAuth();
+  const { activeOrgId, session, token } = useAuth();
+  const roleContext = useRoleContext();
   const { branches, selectedBranch, selectBranch } = useBranchSelection();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const canRecordManualAttendance = useHasPermission("ATTENDANCE_MANUAL_OVERRIDE");
@@ -206,50 +209,12 @@ export default function Reception() {
   const membership = memberRecord?.activeSubscription ?? null;
   const profile = memberRecord?.profile ?? null;
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
-  const availableRoles = activeOrganization?.roles ?? [];
+  const activeRole = roleContext?.role;
   const canSwitchBranches = branches.length > 1;
   const activeOrgLabel = activeOrganization
     ? `${activeOrganization.name} · ${activeOrganization.city}`
     : "Active gym";
   const gymSelectorLabel = selectedBranch?.name ?? activeOrgLabel;
-
-  function openRoleSwitcher() {
-    if (!availableRoles.length || availableRoles.length === 1) {
-      Alert.alert("Only one role", "This account has no other role in this gym.");
-      return;
-    }
-    Alert.alert(
-      "Switch role",
-      "Choose the role to use in this gym.",
-      [
-        ...availableRoles.map((role) => ({
-          text: role === activeRole ? `${role} (active)` : role,
-          onPress: () => {
-            if (role === activeRole) return;
-            void setActiveRole(role)
-              .then(() => {
-                if (role === "OWNER" || role === "ADMIN") {
-                  router.replace("/owner");
-                } else if (role === "TRAINER") {
-                  router.replace("/trainer");
-                } else if (role === "RECEPTIONIST") {
-                  router.replace("/reception");
-                } else {
-                  router.replace("/");
-                }
-              })
-              .catch((error) => {
-                Alert.alert(
-                  "Role unavailable",
-                  error instanceof Error ? error.message : "That role is not available here.",
-                );
-              });
-          },
-        })),
-        { text: "Cancel", style: "cancel" as const },
-      ],
-    );
-  }
 
   function openBranchSwitcher() {
     if (!canSwitchBranches) {
@@ -673,17 +638,7 @@ export default function Reception() {
               {view === "desk" ? "Receptionist Desk" : session?.user.name ?? "Reception"}
             </Text>
           </View>
-          <Pressable
-            testID="reception-role-chip"
-            onPress={openRoleSwitcher}
-            accessibilityRole="button"
-            accessibilityLabel="Switch role"
-            style={styles.roleChip}
-          >
-            <Ionicons name="person-outline" size={19} color={colors.lime} />
-            <Text style={styles.roleChipText}>Receptionist</Text>
-            <Ionicons name="chevron-down" size={16} color={colors.muted} />
-          </Pressable>
+          <RoleSwitcherChip />
         </View>
 
         <Pressable

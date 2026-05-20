@@ -29,6 +29,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { RoleSwitcherChip } from "@/components/role-switcher";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
@@ -490,6 +491,7 @@ export default function Scan() {
         >
           <MobileHeader
             title="Scan Gym QR"
+            contextSlot={<RoleSwitcherChip />}
             subtitle="Server-authoritative check-in for your active gym"
             showProfileShortcut={false}
           />

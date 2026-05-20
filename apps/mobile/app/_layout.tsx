@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import type { Role } from "@zook/core";
+import type { Permission, Role } from "@zook/core";
 import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
@@ -16,7 +16,7 @@ import {
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
 
-import { AuthProvider, setAuthQueryClient, useActivePermissions, useAuth } from "@/lib/auth";
+import { AuthProvider, setAuthQueryClient, useAuth } from "@/lib/auth";
 import { NetworkBanner, OfflineBanner } from "@/components/primitives";
 import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
 import { ToastHost } from "@/components/toast-host";
@@ -26,17 +26,19 @@ import { getMobileRuntimeConfigError, isOfflineDemoMode } from "@/lib/runtime-mo
 import { setApiAuthHandlers } from "@/lib/api";
 import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { PrivilegedPinProvider } from "@/components/privileged-pin-modal";
-import { checkRouteAccess, requiredRolesForPath, routeForRole } from "@/lib/route-guards";
+import { checkRouteAccess, routeForRole } from "@/lib/route-guards";
 import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberDashboardQueryOptions } from "@/lib/query-hooks";
 import { colors, layout } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+import { useRoleContext } from "@/lib/role-context";
 
 initMobileSentry();
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
 const ONBOARDING_COMPLETED = "true";
+const EMPTY_PERMISSIONS = new Set<Permission>();
 
 function encodeRedirectTarget(
   pathname: string,
@@ -124,27 +126,26 @@ function isPaymentReturnDeepLink(url: string) {
 function LayoutContent() {
   const {
     activeOrgId,
-    activeRole,
     clearExpiredSession,
     defaultRoute,
-    hasActiveRole,
-    hasAnyRole,
     logout,
     offlineBanner,
     proactiveLogin,
     refresh,
     session,
-    setActiveRole,
     status,
     token,
   } = useAuth();
+  const roleContext = useRoleContext();
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const runtimeConfigError = getMobileRuntimeConfigError();
   const pathname = usePathname();
   const router = useRouter();
-  const activePermissions = useActivePermissions();
+  const activeRole = roleContext?.role;
+  const activePermissions = roleContext?.permissions ?? EMPTY_PERMISSIONS;
+  const isPlatformAdmin = Boolean(roleContext?.isPlatformAdmin ?? session?.user.isPlatformAdmin);
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
   const [onboardingFlag, setOnboardingFlag] = useState<string | null | undefined>(undefined);
 
@@ -310,8 +311,8 @@ function LayoutContent() {
           hasAnyRole: (...roles) =>
             roles.some((role) =>
               role === "PLATFORM_ADMIN"
-                ? Boolean(session?.user.isPlatformAdmin || hasAnyRole("PLATFORM_ADMIN"))
-                : hasAnyRole(role),
+                ? isPlatformAdmin
+                : Boolean(roleContext?.availableRoles.includes(role)),
             ),
         },
       );
@@ -324,32 +325,12 @@ function LayoutContent() {
       return;
     }
 
-    const requiredRoles = requiredRolesForPath(pathname);
-    const hasRequiredRole =
-      requiredRoles?.includes("PLATFORM_ADMIN")
-        ? Boolean(session?.user.isPlatformAdmin || hasAnyRole("PLATFORM_ADMIN"))
-        : Boolean(requiredRoles?.some((role) => hasAnyRole(role)));
-    if (requiredRoles && !hasRequiredRole) {
-      router.replace(routeForRole(activeRole ?? "MEMBER") as never);
-      return;
-    }
-
-    const roleToActivate = requiredRoles?.find(
-      (role) => role !== "PLATFORM_ADMIN" && hasAnyRole(role),
-    );
-    if (roleToActivate && !hasActiveRole(roleToActivate)) {
-      void setActiveRole(roleToActivate).then(() => {
-        showToast({ title: `Switched to ${roleToActivate} view` });
-      });
-      return;
-    }
-
-    const canAccessRoute = checkRouteAccess(
+    const hasRequiredPermission = checkRouteAccess(
       pathname,
       activePermissions,
-      Boolean(session?.user.isPlatformAdmin),
+      isPlatformAdmin,
     );
-    if (!canAccessRoute) {
+    if (!hasRequiredPermission) {
       router.replace(routeForRole(activeRole ?? "MEMBER") as never);
       return;
     }
@@ -357,15 +338,14 @@ function LayoutContent() {
     activeRole,
     activePermissions,
     defaultRoute,
-    hasActiveRole,
-    hasAnyRole,
+    isPlatformAdmin,
     onboardingFlag,
     pathname,
+    roleContext?.availableRoles,
     router,
     searchParams,
     session?.organizations.length,
     session?.user.isPlatformAdmin,
-    setActiveRole,
     status,
   ]);
 

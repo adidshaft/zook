@@ -29,6 +29,7 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { RoleSwitcherChip } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton, TrainerClientsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { apiClient, ownerApi } from "@/lib/domain-api";
@@ -45,6 +46,7 @@ import {
   useRejectJoinRequest,
 } from "@/lib/query-hooks";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
+import { useRoleContext } from "@/lib/role-context";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
@@ -103,7 +105,8 @@ function phoneRevealStorageKey(orgId?: string | null) {
 export default function Owner() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeOrgId, activeRole, logout, token } = useAuth();
+  const { activeOrgId, logout, token } = useAuth();
+  const roleContext = useRoleContext();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const view = normalizeView(params.view);
   const [memberSearch, setMemberSearch] = useState("");
@@ -111,7 +114,7 @@ export default function Owner() {
   const [actionStatus, setActionStatus] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [revealedPhones, setRevealedPhones] = useState<Set<string>>(() => new Set());
-  const shellRole = activeRole === "ADMIN" ? "ADMIN" : "OWNER";
+  const shellRole = roleContext?.role === "ADMIN" ? "ADMIN" : "OWNER";
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const dashboardQuery = useOwnerDashboard();
   const membersQuery = useOrgMembers();
@@ -396,6 +399,7 @@ export default function Owner() {
             </Text>
             <Text style={styles.title}>{titleForView(view)}</Text>
           </View>
+          <RoleSwitcherChip />
         </View>
 
         <View style={styles.utilityRow}>

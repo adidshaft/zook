@@ -41,6 +41,7 @@ import type { Role } from "@zook/core";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
+import { useRoleContext } from "@/lib/role-context";
 import { useBottomScrollPadding, useStickyActionOffset } from "@/lib/use-layout-padding";
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/query-hooks";
 import { isOfflineDemoMode } from "@/lib/runtime-mode";
@@ -706,6 +707,7 @@ export function MobileHeader({
   leading,
   trailing,
   chip,
+  contextSlot,
   centered = false,
   showProfileShortcut = true,
   style,
@@ -716,6 +718,7 @@ export function MobileHeader({
   leading?: ReactNode;
   trailing?: ReactNode;
   chip?: ReactNode;
+  contextSlot?: ReactNode;
   centered?: boolean;
   showProfileShortcut?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -729,6 +732,7 @@ export function MobileHeader({
       <View style={[styles.mobileHeaderCopy, centered ? styles.centeredCopy : null]}>
         {chip}
         {eyebrow ? <Text style={styles.headerEyebrow}>{eyebrow}</Text> : null}
+        {contextSlot ? <View style={styles.headerContextSlot}>{contextSlot}</View> : null}
         <Text style={[styles.headerTitle, centered ? styles.centerText : null]}>{title}</Text>
         {subtitle ? (
           <Text style={[styles.headerSubtitle, centered ? styles.centerText : null]}>
@@ -2329,8 +2333,8 @@ export function BottomNav({
   const { t } = useI18n();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string }>();
-  const { activeRole } = useAuth();
-  const resolvedRole = role ?? activeRole;
+  const roleContext = useRoleContext();
+  const resolvedRole = role ?? roleContext?.role;
   const notificationsQuery = useMyNotifications();
   const pendingAttendanceQuery = useOrgAttendancePending(undefined, {
     enabled: resolvedRole === "RECEPTIONIST",
@@ -2749,6 +2753,9 @@ const styles = StyleSheet.create({
   mobileHeaderCopy: {
     flex: 1,
     gap: 4,
+  },
+  headerContextSlot: {
+    alignSelf: "flex-start",
   },
   centeredCopy: {
     alignItems: "center",
