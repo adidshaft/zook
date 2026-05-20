@@ -402,12 +402,7 @@ function LayoutContent() {
         <Stack.Screen name="reception" options={{ animation: "none" }} />
         <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
         <Stack.Screen name="login" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="trainer/index" options={{ animation: "none" }} />
-        <Stack.Screen name="trainer/client/[id]" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen
-          name="trainer/client/[id]/ai-draft"
-          options={{ animation: "slide_from_right" }}
-        />
+        <Stack.Screen name="trainer" options={{ animation: "none" }} />
         <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen
           name="attendance/[attendanceRecordId]"
