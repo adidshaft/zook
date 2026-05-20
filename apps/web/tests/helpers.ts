@@ -99,7 +99,12 @@ export async function loginWithOtp(page: Page, identifier: string) {
     await page.getByTestId("login-verify-code").click();
     return verifyResponsePromise;
   });
-  expect(verifyResponse.ok(), await verifyResponse.text()).toBeTruthy();
+  if (!verifyResponse.ok()) {
+    const responseText = await verifyResponse.text().catch(() => "<response body unavailable>");
+    throw new Error(
+      `OTP verification failed with ${verifyResponse.status()}: ${responseText}`,
+    );
+  }
   await expect(page).toHaveURL(/\/(?:dashboard|platform|gyms|me|desk|coach)(?:$|[/?#])/, {
     timeout: 15_000,
   });
