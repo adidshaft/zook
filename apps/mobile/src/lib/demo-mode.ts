@@ -12,8 +12,6 @@ export { isOfflineDemoMode };
 
 const ownerViews = new Set(["command", "approvals", "revenue", "stock", "members"]);
 const receptionViews = new Set(["desk", "members", "payments", "orders"]);
-const trainerViews = new Set(["home", "clients", "plans", "inbox"]);
-
 function envValue(key: string) {
   return process.env[key]?.trim();
 }
@@ -43,7 +41,9 @@ export function getOfflineDemoInitialRoute(role = getOfflineDemoRoleOverride()) 
     return view && receptionViews.has(view) && view !== "desk" ? `/reception/${view}` : "/reception";
   }
   if (role === "TRAINER") {
-    return view && trainerViews.has(view) && view !== "home" ? `/trainer?view=${view}` : "/trainer";
+    if (view === "clients") return "/trainer/clients";
+    if (view === "plans") return "/trainer/plans";
+    return "/trainer";
   }
   return "/";
 }

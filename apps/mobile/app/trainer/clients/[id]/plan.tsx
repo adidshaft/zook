@@ -1,0 +1,214 @@
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  FormField,
+  GlassCard,
+  IconBubble,
+  MobileHeader,
+  SecondaryButton,
+  SegmentedControl,
+  SectionHeader,
+  StatusChip,
+  ZookButton,
+  ZookScreen,
+} from "@/components/primitives";
+import { AiDraftPanel } from "@/features/trainer/components/ai-draft-panel";
+import {
+  clientDetailTabs,
+  fitnessGoalFor,
+  planTemplates,
+  type ClientDetailTab,
+  type PlanTemplateId,
+} from "@/features/trainer/helpers";
+import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
+import { plansApi } from "@/lib/domain-api";
+import { useTrainerClients } from "@/lib/query-hooks";
+import { colors, layout, spacing, typography } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
+
+export default function TrainerClientPlanScreen() {
+  const router = useRouter();
+  const { id = "", focus } = useLocalSearchParams<{ id: string; focus?: string }>();
+  const scrollRef = useRef<ScrollView>(null);
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const canPublishAssignedPlan = useHasPermission("PLANS_PUBLISH_ASSIGNED");
+  const clientsQuery = useTrainerClients();
+  const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === id) ?? null;
+  const clientName = client?.user?.name ?? "Client";
+  const fitnessGoal = fitnessGoalFor(client);
+  const [status, setStatus] = useState("");
+  const [planTitle, setPlanTitle] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<PlanTemplateId>("workout");
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [savedPlan, setSavedPlan] = useState<{ id: string; title: string } | null>(null);
+
+  useEffect(() => {
+    if (focus === "ai") {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
+    }
+  }, [focus]);
+
+  function buildPlanPayload() {
+    const template = planTemplates.find((item) => item.id === selectedTemplate) ?? planTemplates[0]!;
+    return {
+      title: planTitle.trim() || `${clientName} ${template.label.toLowerCase()} plan`,
+      type: "WORKOUT",
+      description: `Trainer-created plan for ${clientName}. Goal: ${fitnessGoal}.`,
+      visibility: "selected",
+      aiGenerated: false,
+      content: {
+        goal: fitnessGoal,
+        template: template.id,
+        sections: [{ title: template.title, body: template.body }],
+        exercises: [],
+      },
+    };
+  }
+
+  async function saveDraft() {
+    if (!token || !activeOrgId || !client) {
+      setStatus("Select a client before saving.");
+      return null;
+    }
+    setSavingPlan(true);
+    setStatus("");
+    try {
+      const result = await plansApi.create<{ plan: { id: string; title: string } }>({
+        token,
+        orgId: activeOrgId,
+        body: buildPlanPayload(),
+      });
+      setSavedPlan({ id: result.plan.id, title: result.plan.title });
+      setStatus(`${result.plan.title} saved as a draft.`);
+      showToast({ tone: "success", haptic: "success", message: "Draft saved." });
+      return result.plan;
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      setStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      return null;
+    } finally {
+      setSavingPlan(false);
+    }
+  }
+
+  async function assignPlan() {
+    if (!token || !activeOrgId || !client) {
+      setStatus("Select a client before assigning.");
+      return;
+    }
+    setSavingPlan(true);
+    setStatus("");
+    try {
+      const nextPlanTitle = planTitle.trim() || `${clientName} workout plan`;
+      const existingPlan = savedPlan && savedPlan.title === nextPlanTitle ? savedPlan : null;
+      const plan =
+        existingPlan ??
+        (await plansApi
+          .create<{ plan: { id: string; title: string } }>({ token, orgId: activeOrgId, body: buildPlanPayload() })
+          .then((result) => result.plan));
+      if (!plan) {
+        throw new Error("Plan could not be created.");
+      }
+      await plansApi.assign({
+        token,
+        orgId: activeOrgId,
+        planId: plan.id,
+        assignedToUserId: client.memberUserId,
+        audience: "selected_member",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
+      await queryClient.invalidateQueries({ queryKey: ["me", "notifications"] });
+      setSavedPlan({ id: plan.id, title: plan.title });
+      setStatus(`${plan.title} assigned. ${clientName} can now see it.`);
+      showToast({ tone: "success", haptic: "success", message: "Plan assigned." });
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      setStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+    } finally {
+      setSavingPlan(false);
+    }
+  }
+
+  function selectTab(tab: ClientDetailTab) {
+    router.replace(`/trainer/clients/${id}${tab === "overview" ? "" : `/${tab}`}` as never);
+  }
+
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ZookScreen testID="trainer-client-plan-screen">
+        <ScrollView ref={scrollRef} contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <MobileHeader
+            title="Client Detail"
+            subtitle={clientName}
+            leading={<Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))} accessibilityRole="button" accessibilityLabel="Back to clients" style={styles.iconButton}><Text style={styles.backIcon}>‹</Text></Pressable>}
+            chip={<StatusChip status="Trainer" tone="neutral" />}
+          />
+          <SegmentedControl options={clientDetailTabs} value="plan" onChange={selectTab} />
+          <GlassCard contentStyle={styles.stack}>
+            <SectionHeader title="Plan builder" subtitle="Create a trainer-owned draft before assigning." />
+            <FormField testID="trainer-plan-title" label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
+            <View style={styles.chipRow}>
+              {planTemplates.map((template) => {
+                const selected = template.id === selectedTemplate;
+                return (
+                  <Pressable key={template.id} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => setSelectedTemplate(template.id)} style={[styles.templateChip, selected ? styles.templateChipSelected : null]}>
+                    <Ionicons name={template.icon} size={15} color={selected ? colors.lime : colors.muted} />
+                    <Text style={[styles.templateChipText, selected ? styles.templateChipTextSelected : null]}>{template.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <View style={styles.actionRow}>
+              <ZookButton testID="trainer-save-draft-button" onPress={() => void saveDraft()} icon="save-outline" disabled={savingPlan} style={styles.actionHalf}>Save draft</ZookButton>
+              <SecondaryButton testID="trainer-generate-ai-draft-button" onPress={() => scrollRef.current?.scrollToEnd({ animated: true })} disabled={!client || savingPlan} style={styles.actionHalf}>Feature Locked</SecondaryButton>
+            </View>
+            <SecondaryButton
+              testID="trainer-publish-plan-button"
+              onPress={() => Alert.alert(`Publish to ${clientName}?`, "The member will see this plan immediately.", [{ text: "Cancel", style: "cancel" }, { text: "Publish", onPress: () => void assignPlan() }])}
+              disabled={!canPublishAssignedPlan || savingPlan}
+              onLongPress={!canPublishAssignedPlan ? () => showToast({ title: "Owner approval required", tone: "amber" }) : undefined}
+            >
+              Publish to {clientName}
+            </SecondaryButton>
+          </GlassCard>
+          {savedPlan ? (
+            <GlassCard variant="warning" contentStyle={styles.draftPromptContent}>
+              <View style={styles.attentionHeader}>
+                <IconBubble icon="reader-outline" tone="amber" />
+                <Text style={styles.cardBody}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
+              </View>
+            </GlassCard>
+          ) : null}
+          {status ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={styles.statusText}>{status}</Text></GlassCard> : null}
+          <AiDraftPanel clientId={id} />
+        </ScrollView>
+      </ZookScreen>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
+  iconButton: { alignItems: "center", backgroundColor: colors.panel, borderColor: colors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
+  backIcon: { color: colors.text, fontSize: 26, lineHeight: 28 },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  templateChip: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderColor: colors.border, borderRadius: 18, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 36, paddingHorizontal: 11 },
+  templateChipSelected: { backgroundColor: "rgba(185,244,85,0.13)", borderColor: colors.lime },
+  templateChipText: { color: colors.muted, ...typography.caption },
+  templateChipTextSelected: { color: colors.lime },
+  actionRow: { flexDirection: "row", gap: spacing.sm },
+  actionHalf: { flex: 1 },
+  stack: { gap: 10 },
+  attentionHeader: { alignItems: "center", flexDirection: "row", gap: spacing.md },
+  draftPromptContent: { gap: 12 },
+  cardBody: { color: colors.muted, ...typography.body },
+  statusContent: { padding: 14 },
+  statusText: { color: colors.lime, ...typography.bodyStrong },
+});

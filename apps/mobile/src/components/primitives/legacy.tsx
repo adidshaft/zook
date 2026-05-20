@@ -2021,6 +2021,7 @@ const memberTabs: DockTab[] = [
   },
 ];
 
+/** @deprecated Trainer routes own their tab bar in app/trainer/_layout.tsx. */
 const trainerTabs: DockTab[] = [
   {
     href: "/trainer",
@@ -2030,7 +2031,7 @@ const trainerTabs: DockTab[] = [
     matchPath: "/trainer",
   },
   {
-    href: "/trainer?view=clients" as Href,
+    href: "/trainer/clients" as Href,
     label: "Clients",
     icon: "people-outline",
     activeIcon: "people",
@@ -2038,7 +2039,7 @@ const trainerTabs: DockTab[] = [
     activeView: "clients",
   },
   {
-    href: "/trainer?view=plans" as Href,
+    href: "/trainer/plans" as Href,
     label: "Plans",
     icon: "reader-outline",
     activeIcon: "reader",
@@ -2103,6 +2104,7 @@ const receptionTabs: DockTab[] = [
   },
 ];
 
+/** @deprecated Owner routes now render their own Expo Router tab layout. Plan #11 removes this. */
 const ownerTabs: DockTab[] = [
   {
     href: "/owner",
@@ -2112,7 +2114,7 @@ const ownerTabs: DockTab[] = [
     matchPath: "/owner",
   },
   {
-    href: "/owner?view=approvals" as Href,
+    href: "/owner/approvals" as Href,
     label: "Approvals",
     icon: "checkmark-done-outline",
     activeIcon: "checkmark-done",
@@ -2120,7 +2122,7 @@ const ownerTabs: DockTab[] = [
     activeView: "approvals",
   },
   {
-    href: "/owner?view=revenue" as Href,
+    href: "/owner/revenue" as Href,
     label: "Revenue",
     icon: "trending-up-outline",
     activeIcon: "trending-up",
@@ -2128,7 +2130,7 @@ const ownerTabs: DockTab[] = [
     activeView: "revenue",
   },
   {
-    href: "/owner?view=stock" as Href,
+    href: "/owner/stock" as Href,
     label: "Stock",
     icon: "cube-outline",
     activeIcon: "cube",
@@ -2137,6 +2139,7 @@ const ownerTabs: DockTab[] = [
   },
 ];
 
+/** @deprecated Admin shares Owner's Expo Router tab layout. Plan #11 removes this. */
 const adminTabs: DockTab[] = [
   {
     href: "/owner",
@@ -2153,7 +2156,7 @@ const adminTabs: DockTab[] = [
     matchPath: "/scan",
   },
   {
-    href: "/owner?view=approvals" as Href,
+    href: "/owner/approvals" as Href,
     label: "Approvals",
     icon: "checkmark-done-outline",
     activeIcon: "checkmark-done",
@@ -2161,7 +2164,7 @@ const adminTabs: DockTab[] = [
     activeView: "approvals",
   },
   {
-    href: "/owner?view=stock" as Href,
+    href: "/owner/stock" as Href,
     label: "Stock",
     icon: "cube-outline",
     activeIcon: "cube",
@@ -2364,6 +2367,14 @@ export function BottomNav({
     return null;
   }
 
+  if (pathname.startsWith("/owner")) {
+    return null;
+  }
+
+  if (pathname.startsWith("/trainer")) {
+    return null;
+  }
+
   if (!visible) {
     return null;
   }
@@ -2372,7 +2383,9 @@ export function BottomNav({
   const navItems = resolvedTabs.map((tab) => {
     const currentView =
       activeTab ?? activeView ?? (Array.isArray(params.view) ? params.view[0] : params.view);
-    const clientDetailMatches = tab.label === "Clients" && activePath.startsWith("/trainer/client");
+    const clientDetailMatches =
+      tab.label === "Clients" &&
+      (activePath.startsWith("/trainer/client") || activePath.startsWith("/trainer/clients"));
     const roleRootPath =
       tab.matchPath === "/trainer" || tab.matchPath === "/reception" || tab.matchPath === "/owner";
     const viewMatches =
