@@ -1,10 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
-import { RefreshControl, StyleSheet, View } from "react-native";
+import { RefreshControl, StyleSheet } from "react-native";
 
-import { EmptyState, GlassCard, MetricTile, PrimaryButton, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
+import { MetricGrid } from "@/components/domain/metric-grid";
+import { EmptyState, GlassCard, PrimaryButton, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { AttendanceApprovalCard, JoinRequestCard } from "@/features/owner/components/approval-card";
+import { cleanReviewReason, titleCase } from "@/features/owner/helpers";
 import { useHasPermission, useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useApproveAttendance, useOrgAttendancePending } from "@/lib/domains/attendance";
@@ -24,6 +26,20 @@ export default function OwnerApprovalsScreen() {
   const joinRequests = (joinRequestsQuery.data?.joinRequests ?? []).filter((request) => String(request.status ?? "").toLowerCase() === "pending");
   const attentionAttempts = attentionQuery.data?.records ?? [];
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
+  const joinItems: ApprovalItem[] = joinRequests.map((request) => ({
+    id: request.id,
+    primaryText: request.userName ?? "Join request",
+    secondaryText: `${request.userEmail ?? request.userId} · Referral ${request.referralCode ?? "none"}`,
+    metaText: "Pending",
+  }));
+  const attendanceItems: ApprovalItem[] = attentionAttempts.map((record) => ({
+    id: record.id,
+    primaryText: record.user?.name ?? record.user?.email ?? "Member check-in",
+    secondaryText: `${record.branchName ?? "Main branch"} · ${titleCase(record.status)}`,
+    reason: cleanReviewReason(
+      Array.isArray(record.suspiciousFlags) ? record.suspiciousFlags.join(", ") : null,
+    ),
+  }));
 
   async function approveAllJoinRequests() {
     if (!token || !activeOrgId || !joinRequests.length) return;
@@ -54,43 +70,53 @@ export default function OwnerApprovalsScreen() {
             refreshControl: <RefreshControl refreshing={joinRequestsQuery.isRefetching || attentionQuery.isRefetching} onRefresh={onRefresh} tintColor={colors.brandLime} colors={[colors.brandLime]} />,
           }}
         >
-          <View style={styles.metricGrid}>
-            <MetricTile label="Join requests" value={String(joinRequests.length)} detail="Awaiting owner action" tone="amber" style={styles.metricHalf} />
-            <MetricTile label="Scan reviews" value={String(attentionAttempts.length)} detail="Pending or flagged" tone="red" style={styles.metricHalf} />
-          </View>
+          <MetricGrid
+            items={[
+              {
+                label: "Join requests",
+                value: joinRequests.length,
+                hint: "Awaiting owner action",
+                tone: "amber",
+              },
+              {
+                label: "Scan reviews",
+                value: attentionAttempts.length,
+                hint: "Pending or flagged",
+                tone: "red",
+              },
+            ]}
+          />
           {joinRequestsQuery.isError || attentionQuery.isError ? (
             <QueryErrorState error={joinRequestsQuery.error ?? attentionQuery.error} onRetry={() => { void joinRequestsQuery.refetch(); void attentionQuery.refetch(); }} />
           ) : pendingApprovals === 0 ? (
             <GlassCard variant="compact"><EmptyState title="All caught up" body="No pending join requests or scan reviews." /></GlassCard>
           ) : null}
           <SectionHeader title="Request list" subtitle="Pending join decisions" action={joinRequests.length ? <PrimaryButton size="sm" disabled={approveJoinRequestMutation.isPending} onPress={() => void approveAllJoinRequests()}>Approve all</PrimaryButton> : undefined} />
-          <View testID="pending-approvals-list" style={styles.stack}>
-            {joinRequests.map((request, index) => (
-              <JoinRequestCard
-                key={request.id}
-                testID={index === 0 ? "pending-row-first" : `pending-row-${request.id}`}
-                request={request}
-                disabled={approveJoinRequestMutation.isPending || rejectJoinRequestMutation.isPending}
-                onApprove={() => void approveJoinRequestMutation.mutateAsync(request.id)}
-                onReject={() => void rejectJoinRequestMutation.mutateAsync(request.id)}
-              />
-            ))}
-            {!joinRequests.length ? <GlassCard variant="compact"><EmptyState title="No join requests" body="New public join requests will show up here for owner approval." /></GlassCard> : null}
-          </View>
+          <ApprovalQueue
+            testID="pending-approvals-list"
+            items={joinItems}
+            onApprove={(id) => void approveJoinRequestMutation.mutateAsync(id)}
+            onReject={(id) => void rejectJoinRequestMutation.mutateAsync(id)}
+            emptyState={{
+              title: "No join requests",
+              subtitle: "New public join requests will show up here for owner approval.",
+            }}
+          />
           <SectionHeader title="Scan review queue" subtitle="Pending and flagged scans." />
-          <View style={styles.stack}>
-            {attentionAttempts.map((record, index) => (
-              <AttendanceApprovalCard
-                key={record.id}
-                testID={index === 0 ? "attendance-pending-row-first" : `attendance-pending-row-${record.id}`}
-                record={record}
-                disabled={!canApproveAttendance || approveAttendanceMutation.isPending}
-                onApprove={() => void approveAttendanceMutation.mutateAsync(record.id)}
-                onLongPress={!canApproveAttendance ? () => showToast({ title: "Owner approval required", tone: "amber" }) : undefined}
-              />
-            ))}
-            {!attentionAttempts.length ? <GlassCard variant="compact"><EmptyState title="Attendance queue clear" body="Pending and flagged scans will appear here when the desk needs help." /></GlassCard> : null}
-          </View>
+          <ApprovalQueue
+            items={attendanceItems}
+            onApprove={(id) => {
+              if (!canApproveAttendance) {
+                showToast({ title: "Owner approval required", tone: "amber" });
+                return;
+              }
+              void approveAttendanceMutation.mutateAsync(id);
+            }}
+            emptyState={{
+              title: "Attendance queue clear",
+              subtitle: "Pending and flagged scans will appear here when the desk needs help.",
+            }}
+          />
         </KeyboardAwareScreen>
       </ZookScreen>
     </>
@@ -99,7 +125,4 @@ export default function OwnerApprovalsScreen() {
 
 const styles = StyleSheet.create({
   content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
-  stack: { gap: 12 },
-  metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  metricHalf: { flexBasis: "47%", flexGrow: 1 },
 });

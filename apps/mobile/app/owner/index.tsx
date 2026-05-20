@@ -1,21 +1,24 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { RefreshControl, StyleSheet, Text } from "react-native";
+import { useRouter } from "expo-router";
 
+import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
+import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
 import { DemoBanner } from "@/components/demo-banner";
 import { QueryErrorState, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherChip } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
-import { AttentionCard, type AttentionItem } from "@/features/owner/components/attention-card";
-import { CommandMetrics } from "@/features/owner/components/command-metrics";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
+import { formatCompactNumber, formatInr } from "@/lib/formatting";
 import { colors, layout, typography } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 
 export default function OwnerCommandScreen() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
   const dashboardQuery = useOwnerDashboard();
@@ -36,10 +39,9 @@ export default function OwnerCommandScreen() {
       id: "approvals",
       title: "Approvals waiting",
       subtitle: `${joinRequests.length} join ${joinRequests.length === 1 ? "request" : "requests"} · ${attentionAttempts.length} scan ${attentionAttempts.length === 1 ? "review" : "reviews"}`,
-      count: pendingApprovals,
       tone: pendingApprovals ? "amber" : "lime",
       icon: "checkmark-done-outline",
-      target: "/owner/approvals",
+      cta: { label: pendingApprovals ? "Review" : "Open", onPress: () => router.replace("/owner/approvals") },
     },
     {
       id: "revenue",
@@ -47,28 +49,63 @@ export default function OwnerCommandScreen() {
       subtitle: paymentExceptionCount
         ? `${paymentExceptionCount} ${paymentExceptionCount === 1 ? "transaction needs" : "transactions need"} review`
         : "No transactions need review",
-      count: paymentExceptionCount,
       tone: paymentExceptionCount ? "amber" : "lime",
       icon: "card-outline",
-      target: "/owner/revenue",
+      cta: { label: paymentExceptionCount ? "Review" : "Open", onPress: () => router.replace("/owner/revenue") },
     },
     {
       id: "stock",
       title: "Low stock",
       subtitle: `${lowStock.length} ${lowStock.length === 1 ? "product is" : "products are"} under threshold`,
-      count: lowStock.length,
       tone: lowStock.length ? "amber" : "lime",
       icon: "cube-outline",
-      target: "/owner/stock",
+      cta: { label: lowStock.length ? "Review" : "Open", onPress: () => router.replace("/owner/stock") },
     },
     {
       id: "memberships",
       title: "Expiring soon",
       subtitle: `${expiringSoon} active ${expiringSoon === 1 ? "membership" : "memberships"} in the next 7 days`,
-      count: expiringSoon,
       tone: expiringSoon ? "blue" : "neutral",
       icon: "time-outline",
-      target: "/owner/revenue",
+      cta: { label: expiringSoon ? "Review" : "Open", onPress: () => router.replace("/owner/revenue") },
+    },
+  ];
+  const branchName =
+    dashboard?.branchScope?.selectedBranch?.name ??
+    dashboard?.branchScope?.defaultBranch?.name ??
+    "Main branch";
+  const metrics: MetricTileItem[] = [
+    {
+      label: "Active members",
+      value: formatCompactNumber(dashboard?.summary?.activeMembers ?? 0),
+      hint: branchName,
+      tone: "lime",
+      icon: "people-outline",
+      onPress: () => router.replace("/owner/members"),
+    },
+    {
+      label: "Today check-ins",
+      value: formatCompactNumber(dashboard?.summary?.todayAttendance ?? 0),
+      hint: `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending review`,
+      tone: "blue",
+      icon: "qr-code-outline",
+      onPress: () => router.replace("/owner/approvals"),
+    },
+    {
+      label: "Revenue",
+      value: formatInr(dashboard?.summary?.revenuePaise ?? 0),
+      hint: "Collected + pickup",
+      tone: "amber",
+      icon: "trending-up-outline",
+      onPress: () => router.replace("/owner/revenue"),
+    },
+    {
+      label: "Approvals",
+      value: pendingApprovals,
+      hint: "Needs attention",
+      tone: "violet",
+      icon: "checkmark-done-outline",
+      onPress: () => router.replace("/owner/approvals"),
     },
   ];
 
@@ -102,7 +139,7 @@ export default function OwnerCommandScreen() {
           {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
           {dashboard ? (
             <>
-              <CommandMetrics dashboard={dashboard} pendingApprovals={pendingApprovals} />
+              <MetricGrid testID="owner-view-command" items={metrics} />
               <AttentionCard items={items} />
             </>
           ) : null}
