@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
-  BottomNav,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -241,7 +240,6 @@ export default function FindGyms() {
             ))}
           </View>
         </KeyboardAwareScreen>
-        <BottomNav />
       </ZookScreen>
     </>
   );
