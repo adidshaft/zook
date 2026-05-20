@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   checkRouteAccess,
+  permissionForPath,
   requiredRolesForPath,
   routeForRole,
 } from "./route-guards";
@@ -18,6 +19,12 @@ describe("mobile route guards", () => {
       "OWNER",
       "ADMIN",
     ]);
+  });
+
+  it("maps Reception subroutes to their specific permissions", () => {
+    expect(permissionForPath("/reception/members")).toBe("MEMBERS_VIEW");
+    expect(permissionForPath("/reception/payments")).toBe("PAYMENTS_RECORD_OFFLINE");
+    expect(permissionForPath("/reception/orders")).toBe("SHOP_FULFILL_ORDER");
   });
 
   it("keeps the platform route behind the hidden platform flag", () => {
