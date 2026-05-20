@@ -8,10 +8,12 @@ import { renderHomeCard } from "@/features/member/home/render";
 import { deriveHomeState } from "@/features/member/home/state";
 import { useAuth } from "@/lib/auth";
 import { useMemberHome } from "@/lib/domains/member";
-import { colors, layout, spacing } from "@/lib/theme";
+import { layout, spacing } from "@/lib/theme";
+import { useTheme } from "@/lib/theme/index";
 
 export default function HomeScreen() {
   const { session } = useAuth();
+  const { palette } = useTheme();
   const homeQuery = useMemberHome();
   const home = homeQuery.data;
   const state = deriveHomeState(home);
@@ -29,8 +31,8 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={homeQuery.isRefetching}
               onRefresh={() => void homeQuery.refetch()}
-              tintColor={colors.lime}
-              colors={[colors.lime]}
+              tintColor={palette.accent.base}
+              colors={[palette.accent.base]}
             />
           }
         >
