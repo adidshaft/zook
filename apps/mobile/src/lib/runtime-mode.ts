@@ -82,6 +82,7 @@ function resolveApiMode() {
     return { apiMode: normalized };
   }
   if (
+    normalizeBooleanFlag(process.env.EXPO_PUBLIC_DEMO) ||
     normalizeBooleanFlag(process.env.EXPO_PUBLIC_OFFLINE_DEMO) ||
     normalizeBooleanFlag(process.env.MOBILE_OFFLINE_DEMO)
   ) {
@@ -107,6 +108,10 @@ export function getMobileRuntimeMode() {
 
 export function isOfflineDemoMode() {
   return getMobileApiMode() === "offline-demo";
+}
+
+export function isDemoBundleIncluded() {
+  return process.env.EXPO_PUBLIC_INCLUDE_DEMO?.trim().toLowerCase() !== "false";
 }
 
 function normalizeBooleanFlag(value?: string | null) {
@@ -142,6 +147,10 @@ export function getMobileRuntimeConfigError() {
 
   if (apiModeResult.error) {
     return apiModeResult.error;
+  }
+
+  if (apiMode === "offline-demo" && !isDemoBundleIncluded()) {
+    return "Sample mode is not included in this app build.";
   }
 
   if (apiMode === "offline-demo" && appEnv !== "local") {
