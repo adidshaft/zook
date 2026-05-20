@@ -1,295 +1,296 @@
-# Plan 08 â€” Shared Domain Components
-
-## Goal
-
-Extract the components that appear in multiple roles into a single canonical implementation: `MemberList`, `ApprovalQueue`, `MetricGrid`, `MetricTile`, `AttentionCard`. Refactor Reception, Owner, and Trainer to use these.
-
-## Why
-
-After plans #05, #06, #07 land, the same UI exists three times:
-- **Member list** (search + filter pills + status chip + phone reveal) â†’ Reception members, Owner members, Trainer clients
-- **Approval queue** (pending action cards with approve/reject) â†’ Reception desk, Owner approvals
-- **Metric grid** (a row of stat tiles at the top of every dashboard) â†’ Owner command, Trainer home, Reception desk header
-
-Each role currently has its own slightly-different copy. That's the structural source of "UI inconsistency."
-
-## Prerequisites
-
-- Plans #05, #06, #07 must be merged (so we have three call sites to consolidate).
-- Plan #03 (theme) merged.
-
-## Architectural target
-
-```
-apps/mobile/src/components/domain/
-â”œâ”€â”€ member-list/
-â”‚   â”œâ”€â”€ index.tsx              â€” <MemberList items=... onPress=... />
-â”‚   â”œâ”€â”€ filters.tsx            â€” search bar + filter pills
-â”‚   â”œâ”€â”€ row.tsx                â€” single member row
-â”‚   â”œâ”€â”€ types.ts               â€” MemberRowItem, Filter, etc.
-â”‚   â””â”€â”€ empty-state.tsx
-â”œâ”€â”€ approval-queue/
-â”‚   â”œâ”€â”€ index.tsx
-â”‚   â”œâ”€â”€ card.tsx               â€” single approval card
-â”‚   â””â”€â”€ types.ts
-â”œâ”€â”€ metric-grid/
-â”‚   â”œâ”€â”€ index.tsx
-â”‚   â”œâ”€â”€ tile.tsx
-â”‚   â””â”€â”€ types.ts
-â””â”€â”€ attention/
-    â”œâ”€â”€ index.tsx              â€” AttentionCard
-    â””â”€â”€ item.tsx               â€” AttentionItem
-```
-
-## Member list contract
-
-```ts
-// apps/mobile/src/components/domain/member-list/types.ts
-export type MemberRowItem = {
-  id: string;
-  name: string;
-  email?: string | null;
-  phone?: string | null;
-  avatarUrl?: string | null;
-  status: "active" | "expiring" | "expired" | "pending";
-  badges?: Array<{ label: string; tone: "neutral" | "lime" | "amber" | "danger" }>;
-  meta?: string;                         // free text under name (e.g., "Member since 2024")
-};
-
-export type MemberListFilter =
-  | { kind: "all" }
-  | { kind: "status"; status: MemberRowItem["status"] }
-  | { kind: "tag"; tag: string };
-
-export type MemberListProps = {
-  items: MemberRowItem[];
-  isLoading?: boolean;
-  isError?: boolean;
-  onRetry?: () => void;
-  onRefresh?: () => void;
-  refreshing?: boolean;
-  onPressMember: (member: MemberRowItem) => void;
-  onRevealPhone?: (member: MemberRowItem) => void;  // optional â€” controls phone reveal feature
-  searchValue?: string;
-  onSearchChange?: (value: string) => void;
-  filter?: MemberListFilter;
-  onFilterChange?: (filter: MemberListFilter) => void;
-  availableFilters?: MemberListFilter[];
-  emptyState?: { title: string; subtitle?: string };
-  testID?: string;
-};
-```
-
-Notes:
-- All callers pass already-normalized data. The component does not fetch.
-- Phone reveal is opt-in via `onRevealPhone`. If absent, no reveal UI renders.
-- Filters are role-defined: Owner shows "all/active/expiring/expired"; Reception shows "all/checking-in/no-show"; Trainer shows "all/clients/leads".
-
-## Approval queue contract
-
-```ts
-// apps/mobile/src/components/domain/approval-queue/types.ts
-export type ApprovalItem = {
-  id: string;
-  primaryText: string;           // e.g., member name
-  secondaryText?: string;        // e.g., "wants to check in at Branch A"
-  metaText?: string;             // e.g., "2 min ago"
-  reason?: string;               // why this needs approval (rendered in audit trail)
-  avatarUrl?: string | null;
-  context?: ReactNode;           // optional escape hatch for one-off content
-};
-
-export type ApprovalQueueProps = {
-  items: ApprovalItem[];
-  isLoading?: boolean;
-  isError?: boolean;
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
-  approvingId?: string;          // disables that row's approve button while mutating
-  rejectingId?: string;
-  emptyState?: { title: string; subtitle?: string };
-  testID?: string;
-};
-```
-
-## Metric grid contract
-
-```ts
-// apps/mobile/src/components/domain/metric-grid/types.ts
-export type MetricTileItem = {
-  label: string;
-  value: string | number;        // pre-formatted; use formatCompactNumber/formatInr at caller
-  delta?: { value: string; tone: "up" | "down" | "neutral" };
-  hint?: string;
-  icon?: IoniconName;            // optional
-  tone?: "neutral" | "lime" | "amber" | "danger";
-};
-
-export type MetricGridProps = {
-  items: MetricTileItem[];
-  columns?: 2 | 3 | 4;            // default 2 on phones
-  testID?: string;
-};
-```
-
-## Attention card contract
-
-```ts
-// apps/mobile/src/components/domain/attention/types.ts
-export type AttentionItem = {
-  id: string;
-  icon: IoniconName;
-  title: string;
-  subtitle?: string;
-  tone: "neutral" | "lime" | "amber" | "danger";
-  cta?: { label: string; onPress: () => void };
-};
-
-export type AttentionCardProps = {
-  title?: string;                 // section header
-  items: AttentionItem[];
-  emptyState?: { title: string; subtitle?: string };
-};
-```
-
-## Execution steps
-
-### Step 1 â€” Implement components
-
-Build each component per the contracts above. Each component:
-- Uses `useTheme()` palette (not static `colors`).
-- Uses `spacing`, `radii`, `typography` from `@/lib/theme` static tokens.
-- Has accessibility labels on interactive elements.
-- Has skeleton loading state.
-- Has error state with retry.
-- Has empty state.
-
-### Step 2 â€” Migrate Reception
-
-Replace local components in `apps/mobile/src/features/reception/components/`:
-
-- `member-row.tsx` (and the members screen) â†’ `MemberList` from `@/components/domain/member-list`
-- `desk-queue-card.tsx` â†’ `ApprovalQueue` from `@/components/domain/approval-queue`
-- The desk header metrics block â†’ `MetricGrid`
-
-Update `apps/mobile/app/reception/members.tsx`:
-
-```tsx
-import { MemberList } from "@/components/domain/member-list";
-import { useReceptionMembers } from "@/lib/domains/reception";
-
-export default function ReceptionMembersScreen() {
-  const query = useReceptionMembers();
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<MemberListFilter>({ kind: "all" });
-
-  const items: MemberRowItem[] = useMemo(
-    () => (query.data?.members ?? []).map(toMemberRowItem),
-    [query.data],
-  );
-
-  return (
-    <ZookScreen>
-      <MemberList
-        items={items}
-        isLoading={query.isLoading}
-        onPressMember={(m) => router.push(`/reception/members/${m.id}` as never)}
-        searchValue={search}
-        onSearchChange={setSearch}
-        filter={filter}
-        onFilterChange={setFilter}
-        availableFilters={[{ kind: "all" }, /* etc */]}
-        testID="reception-member-list"
-      />
-    </ZookScreen>
-  );
-}
-```
-
-Add `toMemberRowItem` mapper to `apps/mobile/src/features/reception/helpers.ts`.
-
-### Step 3 â€” Migrate Owner
-
-In `apps/mobile/app/owner/members.tsx`: replace local components with `MemberList`.
-In `apps/mobile/app/owner/approvals.tsx`: replace with `ApprovalQueue`.
-In `apps/mobile/app/owner/index.tsx` (Command): replace local `CommandMetrics` with `MetricGrid`.
-
-Delete the local `apps/mobile/src/features/owner/components/{member-row,approval-card,command-metrics}.tsx` files.
-
-### Step 4 â€” Migrate Trainer
-
-In `apps/mobile/app/trainer/clients/index.tsx`: replace with `MemberList` (clients are members).
-In `apps/mobile/app/trainer/index.tsx` (Home): replace local `HomeMetrics` with `MetricGrid`.
-
-Delete `apps/mobile/src/features/trainer/components/{client-row,home-metrics}.tsx`.
-
-### Step 5 â€” Make AttentionCard the canonical attention component
-
-Owner Command and Trainer Home both render an "attention" list (things needing the user's notice). Use `AttentionCard` from `@/components/domain/attention` for both. Delete the local copies in `features/owner/` and `features/trainer/`.
-
-### Step 6 â€” Stories / fixtures
-
-Add stories to `apps/mobile/src/components/primitives/mobile-ux-primitives.stories.tsx` (or a new `domain.stories.tsx`) for each shared component with examples in:
-- Loading state
-- Error state
-- Empty state
-- Populated state (small and large)
-- Each tone variant
-
-These stories double as visual regression coverage.
-
-### Step 7 â€” Type alignment
-
-If the API shapes returned by `domains/owner`, `domains/reception`, `domains/trainer` differ (they do â€” same data, different field names from server), each role's screen file converts to the shared `MemberRowItem` via a mapper function in `features/<role>/helpers.ts`.
-
-**Do not** push canonical shapes back into the API layer. The transport returns whatever the server returns; we adapt at the screen boundary.
-
-## UI fixes shipped with this plan
-
-- Visual consistency: identical member rows everywhere
-- Identical approval card UI for receptionist and owner â€” currently they look subtly different
-- Identical metric tile look across all dashboards â€” currently each role has slight variations
-- One place to fix bugs in these patterns (e.g., a long-name truncation issue gets fixed once, not three times)
-- Better empty/loading/error states everywhere they appear
-
-## Files created
-
-- `apps/mobile/src/components/domain/member-list/{index,filters,row,types,empty-state}.tsx`
-- `apps/mobile/src/components/domain/approval-queue/{index,card,types}.tsx`
-- `apps/mobile/src/components/domain/metric-grid/{index,tile,types}.tsx`
-- `apps/mobile/src/components/domain/attention/{index,item,types}.tsx`
-
-## Files modified
-
-- `apps/mobile/app/reception/members.tsx`
-- `apps/mobile/app/reception/index.tsx` (Desk uses ApprovalQueue + MetricGrid)
-- `apps/mobile/app/owner/members.tsx`
-- `apps/mobile/app/owner/approvals.tsx`
-- `apps/mobile/app/owner/index.tsx`
-- `apps/mobile/app/trainer/clients/index.tsx`
-- `apps/mobile/app/trainer/index.tsx`
-- `apps/mobile/src/features/<role>/helpers.ts` (add mappers)
-- Stories file
-
-## Files deleted
-
-- `apps/mobile/src/features/reception/components/{member-row,desk-queue-card}.tsx`
-- `apps/mobile/src/features/owner/components/{member-row,approval-card,command-metrics,attention-card}.tsx`
-- `apps/mobile/src/features/trainer/components/{client-row,home-metrics}.tsx`
-
-## Acceptance criteria
-
-- [ ] All four `domain/` components exist with stories covering loading/error/empty/populated states.
-- [ ] Reception, Owner, and Trainer all use these components (no local copies remain).
-- [ ] `git grep "MemberRow\|ApprovalCard\|MetricTile" apps/mobile/src/features` returns nothing.
-- [ ] Visual smoke: open Reception members â†’ looks identical row-for-row to Owner members (modulo filter pills and avatar URLs).
-- [ ] Tap on a member in any role goes to that role's correct detail screen.
-- [ ] Phone reveal works on Reception members (where the feature exists) and is absent on others.
-- [ ] `pnpm -w typecheck` clean.
-- [ ] `pnpm -w test --filter @zook/mobile` clean.
-
-## What this plan does NOT do
-
-- Does not change data fetching â€” purely component-layer.
-- Does not redesign the components â€” they look like the current Reception versions (the most polished of the three), pulled into one place.
-- Does not extract other shared patterns (sheets, forms, headers) â€” those are touched in plans #10/#11 if needed.
+compat#compat compatPcompatlcompatacompatncompat compat0compat8compat compatâcompat€compat”compat compatScompathcompatacompatrcompatecompatdcompat compatDcompatocompatmcompatacompaticompatncompat compatCcompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat
+compat
+compat#compat#compat compatGcompatocompatacompatlcompat
+compat
+compatEcompatxcompattcompatrcompatacompatccompattcompat compattcompathcompatecompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat compattcompathcompatacompattcompat compatacompatpcompatpcompatecompatacompatrcompat compaticompatncompat compatmcompatucompatlcompattcompaticompatpcompatlcompatecompat compatrcompatocompatlcompatecompatscompat compaticompatncompattcompatocompat compatacompat compatscompaticompatncompatgcompatlcompatecompat compatccompatacompatncompatocompatncompaticompatccompatacompatlcompat compaticompatmcompatpcompatlcompatecompatmcompatecompatncompattcompatacompattcompaticompatocompatncompat:compat compat`compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompat`compat,compat compat`compatAcompatpcompatpcompatrcompatocompatvcompatacompatlcompatQcompatucompatecompatucompatecompat`compat,compat compat`compatMcompatecompattcompatrcompaticompatccompatGcompatrcompaticompatdcompat`compat,compat compat`compatMcompatecompattcompatrcompaticompatccompatTcompaticompatlcompatecompat`compat,compat compat`compatAcompattcompattcompatecompatncompattcompaticompatocompatncompatCcompatacompatrcompatdcompat`compat.compat compatRcompatecompatfcompatacompatccompattcompatocompatrcompat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompat,compat compatOcompatwcompatncompatecompatrcompat,compat compatacompatncompatdcompat compatTcompatrcompatacompaticompatncompatecompatrcompat compattcompatocompat compatucompatscompatecompat compattcompathcompatecompatscompatecompat.compat
+compat
+compat#compat#compat compatWcompathcompatycompat
+compat
+compatAcompatfcompattcompatecompatrcompat compatpcompatlcompatacompatncompatscompat compat#compat0compat5compat,compat compat#compat0compat6compat,compat compat#compat0compat7compat compatlcompatacompatncompatdcompat,compat compattcompathcompatecompat compatscompatacompatmcompatecompat compatUcompatIcompat compatecompatxcompaticompatscompattcompatscompat compattcompathcompatrcompatecompatecompat compattcompaticompatmcompatecompatscompat:compat
+compat-compat compat*compat*compatMcompatecompatmcompatbcompatecompatrcompat compatlcompaticompatscompattcompat*compat*compat compat(compatscompatecompatacompatrcompatccompathcompat compat+compat compatfcompaticompatlcompattcompatecompatrcompat compatpcompaticompatlcompatlcompatscompat compat+compat compatscompattcompatacompattcompatucompatscompat compatccompathcompaticompatpcompat compat+compat compatpcompathcompatocompatncompatecompat compatrcompatecompatvcompatecompatacompatlcompat)compat compatâcompat†compat’compat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompat compatmcompatecompatmcompatbcompatecompatrcompatscompat,compat compatOcompatwcompatncompatecompatrcompat compatmcompatecompatmcompatbcompatecompatrcompatscompat,compat compatTcompatrcompatacompaticompatncompatecompatrcompat compatccompatlcompaticompatecompatncompattcompatscompat
+compat-compat compat*compat*compatAcompatpcompatpcompatrcompatocompatvcompatacompatlcompat compatqcompatucompatecompatucompatecompat*compat*compat compat(compatpcompatecompatncompatdcompaticompatncompatgcompat compatacompatccompattcompaticompatocompatncompat compatccompatacompatrcompatdcompatscompat compatwcompaticompattcompathcompat compatacompatpcompatpcompatrcompatocompatvcompatecompat/compatrcompatecompatjcompatecompatccompattcompat)compat compatâcompat†compat’compat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompat compatdcompatecompatscompatkcompat,compat compatOcompatwcompatncompatecompatrcompat compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompatscompat
+compat-compat compat*compat*compatMcompatecompattcompatrcompaticompatccompat compatgcompatrcompaticompatdcompat*compat*compat compat(compatacompat compatrcompatocompatwcompat compatocompatfcompat compatscompattcompatacompattcompat compattcompaticompatlcompatecompatscompat compatacompattcompat compattcompathcompatecompat compattcompatocompatpcompat compatocompatfcompat compatecompatvcompatecompatrcompatycompat compatdcompatacompatscompathcompatbcompatocompatacompatrcompatdcompat)compat compatâcompat†compat’compat compatOcompatwcompatncompatecompatrcompat compatccompatocompatmcompatmcompatacompatncompatdcompat,compat compatTcompatrcompatacompaticompatncompatecompatrcompat compathcompatocompatmcompatecompat,compat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompat compatdcompatecompatscompatkcompat compathcompatecompatacompatdcompatecompatrcompat
+compat
+compatEcompatacompatccompathcompat compatrcompatocompatlcompatecompat compatccompatucompatrcompatrcompatecompatncompattcompatlcompatycompat compathcompatacompatscompat compaticompattcompatscompat compatocompatwcompatncompat compatscompatlcompaticompatgcompathcompattcompatlcompatycompat-compatdcompaticompatfcompatfcompatecompatrcompatecompatncompattcompat compatccompatocompatpcompatycompat.compat compatTcompathcompatacompattcompat'compatscompat compattcompathcompatecompat compatscompattcompatrcompatucompatccompattcompatucompatrcompatacompatlcompat compatscompatocompatucompatrcompatccompatecompat compatocompatfcompat compat"compatUcompatIcompat compaticompatncompatccompatocompatncompatscompaticompatscompattcompatecompatncompatccompatycompat.compat"compat
+compat
+compat#compat#compat compatPcompatrcompatecompatrcompatecompatqcompatucompaticompatscompaticompattcompatecompatscompat
+compat
+compat-compat compatPcompatlcompatacompatncompatscompat compat#compat0compat5compat,compat compat#compat0compat6compat,compat compat#compat0compat7compat compatmcompatucompatscompattcompat compatbcompatecompat compatmcompatecompatrcompatgcompatecompatdcompat compat(compatscompatocompat compatwcompatecompat compathcompatacompatvcompatecompat compattcompathcompatrcompatecompatecompat compatccompatacompatlcompatlcompat compatscompaticompattcompatecompatscompat compattcompatocompat compatccompatocompatncompatscompatocompatlcompaticompatdcompatacompattcompatecompat)compat.compat
+compat-compat compatPcompatlcompatacompatncompat compat#compat0compat3compat compat(compattcompathcompatecompatmcompatecompat)compat compatmcompatecompatrcompatgcompatecompatdcompat.compat
+compat
+compat#compat#compat compatAcompatrcompatccompathcompaticompattcompatecompatccompattcompatucompatrcompatacompatlcompat compattcompatacompatrcompatgcompatecompattcompat
+compat
+compat`compat`compat`compat
+compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compat
+compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compatmcompatecompatmcompatbcompatecompatrcompat-compatlcompaticompatscompattcompat/compat
+compatâcompat”compat‚compat compat compat compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat compat compat compat compat compat compat compat compat compat compat compat compat compat compatâcompat€compat”compat compat<compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompat compaticompattcompatecompatmcompatscompat=compat.compat.compat.compat compatocompatncompatPcompatrcompatecompatscompatscompat=compat.compat.compat.compat compat/compat>compat
+compatâcompat”compat‚compat compat compat compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compatfcompaticompatlcompattcompatecompatrcompatscompat.compattcompatscompatxcompat compat compat compat compat compat compat compat compat compat compat compat compatâcompat€compat”compat compatscompatecompatacompatrcompatccompathcompat compatbcompatacompatrcompat compat+compat compatfcompaticompatlcompattcompatecompatrcompat compatpcompaticompatlcompatlcompatscompat
+compatâcompat”compat‚compat compat compat compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compatrcompatocompatwcompat.compattcompatscompatxcompat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compatâcompat€compat”compat compatscompaticompatncompatgcompatlcompatecompat compatmcompatecompatmcompatbcompatecompatrcompat compatrcompatocompatwcompat
+compatâcompat”compat‚compat compat compat compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compattcompatycompatpcompatecompatscompat.compattcompatscompat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compatâcompat€compat”compat compatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompatIcompattcompatecompatmcompat,compat compatFcompaticompatlcompattcompatecompatrcompat,compat compatecompattcompatccompat.compat
+compatâcompat”compat‚compat compat compat compatâcompat”compat”compatâcompat”compat€compatâcompat”compat€compat compatecompatmcompatpcompattcompatycompat-compatscompattcompatacompattcompatecompat.compattcompatscompatxcompat
+compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompat-compatqcompatucompatecompatucompatecompat/compat
+compatâcompat”compat‚compat compat compat compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat
+compatâcompat”compat‚compat compat compat compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compatccompatacompatrcompatdcompat.compattcompatscompatxcompat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compatâcompat€compat”compat compatscompaticompatncompatgcompatlcompatecompat compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompat compatccompatacompatrcompatdcompat
+compatâcompat”compat‚compat compat compat compatâcompat”compat”compatâcompat”compat€compatâcompat”compat€compat compattcompatycompatpcompatecompatscompat.compattcompatscompat
+compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compatmcompatecompattcompatrcompaticompatccompat-compatgcompatrcompaticompatdcompat/compat
+compatâcompat”compat‚compat compat compat compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat
+compatâcompat”compat‚compat compat compat compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compattcompaticompatlcompatecompat.compattcompatscompatxcompat
+compatâcompat”compat‚compat compat compat compatâcompat”compat”compatâcompat”compat€compatâcompat”compat€compat compattcompatycompatpcompatecompatscompat.compattcompatscompat
+compatâcompat”compat”compatâcompat”compat€compatâcompat”compat€compat compatacompattcompattcompatecompatncompattcompaticompatocompatncompat/compat
+compat compat compat compat compatâcompat”compatœcompatâcompat”compat€compatâcompat”compat€compat compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat compat compat compat compat compat compat compat compat compat compat compat compat compat compatâcompat€compat”compat compatAcompattcompattcompatecompatncompattcompaticompatocompatncompatCcompatacompatrcompatdcompat
+compat compat compat compat compatâcompat”compat”compatâcompat”compat€compatâcompat”compat€compat compaticompattcompatecompatmcompat.compattcompatscompatxcompat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compatâcompat€compat”compat compatAcompattcompattcompatecompatncompattcompaticompatocompatncompatIcompattcompatecompatmcompat
+compat`compat`compat`compat
+compat
+compat#compat#compat compatMcompatecompatmcompatbcompatecompatrcompat compatlcompaticompatscompattcompat compatccompatocompatncompattcompatrcompatacompatccompattcompat
+compat
+compat`compat`compat`compattcompatscompat
+compat/compat/compat compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatmcompatecompatmcompatbcompatecompatrcompat-compatlcompaticompatscompattcompat/compattcompatycompatpcompatecompatscompat.compattcompatscompat
+compatecompatxcompatpcompatocompatrcompattcompat compattcompatycompatpcompatecompat compatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompatIcompattcompatecompatmcompat compat=compat compat{compat
+compat compat compaticompatdcompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat compat compatncompatacompatmcompatecompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat compat compatecompatmcompatacompaticompatlcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat compat|compat compatncompatucompatlcompatlcompat;compat
+compat compat compatpcompathcompatocompatncompatecompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat compat|compat compatncompatucompatlcompatlcompat;compat
+compat compat compatacompatvcompatacompattcompatacompatrcompatUcompatrcompatlcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat compat|compat compatncompatucompatlcompatlcompat;compat
+compat compat compatscompattcompatacompattcompatucompatscompat:compat compat"compatacompatccompattcompaticompatvcompatecompat"compat compat|compat compat"compatecompatxcompatpcompaticompatrcompaticompatncompatgcompat"compat compat|compat compat"compatecompatxcompatpcompaticompatrcompatecompatdcompat"compat compat|compat compat"compatpcompatecompatncompatdcompaticompatncompatgcompat"compat;compat
+compat compat compatbcompatacompatdcompatgcompatecompatscompat?compat:compat compatAcompatrcompatrcompatacompatycompat<compat{compat compatlcompatacompatbcompatecompatlcompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compattcompatocompatncompatecompat:compat compat"compatncompatecompatucompattcompatrcompatacompatlcompat"compat compat|compat compat"compatlcompaticompatmcompatecompat"compat compat|compat compat"compatacompatmcompatbcompatecompatrcompat"compat compat|compat compat"compatdcompatacompatncompatgcompatecompatrcompat"compat compat}compat>compat;compat
+compat compat compatmcompatecompattcompatacompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat/compat/compat compatfcompatrcompatecompatecompat compattcompatecompatxcompattcompat compatucompatncompatdcompatecompatrcompat compatncompatacompatmcompatecompat compat(compatecompat.compatgcompat.compat,compat compat"compatMcompatecompatmcompatbcompatecompatrcompat compatscompaticompatncompatccompatecompat compat2compat0compat2compat4compat"compat)compat
+compat}compat;compat
+compat
+compatecompatxcompatpcompatocompatrcompattcompat compattcompatycompatpcompatecompat compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompatFcompaticompatlcompattcompatecompatrcompat compat=compat
+compat compat compat|compat compat{compat compatkcompaticompatncompatdcompat:compat compat"compatacompatlcompatlcompat"compat compat}compat
+compat compat compat|compat compat{compat compatkcompaticompatncompatdcompat:compat compat"compatscompattcompatacompattcompatucompatscompat"compat;compat compatscompattcompatacompattcompatucompatscompat:compat compatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompatIcompattcompatecompatmcompat[compat"compatscompattcompatacompattcompatucompatscompat"compat]compat compat}compat
+compat compat compat|compat compat{compat compatkcompaticompatncompatdcompat:compat compat"compattcompatacompatgcompat"compat;compat compattcompatacompatgcompat:compat compatscompattcompatrcompaticompatncompatgcompat compat}compat;compat
+compat
+compatecompatxcompatpcompatocompatrcompattcompat compattcompatycompatpcompatecompat compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompatPcompatrcompatocompatpcompatscompat compat=compat compat{compat
+compat compat compaticompattcompatecompatmcompatscompat:compat compatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompatIcompattcompatecompatmcompat[compat]compat;compat
+compat compat compaticompatscompatLcompatocompatacompatdcompaticompatncompatgcompat?compat:compat compatbcompatocompatocompatlcompatecompatacompatncompat;compat
+compat compat compaticompatscompatEcompatrcompatrcompatocompatrcompat?compat:compat compatbcompatocompatocompatlcompatecompatacompatncompat;compat
+compat compat compatocompatncompatRcompatecompattcompatrcompatycompat?compat:compat compat(compat)compat compat=compat>compat compatvcompatocompaticompatdcompat;compat
+compat compat compatocompatncompatRcompatecompatfcompatrcompatecompatscompathcompat?compat:compat compat(compat)compat compat=compat>compat compatvcompatocompaticompatdcompat;compat
+compat compat compatrcompatecompatfcompatrcompatecompatscompathcompaticompatncompatgcompat?compat:compat compatbcompatocompatocompatlcompatecompatacompatncompat;compat
+compat compat compatocompatncompatPcompatrcompatecompatscompatscompatMcompatecompatmcompatbcompatecompatrcompat:compat compat(compatmcompatecompatmcompatbcompatecompatrcompat:compat compatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompatIcompattcompatecompatmcompat)compat compat=compat>compat compatvcompatocompaticompatdcompat;compat
+compat compat compatocompatncompatRcompatecompatvcompatecompatacompatlcompatPcompathcompatocompatncompatecompat?compat:compat compat(compatmcompatecompatmcompatbcompatecompatrcompat:compat compatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompatIcompattcompatecompatmcompat)compat compat=compat>compat compatvcompatocompaticompatdcompat;compat compat compat/compat/compat compatocompatpcompattcompaticompatocompatncompatacompatlcompat compatâcompat€compat”compat compatccompatocompatncompattcompatrcompatocompatlcompatscompat compatpcompathcompatocompatncompatecompat compatrcompatecompatvcompatecompatacompatlcompat compatfcompatecompatacompattcompatucompatrcompatecompat
+compat compat compatscompatecompatacompatrcompatccompathcompatVcompatacompatlcompatucompatecompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat compat compatocompatncompatScompatecompatacompatrcompatccompathcompatCcompathcompatacompatncompatgcompatecompat?compat:compat compat(compatvcompatacompatlcompatucompatecompat:compat compatscompattcompatrcompaticompatncompatgcompat)compat compat=compat>compat compatvcompatocompaticompatdcompat;compat
+compat compat compatfcompaticompatlcompattcompatecompatrcompat?compat:compat compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompatFcompaticompatlcompattcompatecompatrcompat;compat
+compat compat compatocompatncompatFcompaticompatlcompattcompatecompatrcompatCcompathcompatacompatncompatgcompatecompat?compat:compat compat(compatfcompaticompatlcompattcompatecompatrcompat:compat compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompatFcompaticompatlcompattcompatecompatrcompat)compat compat=compat>compat compatvcompatocompaticompatdcompat;compat
+compat compat compatacompatvcompatacompaticompatlcompatacompatbcompatlcompatecompatFcompaticompatlcompattcompatecompatrcompatscompat?compat:compat compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompatFcompaticompatlcompattcompatecompatrcompat[compat]compat;compat
+compat compat compatecompatmcompatpcompattcompatycompatScompattcompatacompattcompatecompat?compat:compat compat{compat compattcompaticompattcompatlcompatecompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compatscompatucompatbcompattcompaticompattcompatlcompatecompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat compat}compat;compat
+compat compat compattcompatecompatscompattcompatIcompatDcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat}compat;compat
+compat`compat`compat`compat
+compat
+compatNcompatocompattcompatecompatscompat:compat
+compat-compat compatAcompatlcompatlcompat compatccompatacompatlcompatlcompatecompatrcompatscompat compatpcompatacompatscompatscompat compatacompatlcompatrcompatecompatacompatdcompatycompat-compatncompatocompatrcompatmcompatacompatlcompaticompatzcompatecompatdcompat compatdcompatacompattcompatacompat.compat compatTcompathcompatecompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompat compatdcompatocompatecompatscompat compatncompatocompattcompat compatfcompatecompattcompatccompathcompat.compat
+compat-compat compatPcompathcompatocompatncompatecompat compatrcompatecompatvcompatecompatacompatlcompat compaticompatscompat compatocompatpcompattcompat-compaticompatncompat compatvcompaticompatacompat compat`compatocompatncompatRcompatecompatvcompatecompatacompatlcompatPcompathcompatocompatncompatecompat`compat.compat compatIcompatfcompat compatacompatbcompatscompatecompatncompattcompat,compat compatncompatocompat compatrcompatecompatvcompatecompatacompatlcompat compatUcompatIcompat compatrcompatecompatncompatdcompatecompatrcompatscompat.compat
+compat-compat compatFcompaticompatlcompattcompatecompatrcompatscompat compatacompatrcompatecompat compatrcompatocompatlcompatecompat-compatdcompatecompatfcompaticompatncompatecompatdcompat:compat compatOcompatwcompatncompatecompatrcompat compatscompathcompatocompatwcompatscompat compat"compatacompatlcompatlcompat/compatacompatccompattcompaticompatvcompatecompat/compatecompatxcompatpcompaticompatrcompaticompatncompatgcompat/compatecompatxcompatpcompaticompatrcompatecompatdcompat"compat;compat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompat compatscompathcompatocompatwcompatscompat compat"compatacompatlcompatlcompat/compatccompathcompatecompatccompatkcompaticompatncompatgcompat-compaticompatncompat/compatncompatocompat-compatscompathcompatocompatwcompat"compat;compat compatTcompatrcompatacompaticompatncompatecompatrcompat compatscompathcompatocompatwcompatscompat compat"compatacompatlcompatlcompat/compatccompatlcompaticompatecompatncompattcompatscompat/compatlcompatecompatacompatdcompatscompat"compat.compat
+compat
+compat#compat#compat compatAcompatpcompatpcompatrcompatocompatvcompatacompatlcompat compatqcompatucompatecompatucompatecompat compatccompatocompatncompattcompatrcompatacompatccompattcompat
+compat
+compat`compat`compat`compattcompatscompat
+compat/compat/compat compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompat-compatqcompatucompatecompatucompatecompat/compattcompatycompatpcompatecompatscompat.compattcompatscompat
+compatecompatxcompatpcompatocompatrcompattcompat compattcompatycompatpcompatecompat compatAcompatpcompatpcompatrcompatocompatvcompatacompatlcompatIcompattcompatecompatmcompat compat=compat compat{compat
+compat compat compaticompatdcompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat compat compatpcompatrcompaticompatmcompatacompatrcompatycompatTcompatecompatxcompattcompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compat compat compat compat compat compat compat compat compat compat compat/compat/compat compatecompat.compatgcompat.compat,compat compatmcompatecompatmcompatbcompatecompatrcompat compatncompatacompatmcompatecompat
+compat compat compatscompatecompatccompatocompatncompatdcompatacompatrcompatycompatTcompatecompatxcompattcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compat compat compat compat compat compat compat compat/compat/compat compatecompat.compatgcompat.compat,compat compat"compatwcompatacompatncompattcompatscompat compattcompatocompat compatccompathcompatecompatccompatkcompat compaticompatncompat compatacompattcompat compatBcompatrcompatacompatncompatccompathcompat compatAcompat"compat
+compat compat compatmcompatecompattcompatacompatTcompatecompatxcompattcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compat compat compat compat compat compat compat compat compat compat compat compat compat/compat/compat compatecompat.compatgcompat.compat,compat compat"compat2compat compatmcompaticompatncompat compatacompatgcompatocompat"compat
+compat compat compatrcompatecompatacompatscompatocompatncompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat/compat/compat compatwcompathcompatycompat compattcompathcompaticompatscompat compatncompatecompatecompatdcompatscompat compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompat compat(compatrcompatecompatncompatdcompatecompatrcompatecompatdcompat compaticompatncompat compatacompatucompatdcompaticompattcompat compattcompatrcompatacompaticompatlcompat)compat
+compat compat compatacompatvcompatacompattcompatacompatrcompatUcompatrcompatlcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat compat|compat compatncompatucompatlcompatlcompat;compat
+compat compat compatccompatocompatncompattcompatecompatxcompattcompat?compat:compat compatRcompatecompatacompatccompattcompatNcompatocompatdcompatecompat;compat compat compat compat compat compat compat compat compat compat compat compat/compat/compat compatocompatpcompattcompaticompatocompatncompatacompatlcompat compatecompatscompatccompatacompatpcompatecompat compathcompatacompattcompatccompathcompat compatfcompatocompatrcompat compatocompatncompatecompat-compatocompatfcompatfcompat compatccompatocompatncompattcompatecompatncompattcompat
+compat}compat;compat
+compat
+compatecompatxcompatpcompatocompatrcompattcompat compattcompatycompatpcompatecompat compatAcompatpcompatpcompatrcompatocompatvcompatacompatlcompatQcompatucompatecompatucompatecompatPcompatrcompatocompatpcompatscompat compat=compat compat{compat
+compat compat compaticompattcompatecompatmcompatscompat:compat compatAcompatpcompatpcompatrcompatocompatvcompatacompatlcompatIcompattcompatecompatmcompat[compat]compat;compat
+compat compat compaticompatscompatLcompatocompatacompatdcompaticompatncompatgcompat?compat:compat compatbcompatocompatocompatlcompatecompatacompatncompat;compat
+compat compat compaticompatscompatEcompatrcompatrcompatocompatrcompat?compat:compat compatbcompatocompatocompatlcompatecompatacompatncompat;compat
+compat compat compatocompatncompatAcompatpcompatpcompatrcompatocompatvcompatecompat:compat compat(compaticompatdcompat:compat compatscompattcompatrcompaticompatncompatgcompat)compat compat=compat>compat compatvcompatocompaticompatdcompat;compat
+compat compat compatocompatncompatRcompatecompatjcompatecompatccompattcompat:compat compat(compaticompatdcompat:compat compatscompattcompatrcompaticompatncompatgcompat)compat compat=compat>compat compatvcompatocompaticompatdcompat;compat
+compat compat compatacompatpcompatpcompatrcompatocompatvcompaticompatncompatgcompatIcompatdcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compat compat compat compat compat compat compat compat compat compat/compat/compat compatdcompaticompatscompatacompatbcompatlcompatecompatscompat compattcompathcompatacompattcompat compatrcompatocompatwcompat'compatscompat compatacompatpcompatpcompatrcompatocompatvcompatecompat compatbcompatucompattcompattcompatocompatncompat compatwcompathcompaticompatlcompatecompat compatmcompatucompattcompatacompattcompaticompatncompatgcompat
+compat compat compatrcompatecompatjcompatecompatccompattcompaticompatncompatgcompatIcompatdcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat compat compatecompatmcompatpcompattcompatycompatScompattcompatacompattcompatecompat?compat:compat compat{compat compattcompaticompattcompatlcompatecompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compatscompatucompatbcompattcompaticompattcompatlcompatecompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat compat}compat;compat
+compat compat compattcompatecompatscompattcompatIcompatDcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat}compat;compat
+compat`compat`compat`compat
+compat
+compat#compat#compat compatMcompatecompattcompatrcompaticompatccompat compatgcompatrcompaticompatdcompat compatccompatocompatncompattcompatrcompatacompatccompattcompat
+compat
+compat`compat`compat`compattcompatscompat
+compat/compat/compat compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatmcompatecompattcompatrcompaticompatccompat-compatgcompatrcompaticompatdcompat/compattcompatycompatpcompatecompatscompat.compattcompatscompat
+compatecompatxcompatpcompatocompatrcompattcompat compattcompatycompatpcompatecompat compatMcompatecompattcompatrcompaticompatccompatTcompaticompatlcompatecompatIcompattcompatecompatmcompat compat=compat compat{compat
+compat compat compatlcompatacompatbcompatecompatlcompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat compat compatvcompatacompatlcompatucompatecompat:compat compatscompattcompatrcompaticompatncompatgcompat compat|compat compatncompatucompatmcompatbcompatecompatrcompat;compat compat compat compat compat compat compat compat compat/compat/compat compatpcompatrcompatecompat-compatfcompatocompatrcompatmcompatacompattcompattcompatecompatdcompat;compat compatucompatscompatecompat compatfcompatocompatrcompatmcompatacompattcompatCcompatocompatmcompatpcompatacompatccompattcompatNcompatucompatmcompatbcompatecompatrcompat/compatfcompatocompatrcompatmcompatacompattcompatIcompatncompatrcompat compatacompattcompat compatccompatacompatlcompatlcompatecompatrcompat
+compat compat compatdcompatecompatlcompattcompatacompat?compat:compat compat{compat compatvcompatacompatlcompatucompatecompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compattcompatocompatncompatecompat:compat compat"compatucompatpcompat"compat compat|compat compat"compatdcompatocompatwcompatncompat"compat compat|compat compat"compatncompatecompatucompattcompatrcompatacompatlcompat"compat compat}compat;compat
+compat compat compathcompaticompatncompattcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat compat compaticompatccompatocompatncompat?compat:compat compatIcompatocompatncompaticompatccompatocompatncompatNcompatacompatmcompatecompat;compat compat compat compat compat compat compat compat compat compat compat compat compat/compat/compat compatocompatpcompattcompaticompatocompatncompatacompatlcompat
+compat compat compattcompatocompatncompatecompat?compat:compat compat"compatncompatecompatucompattcompatrcompatacompatlcompat"compat compat|compat compat"compatlcompaticompatmcompatecompat"compat compat|compat compat"compatacompatmcompatbcompatecompatrcompat"compat compat|compat compat"compatdcompatacompatncompatgcompatecompatrcompat"compat;compat
+compat}compat;compat
+compat
+compatecompatxcompatpcompatocompatrcompattcompat compattcompatycompatpcompatecompat compatMcompatecompattcompatrcompaticompatccompatGcompatrcompaticompatdcompatPcompatrcompatocompatpcompatscompat compat=compat compat{compat
+compat compat compaticompattcompatecompatmcompatscompat:compat compatMcompatecompattcompatrcompaticompatccompatTcompaticompatlcompatecompatIcompattcompatecompatmcompat[compat]compat;compat
+compat compat compatccompatocompatlcompatucompatmcompatncompatscompat?compat:compat compat2compat compat|compat compat3compat compat|compat compat4compat;compat compat compat compat compat compat compat compat compat compat compat compat compat/compat/compat compatdcompatecompatfcompatacompatucompatlcompattcompat compat2compat compatocompatncompat compatpcompathcompatocompatncompatecompatscompat
+compat compat compattcompatecompatscompattcompatIcompatDcompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat}compat;compat
+compat`compat`compat`compat
+compat
+compat#compat#compat compatAcompattcompattcompatecompatncompattcompaticompatocompatncompat compatccompatacompatrcompatdcompat compatccompatocompatncompattcompatrcompatacompatccompattcompat
+compat
+compat`compat`compat`compattcompatscompat
+compat/compat/compat compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatacompattcompattcompatecompatncompattcompaticompatocompatncompat/compattcompatycompatpcompatecompatscompat.compattcompatscompat
+compatecompatxcompatpcompatocompatrcompattcompat compattcompatycompatpcompatecompat compatAcompattcompattcompatecompatncompattcompaticompatocompatncompatIcompattcompatecompatmcompat compat=compat compat{compat
+compat compat compaticompatdcompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat compat compaticompatccompatocompatncompat:compat compatIcompatocompatncompaticompatccompatocompatncompatNcompatacompatmcompatecompat;compat
+compat compat compattcompaticompattcompatlcompatecompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat compat compatscompatucompatbcompattcompaticompattcompatlcompatecompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat
+compat compat compattcompatocompatncompatecompat:compat compat"compatncompatecompatucompattcompatrcompatacompatlcompat"compat compat|compat compat"compatlcompaticompatmcompatecompat"compat compat|compat compat"compatacompatmcompatbcompatecompatrcompat"compat compat|compat compat"compatdcompatacompatncompatgcompatecompatrcompat"compat;compat
+compat compat compatccompattcompatacompat?compat:compat compat{compat compatlcompatacompatbcompatecompatlcompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compatocompatncompatPcompatrcompatecompatscompatscompat:compat compat(compat)compat compat=compat>compat compatvcompatocompaticompatdcompat compat}compat;compat
+compat}compat;compat
+compat
+compatecompatxcompatpcompatocompatrcompattcompat compattcompatycompatpcompatecompat compatAcompattcompattcompatecompatncompattcompaticompatocompatncompatCcompatacompatrcompatdcompatPcompatrcompatocompatpcompatscompat compat=compat compat{compat
+compat compat compattcompaticompattcompatlcompatecompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat compat/compat/compat compatscompatecompatccompattcompaticompatocompatncompat compathcompatecompatacompatdcompatecompatrcompat
+compat compat compaticompattcompatecompatmcompatscompat:compat compatAcompattcompattcompatecompatncompattcompaticompatocompatncompatIcompattcompatecompatmcompat[compat]compat;compat
+compat compat compatecompatmcompatpcompattcompatycompatScompattcompatacompattcompatecompat?compat:compat compat{compat compattcompaticompattcompatlcompatecompat:compat compatscompattcompatrcompaticompatncompatgcompat;compat compatscompatucompatbcompattcompaticompattcompatlcompatecompat?compat:compat compatscompattcompatrcompaticompatncompatgcompat compat}compat;compat
+compat}compat;compat
+compat`compat`compat`compat
+compat
+compat#compat#compat compatEcompatxcompatecompatccompatucompattcompaticompatocompatncompat compatscompattcompatecompatpcompatscompat
+compat
+compat#compat#compat#compat compatScompattcompatecompatpcompat compat1compat compatâcompat€compat”compat compatIcompatmcompatpcompatlcompatecompatmcompatecompatncompattcompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat
+compat
+compatBcompatucompaticompatlcompatdcompat compatecompatacompatccompathcompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompat compatpcompatecompatrcompat compattcompathcompatecompat compatccompatocompatncompattcompatrcompatacompatccompattcompatscompat compatacompatbcompatocompatvcompatecompat.compat compatEcompatacompatccompathcompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompat:compat
+compat-compat compatUcompatscompatecompatscompat compat`compatucompatscompatecompatTcompathcompatecompatmcompatecompat(compat)compat`compat compatpcompatacompatlcompatecompattcompattcompatecompat compat(compatncompatocompattcompat compatscompattcompatacompattcompaticompatccompat compat`compatccompatocompatlcompatocompatrcompatscompat`compat)compat.compat
+compat-compat compatUcompatscompatecompatscompat compat`compatscompatpcompatacompatccompaticompatncompatgcompat`compat,compat compat`compatrcompatacompatdcompaticompaticompat`compat,compat compat`compattcompatycompatpcompatocompatgcompatrcompatacompatpcompathcompatycompat`compat compatfcompatrcompatocompatmcompat compat`compat@compat/compatlcompaticompatbcompat/compattcompathcompatecompatmcompatecompat`compat compatscompattcompatacompattcompaticompatccompat compattcompatocompatkcompatecompatncompatscompat.compat
+compat-compat compatHcompatacompatscompat compatacompatccompatccompatecompatscompatscompaticompatbcompaticompatlcompaticompattcompatycompat compatlcompatacompatbcompatecompatlcompatscompat compatocompatncompat compaticompatncompattcompatecompatrcompatacompatccompattcompaticompatvcompatecompat compatecompatlcompatecompatmcompatecompatncompattcompatscompat.compat
+compat-compat compatHcompatacompatscompat compatscompatkcompatecompatlcompatecompattcompatocompatncompat compatlcompatocompatacompatdcompaticompatncompatgcompat compatscompattcompatacompattcompatecompat.compat
+compat-compat compatHcompatacompatscompat compatecompatrcompatrcompatocompatrcompat compatscompattcompatacompattcompatecompat compatwcompaticompattcompathcompat compatrcompatecompattcompatrcompatycompat.compat
+compat-compat compatHcompatacompatscompat compatecompatmcompatpcompattcompatycompat compatscompattcompatacompattcompatecompat.compat
+compat
+compat#compat#compat#compat compatScompattcompatecompatpcompat compat2compat compatâcompat€compat”compat compatMcompaticompatgcompatrcompatacompattcompatecompat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompat
+compat
+compatRcompatecompatpcompatlcompatacompatccompatecompat compatlcompatocompatccompatacompatlcompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat compaticompatncompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compat`compat:compat
+compat
+compat-compat compat`compatmcompatecompatmcompatbcompatecompatrcompat-compatrcompatocompatwcompat.compattcompatscompatxcompat`compat compat(compatacompatncompatdcompat compattcompathcompatecompat compatmcompatecompatmcompatbcompatecompatrcompatscompat compatscompatccompatrcompatecompatecompatncompat)compat compatâcompat†compat’compat compat`compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompat`compat compatfcompatrcompatocompatmcompat compat`compat@compat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatmcompatecompatmcompatbcompatecompatrcompat-compatlcompaticompatscompattcompat`compat
+compat-compat compat`compatdcompatecompatscompatkcompat-compatqcompatucompatecompatucompatecompat-compatccompatacompatrcompatdcompat.compattcompatscompatxcompat`compat compatâcompat†compat’compat compat`compatAcompatpcompatpcompatrcompatocompatvcompatacompatlcompatQcompatucompatecompatucompatecompat`compat compatfcompatrcompatocompatmcompat compat`compat@compat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompat-compatqcompatucompatecompatucompatecompat`compat
+compat-compat compatTcompathcompatecompat compatdcompatecompatscompatkcompat compathcompatecompatacompatdcompatecompatrcompat compatmcompatecompattcompatrcompaticompatccompatscompat compatbcompatlcompatocompatccompatkcompat compatâcompat†compat’compat compat`compatMcompatecompattcompatrcompaticompatccompatGcompatrcompaticompatdcompat`compat
+compat
+compatUcompatpcompatdcompatacompattcompatecompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompat/compatmcompatecompatmcompatbcompatecompatrcompatscompat.compattcompatscompatxcompat`compat:compat
+compat
+compat`compat`compat`compattcompatscompatxcompat
+compaticompatmcompatpcompatocompatrcompattcompat compat{compat compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompat compat}compat compatfcompatrcompatocompatmcompat compat"compat@compat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatmcompatecompatmcompatbcompatecompatrcompat-compatlcompaticompatscompattcompat"compat;compat
+compaticompatmcompatpcompatocompatrcompattcompat compat{compat compatucompatscompatecompatRcompatecompatccompatecompatpcompattcompaticompatocompatncompatMcompatecompatmcompatbcompatecompatrcompatscompat compat}compat compatfcompatrcompatocompatmcompat compat"compat@compat/compatlcompaticompatbcompat/compatdcompatocompatmcompatacompaticompatncompatscompat/compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompat"compat;compat
+compat
+compatecompatxcompatpcompatocompatrcompattcompat compatdcompatecompatfcompatacompatucompatlcompattcompat compatfcompatucompatncompatccompattcompaticompatocompatncompat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompatMcompatecompatmcompatbcompatecompatrcompatscompatScompatccompatrcompatecompatecompatncompat(compat)compat compat{compat
+compat compat compatccompatocompatncompatscompattcompat compatqcompatucompatecompatrcompatycompat compat=compat compatucompatscompatecompatRcompatecompatccompatecompatpcompattcompaticompatocompatncompatMcompatecompatmcompatbcompatecompatrcompatscompat(compat)compat;compat
+compat compat compatccompatocompatncompatscompattcompat compat[compatscompatecompatacompatrcompatccompathcompat,compat compatscompatecompattcompatScompatecompatacompatrcompatccompathcompat]compat compat=compat compatucompatscompatecompatScompattcompatacompattcompatecompat(compat"compat"compat)compat;compat
+compat compat compatccompatocompatncompatscompattcompat compat[compatfcompaticompatlcompattcompatecompatrcompat,compat compatscompatecompattcompatFcompaticompatlcompattcompatecompatrcompat]compat compat=compat compatucompatscompatecompatScompattcompatacompattcompatecompat<compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompatFcompaticompatlcompattcompatecompatrcompat>compat(compat{compat compatkcompaticompatncompatdcompat:compat compat"compatacompatlcompatlcompat"compat compat}compat)compat;compat
+compat
+compat compat compatccompatocompatncompatscompattcompat compaticompattcompatecompatmcompatscompat:compat compatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompatIcompattcompatecompatmcompat[compat]compat compat=compat compatucompatscompatecompatMcompatecompatmcompatocompat(compat
+compat compat compat compat compat(compat)compat compat=compat>compat compat(compatqcompatucompatecompatrcompatycompat.compatdcompatacompattcompatacompat?compat.compatmcompatecompatmcompatbcompatecompatrcompatscompat compat?compat?compat compat[compat]compat)compat.compatmcompatacompatpcompat(compattcompatocompatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompatIcompattcompatecompatmcompat)compat,compat
+compat compat compat compat compat[compatqcompatucompatecompatrcompatycompat.compatdcompatacompattcompatacompat]compat,compat
+compat compat compat)compat;compat
+compat
+compat compat compatrcompatecompattcompatucompatrcompatncompat compat(compat
+compat compat compat compat compat<compatZcompatocompatocompatkcompatScompatccompatrcompatecompatecompatncompat>compat
+compat compat compat compat compat compat compat<compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompat
+compat compat compat compat compat compat compat compat compaticompattcompatecompatmcompatscompat=compat{compaticompattcompatecompatmcompatscompat}compat
+compat compat compat compat compat compat compat compat compaticompatscompatLcompatocompatacompatdcompaticompatncompatgcompat=compat{compatqcompatucompatecompatrcompatycompat.compaticompatscompatLcompatocompatacompatdcompaticompatncompatgcompat}compat
+compat compat compat compat compat compat compat compat compatocompatncompatPcompatrcompatecompatscompatscompatMcompatecompatmcompatbcompatecompatrcompat=compat{compat(compatmcompat)compat compat=compat>compat compatrcompatocompatucompattcompatecompatrcompat.compatpcompatucompatscompathcompat(compat`compat/compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompat/compatmcompatecompatmcompatbcompatecompatrcompatscompat/compat$compat{compatmcompat.compaticompatdcompat}compat`compat compatacompatscompat compatncompatecompatvcompatecompatrcompat)compat}compat
+compat compat compat compat compat compat compat compat compatscompatecompatacompatrcompatccompathcompatVcompatacompatlcompatucompatecompat=compat{compatscompatecompatacompatrcompatccompathcompat}compat
+compat compat compat compat compat compat compat compat compatocompatncompatScompatecompatacompatrcompatccompathcompatCcompathcompatacompatncompatgcompatecompat=compat{compatscompatecompattcompatScompatecompatacompatrcompatccompathcompat}compat
+compat compat compat compat compat compat compat compat compatfcompaticompatlcompattcompatecompatrcompat=compat{compatfcompaticompatlcompattcompatecompatrcompat}compat
+compat compat compat compat compat compat compat compat compatocompatncompatFcompaticompatlcompattcompatecompatrcompatCcompathcompatacompatncompatgcompatecompat=compat{compatscompatecompattcompatFcompaticompatlcompattcompatecompatrcompat}compat
+compat compat compat compat compat compat compat compat compatacompatvcompatacompaticompatlcompatacompatbcompatlcompatecompatFcompaticompatlcompattcompatecompatrcompatscompat=compat{compat[compat{compat compatkcompaticompatncompatdcompat:compat compat"compatacompatlcompatlcompat"compat compat}compat,compat compat/compat*compat compatecompattcompatccompat compat*compat/compat]compat}compat
+compat compat compat compat compat compat compat compat compattcompatecompatscompattcompatIcompatDcompat=compat"compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompat-compatmcompatecompatmcompatbcompatecompatrcompat-compatlcompaticompatscompattcompat"compat
+compat compat compat compat compat compat compat/compat>compat
+compat compat compat compat compat<compat/compatZcompatocompatocompatkcompatScompatccompatrcompatecompatecompatncompat>compat
+compat compat compat)compat;compat
+compat}compat
+compat`compat`compat`compat
+compat
+compatAcompatdcompatdcompat compat`compattcompatocompatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompatIcompattcompatecompatmcompat`compat compatmcompatacompatpcompatpcompatecompatrcompat compattcompatocompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompat/compathcompatecompatlcompatpcompatecompatrcompatscompat.compattcompatscompat`compat.compat
+compat
+compat#compat#compat#compat compatScompattcompatecompatpcompat compat3compat compatâcompat€compat”compat compatMcompaticompatgcompatrcompatacompattcompatecompat compatOcompatwcompatncompatecompatrcompat
+compat
+compatIcompatncompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compatocompatwcompatncompatecompatrcompat/compatmcompatecompatmcompatbcompatecompatrcompatscompat.compattcompatscompatxcompat`compat:compat compatrcompatecompatpcompatlcompatacompatccompatecompat compatlcompatocompatccompatacompatlcompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat compatwcompaticompattcompathcompat compat`compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompat`compat.compat
+compatIcompatncompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compatocompatwcompatncompatecompatrcompat/compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompatscompat.compattcompatscompatxcompat`compat:compat compatrcompatecompatpcompatlcompatacompatccompatecompat compatwcompaticompattcompathcompat compat`compatAcompatpcompatpcompatrcompatocompatvcompatacompatlcompatQcompatucompatecompatucompatecompat`compat.compat
+compatIcompatncompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compatocompatwcompatncompatecompatrcompat/compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat`compat compat(compatCcompatocompatmcompatmcompatacompatncompatdcompat)compat:compat compatrcompatecompatpcompatlcompatacompatccompatecompat compatlcompatocompatccompatacompatlcompat compat`compatCcompatocompatmcompatmcompatacompatncompatdcompatMcompatecompattcompatrcompaticompatccompatscompat`compat compatwcompaticompattcompathcompat compat`compatMcompatecompattcompatrcompaticompatccompatGcompatrcompaticompatdcompat`compat.compat
+compat
+compatDcompatecompatlcompatecompattcompatecompat compattcompathcompatecompat compatlcompatocompatccompatacompatlcompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compatocompatwcompatncompatecompatrcompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compat{compatmcompatecompatmcompatbcompatecompatrcompat-compatrcompatocompatwcompat,compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompat-compatccompatacompatrcompatdcompat,compatccompatocompatmcompatmcompatacompatncompatdcompat-compatmcompatecompattcompatrcompaticompatccompatscompat}compat.compattcompatscompatxcompat`compat compatfcompaticompatlcompatecompatscompat.compat
+compat
+compat#compat#compat#compat compatScompattcompatecompatpcompat compat4compat compatâcompat€compat”compat compatMcompaticompatgcompatrcompatacompattcompatecompat compatTcompatrcompatacompaticompatncompatecompatrcompat
+compat
+compatIcompatncompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compattcompatrcompatacompaticompatncompatecompatrcompat/compatccompatlcompaticompatecompatncompattcompatscompat/compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat`compat:compat compatrcompatecompatpcompatlcompatacompatccompatecompat compatwcompaticompattcompathcompat compat`compatMcompatecompatmcompatbcompatecompatrcompatLcompaticompatscompattcompat`compat compat(compatccompatlcompaticompatecompatncompattcompatscompat compatacompatrcompatecompat compatmcompatecompatmcompatbcompatecompatrcompatscompat)compat.compat
+compatIcompatncompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compattcompatrcompatacompaticompatncompatecompatrcompat/compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat`compat compat(compatHcompatocompatmcompatecompat)compat:compat compatrcompatecompatpcompatlcompatacompatccompatecompat compatlcompatocompatccompatacompatlcompat compat`compatHcompatocompatmcompatecompatMcompatecompattcompatrcompaticompatccompatscompat`compat compatwcompaticompattcompathcompat compat`compatMcompatecompattcompatrcompaticompatccompatGcompatrcompaticompatdcompat`compat.compat
+compat
+compatDcompatecompatlcompatecompattcompatecompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compattcompatrcompatacompaticompatncompatecompatrcompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compat{compatccompatlcompaticompatecompatncompattcompat-compatrcompatocompatwcompat,compathcompatocompatmcompatecompat-compatmcompatecompattcompatrcompaticompatccompatscompat}compat.compattcompatscompatxcompat`compat.compat
+compat
+compat#compat#compat#compat compatScompattcompatecompatpcompat compat5compat compatâcompat€compat”compat compatMcompatacompatkcompatecompat compatAcompattcompattcompatecompatncompattcompaticompatocompatncompatCcompatacompatrcompatdcompat compattcompathcompatecompat compatccompatacompatncompatocompatncompaticompatccompatacompatlcompat compatacompattcompattcompatecompatncompattcompaticompatocompatncompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompat
+compat
+compatOcompatwcompatncompatecompatrcompat compatCcompatocompatmcompatmcompatacompatncompatdcompat compatacompatncompatdcompat compatTcompatrcompatacompaticompatncompatecompatrcompat compatHcompatocompatmcompatecompat compatbcompatocompattcompathcompat compatrcompatecompatncompatdcompatecompatrcompat compatacompatncompat compat"compatacompattcompattcompatecompatncompattcompaticompatocompatncompat"compat compatlcompaticompatscompattcompat compat(compattcompathcompaticompatncompatgcompatscompat compatncompatecompatecompatdcompaticompatncompatgcompat compattcompathcompatecompat compatucompatscompatecompatrcompat'compatscompat compatncompatocompattcompaticompatccompatecompat)compat.compat compatUcompatscompatecompat compat`compatAcompattcompattcompatecompatncompattcompaticompatocompatncompatCcompatacompatrcompatdcompat`compat compatfcompatrcompatocompatmcompat compat`compat@compat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatacompattcompattcompatecompatncompattcompaticompatocompatncompat`compat compatfcompatocompatrcompat compatbcompatocompattcompathcompat.compat compatDcompatecompatlcompatecompattcompatecompat compattcompathcompatecompat compatlcompatocompatccompatacompatlcompat compatccompatocompatpcompaticompatecompatscompat compaticompatncompat compat`compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compatocompatwcompatncompatecompatrcompat/compat`compat compatacompatncompatdcompat compat`compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compattcompatrcompatacompaticompatncompatecompatrcompat/compat`compat.compat
+compat
+compat#compat#compat#compat compatScompattcompatecompatpcompat compat6compat compatâcompat€compat”compat compatScompattcompatocompatrcompaticompatecompatscompat compat/compat compatfcompaticompatxcompattcompatucompatrcompatecompatscompat
+compat
+compatAcompatdcompatdcompat compatscompattcompatocompatrcompaticompatecompatscompat compattcompatocompat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatpcompatrcompaticompatmcompaticompattcompaticompatvcompatecompatscompat/compatmcompatocompatbcompaticompatlcompatecompat-compatucompatxcompat-compatpcompatrcompaticompatmcompaticompattcompaticompatvcompatecompatscompat.compatscompattcompatocompatrcompaticompatecompatscompat.compattcompatscompatxcompat`compat compat(compatocompatrcompat compatacompat compatncompatecompatwcompat compat`compatdcompatocompatmcompatacompaticompatncompat.compatscompattcompatocompatrcompaticompatecompatscompat.compattcompatscompatxcompat`compat)compat compatfcompatocompatrcompat compatecompatacompatccompathcompat compatscompathcompatacompatrcompatecompatdcompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompat compatwcompaticompattcompathcompat compatecompatxcompatacompatmcompatpcompatlcompatecompatscompat compaticompatncompat:compat
+compat-compat compatLcompatocompatacompatdcompaticompatncompatgcompat compatscompattcompatacompattcompatecompat
+compat-compat compatEcompatrcompatrcompatocompatrcompat compatscompattcompatacompattcompatecompat
+compat-compat compatEcompatmcompatpcompattcompatycompat compatscompattcompatacompattcompatecompat
+compat-compat compatPcompatocompatpcompatucompatlcompatacompattcompatecompatdcompat compatscompattcompatacompattcompatecompat compat(compatscompatmcompatacompatlcompatlcompat compatacompatncompatdcompat compatlcompatacompatrcompatgcompatecompat)compat
+compat-compat compatEcompatacompatccompathcompat compattcompatocompatncompatecompat compatvcompatacompatrcompaticompatacompatncompattcompat
+compat
+compatTcompathcompatecompatscompatecompat compatscompattcompatocompatrcompaticompatecompatscompat compatdcompatocompatucompatbcompatlcompatecompat compatacompatscompat compatvcompaticompatscompatucompatacompatlcompat compatrcompatecompatgcompatrcompatecompatscompatscompaticompatocompatncompat compatccompatocompatvcompatecompatrcompatacompatgcompatecompat.compat
+compat
+compat#compat#compat#compat compatScompattcompatecompatpcompat compat7compat compatâcompat€compat”compat compatTcompatycompatpcompatecompat compatacompatlcompaticompatgcompatncompatmcompatecompatncompattcompat
+compat
+compatIcompatfcompat compattcompathcompatecompat compatAcompatPcompatIcompat compatscompathcompatacompatpcompatecompatscompat compatrcompatecompattcompatucompatrcompatncompatecompatdcompat compatbcompatycompat compat`compatdcompatocompatmcompatacompaticompatncompatscompat/compatocompatwcompatncompatecompatrcompat`compat,compat compat`compatdcompatocompatmcompatacompaticompatncompatscompat/compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompat`compat,compat compat`compatdcompatocompatmcompatacompaticompatncompatscompat/compattcompatrcompatacompaticompatncompatecompatrcompat`compat compatdcompaticompatfcompatfcompatecompatrcompat compat(compattcompathcompatecompatycompat compatdcompatocompat compatâcompat€compat”compat compatscompatacompatmcompatecompat compatdcompatacompattcompatacompat,compat compatdcompaticompatfcompatfcompatecompatrcompatecompatncompattcompat compatfcompaticompatecompatlcompatdcompat compatncompatacompatmcompatecompatscompat compatfcompatrcompatocompatmcompat compatscompatecompatrcompatvcompatecompatrcompat)compat,compat compatecompatacompatccompathcompat compatrcompatocompatlcompatecompat'compatscompat compatscompatccompatrcompatecompatecompatncompat compatfcompaticompatlcompatecompat compatccompatocompatncompatvcompatecompatrcompattcompatscompat compattcompatocompat compattcompathcompatecompat compatscompathcompatacompatrcompatecompatdcompat compat`compatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompatIcompattcompatecompatmcompat`compat compatvcompaticompatacompat compatacompat compatmcompatacompatpcompatpcompatecompatrcompat compatfcompatucompatncompatccompattcompaticompatocompatncompat compaticompatncompat compat`compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compat<compatrcompatocompatlcompatecompat>compat/compathcompatecompatlcompatpcompatecompatrcompatscompat.compattcompatscompat`compat.compat
+compat
+compat*compat*compatDcompatocompat compatncompatocompattcompat*compat*compat compatpcompatucompatscompathcompat compatccompatacompatncompatocompatncompaticompatccompatacompatlcompat compatscompathcompatacompatpcompatecompatscompat compatbcompatacompatccompatkcompat compaticompatncompattcompatocompat compattcompathcompatecompat compatAcompatPcompatIcompat compatlcompatacompatycompatecompatrcompat.compat compatTcompathcompatecompat compattcompatrcompatacompatncompatscompatpcompatocompatrcompattcompat compatrcompatecompattcompatucompatrcompatncompatscompat compatwcompathcompatacompattcompatecompatvcompatecompatrcompat compattcompathcompatecompat compatscompatecompatrcompatvcompatecompatrcompat compatrcompatecompattcompatucompatrcompatncompatscompat;compat compatwcompatecompat compatacompatdcompatacompatpcompattcompat compatacompattcompat compattcompathcompatecompat compatscompatccompatrcompatecompatecompatncompat compatbcompatocompatucompatncompatdcompatacompatrcompatycompat.compat
+compat
+compat#compat#compat compatUcompatIcompat compatfcompaticompatxcompatecompatscompat compatscompathcompaticompatpcompatpcompatecompatdcompat compatwcompaticompattcompathcompat compattcompathcompaticompatscompat compatpcompatlcompatacompatncompat
+compat
+compat-compat compatVcompaticompatscompatucompatacompatlcompat compatccompatocompatncompatscompaticompatscompattcompatecompatncompatccompatycompat:compat compaticompatdcompatecompatncompattcompaticompatccompatacompatlcompat compatmcompatecompatmcompatbcompatecompatrcompat compatrcompatocompatwcompatscompat compatecompatvcompatecompatrcompatycompatwcompathcompatecompatrcompatecompat
+compat-compat compatIcompatdcompatecompatncompattcompaticompatccompatacompatlcompat compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompat compatccompatacompatrcompatdcompat compatUcompatIcompat compatfcompatocompatrcompat compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompaticompatscompattcompat compatacompatncompatdcompat compatocompatwcompatncompatecompatrcompat compatâcompat€compat”compat compatccompatucompatrcompatrcompatecompatncompattcompatlcompatycompat compattcompathcompatecompatycompat compatlcompatocompatocompatkcompat compatscompatucompatbcompattcompatlcompatycompat compatdcompaticompatfcompatfcompatecompatrcompatecompatncompattcompat
+compat-compat compatIcompatdcompatecompatncompattcompaticompatccompatacompatlcompat compatmcompatecompattcompatrcompaticompatccompat compattcompaticompatlcompatecompat compatlcompatocompatocompatkcompat compatacompatccompatrcompatocompatscompatscompat compatacompatlcompatlcompat compatdcompatacompatscompathcompatbcompatocompatacompatrcompatdcompatscompat compatâcompat€compat”compat compatccompatucompatrcompatrcompatecompatncompattcompatlcompatycompat compatecompatacompatccompathcompat compatrcompatocompatlcompatecompat compathcompatacompatscompat compatscompatlcompaticompatgcompathcompattcompat compatvcompatacompatrcompaticompatacompattcompaticompatocompatncompatscompat
+compat-compat compatOcompatncompatecompat compatpcompatlcompatacompatccompatecompat compattcompatocompat compatfcompaticompatxcompat compatbcompatucompatgcompatscompat compaticompatncompat compattcompathcompatecompatscompatecompat compatpcompatacompattcompattcompatecompatrcompatncompatscompat compat(compatecompat.compatgcompat.compat,compat compatacompat compatlcompatocompatncompatgcompat-compatncompatacompatmcompatecompat compattcompatrcompatucompatncompatccompatacompattcompaticompatocompatncompat compaticompatscompatscompatucompatecompat compatgcompatecompattcompatscompat compatfcompaticompatxcompatecompatdcompat compatocompatncompatccompatecompat,compat compatncompatocompattcompat compattcompathcompatrcompatecompatecompat compattcompaticompatmcompatecompatscompat)compat
+compat-compat compatBcompatecompattcompattcompatecompatrcompat compatecompatmcompatpcompattcompatycompat/compatlcompatocompatacompatdcompaticompatncompatgcompat/compatecompatrcompatrcompatocompatrcompat compatscompattcompatacompattcompatecompatscompat compatecompatvcompatecompatrcompatycompatwcompathcompatecompatrcompatecompat compattcompathcompatecompatycompat compatacompatpcompatpcompatecompatacompatrcompat
+compat
+compat#compat#compat compatFcompaticompatlcompatecompatscompat compatccompatrcompatecompatacompattcompatecompatdcompat
+compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatmcompatecompatmcompatbcompatecompatrcompat-compatlcompaticompatscompattcompat/compat{compaticompatncompatdcompatecompatxcompat,compatfcompaticompatlcompattcompatecompatrcompatscompat,compatrcompatocompatwcompat,compattcompatycompatpcompatecompatscompat,compatecompatmcompatpcompattcompatycompat-compatscompattcompatacompattcompatecompat}compat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompat-compatqcompatucompatecompatucompatecompat/compat{compaticompatncompatdcompatecompatxcompat,compatccompatacompatrcompatdcompat,compattcompatycompatpcompatecompatscompat}compat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatmcompatecompattcompatrcompaticompatccompat-compatgcompatrcompaticompatdcompat/compat{compaticompatncompatdcompatecompatxcompat,compattcompaticompatlcompatecompat,compattcompatycompatpcompatecompatscompat}compat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compatdcompatocompatmcompatacompaticompatncompat/compatacompattcompattcompatecompatncompattcompaticompatocompatncompat/compat{compaticompatncompatdcompatecompatxcompat,compaticompattcompatecompatmcompat,compattcompatycompatpcompatecompatscompat}compat.compattcompatscompatxcompat`compat
+compat
+compat#compat#compat compatFcompaticompatlcompatecompatscompat compatmcompatocompatdcompaticompatfcompaticompatecompatdcompat
+compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompat/compatmcompatecompatmcompatbcompatecompatrcompatscompat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompat/compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat`compat compat(compatDcompatecompatscompatkcompat compatucompatscompatecompatscompat compatAcompatpcompatpcompatrcompatocompatvcompatacompatlcompatQcompatucompatecompatucompatecompat compat+compat compatMcompatecompattcompatrcompaticompatccompatGcompatrcompaticompatdcompat)compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compatocompatwcompatncompatecompatrcompat/compatmcompatecompatmcompatbcompatecompatrcompatscompat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compatocompatwcompatncompatecompatrcompat/compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompatscompat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compatocompatwcompatncompatecompatrcompat/compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compattcompatrcompatacompaticompatncompatecompatrcompat/compatccompatlcompaticompatecompatncompattcompatscompat/compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatacompatpcompatpcompat/compattcompatrcompatacompaticompatncompatecompatrcompat/compaticompatncompatdcompatecompatxcompat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compat<compatrcompatocompatlcompatecompat>compat/compathcompatecompatlcompatpcompatecompatrcompatscompat.compattcompatscompat`compat compat(compatacompatdcompatdcompat compatmcompatacompatpcompatpcompatecompatrcompatscompat)compat
+compat-compat compatScompattcompatocompatrcompaticompatecompatscompat compatfcompaticompatlcompatecompat
+compat
+compat#compat#compat compatFcompaticompatlcompatecompatscompat compatdcompatecompatlcompatecompattcompatecompatdcompat
+compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compatrcompatecompatccompatecompatpcompattcompaticompatocompatncompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compat{compatmcompatecompatmcompatbcompatecompatrcompat-compatrcompatocompatwcompat,compatdcompatecompatscompatkcompat-compatqcompatucompatecompatucompatecompat-compatccompatacompatrcompatdcompat}compat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compatocompatwcompatncompatecompatrcompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compat{compatmcompatecompatmcompatbcompatecompatrcompat-compatrcompatocompatwcompat,compatacompatpcompatpcompatrcompatocompatvcompatacompatlcompat-compatccompatacompatrcompatdcompat,compatccompatocompatmcompatmcompatacompatncompatdcompat-compatmcompatecompattcompatrcompaticompatccompatscompat,compatacompattcompattcompatecompatncompattcompaticompatocompatncompat-compatccompatacompatrcompatdcompat}compat.compattcompatscompatxcompat`compat
+compat-compat compat`compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatfcompatecompatacompattcompatucompatrcompatecompatscompat/compattcompatrcompatacompaticompatncompatecompatrcompat/compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat/compat{compatccompatlcompaticompatecompatncompattcompat-compatrcompatocompatwcompat,compathcompatocompatmcompatecompat-compatmcompatecompattcompatrcompaticompatccompatscompat}compat.compattcompatscompatxcompat`compat
+compat
+compat#compat#compat compatAcompatccompatccompatecompatpcompattcompatacompatncompatccompatecompat compatccompatrcompaticompattcompatecompatrcompaticompatacompat
+compat
+compat-compat compat[compat compat]compat compatAcompatlcompatlcompat compatfcompatocompatucompatrcompat compat`compatdcompatocompatmcompatacompaticompatncompat/compat`compat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat compatecompatxcompaticompatscompattcompat compatwcompaticompattcompathcompat compatscompattcompatocompatrcompaticompatecompatscompat compatccompatocompatvcompatecompatrcompaticompatncompatgcompat compatlcompatocompatacompatdcompaticompatncompatgcompat/compatecompatrcompatrcompatocompatrcompat/compatecompatmcompatpcompattcompatycompat/compatpcompatocompatpcompatucompatlcompatacompattcompatecompatdcompat compatscompattcompatacompattcompatecompatscompat.compat
+compat-compat compat[compat compat]compat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompat,compat compatOcompatwcompatncompatecompatrcompat,compat compatacompatncompatdcompat compatTcompatrcompatacompaticompatncompatecompatrcompat compatacompatlcompatlcompat compatucompatscompatecompat compattcompathcompatecompatscompatecompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat compat(compatncompatocompat compatlcompatocompatccompatacompatlcompat compatccompatocompatpcompaticompatecompatscompat compatrcompatecompatmcompatacompaticompatncompat)compat.compat
+compat-compat compat[compat compat]compat compat`compatgcompaticompattcompat compatgcompatrcompatecompatpcompat compat"compatMcompatecompatmcompatbcompatecompatrcompatRcompatocompatwcompat\compat|compatAcompatpcompatpcompatrcompatocompatvcompatacompatlcompatCcompatacompatrcompatdcompat\compat|compatMcompatecompattcompatrcompaticompatccompatTcompaticompatlcompatecompat"compat compatacompatpcompatpcompatscompat/compatmcompatocompatbcompaticompatlcompatecompat/compatscompatrcompatccompat/compatfcompatecompatacompattcompatucompatrcompatecompatscompat`compat compatrcompatecompattcompatucompatrcompatncompatscompat compatncompatocompattcompathcompaticompatncompatgcompat.compat
+compat-compat compat[compat compat]compat compatVcompaticompatscompatucompatacompatlcompat compatscompatmcompatocompatkcompatecompat:compat compatocompatpcompatecompatncompat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompat compatmcompatecompatmcompatbcompatecompatrcompatscompat compatâcompat†compat’compat compatlcompatocompatocompatkcompatscompat compaticompatdcompatecompatncompattcompaticompatccompatacompatlcompat compatrcompatocompatwcompat-compatfcompatocompatrcompat-compatrcompatocompatwcompat compattcompatocompat compatOcompatwcompatncompatecompatrcompat compatmcompatecompatmcompatbcompatecompatrcompatscompat compat(compatmcompatocompatdcompatucompatlcompatocompat compatfcompaticompatlcompattcompatecompatrcompat compatpcompaticompatlcompatlcompatscompat compatacompatncompatdcompat compatacompatvcompatacompattcompatacompatrcompat compatUcompatRcompatLcompatscompat)compat.compat
+compat-compat compat[compat compat]compat compatTcompatacompatpcompat compatocompatncompat compatacompat compatmcompatecompatmcompatbcompatecompatrcompat compaticompatncompat compatacompatncompatycompat compatrcompatocompatlcompatecompat compatgcompatocompatecompatscompat compattcompatocompat compattcompathcompatacompattcompat compatrcompatocompatlcompatecompat'compatscompat compatccompatocompatrcompatrcompatecompatccompattcompat compatdcompatecompattcompatacompaticompatlcompat compatscompatccompatrcompatecompatecompatncompat.compat
+compat-compat compat[compat compat]compat compatPcompathcompatocompatncompatecompat compatrcompatecompatvcompatecompatacompatlcompat compatwcompatocompatrcompatkcompatscompat compatocompatncompat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompat compatmcompatecompatmcompatbcompatecompatrcompatscompat compat(compatwcompathcompatecompatrcompatecompat compattcompathcompatecompat compatfcompatecompatacompattcompatucompatrcompatecompat compatecompatxcompaticompatscompattcompatscompat)compat compatacompatncompatdcompat compaticompatscompat compatacompatbcompatscompatecompatncompattcompat compatocompatncompat compatocompattcompathcompatecompatrcompatscompat.compat
+compat-compat compat[compat compat]compat compat`compatpcompatncompatpcompatmcompat compat-compatwcompat compattcompatycompatpcompatecompatccompathcompatecompatccompatkcompat`compat compatccompatlcompatecompatacompatncompat.compat
+compat-compat compat[compat compat]compat compat`compatpcompatncompatpcompatmcompat compat-compatwcompat compattcompatecompatscompattcompat compat-compat-compatfcompaticompatlcompattcompatecompatrcompat compat@compatzcompatocompatocompatkcompat/compatmcompatocompatbcompaticompatlcompatecompat`compat compatccompatlcompatecompatacompatncompat.compat
+compat
+compat#compat#compat compatWcompathcompatacompattcompat compattcompathcompaticompatscompat compatpcompatlcompatacompatncompat compatdcompatocompatecompatscompat compatNcompatOcompatTcompat compatdcompatocompat
+compat
+compat-compat compatDcompatocompatecompatscompat compatncompatocompattcompat compatccompathcompatacompatncompatgcompatecompat compatdcompatacompattcompatacompat compatfcompatecompattcompatccompathcompaticompatncompatgcompat compatâcompat€compat”compat compatpcompatucompatrcompatecompatlcompatycompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompat-compatlcompatacompatycompatecompatrcompat.compat
+compat-compat compatDcompatocompatecompatscompat compatncompatocompattcompat compatrcompatecompatdcompatecompatscompaticompatgcompatncompat compattcompathcompatecompat compatccompatocompatmcompatpcompatocompatncompatecompatncompattcompatscompat compatâcompat€compat”compat compattcompathcompatecompatycompat compatlcompatocompatocompatkcompat compatlcompaticompatkcompatecompat compattcompathcompatecompat compatccompatucompatrcompatrcompatecompatncompattcompat compatRcompatecompatccompatecompatpcompattcompaticompatocompatncompat compatvcompatecompatrcompatscompaticompatocompatncompatscompat compat(compattcompathcompatecompat compatmcompatocompatscompattcompat compatpcompatocompatlcompaticompatscompathcompatecompatdcompat compatocompatfcompat compattcompathcompatecompat compattcompathcompatrcompatecompatecompat)compat,compat compatpcompatucompatlcompatlcompatecompatdcompat compaticompatncompattcompatocompat compatocompatncompatecompat compatpcompatlcompatacompatccompatecompat.compat
+compat-compat compatDcompatocompatecompatscompat compatncompatocompattcompat compatecompatxcompattcompatrcompatacompatccompattcompat compatocompattcompathcompatecompatrcompat compatscompathcompatacompatrcompatecompatdcompat compatpcompatacompattcompattcompatecompatrcompatncompatscompat compat(compatscompathcompatecompatecompattcompatscompat,compat compatfcompatocompatrcompatmcompatscompat,compat compathcompatecompatacompatdcompatecompatrcompatscompat)compat compatâcompat€compat”compat compattcompathcompatocompatscompatecompat compatacompatrcompatecompat compattcompatocompatucompatccompathcompatecompatdcompat compaticompatncompat compatpcompatlcompatacompatncompatscompat compat#compat1compat0compat/compat#compat1compat1compat compaticompatfcompat compatncompatecompatecompatdcompatecompatdcompat.compat
+compat

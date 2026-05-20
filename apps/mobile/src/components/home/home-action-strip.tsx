@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { GlassCard, ZookButton } from "@/components/primitives";
-import { colors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 
 export function HomeActionStrip({
   daysLeftLabel,
@@ -43,7 +43,7 @@ export function HomeActionStrip({
         </ZookButton>
       </View>
       <View style={styles.streakRow}>
-        <Ionicons name="flame-outline" size={17} color={colors.lime} />
+        <Ionicons name="flame-outline" size={17} color={legacyColors.lime} />
         <Text numberOfLines={1} style={styles.streakText}>
           {streakDays}-day streak · Last: {lastCheckIn}
         </Text>
@@ -74,11 +74,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statusValue: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.h2,
   },
   statusLabel: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   scanButton: {
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     minHeight: 86,
   },
   scanButtonText: {
-    color: colors.lime,
+    color: legacyColors.lime,
   },
   streakRow: {
     minHeight: 28,
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   streakText: {
     flex: 1,
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
 });

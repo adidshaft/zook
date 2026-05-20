@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text } from "react-native";
 
 import { IconBubble, ListRow } from "@/components/primitives";
 import { formatInr } from "@/lib/formatting";
-import { colors, typography } from "@/lib/theme";
+import { legacyColors, typography } from "@/lib/theme";
 
 export type LowStockProduct = {
   id: string;
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   reorderText: {
-    color: colors.warning,
+    color: legacyColors.warning,
     ...typography.caption,
   },
 });

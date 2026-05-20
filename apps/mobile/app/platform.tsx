@@ -12,7 +12,7 @@ import {
 } from "@/components/primitives";
 import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 
 export default function PlatformMobile() {
   const { logout, session } = useAuth();
@@ -102,11 +102,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.screenTitle,
   },
   body: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.body,
   },
   stack: {

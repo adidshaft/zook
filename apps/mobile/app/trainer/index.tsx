@@ -18,8 +18,8 @@ import {
 import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { fitnessGoalFor } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
-import { useTrainerClients } from "@/lib/query-hooks";
-import { colors, layout, spacing } from "@/lib/theme";
+import { useTrainerClients } from "@/lib/domains";
+import { legacyColors, layout, spacing } from "@/lib/theme";
 
 export default function TrainerHomeScreen() {
   const router = useRouter();
@@ -59,7 +59,7 @@ export default function TrainerHomeScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.lime} colors={[colors.lime]} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={legacyColors.lime} colors={[legacyColors.lime]} />}
         >
           <MobileHeader
             eyebrow="Trainer mode"
@@ -183,8 +183,8 @@ const styles = StyleSheet.create({
   headerActions: { alignItems: "center", flexDirection: "row", gap: 8 },
   iconButton: {
     alignItems: "center",
-    backgroundColor: colors.panel,
-    borderColor: colors.border,
+    backgroundColor: legacyColors.panel,
+    borderColor: legacyColors.border,
     borderRadius: 14,
     borderWidth: 1,
     justifyContent: "center",

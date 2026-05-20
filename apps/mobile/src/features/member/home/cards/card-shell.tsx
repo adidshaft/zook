@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
-import { colors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 
 export function HomeCardShell({
   body,
@@ -54,8 +54,8 @@ const styles = StyleSheet.create({
   card: { gap: spacing.lg },
   header: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   copy: { flex: 1, gap: 4 },
-  title: { color: colors.text, ...typography.title },
-  body: { color: colors.muted, ...typography.body },
+  title: { color: legacyColors.text, ...typography.title },
+  body: { color: legacyColors.muted, ...typography.body },
   chip: {
     alignSelf: "flex-start",
     backgroundColor: "rgba(188,255,0,0.10)",
@@ -65,5 +65,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  chipText: { color: colors.lime, ...typography.caption },
+  chipText: { color: legacyColors.lime, ...typography.caption },
 });

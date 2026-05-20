@@ -15,4 +15,4 @@ export {
   QueueCard,
   StatCard,
   StatusRing,
-} from "./legacy";
+} from "./foundation";

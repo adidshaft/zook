@@ -1,13 +1,13 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { GlassCard } from "@/components/primitives";
-import { colors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 
 export function AiDraftPanel({ clientId }: { clientId: string }) {
   return (
     <GlassCard testID="trainer-ai-draft-panel" contentStyle={styles.lockedCard}>
       <View style={styles.lockIcon}>
-        <Ionicons name="lock-closed-outline" size={28} color={colors.lime} />
+        <Ionicons name="lock-closed-outline" size={28} color={legacyColors.lime} />
       </View>
       <Text style={styles.title}>Feature Locked</Text>
       <Text style={styles.body}>
@@ -35,12 +35,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.h2,
-    color: colors.text,
+    color: legacyColors.text,
     textAlign: "center",
   },
   body: {
     ...typography.body,
-    color: colors.muted,
+    color: legacyColors.muted,
     textAlign: "center",
   },
 });

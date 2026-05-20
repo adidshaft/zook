@@ -1,1 +1,1 @@
-export * from "./theme/legacy";
+export * from "./theme/index";

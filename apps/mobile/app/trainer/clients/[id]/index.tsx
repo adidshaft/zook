@@ -25,8 +25,8 @@ import {
 } from "@/features/trainer/helpers";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { trainerApi } from "@/lib/domain-api";
-import { useTrainerClients } from "@/lib/query-hooks";
-import { colors, layout, spacing, typography } from "@/lib/theme";
+import { useTrainerClients } from "@/lib/domains";
+import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export default function TrainerClientOverviewScreen() {
@@ -98,19 +98,19 @@ export default function TrainerClientOverviewScreen() {
               <View style={styles.clientHeroCopy}>
                 <Text numberOfLines={1} style={styles.clientHeroName}>{clientName}</Text>
                 <View style={styles.clientStatusRow}>
-                  <Ionicons name="person-outline" size={21} color={colors.lime} />
+                  <Ionicons name="person-outline" size={21} color={legacyColors.lime} />
                   <Text style={styles.clientStatusText}>{client?.active ? "Active member" : "Paused member"}</Text>
                 </View>
               </View>
             </View>
             <View style={styles.clientHeroMetrics}>
               <View style={styles.clientHeroMetric}>
-                <Ionicons name="navigate-circle-outline" size={22} color={colors.lime} />
+                <Ionicons name="navigate-circle-outline" size={22} color={legacyColors.lime} />
                 <Text style={styles.metricLabel}>Goal</Text>
                 <Text numberOfLines={1} style={styles.metricValue}>{fitnessGoal}</Text>
               </View>
               <View style={styles.clientHeroMetric}>
-                <Ionicons name="barbell-outline" size={22} color={colors.lime} />
+                <Ionicons name="barbell-outline" size={22} color={legacyColors.lime} />
                 <Text style={styles.metricLabel}>PT pack</Text>
                 <Text numberOfLines={1} style={styles.metricValue}>{activePlans ? `${activePlans} active plans` : "Create first plan"}</Text>
               </View>
@@ -138,22 +138,22 @@ export default function TrainerClientOverviewScreen() {
 
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
-  iconButton: { alignItems: "center", backgroundColor: colors.panel, borderColor: colors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
-  backIcon: { color: colors.text, fontSize: 26, lineHeight: 28 },
+  iconButton: { alignItems: "center", backgroundColor: legacyColors.panel, borderColor: legacyColors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
+  backIcon: { color: legacyColors.text, fontSize: 26, lineHeight: 28 },
   notFoundContent: { alignItems: "center", gap: spacing.md },
   clientHeroContent: { gap: 18, padding: 20 },
   clientHeroTop: { alignItems: "center", flexDirection: "row", gap: spacing.lg },
-  clientAvatar: { alignItems: "center", backgroundColor: "rgba(185,244,85,0.12)", borderColor: colors.lime, borderRadius: 48, borderWidth: 2, height: 96, justifyContent: "center", width: 96 },
-  clientAvatarText: { color: colors.text, fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
-  clientAvatarDot: { backgroundColor: colors.lime, borderColor: colors.bg, borderRadius: 11, borderWidth: 4, bottom: 10, height: 22, position: "absolute", right: 2, width: 22 },
+  clientAvatar: { alignItems: "center", backgroundColor: "rgba(185,244,85,0.12)", borderColor: legacyColors.lime, borderRadius: 48, borderWidth: 2, height: 96, justifyContent: "center", width: 96 },
+  clientAvatarText: { color: legacyColors.text, fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
+  clientAvatarDot: { backgroundColor: legacyColors.lime, borderColor: legacyColors.bg, borderRadius: 11, borderWidth: 4, bottom: 10, height: 22, position: "absolute", right: 2, width: 22 },
   clientHeroCopy: { flex: 1, gap: 8, minWidth: 0 },
-  clientHeroName: { color: colors.text, fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
+  clientHeroName: { color: legacyColors.text, fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
   clientStatusRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
-  clientStatusText: { color: colors.lime, fontFamily: "Inter_600SemiBold", fontSize: 17, lineHeight: 23 },
+  clientStatusText: { color: legacyColors.lime, fontFamily: "Inter_600SemiBold", fontSize: 17, lineHeight: 23 },
   clientHeroMetrics: { flexDirection: "row", gap: spacing.lg },
   clientHeroMetric: { flex: 1, gap: 6 },
-  metricLabel: { color: colors.muted, fontSize: 15, lineHeight: 20 },
-  metricValue: { color: colors.text, fontFamily: "Inter_600SemiBold", fontSize: 18, lineHeight: 24 },
-  cardTitle: { color: colors.text, ...typography.cardTitle },
+  metricLabel: { color: legacyColors.muted, fontSize: 15, lineHeight: 20 },
+  metricValue: { color: legacyColors.text, fontFamily: "Inter_600SemiBold", fontSize: 18, lineHeight: 24 },
+  cardTitle: { color: legacyColors.text, ...typography.cardTitle },
   stack: { gap: 10 },
 });

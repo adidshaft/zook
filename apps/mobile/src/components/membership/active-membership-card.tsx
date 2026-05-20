@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DatePickerField, GlassCard, IconBubble, Pill, ZookButton } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
-import { colors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography } from "@/lib/theme";
 import { membershipStatusGuidance, toneForStatus } from "./helpers";
 import type { MembershipRecord } from "./types";
 
@@ -87,7 +87,7 @@ export function ActiveMembershipCard({
 
       {subscription.remainingVisits !== null && subscription.remainingVisits !== undefined ? (
         <View style={styles.membershipMetaLine}>
-          <Ionicons name="walk-outline" size={14} color={colors.lime} />
+          <Ionicons name="walk-outline" size={14} color={legacyColors.lime} />
           <Text style={styles.membershipMetaText}>
             {subscription.remainingVisits} visits remaining
           </Text>
@@ -153,11 +153,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   featuredTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.cardTitle,
   },
   featuredOrg: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   progressSection: {
@@ -172,10 +172,10 @@ const styles = StyleSheet.create({
   progressFill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: colors.lime,
+    backgroundColor: legacyColors.lime,
   },
   progressFillWarning: {
-    backgroundColor: colors.amber,
+    backgroundColor: legacyColors.amber,
   },
   progressLabels: {
     flexDirection: "row",
@@ -183,14 +183,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   progressText: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.small,
   },
   progressTextWarning: {
-    color: colors.amber,
+    color: legacyColors.amber,
   },
   progressTextMuted: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   membershipMetaLine: {
@@ -199,14 +199,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   membershipMetaText: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   guidanceCard: {
     minHeight: 72,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(0,0,0,0.18)",
     flexDirection: "row",
     alignItems: "center",
@@ -218,18 +218,18 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   guidanceTitle: {
-    color: colors.text,
+    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   guidanceBody: {
-    color: colors.muted,
+    color: legacyColors.muted,
     ...typography.small,
   },
   pausePicker: {
     marginTop: -spacing.xs,
   },
   statusMessage: {
-    color: colors.lime,
+    color: legacyColors.lime,
     ...typography.small,
   },
 });

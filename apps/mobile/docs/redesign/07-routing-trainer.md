@@ -16,7 +16,7 @@ Apply the routing template from Plan #05 to the Trainer role. Split `apps/mobile
 - `apps/mobile/app/trainer/index.tsx` — 447 lines. `view: TrainerView = "home" | "clients" | "plans"` (line 24). Branches at 164 (home), 276 (clients), 329 (plans).
 - `apps/mobile/app/trainer/client/[id].tsx` — 819 lines. Client detail (already a real route).
 - `apps/mobile/app/trainer/client/[id]/ai-draft.tsx` — 114 lines. AI plan draft as a separate route — looks like a bolt-on. Fold into the client detail as a tab/section.
-- `trainerTabs` at `apps/mobile/src/components/primitives/legacy.tsx:2044` (Home, Clients, Plans, Inbox, Profile).
+- `trainerTabs` at `apps/mobile/src/components/primitives/foundation.tsx:2044` (Home, Clients, Plans, Inbox, Profile).
 
 ## Architectural target
 
@@ -312,7 +312,7 @@ Similarly handle the old 819-line `trainer/client/[id].tsx` after the new `clien
 
 - `apps/mobile/app/trainer/client/[id].tsx` — replaced with Redirect (back-compat only)
 - `apps/mobile/app/trainer/client/[id]/ai-draft.tsx` — replaced with Redirect (back-compat only)
-- `apps/mobile/src/components/primitives/legacy.tsx` — `trainerTabs` `@deprecated`, BottomNav short-circuits trainer
+- `apps/mobile/src/components/primitives/foundation.tsx` — `trainerTabs` `@deprecated`, BottomNav short-circuits trainer
 - `apps/mobile/src/lib/route-guards.ts`
 - `apps/mobile/src/lib/route-guards.test.ts`
 

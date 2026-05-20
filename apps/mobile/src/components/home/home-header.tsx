@@ -3,7 +3,7 @@ import type { Href } from "expo-router";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing } from "@/lib/theme";
+import { legacyColors, spacing } from "@/lib/theme";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -43,7 +43,7 @@ export function HomeHeader({
             accessibilityRole="button"
             accessibilityLabel="Open notifications"
           >
-            <Ionicons name="notifications-outline" size={27} color={colors.text} />
+            <Ionicons name="notifications-outline" size={27} color={legacyColors.text} />
             {unreadCount > 0 ? (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
@@ -59,12 +59,12 @@ export function HomeHeader({
           accessibilityLabel="Open gym details"
           style={styles.premiumGymSelector}
         >
-          <Ionicons name="business-outline" size={24} color={colors.text} />
+          <Ionicons name="business-outline" size={24} color={legacyColors.text} />
           <Text numberOfLines={1} style={styles.premiumGymText}>
             {orgName}
             {city ? ` · ${city}` : ""}
           </Text>
-          <Ionicons name="chevron-down" size={19} color={colors.muted} />
+          <Ionicons name="chevron-down" size={19} color={legacyColors.muted} />
         </Pressable>
       </Link>
     </>
@@ -88,12 +88,12 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   premiumGreeting: {
-    color: colors.muted,
+    color: legacyColors.muted,
     fontSize: 16,
     lineHeight: 22,
   },
   premiumName: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 34,
     lineHeight: 40,
     fontFamily: "Inter_700Bold",
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     minHeight: 62,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: legacyColors.border,
     backgroundColor: "rgba(255,255,255,0.035)",
     flexDirection: "row",
     alignItems: "center",
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   premiumGymText: {
     flex: 1,
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 17,
     lineHeight: 22,
     fontFamily: "Inter_600SemiBold",
@@ -132,13 +132,13 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.red,
+    backgroundColor: legacyColors.red,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 3,
   },
   unreadBadgeText: {
-    color: colors.text,
+    color: legacyColors.text,
     fontSize: 9,
     fontWeight: "900",
     lineHeight: 12,

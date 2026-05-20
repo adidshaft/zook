@@ -22,4 +22,4 @@ export {
   SwipeActionRow,
   ZookHeader,
   ZookScreen,
-} from "./legacy";
+} from "./foundation";

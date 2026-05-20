@@ -3,7 +3,7 @@ import { View } from "react-native";
 import Reanimated from "@/lib/reanimated-lite";
 import { useBreathingScale } from "@/lib/motion";
 import { useT } from "@/lib/i18n";
-import { colors, spacing } from "@/lib/theme";
+import { legacyColors, spacing } from "@/lib/theme";
 
 export function PickupQrCode({ value }: { value: string }) {
   const breathingStyle = useBreathingScale(true);
@@ -15,12 +15,12 @@ export function PickupQrCode({ value }: { value: string }) {
         accessibilityLabel={t("shop.signedPickupQrCode")}
         style={{
           alignItems: "center",
-          backgroundColor: colors.paper,
+          backgroundColor: legacyColors.paper,
           borderRadius: 18,
           padding: spacing.lg,
         }}
       >
-        <QRCode value={value} size={176} backgroundColor={colors.paper} color={colors.ink} />
+        <QRCode value={value} size={176} backgroundColor={legacyColors.paper} color={legacyColors.ink} />
       </View>
     </Reanimated.View>
   );
