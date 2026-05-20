@@ -3,7 +3,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import {
-  BottomNav,
   GlassCard,
   IconBubble,
   MobileHeader,
@@ -16,7 +15,7 @@ import { useAuth } from "@/lib/auth";
 import { apiClient, ownerApi } from "@/lib/domain-api";
 import { formatLongDate } from "@/lib/formatting";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import type { OrgMemberRecord } from "@/lib/query-hooks";
+import type { OrgMemberRecord } from "@/lib/domains/shared/types";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useEffect, useState } from "react";
@@ -173,7 +172,7 @@ export default function OwnerMemberDetail() {
             leading={
               <BackButton
                 onPress={() =>
-                  router.canGoBack() ? router.back() : router.replace("/owner?view=members")
+                  router.canGoBack() ? router.back() : router.replace("/owner/members")
                 }
               />
             }
@@ -265,136 +264,34 @@ export default function OwnerMemberDetail() {
             </>
           ) : null}
         </ScrollView>
-        <BottomNav role="OWNER" activeView="members" />
       </ZookScreen>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    width: "100%",
-    maxWidth: layout.contentWidth,
-    alignSelf: "center",
-    paddingTop: 14,
-    gap: 14,
-    paddingBottom: layout.bottomNavContentPadding + 32,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stateContent: {
-    minHeight: 76,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  stateSkeletonCopy: {
-    flex: 1,
-    gap: 8,
-  },
-  stateText: {
-    color: colors.text,
-    ...typography.cardTitle,
-  },
-  profileContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  largeAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.lime,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  largeAvatarText: {
-    color: colors.bg,
-    ...typography.h2,
-  },
-  profileCopy: {
-    flex: 1,
-    gap: 5,
-    alignItems: "flex-start",
-  },
-  memberName: {
-    color: colors.text,
-    ...typography.headerTitle,
-  },
-  memberEmail: {
-    color: colors.muted,
-    ...typography.small,
-  },
-  memberPhone: {
-    color: colors.muted,
-    ...typography.body,
-  },
-  sectionContent: {
-    gap: spacing.md,
-  },
-  sectionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  sectionCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  sectionLabel: {
-    color: colors.muted,
-    ...typography.caption,
-  },
-  sectionTitle: {
-    color: colors.text,
-    ...typography.cardTitle,
-  },
-  notesBox: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.md,
-    gap: 4,
-  },
-  notesText: {
-    color: colors.text,
-    ...typography.body,
-  },
-  contactRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  contactCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  rowLabel: {
-    color: colors.muted,
-    ...typography.caption,
-  },
-  rowValue: {
-    color: colors.text,
-    ...typography.bodyStrong,
-  },
-  revealPhoneButton: {
-    minHeight: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 10,
-    justifyContent: "center",
-  },
-  revealPhoneText: {
-    color: colors.lime,
-    ...typography.caption,
-  },
+  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
+  iconButton: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center" },
+  stateContent: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: spacing.md },
+  stateSkeletonCopy: { flex: 1, gap: 8 },
+  stateText: { color: colors.text, ...typography.cardTitle },
+  profileContent: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  largeAvatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.lime, alignItems: "center", justifyContent: "center" },
+  largeAvatarText: { color: colors.bg, ...typography.h2 },
+  profileCopy: { flex: 1, gap: 5, alignItems: "flex-start" },
+  memberName: { color: colors.text, ...typography.headerTitle },
+  memberEmail: { color: colors.muted, ...typography.small },
+  sectionContent: { gap: spacing.md },
+  sectionRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  sectionCopy: { flex: 1, gap: 3 },
+  sectionLabel: { color: colors.muted, ...typography.caption },
+  sectionTitle: { color: colors.text, ...typography.cardTitle },
+  notesBox: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md, gap: 4 },
+  notesText: { color: colors.text, ...typography.body },
+  contactRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  contactCopy: { flex: 1, gap: 3 },
+  rowLabel: { color: colors.muted, ...typography.caption },
+  rowValue: { color: colors.text, ...typography.bodyStrong },
+  revealPhoneButton: { minHeight: 32, borderRadius: 16, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 10, justifyContent: "center" },
+  revealPhoneText: { color: colors.lime, ...typography.caption },
 });
