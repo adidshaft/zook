@@ -40,7 +40,7 @@ export function getOfflineDemoInitialRoute(role = getOfflineDemoRoleOverride()) 
     return view && ownerViews.has(view) && view !== "command" ? `/owner?view=${view}` : "/owner";
   }
   if (role === "RECEPTIONIST") {
-    return view && receptionViews.has(view) && view !== "desk" ? `/reception?view=${view}` : "/reception";
+    return view && receptionViews.has(view) && view !== "desk" ? `/reception/${view}` : "/reception";
   }
   if (role === "TRAINER") {
     return view && trainerViews.has(view) && view !== "home" ? `/trainer?view=${view}` : "/trainer";

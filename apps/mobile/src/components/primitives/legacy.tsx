@@ -2061,6 +2061,7 @@ const trainerTabs: DockTab[] = [
   },
 ];
 
+/** @deprecated Reception owns local tabs in app/reception/_layout.tsx. */
 const receptionTabs: DockTab[] = [
   {
     href: "/reception",
@@ -2070,7 +2071,7 @@ const receptionTabs: DockTab[] = [
     matchPath: "/reception",
   },
   {
-    href: "/reception?view=members" as Href,
+    href: "/reception/members" as Href,
     label: "Members",
     icon: "people-outline",
     activeIcon: "people",
@@ -2078,7 +2079,7 @@ const receptionTabs: DockTab[] = [
     activeView: "members",
   },
   {
-    href: "/reception?view=payments" as Href,
+    href: "/reception/payments" as Href,
     label: "Payments",
     icon: "card-outline",
     activeIcon: "card",
@@ -2086,7 +2087,7 @@ const receptionTabs: DockTab[] = [
     activeView: "payments",
   },
   {
-    href: "/reception?view=orders" as Href,
+    href: "/reception/orders" as Href,
     label: "Orders",
     icon: "cube-outline",
     activeIcon: "cube",
@@ -2358,6 +2359,10 @@ export function BottomNav({
       hideSubscription.remove();
     };
   }, [setVisible]);
+
+  if (pathname.startsWith("/reception")) {
+    return null;
+  }
 
   if (!visible) {
     return null;

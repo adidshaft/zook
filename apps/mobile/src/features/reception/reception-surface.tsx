@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import {
   BottomSheetBackdrop,
@@ -11,10 +11,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Reanimated from "@/lib/reanimated-lite";
-import type { PaymentMode } from "@zook/core";
 import {
   AuditWarning,
-  BottomNav,
   EmptyState,
   FormField,
   GlassCard,
@@ -34,16 +32,15 @@ import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-scre
 import { formatDateTime, formatInr } from "@/lib/formatting";
 import {
   useApproveAttendance,
-  useFulfillShopOrder,
   useManualAttendance,
-  useOrgActiveShopOrders,
   useOrgAttendanceToday,
-  useOrgMembers,
-  useReceptionQueue,
-  useRecordManualPayment,
   useRejectAttendance,
-  type ReceptionQueueRecord,
-} from "@/lib/query-hooks";
+} from "@/lib/domains/attendance";
+import { useOrgMembers } from "@/lib/domains/owner";
+import { useRecordManualPayment } from "@/lib/domains/payments";
+import { useReceptionQueue } from "@/lib/domains/reception";
+import { useFulfillShopOrder, useOrgActiveShopOrders } from "@/lib/domains/shop";
+import type { ReceptionQueueRecord } from "@/lib/domains/shared/types";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
 import { useBranchSelection } from "@/lib/branch-selection";
@@ -53,12 +50,15 @@ import { requirePrivilegedAuth } from "@/lib/privileged-action";
 import { colors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
+import { paymentModes, reasonSuggestions, type DeskPaymentMode } from "./constants";
+import {
+  ageLabel,
+  deskReasonCopy,
+  phoneRevealStorageKey,
+  redactPhone,
+  type DeskView,
+} from "./helpers";
 
-type DeskView = "desk" | "members" | "payments" | "orders";
-type DeskPaymentMode = Extract<
-  PaymentMode,
-  "CASH" | "DIRECT_UPI" | "BANK_TRANSFER" | "CARD" | "OTHER"
->;
 type ReceptionCodeVerification = {
   match: null | {
     type: "attendance" | "pickup";
@@ -74,55 +74,15 @@ type ReceptionCodeVerification = {
   };
 };
 
-const paymentModes: Array<{ label: string; value: DeskPaymentMode }> = [
-  { label: "Cash", value: "CASH" },
-  { label: "Direct UPI", value: "DIRECT_UPI" },
-  { label: "Bank", value: "BANK_TRANSFER" },
-  { label: "Card", value: "CARD" },
-  { label: "Manual", value: "OTHER" },
-];
+export type ReceptionSurfaceView = DeskView;
 
-const reasonSuggestions = [
-  "Desk confirmed member identity",
-  "Member showed active membership",
-  "QR was unreadable at entry",
-];
-
-function normalizeView(value: string | string[] | undefined): DeskView {
-  const raw = Array.isArray(value) ? value[0] : value;
-  if (raw === "members" || raw === "payments" || raw === "orders") return raw;
-  return "desk";
-}
-
-function deskReasonCopy(reason?: string | null) {
-  if (!reason) return "Desk approval required.";
-  return reason.replace("Attendance approval mode is enabled.", "Desk approval is required.");
-}
-
-function redactPhone(phone?: string | null) {
-  if (!phone) return "No phone";
-  return `****${phone.slice(-4)}`;
-}
-
-function ageLabel(dateOfBirth?: string | null) {
-  if (!dateOfBirth) return "DOB not added";
-  const parsed = new Date(dateOfBirth);
-  if (Number.isNaN(parsed.getTime())) return "DOB not added";
-  const today = new Date();
-  let age = today.getFullYear() - parsed.getFullYear();
-  const monthDelta = today.getMonth() - parsed.getMonth();
-  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < parsed.getDate())) {
-    age -= 1;
-  }
-  return `${age} years`;
-}
-
-function phoneRevealStorageKey(orgId?: string | null) {
-  return `zook_revealed_reception_phones_${orgId ?? "none"}`;
-}
-
-export default function Reception() {
-  const params = useLocalSearchParams<{ view?: string | string[] }>();
+export function ReceptionSurface({
+  initialMemberId = null,
+  view,
+}: {
+  initialMemberId?: string | null;
+  view: ReceptionSurfaceView;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
@@ -131,7 +91,6 @@ export default function Reception() {
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const canRecordManualAttendance = useHasPermission("ATTENDANCE_MANUAL_OVERRIDE");
   const canRecordOfflinePayment = useHasPermission("PAYMENTS_RECORD_OFFLINE");
-  const view = normalizeView(params.view);
   const [reason, setReason] = useState("");
   const [decisionReason, setDecisionReason] = useState("");
   const [selectedDecisionAttempt, setSelectedDecisionAttempt] =
@@ -152,7 +111,7 @@ export default function Reception() {
   const [attendanceStatus, setAttendanceStatus] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [verifyingCode, setVerifyingCode] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(initialMemberId);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(() => new Set());
   const [bulkAttendanceStatus, setBulkAttendanceStatus] = useState("");
@@ -187,6 +146,12 @@ export default function Reception() {
     setVerifyMessage("");
     setVerifiedUser(null);
   }, [view]);
+
+  useEffect(() => {
+    if (initialMemberId) {
+      setSelectedMemberId(initialMemberId);
+    }
+  }, [initialMemberId]);
 
   const filteredMembers = useMemo(() => {
     const query = memberSearch.toLowerCase();
@@ -1047,6 +1012,7 @@ export default function Reception() {
                         toggleMemberSelection(user.profile.userId);
                       } else {
                         setSelectedMemberId(user.profile.userId);
+                        router.push(`/reception/members/${user.profile.userId}`);
                       }
                     }}
                   >
@@ -1511,7 +1477,6 @@ export default function Reception() {
           </View>
         </BottomSheetView>
       </BottomSheetModal>
-      <BottomNav role="RECEPTIONIST" />
     </ZookScreen>
   );
 }
