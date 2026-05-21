@@ -1,5 +1,5 @@
 import { DashboardShell } from "@/components/dashboard-shell";
-import { loadDashboardRouteProps } from "../dashboard-route";
+import { loadDashboardRouteProps } from "@/components/dashboard-route-renderer";
 
 type PlanGrowthRoute = "coupons" | "offers" | "referrals";
 

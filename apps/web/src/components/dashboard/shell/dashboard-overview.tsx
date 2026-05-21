@@ -113,7 +113,7 @@ export function DashboardOverview({
       title: `${summary.joinRequests} pending join request${summary.joinRequests === 1 ? "" : "s"}`,
       subtitle: "Approve to start onboarding",
       tone: "rose",
-      href: "/dashboard/members?view=join-requests",
+      href: "/dashboard/members/join-requests",
     },
     {
       icon: Package,
@@ -169,7 +169,7 @@ export function DashboardOverview({
             title: "Approve new join requests",
             subtitle: `${summary.joinRequests} member${summary.joinRequests === 1 ? "" : "s"} waiting for access.`,
             tone: "rose" as const,
-            href: "/dashboard/members?view=join-requests",
+            href: "/dashboard/members/join-requests",
           },
         ]
       : []),
@@ -330,7 +330,7 @@ export function DashboardOverview({
           icon={UserPlus}
           tone="rose"
           caption="Awaiting approval"
-          href="/dashboard/members?view=join-requests"
+          href="/dashboard/members/join-requests"
         />
         <KPITile
           label="Low stock"
