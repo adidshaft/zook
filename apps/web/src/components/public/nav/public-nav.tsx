@@ -22,7 +22,7 @@ export function PublicNav({
   children?: ReactNode;
 }) {
   return (
-    <header className="sticky top-3 z-30 flex items-center justify-between rounded-full border border-white/8 bg-black/40 px-3 py-2 backdrop-blur-xl">
+    <header className="sticky top-3 z-30 flex items-center justify-between rounded-full border border-[var(--border)] bg-[var(--surface)]/80 px-3 py-2 backdrop-blur-xl">
       <div className="flex items-center gap-2 pl-2">
         <ZookLogo />
         <div className="hidden md:block">
@@ -36,7 +36,7 @@ export function PublicNav({
         {languageHref ? (
           <Link
             href={languageHref}
-            className="zook-focus rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/65 transition hover:border-white/20 hover:text-white"
+            className="zook-focus rounded-full border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]"
           >
             {languageLabel ?? publicT(locale, "languageSwitch")}
           </Link>
@@ -44,7 +44,7 @@ export function PublicNav({
         {backHref ? (
           <Link
             href={backHref}
-            className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/65 transition hover:border-white/20 hover:text-white"
+            className="zook-focus inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]"
           >
             <ArrowLeft size={14} aria-hidden />
             {backLabel ?? publicT(locale, "home")}
@@ -52,7 +52,7 @@ export function PublicNav({
         ) : (
           <Link
             href={localizedPath("/gyms", locale)}
-            className="hidden rounded-full px-3 py-1.5 text-xs text-white/65 transition hover:text-white sm:inline-flex"
+            className="hidden rounded-full px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)] sm:inline-flex"
           >
             {publicT(locale, "navGyms")}
           </Link>

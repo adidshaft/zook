@@ -108,7 +108,7 @@ export function CouponApplyForm({
     <form onSubmit={(event) => void applyCoupon(event)} className="mt-6 grid gap-2">
       <label
         htmlFor={couponId}
-        className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35"
+        className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]"
       >
         Coupon code
       </label>
@@ -120,7 +120,7 @@ export function CouponApplyForm({
           onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
           placeholder="Enter coupon"
           aria-describedby={message ? messageId : undefined}
-          className="zook-focus min-h-11 flex-1 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
+          className="zook-focus min-h-11 flex-1 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
         />
         <ZookButton type="submit" tone="ghost" state={busy ? "loading" : "idle"} disabled={busy}>
           {busy ? "Applying..." : "Apply"}
@@ -133,8 +133,8 @@ export function CouponApplyForm({
           aria-live="polite"
           className={`rounded-[18px] border px-4 py-3 text-sm ${
             valid
-              ? "border-lime-300/20 bg-lime-300/10 text-lime-100"
-              : "border-amber-300/20 bg-amber-300/10 text-amber-50"
+              ? "border-[var(--border)] bg-[var(--surface-accent-soft)] text-[var(--text-primary)]"
+              : "border-[var(--border)] bg-[var(--surface-warning-soft)] text-[var(--text-primary)]"
           }`}
         >
           {message}

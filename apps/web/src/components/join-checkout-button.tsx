@@ -91,7 +91,7 @@ export function JoinCheckoutButton({
         <p
           role="alert"
           aria-live="polite"
-          className="rounded-[18px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100"
+          className="rounded-[18px] border border-[var(--border)] bg-[var(--surface-danger-soft)] px-4 py-3 text-sm text-[var(--feedback-danger)]"
         >
           {error}
         </p>

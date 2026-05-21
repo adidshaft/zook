@@ -57,7 +57,7 @@ export default async function LoginPage({
             redirect: redirectTarget,
             email: firstParam(resolvedSearchParams.email),
           })}
-          className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
+          className="zook-focus rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] transition"
         >
           {t("languageSwitch")}
         </a>

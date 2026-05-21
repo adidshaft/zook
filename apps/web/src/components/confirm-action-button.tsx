@@ -50,10 +50,10 @@ export function ConfirmActionButton({
         {children}
       </button>
       {open ? (
-        <span className="absolute right-0 top-full z-[160] mt-2 w-[min(18rem,82vw)] rounded-[22px] border border-white/10 bg-zinc-950/96 p-3 text-left shadow-2xl shadow-black/60 backdrop-blur">
-          <span className="block text-sm font-semibold text-white">{title}</span>
+        <span className="absolute right-0 top-full z-[160] mt-2 w-[min(18rem,82vw)] rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)]/96 p-3 text-left shadow-[var(--shadow-lg)] backdrop-blur">
+          <span className="block text-sm font-semibold text-[var(--text-primary)]">{title}</span>
           {description ? (
-            <span className="mt-1 block text-xs leading-5 text-white/55">{description}</span>
+            <span className="mt-1 block text-xs leading-5 text-[var(--text-secondary)]">{description}</span>
           ) : null}
           <span className="mt-3 flex flex-wrap justify-end gap-2">
             <ZookButton

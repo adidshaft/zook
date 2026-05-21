@@ -399,7 +399,7 @@ export function LoginPanel({
     >
       <motion.div
         variants={itemVariants}
-        className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-lime-300 text-black"
+        className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-fill)] text-[var(--text-on-accent)]"
       >
         <Mail size={22} />
       </motion.div>
@@ -408,7 +408,7 @@ export function LoginPanel({
       </motion.h1>
       <motion.p
         variants={itemVariants}
-        className="mt-2 text-sm leading-6 text-white/55"
+        className="mt-2 text-sm leading-6 text-[var(--text-secondary)]"
         role="alert"
         aria-live="polite"
       >
@@ -429,7 +429,7 @@ export function LoginPanel({
         {stage === "identifier" ? (
           <>
             <div className="grid gap-2">
-              <label htmlFor="login-email" className="text-xs font-medium uppercase text-white/45">
+              <label htmlFor="login-email" className="text-xs font-medium uppercase text-[var(--text-tertiary)]">
                 {t("emailAddress")}
               </label>
               <input
@@ -445,15 +445,15 @@ export function LoginPanel({
                 required
                 disabled={!hydrated || submitting !== null}
                 onChange={(event) => setEmail(event.target.value)}
-                className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
+                className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
               />
-              <p className="text-xs leading-5 text-white/42">{t("emailHint")}</p>
+              <p className="text-xs leading-5 text-[var(--text-tertiary)]">{t("emailHint")}</p>
             </div>
           </>
         ) : null}
         {stage === "otp" ? (
           <>
-            <label htmlFor="login-otp" className="text-xs font-medium uppercase text-white/45">
+            <label htmlFor="login-otp" className="text-xs font-medium uppercase text-[var(--text-tertiary)]">
               {t("otp")}
             </label>
             <input
@@ -466,18 +466,18 @@ export function LoginPanel({
               value={code}
               onChange={(event) => handleOtpChange(event.target.value)}
               maxLength={6}
-              className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
+              className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
             />
           </>
         ) : null}
         {stage === "otp" && resendCooldown > 0 ? (
           <div className="grid gap-2" aria-live="polite">
-            <p className="text-xs leading-5 text-white/45">
+            <p className="text-xs leading-5 text-[var(--text-secondary)]">
               {t("resendAvailable", { seconds: resendCooldown })}
             </p>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="h-1.5 overflow-hidden rounded-full bg-[var(--border-subtle)]">
               <div
-                className="h-full rounded-full bg-lime-300 transition-all"
+                className="h-full rounded-full bg-[var(--accent-fill)] transition-all"
                 style={{
                   width: `${((OTP_RESEND_COOLDOWN_SECONDS - resendCooldown) / OTP_RESEND_COOLDOWN_SECONDS) * 100}%`,
                 }}
@@ -510,10 +510,10 @@ export function LoginPanel({
       </motion.form>
       {stage === "identifier" ? (
         <motion.div variants={itemVariants} className="mt-5 grid gap-3">
-          <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.18em] text-white/35">
-            <span className="h-px flex-1 bg-white/10" />
+          <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+            <span className="h-px flex-1 bg-[var(--border-subtle)]" />
             <span>or</span>
-            <span className="h-px flex-1 bg-white/10" />
+            <span className="h-px flex-1 bg-[var(--border-subtle)]" />
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <ZookButton

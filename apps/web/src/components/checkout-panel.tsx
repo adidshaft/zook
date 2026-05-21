@@ -82,51 +82,51 @@ export function CheckoutPanel({
 
   return (
     <div className="glass-panel w-full max-w-xl rounded-[28px] p-8">
-      <div className="sticky top-4 z-10 mb-5 rounded-2xl border border-amber-300/30 bg-amber-300/15 px-4 py-3 text-sm font-semibold text-amber-50 shadow-[var(--shadow-lg)]">
+      <div className="sticky top-4 z-10 mb-5 rounded-2xl border border-[var(--feedback-warning)] bg-[var(--surface-warning-soft)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] shadow-[var(--shadow-lg)]">
         TEST MODE · No real payment. Click any outcome to simulate.
       </div>
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <p className="text-sm text-white/45">Payment confirmation</p>
-          <h1 className="mt-1 text-3xl font-semibold">{formatInr(session.amountPaise)}</h1>
+          <p className="text-sm text-[var(--text-tertiary)]">Payment confirmation</p>
+          <h1 className="mt-1 text-3xl font-semibold text-[var(--text-primary)]">{formatInr(session.amountPaise)}</h1>
         </div>
-        <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs">
+        <span className="rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs text-[var(--text-secondary)] font-medium">
           {formatEnumLabel(status)}
         </span>
       </div>
-      <p className="text-sm leading-6 text-white/55">{message}</p>
-      <div className="mt-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4 text-sm text-white/65">
+      <p className="text-sm leading-6 text-[var(--text-secondary)]">{message}</p>
+      <div className="mt-5 grid gap-3 rounded-[24px] border border-[var(--border)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-secondary)]">
         <p>
-          <span className="text-white/38">Plan:</span>{" "}
+          <span className="text-[var(--text-tertiary)]">Plan:</span>{" "}
           {session.planName ?? formatEnumLabel(session.purpose)}
         </p>
         <p>
-          <span className="text-white/38">Validity:</span>{" "}
+          <span className="text-[var(--text-tertiary)]">Validity:</span>{" "}
           {session.validityLabel ?? "Confirmation required"}
         </p>
         <p>
-          <span className="text-white/38">Activation:</span>{" "}
+          <span className="text-[var(--text-tertiary)]">Activation:</span>{" "}
           {session.activationLabel ?? "Confirmation required"}
         </p>
       </div>
       <div className="mt-8 grid gap-3 sm:grid-cols-3">
         <button
-          onClick={() => complete("SUCCEEDED")}
-          className="zook-focus rounded-2xl bg-lime-300 px-4 py-3 font-semibold text-black"
+          onClick={() => void complete("SUCCEEDED")}
+          className="zook-focus rounded-2xl bg-[var(--accent-fill)] px-4 py-3 font-semibold text-[var(--text-on-accent)] transition hover:opacity-90"
         >
           <CheckCircle2 className="mx-auto mb-2" />
           Simulate Success
         </button>
         <button
-          onClick={() => complete("PENDING")}
-          className="zook-focus rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-amber-100"
+          onClick={() => void complete("PENDING")}
+          className="zook-focus rounded-2xl border border-[var(--feedback-warning)] bg-[var(--surface-warning-soft)] hover:bg-[var(--bg-sunken)] px-4 py-3 text-[var(--feedback-warning)] font-semibold transition"
         >
           <Clock className="mx-auto mb-2" />
           Simulate Pending
         </button>
         <button
-          onClick={() => complete("FAILED")}
-          className="zook-focus rounded-2xl border border-red-300/30 bg-red-300/10 px-4 py-3 text-red-100"
+          onClick={() => void complete("FAILED")}
+          className="zook-focus rounded-2xl border border-[var(--feedback-danger)] bg-[var(--surface-danger-soft)] hover:bg-[var(--bg-sunken)] px-4 py-3 text-[var(--feedback-danger)] font-semibold transition"
         >
           <XCircle className="mx-auto mb-2" />
           Simulate Failure

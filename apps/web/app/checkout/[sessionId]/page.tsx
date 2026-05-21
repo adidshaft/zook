@@ -98,11 +98,11 @@ export default async function HostedCheckoutPage({
           <ZookLogo />
         </div>
         <div className="glass-panel w-full max-w-xl rounded-[28px] p-8">
-          <p className="text-sm text-white/45">Payment link</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">
+          <p className="text-sm text-[var(--text-tertiary)]">Payment link</p>
+          <h1 className="mt-2 text-3xl font-semibold text-[var(--text-primary)]">
             This payment link is no longer active
           </h1>
-          <p className="mt-3 text-sm leading-6 text-white/60">
+          <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             Please return to Zook and start checkout again.
           </p>
         </div>
@@ -122,61 +122,61 @@ export default async function HostedCheckoutPage({
         />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm text-white/45">Secure payment</p>
-            <h1 className="mt-2 text-3xl font-semibold text-white">
+            <p className="text-sm text-[var(--text-tertiary)]">Secure payment</p>
+            <h1 className="mt-2 text-3xl font-semibold text-[var(--text-primary)]">
               {formatInr(session.amountPaise)}
             </h1>
           </div>
-          <div className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
+          <div className="rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs text-[var(--text-secondary)]">
             {formatEnumLabel(session.status)}
           </div>
         </div>
 
-        <p className="mt-5 text-sm leading-6 text-white/60">
+        <p className="mt-5 text-sm leading-6 text-[var(--text-secondary)]">
           Review your membership and continue through the hosted payment handoff. Your membership
           activates only after backend payment confirmation.
         </p>
-        <p className="mt-2 text-sm font-medium text-lime-100">
+        <p className="mt-2 text-sm font-medium text-[var(--accent-strong)]">
           Secured by{" "}
           {session.provider.toLowerCase() === "razorpay"
             ? "Razorpay"
             : paymentPartnerLabel(session.provider)}
         </p>
         {showExpiryWarning ? (
-          <div className="mt-5 rounded-[22px] border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm text-amber-50">
+          <div className="mt-5 rounded-[22px] border border-[var(--feedback-warning)] bg-[var(--surface-warning-soft)] px-4 py-3 text-sm text-[var(--text-primary)]">
             This payment link expires in {expiryMinutes}m{" "}
             {expirySeconds.toString().padStart(2, "0")}s.
           </div>
         ) : null}
         {session.status === "SUCCEEDED" ? (
-          <div className="mt-5 rounded-[22px] border border-lime-300/25 bg-lime-300/10 px-4 py-3 text-sm text-lime-100">
+          <div className="mt-5 rounded-[22px] border border-[var(--feedback-success)] bg-[var(--surface-success-soft)] px-4 py-3 text-sm text-[var(--text-primary)]">
             Payment confirmed. Redirecting you back to Zook in 3 seconds.
           </div>
         ) : null}
 
-        <div className="mt-6 grid gap-4 rounded-[24px] border border-white/10 bg-black/20 p-5 text-sm text-white/70 md:grid-cols-2">
+        <div className="mt-6 grid gap-4 rounded-[24px] border border-[var(--border)] bg-[var(--surface-raised)] p-5 text-sm text-[var(--text-secondary)] md:grid-cols-2">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/35">For</p>
-            <p className="mt-2 font-medium text-white">{formatEnumLabel(session.purpose)}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">For</p>
+            <p className="mt-2 font-medium text-[var(--text-primary)]">{formatEnumLabel(session.purpose)}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Payment partner</p>
-            <p className="mt-2 font-medium text-white">{paymentPartnerLabel(session.provider)}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Payment partner</p>
+            <p className="mt-2 font-medium text-[var(--text-primary)]">{paymentPartnerLabel(session.provider)}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Status</p>
-            <p className="mt-2 font-medium text-white">{formatEnumLabel(session.status)}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Status</p>
+            <p className="mt-2 font-medium text-[var(--text-primary)]">{formatEnumLabel(session.status)}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/35">Valid until</p>
-            <p className="mt-2 font-medium text-white">{formatDateTime(session.expiresAt)}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Valid until</p>
+            <p className="mt-2 font-medium text-[var(--text-primary)]">{formatDateTime(session.expiresAt)}</p>
           </div>
         </div>
 
         {checkoutData ? (
-          <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/35">What happens next</p>
-            <div className="mt-3 grid gap-3 text-sm text-white/70 md:grid-cols-3">
+          <div className="mt-6 rounded-[24px] border border-[var(--border)] bg-[var(--bg-sunken)] p-5">
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">What happens next</p>
+            <div className="mt-3 grid gap-3 text-sm text-[var(--text-secondary)] md:grid-cols-3">
               {[
                 "Secure hosted checkout",
                 "Backend confirms payment",
@@ -184,9 +184,9 @@ export default async function HostedCheckoutPage({
               ].map((step, index) => (
                 <div
                   key={step}
-                  className="rounded-2xl border border-white/10 bg-black/20 p-3 text-white"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-3 text-[var(--text-primary)]"
                 >
-                  <span className="mr-2 text-lime-200">{index + 1}.</span>
+                  <span className="mr-2 text-[var(--accent-strong)]">{index + 1}.</span>
                   {step}
                 </div>
               ))}
@@ -206,19 +206,19 @@ export default async function HostedCheckoutPage({
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href={`/checkout/${session.id}`}
-            className="zook-focus inline-flex items-center justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+            className="zook-focus inline-flex items-center justify-center rounded-full bg-[var(--accent-fill)] px-5 py-3 font-semibold text-[var(--text-on-accent)] transition hover:opacity-90"
           >
             Refresh status
           </Link>
           <Link
             href={returnUrl ?? "/login"}
-            className="zook-focus inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-3 text-sm text-white/70 transition hover:bg-white/8"
+            className="zook-focus inline-flex items-center justify-center rounded-full border border-[var(--border)] px-5 py-3 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
           >
             Return to Zook
           </Link>
           <Link
             href={session.purpose === "MEMBERSHIP" ? "/me" : (returnUrl ?? "/me")}
-            className="zook-focus inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-3 text-sm text-white/70 transition hover:bg-white/8"
+            className="zook-focus inline-flex items-center justify-center rounded-full border border-[var(--border)] px-5 py-3 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
           >
             {session.purpose === "MEMBERSHIP" ? "View subscription" : "Back to order"}
           </Link>

@@ -75,19 +75,19 @@ export function MobileDashboardMenu({
         }
       }}
     >
-      <summary className="zook-focus flex min-h-12 cursor-pointer list-none items-center justify-between rounded-[24px] border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white transition hover:bg-white/8 [&::-webkit-details-marker]:hidden">
+      <summary className="zook-focus flex min-h-12 cursor-pointer list-none items-center justify-between rounded-[24px] border border-[var(--border)] bg-[var(--surface-raised)] px-4 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-sunken)] [&::-webkit-details-marker]:hidden">
         <span className="inline-flex items-center gap-2">
           <Menu size={18} />
           {copy.common.openMenu}
         </span>
-        <span className="text-xs text-white/40 group-open:hidden">{copy.nav.today}</span>
-        <span className="hidden text-xs text-white/40 group-open:inline">{copy.common.closeMenu}</span>
+        <span className="text-xs text-[var(--text-tertiary)] group-open:hidden">{copy.nav.today}</span>
+        <span className="hidden text-xs text-[var(--text-tertiary)] group-open:inline">{copy.common.closeMenu}</span>
       </summary>
-      <div className="absolute inset-x-0 top-full z-[120] mt-2 rounded-[28px] border border-white/10 bg-zinc-950/95 p-3 shadow-2xl shadow-black/50 backdrop-blur">
+      <div className="absolute inset-x-0 top-full z-[120] mt-2 rounded-[28px] border border-[var(--border)] bg-[var(--surface-raised)]/95 p-3 shadow-[var(--shadow-lg)] backdrop-blur">
         <nav className="grid gap-4">
           {visibleNavGroups.map((group) => (
             <div key={group.key} className="grid gap-1">
-              <p className="px-3 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-white/30">
+              <p className="px-3 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)] opacity-60">
                 {translatedGroupLabel(copy, group.key)}
               </p>
               {group.items.map((item) => {
@@ -100,7 +100,7 @@ export function MobileDashboardMenu({
                     href={href}
                     aria-current={active ? "page" : undefined}
                     className={`zook-focus flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition ${
-                      active ? "bg-lime-300 text-black" : "text-white/70 hover:bg-white/8 hover:text-white"
+                      active ? "bg-[var(--accent-fill)] text-[var(--text-on-accent)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
                     }`}
                   >
                     <Icon size={18} />
@@ -111,7 +111,7 @@ export function MobileDashboardMenu({
             </div>
           ))}
         </nav>
-        <div className="mt-4 border-t border-white/10 pt-3">
+        <div className="mt-4 border-t border-[var(--border-subtle)] pt-3">
           <DashboardSignOutButton
             label={copy.common.signOut}
             busyLabel={copy.common.signingOut}
