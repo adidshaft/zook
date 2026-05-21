@@ -176,8 +176,8 @@ function RadioCard({
       className={clsx(
         "zook-focus group min-h-16 rounded-[22px] border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-40",
         selected
-          ? "border-lime-300/55 bg-lime-300/14 text-white shadow-[inset_0_0_0_1px_rgba(190,242,100,0.22)]"
-          : "border-white/10 bg-black/20 text-white/68 hover:border-white/18 hover:bg-white/6",
+          ? "border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-[var(--text-primary)] shadow-[var(--shadow-glow-accent-subtle)]"
+          : "border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]",
         className,
       )}
     >
@@ -185,20 +185,20 @@ function RadioCard({
         <span className="min-w-0">
           <span className="block font-medium text-inherit">{children}</span>
           {description ? (
-            <span className="mt-1 block text-sm leading-5 text-white/45">{description}</span>
+            <span className="mt-1 block text-sm leading-5 text-[var(--text-tertiary)]">{description}</span>
           ) : null}
         </span>
         <span
           aria-hidden="true"
           className={clsx(
             "mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border transition",
-            selected ? "border-lime-200 bg-lime-300 text-black" : "border-white/18 bg-black/30",
+            selected ? "border-[var(--border-focus)] bg-[var(--accent-fill)] text-[var(--text-on-accent)]" : "border-[var(--border)] bg-[var(--bg-sunken)]",
           )}
         >
-          {selected ? <span className="h-2 w-2 rounded-full bg-black" /> : null}
+          {selected ? <span className="h-2 w-2 rounded-full bg-[var(--text-on-accent)]" /> : null}
         </span>
       </span>
-      {meta ? <span className="mt-3 block text-xs text-white/45">{meta}</span> : null}
+      {meta ? <span className="mt-3 block text-xs text-[var(--text-tertiary)]">{meta}</span> : null}
     </button>
   );
 }

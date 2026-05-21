@@ -51,13 +51,13 @@ export function OwnerSetupChecklist({
     <GlassCard variant="strong" className="overflow-hidden">
       <div className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr] xl:items-center">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-lime-200/70">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
             {copy.dashboard.setupEyebrow}
           </p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
             {interpolate(copy.dashboard.setupTitle, { orgName: activeOrg.name })}
           </h2>
-          <p className="mt-2 text-sm leading-6 text-white/55">
+          <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
             {copy.dashboard.setupDescription}
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -68,16 +68,16 @@ export function OwnerSetupChecklist({
             >
               {copy.dashboard.createFirstPlan}
             </ZookButtonLink>
-            <span className="text-sm text-white/45">
+            <span className="text-sm text-[var(--text-tertiary)]">
               {interpolate(copy.dashboard.setupComplete, {
                 completed,
                 total: checklist.length,
               })}
             </span>
           </div>
-          <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-4 h-1 overflow-hidden rounded-full bg-[var(--bg-sunken)]">
             <div
-              className="h-full rounded-full bg-lime-300 transition-all duration-500"
+              className="h-full rounded-full bg-[var(--accent-fill)] transition-all duration-500"
               style={{ width: `${(completed / checklist.length) * 100}%` }}
             />
           </div>
@@ -89,18 +89,18 @@ export function OwnerSetupChecklist({
               <Link
                 key={item.label}
                 href={item.href}
-                className="group rounded-[22px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/6"
+                className="group rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-4 transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
               >
                 <div className="flex items-start gap-3">
                   <Icon
                     size={20}
                     className={
-                      item.done ? "mt-0.5 shrink-0 text-lime-200" : "mt-0.5 shrink-0 text-white/30"
+                      item.done ? "mt-0.5 shrink-0 text-[var(--accent)]" : "mt-0.5 shrink-0 text-[var(--text-tertiary)]"
                     }
                   />
                   <div className="min-w-0">
-                    <p className="font-medium text-white">{item.label}</p>
-                    <p className="mt-1 text-xs leading-5 text-white/48">{item.detail}</p>
+                    <p className="font-medium text-[var(--text-primary)]">{item.label}</p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">{item.detail}</p>
                   </div>
                 </div>
               </Link>

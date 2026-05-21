@@ -46,7 +46,7 @@ export function HelpHint({
           }
         }}
         className={clsx(
-          "zook-focus inline-grid shrink-0 place-items-center rounded-full border border-white/12 bg-white/6 text-white/58 transition hover:bg-white/12 hover:text-white",
+          "zook-focus inline-grid shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)]/80 hover:text-[var(--text-primary)]",
           buttonSize,
         )}
       >
@@ -58,26 +58,26 @@ export function HelpHint({
           role="dialog"
           aria-label={title ?? label ?? "Help"}
           className={clsx(
-            "absolute top-full z-[160] mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-white/12 bg-zinc-950/98 p-4 text-left shadow-2xl shadow-black/55 backdrop-blur",
+            "absolute top-full z-[160] mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-4 text-left shadow-[var(--shadow-lg)] backdrop-blur",
             align === "start" ? "left-0" : "right-0",
           )}
         >
           <span className="flex items-start justify-between gap-3">
-            {title ? <span className="text-sm font-semibold text-white">{title}</span> : <span />}
+            {title ? <span className="text-sm font-semibold text-[var(--text-primary)]">{title}</span> : <span />}
             <button
               type="button"
               aria-label="Close help"
               onClick={() => setOpen(false)}
-              className="zook-focus -mr-1 -mt-1 grid h-7 w-7 shrink-0 place-items-center rounded-full text-white/45 hover:bg-white/8 hover:text-white"
+              className="zook-focus -mr-1 -mt-1 grid h-7 w-7 shrink-0 place-items-center rounded-full text-[var(--text-tertiary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
             >
               <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </span>
-          <span className="mt-2 block text-sm leading-6 text-white/62">{children}</span>
+          <span className="mt-2 block text-sm leading-6 text-[var(--text-secondary)]">{children}</span>
           {href ? (
             <a
               href={href}
-              className="zook-focus mt-3 inline-flex rounded-full text-xs font-semibold text-lime-100 underline-offset-4 hover:underline"
+              className="zook-focus mt-3 inline-flex rounded-full text-xs font-semibold text-[var(--accent)] underline-offset-4 hover:underline"
             >
               {hrefLabel}
             </a>

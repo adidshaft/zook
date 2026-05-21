@@ -178,11 +178,11 @@ export function DashboardShell({
           <LayoutTransition layoutKey={sectionKey}>
             {sectionKey === "" ? (
               <div className="px-1 pt-3 md:px-0">
-                <h1 className="text-3xl font-black tracking-[-0.035em] text-white md:text-4xl">
+                <h1 className="text-3xl font-black tracking-[-0.035em] text-[var(--text-primary)] md:text-4xl">
                   {pageTitle}
                 </h1>
                 {pageDescription ? (
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">
                     {pageDescription}
                   </p>
                 ) : null}

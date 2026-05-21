@@ -173,10 +173,10 @@ export default async function JoinPage({
           />
           <GlassCard className="mx-auto max-w-xl text-center">
             <Pill tone="amber">{t("joinUnavailable")}</Pill>
-            <p className="mt-4 text-sm leading-6 text-white/55">{t("joinUnavailable")}</p>
+            <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">{t("joinUnavailable")}</p>
             <Link
               href={localizedPath("/gyms", locale)}
-              className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
+              className="zook-focus mt-6 inline-flex rounded-full bg-[var(--accent-fill)] px-5 py-3 text-sm font-semibold text-[var(--text-on-accent)]"
             >
               {t("findGym")}
             </Link>
@@ -208,8 +208,8 @@ export default async function JoinPage({
           />
         <GlassCard className="mx-auto max-w-xl">
           <Pill tone="amber">{t("approvalRequired")}</Pill>
-          <h1 className="mt-5 text-3xl font-semibold text-white">{t("approvalRequired")}</h1>
-          <p className="mt-3 text-sm leading-6 text-white/55">{t("approvalCopy")}</p>
+          <h1 className="mt-5 text-3xl font-semibold text-[var(--text-primary)]">{t("approvalRequired")}</h1>
+          <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("approvalCopy")}</p>
           {viewerJoinState?.activeSubscription ? (
             <MembershipStateNotice
               title={t("membershipInProgressTitle")}
@@ -247,7 +247,7 @@ export default async function JoinPage({
           )}
           <Link
             href={localizedPath(`/g/${org.username}`, locale)}
-            className="zook-focus ml-3 mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70"
+            className="zook-focus ml-3 mt-6 inline-flex rounded-full border border-[var(--border)] px-5 py-3 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] transition"
           >
             {t("backToGym")}
           </Link>
@@ -270,8 +270,8 @@ export default async function JoinPage({
           />
         <GlassCard className="mx-auto max-w-xl">
           <Pill tone="red">{joinModeLabelForLocale(joinMode, locale)}</Pill>
-          <h1 className="mt-5 text-3xl font-semibold text-white">{t("inviteRequired")}</h1>
-          <p className="mt-3 text-sm leading-6 text-white/55">{t("inviteCopy")}</p>
+          <h1 className="mt-5 text-3xl font-semibold text-[var(--text-primary)]">{t("inviteRequired")}</h1>
+          <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("inviteCopy")}</p>
           <InviteCodeForm
             actionPath={`/join/${org.username}`}
             planHandle={selectedPlan.handle}
@@ -284,7 +284,7 @@ export default async function JoinPage({
           />
           <Link
             href={localizedPath(`/g/${org.username}`, locale)}
-            className="zook-focus mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-sm text-white/70"
+            className="zook-focus mt-6 inline-flex rounded-full border border-[var(--border)] px-5 py-3 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] transition"
           >
             {t("backToGym")}
           </Link>
@@ -308,12 +308,12 @@ export default async function JoinPage({
         <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
           <GlassCard variant="strong">
             <Pill tone="lime">{joinModeLabelForLocale(joinMode, locale)}</Pill>
-            <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white">
+            <h1 className="mt-5 text-4xl font-semibold tracking-tight text-[var(--text-primary)]">
               {t("reviewMembership")}
             </h1>
             {data.plans.length > 1 ? (
               <div className="mt-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
                   {t("choosePlan")}
                 </p>
                 <div
@@ -335,22 +335,22 @@ export default async function JoinPage({
                         )}
                         className={`zook-focus rounded-[22px] border p-4 transition ${
                           isSelected
-                            ? "border-lime-300/45 bg-lime-300/12"
-                            : "border-white/10 bg-black/20 hover:bg-white/8"
+                            ? "border-[var(--border-focus)] bg-[var(--surface-accent-soft)]"
+                            : "border-[var(--border)] bg-[var(--surface-raised)] hover:bg-[var(--bg-sunken)]"
                         }`}
                         role="radio"
                         aria-checked={isSelected}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="truncate font-medium text-white">
+                            <p className="truncate font-medium text-[var(--text-primary)]">
                               {resolvePlanName(plan)}
                             </p>
-                            <p className="mt-1 text-xs text-white/45">
+                            <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                               {validityLabel(plan, locale)} · {visitLabel(plan.visitLimit, locale)}
                             </p>
                           </div>
-                          <span className="font-semibold text-lime-200">
+                          <span className="font-semibold text-[var(--accent-strong)]">
                             {formatInr(plan.pricePaise)}
                           </span>
                         </div>
@@ -384,9 +384,9 @@ export default async function JoinPage({
                 }
               />
             </div>
-            <div className="mt-6 overflow-hidden rounded-[22px] border border-white/10 bg-black/20">
+            <div className="mt-6 overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)]">
               <table className="w-full text-left text-sm">
-                <tbody className="divide-y divide-white/10">
+                <tbody className="divide-y divide-[var(--border-subtle)]">
                   <BreakdownRow label={t("plan")} value={formatInr(selectedPlan.pricePaise)} />
                   <BreakdownRow
                     label={t("referralDiscount")}
@@ -410,8 +410,8 @@ export default async function JoinPage({
           </GlassCard>
 
           <GlassCard>
-            <p className="text-sm text-white/45">{t("finalAmount")}</p>
-            <p className="metric mt-2 text-5xl font-semibold text-lime-200">
+            <p className="text-sm text-[var(--text-tertiary)]">{t("finalAmount")}</p>
+            <p className="metric mt-2 text-5xl font-semibold text-[var(--accent)]">
               {formatInr(finalAmount)}
             </p>
             <div className="mt-6 grid gap-3">
@@ -419,29 +419,29 @@ export default async function JoinPage({
                 (step, index) => (
                   <div
                     key={step}
-                    className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4"
+                    className="flex items-center gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
                   >
-                    <CheckCircle2 className="text-lime-200" size={20} />
-                    <p className="text-sm text-white/75">
+                    <CheckCircle2 className="text-[var(--accent)]" size={20} />
+                    <p className="text-sm text-[var(--text-primary)]">
                       {index + 1}. {step}
                     </p>
                   </div>
                 ),
               )}
             </div>
-            <div className="mt-5 rounded-[22px] border border-sky-300/20 bg-sky-300/10 p-4">
+            <div className="mt-5 rounded-[22px] border border-[var(--border)] bg-[var(--surface-info-soft)] p-4">
               <div className="flex items-center gap-3">
-                <LockKeyhole className="text-sky-100" size={20} />
-                <p className="text-sm font-medium text-sky-50">
+                <LockKeyhole className="text-[var(--feedback-info)]" size={20} />
+                <p className="text-sm font-medium text-[var(--text-primary)]">
                   {t("paymentActivation")}
                 </p>
               </div>
             </div>
-            <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+            <div className="mt-5 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
                 {t("paymentMethod")}
               </p>
-              <div className="mt-3 rounded-2xl border border-lime-300/35 bg-lime-300/10 px-4 py-3 text-sm font-semibold text-lime-100">
+              <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-accent-soft)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)]">
                 {t("razorpay")}
               </div>
             </div>
@@ -472,22 +472,22 @@ export default async function JoinPage({
               />
             ) : process.env.NODE_ENV === "development" ? (
               <>
-                <div className="mt-6 rounded-[22px] border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
+                <div className="mt-6 rounded-[22px] border border-[var(--border)] bg-[var(--surface-warning-soft)] p-4 text-sm leading-6 text-[var(--text-primary)]">
                   {t("testMode")}
                 </div>
                 <Link
                   href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}
-                  className="zook-focus mt-4 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+                  className="zook-focus mt-4 inline-flex w-full justify-center rounded-full bg-[var(--accent-fill)] px-5 py-3 font-semibold text-[var(--text-on-accent)]"
                 >
                   {t("simulatedPayment")}
                 </Link>
               </>
             ) : (
-              <div className="mt-6 rounded-[22px] border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
+              <div className="mt-6 rounded-[22px] border border-[var(--border)] bg-[var(--surface-warning-soft)] p-4 text-sm leading-6 text-[var(--text-primary)]">
                 <p>{t("paymentUnavailable")}</p>
                 <Link
                   href={joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale)}
-                  className="zook-focus mt-4 inline-flex rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white"
+                  className="zook-focus mt-4 inline-flex rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] transition"
                 >
                   {t("retry")}
                 </Link>
@@ -515,16 +515,16 @@ function MembershipStateNotice({
 }) {
   const toneClass =
     tone === "lime"
-      ? "border-lime-300/25 bg-lime-300/10 text-lime-50"
-      : "border-amber-200/20 bg-amber-200/10 text-amber-100";
+      ? "border-[var(--border)] bg-[var(--surface-accent-soft)] text-[var(--text-primary)]"
+      : "border-[var(--border)] bg-[var(--surface-warning-soft)] text-[var(--text-primary)]";
 
   return (
     <div className={`mt-6 rounded-[22px] border px-4 py-3 ${toneClass}`}>
       <p className="text-sm font-medium">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-white/58">{copy}</p>
+      <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">{copy}</p>
       <Link
         href={href}
-        className="zook-focus mt-4 inline-flex rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white"
+        className="zook-focus mt-4 inline-flex rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] transition"
       >
         {cta}
       </Link>
@@ -534,9 +534,9 @@ function MembershipStateNotice({
 
 function Readout({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-      <p className="text-xs font-semibold uppercase text-white/35">{label}</p>
-      <p className="mt-2 font-medium text-white">{value}</p>
+    <div className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-4">
+      <p className="text-xs font-semibold uppercase text-[var(--text-tertiary)]">{label}</p>
+      <p className="mt-2 font-medium text-[var(--text-primary)]">{value}</p>
     </div>
   );
 }
@@ -552,10 +552,10 @@ function BreakdownRow({
 }) {
   return (
     <tr>
-      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
         {label}
       </th>
-      <td className={`px-4 py-3 text-right ${strong ? "font-semibold text-lime-100" : "text-white/72"}`}>
+      <td className={`px-4 py-3 text-right ${strong ? "font-semibold text-[var(--text-primary)]" : "text-[var(--text-secondary)]"}`}>
         {value}
       </td>
     </tr>

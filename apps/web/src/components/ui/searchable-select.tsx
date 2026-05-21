@@ -133,7 +133,7 @@ export function SearchableSelect({
   }
 
   return (
-    <div className={clsx("relative grid gap-2 text-sm text-white/62", className)}>
+    <div className={clsx("relative grid gap-2 text-sm text-[var(--text-secondary)]", className)}>
       <span>{label}</span>
       <button
         type="button"
@@ -142,12 +142,12 @@ export function SearchableSelect({
         aria-label={label}
         disabled={disabled}
         onClick={() => (open ? setOpen(false) : openMenu())}
-        className="zook-focus flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-2xl border border-white/10 bg-black/30 px-3 text-left text-sm text-white transition hover:bg-white/6 disabled:opacity-50"
+        className="zook-focus flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 text-left text-sm text-[var(--text-primary)] transition hover:bg-[var(--bg-sunken)]/80 disabled:opacity-50"
       >
         <span className="min-w-0 flex-1 truncate">
           {selectedLabels.length ? selectedLabels.join(", ") : placeholder}
         </span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-white/45" aria-hidden="true" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-[var(--text-tertiary)]" aria-hidden="true" />
       </button>
       {multiple && selectedLabels.length ? (
         <div className="flex flex-wrap gap-2">
@@ -156,7 +156,7 @@ export function SearchableSelect({
               key={selectedValue}
               type="button"
               onClick={() => selectValue(selectedValue)}
-              className="zook-focus inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-xs text-white/72"
+              className="zook-focus inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-2.5 py-1 text-xs text-[var(--text-secondary)]"
             >
               {selectedLabels[index]}
               <X className="h-3 w-3" aria-hidden="true" />
@@ -165,8 +165,8 @@ export function SearchableSelect({
         </div>
       ) : null}
       {open ? (
-        <div className="absolute left-0 right-0 top-full z-[150] mt-2 rounded-2xl border border-white/10 bg-zinc-950/98 p-2 shadow-2xl shadow-black/55 backdrop-blur">
-          <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-white/45">
+        <div className="absolute left-0 right-0 top-full z-[150] mt-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-2 shadow-[var(--shadow-lg)] backdrop-blur">
+          <label className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-tertiary)]">
             <Search className="h-4 w-4" aria-hidden="true" />
             <input
               ref={searchRef}
@@ -177,7 +177,7 @@ export function SearchableSelect({
               }}
               onKeyDown={handleSearchKeyDown}
               placeholder={searchPlaceholder}
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
             />
           </label>
           <div role="listbox" aria-label={label} className="mt-2 max-h-72 overflow-y-auto">
@@ -195,25 +195,25 @@ export function SearchableSelect({
                     onClick={() => selectValue(option.value)}
                     className={clsx(
                       "zook-focus flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition disabled:opacity-40",
-                      activeIndex === index ? "bg-white/10 text-white" : "text-white/68",
+                      activeIndex === index ? "bg-[var(--bg-sunken)] text-[var(--text-primary)]" : "text-[var(--text-secondary)]",
                     )}
                   >
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{option.label}</span>
                       {option.description ? (
-                        <span className="mt-0.5 block truncate text-xs text-white/42">
+                        <span className="mt-0.5 block truncate text-xs text-[var(--text-tertiary)]">
                           {option.description}
                         </span>
                       ) : null}
                     </span>
                     {selected ? (
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-lime-200" aria-hidden="true" />
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden="true" />
                     ) : null}
                   </button>
                 );
               })
             ) : (
-              <p className="px-3 py-4 text-sm text-white/45">{emptyLabel}</p>
+              <p className="px-3 py-4 text-sm text-[var(--text-tertiary)]">{emptyLabel}</p>
             )}
           </div>
         </div>

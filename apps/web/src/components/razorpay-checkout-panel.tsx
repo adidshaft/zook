@@ -127,17 +127,17 @@ export function RazorpayCheckoutPanel({
   }
 
   return (
-    <div className="mt-6 rounded-[24px] border border-lime-300/25 bg-lime-300/10 p-5">
+    <div className="mt-6 rounded-[24px] border border-[var(--border)] bg-[var(--surface-raised)] p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-lime-100/55">Secure checkout</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Secure checkout</p>
           {!scriptReady && !scriptError ? (
             <div role="status" aria-label={statusText} className="mt-3 grid gap-2">
-              <div className="h-3 w-60 animate-pulse rounded-full bg-white/15" />
-              <div className="h-3 w-40 animate-pulse rounded-full bg-white/10" />
+              <div className="h-3 w-60 animate-pulse rounded-full bg-[var(--border-subtle)]" />
+              <div className="h-3 w-40 animate-pulse rounded-full bg-[var(--border-subtle)]/70" />
             </div>
           ) : (
-            <p className="mt-2 text-sm text-white/70">{statusText}</p>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">{statusText}</p>
           )}
         </div>
         <ZookButton

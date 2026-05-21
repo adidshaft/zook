@@ -246,11 +246,11 @@ export function DashboardOverview({
         tone={accent}
         meta={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/80">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
               <PulseDot tone={accent} size={6} />
               Live
             </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-white/55">
+            <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)]/60 px-3 py-1 text-xs text-[var(--text-tertiary)]">
               {data.connected ? "Server-truth data" : "Demo mode"}
             </span>
           </div>
@@ -260,16 +260,16 @@ export function DashboardOverview({
       <GlassCard className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
               Next best actions
             </p>
-            <h2 className="mt-1 text-base font-semibold text-white">
+            <h2 className="mt-1 text-base font-semibold text-[var(--text-primary)]">
               {setupComplete ? "Keep the operating rhythm clean" : "What needs attention today"}
             </h2>
           </div>
           <Link
             href="/dashboard/reports"
-            className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/70 transition hover:border-white/25 hover:text-white"
+            className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
           >
             Open reports →
           </Link>
@@ -283,7 +283,7 @@ export function DashboardOverview({
               title={row.title}
               subtitle={row.subtitle}
               href={row.href}
-              trailing={<ChevronRight size={16} className="text-white/30" />}
+              trailing={<ChevronRight size={16} className="text-[var(--text-tertiary)]/60" />}
               index={index}
             />
           ))}
@@ -352,20 +352,20 @@ export function DashboardOverview({
           <GlassCard className="overflow-hidden p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
                   Revenue · last 7 days
                 </p>
                 <div className="mt-2 flex items-baseline gap-3">
-                  <span className="text-3xl font-bold tabular-nums text-white">
+                  <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
                     {formatInr(summary.revenuePaise)}
                   </span>
                   <DeltaChip delta={summary.revenuePaise > 0 ? 12.3 : 0} />
                 </div>
-                <p className="mt-1 text-xs text-white/45">Today is the latest mark</p>
+                <p className="mt-1 text-xs text-[var(--text-tertiary)]">Today is the latest mark</p>
               </div>
               <Link
                 href="/dashboard/reports"
-                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/70 transition hover:border-white/25 hover:text-white"
+                className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
               >
                 Open reports →
               </Link>
@@ -387,9 +387,9 @@ export function DashboardOverview({
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <AlertTriangle size={16} className="text-amber-300" />
-              <h2 className="text-base font-semibold text-white">Needs attention</h2>
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">Needs attention</h2>
             </div>
-            <Link href="/dashboard/reports" className="text-xs font-medium text-lime-300 hover:underline">
+            <Link href="/dashboard/reports" className="text-xs font-medium text-[var(--accent)] hover:underline">
               All →
             </Link>
           </div>
@@ -402,7 +402,7 @@ export function DashboardOverview({
                 title={row.title}
                 subtitle={row.subtitle}
                 href={row.href}
-                trailing={<ChevronRight size={16} className="text-white/30" />}
+                trailing={<ChevronRight size={16} className="text-[var(--text-tertiary)]/60" />}
                 index={index}
               />
             ))}
@@ -421,19 +421,19 @@ export function DashboardOverview({
         <GlassCard className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
                 Daily check-ins · last 7 days
               </p>
               <div className="mt-2 flex items-baseline gap-3">
-                <span className="text-3xl font-bold tabular-nums text-white">
+                <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
                   {summary.todayAttendance}
                 </span>
-                <span className="text-xs text-white/45">today</span>
+                <span className="text-xs text-[var(--text-tertiary)]">today</span>
               </div>
             </div>
             <Link
               href="/dashboard/attendance"
-              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/70 transition hover:border-white/25 hover:text-white"
+              className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
             >
               Open attendance →
             </Link>
@@ -448,16 +448,16 @@ export function DashboardOverview({
         <GlassCard className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
                 Plan mix
               </p>
-              <h2 className="mt-1 text-base font-semibold text-white">
+              <h2 className="mt-1 text-base font-semibold text-[var(--text-primary)]">
                 Where members are
               </h2>
             </div>
             <Link
               href="/dashboard/membership-plans"
-              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/70 transition hover:border-white/25 hover:text-white"
+              className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
             >
               Edit plans →
             </Link>
@@ -470,7 +470,7 @@ export function DashboardOverview({
               thickness={14}
               tone="lime"
               centerLabel={
-                <span className="text-2xl font-bold tabular-nums text-white">
+                <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
                   {planMix.length}
                 </span>
               }
@@ -498,8 +498,8 @@ export function DashboardOverview({
         {prefs.widgets.aiUsage ? (
         <GlassCard className="p-5 lg:col-span-4">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-white">AI usage</h2>
-            <Link href="/dashboard/ai" className="text-xs font-medium text-lime-300 hover:underline">
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">AI usage</h2>
+            <Link href="/dashboard/ai" className="text-xs font-medium text-[var(--accent)] hover:underline">
               Insights →
             </Link>
           </div>
@@ -511,7 +511,7 @@ export function DashboardOverview({
               thickness={12}
               tone="violet"
               centerLabel={
-                <span className="text-2xl font-bold tabular-nums text-white">
+                <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
                   {aiUsagePercent}%
                 </span>
               }
@@ -527,10 +527,10 @@ export function DashboardOverview({
               ).map(([label, value]) => (
                 <div
                   key={label}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-white/[0.025] px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2"
                 >
-                  <span className="text-xs text-white/45">{label}</span>
-                  <span className="text-sm font-semibold tabular-nums text-white">{value}</span>
+                  <span className="text-xs text-[var(--text-tertiary)]">{label}</span>
+                  <span className="text-sm font-semibold tabular-nums text-[var(--text-primary)]">{value}</span>
                 </div>
               ))}
             </div>
@@ -541,26 +541,26 @@ export function DashboardOverview({
         {prefs.widgets.staffActivity ? (
         <GlassCard className="p-5 lg:col-span-5">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-white">Recent staff activity</h2>
-            <Link href="/dashboard/audit" className="text-xs font-medium text-lime-300 hover:underline">
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">Recent staff activity</h2>
+            <Link href="/dashboard/audit" className="text-xs font-medium text-[var(--accent)] hover:underline">
               Audit log →
             </Link>
           </div>
           <Link
             href="/dashboard/audit"
-            className="mt-4 flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.025] px-3 py-3 transition hover:border-white/15"
+            className="mt-4 flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-3 transition hover:border-[var(--border)]"
           >
             <AvatarInitials name="Audit" className="h-9 w-9 rounded-full" />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm text-white">
+              <span className="block truncate text-sm text-[var(--text-primary)]">
                 <strong className="tabular-nums">{summary.staffCount}</strong> staff roles ·{" "}
                 <strong className="tabular-nums">{data.auditLogCount}</strong> audit records
               </span>
-              <span className="block text-xs text-white/45">
+              <span className="block text-xs text-[var(--text-tertiary)]">
                 Open audit log for exact actions and timestamps
               </span>
             </span>
-            <ChevronRight size={16} className="text-white/35" />
+            <ChevronRight size={16} className="text-[var(--text-tertiary)]/60" />
           </Link>
         </GlassCard>
         ) : null}
@@ -569,19 +569,19 @@ export function DashboardOverview({
         <GlassCard className="relative overflow-hidden p-5 lg:col-span-3">
           <div className="absolute -right-12 -bottom-12 h-40 w-40 rounded-full bg-lime-300/8 blur-3xl" />
           <div className="flex items-center gap-2">
-            <Bot size={16} className="text-lime-300" />
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-lime-200/70">
+            <Bot size={16} className="text-[var(--accent)]" />
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
               Zook tip
             </span>
           </div>
-          <p className="mt-3 text-sm leading-6 text-white/72">
+          <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             {summary.todayAttendance === 0
               ? "No check-ins recorded today yet. Try a reminder campaign when the gym confirms it."
               : `${summary.todayAttendance} members checked in today. Keep the desk queue clear before peak hours.`}
           </p>
           <Link
             href="/dashboard/members"
-            className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white transition hover:border-lime-300/35 hover:bg-lime-300/8"
+            className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
           >
             <Sparkles size={12} />
             View members
