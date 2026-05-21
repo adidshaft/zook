@@ -24,10 +24,31 @@ function normalizeOrigin(value: string | undefined, fallback: string) {
   }
 }
 
+function isLocalOrigin(origin: string) {
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
 export function getOrigins(): WebOrigins {
+  const configuredPublicOrigin = process.env.NEXT_PUBLIC_WEB_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+  const publicOrigin = normalizeOrigin(
+    configuredPublicOrigin,
+    defaultPublicOrigin(),
+  );
+  const dashboardFallback =
+    configuredPublicOrigin?.trim() &&
+    !process.env.NEXT_PUBLIC_DASHBOARD_URL?.trim() &&
+    isLocalOrigin(publicOrigin)
+      ? publicOrigin
+      : defaultDashboardOrigin();
+
   return {
-    public: normalizeOrigin(process.env.NEXT_PUBLIC_WEB_URL, defaultPublicOrigin()),
-    dashboard: normalizeOrigin(process.env.NEXT_PUBLIC_DASHBOARD_URL, defaultDashboardOrigin()),
+    public: publicOrigin,
+    dashboard: normalizeOrigin(process.env.NEXT_PUBLIC_DASHBOARD_URL, dashboardFallback),
   };
 }
 
