@@ -1,9 +1,13 @@
-import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import { PublicProfileDashboardRoute } from "@/components/dashboard/route-panels";
 
 export default function PublicProfilePage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["public-profile"], searchParams });
+  return renderDashboardPanelRoute(
+    { section: ["public-profile"], searchParams },
+    PublicProfileDashboardRoute,
+  );
 }

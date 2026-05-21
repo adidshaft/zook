@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { formatInr } from "@/lib/format";
-import type { CouponKind, CouponRow } from "../../../dashboard-operational-model";
+import type { CouponKind, CouponRow } from "@/components/dashboard/types";
 import { HelpHint } from "../../../ui";
 import { Select, TextInput } from "../../primitives";
 import { ZookButton } from "../../../zook-button";

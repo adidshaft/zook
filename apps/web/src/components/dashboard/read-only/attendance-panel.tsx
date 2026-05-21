@@ -22,7 +22,7 @@ import type {
   BranchScopeSnapshot,
   OrganizationSnapshot,
   OrganizationSummary,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-shared";
 import type { PagedState } from "./types";
 

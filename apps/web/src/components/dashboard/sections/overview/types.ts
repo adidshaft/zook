@@ -19,7 +19,7 @@ import type {
   RewardType,
   StaffAssignmentRow,
   StaffUserRow,
-} from "../../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 
 export type ResourceState<T> = {
   data: T | undefined;

@@ -2,7 +2,7 @@ import { formatCompactNumber, formatInr } from "@/lib/format";
 import { ReadoutGrid, SectionHeader } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { CsvExportButton } from "../operational-shared";
-import type { OrganizationSummary, PaymentRow } from "../../dashboard-operational-model";
+import type { OrganizationSummary, PaymentRow } from "@/components/dashboard/types";
 
 export function PaymentReconciliationCard({
   orgId,

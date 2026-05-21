@@ -11,7 +11,7 @@ import type {
   NotificationSnapshot,
   OrganizationSnapshot,
   OrganizationSummary,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import type { Permission, Role } from "@zook/core";
 import { HelpHint } from "../../ui";
 

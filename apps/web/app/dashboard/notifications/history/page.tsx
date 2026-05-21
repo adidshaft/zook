@@ -1,9 +1,14 @@
-import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import { NotificationsDashboardRoute } from "@/components/dashboard/route-panels";
 
 export default function NotificationHistoryPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["notifications", "history"], searchParams });
+  return renderDashboardPanelRoute(
+    { section: ["notifications", "history"], searchParams },
+    NotificationsDashboardRoute,
+    { view: "history" },
+  );
 }

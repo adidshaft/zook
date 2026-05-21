@@ -1,7 +1,7 @@
 import { formatCompactNumber } from "@/lib/format";
 import { ReadoutGrid, SectionHeader } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
-import type { MembershipPlanRow, OrganizationSummary } from "../../dashboard-operational-model";
+import type { MembershipPlanRow, OrganizationSummary } from "@/components/dashboard/types";
 
 export function RevenueOpportunitiesCard({
   summary,

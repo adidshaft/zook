@@ -10,87 +10,15 @@ import { type DashboardOperationalPanelProps } from "./controller-types";
 
 export type { DashboardOperationalPanelProps } from "./controller-types";
 
-function operationalModeForSection(sectionKey: string) {
-  if (sectionKey.includes("public-profile") || sectionKey === "org") {
-    return "public-profile";
-  }
-  if (sectionKey === "settings") {
-    return "settings";
-  }
-  if (sectionKey.includes("join-requests")) {
-    return "join-requests";
-  }
-  if (sectionKey.includes("attendance")) {
-    return "attendance";
-  }
-  if (sectionKey.includes("notifications/templates")) {
-    return "notification-templates";
-  }
-  if (sectionKey.includes("notifications/history")) {
-    return "notification-history";
-  }
-  if (sectionKey.includes("notifications")) {
-    return "notifications";
-  }
-  if (sectionKey.includes("reports")) {
-    return "reports";
-  }
-  if (sectionKey.includes("shop")) {
-    return "shop";
-  }
-  if (
-    sectionKey.includes("staff") ||
-    sectionKey.includes("trainers") ||
-    sectionKey.includes("pt")
-  ) {
-    return "staff";
-  }
-  if (sectionKey === "plans/coupons" || sectionKey.startsWith("plans/coupons/")) {
-    return "plan-coupons";
-  }
-  if (sectionKey === "plans/offers" || sectionKey.startsWith("plans/offers/")) {
-    return "plan-offers";
-  }
-  if (sectionKey === "plans/referrals" || sectionKey.startsWith("plans/referrals/")) {
-    return "plan-referrals";
-  }
-  if (sectionKey.includes("membership-plans") || sectionKey === "plans") {
-    return "plans";
-  }
-  if (sectionKey.includes("billing")) {
-    return "billing";
-  }
-  if (sectionKey.includes("payments/refunds")) {
-    return "payment-refunds";
-  }
-  if (sectionKey.includes("payments") || sectionKey.includes("checkout")) {
-    return "payments";
-  }
-  if (sectionKey.includes("branches")) {
-    return "branches";
-  }
-  if (sectionKey.includes("audit")) {
-    return "audit";
-  }
-  if (sectionKey.includes("members")) {
-    return "members";
-  }
-  if (sectionKey.includes("ai")) {
-    return "ai";
-  }
-  return "overview";
-}
-
 export function useDashboardOperationalController({
   orgId,
-  sectionKey,
+  mode,
   organization,
   summary,
   branchScope,
   initialJoinRequests,
   initialAiUsage,
 }: DashboardOperationalPanelProps) {
-  const mode = operationalModeForSection(sectionKey);
   const state = useDashboardOperationalState(organization);
   const resources = useDashboardOperationalResources({
     orgId,

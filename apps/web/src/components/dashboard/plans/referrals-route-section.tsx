@@ -5,7 +5,7 @@ import { formatCompactNumber } from "@/lib/format";
 import { Pill } from "../../glass-card";
 import { ReadoutGrid, Section, StatusPill, Toggle, TextInput, Select } from "../primitives";
 import { ZookButton, ZookButtonLink } from "../../zook-button";
-import type { DiscountType, RewardType } from "../../dashboard-operational-model";
+import type { DiscountType, RewardType } from "@/components/dashboard/types";
 import { ReferralCodeControls } from "../sections/overview/referral-code-controls";
 import { RouteFeedback } from "./route-feedback";
 import type { GrowthRouteProps } from "./types";

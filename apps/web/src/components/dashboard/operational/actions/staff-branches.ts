@@ -1,7 +1,7 @@
 import { webApiFetch } from "@/lib/api-client";
 import { branchFormPayload, type BranchFormState } from "../../sections/branches-section";
 import { normalizeBranchHours, serializeBranchHours } from "../../sections/branch-hours-editor";
-import { type BranchRow, type CoachPlanRow } from "../../../dashboard-operational-model";
+import { type BranchRow, type CoachPlanRow } from "@/components/dashboard/types";
 import { createEmptyStaffInvite, type DashboardOperationalState } from "../controller-state";
 import { type DashboardOperationalResources } from "../controller-resources";
 

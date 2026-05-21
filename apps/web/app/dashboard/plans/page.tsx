@@ -1,9 +1,10 @@
-import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import { PlansDashboardRoute } from "@/components/dashboard/route-panels";
 
 export default function PlansPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["plans"], searchParams });
+  return renderDashboardPanelRoute({ section: ["plans"], searchParams }, PlansDashboardRoute);
 }

@@ -3,7 +3,7 @@ import type {
   CouponRow,
   ReferralCodeRow,
   StaffUserRow,
-} from "../../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import { Select, TextInput } from "../../primitives";
 import { ZookButton } from "../../../zook-button";
 import type { ReferralFormState } from "./types";

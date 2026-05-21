@@ -7,7 +7,7 @@ import { GlassCard } from "../../glass-card";
 import { PaymentProofUpload } from "../../payment-proof-upload";
 import { HelpHint, SearchableSelect } from "../../ui";
 import { ZookButton } from "../../zook-button";
-import type { MembershipPlanRow, MemberRow } from "../../dashboard-operational-model";
+import type { MembershipPlanRow, MemberRow } from "@/components/dashboard/types";
 import { formatPaymentMode, modeOptions, type PaymentReceiptState } from "./payments-utils";
 import type { ManualPaymentForm } from "./types";
 
