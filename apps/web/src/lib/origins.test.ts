@@ -11,6 +11,7 @@ describe("origins", () => {
   it("uses local defaults outside production", () => {
     (process.env as Record<string, string | undefined>).NODE_ENV = "test";
     delete process.env.NEXT_PUBLIC_WEB_URL;
+    delete process.env.NEXT_PUBLIC_APP_URL;
     delete process.env.NEXT_PUBLIC_DASHBOARD_URL;
 
     expect(getOrigins()).toEqual({
@@ -22,6 +23,7 @@ describe("origins", () => {
   it("uses production defaults when production env vars are absent", () => {
     (process.env as Record<string, string | undefined>).NODE_ENV = "production";
     delete process.env.NEXT_PUBLIC_WEB_URL;
+    delete process.env.NEXT_PUBLIC_APP_URL;
     delete process.env.NEXT_PUBLIC_DASHBOARD_URL;
 
     expect(getOrigins()).toEqual({
@@ -30,9 +32,34 @@ describe("origins", () => {
     });
   });
 
+  it("uses the public origin for dashboard in local single-origin production runs", () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    process.env.NEXT_PUBLIC_WEB_URL = "http://127.0.0.1:3000";
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    delete process.env.NEXT_PUBLIC_DASHBOARD_URL;
+
+    expect(getOrigins()).toEqual({
+      public: "http://127.0.0.1:3000",
+      dashboard: "http://127.0.0.1:3000",
+    });
+  });
+
+  it("falls back to the app URL for local single-origin runs", () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    delete process.env.NEXT_PUBLIC_WEB_URL;
+    process.env.NEXT_PUBLIC_APP_URL = "http://127.0.0.1:3120";
+    delete process.env.NEXT_PUBLIC_DASHBOARD_URL;
+
+    expect(getOrigins()).toEqual({
+      public: "http://127.0.0.1:3120",
+      dashboard: "http://127.0.0.1:3120",
+    });
+  });
+
   it("normalizes configured origins", () => {
     (process.env as Record<string, string | undefined>).NODE_ENV = "test";
     process.env.NEXT_PUBLIC_WEB_URL = "https://www.zookfit.in/some/path";
+    delete process.env.NEXT_PUBLIC_APP_URL;
     process.env.NEXT_PUBLIC_DASHBOARD_URL = "https://dashboard.zookfit.in/dashboard";
 
     expect(getOrigins()).toEqual({
