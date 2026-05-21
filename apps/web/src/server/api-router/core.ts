@@ -5113,7 +5113,8 @@ export async function handleAuth(request: NextRequest, path: string[]) {
       const auth = new AuthService(new PrismaAuthRepo(), getEmailProviderOrThrow());
       await auth.logout(token);
     }
-    const response = ok({ loggedOut: true });
+    const logoutUrl = process.env.NEXT_PUBLIC_WEB_URL ?? "https://zookfit.in";
+    const response = ok({ loggedOut: true, redirectUrl: new URL("/", logoutUrl).toString() });
     response.cookies.set(sessionCookieName, "", {
       ...sharedSessionCookieOptions(request, new Date(0)),
     });

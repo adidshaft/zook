@@ -186,6 +186,7 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
 
   results.push(checkAbsoluteUrl("App URL", "NEXT_PUBLIC_APP_URL"));
   results.push(checkAbsoluteUrl("Web URL", "NEXT_PUBLIC_WEB_URL"));
+  results.push(checkAbsoluteUrl("Dashboard URL", "NEXT_PUBLIC_DASHBOARD_URL"));
 
   const mobileApiBaseUrl = env("MOBILE_API_BASE_URL") ?? env("EXPO_PUBLIC_API_BASE_URL");
   if (!mobileApiBaseUrl) {

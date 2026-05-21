@@ -5,9 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
 import { ArrowRight, Mail } from "lucide-react";
 import { ApiError, parseApiResponse } from "@zook/core";
+import type { AuthSessionSummary } from "@zook/core";
 import { toast } from "sonner";
 import { ZookButton } from "./zook-button";
-import { resolvePostLoginPath } from "@/lib/auth-destinations";
+import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-destinations";
+import type { WebHost } from "@/lib/host-routing";
+import { getOrigins, webHostFromHeader, type WebOrigins } from "@/lib/origins";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 
 const containerVariants: Variants = {
@@ -52,6 +55,7 @@ const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const isDev = process.env.NODE_ENV === "development";
 const googleOAuthStateKey = "zook.googleOAuthState";
 const googleOAuthRedirectKey = "zook.googleOAuthRedirect";
+type LoginSession = Parameters<typeof resolvePostLoginDestination>[0];
 
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
@@ -95,7 +99,15 @@ function rateLimitMessage(response: Response, locale: PublicLocale) {
   return { seconds, message: publicT(locale, "tooManyAttempts", { seconds }) };
 }
 
-export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
+export function LoginPanel({
+  locale = "en",
+  currentHost,
+  origins,
+}: {
+  locale?: PublicLocale;
+  currentHost?: WebHost;
+  origins?: WebOrigins;
+}) {
   const searchParams = useSearchParams();
   const t = (
     key: Parameters<typeof publicT>[1],
@@ -182,6 +194,17 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
     return email.trim().toLowerCase();
   }
 
+  function redirectHrefForSession(session: LoginSession, redirect: string | null) {
+    const resolvedOrigins = origins ?? getOrigins();
+    const resolvedCurrentHost =
+      currentHost ?? webHostFromHeader(window.location.host, resolvedOrigins);
+    return destinationToHref(
+      resolvePostLoginDestination(session, redirect),
+      resolvedCurrentHost,
+      resolvedOrigins,
+    );
+  }
+
   async function requestOtp({ resend = false }: { resend?: boolean } = {}) {
     if (resend && resendCooldown > 0) {
       return;
@@ -240,7 +263,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
         body: JSON.stringify({ identifier: trimmedIdentifier, code: otpCode }),
       });
       const payload = await parseApiResponse<{
-        session?: Parameters<typeof resolvePostLoginPath>[0];
+        session?: AuthSessionSummary;
       }>(response).catch((error) => {
         if (error instanceof ApiError && error.status === 429) {
           throw new Error(rateLimitMessage(response, locale).message);
@@ -251,7 +274,7 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
       const safeRedirect =
         redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
       toast.success(t("verifyContinue"));
-      window.location.href = resolvePostLoginPath(payload.session, safeRedirect);
+      window.location.href = redirectHrefForSession(payload.session, safeRedirect);
     } catch (error) {
       const nextMessage = error instanceof Error ? error.message : t("unableVerifyOtp");
       setMessage(nextMessage);
@@ -273,13 +296,13 @@ export function LoginPanel({ locale = "en" }: { locale?: PublicLocale }) {
         body: JSON.stringify(body),
       });
       const payload = await parseApiResponse<{
-        session?: Parameters<typeof resolvePostLoginPath>[0];
+        session?: AuthSessionSummary;
       }>(response);
       const redirect = redirectOverride ?? searchParams.get("redirect");
       const safeRedirect =
         redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
       toast.success(t("verifyContinue"));
-      window.location.href = resolvePostLoginPath(payload.session, safeRedirect);
+      window.location.href = redirectHrefForSession(payload.session, safeRedirect);
     } catch (error) {
       const nextMessage =
         error instanceof Error ? error.message : "Sign-in could not be completed.";

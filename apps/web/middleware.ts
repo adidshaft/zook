@@ -48,6 +48,7 @@ function buildContentSecurityPolicy(nonce: string) {
   for (const origin of [
     originFromEnv(process.env.NEXT_PUBLIC_APP_URL),
     originFromEnv(process.env.NEXT_PUBLIC_WEB_URL),
+    originFromEnv(process.env.NEXT_PUBLIC_DASHBOARD_URL),
     originFromEnv(process.env.NEXT_PUBLIC_SENTRY_DSN),
   ]) {
     if (origin) {
@@ -130,25 +131,36 @@ function portFromRequest(request: NextRequest) {
   return request.headers.get("host")?.match(/:(\d+)$/)?.[1] ?? request.nextUrl.port;
 }
 
-function redirectToHost(request: NextRequest, hostname: string) {
+function redirectToHost(
+  request: NextRequest,
+  hostname: string,
+  currentHostname = hostnameFromRequest(request),
+) {
   const isLocalTarget = isLocalHost(hostname);
   const protocol = isLocalTarget ? "http" : "https";
   const port = isLocalTarget ? portFromRequest(request) : "";
-  const origin = `${protocol}://${hostname}${port ? `:${port}` : ""}`;
-  const pathAndSearch = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-  const redirectUrl = new URL(pathAndSearch, origin);
+  // Next dev normalizes dashboard.localhost -> localhost internally; the dotted
+  // localhost keeps the public local hop absolute while resolving to localhost.
+  const redirectHostname =
+    isLocalTarget && hostname === DEV_PUBLIC_HOST && currentHostname === DEV_STAFF_HOST
+      ? "localhost."
+      : hostname;
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.protocol = `${protocol}:`;
+  redirectUrl.hostname = redirectHostname;
+  redirectUrl.port = port;
   return new NextResponse(null, {
     status: 308,
     headers: { Location: redirectUrl.toString() },
   });
 }
 
-function staffHostForRequest(request: NextRequest) {
-  return isLocalHost(hostnameFromRequest(request)) ? DEV_STAFF_HOST : STAFF_HOST;
+function staffHostForHostname(hostname: string) {
+  return isLocalHost(hostname) ? DEV_STAFF_HOST : STAFF_HOST;
 }
 
-function publicHostForRequest(request: NextRequest) {
-  return isLocalHost(hostnameFromRequest(request)) ? DEV_PUBLIC_HOST : PUBLIC_HOST;
+function publicHostForHostname(hostname: string) {
+  return isLocalHost(hostname) ? DEV_PUBLIC_HOST : PUBLIC_HOST;
 }
 
 function isStaffPrivatePath(pathname: string) {
@@ -179,10 +191,10 @@ export function middleware(request: NextRequest) {
   const expectedHost = expectedHostForPath(request.nextUrl.pathname);
   const useSingleOriginHostRouting = shouldUseSingleOriginHostRouting(hostname);
   if (expectedHost === "dashboard" && host !== "staff" && !useSingleOriginHostRouting) {
-    return redirectToHost(request, staffHostForRequest(request));
+    return redirectToHost(request, staffHostForHostname(hostname), hostname);
   }
   if (expectedHost === "public" && host === "staff" && !useSingleOriginHostRouting) {
-    return redirectToHost(request, publicHostForRequest(request));
+    return redirectToHost(request, publicHostForHostname(hostname), DEV_STAFF_HOST);
   }
 
   const hasSession = Boolean(request.cookies.get(sessionCookieName)?.value);

@@ -5,7 +5,9 @@ import { CalendarDays, CreditCard, Dumbbell, MapPin } from "lucide-react";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { PublicNav } from "@/components/public-nav";
+import { destinationToUrl, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
+import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata: Metadata = {
@@ -16,19 +18,10 @@ export const metadata: Metadata = {
 
 export default async function MyMembershipPage() {
   const session = await requireDashboardSession();
-  const roles = session.activeOrganization?.roles ?? [];
+  const destination = resolvePostLoginDestination(session);
 
-  if (session.user.isPlatformAdmin) {
-    redirect("/platform");
-  }
-  if (roles.some((role) => role === "OWNER" || role === "ADMIN")) {
-    redirect("/dashboard");
-  }
-  if (roles.includes("RECEPTIONIST")) {
-    redirect("/desk");
-  }
-  if (roles.includes("TRAINER")) {
-    redirect("/coach");
+  if (destination.host === "dashboard") {
+    redirect(destinationToUrl(destination, getOrigins()));
   }
 
   const subscriptions = await prisma.memberSubscription.findMany({
@@ -143,7 +136,9 @@ export default async function MyMembershipPage() {
                         Last payment
                       </p>
                       <p className="mt-1 text-sm font-medium text-white">
-                        {payment ? `${formatInr(payment.amountPaise)} · ${formatDate(payment.recordedAt)}` : "Not available"}
+                        {payment
+                          ? `${formatInr(payment.amountPaise)} · ${formatDate(payment.recordedAt)}`
+                          : "Not available"}
                       </p>
                     </div>
                   </div>
