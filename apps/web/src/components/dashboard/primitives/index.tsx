@@ -93,17 +93,17 @@ export function TextInput({
   error?: ReactNode;
 }) {
   return (
-    <label className={clsx("grid gap-2 text-sm text-white/62", className)}>
+    <label className={clsx("grid gap-2 text-sm text-[var(--text-secondary)]", className)}>
       {label}
       <input
         {...props}
         className={clsx(
-          "zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white placeholder:text-white/35 disabled:opacity-50",
-          error ? "border-red-300/35" : undefined,
+          "zook-focus min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] disabled:opacity-50",
+          error ? "border-[var(--feedback-danger)]" : undefined,
         )}
       />
-      {error ? <span className="text-xs text-red-200">{error}</span> : null}
-      {hint && !error ? <span className="text-xs text-white/42">{hint}</span> : null}
+      {error ? <span className="text-xs text-[var(--feedback-danger)]">{error}</span> : null}
+      {hint && !error ? <span className="text-xs text-[var(--text-tertiary)]">{hint}</span> : null}
     </label>
   );
 }
@@ -120,16 +120,16 @@ export function TextArea({
   error?: ReactNode;
 }) {
   return (
-    <label className={clsx("grid gap-2 text-sm text-white/62", className)}>
+    <label className={clsx("grid gap-2 text-sm text-[var(--text-secondary)]", className)}>
       {label}
       <textarea
         {...props}
         className={clsx(
-          "zook-focus min-h-28 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/35 disabled:opacity-50",
+          "zook-focus min-h-28 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] disabled:opacity-50",
         )}
       />
-      {error ? <span className="text-xs text-red-200">{error}</span> : null}
-      {hint && !error ? <span className="text-xs text-white/42">{hint}</span> : null}
+      {error ? <span className="text-xs text-[var(--feedback-danger)]">{error}</span> : null}
+      {hint && !error ? <span className="text-xs text-[var(--text-tertiary)]">{hint}</span> : null}
     </label>
   );
 }

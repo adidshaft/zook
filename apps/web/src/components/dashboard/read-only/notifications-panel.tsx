@@ -121,7 +121,7 @@ export function NotificationsPanel({
             action={
               <Link
                 href="/dashboard/notifications/history"
-                className="zook-focus rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/8"
+                className="zook-focus rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
               >
                 Open history →
               </Link>
@@ -137,19 +137,19 @@ export function NotificationsPanel({
                       ? "/dashboard/notifications/history?status=attention"
                       : `/dashboard/notifications/history?status=${encodeURIComponent(notification.status)}`
                   }
-                  className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+                  className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-white">{notification.title}</p>
+                    <p className="font-medium text-[var(--text-primary)]">{notification.title}</p>
                     <StatusPill value={formatEnumLabel(notification.status)} />
                   </div>
-                  <p className="mt-2 text-xs text-white/45">
+                  <p className="mt-2 text-xs text-[var(--text-tertiary)]">
                     {formatEnumLabel(notification.type)}
                     {notification.audience ? ` · ${formatEnumLabel(notification.audience)}` : ""}
                     {" · "}
                     {formatDateTime(notification.createdAt)}
                   </p>
-                  <span className="mt-3 inline-flex text-xs font-semibold text-lime-100">
+                  <span className="mt-3 inline-flex text-xs font-semibold text-[var(--accent-strong)]">
                     Open history →
                   </span>
                 </Link>

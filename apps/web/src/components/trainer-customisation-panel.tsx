@@ -72,30 +72,30 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
     <GlassCard className="relative overflow-hidden p-5">
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-lime-300/8 blur-3xl"
+        className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] blur-3xl"
       />
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Settings2 size={16} className="text-lime-300" />
-          <h2 className="text-base font-semibold text-white">
+          <Settings2 size={16} className="text-[var(--accent-strong)]" />
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">
             Personalise your coach workspace
           </h2>
         </div>
         <button
           type="button"
           onClick={reset}
-          className="zook-focus rounded-full border border-white/10 px-3 py-1 text-[11px] font-medium text-white/55 transition hover:border-white/25 hover:text-white"
+          className="zook-focus rounded-full border border-[var(--border)] px-3 py-1 text-[11px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
         >
           Reset
         </button>
       </div>
-      <p className="mt-2 text-sm leading-6 text-white/55">
+      <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
         Saved locally to this browser. {trainerName ? `Hi, ${trainerName}.` : null}
       </p>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <SegmentRow
-          icon={<ClipboardList size={14} className="text-lime-300" />}
+          icon={<ClipboardList size={14} className="text-[var(--accent-strong)]" />}
           label="Default landing tab"
           description="Where coaching opens by default"
           value={prefs.defaultLanding}
@@ -107,7 +107,7 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
           ]}
         />
         <SegmentRow
-          icon={<Users size={14} className="text-sky-300" />}
+          icon={<Users size={14} className="text-[var(--feedback-info)]" />}
           label="Week starts on"
           description="Affects week schedule + reports"
           value={prefs.weekStart}
@@ -118,21 +118,21 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
           ]}
         />
         <SwitchRow
-          icon={<Bell size={14} className="text-amber-300" />}
+          icon={<Bell size={14} className="text-[var(--feedback-warning)]" />}
           label="Auto-notify on plan change"
           description="Push the client when you update a plan"
           checked={prefs.autoNotifyOnPlanChange}
           onChange={(value) => update("autoNotifyOnPlanChange", value)}
         />
         <SwitchRow
-          icon={<Sparkles size={14} className="text-violet-300" />}
+          icon={<Sparkles size={14} className="text-[var(--feedback-success)]" />}
           label="Show revenue snippet"
           description="Display your monthly trainer payout at a glance"
           checked={prefs.showRevenueCard}
           onChange={(value) => update("showRevenueCard", value)}
         />
         <SegmentRow
-          icon={<Sparkles size={14} className="text-lime-300" />}
+          icon={<Sparkles size={14} className="text-[var(--accent-strong)]" />}
           label="Accent colour"
           description="Used across charts and chips"
           value={prefs.preferredAccent}
@@ -151,7 +151,7 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
           key={saved ?? "idle"}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-4 text-xs text-lime-200/70"
+          className="mt-4 text-xs text-[var(--accent-strong)]"
         >
           {saved ? "Saved" : "Loaded preferences"}
         </motion.p>
@@ -176,13 +176,13 @@ function SegmentRow<T extends string>({
   onChange: (next: T) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
       <div className="flex items-center gap-2">
         {icon}
-        <p className="text-sm font-medium text-white">{label}</p>
+        <p className="text-sm font-medium text-[var(--text-primary)]">{label}</p>
       </div>
-      <p className="mt-1 text-xs text-white/45">{description}</p>
-      <div className="mt-3 inline-flex rounded-full border border-white/10 bg-black/30 p-1 text-[11px]">
+      <p className="mt-1 text-xs text-[var(--text-tertiary)]">{description}</p>
+      <div className="mt-3 inline-flex rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] p-1 text-[11px]">
         {options.map((opt) => (
           <button
             key={opt.value}
@@ -191,8 +191,8 @@ function SegmentRow<T extends string>({
             aria-pressed={opt.value === value}
             className={`zook-focus rounded-full px-3 py-1 font-medium transition ${
               opt.value === value
-                ? "bg-lime-300 text-black"
-                : "text-white/55 hover:text-white"
+                ? "bg-[var(--accent-fill)] text-[var(--text-on-accent)] font-semibold shadow-sm"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             }`}
           >
             {opt.label}
@@ -217,13 +217,13 @@ function SwitchRow({
   onChange: (next: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
-      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.04]">
+    <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
+      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--bg-sunken)]">
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium text-white">{label}</span>
-        <span className="block text-xs text-white/45">{description}</span>
+        <span className="block text-sm font-medium text-[var(--text-primary)]">{label}</span>
+        <span className="block text-xs text-[var(--text-tertiary)]">{description}</span>
       </span>
       <button
         type="button"
@@ -232,15 +232,15 @@ function SwitchRow({
         onClick={() => onChange(!checked)}
         className={`zook-focus relative h-6 w-11 shrink-0 rounded-full border transition ${
           checked
-            ? "border-lime-300/45 bg-lime-300/35"
-            : "border-white/15 bg-white/[0.04]"
+            ? "border-[color-mix(in_srgb,var(--accent)_45%,transparent)] bg-[var(--surface-accent-soft)]"
+            : "border-[var(--border-strong)] bg-[var(--bg-sunken)]"
         }`}
       >
         <span
           className={`absolute top-0.5 grid h-5 w-5 place-items-center rounded-full transition ${
             checked
-              ? "left-[calc(100%-1.375rem)] bg-lime-300 text-black"
-              : "left-0.5 bg-white/40"
+              ? "left-[calc(100%-1.375rem)] bg-[var(--accent-fill)] text-[var(--text-on-accent)]"
+              : "left-0.5 bg-[var(--text-tertiary)]"
           }`}
         />
       </button>

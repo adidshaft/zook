@@ -25,7 +25,7 @@ export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicL
               width={640}
               height={480}
               sizes="(min-width: 768px) 33vw, 100vw"
-              className="aspect-[4/3] rounded-[28px] border border-white/10 object-cover"
+              className="aspect-[4/3] rounded-[28px] border border-[var(--border)] object-cover"
               unoptimized
             />
           ))}
@@ -48,16 +48,16 @@ function TagCard({
 }) {
   return (
     <GlassCard>
-      <h2 className="text-2xl font-semibold text-white">{title}</h2>
+      <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{title}</h2>
       <div className="mt-5 flex flex-wrap gap-2">
         {items.length ? (
           items.map((item) => (
-            <Pill key={item} tone={tone} className="border-white/15 bg-white/10 text-white/80">
+            <Pill key={item} tone={tone}>
               {item}
             </Pill>
           ))
         ) : (
-          <p className="text-sm text-white/50">{empty}</p>
+          <p className="text-sm text-[var(--text-tertiary)]">{empty}</p>
         )}
       </div>
     </GlassCard>

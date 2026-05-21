@@ -20,10 +20,10 @@ export function GymMembershipCard({
   const hasPublicPlans = plans.length > 0;
   return (
     <GlassCard variant="strong" className="h-fit">
-      <p className="text-sm text-white/45">{t("membershipPreview")}</p>
-      <h2 className="mt-2 text-3xl font-semibold text-white">{priceSummary(plans, locale)}</h2>
-      <p className="mt-3 text-sm leading-6 text-white/55">{t("choosePlanProfile")}</p>
-      <div className="mx-auto mt-5 w-40 rounded-[24px] border border-white/10 bg-white p-3">
+      <p className="text-sm text-[var(--text-tertiary)]">{t("membershipPreview")}</p>
+      <h2 className="mt-2 text-3xl font-semibold text-[var(--text-primary)]">{priceSummary(plans, locale)}</h2>
+      <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("choosePlanProfile")}</p>
+      <div className="mx-auto mt-5 w-40 rounded-[24px] border border-[var(--border)] bg-white p-3">
         <Image
           src={`/qr/${org.username}?target=join`}
           alt={`Join ${org.name} on Zook`}
@@ -34,16 +34,16 @@ export function GymMembershipCard({
           unoptimized
         />
       </div>
-      <p className="mt-3 text-center text-xs text-white/45">{t("scanToJoin")}</p>
+      <p className="mt-3 text-center text-xs text-[var(--text-tertiary)]">{t("scanToJoin")}</p>
       {hasPublicPlans ? (
         <Link
           href="#plans"
-          className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
+          className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-[var(--accent-fill)] px-5 py-3 font-semibold text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)] transition hover:bg-[var(--accent-soft)]"
         >
           {t("viewPlans")}
         </Link>
       ) : (
-        <div className="mt-6 rounded-[24px] border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/55">
+        <div className="mt-6 rounded-[24px] border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-secondary)]">
           {priceSummary([], locale)}
         </div>
       )}
@@ -55,12 +55,12 @@ export function GymMembershipCard({
         copyLabel={t("copyJoinLink")}
         copiedLabel={t("copied")}
       />
-      <div className="mt-5 rounded-[24px] border border-white/10 bg-black/20 p-4">
+      <div className="mt-5 rounded-[24px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
         <div className="flex items-center gap-3">
-          <ShieldCheck className="text-lime-200" size={22} />
-          <p className="text-sm font-medium text-white">{t("securePayment")}</p>
+          <ShieldCheck className="text-[var(--accent)]" size={22} />
+          <p className="text-sm font-medium text-[var(--text-primary)]">{t("securePayment")}</p>
         </div>
-        <p className="mt-2 text-sm leading-6 text-white/50">{t("paymentActivation")}</p>
+        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{t("paymentActivation")}</p>
       </div>
     </GlassCard>
   );

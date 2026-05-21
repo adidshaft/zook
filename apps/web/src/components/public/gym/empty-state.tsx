@@ -15,11 +15,11 @@ export function GymNotFound({
       <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
         <GlassCard className="mx-auto max-w-xl text-center">
           <Pill tone="amber">{t("gymNotFound")}</Pill>
-          <h1 className="mt-5 text-3xl font-semibold text-white">{t("gymNotFound")}</h1>
-          <p className="mt-3 text-sm leading-6 text-white/55">{t("gymNotFoundCopy")}</p>
+          <h1 className="mt-5 text-3xl font-semibold text-[var(--text-primary)]">{t("gymNotFound")}</h1>
+          <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("gymNotFoundCopy")}</p>
           <Link
             href={localizedPath("/gyms", locale)}
-            className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
+            className="zook-focus mt-6 inline-flex rounded-full bg-[var(--accent-fill)] hover:bg-[var(--accent-strong)] px-5 py-3 text-sm font-semibold text-[var(--text-on-accent)] transition-colors duration-200"
           >
             {t("findGym")}
           </Link>

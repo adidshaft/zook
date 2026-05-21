@@ -22,7 +22,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
   const entriesWithPhotos = visibleEntries.filter((entry) => entry.photoAssetId).length;
 
   return (
-    <div className="mt-4 rounded-[24px] border border-white/10 bg-black/20 p-4 lg:col-span-4">
+    <div className="mt-4 rounded-[24px] border border-[var(--border)] bg-[var(--bg-sunken)]/40 p-4 lg:col-span-4">
       <SectionHeader
         eyebrow="Body composition"
         title="Photo timeline"
@@ -38,9 +38,9 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
           {visibleEntries.map((entry, index) => (
             <article
               key={entry.id}
-              className="overflow-hidden rounded-[24px] border border-white/10 bg-black/20"
+              className="overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--bg-sunken)]/30"
             >
-              <div className="relative aspect-[4/3] bg-white/[0.035]">
+              <div className="relative aspect-[4/3] bg-[var(--bg-sunken)]/20">
                 {entry.photoAssetId ? (
                   <img
                     src={`/api/files/${entry.photoAssetId}/content`}
@@ -49,7 +49,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
                     loading="lazy"
                   />
                 ) : (
-                  <div className="flex h-full flex-col items-center justify-center gap-3 text-white/42">
+                  <div className="flex h-full flex-col items-center justify-center gap-3 text-[var(--text-tertiary)]">
                     <Camera size={24} aria-hidden="true" />
                     <span className="text-sm">No photo attached</span>
                   </div>
@@ -62,33 +62,33 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
               </div>
               <div className="grid gap-3 p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-white">{formatDate(entry.measuredAt)}</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{formatDate(entry.measuredAt)}</p>
                   <Pill tone={entry.visibility === "PRIVATE" ? "amber" : "blue"}>
                     {entry.visibility ? entry.visibility.replaceAll("_", " ") : "Visible"}
                   </Pill>
                 </div>
                 <dl className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
-                    <dt className="text-white/35">Weight</dt>
-                    <dd className="mt-1 font-medium text-white">
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2">
+                    <dt className="text-[var(--text-tertiary)]">Weight</dt>
+                    <dd className="mt-1 font-medium text-[var(--text-primary)]">
                       {numericLabel(entry.weightKg, " kg")}
                     </dd>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
-                    <dt className="text-white/35">Body fat</dt>
-                    <dd className="mt-1 font-medium text-white">
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2">
+                    <dt className="text-[var(--text-tertiary)]">Body fat</dt>
+                    <dd className="mt-1 font-medium text-[var(--text-primary)]">
                       {numericLabel(entry.bodyFatPercent, "%")}
                     </dd>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
-                    <dt className="text-white/35">Waist</dt>
-                    <dd className="mt-1 font-medium text-white">
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2">
+                    <dt className="text-[var(--text-tertiary)]">Waist</dt>
+                    <dd className="mt-1 font-medium text-[var(--text-primary)]">
                       {numericLabel(entry.waistCm, " cm")}
                     </dd>
                   </div>
                 </dl>
                 {entry.notes ? (
-                  <p className="text-xs leading-5 text-white/48">{entry.notes}</p>
+                  <p className="text-xs leading-5 text-[var(--text-secondary)]">{entry.notes}</p>
                 ) : null}
               </div>
             </article>

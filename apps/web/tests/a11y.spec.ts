@@ -3,6 +3,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { loginWithSessionCookie, seedAndGetOrg } from "./helpers";
 
 async function expectA11yClean(page: import("@playwright/test").Page) {
+  // Wait for any entry transitions or fade-in animations to fully complete
+  await page.waitForTimeout(500);
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 }

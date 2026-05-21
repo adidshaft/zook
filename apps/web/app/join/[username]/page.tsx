@@ -312,12 +312,14 @@ export default async function JoinPage({
               {t("reviewMembership")}
             </h1>
             {data.plans.length > 1 ? (
-              <div className="mt-6">
+              <div className="mt-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
                   {t("choosePlan")}
                 </p>
                 <div
-                  className="mt-3 grid gap-3 md:grid-cols-2"
+                  className={`mt-2.5 grid gap-2.5 md:grid-cols-2 ${
+                    data.plans.length > 4 ? "max-h-[185px] overflow-y-auto pr-1 scroll-smooth" : ""
+                  }`}
                   role="radiogroup"
                   aria-label="Membership plan"
                 >
@@ -359,140 +361,164 @@ export default async function JoinPage({
                   })}
                 </div>
               </div>
-            ) : null}
-            <div className="mt-6 grid gap-3">
-              <Readout label="Gym" value={`${org.name} · ${org.city}`} />
-              <Readout label={t("plan")} value={resolvePlanName(selectedPlan)} />
-              <Readout label={t("duration")} value={validityLabel(selectedPlan, locale)} />
-              <Readout label={t("visits")} value={visitLabel(selectedPlan.visitLimit, locale)} />
-              <Readout
-                label={t("referralDiscount")}
-                value={
-                  referral
-                    ? `Referral ${referral.code} applied · -${formatInr(referralDiscountPaise)}`
-                    : t("none")
-                }
-              />
-              <Readout
-                label={t("couponDiscount")}
-                value={
-                  couponPreview
-                    ? `Coupon ${couponPreview.code} applied · -${formatInr(couponDiscountPaise)}`
-                    : couponCode
-                      ? `${couponCode} could not be validated for this plan`
-                      : t("none")
-                }
-              />
-            </div>
-            <div className="mt-6 overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)]">
-              <table className="w-full text-left text-sm">
-                <tbody className="divide-y divide-[var(--border-subtle)]">
-                  <BreakdownRow label={t("plan")} value={formatInr(selectedPlan.pricePaise)} />
-                  <BreakdownRow
-                    label={t("referralDiscount")}
-                    value={referral ? `-${formatInr(referralDiscountPaise)}` : t("none")}
-                  />
-                  <BreakdownRow
-                    label={t("couponDiscount")}
-                    value={couponPreview ? `-${formatInr(couponDiscountPaise)}` : t("none")}
-                  />
-                  <BreakdownRow label={t("finalAmount")} value={formatInr(finalAmount)} strong />
-                </tbody>
-              </table>
-            </div>
-            <CouponApplyForm
-              orgId={org.id}
-              username={org.username}
-              planId={selectedPlan.id}
-              referralCode={referral?.code ?? null}
-              initialCouponCode={couponPreview?.code ?? null}
-            />
-          </GlassCard>
-
-          <GlassCard>
-            <p className="text-sm text-[var(--text-tertiary)]">{t("finalAmount")}</p>
-            <p className="metric mt-2 text-5xl font-semibold text-[var(--accent)]">
-              {formatInr(finalAmount)}
-            </p>
-            <div className="mt-6 grid gap-3">
-              {[t("paymentDetails"), t("paymentConfirmed"), t("membershipActivates")].map(
-                (step, index) => (
-                  <div
-                    key={step}
-                    className="flex items-center gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
-                  >
-                    <CheckCircle2 className="text-[var(--accent)]" size={20} />
-                    <p className="text-sm text-[var(--text-primary)]">
-                      {index + 1}. {step}
+            ) : (
+              <div className="mt-6 rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+                  Selected Plan
+                </p>
+                <div className="mt-3 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-[var(--text-primary)]">
+                      {resolvePlanName(selectedPlan)}
+                    </h3>
+                    <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                      {validityLabel(selectedPlan, locale)} · {visitLabel(selectedPlan.visitLimit, locale)}
                     </p>
                   </div>
-                ),
-              )}
-            </div>
-            <div className="mt-5 rounded-[22px] border border-[var(--border)] bg-[var(--surface-info-soft)] p-4">
-              <div className="flex items-center gap-3">
-                <LockKeyhole className="text-[var(--feedback-info)]" size={20} />
-                <p className="text-sm font-medium text-[var(--text-primary)]">
-                  {t("paymentActivation")}
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-                {t("paymentMethod")}
-              </p>
-              <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-accent-soft)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)]">
-                {t("razorpay")}
-              </div>
-            </div>
-            {viewerJoinState?.activeSubscription ? (
-              <MembershipStateNotice
-                title={t("membershipInProgressTitle")}
-                copy={t("membershipInProgressCopy")}
-                href={
-                  viewerJoinState.session.user.slug
-                    ? `/m/${viewerJoinState.session.user.slug}`
-                    : viewerJoinState.session.user.privateHandle
-                      ? `/me/${viewerJoinState.session.user.privateHandle}`
-                      : "/me"
-                }
-                cta={t("viewMembership")}
-                tone="lime"
-              />
-            ) : data.connected ? (
-              <JoinCheckoutButton
-                orgId={org.id}
-                planId={selectedPlan.id}
-                couponCode={couponPreview?.code ?? null}
-                referralCode={referral?.code ?? null}
-                loginPath={loginRedirect(
-                  joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale),
-                  locale,
-                )}
-              />
-            ) : process.env.NODE_ENV === "development" ? (
-              <>
-                <div className="mt-6 rounded-[22px] border border-[var(--border)] bg-[var(--surface-warning-soft)] p-4 text-sm leading-6 text-[var(--text-primary)]">
-                  {t("testMode")}
+                  <span className="text-lg font-bold text-[var(--accent-strong)]">
+                    {formatInr(selectedPlan.pricePaise)}
+                  </span>
                 </div>
-                <Link
-                  href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}
-                  className="zook-focus mt-4 inline-flex w-full justify-center rounded-full bg-[var(--accent-fill)] px-5 py-3 font-semibold text-[var(--text-on-accent)]"
-                >
-                  {t("simulatedPayment")}
-                </Link>
-              </>
-            ) : (
-              <div className="mt-6 rounded-[22px] border border-[var(--border)] bg-[var(--surface-warning-soft)] p-4 text-sm leading-6 text-[var(--text-primary)]">
-                <p>{t("paymentUnavailable")}</p>
-                <Link
-                  href={joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale)}
-                  className="zook-focus mt-4 inline-flex rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] transition"
-                >
-                  {t("retry")}
-                </Link>
               </div>
             )}
+          </GlassCard>
+
+          <GlassCard className="flex flex-col justify-between h-full">
+            <div>
+              <p className="text-sm text-[var(--text-tertiary)]">{t("finalAmount")}</p>
+              <p className="metric mt-1 text-5xl font-bold tracking-tight text-[var(--accent-strong)]">
+                {formatInr(finalAmount)}
+              </p>
+
+              {/* Secure Checkout CTA high-up for immediate visibility */}
+              <div className="mt-4">
+                {viewerJoinState?.activeSubscription ? (
+                  <MembershipStateNotice
+                    title={t("membershipInProgressTitle")}
+                    copy={t("membershipInProgressCopy")}
+                    href={
+                      viewerJoinState.session.user.slug
+                        ? `/m/${viewerJoinState.session.user.slug}`
+                        : viewerJoinState.session.user.privateHandle
+                          ? `/me/${viewerJoinState.session.user.privateHandle}`
+                          : "/me"
+                    }
+                    cta={t("viewMembership")}
+                    tone="lime"
+                  />
+                ) : data.connected ? (
+                  <JoinCheckoutButton
+                    orgId={org.id}
+                    planId={selectedPlan.id}
+                    couponCode={couponPreview?.code ?? null}
+                    referralCode={referral?.code ?? null}
+                    loginPath={loginRedirect(
+                      joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale),
+                      locale,
+                    )}
+                  />
+                ) : process.env.NODE_ENV === "development" ? (
+                  <div className="grid gap-3">
+                    <div className="rounded-[18px] border border-[var(--border)] bg-[var(--surface-warning-soft)] p-3 text-xs leading-5 text-[var(--text-secondary)]">
+                      {t("testMode")}
+                    </div>
+                    <Link
+                      href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}
+                      className="zook-focus inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--accent-fill)] px-5 py-2.5 text-sm font-semibold text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)] transition duration-200 active:translate-y-px"
+                    >
+                      {t("simulatedPayment")}
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="rounded-[18px] border border-[var(--border)] bg-[var(--surface-warning-soft)] p-4 text-xs leading-5 text-[var(--text-secondary)]">
+                    <p>{t("paymentUnavailable")}</p>
+                    <Link
+                      href={joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale)}
+                      className="zook-focus mt-3 inline-flex rounded-full border border-[var(--border)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] transition"
+                    >
+                      {t("retry")}
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Pricing breakdown table moved here */}
+              <div className="mt-5 overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)]">
+                <table className="w-full text-left text-xs">
+                  <tbody className="divide-y divide-[var(--border-subtle)]">
+                    <tr className="bg-[var(--bg-sunken)]/40">
+                      <th className="px-4 py-2.5 font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)] w-1/3">
+                        Gym
+                      </th>
+                      <td className="px-4 py-2.5 font-medium text-[var(--text-primary)]">
+                        {org.name} · {org.city}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th className="px-4 py-2.5 font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                        {t("plan")}
+                      </th>
+                      <td className="px-4 py-2.5 font-medium text-[var(--text-primary)]">
+                        {resolvePlanName(selectedPlan)} ({validityLabel(selectedPlan, locale)} · {visitLabel(selectedPlan.visitLimit, locale)})
+                      </td>
+                    </tr>
+                    <BreakdownRow label="Base Price" value={formatInr(selectedPlan.pricePaise)} />
+                    {referral && (
+                      <BreakdownRow
+                        label={`${t("referralDiscount")} (${referral.code})`}
+                        value={`-${formatInr(referralDiscountPaise)}`}
+                      />
+                    )}
+                    {couponPreview && (
+                      <BreakdownRow
+                        label={`${t("couponDiscount")} (${couponPreview.code})`}
+                        value={`-${formatInr(couponDiscountPaise)}`}
+                      />
+                    )}
+                    <BreakdownRow label={t("finalAmount")} value={formatInr(finalAmount)} strong />
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Coupon form moved here */}
+              <CouponApplyForm
+                orgId={org.id}
+                username={org.username}
+                planId={selectedPlan.id}
+                referralCode={referral?.code ?? null}
+                initialCouponCode={couponPreview?.code ?? null}
+              />
+
+              {/* High-density, professional checkout summary block */}
+              <div className="mt-5 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4 text-xs leading-tight">
+                {/* Payment Method */}
+                <div className="flex items-center justify-between font-medium text-[var(--text-secondary)]">
+                  <span>{t("paymentMethod")}</span>
+                  <span className="font-semibold text-[var(--text-primary)]">{t("razorpay")}</span>
+                </div>
+                
+                {/* Checkout Progress Steps in a neat horizontal bar */}
+                <div className="mt-4 flex items-center justify-between gap-1 border-t border-[var(--border-subtle)] pt-4 text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
+                  <span className="flex items-center gap-1 font-semibold text-[var(--accent-strong)]">
+                    <CheckCircle2 size={12} className="shrink-0" /> Pay
+                  </span>
+                  <span className="h-px flex-1 bg-[var(--border-subtle)]" />
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 size={12} className="shrink-0" /> Confirm
+                  </span>
+                  <span className="h-px flex-1 bg-[var(--border-subtle)]" />
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 size={12} className="shrink-0" /> Activate
+                  </span>
+                </div>
+
+                {/* Secure Payment warning inline */}
+                <div className="mt-4 flex items-center gap-2 border-t border-[var(--border-subtle)] pt-4 text-[11px] text-[var(--text-secondary)]">
+                  <LockKeyhole className="text-[var(--accent-strong)] shrink-0" size={14} />
+                  <span>{t("paymentActivation")}</span>
+                </div>
+              </div>
+            </div>
           </GlassCard>
         </section>
       </div>
@@ -534,9 +560,9 @@ function MembershipStateNotice({
 
 function Readout({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-4">
-      <p className="text-xs font-semibold uppercase text-[var(--text-tertiary)]">{label}</p>
-      <p className="mt-2 font-medium text-[var(--text-primary)]">{value}</p>
+    <div className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">{label}</p>
+      <p className="mt-1 font-medium text-sm text-[var(--text-primary)] truncate" title={value}>{value}</p>
     </div>
   );
 }

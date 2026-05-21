@@ -117,10 +117,10 @@ export function AttendancePanel({
                     header: "Member",
                     render: (record) => (
                       <div>
-                        <p className="font-medium text-white">
+                        <p className="font-medium text-[var(--text-primary)]">
                           {record.user?.name ?? record.user?.email ?? "Member"}
                         </p>
-                        <p className="mt-1 text-xs text-white/45">
+                        <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                           {record.plan?.name ?? "Membership"}
                         </p>
                       </div>

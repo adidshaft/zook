@@ -28,8 +28,8 @@ export function GymPlansGrid({
       <section id="plans" className="scroll-mt-5">
         <GlassCard>
           <Pill tone="amber">{t("plansComingSoon")}</Pill>
-          <h2 className="mt-4 text-2xl font-semibold text-white">{priceSummary([], locale)}</h2>
-          <p className="mt-3 text-sm leading-6 text-white/55">{t("noPublicPlanCopy")}</p>
+          <h2 className="mt-4 text-2xl font-semibold text-[var(--text-primary)]">{priceSummary([], locale)}</h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("noPublicPlanCopy")}</p>
         </GlassCard>
       </section>
     );
@@ -45,23 +45,23 @@ export function GymPlansGrid({
         >
           <GlassCard
             variant={plan.id === recommendedPlanId ? "selected" : "default"}
-            className="h-full transition hover:border-lime-300/25 hover:bg-white/[0.075]"
+            className="h-full transition hover:border-[var(--border-focus)] hover:bg-[var(--bg-sunken)]"
           >
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <Pill tone={plan.id === recommendedPlanId ? "lime" : "neutral"}>
                   {plan.id === recommendedPlanId ? t("mostPopular") : plan.type.replaceAll("_", " ")}
                 </Pill>
-                <h2 className="mt-4 max-w-full truncate text-2xl font-semibold text-white">
+                <h2 className="mt-4 max-w-full truncate text-2xl font-semibold text-[var(--text-primary)]">
                   {resolvePlanName(plan)}
                 </h2>
               </div>
-              <p className="metric shrink-0 text-2xl font-semibold text-lime-200">
+              <p className="metric shrink-0 text-2xl font-semibold text-[var(--accent-strong)]">
                 {formatInr(plan.pricePaise)}
               </p>
             </div>
-            <p className="mt-3 text-sm leading-6 text-white/52">{plan.description}</p>
-            <p className="mt-4 text-sm text-white/45">
+            <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{plan.description}</p>
+            <p className="mt-4 text-sm text-[var(--text-tertiary)]">
               {plan.durationDays
                 ? `${plan.durationDays} ${t("days")}`
                 : plan.type === "TRIAL"
@@ -75,7 +75,7 @@ export function GymPlansGrid({
       {plans.length > visiblePlans.length ? (
         <Link
           href={localizedPath(`/join/${org.username}`, locale)}
-          className="zook-focus inline-flex w-fit rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/75 lg:col-span-3"
+          className="zook-focus inline-flex w-fit rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] lg:col-span-3"
         >
           {t("seeAllPlansPrefix")} {plans.length} {t("seeAllPlansSuffix")}
         </Link>
