@@ -1,58 +1,63 @@
+@import "./palettes/light.css";
+@import "./palettes/dark.css";
+
 :root {
-  --zook-bg: #070908;
-  --zook-graphite-950: #070908;
-  --zook-graphite-900: #101310;
-  --zook-graphite-800: #171c18;
-  --zook-graphite-700: #222820;
-  --zook-graphite-600: #333b32;
-  --zook-surface: rgba(255, 255, 255, 0.06);
-  --zook-surface-strong: rgba(255, 255, 255, 0.08);
-  --zook-glass: rgba(255, 255, 255, 0.06);
-  --zook-glass-strong: rgba(255, 255, 255, 0.08);
-  --zook-border: rgba(255, 255, 255, 0.14);
-  --zook-border-strong: rgba(255, 255, 255, 0.20);
-  --zook-text: #f4f7ef;
-  --zook-muted: #aeb8a8;
-  --zook-subtle: #778273;
-  --zook-text-muted: #aeb8a8;
-  --zook-lime: #b9f455;
-  --zook-lime-soft: #d7ff6a;
-  --zook-lime-dim: rgba(185, 244, 85, 0.16);
-  --zook-lime-border: rgba(185, 244, 85, 0.45);
-  --zook-lime-deep: #6fad21;
-  --zook-warning: #f2c94c;
-  --zook-danger: #ff5a3d;
-  --zook-amber: #f2c94c;
-  --zook-red: #ff5a3d;
-  --zook-blue: #7dd3fc;
-  --zook-radius-xs: 8px;
-  --zook-radius-sm: 12px;
-  --zook-radius-md: 18px;
-  --zook-radius-lg: 24px;
-  --zook-radius-xl: 28px;
-  --zook-radius-xxl: 32px;
-  --zook-shadow-glass: 0 24px 80px rgba(0, 0, 0, 0.38), 0 10px 28px rgba(0, 0, 0, 0.24);
-  --zook-shadow-glow-lime: 0 18px 46px rgba(185, 244, 85, 0.16), 0 0 0 1px rgba(185, 244, 85, 0.08);
-  --zook-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.13), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-  --zook-lime-glow-subtle: 0 0 24px rgba(185, 244, 85, 0.4);
-  --zook-sidebar-width: 280px;
-  --zook-header-height: 72px;
-  --zook-card-radius: 24px;
-  --zook-stat-card-radius: 20px;
+  color-scheme: light;
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+  --radius-xxl: 32px;
+  --sidebar-width: 280px;
+  --header-height: 72px;
+  --card-radius: var(--radius-lg);
+  --stat-card-radius: 20px;
 }
 
-.zook-glass {
-  background: var(--zook-glass);
-  border: 1px solid var(--zook-border);
-  box-shadow: var(--zook-shadow-glass), var(--zook-shadow-inset);
-  backdrop-filter: blur(24px);
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
-.zook-glass-strong {
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.045)),
-    var(--zook-glass-strong);
-  border: 1px solid var(--zook-border-strong);
-  box-shadow: var(--zook-shadow-glass), var(--zook-shadow-inset);
-  backdrop-filter: blur(28px);
+:root {
+  --zook-bg: var(--bg);
+  --zook-graphite-950: var(--bg);
+  --zook-graphite-900: var(--bg-elevated);
+  --zook-graphite-800: var(--bg-elevated);
+  --zook-graphite-700: var(--surface-raised);
+  --zook-graphite-600: var(--surface-raised);
+  --zook-surface: var(--surface);
+  --zook-surface-strong: var(--surface-raised);
+  --zook-glass: var(--surface);
+  --zook-glass-strong: var(--surface-raised);
+  --zook-border: var(--border);
+  --zook-border-strong: var(--border-strong);
+  --zook-text: var(--text-primary);
+  --zook-muted: var(--text-secondary);
+  --zook-subtle: var(--text-tertiary);
+  --zook-text-muted: var(--text-secondary);
+  --zook-lime: var(--accent);
+  --zook-lime-soft: var(--accent-soft);
+  --zook-lime-dim: var(--surface-accent-soft);
+  --zook-lime-border: var(--border-focus);
+  --zook-lime-deep: var(--accent-strong);
+  --zook-warning: var(--feedback-warning);
+  --zook-danger: var(--feedback-danger);
+  --zook-amber: var(--feedback-warning);
+  --zook-red: var(--feedback-danger);
+  --zook-blue: var(--feedback-info);
+  --zook-radius-xs: var(--radius-xs);
+  --zook-radius-sm: var(--radius-sm);
+  --zook-radius-md: var(--radius-md);
+  --zook-radius-lg: var(--radius-lg);
+  --zook-radius-xl: var(--radius-xl);
+  --zook-radius-xxl: var(--radius-xxl);
+  --zook-shadow-glass: var(--shadow-lg);
+  --zook-shadow-glow-lime: var(--shadow-glow-accent);
+  --zook-shadow-inset: var(--shadow-inset);
+  --zook-lime-glow-subtle: var(--shadow-glow-accent-subtle);
+  --zook-sidebar-width: var(--sidebar-width);
+  --zook-header-height: var(--header-height);
+  --zook-card-radius: var(--card-radius);
+  --zook-stat-card-radius: var(--stat-card-radius);
 }

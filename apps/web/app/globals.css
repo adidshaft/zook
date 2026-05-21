@@ -6,8 +6,8 @@
 }
 
 html {
-  background: var(--zook-graphite-950);
-  color: var(--zook-text);
+  background: var(--bg);
+  color: var(--text-primary);
   overflow-x: hidden;
 }
 
@@ -15,11 +15,10 @@ body {
   margin: 0;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 12% 0%, rgba(185, 244, 85, 0.12), transparent 34rem),
-    radial-gradient(circle at 84% 6%, rgba(125, 211, 252, 0.08), transparent 28rem),
-    radial-gradient(circle at 48% 42%, rgba(255, 255, 255, 0.035), transparent 36rem),
-    linear-gradient(180deg, #070908 0%, #0a0d0a 48%, #070908 100%);
-  color: var(--zook-text);
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 34rem),
+    radial-gradient(circle at 84% 6%, color-mix(in srgb, var(--feedback-info) 9%, transparent), transparent 28rem),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-sunken) 52%, var(--bg) 100%);
+  color: var(--text-primary);
   font-family: Satoshi, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -47,10 +46,10 @@ label {
 
 .glass-panel {
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)),
-    var(--zook-glass);
-  border: 1px solid var(--zook-border);
-  box-shadow: var(--zook-shadow-glass), var(--zook-shadow-inset);
+    linear-gradient(145deg, color-mix(in srgb, var(--surface-raised) 74%, transparent), color-mix(in srgb, var(--surface) 58%, transparent)),
+    var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg), var(--shadow-inset);
   backdrop-filter: blur(24px);
 }
 
@@ -58,10 +57,10 @@ label {
   position: relative;
   isolation: isolate;
   background:
-    radial-gradient(circle at 8% 4%, rgba(185, 244, 85, 0.13), transparent 26rem),
-    radial-gradient(circle at 96% 2%, rgba(125, 211, 252, 0.08), transparent 24rem),
-    radial-gradient(circle at 50% 120%, rgba(185, 244, 85, 0.08), transparent 30rem),
-    var(--zook-bg);
+    radial-gradient(circle at 8% 4%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 26rem),
+    radial-gradient(circle at 96% 2%, color-mix(in srgb, var(--feedback-info) 10%, transparent), transparent 24rem),
+    radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 30rem),
+    var(--bg);
 }
 
 .zook-shell-bg::before {
@@ -72,28 +71,34 @@ label {
   content: "";
   opacity: 0.35;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--text-primary) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--text-primary) 3%, transparent) 1px, transparent 1px);
   background-size: 72px 72px;
   mask-image: linear-gradient(to bottom, black, transparent 78%);
 }
 
 .zook-glass {
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)),
-    var(--zook-glass);
-  border: 1px solid var(--zook-border);
-  box-shadow: var(--zook-shadow-glass), var(--zook-shadow-inset);
+    linear-gradient(145deg, color-mix(in srgb, var(--surface-raised) 74%, transparent), color-mix(in srgb, var(--surface) 58%, transparent)),
+    var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg), var(--shadow-inset);
   backdrop-filter: blur(24px);
 }
 
 .zook-glass-strong {
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.045)),
-    var(--zook-glass-strong);
-  border: 1px solid var(--zook-border-strong);
-  box-shadow: var(--zook-shadow-glass), var(--zook-shadow-inset);
+    linear-gradient(145deg, color-mix(in srgb, var(--surface-raised) 82%, transparent), color-mix(in srgb, var(--surface) 64%, transparent)),
+    var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg), var(--shadow-inset);
   backdrop-filter: blur(28px);
+}
+
+[data-theme="light"] .glass-panel,
+[data-theme="light"] .zook-glass,
+[data-theme="light"] .zook-glass-strong {
+  backdrop-filter: none;
 }
 
 .zook-lime-glow {
@@ -122,14 +127,14 @@ label {
 }
 
 .zook-focus:focus-visible {
-  outline: 2px solid var(--zook-lime);
+  outline: 2px solid var(--border-focus);
   outline-offset: 3px;
 }
 
 .zook-button-lime,
 a.zook-focus.bg-lime-300,
 button.zook-focus.bg-lime-300 {
-  color: #050805 !important;
+  color: var(--text-on-accent) !important;
 }
 
 .zook-button-lime *,
