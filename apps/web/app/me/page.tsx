@@ -6,7 +6,7 @@ import type { AuthSessionSummary } from "@zook/core";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { MemberPrivateLink } from "@/components/member-private-link";
-import { PublicNav } from "@/components/public-nav";
+import { PublicNav } from "@/components/public/nav/public-nav";
 import { destinationToUrl, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { getOrigins } from "@/lib/origins";
@@ -50,7 +50,7 @@ async function renderMembershipSurface(session: AuthSessionSummary) {
   return (
     <main className="min-h-screen px-5 py-5">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        <PublicNav showLogin={false} />
+        <PublicNav locale="en" />
 
         <GlassCard variant="strong" className="p-6 md:p-8">
           <Pill tone="lime">Member profile</Pill>
