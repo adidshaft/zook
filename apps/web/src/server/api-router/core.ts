@@ -1053,6 +1053,22 @@ function shouldUseSecureSessionCookie(request: NextRequest) {
   return appEnv !== "local" || isHttpsRequest(request);
 }
 
+function sessionCookieDomain() {
+  return process.env.NODE_ENV === "production" ? ".zookfit.in" : undefined;
+}
+
+function sharedSessionCookieOptions(request: NextRequest, expires: Date, path = "/") {
+  const domain = sessionCookieDomain();
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: shouldUseSecureSessionCookie(request),
+    expires,
+    path,
+    ...(domain ? { domain } : {}),
+  };
+}
+
 async function revokeActiveSessionsForUsers(userIds: string[]) {
   const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)));
   if (!uniqueUserIds.length) {
@@ -2235,18 +2251,10 @@ async function createAuthSessionResponse(
     ...(sessionSummary ? { session: sessionSummary } : {}),
   });
   response.cookies.set(sessionCookieName, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: shouldUseSecureSessionCookie(request),
-    expires: expiresAt,
-    path: "/",
+    ...sharedSessionCookieOptions(request, expiresAt),
   });
   response.cookies.set(refreshSessionCookieName, refreshToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: shouldUseSecureSessionCookie(request),
-    expires: refreshExpiresAt,
-    path: "/",
+    ...sharedSessionCookieOptions(request, refreshExpiresAt),
   });
   return response;
 }
@@ -2289,11 +2297,7 @@ function setSessionCookie(
   expiresAt: Date,
 ) {
   response.cookies.set(sessionCookieName, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: shouldUseSecureSessionCookie(request),
-    expires: expiresAt,
-    path: "/",
+    ...sharedSessionCookieOptions(request, expiresAt),
   });
 }
 
@@ -5036,18 +5040,10 @@ export async function handleAuth(request: NextRequest, path: string[]) {
       ...(sessionSummary ? { session: sessionSummary } : {}),
     });
     response.cookies.set(sessionCookieName, session.token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureSessionCookie(request),
-      expires: session.expiresAt,
-      path: "/",
+      ...sharedSessionCookieOptions(request, session.expiresAt),
     });
     response.cookies.set(refreshSessionCookieName, session.refreshToken, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureSessionCookie(request),
-      expires: session.refreshExpiresAt,
-      path: "/",
+      ...sharedSessionCookieOptions(request, session.refreshExpiresAt),
     });
     return response;
   }
@@ -5118,20 +5114,14 @@ export async function handleAuth(request: NextRequest, path: string[]) {
       await auth.logout(token);
     }
     const response = ok({ loggedOut: true });
-    response.cookies.delete(sessionCookieName);
-    response.cookies.set(refreshSessionCookieName, "", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureSessionCookie(request),
-      expires: new Date(0),
-      path: "/",
+    response.cookies.set(sessionCookieName, "", {
+      ...sharedSessionCookieOptions(request, new Date(0)),
     });
     response.cookies.set(refreshSessionCookieName, "", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureSessionCookie(request),
-      expires: new Date(0),
-      path: "/api/auth/refresh",
+      ...sharedSessionCookieOptions(request, new Date(0)),
+    });
+    response.cookies.set(refreshSessionCookieName, "", {
+      ...sharedSessionCookieOptions(request, new Date(0), "/api/auth/refresh"),
     });
     return response;
   }
