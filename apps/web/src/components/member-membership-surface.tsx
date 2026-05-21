@@ -1,24 +1,15 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { CalendarDays, CreditCard, Dumbbell, MapPin } from "lucide-react";
 import type { AuthSessionSummary } from "@zook/core";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { MemberPrivateLink } from "@/components/member-private-link";
 import { PublicNav } from "@/components/public-nav";
-import { destinationToUrl, resolvePostLoginDestination } from "@/lib/auth-destinations";
+import { destinationToUrl } from "@/lib/auth-destinations";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { getOrigins } from "@/lib/origins";
-import { requireDashboardSession } from "@/lib/server-auth";
 
-export const metadata: Metadata = {
-  title: "My membership | Zook",
-  description: "View your Zook gym memberships, payment status, and renewal details.",
-  robots: { index: false, follow: false },
-};
-
-async function renderMembershipSurface(session: AuthSessionSummary) {
+export async function renderMembershipSurface(session: AuthSessionSummary) {
   const origins = getOrigins();
   const memberPrivateUrl = session.user.slug
     ? destinationToUrl({ host: "public", path: `/m/${session.user.slug}` }, origins)
@@ -173,18 +164,4 @@ async function renderMembershipSurface(session: AuthSessionSummary) {
       </div>
     </main>
   );
-}
-
-export default async function MyMembershipPage() {
-  const session = await requireDashboardSession({ loginRedirectPath: "/me" });
-  const destination = resolvePostLoginDestination(session);
-
-  if (destination.host === "dashboard") {
-    redirect(destinationToUrl(destination, getOrigins()));
-  }
-  if (session.user.slug) {
-    redirect(`/m/${session.user.slug}`);
-  }
-
-  return renderMembershipSurface(session);
 }

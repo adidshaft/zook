@@ -416,6 +416,7 @@ model User {
   email             String    @unique
   emailVerifiedAt   DateTime?
   name              String
+  slug              String?   @unique @db.VarChar(32)
   phone             String?
   phoneVerifiedAt   DateTime?
   dateOfBirth       DateTime?
