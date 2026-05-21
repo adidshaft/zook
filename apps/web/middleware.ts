@@ -163,6 +163,58 @@ function publicHostForHostname(hostname: string) {
   return isLocalHost(hostname) ? DEV_PUBLIC_HOST : PUBLIC_HOST;
 }
 
+const memberSlugPattern = /^[0-9a-z]{4,20}$/;
+const reservedMemberSlugs = new Set([
+  "me",
+  "m",
+  "g",
+  "in",
+  "join",
+  "r",
+  "qr",
+  "gyms",
+  "guardian",
+  "guardian-consent",
+  "login",
+  "verify-otp",
+  "support",
+  "terms",
+  "privacy",
+  "status",
+  "dashboard",
+  "desk",
+  "coach",
+  "platform",
+  "staff",
+  "start-gym",
+  "checkout",
+  "api",
+  "_next",
+  "admin",
+  "owner",
+  "manager",
+  "trainer",
+  "member",
+  "settings",
+]);
+
+function memberSlugStatus(pathname: string): "valid" | "invalid" | "not-member-slug" {
+  if (pathname !== "/m" && !pathname.startsWith("/m/")) {
+    return "not-member-slug";
+  }
+  const parts = pathname.split("/").filter(Boolean);
+  const slug = parts[1];
+  if (
+    parts.length !== 2 ||
+    !slug ||
+    !memberSlugPattern.test(slug) ||
+    reservedMemberSlugs.has(slug)
+  ) {
+    return "invalid";
+  }
+  return "valid";
+}
+
 function isStaffPrivatePath(pathname: string) {
   if (pathname === "/staff/invite" || pathname.startsWith("/staff/invite/")) {
     return false;
@@ -197,12 +249,21 @@ export function middleware(request: NextRequest) {
     return redirectToHost(request, publicHostForHostname(hostname), DEV_STAFF_HOST);
   }
 
+  const memberSlug = memberSlugStatus(request.nextUrl.pathname);
+  if (memberSlug === "invalid") {
+    return new NextResponse(null, {
+      status: 404,
+      headers: { "Content-Security-Policy": contentSecurityPolicy },
+    });
+  }
+
   const hasSession = Boolean(request.cookies.get(sessionCookieName)?.value);
   const hasRefreshSession = Boolean(request.cookies.get(refreshSessionCookieName)?.value);
   const requiresStaffSession =
     isStaffPrivatePath(request.nextUrl.pathname) ||
     (host === "staff" && request.nextUrl.pathname === "/");
-  if (requiresStaffSession && !hasSession) {
+  const requiresPublicMemberSession = memberSlug === "valid";
+  if ((requiresStaffSession || requiresPublicMemberSession) && !hasSession) {
     const redirectTarget = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     if (hasRefreshSession) {
       const refreshUrl = new URL("/api/auth/refresh", request.url);

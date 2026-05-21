@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
+import { renderMembershipSurface } from "@/components/member-membership-surface";
 import { requireDashboardSession } from "@/lib/server-auth";
-import MyMembershipPage from "../page";
 
 export default async function PrivateMemberHandlePage({
   params,
@@ -11,9 +11,12 @@ export default async function PrivateMemberHandlePage({
   const { handle } = await params;
   const privateHandle = session.user.privateHandle?.toLowerCase();
 
+  if (session.user.slug) {
+    redirect(`/m/${session.user.slug}`);
+  }
   if (!privateHandle || privateHandle !== handle.toLowerCase()) {
     redirect("/me");
   }
 
-  return <MyMembershipPage />;
+  return renderMembershipSurface(session);
 }

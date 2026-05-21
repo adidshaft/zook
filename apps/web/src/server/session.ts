@@ -10,6 +10,7 @@ import {
 } from "@zook/core";
 import { AuthService } from "@zook/core/services";
 import { prisma } from "@zook/db";
+import { ensureMemberSlugForUser } from "./member-slug";
 import { privateUserHandle } from "./private-user-handle";
 
 function resolvePermissions(
@@ -86,6 +87,8 @@ export async function resolveSessionSummaryFromToken(
     return null;
   }
 
+  const userSlug = await ensureMemberSlugForUser(user);
+
   const organizationUsers = await prisma.organizationUser.findMany({
     where: { userId: user.id, status: "active" },
     orderBy: { joinedAt: "asc" },
@@ -150,6 +153,7 @@ export async function resolveSessionSummaryFromToken(
       id: user.id,
       email: publicUserEmail(user.email) ?? "",
       name: user.name,
+      slug: userSlug,
       privateHandle: privateUserHandle(user.id),
       dateOfBirth: user.dateOfBirth,
       isMinor: user.isMinor,

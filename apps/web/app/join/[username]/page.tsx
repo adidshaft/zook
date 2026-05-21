@@ -187,9 +187,11 @@ export default async function JoinPage({
   }
 
   if (joinMode === "APPROVAL_REQUIRED" && !viewerJoinState?.approvedJoinRequest) {
-    const membershipPath = viewerJoinState?.session?.user.privateHandle
-      ? `/me/${viewerJoinState.session.user.privateHandle}`
-      : "/me";
+    const membershipPath = viewerJoinState?.session?.user.slug
+      ? `/m/${viewerJoinState.session.user.slug}`
+      : viewerJoinState?.session?.user.privateHandle
+        ? `/me/${viewerJoinState.session.user.privateHandle}`
+        : "/me";
     return (
       <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen py-1">
         <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
@@ -448,9 +450,11 @@ export default async function JoinPage({
                 title={t("membershipInProgressTitle")}
                 copy={t("membershipInProgressCopy")}
                 href={
-                  viewerJoinState.session.user.privateHandle
-                    ? `/me/${viewerJoinState.session.user.privateHandle}`
-                    : "/me"
+                  viewerJoinState.session.user.slug
+                    ? `/m/${viewerJoinState.session.user.slug}`
+                    : viewerJoinState.session.user.privateHandle
+                      ? `/me/${viewerJoinState.session.user.privateHandle}`
+                      : "/me"
                 }
                 cta={t("viewMembership")}
                 tone="lime"
