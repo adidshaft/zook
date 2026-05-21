@@ -1,11 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { expectedHostForPath, pathBelongsToStaff } from "./src/lib/host-routing";
 
 const sessionCookieName = "zook_session";
 const refreshSessionCookieName = "zook_refresh";
 const canonicalHost = "zookfit.in";
+const STAFF_HOST = "dashboard.zookfit.in";
+const PUBLIC_HOST = "zookfit.in";
+const DEV_STAFF_HOST = "dashboard.localhost";
+const DEV_PUBLIC_HOST = "localhost";
 const canonicalRedirectHosts = new Set([
   "app.zookfit.in",
-  "dashboard.zookfit.in",
   "app.zook.kyokasuigetsu.xyz",
   "zook-gym-app.vercel.app",
 ]);
@@ -50,10 +54,14 @@ function buildContentSecurityPolicy(nonce: string) {
       connectSources.add(origin);
     }
   }
+  connectSources.add("https://zookfit.in");
+  connectSources.add("https://dashboard.zookfit.in");
   if (process.env.NODE_ENV === "development") {
     connectSources.add("http://localhost:*");
+    connectSources.add("http://dashboard.localhost:*");
     connectSources.add("http://127.0.0.1:*");
     connectSources.add("ws://localhost:*");
+    connectSources.add("ws://dashboard.localhost:*");
     connectSources.add("ws://127.0.0.1:*");
   }
 
@@ -74,25 +82,89 @@ function buildContentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
-function matchesPathPrefix(pathname: string, prefix: string) {
-  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+function classifyHost(hostname: string): "staff" | "public" | "unknown" {
+  if (hostname === STAFF_HOST || hostname === DEV_STAFF_HOST || hostname.startsWith("dashboard.")) {
+    return "staff";
+  }
+  if (hostname === PUBLIC_HOST || hostname === DEV_PUBLIC_HOST || hostname === "www.zookfit.in") {
+    return "public";
+  }
+  return "unknown";
 }
 
-function isPrivatePath(pathname: string) {
-  if (matchesPathPrefix(pathname, "/staff/invite")) {
+function isLoopbackHost(hostname: string) {
+  return hostname === DEV_PUBLIC_HOST || hostname === DEV_STAFF_HOST || hostname === "127.0.0.1";
+}
+
+function isLocalHost(hostname: string) {
+  return hostname === DEV_PUBLIC_HOST || hostname === DEV_STAFF_HOST;
+}
+
+function usesLocalSingleOriginHosts() {
+  const publicOrigin =
+    originFromEnv(process.env.NEXT_PUBLIC_WEB_URL) ?? originFromEnv(process.env.NEXT_PUBLIC_APP_URL);
+  if (!publicOrigin) {
     return false;
   }
-  return ["/dashboard", "/desk", "/coach", "/me", "/platform", "/staff", "/start-gym"].some(
-    (prefix) => matchesPathPrefix(pathname, prefix),
+  const publicHostname = new URL(publicOrigin).hostname.toLowerCase();
+  if (!isLoopbackHost(publicHostname)) {
+    return false;
+  }
+
+  const dashboardOrigin = originFromEnv(process.env.NEXT_PUBLIC_DASHBOARD_URL);
+  return !dashboardOrigin || dashboardOrigin === publicOrigin;
+}
+
+function shouldUseSingleOriginHostRouting(hostname: string) {
+  return isLoopbackHost(hostname) && usesLocalSingleOriginHosts();
+}
+
+function hostnameFromRequest(request: NextRequest) {
+  return (
+    request.headers.get("host")?.split(":")[0]?.trim().toLowerCase() ??
+    request.nextUrl.hostname.toLowerCase()
   );
 }
 
+function portFromRequest(request: NextRequest) {
+  return request.headers.get("host")?.match(/:(\d+)$/)?.[1] ?? request.nextUrl.port;
+}
+
+function redirectToHost(request: NextRequest, hostname: string) {
+  const isLocalTarget = isLocalHost(hostname);
+  const protocol = isLocalTarget ? "http" : "https";
+  const port = isLocalTarget ? portFromRequest(request) : "";
+  const origin = `${protocol}://${hostname}${port ? `:${port}` : ""}`;
+  const pathAndSearch = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  const redirectUrl = new URL(pathAndSearch, origin);
+  return new NextResponse(null, {
+    status: 308,
+    headers: { Location: redirectUrl.toString() },
+  });
+}
+
+function staffHostForRequest(request: NextRequest) {
+  return isLocalHost(hostnameFromRequest(request)) ? DEV_STAFF_HOST : STAFF_HOST;
+}
+
+function publicHostForRequest(request: NextRequest) {
+  return isLocalHost(hostnameFromRequest(request)) ? DEV_PUBLIC_HOST : PUBLIC_HOST;
+}
+
+function isStaffPrivatePath(pathname: string) {
+  if (pathname === "/staff/invite" || pathname.startsWith("/staff/invite/")) {
+    return false;
+  }
+  return pathBelongsToStaff(pathname);
+}
+
 export function middleware(request: NextRequest) {
-  const host = request.nextUrl.hostname.toLowerCase();
-  if (canonicalRedirectHosts.has(host)) {
+  const hostname = hostnameFromRequest(request);
+  if (canonicalRedirectHosts.has(hostname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.protocol = "https:";
     redirectUrl.hostname = canonicalHost;
+    redirectUrl.port = "";
     return NextResponse.redirect(redirectUrl, 308);
   }
 
@@ -103,9 +175,22 @@ export function middleware(request: NextRequest) {
   requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
   const responseInit = { request: { headers: requestHeaders } };
   let response: NextResponse;
+  const host = classifyHost(hostname);
+  const expectedHost = expectedHostForPath(request.nextUrl.pathname);
+  const useSingleOriginHostRouting = shouldUseSingleOriginHostRouting(hostname);
+  if (expectedHost === "dashboard" && host !== "staff" && !useSingleOriginHostRouting) {
+    return redirectToHost(request, staffHostForRequest(request));
+  }
+  if (expectedHost === "public" && host === "staff" && !useSingleOriginHostRouting) {
+    return redirectToHost(request, publicHostForRequest(request));
+  }
+
   const hasSession = Boolean(request.cookies.get(sessionCookieName)?.value);
   const hasRefreshSession = Boolean(request.cookies.get(refreshSessionCookieName)?.value);
-  if (isPrivatePath(request.nextUrl.pathname) && !hasSession) {
+  const requiresStaffSession =
+    isStaffPrivatePath(request.nextUrl.pathname) ||
+    (host === "staff" && request.nextUrl.pathname === "/");
+  if (requiresStaffSession && !hasSession) {
     const redirectTarget = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     if (hasRefreshSession) {
       const refreshUrl = new URL("/api/auth/refresh", request.url);
@@ -116,6 +201,9 @@ export function middleware(request: NextRequest) {
       loginUrl.searchParams.set("redirect", redirectTarget);
       response = NextResponse.redirect(loginUrl);
     }
+  } else if (host === "staff" && request.nextUrl.pathname === "/") {
+    const dashboardUrl = new URL("/dashboard", request.url);
+    response = NextResponse.redirect(dashboardUrl);
   } else {
     response = NextResponse.next(responseInit);
   }
