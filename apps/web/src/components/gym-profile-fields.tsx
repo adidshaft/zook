@@ -103,7 +103,7 @@ export function Field({
 }) {
   return (
     <label className="grid gap-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
         {label}
       </span>
       <input
@@ -111,7 +111,7 @@ export function Field({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         type={type}
-        className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
+        className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]/60"
       />
     </label>
   );
@@ -130,16 +130,16 @@ export function SelectField<T extends string>({
 }) {
   return (
     <label className="grid gap-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
-        className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
+        className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none"
       >
         {options.map((option) => (
-          <option key={option} value={option} className="bg-black text-white">
+          <option key={option} value={option} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
             {formatEnumLabel(option)}
           </option>
         ))}
@@ -163,7 +163,7 @@ export function TextAreaField({
 }) {
   return (
     <label className="grid gap-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
         {label}
       </span>
       <textarea
@@ -171,7 +171,7 @@ export function TextAreaField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className="zook-focus resize-y rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm leading-6 text-white outline-none placeholder:text-white/25"
+        className="zook-focus resize-y rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm leading-6 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]/60"
       />
     </label>
   );
@@ -198,22 +198,25 @@ export function ChipPicker({
 
   return (
     <div className="grid gap-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">{label}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">{label}</p>
       <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => toggle(option)}
-            className={`rounded-full border px-3 py-2 text-xs font-medium transition ${
-              selected.has(option)
-                ? "border-lime-300/45 bg-lime-300/15 text-lime-100"
-                : "border-white/10 bg-white/5 text-white/50 hover:bg-white/8"
-            }`}
-          >
-            {option}
-          </button>
-        ))}
+        {options.map((option) => {
+          const isSelected = selected.has(option);
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => toggle(option)}
+              className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                isSelected
+                  ? "border-[color-mix(in_srgb,var(--accent)_35%,transparent)] bg-[var(--surface-accent-soft)] text-[var(--accent-strong)] shadow-sm"
+                  : "border-[var(--border)] bg-[var(--bg-sunken)]/60 text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]"
+              }`}
+            >
+              {option}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

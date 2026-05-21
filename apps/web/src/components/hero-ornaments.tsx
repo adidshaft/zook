@@ -29,7 +29,7 @@ export function GridBackdrop({ className }: { className?: string }) {
           <path
             d="M 56 0 L 0 0 0 56"
             fill="none"
-            stroke="rgba(255,255,255,0.045)"
+            stroke="var(--border-subtle)"
             strokeWidth="1"
           />
         </pattern>
@@ -60,13 +60,13 @@ export function HeroRingOrnament({ className }: { className?: string }) {
       >
         <defs>
           <linearGradient id="zk-ring" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#B9F455" stopOpacity="0" />
-            <stop offset="60%" stopColor="#B9F455" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#D7FF6A" stopOpacity="0.4" />
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0" />
+            <stop offset="60%" stopColor="var(--accent)" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="color-mix(in srgb, var(--accent) 40%, transparent)" stopOpacity="0.4" />
           </linearGradient>
           <linearGradient id="zk-ring-inner" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#7DD3FC" stopOpacity="0" />
-            <stop offset="100%" stopColor="#7DD3FC" stopOpacity="0.55" />
+            <stop offset="0%" stopColor="var(--feedback-info)" stopOpacity="0" />
+            <stop offset="100%" stopColor="var(--feedback-info)" stopOpacity="0.55" />
           </linearGradient>
         </defs>
         <motion.circle
@@ -93,8 +93,8 @@ export function HeroRingOrnament({ className }: { className?: string }) {
           transition={{ repeat: Infinity, duration: 80, ease: "linear" }}
           style={{ transformOrigin: "90px 90px" }}
         />
-        <circle cx="90" cy="12" r="3.5" fill="#B9F455" />
-        <circle cx="90" cy="12" r="6.5" fill="#B9F455" opacity="0.25" />
+        <circle cx="90" cy="12" r="3.5" fill="var(--accent-strong)" />
+        <circle cx="90" cy="12" r="6.5" fill="var(--accent-strong)" opacity="0.25" />
       </motion.svg>
     </div>
   );
@@ -107,7 +107,7 @@ export function MiniSparkline({
   values,
   width = 64,
   height = 18,
-  color = "#B9F455",
+  color = "var(--accent-strong)",
   className,
 }: {
   values: number[];

@@ -2,14 +2,9 @@ import type { Metadata } from "next";
 import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { GymNotFound } from "@/components/public/gym/empty-state";
-import { GymFacilities } from "@/components/public/gym/facilities";
 import { GymHero } from "@/components/public/gym/hero";
-import { MemberJourney } from "@/components/public/gym/member-journey";
 import { GymMembershipCard } from "@/components/public/gym/membership-card";
-import { GymPlansGrid } from "@/components/public/gym/plans-grid";
-import { GymReviews } from "@/components/public/gym/reviews";
-import { ShareInstall } from "@/components/public/gym/share-install";
-import { GymTrainers } from "@/components/public/gym/trainers";
+import { GymProfileTabs } from "@/components/public/gym/profile-tabs";
 import { StructuredData } from "@/components/public/seo/structured-data";
 import { gymJsonLd, priceSummary } from "@/lib/public-gym-profile";
 import {
@@ -82,12 +77,7 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
           <GymHero org={org} locale={locale} />
           <GymMembershipCard org={org} plans={plans} locale={locale} />
         </section>
-        <GymPlansGrid org={org} plans={plans} locale={locale} />
-        <MemberJourney plans={plans} locale={locale} />
-        <GymFacilities org={org} locale={locale} />
-        <ShareInstall org={org} locale={locale} />
-        <GymTrainers org={org} trainers={trainers} locale={locale} />
-        <GymReviews locale={locale} />
+        <GymProfileTabs org={org} plans={plans} trainers={trainers} locale={locale} />
       </div>
     </main>
   );

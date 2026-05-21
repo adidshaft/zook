@@ -47,20 +47,20 @@ export function JoinRequestQueue({
           <ErrorNotice message={joinRequestsState.error} />
         ) : joinRequests.length ? (
           joinRequests.map((request) => (
-            <div key={request.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+            <div key={request.id} className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-[var(--text-primary)]">
                       {planNamesById.get(request.planId ?? "") ?? "Membership request"}
                     </p>
                     <StatusPill value={formatEnumLabel(request.status)} />
                   </div>
-                  <p className="mt-2 text-xs text-white/45">
+                  <p className="mt-2 text-xs text-[var(--text-tertiary)]">
                     Created {formatDateTime(request.createdAt)}
                     {request.referralCode ? ` · Referral ${request.referralCode}` : ""}
                   </p>
-                  <p className="mt-2 text-sm text-white/60">
+                  <p className="mt-2 text-sm text-[var(--text-secondary)]">
                     {request.message ??
                       "No intake note. Consider WhatsApp-ing the member before approving."}
                   </p>

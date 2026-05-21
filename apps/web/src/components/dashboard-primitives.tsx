@@ -468,8 +468,8 @@ export function DataTable<Row>({
       )}
       aria-label="Scrollable table"
     >
-      <table className="min-w-[720px] w-full text-left text-sm">
-        <thead className="bg-[var(--bg-sunken)] text-[var(--text-tertiary)]">
+      <table className="min-w-[720px] w-full text-left text-sm border-collapse">
+        <thead className="sticky top-0 z-10 bg-[var(--bg-sunken)] text-[var(--text-tertiary)] shadow-[inset_0_-1px_0_var(--border)]">
           <tr>
             {columns.map((column) => (
               <th

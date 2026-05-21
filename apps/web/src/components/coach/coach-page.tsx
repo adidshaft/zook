@@ -34,7 +34,7 @@ export function CoachPage({ firstName, stats }: { firstName: string; stats: Coac
         tone="lime"
         meta={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-lime-300/30 bg-lime-300/10 px-3 py-1 text-xs font-medium text-lime-100">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
               <PulseDot tone="lime" size={6} />
               Live signal
             </span>
@@ -77,19 +77,19 @@ export function CoachPage({ firstName, stats }: { firstName: string; stats: Coac
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-white">Pinned for today</h2>
-            <Link href="/me" className="text-xs font-medium text-lime-300 hover:underline">
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">Pinned for today</h2>
+            <Link href="/me" className="text-xs font-medium text-[var(--accent)] hover:underline">
               Open my profile {"->"}
             </Link>
           </div>
-          <p className="mt-2 text-sm leading-6 text-white/55">
+          <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
             Use the Zook mobile app to pin a client here and pull up their plan with one tap from
             the dashboard.
           </p>
           <div className="mt-4 grid gap-2">
             {stats.assignedClients === 0 ? (
-              <div className="flex items-start gap-3 rounded-xl border border-dashed border-white/12 bg-white/[0.02] px-4 py-4 text-sm text-white/55">
-                <PinIcon size={16} className="mt-0.5 shrink-0 text-white/35" />
+              <div className="flex items-start gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-4 text-sm text-[var(--text-secondary)]">
+                <PinIcon size={16} className="mt-0.5 shrink-0 text-[var(--text-tertiary)]" />
                 <span>
                   No clients pinned yet. Pin from the mobile app and they appear here
                   automatically.
@@ -107,7 +107,7 @@ export function CoachPage({ firstName, stats }: { firstName: string; stats: Coac
         </GlassCard>
 
         <GlassCard className="p-5">
-          <h2 className="text-base font-semibold text-white">Today's quick actions</h2>
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">Today's quick actions</h2>
           <div className="mt-4 grid gap-2">
             <ActivityRow
               icon={ClipboardList}

@@ -202,6 +202,7 @@ export function MemberList({
                 columns={memberRosterColumns}
                 rows={filteredMembers}
                 rowKey={(row) => row.profile.id}
+                className="max-h-[620px] overflow-y-auto"
                 empty={<MemberListEmpty filtersActive={filtersActive} />}
               />
             )}

@@ -254,7 +254,7 @@ export function Marquee({
 export function PointerSpotlight({
   className,
   size = 320,
-  color = "rgba(185,244,85,0.10)",
+  color = "color-mix(in srgb, var(--accent) 12%, transparent)",
 }: {
   className?: string;
   size?: number;

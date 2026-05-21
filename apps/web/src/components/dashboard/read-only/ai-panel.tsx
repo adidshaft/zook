@@ -67,8 +67,8 @@ export function AiPanel({
                   header: "Prompt",
                   render: (usage) => (
                     <div>
-                      <p className="font-medium text-white">{usage.promptSummary}</p>
-                      <p className="mt-1 text-xs text-white/45">
+                      <p className="font-medium text-[var(--text-primary)]">{usage.promptSummary}</p>
+                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                         {formatAiResponseSummary(usage.responseSummary)}
                       </p>
                     </div>
@@ -122,12 +122,12 @@ export function AiPanel({
             role="dialog"
             aria-modal="false"
             aria-label="Assistant draft detail"
-            className="mt-4 rounded-[22px] border border-white/10 bg-black/35 p-4"
+            className="mt-4 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Draft detail</p>
-                <p className="mt-1 font-medium text-white">{selectedDraft.promptSummary}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Draft detail</p>
+                <p className="mt-1 font-medium text-[var(--text-primary)]">{selectedDraft.promptSummary}</p>
               </div>
               <ZookButton
                 type="button"
@@ -138,7 +138,7 @@ export function AiPanel({
                 Close
               </ZookButton>
             </div>
-            <div className="mt-4 grid gap-3 rounded-[18px] border border-white/10 bg-black/40 p-3 text-sm leading-6 text-white/62">
+            <div className="mt-4 grid gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--bg-sunken)] p-3 text-sm leading-6 text-[var(--text-secondary)]">
               <p>{formatAiResponseSummary(selectedDraft.responseSummary)}</p>
               <p>
                 Category: {formatEnumLabel(selectedDraft.requestType)} · Cost:{" "}

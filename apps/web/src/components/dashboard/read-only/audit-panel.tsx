@@ -69,14 +69,15 @@ export function AuditPanel({
           ) : (
             <>
               <DataTable
+                className="max-h-[420px] overflow-y-auto"
                 columns={[
                   {
                     id: "action",
                     header: "Action",
                     render: (log) => (
                       <div>
-                        <p className="font-medium text-white">{formatEnumLabel(log.action)}</p>
-                        <p className="mt-1 text-xs text-white/45">
+                        <p className="font-medium text-[var(--text-primary)]">{formatEnumLabel(log.action)}</p>
+                        <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                           {formatEnumLabel(log.entityType)}
                         </p>
                       </div>
@@ -132,12 +133,12 @@ export function AuditPanel({
             role="dialog"
             aria-modal="false"
             aria-label="Change details"
-            className="mt-4 rounded-[22px] border border-white/10 bg-black/35 p-4"
+            className="mt-4 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Change details</p>
-                <p className="mt-1 font-medium text-white">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Change details</p>
+                <p className="mt-1 font-medium text-[var(--text-primary)]">
                   {formatEnumLabel(selectedAuditLog.action)}
                 </p>
               </div>
@@ -151,19 +152,19 @@ export function AuditPanel({
               </ZookButton>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="rounded-[18px] border border-white/10 bg-black/40 p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+              <div className="rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
                   Before
                 </p>
-                <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-xs leading-5 text-white/60">
+                <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-xs leading-5 text-[var(--text-secondary)]">
                   {JSON.stringify(selectedAuditLog.before ?? {}, null, 2)}
                 </pre>
               </div>
-              <div className="rounded-[18px] border border-white/10 bg-black/40 p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+              <div className="rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
                   After
                 </p>
-                <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-xs leading-5 text-white/60">
+                <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-xs leading-5 text-[var(--text-secondary)]">
                   {JSON.stringify(
                     selectedAuditLog.after ?? selectedAuditLog.metadata ?? {},
                     null,
@@ -200,10 +201,10 @@ export function AuditPanel({
           <button
             type="button"
             onClick={() => setAiFilter("all")}
-            className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold ${
+            className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
               aiFilter === "all"
-                ? "border-lime-300/45 bg-lime-300/12 text-lime-100"
-                : "border-white/10 text-white/55"
+                ? "border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-[var(--accent-strong)]"
+                : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)]"
             }`}
           >
             All drafts
@@ -211,10 +212,10 @@ export function AuditPanel({
           <button
             type="button"
             onClick={() => setAiFilter("needs-review")}
-            className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold ${
+            className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
               aiFilter === "needs-review"
-                ? "border-lime-300/45 bg-lime-300/12 text-lime-100"
-                : "border-white/10 text-white/55"
+                ? "border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-[var(--accent-strong)]"
+                : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)]"
             }`}
           >
             Needs review
@@ -234,21 +235,21 @@ export function AuditPanel({
                 key={usage.id}
                 type="button"
                 onClick={() => setSelectedAiId(usage.id)}
-                className="zook-focus rounded-[22px] border border-white/10 bg-black/20 p-4 text-left transition hover:bg-white/6"
+                className="zook-focus rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-4 text-left transition hover:bg-[var(--bg-sunken)]"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="font-medium text-white">{usage.promptSummary}</p>
+                  <p className="font-medium text-[var(--text-primary)]">{usage.promptSummary}</p>
                   <div className="flex flex-wrap gap-2">
                     <StatusPill value={formatEnumLabel(usage.requestType)} />
                   </div>
                 </div>
-                <p className="mt-2 text-sm text-white/55">
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
                   {formatAiResponseSummary(usage.responseSummary)}
                 </p>
-                <p className="mt-3 text-xs text-white/40">
+                <p className="mt-3 text-xs text-[var(--text-tertiary)]">
                   {formatEnumLabel(usage.role)} · {formatDateTime(usage.createdAt)}
                 </p>
-                <span className="mt-3 inline-flex text-xs font-semibold text-lime-100">
+                <span className="mt-3 inline-flex text-xs font-semibold text-[var(--accent-strong)]">
                   Open draft details →
                 </span>
               </button>
@@ -265,12 +266,12 @@ export function AuditPanel({
             role="dialog"
             aria-modal="false"
             aria-label="Assistant draft details"
-            className="mt-4 rounded-[22px] border border-white/10 bg-black/35 p-4"
+            className="mt-4 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Draft details</p>
-                <p className="mt-1 font-medium text-white">{selectedAiUsage.promptSummary}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Draft details</p>
+                <p className="mt-1 font-medium text-[var(--text-primary)]">{selectedAiUsage.promptSummary}</p>
               </div>
               <ZookButton
                 type="button"
@@ -281,9 +282,9 @@ export function AuditPanel({
                 Close
               </ZookButton>
             </div>
-            <div className="mt-4 grid gap-3 rounded-[18px] border border-white/10 bg-black/40 p-3 text-sm leading-6 text-white/62">
+            <div className="mt-4 grid gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-3 text-sm leading-6 text-[var(--text-secondary)]">
               <p>{formatAiResponseSummary(selectedAiUsage.responseSummary)}</p>
-              <p>
+              <p className="text-xs text-[var(--text-tertiary)]">
                 {formatEnumLabel(selectedAiUsage.role)} ·{" "}
                 {formatEnumLabel(selectedAiUsage.requestType)} ·{" "}
                 {formatDateTime(selectedAiUsage.createdAt)}

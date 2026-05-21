@@ -1,7 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BarChart3, Calendar, CircleAlert, Sparkles, TrendingUp } from "lucide-react";
+import { 
+  BarChart3, 
+  Calendar, 
+  CircleAlert, 
+  Sparkles, 
+  TrendingUp,
+  IndianRupee,
+  Users,
+  ClipboardList,
+  ShieldCheck,
+  CalendarDays
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ReadoutGrid, SectionHeader } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
 import {
@@ -52,6 +64,8 @@ function formatInrCompact(paise: number) {
   return `₹${Math.round(rupees)}`;
 }
 
+type TabId = "financials" | "attendance" | "members" | "snapshot";
+
 export function ReportsPanel({
   organization,
   summary,
@@ -70,6 +84,7 @@ export function ReportsPanel({
   const [dateRange, setDateRange] = useState({ from: sevenDaysAgo, to: today });
   const invalidRange = dateRange.to < dateRange.from;
   const [revenueWindow, setRevenueWindow] = useState<"7d" | "30d">("7d");
+  const [activeTab, setActiveTab] = useState<TabId>("financials");
 
   const revenueRupees = Math.round(summary.revenuePaise / 100);
   const cashRupees = Math.round(summary.cashCollectedPaise / 100);
@@ -111,6 +126,13 @@ export function ReportsPanel({
   const channelTotal = revenueRupees || 1;
   const cashShare = Math.round((cashRupees / channelTotal) * 100);
 
+  const tabs = [
+    { id: "financials" as TabId, label: "Financials", icon: IndianRupee },
+    { id: "attendance" as TabId, label: "Attendance", icon: CalendarDays },
+    { id: "members" as TabId, label: "Members & Growth", icon: Users },
+    { id: "snapshot" as TabId, label: "Snapshot & Governance", icon: ClipboardList },
+  ];
+
   return (
     <div className="grid gap-5">
       {/* Hero */}
@@ -122,11 +144,11 @@ export function ReportsPanel({
         tone="lime"
         meta={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-lime-300/30 bg-lime-300/10 px-3 py-1 text-xs font-medium text-lime-100">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
               <PulseDot tone="lime" size={6} />
               Live
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-white/55">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs text-[var(--text-secondary)]">
               <Calendar size={11} />
               {selectedBranchName}
             </span>
@@ -134,280 +156,367 @@ export function ReportsPanel({
         }
       />
 
-      {/* Date range */}
-      <GlassCard className="p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="grid flex-1 gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
-            From
-            <input
-              type="date"
-              value={dateRange.from}
-              max={dateRange.to}
-              onChange={(event) =>
-                setDateRange((current) => ({ ...current, from: event.target.value }))
-              }
-              className="zook-focus min-h-10 rounded-xl border border-white/10 bg-black/30 px-3 text-sm text-white"
-            />
-          </label>
-          <label className="grid flex-1 gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
-            To
-            <input
-              type="date"
-              value={dateRange.to}
-              min={dateRange.from}
-              max={today}
-              onChange={(event) =>
-                setDateRange((current) => ({ ...current, to: event.target.value }))
-              }
-              className="zook-focus min-h-10 rounded-xl border border-white/10 bg-black/30 px-3 text-sm text-white"
-            />
-          </label>
-          <p
-            className={`flex-1 text-xs ${
-              invalidRange ? "text-rose-200" : "text-white/45"
-            }`}
+      {/* Date range & Sub Tabs bar */}
+      <div className="grid gap-4 md:grid-cols-[0.8fr_1.2fr] md:items-end">
+        <GlassCard className="p-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid flex-1 gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+              From
+              <input
+                type="date"
+                value={dateRange.from}
+                max={dateRange.to}
+                onChange={(event) =>
+                  setDateRange((current) => ({ ...current, from: event.target.value }))
+                }
+                className="zook-focus min-h-10 rounded-xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 text-sm text-[var(--text-primary)]"
+              />
+            </label>
+            <label className="grid flex-1 gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+              To
+              <input
+                type="date"
+                value={dateRange.to}
+                min={dateRange.from}
+                max={today}
+                onChange={(event) =>
+                  setDateRange((current) => ({ ...current, to: event.target.value }))
+                }
+                className="zook-focus min-h-10 rounded-xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 text-sm text-[var(--text-primary)]"
+              />
+            </label>
+          </div>
+        </GlassCard>
+
+        {/* Sub Tabs Pill Selector */}
+        <div className="flex justify-start overflow-x-auto no-scrollbar rounded-full border border-[var(--border)] bg-[var(--surface)]/90 p-1.5 backdrop-blur-xl">
+          <div className="flex gap-1 w-full justify-between">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold tracking-wide transition-all duration-300 ${
+                    isActive
+                      ? "text-[var(--accent-strong)]"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]/50"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="active-reports-tab"
+                      className="absolute inset-0 rounded-full bg-[var(--surface-accent-soft)] border border-[var(--border-focus)]/30"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  <Icon size={14} className="relative z-10 shrink-0" />
+                  <span className="relative z-10 whitespace-nowrap">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {invalidRange && (
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-danger-soft)] px-4 py-3 text-xs text-[var(--feedback-danger)]">
+          End date must be after start date.
+        </div>
+      )}
+
+      {/* Tab Content Panels */}
+      <div className="relative min-h-[350px]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
           >
-            {invalidRange
-              ? "End date must be after start date."
-              : `Times in Asia/Kolkata · ${dateRange.from} → ${dateRange.to}`}
-          </p>
-        </div>
-      </GlassCard>
+            {activeTab === "financials" && (
+              <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+                {/* Revenue chart with window toggle */}
+                <GlassCard className="p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                        Revenue trend
+                      </p>
+                      <div className="mt-2 flex items-baseline gap-3">
+                        <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
+                          {formatInr(summary.revenuePaise)}
+                        </span>
+                        <DeltaChip delta={summary.revenuePaise > 0 ? 12.3 : 0} />
+                        <span className="text-xs text-[var(--text-tertiary)]">{revenueWindow === "7d" ? "last 7 days" : "last 30 days"}</span>
+                      </div>
+                    </div>
+                    <div className="inline-flex rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] p-1 text-xs">
+                      {(["7d", "30d"] as const).map((window) => (
+                        <button
+                          key={window}
+                          type="button"
+                          onClick={() => setRevenueWindow(window)}
+                          className={`zook-focus rounded-full px-3 py-1 font-medium transition ${
+                            revenueWindow === window
+                              ? "bg-[var(--accent-fill)] text-[var(--text-on-accent)] font-semibold shadow-sm"
+                              : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                          }`}
+                        >
+                          {window === "7d" ? "7 days" : "30 days"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-5 h-64">
+                    <LineChart
+                      series={revenueSeries}
+                      labels={revenueLabels}
+                      tone="lime"
+                      formatY={(v) => formatInrCompact(v * 100)}
+                      formatTooltip={(v, label) => (label ? `${label}: ${formatInrCompact(v * 100)}` : formatInrCompact(v * 100))}
+                      ariaLabel={`Revenue across the ${revenueWindow === "7d" ? "last 7 days" : "last 30 days"}`}
+                    />
+                  </div>
+                </GlassCard>
 
-      {/* Revenue chart with window toggle */}
-      <GlassCard className="p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
-              Revenue trend
-            </p>
-            <div className="mt-2 flex items-baseline gap-3">
-              <span className="text-3xl font-bold tabular-nums text-white">
-                {formatInr(summary.revenuePaise)}
-              </span>
-              <DeltaChip delta={summary.revenuePaise > 0 ? 12.3 : 0} />
-              <span className="text-xs text-white/45">{revenueWindow === "7d" ? "last 7 days" : "last 30 days"}</span>
-            </div>
-          </div>
-          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1 text-xs">
-            {(["7d", "30d"] as const).map((window) => (
-              <button
-                key={window}
-                type="button"
-                onClick={() => setRevenueWindow(window)}
-                className={`zook-focus rounded-full px-3 py-1 font-medium transition ${
-                  revenueWindow === window
-                    ? "bg-lime-300 text-black"
-                    : "text-white/65 hover:text-white"
-                }`}
-              >
-                {window === "7d" ? "7 days" : "30 days"}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="mt-5 h-64">
-          <LineChart
-            series={revenueSeries}
-            labels={revenueLabels}
-            tone="lime"
-            formatY={(v) => formatInrCompact(v * 100)}
-            formatTooltip={(v, label) => (label ? `${label}: ${formatInrCompact(v * 100)}` : formatInrCompact(v * 100))}
-            ariaLabel={`Revenue across the ${revenueWindow === "7d" ? "last 7 days" : "last 30 days"}`}
-          />
-        </div>
-      </GlassCard>
-
-      {/* Two-column: member growth bars + payment channel donut */}
-      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <GlassCard className="p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
-                Member growth · last 30 days
-              </p>
-              <div className="mt-2 flex items-baseline gap-3">
-                <span className="text-3xl font-bold tabular-nums text-white">
-                  {summary.activeMembers}
-                </span>
-                <span className="text-xs text-white/45">active members</span>
-                <DeltaChip delta={3.2} />
+                {/* Donut chart channels */}
+                <GlassCard className="p-5">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                      Payment channels
+                    </p>
+                    <h2 className="mt-1 text-base font-semibold text-[var(--text-primary)]">How money flows in</h2>
+                  </div>
+                  <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row">
+                    <Donut
+                      value={cashRupees}
+                      total={channelTotal}
+                      size={140}
+                      thickness={14}
+                      tone="amber"
+                      centerLabel={
+                        <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">{cashShare}%</span>
+                      }
+                      centerSub="cash"
+                    />
+                    <div className="grid flex-1 gap-2">
+                      <LegendItem
+                        tone="amber"
+                        label="Cash / desk"
+                        value={cashRupees > 0 ? formatInrCompact(cashRupees * 100) : "₹0"}
+                      />
+                      <LegendItem
+                        tone="lime"
+                        label="Online / UPI"
+                        value={onlineRupees > 0 ? formatInrCompact(onlineRupees * 100) : "₹0"}
+                      />
+                      <LegendItem
+                        tone="sky"
+                        label="Total"
+                        value={formatInrCompact(channelTotal * 100)}
+                      />
+                    </div>
+                  </div>
+                </GlassCard>
               </div>
-            </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-white/65">
-              <TrendingUp size={12} />
-              {summary.joinRequests} pending
-            </span>
-          </div>
-          <div className="mt-4 h-52">
-            <BarChart series={memberGrowth} labels={memberLabels} tone="sky" />
-          </div>
-        </GlassCard>
+            )}
 
-        <GlassCard className="p-5">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
-              Payment channels
-            </p>
-            <h2 className="mt-1 text-base font-semibold text-white">How money flows in</h2>
-          </div>
-          <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row">
-            <Donut
-              value={cashRupees}
-              total={channelTotal}
-              size={140}
-              thickness={14}
-              tone="amber"
-              centerLabel={
-                <span className="text-2xl font-bold tabular-nums text-white">{cashShare}%</span>
-              }
-              centerSub="cash"
-            />
-            <div className="grid flex-1 gap-2">
-              <LegendItem
-                tone="amber"
-                label="Cash / desk"
-                value={cashRupees > 0 ? formatInrCompact(cashRupees * 100) : "₹0"}
-              />
-              <LegendItem
-                tone="lime"
-                label="Online / UPI"
-                value={onlineRupees > 0 ? formatInrCompact(onlineRupees * 100) : "₹0"}
-              />
-              <LegendItem
-                tone="sky"
-                label="Total"
-                value={formatInrCompact(channelTotal * 100)}
-              />
-            </div>
-          </div>
-        </GlassCard>
-      </div>
+            {activeTab === "attendance" && (
+              <div className="grid gap-5 md:grid-cols-[1.4fr_1fr]">
+                <GlassCard className="p-5">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                      Daily check-ins · last 7 days
+                    </p>
+                    <div className="mt-2 flex items-baseline gap-3">
+                      <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
+                        {summary.todayAttendance}
+                      </span>
+                      <span className="text-xs text-[var(--text-secondary)]">today</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 h-56">
+                    <BarChart
+                      series={attendance7d}
+                      labels={["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
+                      tone="violet"
+                    />
+                  </div>
+                </GlassCard>
 
-      {/* Attendance + summary readout grid */}
-      <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
-        <GlassCard className="p-5">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
-              Daily check-ins · last 7 days
-            </p>
-            <div className="mt-2 flex items-baseline gap-3">
-              <span className="text-3xl font-bold tabular-nums text-white">
-                {summary.todayAttendance}
-              </span>
-              <span className="text-xs text-white/45">today</span>
-            </div>
-          </div>
-          <div className="mt-4 h-44">
-            <BarChart
-              series={attendance7d}
-              labels={["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
-              tone="violet"
-            />
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-5">
-          <SectionHeader
-            eyebrow="Snapshot"
-            title="By the numbers"
-            description="Quick read on memberships, floor activity, and trial runway."
-          />
-          <ReadoutGrid
-            className="mt-4"
-            columns={2}
-            items={[
-              {
-                label: "Branch scope",
-                value: selectedBranchName,
-                meta: "Filterable by branch",
-              },
-              {
-                label: "Active members",
-                value: formatCompactNumber(summary.activeMembers),
-                meta: `${summary.joinRequests} pending`,
-              },
-              {
-                label: "Attendance today",
-                value: formatCompactNumber(summary.todayAttendance),
-                meta: "QR entries",
-              },
-              {
-                label: "Revenue today",
-                value: formatInr(summary.revenuePaise),
-                meta: `${formatInr(summary.cashCollectedPaise)} cash`,
-              },
-              {
-                label: "Assistant drafts",
-                value: formatCompactNumber(summary.aiUsageThisMonth),
-                meta: "This month",
-              },
-              {
-                label: "Low stock",
-                value: formatCompactNumber(summary.lowStockProducts),
-                meta: "Below threshold",
-              },
-              {
-                label: "Trial runway",
-                value: formatDaysRemaining(summary.trialDaysRemaining),
-                meta: formatDate(organization.trialEndAt),
-              },
-              {
-                label: "Notification queue",
-                value:
-                  summary.notificationQueueCount > 0
-                    ? `${summary.notificationQueueCount} pending`
-                    : "Clear",
-                meta: "Scheduled / failed",
-              },
-            ]}
-          />
-        </GlassCard>
-      </div>
-
-      {/* Bottom strip: governance + operator notes */}
-      <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-        <GlassCard className="p-5">
-          <SectionHeader
-            eyebrow="Governance"
-            title="Control status"
-            description="Admin changes, pending messages, and unresolved checks."
-          />
-          <ReadoutGrid
-            className="mt-4"
-            columns={1}
-            items={[
-              {
-                label: "Audit log",
-                value: formatCompactNumber(auditLogCount),
-                meta: "Admin changes saved",
-              },
-              {
-                label: "Join mode",
-                value: formatEnumLabel(organization.joinMode),
-                meta: "How inbound demand converts",
-              },
-            ]}
-          />
-        </GlassCard>
-
-        <GlassCard className="p-5">
-          <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-lime-300" />
-            <h2 className="text-base font-semibold text-white">What deserves a second look</h2>
-          </div>
-          <div className="mt-4 grid gap-2">
-            {actionTips.map((note) => (
-              <div
-                key={note}
-                className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] px-4 py-3 text-sm leading-6 text-white/68"
-              >
-                <CircleAlert size={14} className="mt-0.5 shrink-0 text-amber-300" />
-                <span>{note}</span>
+                <GlassCard className="p-5 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">Attendance Insights</h3>
+                    <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+                      QR entry points at reception are processing checks smoothly. Active check-ins peak during late evening and early morning hours.
+                    </p>
+                  </div>
+                  <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Today's Total</p>
+                    <p className="mt-1 text-2xl font-bold text-[var(--accent-strong)]">{summary.todayAttendance} Members</p>
+                  </div>
+                </GlassCard>
               </div>
-            ))}
-          </div>
-        </GlassCard>
+            )}
+
+            {activeTab === "members" && (
+              <div className="grid gap-5 md:grid-cols-[1.4fr_1fr]">
+                <GlassCard className="p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                        Member growth · last 30 days
+                      </p>
+                      <div className="mt-2 flex items-baseline gap-3">
+                        <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
+                          {summary.activeMembers}
+                        </span>
+                        <span className="text-xs text-[var(--text-secondary)]">active members</span>
+                        <DeltaChip delta={3.2} />
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs text-[var(--text-secondary)]">
+                      <TrendingUp size={12} />
+                      {summary.joinRequests} pending
+                    </span>
+                  </div>
+                  <div className="mt-4 h-52">
+                    <BarChart series={memberGrowth} labels={memberLabels} tone="sky" />
+                  </div>
+                </GlassCard>
+
+                <GlassCard className="p-5 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">Demand Funnel</h3>
+                    <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+                      Public registration links are generating active join requests. Review pending inquiries under the member tab.
+                    </p>
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="flex justify-between items-center rounded-xl bg-[var(--bg-sunken)] p-3 text-xs">
+                      <span className="font-medium text-[var(--text-secondary)]">Active memberships</span>
+                      <span className="font-bold text-[var(--text-primary)]">{summary.activeMembers}</span>
+                    </div>
+                    <div className="flex justify-between items-center rounded-xl bg-[var(--bg-sunken)] p-3 text-xs">
+                      <span className="font-medium text-[var(--text-secondary)]">Pending join requests</span>
+                      <span className="font-bold text-[var(--feedback-warning)]">{summary.joinRequests}</span>
+                    </div>
+                  </div>
+                </GlassCard>
+              </div>
+            )}
+
+            {activeTab === "snapshot" && (
+              <div className="grid gap-5">
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <GlassCard className="p-5">
+                    <SectionHeader
+                      eyebrow="Snapshot"
+                      title="By the numbers"
+                      description="Quick read on memberships, floor activity, and trial runway."
+                    />
+                    <ReadoutGrid
+                      className="mt-4"
+                      columns={2}
+                      items={[
+                        {
+                          label: "Branch scope",
+                          value: selectedBranchName,
+                          meta: "Filterable by branch",
+                        },
+                        {
+                          label: "Active members",
+                          value: formatCompactNumber(summary.activeMembers),
+                          meta: `${summary.joinRequests} pending`,
+                        },
+                        {
+                          label: "Attendance today",
+                          value: formatCompactNumber(summary.todayAttendance),
+                          meta: "QR entries",
+                        },
+                        {
+                          label: "Revenue today",
+                          value: formatInr(summary.revenuePaise),
+                          meta: `${formatInr(summary.cashCollectedPaise)} cash`,
+                        },
+                        {
+                          label: "Assistant drafts",
+                          value: formatCompactNumber(summary.aiUsageThisMonth),
+                          meta: "This month",
+                        },
+                        {
+                          label: "Low stock",
+                          value: formatCompactNumber(summary.lowStockProducts),
+                          meta: "Below threshold",
+                        },
+                        {
+                          label: "Trial runway",
+                          value: formatDaysRemaining(summary.trialDaysRemaining),
+                          meta: formatDate(organization.trialEndAt),
+                        },
+                        {
+                          label: "Notification queue",
+                          value:
+                            summary.notificationQueueCount > 0
+                              ? `${summary.notificationQueueCount} pending`
+                              : "Clear",
+                          meta: "Scheduled / failed",
+                        },
+                      ]}
+                    />
+                  </GlassCard>
+
+                  <div className="grid gap-5">
+                    <GlassCard className="p-5">
+                      <SectionHeader
+                        eyebrow="Governance"
+                        title="Control status"
+                        description="Admin changes, pending messages, and unresolved checks."
+                      />
+                      <ReadoutGrid
+                        className="mt-4"
+                        columns={2}
+                        items={[
+                          {
+                            label: "Audit log",
+                            value: formatCompactNumber(auditLogCount),
+                            meta: "Admin changes saved",
+                          },
+                          {
+                            label: "Join mode",
+                            value: formatEnumLabel(organization.joinMode),
+                            meta: "Demand funnel type",
+                          },
+                        ]}
+                      />
+                    </GlassCard>
+
+                    <GlassCard className="p-5">
+                      <div className="flex items-center gap-2">
+                        <Sparkles size={16} className="text-[var(--accent)]" />
+                        <h2 className="text-base font-semibold text-[var(--text-primary)]">What deserves a second look</h2>
+                      </div>
+                      <div className="mt-4 grid gap-2">
+                        {actionTips.map((note) => (
+                          <div
+                            key={note}
+                            className="flex items-start gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3 text-sm leading-6 text-[var(--text-secondary)]"
+                          >
+                            <CircleAlert size={14} className="mt-0.5 shrink-0 text-[var(--feedback-warning)]" />
+                            <span>{note}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </GlassCard>
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -17,7 +17,7 @@ export function ZookLogo({ compact = false }: { compact?: boolean }) {
       {!compact ? (
         <span>
           <span className="block text-lg font-semibold tracking-tight">Zook</span>
-          <span className="block text-xs text-white/45">Gym OS</span>
+          <span className="block text-xs text-[var(--text-tertiary)]">Gym OS</span>
         </span>
       ) : null}
     </Link>

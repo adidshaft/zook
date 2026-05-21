@@ -69,13 +69,13 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Exception feed</h2>
-          <p className="mt-1 text-sm text-white/45">QR entry is self-approved; unusual scans appear here only when flagged.</p>
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">QR entry is self-approved; unusual scans appear here only when flagged.</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <a
             href={`/api/orgs/${orgId}/reports/attendance.csv`}
             download
-            className="zook-focus inline-flex min-h-11 items-center rounded-full border border-white/12 bg-white/6 px-4 text-sm font-semibold text-white/78 hover:border-lime-300/35 hover:text-lime-100"
+            className="zook-focus inline-flex min-h-11 items-center rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-sm font-semibold text-[var(--text-secondary)] hover:border-[var(--accent-strong)] hover:text-[var(--accent-strong)] transition"
           >
             Export CSV
           </a>
@@ -85,22 +85,22 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
       {error ? <p className="mt-4 text-sm text-red-200">{error}</p> : null}
       <div className="mt-5 grid gap-3">
         {!records.length ? (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/45">
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-4 text-sm text-[var(--text-tertiary)]">
             No flagged check-ins right now.
           </div>
         ) : null}
         {records.map((record) => (
-          <div key={record.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+          <div key={record.id} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
                   <p className="font-medium">{record.user?.name ?? record.user?.email ?? "Member"}</p>
                   <Pill>{record.status}</Pill>
                 </div>
-                <p className="mt-2 text-sm text-white/45">
+                <p className="mt-2 text-sm text-[var(--text-tertiary)]">
                   {record.plan?.name ?? "Membership"} · {new Date(record.checkedInAt).toLocaleTimeString()}
                 </p>
-                <p className="mt-1 text-xs text-white/40">
+                <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                   {record.subscription?.endsAt
                     ? `Expiry ${new Date(record.subscription.endsAt).toLocaleDateString()}`
                     : "No expiry available"}

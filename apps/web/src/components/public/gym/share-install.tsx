@@ -16,8 +16,8 @@ export function ShareInstall({
   return (
     <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
       <GlassCard>
-        <h2 className="text-2xl font-semibold text-white">{t("shareOrInstall")}</h2>
-        <p className="mt-3 text-sm leading-6 text-white/55">
+        <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("shareOrInstall")}</h2>
+        <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
           {t("shareInstallCopyPrefix")} {org.name}.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
@@ -25,7 +25,7 @@ export function ShareInstall({
           {org.playStoreUrl ? <StoreLink href={org.playStoreUrl} label={t("playStore")} /> : null}
           <a
             href={`/qr/${org.username}?target=join&download=1`}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
           >
             <QrCode size={16} />
             {t("downloadQr")}
@@ -44,7 +44,10 @@ export function ShareInstall({
 
 function StoreLink({ href, label }: { href: string; label: string }) {
   return (
-    <a href={href} className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/72">
+    <a
+      href={href}
+      className="rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
+    >
       {label}
     </a>
   );
@@ -54,11 +57,11 @@ export function ReferralCard({ org, locale }: { org: PublicGym; locale: PublicLo
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   return (
     <GlassCard>
-      <h2 className="text-2xl font-semibold text-white">{t("referral")}</h2>
-      <p className="mt-3 text-sm leading-6 text-white/55">{t("referralCopy")}</p>
+      <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("referral")}</h2>
+      <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("referralCopy")}</p>
       <Link
         href={localizedPath(`/join/${org.username}`, locale, { ref: "" })}
-        className="zook-focus mt-5 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
+        className="zook-focus mt-5 inline-flex rounded-full bg-[var(--accent-fill)] px-5 py-3 text-sm font-semibold text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)] transition hover:bg-[var(--accent-soft)]"
       >
         {t("shareJoinLink")}
       </Link>
