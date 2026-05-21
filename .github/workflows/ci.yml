@@ -35,6 +35,7 @@ jobs:
       API_MODE: backend
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
       NEXT_PUBLIC_WEB_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_DASHBOARD_URL: http://127.0.0.1:3000
       MOBILE_API_BASE_URL: http://127.0.0.1:3000
       SESSION_SECRET: ci-session-key-0123456789ABCDEFabcdefXYZ
       ZOOK_QR_SECRET: ci-zook-qr-signing-key-0123456789ABCDEF
