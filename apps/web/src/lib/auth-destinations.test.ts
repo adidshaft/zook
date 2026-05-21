@@ -76,8 +76,11 @@ describe("auth destinations", () => {
 
   it("honors requested paths on the session destination host", () => {
     expect(
-      resolvePostLoginDestination(session({ roles: ["OWNER"] }), "/dashboard/members?view=all"),
-    ).toEqual({ host: "dashboard", path: "/dashboard/members?view=all" });
+      resolvePostLoginDestination(
+        session({ roles: ["OWNER"] }),
+        "/dashboard/members?branchId=branch_1",
+      ),
+    ).toEqual({ host: "dashboard", path: "/dashboard/members?branchId=branch_1" });
     expect(resolvePostLoginDestination(session({ roles: ["MEMBER"] }), "/checkout/cs_123")).toEqual(
       {
         host: "public",
