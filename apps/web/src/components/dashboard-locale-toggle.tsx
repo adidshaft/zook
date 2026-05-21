@@ -39,7 +39,7 @@ export function DashboardLocaleToggle({
 
   return (
     <div
-      className="flex rounded-full border border-white/10 bg-black/20 p-1"
+      className="flex rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-1"
       aria-label={labels?.language ?? "Language"}
     >
       {(["en", "hi"] as const).map((item) => (
@@ -51,7 +51,9 @@ export function DashboardLocaleToggle({
           aria-pressed={currentLocale === item}
           title={item === "en" ? labels?.english : labels?.hindi}
           className={`zook-focus min-h-8 rounded-full px-3 text-xs font-semibold transition ${
-            currentLocale === item ? "bg-lime-300 text-black" : "text-white/55 hover:text-white"
+            currentLocale === item
+              ? "bg-[var(--accent-fill)] text-[var(--text-on-accent)]"
+              : "text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
           }`}
         >
           {item === "en" ? "EN" : "हिन्दी"}

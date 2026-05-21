@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { cookies, headers } from "next/headers";
 import { QueryProvider } from "@/components/query-provider";
 import "./globals.css";
 
@@ -65,13 +66,52 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#070908",
-  colorScheme: "dark",
+  themeColor: "#f7f8f4",
+  colorScheme: "light dark",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+type ThemePreference = "system" | "light" | "dark";
+type ResolvedTheme = "light" | "dark";
+
+function normalizeThemePreference(value: string | undefined): ThemePreference {
+  return value === "system" || value === "light" || value === "dark" ? value : "light";
+}
+
+function initialServerTheme(preference: ThemePreference): ResolvedTheme {
+  return preference === "dark" ? "dark" : "light";
+}
+
+const themeBootstrapScript = `
+(function() {
+  try {
+    var match = document.cookie.match(/(?:^|; )zook_theme=([^;]+)/);
+    var preference = match ? decodeURIComponent(match[1]) : "light";
+    var theme = preference === "dark" || preference === "light"
+      ? preference
+      : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  } catch (_) {}
+})();
+`;
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const requestHeaders = await headers();
+  const themePreference = normalizeThemePreference(cookieStore.get("zook_theme")?.value);
+  const theme = initialServerTheme(themePreference);
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
+
   return (
-    <html lang="en-IN">
+    <html lang="en-IN" data-theme={theme} suppressHydrationWarning>
+      <head>
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: themeBootstrapScript,
+          }}
+        />
+      </head>
       <body>
         <QueryProvider>{children}</QueryProvider>
       </body>

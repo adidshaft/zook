@@ -17,15 +17,15 @@ export function GlassCard({
     default: "zook-glass rounded-[28px] p-5",
     strong:
       "zook-glass-strong rounded-[28px] p-6",
-    muted: "rounded-[24px] border border-white/10 bg-black/25 p-5",
+    muted: "rounded-[24px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-5",
     selected:
-      "rounded-[28px] border border-[rgba(185,244,85,0.45)] bg-[rgba(185,244,85,0.1)] p-5 shadow-[var(--zook-shadow-glow-lime)] backdrop-blur-2xl",
+      "rounded-[28px] border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] p-5 shadow-[var(--shadow-glow-accent)] backdrop-blur-2xl",
     success:
-      "rounded-[28px] border border-[rgba(185,244,85,0.34)] bg-[rgba(185,244,85,0.08)] p-5 shadow-[var(--zook-shadow-glow-lime)] backdrop-blur-2xl",
+      "rounded-[28px] border border-[color-mix(in_srgb,var(--feedback-success)_42%,transparent)] bg-[var(--surface-success-soft)] p-5 shadow-[var(--shadow-glow-accent)] backdrop-blur-2xl",
     warning:
-      "rounded-[28px] border border-[rgba(242,201,76,0.28)] bg-[rgba(242,201,76,0.1)] p-5 shadow-[var(--zook-shadow-glass)] backdrop-blur-2xl",
+      "rounded-[28px] border border-[color-mix(in_srgb,var(--feedback-warning)_34%,transparent)] bg-[var(--surface-warning-soft)] p-5 shadow-[var(--shadow-lg)] backdrop-blur-2xl",
     danger:
-      "rounded-[28px] border border-[rgba(255,90,61,0.28)] bg-[rgba(255,90,61,0.1)] p-5 shadow-[var(--zook-shadow-glass)] backdrop-blur-2xl",
+      "rounded-[28px] border border-[color-mix(in_srgb,var(--feedback-danger)_34%,transparent)] bg-[var(--surface-danger-soft)] p-5 shadow-[var(--shadow-lg)] backdrop-blur-2xl",
   };
   return (
     <motion.section 
@@ -52,11 +52,11 @@ export function Pill({
   className?: string | undefined;
 } & React.HTMLAttributes<HTMLSpanElement>) {
   const tones = {
-    neutral: "border-white/10 bg-white/8 text-white/70",
-    lime: "border-lime-300/45 bg-lime-300/16 text-lime-200",
-    amber: "border-[rgba(242,201,76,0.32)] bg-[rgba(242,201,76,0.12)] text-[#f8e7a0]",
-    red: "border-[rgba(255,90,61,0.32)] bg-[rgba(255,90,61,0.12)] text-[#ffc9bc]",
-    blue: "border-sky-300/30 bg-sky-300/12 text-sky-100",
+    neutral: "border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)]",
+    lime: "border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-[var(--accent-strong)]",
+    amber: "border-[color-mix(in_srgb,var(--feedback-warning)_36%,transparent)] bg-[var(--surface-warning-soft)] text-[var(--feedback-warning)]",
+    red: "border-[color-mix(in_srgb,var(--feedback-danger)_36%,transparent)] bg-[var(--surface-danger-soft)] text-[var(--feedback-danger)]",
+    blue: "border-[color-mix(in_srgb,var(--feedback-info)_36%,transparent)] bg-[var(--surface-info-soft)] text-[var(--feedback-info)]",
   };
   return (
     <span
@@ -84,7 +84,7 @@ export function ProductPanel({
     <motion.section
       {...props}
       className={clsx(
-        "zook-glass-strong relative overflow-hidden rounded-[32px] p-5 before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-lime-200/35 before:to-transparent md:p-6",
+        "zook-glass-strong relative overflow-hidden rounded-[32px] p-5 before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-[var(--border-focus)] before:to-transparent md:p-6",
         className,
       )}
       whileHover={props.whileHover ?? { scale: 1.005 }}
