@@ -92,8 +92,28 @@ function classifyHost(hostname: string): "staff" | "public" | "unknown" {
   return "unknown";
 }
 
+function isLoopbackHost(hostname: string) {
+  return hostname === DEV_PUBLIC_HOST || hostname === DEV_STAFF_HOST || hostname === "127.0.0.1";
+}
+
 function isLocalHost(hostname: string) {
   return hostname === DEV_PUBLIC_HOST || hostname === DEV_STAFF_HOST;
+}
+
+function usesLocalSingleOriginHosts() {
+  if (originFromEnv(process.env.NEXT_PUBLIC_DASHBOARD_URL)) {
+    return false;
+  }
+  const publicOrigin =
+    originFromEnv(process.env.NEXT_PUBLIC_WEB_URL) ?? originFromEnv(process.env.NEXT_PUBLIC_APP_URL);
+  if (!publicOrigin) {
+    return false;
+  }
+  return isLoopbackHost(new URL(publicOrigin).hostname.toLowerCase());
+}
+
+function shouldUseSingleOriginHostRouting(hostname: string) {
+  return isLoopbackHost(hostname) && usesLocalSingleOriginHosts();
 }
 
 function hostnameFromRequest(request: NextRequest) {
@@ -154,10 +174,11 @@ export function middleware(request: NextRequest) {
   let response: NextResponse;
   const host = classifyHost(hostname);
   const expectedHost = expectedHostForPath(request.nextUrl.pathname);
-  if (expectedHost === "dashboard" && host !== "staff") {
+  const useSingleOriginHostRouting = shouldUseSingleOriginHostRouting(hostname);
+  if (expectedHost === "dashboard" && host !== "staff" && !useSingleOriginHostRouting) {
     return redirectToHost(request, staffHostForRequest(request));
   }
-  if (expectedHost === "public" && host === "staff") {
+  if (expectedHost === "public" && host === "staff" && !useSingleOriginHostRouting) {
     return redirectToHost(request, publicHostForRequest(request));
   }
 
