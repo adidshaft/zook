@@ -176,14 +176,18 @@ export function DashboardShell({
           />
 
           <LayoutTransition layoutKey={sectionKey}>
-            <div className="px-1 pt-3 md:px-0">
-              <h1 className="text-3xl font-black tracking-[-0.035em] text-white md:text-4xl">
-                {pageTitle}
-              </h1>
-              {pageDescription ? (
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">{pageDescription}</p>
-              ) : null}
-            </div>
+            {sectionKey === "" ? (
+              <div className="px-1 pt-3 md:px-0">
+                <h1 className="text-3xl font-black tracking-[-0.035em] text-white md:text-4xl">
+                  {pageTitle}
+                </h1>
+                {pageDescription ? (
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
+                    {pageDescription}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             {showOwnerSetupChecklist ? (
               <OwnerSetupChecklist
