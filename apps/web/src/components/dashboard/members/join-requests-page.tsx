@@ -4,7 +4,7 @@ import { ErrorNotice } from "../operational-shared";
 import { EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButton } from "../../zook-button";
-import type { JoinRequestRow } from "../../dashboard-operational-model";
+import type { JoinRequestRow } from "@/components/dashboard/types";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 
 type ResourceState<T> = {

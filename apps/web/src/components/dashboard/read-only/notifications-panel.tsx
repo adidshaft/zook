@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import {
-  NotificationComposerPanel,
-  NotificationHistoryPanel,
-  NotificationTemplateManagerPanel,
-} from "../../notification-composer-panel";
+import { NotificationComposerPanel } from "../../notifications/composer-wizard";
+import { NotificationHistoryPanel } from "../../notifications/history-panel";
+import { NotificationTemplateManagerPanel } from "../../notifications/template-manager";
 import { EmptyState, ReadoutGrid, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { formatCompactNumber, formatDateTime, formatEnumLabel } from "@/lib/format";
@@ -13,7 +11,7 @@ import type {
   NotificationSnapshot,
   OrganizationSnapshot,
   OrganizationSummary,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import type { Permission, Role } from "@zook/core";
 import { HelpHint } from "../../ui";
 

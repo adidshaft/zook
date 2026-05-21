@@ -5,7 +5,7 @@ import { SectionHeader } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { SearchableSelect } from "../../ui";
 import { ZookButton } from "../../zook-button";
-import type { MembershipPlanRow } from "../../dashboard-operational-model";
+import type { MembershipPlanRow } from "@/components/dashboard/types";
 import { formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
 

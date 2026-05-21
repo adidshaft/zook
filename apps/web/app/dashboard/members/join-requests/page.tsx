@@ -1,9 +1,14 @@
-import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import { MembersDashboardRoute } from "@/components/dashboard/route-panels";
 
 export default function JoinRequestsPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["members", "join-requests"], searchParams });
+  return renderDashboardPanelRoute(
+    { section: ["members", "join-requests"], searchParams },
+    MembersDashboardRoute,
+    { view: "join-requests" },
+  );
 }

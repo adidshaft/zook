@@ -11,7 +11,7 @@ import {
 } from "../../../dashboard-primitives";
 import { GlassCard, Pill } from "../../../glass-card";
 import { ZookButton, ZookButtonLink } from "../../../zook-button";
-import type { MemberRow, OrganizationSnapshot } from "../../../dashboard-operational-model";
+import type { MemberRow, OrganizationSnapshot } from "@/components/dashboard/types";
 import { formatDate } from "@/lib/format";
 import { memberFilters, type MemberFilter, type MembersState } from "./types";
 

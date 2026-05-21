@@ -7,11 +7,35 @@ import {
   type OrganizationSnapshot,
   type OrganizationSummary,
   type ProductSnapshot,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
+
+export type DashboardOperationalMode =
+  | "public-profile"
+  | "settings"
+  | "join-requests"
+  | "attendance"
+  | "notification-templates"
+  | "notification-history"
+  | "notifications"
+  | "reports"
+  | "shop"
+  | "staff"
+  | "plan-coupons"
+  | "plan-offers"
+  | "plan-referrals"
+  | "plans"
+  | "billing"
+  | "payment-refunds"
+  | "payments"
+  | "branches"
+  | "audit"
+  | "members"
+  | "ai";
 
 export type DashboardOperationalPanelProps = {
   orgId: string;
-  sectionKey: string;
+  mode: DashboardOperationalMode;
+  shopView?: "products" | "orders";
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
   branchScope: BranchScopeSnapshot;

@@ -1,5 +1,6 @@
-import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import { AiDashboardRoute } from "@/components/dashboard/route-panels";
 
 export default function AiPage({ searchParams }: { searchParams: Promise<{ branchId?: string }> }) {
-  return renderDashboardRoute({ section: ["ai"], searchParams });
+  return renderDashboardPanelRoute({ section: ["ai"], searchParams }, AiDashboardRoute);
 }

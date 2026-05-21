@@ -6,7 +6,7 @@ import { CsvExportButton, ErrorNotice } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn } from "../../ui";
-import type { ShopOrderRow } from "../../dashboard-operational-model";
+import type { ShopOrderRow } from "@/components/dashboard/types";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 import { ShopOrderPaymentControl } from "../payments/shop-order-payment-control";
 import type { ResourceState } from "./types";

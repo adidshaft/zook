@@ -1,6 +1,6 @@
 import { GlassCard } from "../../glass-card";
 import { ReadoutGrid, SectionHeader } from "../../dashboard-primitives";
-import type { BranchScopeSnapshot, OrganizationSummary } from "../../dashboard-operational-model";
+import type { BranchScopeSnapshot, OrganizationSummary } from "@/components/dashboard/types";
 import { formatCompactNumber, formatInr } from "@/lib/format";
 
 export function ShopStatusCard({

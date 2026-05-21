@@ -1,9 +1,10 @@
-import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import { AuditDashboardRoute } from "@/components/dashboard/route-panels";
 
 export default function AuditPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["audit"], searchParams });
+  return renderDashboardPanelRoute({ section: ["audit"], searchParams }, AuditDashboardRoute);
 }

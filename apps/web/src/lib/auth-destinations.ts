@@ -194,39 +194,3 @@ export function accountDestinationLabel(
   }
   return labels.membership;
 }
-
-/**
- * @deprecated Use resolvePostLoginDestination with destinationToHref/destinationToUrl.
- */
-export function resolvePostLoginPath(
-  session: AuthDestinationSession,
-  requestedPath?: string | null,
-) {
-  return resolvePostLoginDestination(session, requestedPath).path;
-}
-
-/**
- * @deprecated Use publicAccountDestination with accountDestinationLabel.
- */
-export function publicAccountLink(
-  session:
-    | Pick<AuthSessionSummary, "activeOrganization" | "user" | "organizations">
-    | null
-    | undefined,
-  labels: {
-    platform?: string;
-    dashboard: string;
-    desk?: string;
-    coach?: string;
-    membership: string;
-  },
-) {
-  const destination = publicAccountDestination(session);
-  if (!destination) {
-    return null;
-  }
-  return {
-    href: destination.path,
-    label: accountDestinationLabel(destination, labels),
-  };
-}

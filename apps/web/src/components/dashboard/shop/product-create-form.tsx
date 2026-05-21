@@ -4,7 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { Pill } from "../../glass-card";
 import { HelpHint } from "../../ui";
 import { ZookButton } from "../../zook-button";
-import type { ProductCategory } from "../../dashboard-operational-model";
+import type { ProductCategory } from "@/components/dashboard/types";
 import { formatEnumLabel } from "@/lib/format";
 import { ProductPhotosField, productCategories } from "./product-images";
 import type { ProductFormState } from "./types";

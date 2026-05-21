@@ -4,7 +4,7 @@ import {
   type MembershipPlanType,
   type ProductCategory,
   type ProductRow,
-} from "../../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import {
   type DashboardOperationalState,
   type PlanForm,
@@ -80,7 +80,7 @@ export function createPlansProductsActions({
         feedback: { success: "Membership plan created." },
       });
       state.setPlanForm(state.emptyPlanForm);
-      resources.membershipPlansState.reload();
+      await resources.membershipPlansState.reload();
       state.setFormStatus("Membership plan created.");
     } catch (cause) {
       state.setFormError(
@@ -135,7 +135,7 @@ export function createPlansProductsActions({
         },
       });
       state.setEditingPlanId(null);
-      resources.membershipPlansState.reload();
+      await resources.membershipPlansState.reload();
       state.setFormStatus("Membership plan updated.");
     } catch (cause) {
       state.setFormError(
@@ -155,7 +155,7 @@ export function createPlansProductsActions({
         method: "DELETE",
         feedback: { success: "Membership plan deleted." },
       });
-      resources.membershipPlansState.reload();
+      await resources.membershipPlansState.reload();
       state.setFormStatus("Membership plan deleted.");
     } catch (cause) {
       state.setFormError(
@@ -177,7 +177,7 @@ export function createPlansProductsActions({
         feedback: { success: "Shop product created." },
       });
       state.setProductForm(state.emptyProductForm);
-      resources.productsState.reload();
+      await resources.productsState.reload();
       state.setFormStatus("Shop product created.");
     } catch (cause) {
       state.setFormError(cause instanceof Error ? cause.message : "Unable to create product.");

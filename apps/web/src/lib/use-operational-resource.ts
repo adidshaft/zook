@@ -98,8 +98,23 @@ export function useOperationalResource<T>({
     data,
     loading,
     error,
-    reload() {
-      setRevision((current) => current + 1);
+    async reload() {
+      const resourcePath = path;
+      if (!enabled || !resourcePath) {
+        setRevision((current) => current + 1);
+        return;
+      }
+      setLoading(true);
+      try {
+        const payload = await webApiFetch<T>(resourcePath);
+        hasLoadedRef.current = true;
+        setData(payload);
+        setError("");
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Unable to load this view.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 }

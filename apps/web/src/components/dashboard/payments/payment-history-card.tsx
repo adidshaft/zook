@@ -3,7 +3,7 @@ import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboar
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButton } from "../../zook-button";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-shared";
-import type { PaymentRow } from "../../dashboard-operational-model";
+import type { PaymentRow } from "@/components/dashboard/types";
 import type { PagedState } from "../read-only/types";
 import { formatPaymentMode } from "./payments-utils";
 import type { PaymentDocumentKind } from "./types";

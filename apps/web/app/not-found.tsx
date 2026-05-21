@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { PublicNav } from "@/components/public-nav";
+import { PublicNav } from "@/components/public/nav/public-nav";
 
 export default function NotFound() {
   return (
     <main className="flex min-h-dvh flex-col bg-zinc-950">
       <div className="mx-auto grid w-full max-w-5xl gap-5 px-4 sm:px-6">
-        <PublicNav showLogin={false} />
+        <PublicNav locale="en" />
       </div>
       <div className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
         <div className="max-w-sm text-center">

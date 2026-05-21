@@ -3,7 +3,7 @@ import {
   type CouponRow,
   type OfferRow,
   type ReferralCodeRow,
-} from "../../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import {
   createEmptyCouponForm,
   createEmptyOfferForm,

@@ -4,7 +4,7 @@ import { Camera } from "lucide-react";
 import { EmptyState, SectionHeader, StatusPill } from "../dashboard-primitives";
 import { Pill } from "../glass-card";
 import { formatDate } from "@/lib/format";
-import type { BodyProgressEntryRow } from "../dashboard-operational-model";
+import type { BodyProgressEntryRow } from "@/components/dashboard/types";
 
 function numericLabel(value: string | number | null | undefined, suffix: string) {
   if (value === null || value === undefined || value === "") {

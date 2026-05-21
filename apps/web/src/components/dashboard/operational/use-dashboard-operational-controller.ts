@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { resolveMode } from "../../dashboard-operational-model";
 import { createPlansProductsActions } from "./actions/plans-products";
 import { createReferralActions } from "./actions/referrals";
 import { createStaffBranchesActions } from "./actions/staff-branches";
@@ -13,14 +12,13 @@ export type { DashboardOperationalPanelProps } from "./controller-types";
 
 export function useDashboardOperationalController({
   orgId,
-  sectionKey,
+  mode,
   organization,
   summary,
   branchScope,
   initialJoinRequests,
   initialAiUsage,
 }: DashboardOperationalPanelProps) {
-  const mode = resolveMode(sectionKey);
   const state = useDashboardOperationalState(organization);
   const resources = useDashboardOperationalResources({
     orgId,

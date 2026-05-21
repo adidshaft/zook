@@ -5,7 +5,7 @@ import { ConfirmActionButton } from "../../confirm-action-button";
 import { EmptyState } from "../../dashboard-primitives";
 import { ZookButton } from "../../zook-button";
 import { ErrorNotice } from "../operational-shared";
-import type { ProductRow } from "../../dashboard-operational-model";
+import type { ProductRow } from "@/components/dashboard/types";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 import { ProductEditPanel } from "./product-edit-panel";
 import { productImagesFromProduct } from "./product-images";

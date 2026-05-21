@@ -1,5 +1,6 @@
-import { AccountAwarePublicNav } from "@/components/account-aware-public-nav";
 import { GlassCard } from "@/components/glass-card";
+import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
+import { PublicNav } from "@/components/public/nav/public-nav";
 import {
   alternatePublicLocale,
   localizedPath,
@@ -63,13 +64,15 @@ export default async function SupportPage({
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen px-5 py-5">
       <div className="mx-auto max-w-4xl">
-        <AccountAwarePublicNav
+        <PublicNav
           locale={locale}
           languageHref={localizedPath("/support", nextLocale)}
           languageLabel={t("languageSwitch")}
           backHref={localizedPath("/", locale)}
           backLabel={t("home")}
-        />
+        >
+          <AccountAwareNav locale={locale} />
+        </PublicNav>
         <GlassCard variant="strong" className="mt-4 p-6 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-lime-200/70">
             {copy.eyebrow}

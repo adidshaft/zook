@@ -7,46 +7,49 @@ import {
   NotificationsPanel,
   PaymentsPanel,
   ReportsPanel,
-} from "./dashboard/read-only-panels";
-import { BranchesSection } from "./dashboard/sections/branches-section";
-import { ShopSection } from "./dashboard/shop/section";
-import { MembersPage } from "./dashboard/members/members-page";
-import { StaffSection } from "./dashboard/sections/staff-section";
-import { OverviewOperationalSection } from "./dashboard/sections/overview-operational-section";
+} from "./read-only-panels";
+import { BranchesSection } from "./sections/branches-section";
+import { ShopSection } from "./shop/section";
+import { MembersPage } from "./members/members-page";
+import { StaffSection } from "./sections/staff-section";
 import {
   BillingSection,
   RefundsSection,
   SettingsSection,
-} from "./dashboard/sections/utility-sections";
+} from "./sections/utility-sections";
 import {
   CouponsRouteSection,
   OffersRouteSection,
   PlansSection,
   ReferralsRouteSection,
-} from "./dashboard/plans";
-import { GymProfileSetupPanel } from "./gym-profile-setup-panel";
+} from "./plans";
+import { GymProfileSetupPanel } from "../gym-profile-setup-panel";
 import {
   type DashboardOperationalPanelProps,
   useDashboardOperationalController,
-} from "./dashboard/operational/use-dashboard-operational-controller";
+} from "./operational/use-dashboard-operational-controller";
+import type { DashboardOperationalMode } from "./operational/controller-types";
 
-export function DashboardOperationalPanel(props: DashboardOperationalPanelProps) {
+export type DashboardRoutePanelBaseProps = Omit<
+  DashboardOperationalPanelProps,
+  "mode" | "shopView"
+>;
+
+function DashboardPanelContent(props: DashboardOperationalPanelProps) {
   const controller = useDashboardOperationalController(props);
   const {
     orgId,
-    sectionKey,
+    mode,
+    shopView = "products",
     organization,
     summary,
     branchScope,
     auditLogCount,
     initialNotifications,
-    initialProducts,
-    initialAiUsage,
     roles = [],
     permissions = [],
   } = props;
   const {
-    mode,
     queueBusyId,
     queueError,
     planForm,
@@ -69,22 +72,6 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
     setStaffRoleDraft,
     staffBranchDraft,
     setStaffBranchDraft,
-    couponForm,
-    setCouponForm,
-    editingCouponId,
-    setEditingCouponId,
-    couponEditForm,
-    setCouponEditForm,
-    offerForm,
-    setOfferForm,
-    editingOfferId,
-    setEditingOfferId,
-    offerEditForm,
-    setOfferEditForm,
-    referralForm,
-    setReferralForm,
-    policyForm,
-    setPolicyForm,
     staffInvite,
     setStaffInvite,
     branchForm,
@@ -109,11 +96,7 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
     attendanceState,
     auditLogsState,
     aiUsageState,
-    couponsState,
     branchesState,
-    referralPolicyState,
-    referralsState,
-    referralAnalyticsState,
     memberDetailState,
     membershipPlans,
     members,
@@ -129,17 +112,13 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
     coupons,
     offers,
     branches,
-    referralPolicy,
     referrals,
-    referralAnalytics,
-    referralUsersById,
     selectedBranchName,
     planNamesById,
     staffUsersById,
     queuedOrders,
     readyOrders,
     misconfiguredAiCount,
-    overviewWorkflowCards,
     updateJoinRequest,
     createMembershipPlan,
     createProduct,
@@ -159,17 +138,6 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
     startBranchEdit,
     saveBranchEdit,
     deactivateBranch,
-    saveReferralPolicy,
-    createCoupon,
-    toggleCoupon,
-    startCouponEdit,
-    updateCoupon,
-    createOffer,
-    toggleOffer,
-    startOfferEdit,
-    updateOffer,
-    createReferral,
-    updateReferral,
   } = controller;
 
   if (mode === "public-profile") {
@@ -240,7 +208,7 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
   if (mode === "shop") {
     return (
       <ShopSection
-        view={sectionKey === "shop/orders" ? "orders" : "products"}
+        view={shopView}
         orgId={orgId}
         summary={summary}
         branchScope={branchScope}
@@ -431,71 +399,97 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
     );
   }
 
-  return (
-    <OverviewOperationalSection
-      organization={organization}
-      summary={summary}
-      auditLogCount={auditLogCount}
-      initialNotifications={initialNotifications}
-      initialProducts={initialProducts}
-      initialAiUsage={initialAiUsage}
-      overviewWorkflowCards={overviewWorkflowCards}
-      branches={branches}
-      branchesState={branchesState}
-      branchForm={branchForm}
-      setBranchForm={setBranchForm}
-      editingBranchId={editingBranchId}
-      setEditingBranchId={setEditingBranchId}
-      branchEditForm={branchEditForm}
-      setBranchEditForm={setBranchEditForm}
-      staffAssignments={staffAssignments}
-      staffUsersById={staffUsersById}
-      formBusy={formBusy}
-      formError={formError}
-      formStatus={formStatus}
-      createBranch={createBranch}
-      saveBranchEdit={saveBranchEdit}
-      startBranchEdit={startBranchEdit}
-      updateBranch={updateBranch}
-      deactivateBranch={deactivateBranch}
-      referralPolicy={referralPolicy}
-      referralPolicyState={referralPolicyState}
-      referralAnalytics={referralAnalytics}
-      referralAnalyticsState={referralAnalyticsState}
-      referralsState={referralsState}
-      couponsState={couponsState}
-      coupons={coupons}
-      offers={offers}
-      referrals={referrals}
-      referralUsersById={referralUsersById}
-      membershipPlans={membershipPlans}
-      couponForm={couponForm}
-      setCouponForm={setCouponForm}
-      editingCouponId={editingCouponId}
-      setEditingCouponId={setEditingCouponId}
-      couponEditForm={couponEditForm}
-      setCouponEditForm={setCouponEditForm}
-      offerForm={offerForm}
-      setOfferForm={setOfferForm}
-      editingOfferId={editingOfferId}
-      setEditingOfferId={setEditingOfferId}
-      offerEditForm={offerEditForm}
-      setOfferEditForm={setOfferEditForm}
-      referralForm={referralForm}
-      setReferralForm={setReferralForm}
-      policyForm={policyForm}
-      setPolicyForm={setPolicyForm}
-      createCoupon={createCoupon}
-      updateCoupon={updateCoupon}
-      toggleCoupon={toggleCoupon}
-      startCouponEdit={startCouponEdit}
-      createOffer={createOffer}
-      updateOffer={updateOffer}
-      toggleOffer={toggleOffer}
-      startOfferEdit={startOfferEdit}
-      createReferral={createReferral}
-      updateReferral={updateReferral}
-      saveReferralPolicy={saveReferralPolicy}
-    />
-  );
+  return null;
+}
+
+function withMode(
+  props: DashboardRoutePanelBaseProps,
+  mode: DashboardOperationalMode,
+  options?: Pick<DashboardOperationalPanelProps, "shopView">,
+) {
+  return <DashboardPanelContent {...props} mode={mode} {...options} />;
+}
+
+export function PublicProfileDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "public-profile");
+}
+
+export function SettingsDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "settings");
+}
+
+export function MembersDashboardRoute(
+  props: DashboardRoutePanelBaseProps & { view: "members" | "join-requests" },
+) {
+  return withMode(props, props.view === "join-requests" ? "join-requests" : "members");
+}
+
+export function AttendanceDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "attendance");
+}
+
+export function NotificationsDashboardRoute(
+  props: DashboardRoutePanelBaseProps & { view: "compose" | "templates" | "history" },
+) {
+  const mode =
+    props.view === "templates"
+      ? "notification-templates"
+      : props.view === "history"
+        ? "notification-history"
+        : "notifications";
+  return withMode(props, mode);
+}
+
+export function ReportsDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "reports");
+}
+
+export function ShopDashboardRoute(
+  props: DashboardRoutePanelBaseProps & { view: "products" | "orders" },
+) {
+  return withMode(props, "shop", { shopView: props.view });
+}
+
+export function StaffDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "staff");
+}
+
+export function PlanCouponsDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "plan-coupons");
+}
+
+export function PlanOffersDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "plan-offers");
+}
+
+export function PlanReferralsDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "plan-referrals");
+}
+
+export function PlansDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "plans");
+}
+
+export function BillingDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "billing");
+}
+
+export function PaymentRefundsDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "payment-refunds");
+}
+
+export function PaymentsDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "payments");
+}
+
+export function BranchesDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "branches");
+}
+
+export function AuditDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "audit");
+}
+
+export function AiDashboardRoute(props: DashboardRoutePanelBaseProps) {
+  return withMode(props, "ai");
 }
