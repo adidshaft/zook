@@ -98,10 +98,10 @@ test("web UX affordances connect operators to the next action", async ({ page })
   const deskLink = orderRow.getByRole("link", { name: /open in desk/i });
   await expect(deskLink).toHaveAttribute(
     "href",
-    `/desk?tab=pickup&orderId=${encodeURIComponent(order.id)}`,
+    `/desk/orders?orderId=${encodeURIComponent(order.id)}`,
   );
-  await page.goto(`/desk?tab=pickup&orderId=${encodeURIComponent(order.id)}`);
-  await expect(page).toHaveURL(/\/desk\?tab=pickup/);
+  await page.goto(`/desk/orders?orderId=${encodeURIComponent(order.id)}`);
+  await expect(page).toHaveURL(/\/desk\/orders/);
   await expect(page.getByText(order.id.slice(-8).toUpperCase())).toBeVisible();
 
   await page.goto("/dashboard/audit");
