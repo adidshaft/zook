@@ -1989,7 +1989,7 @@ function translatedNavLabel(label: string, t: ReturnType<typeof useI18n>["t"]) {
 const memberTabs: DockTab[] = [
   { href: "/", label: "Home", icon: "home-outline", activeIcon: "home", matchPath: "/" },
   {
-    href: "/tracking",
+    href: "/tracking" as Href,
     label: "Track",
     icon: "barbell-outline",
     activeIcon: "barbell",

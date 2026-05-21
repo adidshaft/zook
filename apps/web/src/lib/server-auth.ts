@@ -6,17 +6,20 @@ import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
 
 export async function requireDashboardSession(
-  opts: { expectedHost?: WebHost; redirectPath?: string } = {},
+  opts: { expectedHost?: WebHost; redirectPath?: string; loginRedirectPath?: string } = {},
 ) {
   const cookieStore = await cookies();
   const token = cookieStore.get(sessionCookieName)?.value;
   const session = await resolveSessionSummaryFromToken(token);
 
   if (!session) {
+    const loginPath = opts.loginRedirectPath
+      ? `/login?redirect=${encodeURIComponent(opts.loginRedirectPath)}`
+      : "/login";
     if (opts.expectedHost === "dashboard") {
-      redirect(`${getOrigins().dashboard}/login`);
+      redirect(new URL(loginPath, getOrigins().dashboard).toString());
     }
-    redirect("/login");
+    redirect(loginPath);
   }
 
   if (opts.expectedHost) {

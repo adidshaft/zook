@@ -239,6 +239,7 @@ export interface AuthSessionUser {
   id: string;
   email: string;
   name: string;
+  slug?: string | null;
   privateHandle?: string;
   phone?: string;
   dateOfBirth?: string | Date | null;
