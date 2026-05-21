@@ -9,7 +9,7 @@ import {
   ReportsPanel,
 } from "./dashboard/read-only-panels";
 import { BranchesSection } from "./dashboard/sections/branches-section";
-import { ShopSection } from "./dashboard/sections/shop-section";
+import { ShopSection } from "./dashboard/shop/section";
 import { MembersPage } from "./dashboard/members/members-page";
 import { StaffSection } from "./dashboard/sections/staff-section";
 import { OverviewOperationalSection } from "./dashboard/sections/overview-operational-section";
@@ -21,9 +21,9 @@ import {
 import {
   CouponsRouteSection,
   OffersRouteSection,
+  PlansSection,
   ReferralsRouteSection,
-} from "./dashboard/sections/plan-growth-sections";
-import { PlansSection } from "./dashboard/sections/plans-section";
+} from "./dashboard/plans";
 import { GymProfileSetupPanel } from "./gym-profile-setup-panel";
 import {
   type DashboardOperationalPanelProps,

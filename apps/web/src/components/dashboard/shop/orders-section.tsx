@@ -8,7 +8,8 @@ import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn } from "../../ui";
 import type { ShopOrderRow } from "../../dashboard-operational-model";
 import { formatEnumLabel, formatInr } from "@/lib/format";
-import { ShopOrderPaymentControl } from "../read-only/shop-order-payment-control";
+import { ShopOrderPaymentControl } from "../payments/shop-order-payment-control";
+import type { ResourceState } from "./types";
 
 const copy = {
   title: "Pickup and fulfillment queue",
@@ -35,10 +36,7 @@ export function ShopOrdersSection({
   orgId: string;
   shopOrders: ShopOrderRow[];
   readyOrders: ShopOrderRow[];
-  shopOrdersState: {
-    error?: string | null;
-    loading: boolean;
-  };
+  shopOrdersState: ResourceState;
 }) {
   const [status, setStatus] = useState("");
   return (
