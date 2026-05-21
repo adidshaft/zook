@@ -15,6 +15,7 @@ const playwrightForwardEnvKeys = [
   "ENV_PROFILE",
   "NEXT_PUBLIC_APP_URL",
   "NEXT_PUBLIC_WEB_URL",
+  "NEXT_PUBLIC_DASHBOARD_URL",
   "MOBILE_API_BASE_URL",
   "ZOOK_QR_SECRET",
   "AI_PROVIDER",
@@ -110,6 +111,7 @@ export default defineConfig({
       ...pickDefinedEnv(playwrightForwardEnvKeys, {
         NEXT_PUBLIC_APP_URL: webServerUrl,
         NEXT_PUBLIC_WEB_URL: webServerUrl,
+        NEXT_PUBLIC_DASHBOARD_URL: webServerUrl,
         PAYMENT_PROVIDER: process.env.PLAYWRIGHT_PAYMENT_PROVIDER ?? "mock",
         ALLOW_MOCK_PAYMENT_COMPLETION: "true",
         ERROR_REPORTER: process.env.PLAYWRIGHT_ERROR_REPORTER ?? "mock",
