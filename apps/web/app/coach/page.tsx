@@ -1,12 +1,4 @@
-import { redirect } from "next/navigation";
-import { CoachCommandPanel } from "@/components/coach-command-panel";
-import {
-  destinationToHref,
-  hasCoachAccess,
-  hasOwnerDashboardAccess,
-  resolvePostLoginDestination,
-} from "@/lib/auth-destinations";
-import { getOrigins } from "@/lib/origins";
+import { CoachPage as CoachOverviewPage } from "@/components/coach/coach-page";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata = {
@@ -19,14 +11,6 @@ export default async function CoachPage() {
     expectedHost: "dashboard",
     redirectPath: "/coach",
   });
-  const origins = getOrigins();
-  if (session.user.isPlatformAdmin || hasOwnerDashboardAccess(session)) {
-    redirect("/dashboard");
-  }
-  if (!hasCoachAccess(session)) {
-    redirect(destinationToHref(resolvePostLoginDestination(session), "dashboard", origins));
-  }
-
   const firstName = (session.user.name ?? "Coach").trim().split(/\s+/)[0] ?? "Coach";
 
   // Server-side placeholders until the trainer mobile API surfaces these
@@ -39,5 +23,5 @@ export default async function CoachPage() {
     progressNotes: 0,
   };
 
-  return <CoachCommandPanel firstName={firstName} stats={stats} />;
+  return <CoachOverviewPage firstName={firstName} stats={stats} />;
 }
