@@ -154,18 +154,15 @@ import { applyAutopayProviderEvent, applyPaymentSessionStatus } from "../payment
 import { deliverPushForNotification } from "../push-runtime";
 import { assertMinorConsentGranted } from "../minor-gates";
 import { getPublicCouponPreview } from "../public-gym-read-models";
+import { getOrganizationAttendanceToday, getOrganizationPendingAttendance } from "../domains/attendance";
 import {
   getActiveMembershipData,
   getMemberHomeData,
-  getMyShopOrders,
-  getOrganizationActiveShopOrders,
-  getOrganizationAttendanceToday,
-  getOrganizationDashboardData,
-  getOrganizationPendingAttendance,
-  getOrganizationRecentPayments,
-  extractPlanExercises,
-  getPlanExercisesForUser,
-} from "../read-models";
+} from "../domains/members";
+import { getOrganizationDashboardData } from "../domains/overview";
+import { getOrganizationRecentPayments } from "../domains/payments";
+import { extractPlanExercises, getPlanExercisesForUser } from "../domains/plans";
+import { getMyShopOrders, getOrganizationActiveShopOrders } from "../domains/shop-orders";
 
 const reportsService = new ReportsService();
 const personalTrackingService = new PersonalTrackingService();

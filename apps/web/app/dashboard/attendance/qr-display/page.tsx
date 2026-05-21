@@ -2,7 +2,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { redirect } from "next/navigation";
 import { AttendanceQrPanel } from "@/components/attendance-qr-panel";
-import { getDashboardData } from "@/lib/data";
+import { getOrganizationDashboardShellData } from "@/lib/data";
 import {
   destinationToHref,
   hasOwnerDashboardAccess,
@@ -36,7 +36,7 @@ export default async function DashboardQrDisplayPage({
     redirect("/desk");
   }
 
-  const data = await getDashboardData(session.activeOrgId, resolvedSearch.branchId);
+  const data = await getOrganizationDashboardShellData(session.activeOrgId, resolvedSearch.branchId);
   const branch = data.branchScope.selectedBranch;
   const closeHref = resolvedSearch.branchId
     ? `/dashboard/attendance?branchId=${encodeURIComponent(resolvedSearch.branchId)}`

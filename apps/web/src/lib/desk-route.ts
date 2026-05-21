@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@zook/db";
-import { getDashboardData } from "@/lib/data";
+import { getOrganizationDashboardShellData } from "@/lib/data";
 import {
   destinationToHref,
   hasCoachAccess,
@@ -30,7 +30,7 @@ export async function getDeskRouteContext(search: DeskSearch, redirectPath: stri
     if (!session.activeOrgId) {
       redirect(postLoginHref());
     }
-    const data = await getDashboardData(session.activeOrgId, search.branchId);
+    const data = await getOrganizationDashboardShellData(session.activeOrgId, search.branchId);
     const organization = data.orgs[0];
     if (!organization) {
       redirect(`${origins.public}/gyms`);
@@ -62,7 +62,7 @@ export async function getDeskRouteContext(search: DeskSearch, redirectPath: stri
     },
     orderBy: { createdAt: "desc" },
   });
-  const data = await getDashboardData(
+  const data = await getOrganizationDashboardShellData(
     session.activeOrgId,
     assignment?.branchId ?? search.branchId,
   );
