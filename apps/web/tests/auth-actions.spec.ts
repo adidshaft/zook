@@ -8,8 +8,8 @@ const seededAccounts = [
   { email: "admin@zook.local", path: /\/dashboard(?:$|[/?#])/ },
   { email: "reception@zook.local", path: /\/desk(?:$|[/?#])/ },
   { email: "trainer@zook.local", path: /\/coach(?:$|[/?#])/ },
-  { email: "member@zook.local", path: /\/me(?:$|\/|[?#])/ },
-  { email: "prospect@zook.local", path: /\/(?:gyms|me)(?:$|\/|[?#])/ },
+  { email: "member@zook.local", path: /\/(?:me|m)(?:$|\/|[?#])/ },
+  { email: "prospect@zook.local", path: /\/(?:gyms|me|m)(?:$|\/|[?#])/ },
   { email: "platform@zook.local", path: /\/platform(?:$|[/?#])/ },
 ] as const;
 

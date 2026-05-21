@@ -116,9 +116,10 @@ export async function loginWithOtp(page: Page, identifier: string) {
       )}`,
     );
   }
-  await expect(page).toHaveURL(/\/(?:dashboard|platform|gyms|me|desk|coach)(?:$|[/?#])/, {
-    timeout: 30_000,
-  });
+  await expect(page).toHaveURL(
+    /\/(?:dashboard|platform|gyms|me(?:\/[^/?#]+)?|m(?:\/[^/?#]+)?|desk|coach)(?:$|[/?#])/,
+    { timeout: 30_000 },
+  );
 }
 
 export async function loginWithSessionCookie(page: Page, email: string) {

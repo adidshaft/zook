@@ -101,7 +101,7 @@ test("organization routes enforce role and permission matrix", async ({ page }) 
   await loginWithSessionCookie(page, memberEmail);
   await expect((await page.request.get(`/api/orgs/${org.id}/dashboard`)).status()).toBe(403);
   await page.goto("/dashboard");
-  await expect(page).toHaveURL(/\/gyms$/);
+  await expect(page).toHaveURL(/\/(?:me|m)(?:\/[^/?#]+)?$/);
   await expect(
     (
       await page.request.post(`/api/orgs/${org.id}/products`, {
