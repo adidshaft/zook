@@ -6,60 +6,11 @@ import { Pill } from "../../glass-card";
 import { ReadoutGrid, Section, StatusPill, Toggle, TextInput, Select } from "../primitives";
 import { ZookButton, ZookButtonLink } from "../../zook-button";
 import type { DiscountType, RewardType } from "../../dashboard-operational-model";
-import { CouponControls } from "./overview/coupon-controls";
-import { OfferControls } from "./overview/offer-controls";
-import { ReferralCodeControls } from "./overview/referral-code-controls";
-import type { OverviewOperationalSectionProps } from "./overview/types";
-
-type GrowthRouteProps = Pick<
-  OverviewOperationalSectionProps,
-  | "referralPolicy"
-  | "referralPolicyState"
-  | "referralAnalytics"
-  | "referralAnalyticsState"
-  | "referralsState"
-  | "couponsState"
-  | "coupons"
-  | "offers"
-  | "referrals"
-  | "referralUsersById"
-  | "membershipPlans"
-  | "couponForm"
-  | "setCouponForm"
-  | "editingCouponId"
-  | "setEditingCouponId"
-  | "couponEditForm"
-  | "setCouponEditForm"
-  | "offerForm"
-  | "setOfferForm"
-  | "editingOfferId"
-  | "setEditingOfferId"
-  | "offerEditForm"
-  | "setOfferEditForm"
-  | "referralForm"
-  | "setReferralForm"
-  | "policyForm"
-  | "setPolicyForm"
-  | "formBusy"
-  | "formError"
-  | "formStatus"
-  | "createCoupon"
-  | "updateCoupon"
-  | "toggleCoupon"
-  | "startCouponEdit"
-  | "createOffer"
-  | "updateOffer"
-  | "toggleOffer"
-  | "startOfferEdit"
-  | "createReferral"
-  | "updateReferral"
-  | "saveReferralPolicy"
->;
+import { ReferralCodeControls } from "../sections/overview/referral-code-controls";
+import { RouteFeedback } from "./route-feedback";
+import type { GrowthRouteProps } from "./types";
 
 const copy = {
-  couponsDescription:
-    "Create codes, set limits, and pause discounts without changing membership plans.",
-  offersDescription: "Publish gym offers for a plan, date window, or gym-wide promotion.",
   referralsDescription:
     "Create member, staff, and trainer referral codes with clear monthly limits.",
   referralEmpty: "Referral performance appears after the first share.",
@@ -77,88 +28,6 @@ function percentToBps(value: string) {
   if (!value.trim()) return "";
   const amount = Number(value);
   return Number.isFinite(amount) ? String(Math.round(amount * 100)) : value;
-}
-
-function RouteFeedback({ error, status }: { error: string; status: string }) {
-  if (error) {
-    return <ErrorNotice message={error} />;
-  }
-  if (status) {
-    return (
-      <p className="rounded-2xl border border-lime-300/20 bg-lime-300/8 px-4 py-3 text-sm text-lime-100">
-        {status}
-      </p>
-    );
-  }
-  return null;
-}
-
-export function CouponsRouteSection(props: GrowthRouteProps) {
-  return (
-    <Section
-      eyebrow="Coupons"
-      title="Coupons"
-      description={copy.couponsDescription}
-      badge={
-        <Pill tone={props.coupons.filter((coupon) => coupon.active).length ? "lime" : "amber"}>
-          {props.coupons.filter((coupon) => coupon.active).length} active
-        </Pill>
-      }
-    >
-      <div className="grid gap-4">
-        {props.couponsState.error ? <ErrorNotice message={props.couponsState.error} /> : null}
-        <CouponControls
-          coupons={props.coupons}
-          couponForm={props.couponForm}
-          setCouponForm={props.setCouponForm}
-          editingCouponId={props.editingCouponId}
-          setEditingCouponId={props.setEditingCouponId}
-          couponEditForm={props.couponEditForm}
-          setCouponEditForm={props.setCouponEditForm}
-          formBusy={props.formBusy}
-          createCoupon={props.createCoupon}
-          updateCoupon={props.updateCoupon}
-          toggleCoupon={props.toggleCoupon}
-          startCouponEdit={props.startCouponEdit}
-        />
-        <RouteFeedback error={props.formError} status={props.formStatus} />
-      </div>
-    </Section>
-  );
-}
-
-export function OffersRouteSection(props: GrowthRouteProps) {
-  return (
-    <Section
-      eyebrow="Offers"
-      title="Public offers"
-      description={copy.offersDescription}
-      badge={
-        <Pill tone={props.offers.filter((offer) => offer.active).length ? "lime" : "amber"}>
-          {props.offers.filter((offer) => offer.active).length} live
-        </Pill>
-      }
-    >
-      <div className="grid gap-4">
-        <OfferControls
-          offers={props.offers}
-          membershipPlans={props.membershipPlans}
-          offerForm={props.offerForm}
-          setOfferForm={props.setOfferForm}
-          editingOfferId={props.editingOfferId}
-          setEditingOfferId={props.setEditingOfferId}
-          offerEditForm={props.offerEditForm}
-          setOfferEditForm={props.setOfferEditForm}
-          formBusy={props.formBusy}
-          createOffer={props.createOffer}
-          updateOffer={props.updateOffer}
-          toggleOffer={props.toggleOffer}
-          startOfferEdit={props.startOfferEdit}
-        />
-        <RouteFeedback error={props.formError} status={props.formStatus} />
-      </div>
-    </Section>
-  );
 }
 
 export function ReferralsRouteSection(props: GrowthRouteProps) {
