@@ -103,10 +103,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const nonce = requestHeaders.get("x-nonce") ?? undefined;
 
   return (
-    <html lang="en-IN" data-theme={theme} suppressHydrationWarning>
+    <html lang="en-IN" data-theme={theme} style={{ colorScheme: theme }} suppressHydrationWarning>
       <head>
         <script
           nonce={nonce}
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: themeBootstrapScript,
           }}
