@@ -104,7 +104,7 @@ export function ShopOrdersSection({
                 render: (order) =>
                   order.status === "READY_FOR_PICKUP" ? (
                     <Link
-                      href={`/desk?tab=pickup&orderId=${encodeURIComponent(order.id)}`}
+                      href={`/desk/orders?orderId=${encodeURIComponent(order.id)}`}
                       className="zook-focus rounded-full border border-lime-300/35 px-3 py-1 text-xs font-semibold text-lime-100 transition hover:bg-lime-300/10"
                     >
                       Open in Desk

@@ -1,23 +1,12 @@
 "use client";
 
-import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { CheckCircle2, Clock, IndianRupee, QrCode, Users } from "lucide-react";
+import { useMemo, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { formatInr } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
-import { Pill } from "./glass-card";
-import { KPITile, PulseDot } from "./dashboard/charts";
-import { ZookButton, ZookButtonLink } from "./zook-button";
-import { DashboardLocaleToggle } from "./dashboard-locale-toggle";
-import { DashboardSignOutButton } from "./dashboard-sign-out-button";
-import { deskTranslations } from "./desk/copy";
-import { MemberTab } from "./desk/member-tab";
-import { PaymentTab } from "./desk/payment-tab";
-import { DeskBottomNav, withBranch } from "./desk/panel-config";
-import { PickupTab } from "./desk/pickup-tab";
-import { QueueTab } from "./desk/queue-tab";
+import { deskTranslations } from "@/components/desk/copy";
+import { withBranch } from "@/components/desk/panel-config";
 import type {
   AttendanceQueueRecord,
   BranchSummary,
@@ -27,30 +16,19 @@ import type {
   PlanRow,
   ReceiptDetails,
   ShopOrder,
-  TabKey,
-} from "./desk/types";
+} from "@/components/desk/types";
 
-export function DeskPanel({
+export function useDeskWorkspace({
   orgId,
-  orgName,
   branch,
   locale,
-  initialTab,
-  initialOrderId,
-  canOpenManagement,
-  redirectedFromDashboard,
 }: {
   orgId: string;
-  orgName: string;
   branch: BranchSummary | null;
-  locale?: string | null;
-  initialTab?: TabKey | undefined;
-  initialOrderId?: string | undefined;
-  canOpenManagement?: boolean;
-  redirectedFromDashboard?: boolean;
+  locale?: string | null | undefined;
 }) {
+  const router = useRouter();
   const copy = deskTranslations[locale === "hi" ? "hi" : "en"];
-  const [activeTab, setActiveTab] = useState<TabKey>(initialTab ?? "queue");
   const [busyId, setBusyId] = useState("");
   const [toast, setToast] = useState("");
   const [memberQuery, setMemberQuery] = useState("");
@@ -165,14 +143,7 @@ export function DeskPanel({
       amountRupees: String(order.totalPaise / 100),
     }));
     const orderMember = members.find((member) => member.user?.id === order.user?.id);
-    if (orderMember) {
-      setSelectedMember(orderMember);
-    }
-  }
-
-  function jumpToShopPayment(order: ShopOrder) {
-    selectPaymentOrder(order);
-    setActiveTab("payment");
+    if (orderMember) setSelectedMember(orderMember);
   }
 
   function handlePurposeChange(purpose: PaymentPurpose) {
@@ -191,9 +162,7 @@ export function DeskPanel({
   function handlePaymentMemberChange(userId: string) {
     const member = members.find((candidate) => candidate.user?.id === userId);
     const defaults = memberPaymentDefaults(member ?? null);
-    if (member) {
-      setSelectedMember(member);
-    }
+    if (member) setSelectedMember(member);
     setPaymentForm((current) => ({
       ...current,
       memberUserId: userId,
@@ -223,8 +192,13 @@ export function DeskPanel({
   }
 
   function handleMemberPayment(member: MemberRow) {
-    setActiveTab("payment");
     selectMember(member);
+    router.push(withBranch("/desk/payments/new", branch));
+  }
+
+  function jumpToShopPayment(order: ShopOrder) {
+    selectPaymentOrder(order);
+    router.push(withBranch("/desk/payments/new", branch));
   }
 
   function skipPickupCode(orderId: string) {
@@ -332,9 +306,7 @@ export function DeskPanel({
             ? `/api/orgs/${orgId}/manual-payments/general`
             : `/api/orgs/${orgId}/manual-payments`;
       await webApiFetch(path, { method: "POST", body });
-      if (paymentForm.purpose === "SHOP_ORDER") {
-        ordersState.reload();
-      }
+      if (paymentForm.purpose === "SHOP_ORDER") ordersState.reload();
       setToast(
         `${paymentForm.purpose === "SHOP_ORDER" ? copy.shopPaymentRecorded : copy.paymentRecorded} ${formatInr(amountPaise)}.`,
       );
@@ -421,238 +393,49 @@ export function DeskPanel({
     }
   }
 
-  return (
-    <main className="min-h-dvh pb-28">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#070908]/92 px-4 py-3 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold uppercase tracking-[0.14em] text-white/70">
-              {orgName}
-            </p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Pill tone="lime">
-                <PulseDot tone="lime" size={6} />
-                <span className="ml-1.5">{branch?.name ?? copy.mainBranch}</span>
-              </Pill>
-              <Pill>
-                {todayRecords.length} {copy.checkInsToday}
-              </Pill>
-            </div>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-            {canOpenManagement ? (
-              <ZookButtonLink
-                tone="ghost"
-                size="sm"
-                href="/dashboard"
-              >
-                {copy.backToManagement}
-              </ZookButtonLink>
-            ) : null}
-            <DashboardLocaleToggle locale={locale ?? undefined} labels={copy.common} />
-            <DashboardSignOutButton
-              compact
-              label={copy.common.signOut}
-              busyLabel={copy.common.signingOut}
-            />
-          </div>
-        </div>
-      </header>
-
-      <section className="mx-auto grid max-w-5xl grid-cols-2 gap-3 px-4 pt-5 sm:grid-cols-4">
-        <KPITile
-          label="Today's check-ins"
-          value={todayRecords.length}
-          icon={CheckCircle2}
-          tone="lime"
-        />
-        <KPITile
-          label="Pending review"
-          value={pendingRecords.length}
-          icon={Clock}
-          tone={pendingRecords.length > 0 ? "amber" : "lime"}
-          caption={pendingRecords.length > 0 ? "Needs eyes" : "Clear"}
-        />
-        <KPITile
-          label="Member directory"
-          value={members.length}
-          icon={Users}
-          tone="sky"
-          caption="Active in this branch"
-        />
-        <KPITile
-          label="Desk handoffs"
-          value={payAtDeskOrders.length}
-          icon={IndianRupee}
-          tone="violet"
-          caption={payAtDeskOrders.length > 0 ? "Awaiting pickup" : "All clear"}
-        />
-      </section>
-
-      <section className="mx-auto grid max-w-5xl gap-4 px-4 py-5">
-        {redirectedFromDashboard ? (
-          <div className="rounded-2xl border border-blue-300/25 bg-blue-300/10 px-4 py-3 text-sm text-blue-50">
-            {copy.openedAsReception}
-          </div>
-        ) : null}
-
-        {toast ? (
-          <div className="rounded-2xl border border-lime-300/25 bg-lime-300/10 px-4 py-3 text-sm text-lime-100">
-            {toast}
-          </div>
-        ) : null}
-
-        {messageDraft ? (
-          <form
-            className="rounded-[24px] border border-white/10 bg-black/30 p-4"
-            onSubmit={(event) => void submitMemberMessage(event)}
-          >
-            <p className="text-sm font-semibold text-white">
-              {copy.directMessagePrompt}: {messageDraft.member.user?.name ?? copy.member}
-            </p>
-            <textarea
-              value={messageDraft.body}
-              onChange={(event) =>
-                setMessageDraft((current) =>
-                  current ? { ...current, body: event.target.value } : current,
-                )
-              }
-              maxLength={500}
-              rows={3}
-              className="zook-focus mt-3 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none"
-              placeholder={copy.deskMessageTitle}
-            />
-            <div className="mt-3 flex flex-wrap justify-end gap-2">
-              <ZookButton
-                type="button"
-                tone="ghost"
-                size="sm"
-                onClick={() => setMessageDraft(null)}
-              >
-                {copy.common.cancel}
-              </ZookButton>
-              <ZookButton
-                type="submit"
-                size="sm"
-                disabled={!messageDraft.body.trim() || busyId.startsWith("message:")}
-                state={busyId.startsWith("message:") ? "loading" : "idle"}
-              >
-                {busyId.startsWith("message:") ? copy.sending : copy.sendMemberMessage}
-              </ZookButton>
-            </div>
-          </form>
-        ) : null}
-
-        {pickupDraft ? (
-          <form
-            className="rounded-[24px] border border-white/10 bg-black/30 p-4"
-            onSubmit={(event) => void submitPickupCode(event)}
-          >
-            <p className="text-sm font-semibold text-white">{copy.pickupPrompt}</p>
-            <input
-              value={pickupDraft.code}
-              onChange={(event) =>
-                setPickupDraft((current) =>
-                  current ? { ...current, code: event.target.value } : current,
-                )
-              }
-              className="zook-focus mt-3 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none"
-              placeholder={copy.pickupCode}
-              autoComplete="one-time-code"
-            />
-            <div className="mt-3 flex flex-wrap justify-end gap-2">
-              <ZookButton
-                type="button"
-                tone="ghost"
-                size="sm"
-                onClick={() => setPickupDraft(null)}
-              >
-                {copy.common.cancel}
-              </ZookButton>
-              <ZookButton
-                type="submit"
-                size="sm"
-                disabled={!pickupDraft.code.trim() || busyId.startsWith("verify:")}
-                state={busyId.startsWith("verify:") ? "loading" : "idle"}
-              >
-                {busyId.startsWith("verify:") ? copy.verifying : copy.verifyCode}
-              </ZookButton>
-            </div>
-          </form>
-        ) : null}
-
-        {activeTab === "queue" ? (
-          <QueueTab
-            copy={copy}
-            pendingRecords={pendingRecords}
-            todayRecords={todayRecords}
-            branchName={branch?.name ?? null}
-            busyId={busyId}
-            onUpdateAttendance={(recordId, action) => void updateAttendance(recordId, action)}
-          />
-        ) : null}
-
-        {activeTab === "member" ? (
-          <MemberTab
-            copy={copy}
-            memberQuery={memberQuery}
-            filteredMembers={filteredMembers}
-            selectedMember={selectedMember}
-            busyId={busyId}
-            onMemberQueryChange={setMemberQuery}
-            onSelectMember={selectMember}
-            onRecordPayment={handleMemberPayment}
-            onOverrideEntry={(member) => void overrideMemberEntry(member)}
-            onSendMessage={(member) => void sendMemberMessage(member)}
-          />
-        ) : null}
-
-        {activeTab === "payment" ? (
-          <PaymentTab
-            copy={copy}
-            busyId={busyId}
-            paymentForm={paymentForm}
-            members={members}
-            activePlans={activePlans}
-            payAtDeskOrders={payAtDeskOrders}
-            orgId={orgId}
-            lastReceipt={lastReceipt}
-            onSubmit={(event) => void recordPayment(event)}
-            onPurposeChange={handlePurposeChange}
-            onMemberChange={handlePaymentMemberChange}
-            onOrderChange={handlePaymentOrderChange}
-            onPlanChange={handlePaymentPlanChange}
-            onFormChange={updatePaymentForm}
-          />
-        ) : null}
-
-        {activeTab === "pickup" ? (
-          <PickupTab
-            copy={copy}
-            activeOrders={pickupOrders}
-            fulfilledToday={ordersState.data?.summary?.fulfilledToday ?? 0}
-            verifiedOrderIds={verifiedOrderIds}
-            skippedCodeOrderIds={skippedCodeOrderIds}
-            busyId={busyId}
-            onVerifyPickupCode={(order) => void verifyPickupCode(order)}
-            onSkipCode={skipPickupCode}
-            onJumpToShopPayment={jumpToShopPayment}
-            onFulfillOrder={(orderId) => void fulfillOrder(orderId)}
-            highlightedOrderId={initialOrderId}
-          />
-        ) : null}
-      </section>
-
-      <Link
-        href={withBranch("/desk/qr", branch)}
-        className="zook-focus fixed bottom-24 right-5 z-40 inline-flex min-h-14 items-center gap-2 rounded-full bg-lime-300 px-4 text-sm font-semibold text-black shadow-[var(--zook-shadow-glow-lime)]"
-        aria-label={copy.showEntryQr}
-      >
-        <QrCode size={20} />
-        <span>Check-in QR</span>
-      </Link>
-
-      <DeskBottomNav activeTab={activeTab} copy={copy} onChange={setActiveTab} />
-    </main>
-  );
+  return {
+    copy,
+    state: {
+      busyId,
+      toast,
+      memberQuery,
+      filteredMembers,
+      selectedMember,
+      paymentForm,
+      verifiedOrderIds,
+      skippedCodeOrderIds,
+      lastReceipt,
+      messageDraft,
+      pickupDraft,
+      pendingRecords,
+      todayRecords,
+      members,
+      activePlans,
+      payAtDeskOrders,
+      pickupOrders,
+      fulfilledToday: ordersState.data?.summary?.fulfilledToday ?? 0,
+    },
+    actions: {
+      setMemberQuery,
+      setMessageDraft,
+      setPickupDraft,
+      selectMember,
+      updatePaymentForm,
+      handlePurposeChange,
+      handlePaymentMemberChange,
+      handlePaymentOrderChange,
+      handlePaymentPlanChange,
+      handleMemberPayment,
+      jumpToShopPayment,
+      skipPickupCode,
+      overrideMemberEntry,
+      sendMemberMessage,
+      submitMemberMessage,
+      updateAttendance,
+      recordPayment,
+      verifyPickupCode,
+      submitPickupCode,
+      fulfillOrder,
+    },
+  };
 }
