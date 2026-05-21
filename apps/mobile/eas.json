@@ -24,7 +24,8 @@
       "channel": "production",
       "env": {
         "EXPO_PUBLIC_ENV_PROFILE": "production",
-        "EXPO_PUBLIC_API_MODE": "backend"
+        "EXPO_PUBLIC_API_MODE": "backend",
+        "EXPO_PUBLIC_INCLUDE_DEMO": "false"
       }
     }
   },
