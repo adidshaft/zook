@@ -1,5 +1,5 @@
 import { getAppEnv, isTruthy, zookDemoFixtures } from "@zook/core";
-import { getOrganizationDashboardData, getPlatformDashboardData } from "@/server/read-models";
+import { getOrganizationDashboardData, getPlatformDashboardData } from "@/server/domains/overview";
 
 const zeroSummary = {
   activeMembers: 0,
@@ -133,6 +133,10 @@ function canUseDemoDashboardFallback() {
   );
 }
 
+/**
+ * @deprecated Prefer focused domain loaders from "@/server/domains/*".
+ * This adapter remains for legacy dashboard shell callers until Plan 11.
+ */
 export async function getDashboardData(orgId?: string, branchId?: string) {
   try {
     if (orgId) {
@@ -196,6 +200,16 @@ export async function getDashboardData(orgId?: string, branchId?: string) {
     }
     return getEmptyDashboardData();
   }
+}
+
+export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
+
+export async function getOrganizationDashboardShellData(orgId: string, branchId?: string) {
+  return getDashboardData(orgId, branchId);
+}
+
+export async function getPlatformDashboardShellData() {
+  return getDashboardData();
 }
 
 export async function getEmptyDashboardData(orgId?: string) {

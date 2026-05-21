@@ -5,7 +5,7 @@ import { GlassCard, Pill } from "@/components/glass-card";
 import { PlatformOperationsPanel } from "@/components/platform-operations-panel";
 import { requirePlatformSession } from "@/lib/server-auth";
 import { ZookLogo } from "@/components/zook-logo";
-import { getDashboardData } from "@/lib/data";
+import { getPlatformDashboardShellData } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +77,7 @@ export default async function PlatformPage({
   const { section } = await params;
   const sectionKey = section?.[0] ?? "status";
   const activeAnchor = platformSectionAnchors[sectionKey] ?? "readiness";
-  const data = await getDashboardData();
+  const data = await getPlatformDashboardShellData();
   const runtimeLabel = data.connected
     ? "System online"
     : data.fallbackMode === "demo"
