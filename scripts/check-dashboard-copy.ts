@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -144,13 +144,20 @@ function isMissingExecutable(error: unknown) {
 }
 
 function listScanFiles() {
+  const existingScanTargets = scanTargets.filter((target) => existsSync(join(root, target)));
   try {
-    return execFileSync("rg", ["--files", ...scanTargets], { cwd: root, encoding: "utf8" });
+    return execFileSync("rg", ["--files", ...existingScanTargets], {
+      cwd: root,
+      encoding: "utf8",
+    });
   } catch (error) {
     if (!isMissingExecutable(error)) {
       throw error;
     }
-    return execFileSync("git", ["ls-files", ...scanTargets], { cwd: root, encoding: "utf8" });
+    return execFileSync("git", ["ls-files", ...existingScanTargets], {
+      cwd: root,
+      encoding: "utf8",
+    });
   }
 }
 
