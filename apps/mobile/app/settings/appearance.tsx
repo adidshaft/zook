@@ -2,7 +2,7 @@ import type { Role } from "@zook/core";
 import { Stack } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { GlassCard, MobileHeader, ZookScreen } from "@/components/primitives";
+import { MobileHeader, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography } from "@/lib/theme";

@@ -26,7 +26,6 @@ import { MemberList } from "@/components/domain/member-list";
 import { MetricGrid } from "@/components/domain/metric-grid";
 import {
   AuditWarning,
-  EmptyState,
   FormField,
   GlassCard,
   IconBubble,
@@ -39,7 +38,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { RoleSwitcherChip } from "@/components/role-switcher";
-import { ReceptionQueueSkeleton, TrainerClientsSkeleton } from "@/components/skeletons";
+import { ReceptionQueueSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { formatDateTime, formatInr } from "@/lib/formatting";
 import {
@@ -268,18 +267,6 @@ function useReceptionWorkspaceState({
         { text: "Cancel", style: "cancel" as const },
       ],
     );
-  }
-
-  function goBackFromDesk() {
-    if (activeRole === "OWNER" || activeRole === "ADMIN") {
-      router.replace("/owner");
-      return;
-    }
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace("/");
-    }
   }
 
   function toggleMemberSelection(userId: string) {
