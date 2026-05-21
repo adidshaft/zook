@@ -1,9 +1,9 @@
 import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
 
-export default function AuditPage({
+export default function JoinRequestsPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["audit"], searchParams });
+  return renderDashboardRoute({ section: ["members", "join-requests"], searchParams });
 }

@@ -39,7 +39,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
       {
         key: "joinRequests",
         label: "Join Requests",
-        href: "/dashboard/members?view=join-requests",
+        href: "/dashboard/members/join-requests",
         icon: UserPlus,
         badgeKey: "joinRequests",
         permissions: ["MEMBERS_VIEW"],
@@ -100,7 +100,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
       {
         key: "trainers",
         label: "Trainers & PT",
-        href: "/dashboard/trainers",
+        href: "/dashboard/staff",
         icon: Dumbbell,
         permissions: ["ORG_MANAGE_STAFF"],
       },
@@ -220,11 +220,7 @@ export function isActiveNav(href: string, sectionKey: string) {
   if (href === "/dashboard") {
     return sectionKey === "";
   }
-  const [pathWithoutQuery] = href.split("?");
-  const hrefKey = (pathWithoutQuery ?? href).replace("/dashboard/", "");
-  if (href.includes("view=join-requests")) {
-    return false;
-  }
+  const hrefKey = href.replace("/dashboard/", "");
   if (hrefKey === "plans") {
     return sectionKey === "plans" || sectionKey.startsWith("plans/");
   }

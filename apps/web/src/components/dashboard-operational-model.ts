@@ -1,3 +1,7 @@
+/**
+ * @deprecated Plan 05 routes sections via explicit URLs. Keep this type only
+ * for the legacy operational panel until the plan 11 cleanup removes it.
+ */
 export type DashboardMode =
   | "overview"
   | "members"
@@ -414,6 +418,10 @@ export type ProductSnapshot = {
   lowStockThreshold?: number | null;
 };
 
+/**
+ * @deprecated Route pages now own their URLs; this adapter remains for the
+ * legacy client panel until section-specific components replace it.
+ */
 export function resolveMode(sectionKey: string): DashboardMode {
   if (sectionKey.includes("public-profile") || sectionKey === "org") {
     return "public-profile";
