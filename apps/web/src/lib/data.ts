@@ -133,11 +133,7 @@ function canUseDemoDashboardFallback() {
   );
 }
 
-/**
- * @deprecated Prefer focused domain loaders from "@/server/domains/*".
- * This adapter remains for legacy dashboard shell callers until Plan 11.
- */
-export async function getDashboardData(orgId?: string, branchId?: string) {
+async function getDashboardShellData(orgId?: string, branchId?: string) {
   try {
     if (orgId) {
       const data = await getOrganizationDashboardData(orgId, branchId ? { branchId } : {});
@@ -202,14 +198,14 @@ export async function getDashboardData(orgId?: string, branchId?: string) {
   }
 }
 
-export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
+export type DashboardData = Awaited<ReturnType<typeof getDashboardShellData>>;
 
 export async function getOrganizationDashboardShellData(orgId: string, branchId?: string) {
-  return getDashboardData(orgId, branchId);
+  return getDashboardShellData(orgId, branchId);
 }
 
 export async function getPlatformDashboardShellData() {
-  return getDashboardData();
+  return getDashboardShellData();
 }
 
 export async function getEmptyDashboardData(orgId?: string) {
