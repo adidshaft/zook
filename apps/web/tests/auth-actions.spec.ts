@@ -90,7 +90,7 @@ test.describe("auth actions", () => {
     expect(limitedStatus).toBe(429);
   });
 
-  test("logout clears the session cookie and returns to login", async ({ page }) => {
+  test("logout clears the session cookie and returns to public home", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     await page.goto("/dashboard/profile");
     const accountMenu = page.getByTestId("dashboard-user-menu");
@@ -103,7 +103,7 @@ test.describe("auth actions", () => {
       accountMenu.getByTestId("dashboard-sign-out").click(),
     ]);
     expect(logoutResponse.ok()).toBeTruthy();
-    await expect(page).toHaveURL(/\/login/);
+    await page.waitForURL((url) => url.pathname === "/", { timeout: 15_000 });
     const cookies = await page.context().cookies();
     expect(cookies.find((cookie) => cookie.name === "zook_session")?.value ?? "").toBe("");
   });
