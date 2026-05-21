@@ -124,6 +124,7 @@ import {
 } from "../errors";
 import { fail, ok, readJson } from "../response";
 import { resolveSessionSummaryFromToken } from "../session";
+import { createUniqueMemberSlug } from "../member-slug";
 import { privateUserHandle } from "../private-user-handle";
 import { writeAuditLog } from "../audit";
 import { getDevOtpResponseValue } from "../auth-response";
@@ -1979,6 +1980,7 @@ async function getUserByEmailOrCreate(email: string) {
     create: {
       email,
       name: email.split("@")[0] ?? "Zook User",
+      slug: await createUniqueMemberSlug(),
     },
   });
 }
@@ -2004,9 +2006,11 @@ function isDateUnder18(date: Date) {
 function serializeUserForClient<T extends { id: string; email: string; phone?: string | null }>(
   user: T,
 ) {
+  const userWithSlug = user as T & { slug?: string | null };
   return {
     ...user,
     email: publicUserEmail(user.email) ?? "",
+    slug: userWithSlug.slug ?? undefined,
     privateHandle: privateUserHandle(user.id),
   };
 }
@@ -2039,6 +2043,7 @@ async function getUserByPhoneOrCreate(phone: string) {
     data: {
       email: buildPhonePlaceholderEmail(phone),
       name: nameFromPhone(phone),
+      slug: await createUniqueMemberSlug(),
       phone,
     },
   });
@@ -2201,6 +2206,7 @@ async function getUserBySsoIdentityOrCreate(input: {
         email: input.email,
         emailVerifiedAt: new Date(),
         name: input.name,
+        slug: await createUniqueMemberSlug(),
       },
     }));
   if (!user.emailVerifiedAt) {
@@ -2325,6 +2331,7 @@ async function createFreshQaUser(identifier: { kind: "email" | "phone"; value: s
           ? `fresh+${nonce}@zook.local`
           : `fresh-phone+${nonce}@zook.local`,
       name: "Fresh QA User",
+      slug: await createUniqueMemberSlug(),
       ...(identifier.kind === "phone"
         ? { phone: identifier.value, phoneVerifiedAt: new Date() }
         : {}),
@@ -2349,6 +2356,7 @@ async function getDemoQaUserOrCreate() {
     data: {
       email: QA_DEMO_ACCOUNT_EMAIL,
       name: "Nisha Member",
+      slug: await createUniqueMemberSlug(),
       ...data,
     },
   });
@@ -7827,6 +7835,7 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
             data: clean({
               email,
               name,
+              slug: await createUniqueMemberSlug(),
               phone: phone || undefined,
               marketingOptIn: true,
             }),
