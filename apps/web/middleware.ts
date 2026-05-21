@@ -101,15 +101,18 @@ function isLocalHost(hostname: string) {
 }
 
 function usesLocalSingleOriginHosts() {
-  if (originFromEnv(process.env.NEXT_PUBLIC_DASHBOARD_URL)) {
-    return false;
-  }
   const publicOrigin =
     originFromEnv(process.env.NEXT_PUBLIC_WEB_URL) ?? originFromEnv(process.env.NEXT_PUBLIC_APP_URL);
   if (!publicOrigin) {
     return false;
   }
-  return isLoopbackHost(new URL(publicOrigin).hostname.toLowerCase());
+  const publicHostname = new URL(publicOrigin).hostname.toLowerCase();
+  if (!isLoopbackHost(publicHostname)) {
+    return false;
+  }
+
+  const dashboardOrigin = originFromEnv(process.env.NEXT_PUBLIC_DASHBOARD_URL);
+  return !dashboardOrigin || dashboardOrigin === publicOrigin;
 }
 
 function shouldUseSingleOriginHostRouting(hostname: string) {
