@@ -4,7 +4,7 @@ import {
   canAccessWebDashboard,
   requireDashboardSectionPermission,
 } from "@/lib/dashboard-guards";
-import { getDashboardData } from "@/lib/data";
+import { getOrganizationDashboardShellData } from "@/lib/data";
 import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
@@ -31,7 +31,7 @@ export async function loadDashboardRouteProps({ section, searchParams }: Dashboa
   }
   requireDashboardSectionPermission(session, section?.join("/") ?? "");
 
-  const data = await getDashboardData(session.activeOrgId, branchId);
+  const data = await getOrganizationDashboardShellData(session.activeOrgId, branchId);
   return {
     section,
     data,
