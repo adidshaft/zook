@@ -16,7 +16,7 @@ import type {
   AIUsageRow,
   CoachPlanRow,
   OrganizationSummary,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import { ErrorNotice, formatAiResponseSummary } from "../operational-shared";
 import type { LoadingState } from "./types";
 

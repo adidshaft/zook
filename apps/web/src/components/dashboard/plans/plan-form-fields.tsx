@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { HelpHint, SearchableSelect } from "../../ui";
-import type { MembershipPlanType } from "../../dashboard-operational-model";
+import type { MembershipPlanType } from "@/components/dashboard/types";
 import { formatEnumLabel } from "@/lib/format";
 import type { PlanFormState } from "./types";
 

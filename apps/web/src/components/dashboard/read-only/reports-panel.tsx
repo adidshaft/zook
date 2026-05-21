@@ -20,7 +20,7 @@ import {
   formatEnumLabel,
   formatInr,
 } from "@/lib/format";
-import type { OrganizationSnapshot, OrganizationSummary } from "../../dashboard-operational-model";
+import type { OrganizationSnapshot, OrganizationSummary } from "@/components/dashboard/types";
 
 /** Synthesize a deterministic 7-day pattern around a single latest value. */
 function shapeDaily(latest: number, opts?: { amplitude?: number; floor?: number }) {

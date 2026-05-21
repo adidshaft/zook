@@ -4,7 +4,7 @@ import type {
   OrganizationSummary,
   PaymentRow,
   ShopOrderRow,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import type { LoadingState, PagedState } from "../read-only/types";
 import type { Permission } from "@zook/core";
 

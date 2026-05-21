@@ -3,7 +3,7 @@ import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboar
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButton } from "../../zook-button";
-import { formatPlanShape } from "../../dashboard-operational-model";
+import { formatPlanShape } from "@/components/dashboard/types";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 import { PlanFormFields } from "./plan-form-fields";
 import type { PlansSectionProps } from "./types";

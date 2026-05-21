@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
-import type { ShopOrderRow } from "../../dashboard-operational-model";
+import type { ShopOrderRow } from "@/components/dashboard/types";
 import { PaymentProofUpload } from "../../payment-proof-upload";
 import { ZookButton } from "../../zook-button";
 import { formatPaymentMode, modeOptions, type PaymentReceiptState } from "./payments-utils";

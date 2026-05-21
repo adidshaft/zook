@@ -4,7 +4,7 @@ import {
   type MembershipPlanType,
   type ProductCategory,
   type ProductRow,
-} from "../../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import {
   type DashboardOperationalState,
   type PlanForm,

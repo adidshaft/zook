@@ -5,7 +5,7 @@ import type {
   ProductCategory,
   ProductRow,
   ShopOrderRow,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 
 export type ProductFormState = {
   name: string;

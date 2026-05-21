@@ -3,7 +3,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { ImageAssetUpload } from "../../image-asset-upload";
 import { Pill } from "../../glass-card";
-import type { ProductCategory, ProductRow } from "../../dashboard-operational-model";
+import type { ProductCategory, ProductRow } from "@/components/dashboard/types";
 import type { ProductFormState } from "./types";
 
 export const productCategories: ProductCategory[] = [

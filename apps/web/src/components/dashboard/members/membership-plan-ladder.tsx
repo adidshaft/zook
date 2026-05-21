@@ -6,7 +6,7 @@ import { GlassCard, Pill } from "../../glass-card";
 import {
   formatPlanShape,
   type MembershipPlanRow,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 
 type ResourceState<T> = {

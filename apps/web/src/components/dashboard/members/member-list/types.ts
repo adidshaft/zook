@@ -4,7 +4,7 @@ import type {
   MemberRow,
   MembershipPlanRow,
   OrganizationSnapshot,
-} from "../../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 
 export type MemberFilter =
   | "All"

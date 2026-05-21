@@ -1,6 +1,5 @@
 import { EmptyState } from "./dashboard-primitives";
 import { GlassCard } from "./glass-card";
-import { DashboardOperationalPanelShell } from "./dashboard-operational-panel-shell";
 import { ZookButtonLink } from "./zook-button";
 import { titleFromSection } from "@/lib/format";
 import { dashboardMessages, isHindi } from "./dashboard/shell/copy";
@@ -13,6 +12,7 @@ import { OwnerSetupChecklist } from "./dashboard/shell/owner-setup-checklist";
 import { LayoutTransition } from "./layout-transition";
 import type { DashboardData } from "./dashboard/shell/types";
 import type { Permission, Role } from "@zook/core";
+import type { ReactNode } from "react";
 
 const sectionDescriptions: Record<"en" | "hi", Record<string, string>> = {
   en: {
@@ -70,6 +70,7 @@ export function DashboardShell({
   roles,
   permissions,
   user,
+  children,
 }: {
   section: string[] | undefined;
   data: DashboardData;
@@ -77,6 +78,7 @@ export function DashboardShell({
   roles: Role[];
   permissions?: Permission[];
   user: { name: string; email: string; preferredLocale?: string | null };
+  children?: ReactNode;
 }) {
   const title = titleFromSection(section);
   const sectionKey = section?.join("/") ?? "";
@@ -201,33 +203,7 @@ export function DashboardShell({
               />
             ) : null}
 
-            {sectionKey ? (
-              <DashboardOperationalPanelShell
-                orgId={activeOrg.id}
-                sectionKey={sectionKey}
-                organization={{
-                  id: activeOrg.id,
-                  name: activeOrg.name,
-                  city: activeOrg.city,
-                  state: activeOrg.state,
-                  status: activeOrg.status,
-                  joinMode: activeOrg.joinMode,
-                  attendanceMode: activeOrg.attendanceMode,
-                  trialEndAt: activeOrg.trialEndAt,
-                  contactEmail: activeOrg.contactEmail,
-                  contactPhone: activeOrg.contactPhone,
-                }}
-                summary={data.summary}
-                branchScope={data.branchScope}
-                auditLogCount={data.auditLogCount}
-                initialJoinRequests={data.joinRequests}
-                initialNotifications={data.notifications}
-                initialProducts={data.products}
-                initialAiUsage={data.aiUsage}
-                roles={roles}
-                permissions={[...activePermissions]}
-              />
-            ) : null}
+            {sectionKey ? children : null}
           </LayoutTransition>
         </section>
       </div>

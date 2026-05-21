@@ -4,7 +4,7 @@ import { BodyCompositionTimeline } from "../body-composition-timeline";
 import { ErrorNotice } from "../operational-shared";
 import { ManagedOn, SearchableSelect } from "../../ui";
 import { ZookButton } from "../../zook-button";
-import type { MemberDetailPayload, MembershipPlanRow } from "../../dashboard-operational-model";
+import type { MemberDetailPayload, MembershipPlanRow } from "@/components/dashboard/types";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 import type { ResourceState } from "./member-list/types";
 

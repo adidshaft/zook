@@ -2,7 +2,7 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { ZookButton } from "../../zook-button";
-import type { ProductCategory, ProductRow } from "../../dashboard-operational-model";
+import type { ProductCategory, ProductRow } from "@/components/dashboard/types";
 import { formatEnumLabel } from "@/lib/format";
 import { ProductPhotosField, productCategories } from "./product-images";
 import type { ProductFormState, StockAdjustmentState } from "./types";
