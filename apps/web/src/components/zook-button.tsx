@@ -11,13 +11,13 @@ type ZookButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type ZookButtonState = "idle" | "loading" | "success";
 
 const toneClasses: Record<ZookButtonTone, string> = {
-  lime: "zook-button-lime border-lime-300 bg-lime-300 text-black shadow-[var(--zook-shadow-glow-lime)] hover:bg-lime-200 active:bg-lime-300",
+  lime: "zook-button-lime border-[var(--accent-fill)] bg-[var(--accent-fill)] text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)] hover:bg-[var(--accent-soft)] active:bg-[var(--accent-fill)]",
   secondary:
-    "border-white/14 bg-white/[0.06] text-white hover:bg-white/[0.1] active:bg-white/[0.08]",
+    "border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--surface-raised)] active:bg-[var(--surface)]",
   ghost:
-    "border-white/10 bg-transparent text-white/72 hover:bg-white/[0.08] hover:text-white active:bg-white/[0.06]",
+    "border-[var(--border-subtle)] bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)] active:bg-[var(--surface-raised)]",
   danger:
-    "border-[rgba(255,90,61,0.35)] bg-[rgba(255,90,61,0.12)] text-white hover:bg-[rgba(255,90,61,0.18)] active:bg-[rgba(255,90,61,0.14)]",
+    "border-[color-mix(in_srgb,var(--feedback-danger)_36%,transparent)] bg-[var(--surface-danger-soft)] text-[var(--feedback-danger)] hover:bg-[color-mix(in_srgb,var(--feedback-danger)_18%,var(--surface-danger-soft))] active:bg-[var(--surface-danger-soft)]",
 };
 
 const baseClasses =
