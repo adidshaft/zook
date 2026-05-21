@@ -1,6 +1,12 @@
 import { redirect } from "next/navigation";
 import { CoachCommandPanel } from "@/components/coach-command-panel";
-import { hasCoachAccess, hasOwnerDashboardAccess } from "@/lib/auth-destinations";
+import {
+  destinationToHref,
+  hasCoachAccess,
+  hasOwnerDashboardAccess,
+  resolvePostLoginDestination,
+} from "@/lib/auth-destinations";
+import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata = {
@@ -9,12 +15,16 @@ export const metadata = {
 };
 
 export default async function CoachPage() {
-  const session = await requireDashboardSession();
+  const session = await requireDashboardSession({
+    expectedHost: "dashboard",
+    redirectPath: "/coach",
+  });
+  const origins = getOrigins();
   if (session.user.isPlatformAdmin || hasOwnerDashboardAccess(session)) {
     redirect("/dashboard");
   }
   if (!hasCoachAccess(session)) {
-    redirect("/me");
+    redirect(destinationToHref(resolvePostLoginDestination(session), "dashboard", origins));
   }
 
   const firstName = (session.user.name ?? "Coach").trim().split(/\s+/)[0] ?? "Coach";

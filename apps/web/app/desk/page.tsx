@@ -2,7 +2,14 @@ import { redirect } from "next/navigation";
 import { prisma } from "@zook/db";
 import { DeskPanel } from "@/components/desk-panel";
 import { getDashboardData } from "@/lib/data";
-import { hasCoachAccess, hasDeskAccess, hasOwnerDashboardAccess } from "@/lib/auth-destinations";
+import {
+  destinationToHref,
+  hasCoachAccess,
+  hasDeskAccess,
+  hasOwnerDashboardAccess,
+  resolvePostLoginDestination,
+} from "@/lib/auth-destinations";
+import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata = {
@@ -16,15 +23,21 @@ export default async function DeskPage({
   searchParams: Promise<{ tab?: string; orderId?: string; branchId?: string; from?: string }>;
 }) {
   const resolvedSearch = await searchParams;
-  const session = await requireDashboardSession();
+  const session = await requireDashboardSession({
+    expectedHost: "dashboard",
+    redirectPath: "/desk",
+  });
+  const origins = getOrigins();
+  const postLoginHref = () =>
+    destinationToHref(resolvePostLoginDestination(session), "dashboard", origins);
   if (session.user.isPlatformAdmin || hasOwnerDashboardAccess(session)) {
     if (!session.activeOrgId) {
-      redirect("/dashboard");
+      redirect(postLoginHref());
     }
     const data = await getDashboardData(session.activeOrgId, resolvedSearch.branchId);
     const organization = data.orgs[0];
     if (!organization) {
-      redirect("/gyms");
+      redirect(`${origins.public}/gyms`);
     }
     return (
       <DeskPanel
@@ -42,7 +55,7 @@ export default async function DeskPage({
     redirect("/coach");
   }
   if (!hasDeskAccess(session) || !session.activeOrgId) {
-    redirect("/me");
+    redirect(postLoginHref());
   }
 
   const assignment = await prisma.organizationRoleAssignment.findFirst({
@@ -61,7 +74,7 @@ export default async function DeskPage({
   const organization = data.orgs[0];
 
   if (!organization) {
-    redirect("/gyms");
+    redirect(`${origins.public}/gyms`);
   }
 
   return (

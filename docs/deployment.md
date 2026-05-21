@@ -141,6 +141,7 @@ Core env:
 - `SESSION_SECRET`
 - `ZOOK_QR_SECRET`
 - `NEXT_PUBLIC_WEB_URL`
+- `NEXT_PUBLIC_DASHBOARD_URL`
 - `NEXT_PUBLIC_APP_URL`
 - `MOBILE_API_BASE_URL`
 - `ENV_PROFILE`
@@ -337,7 +338,8 @@ Pilot recommendation:
 
 - web session cookie remains HTTP-only
 - use HTTPS for staging and production
-- keep `NEXT_PUBLIC_WEB_URL` and `NEXT_PUBLIC_APP_URL` aligned to public origins
+- keep `NEXT_PUBLIC_WEB_URL` aligned to the public origin and `NEXT_PUBLIC_DASHBOARD_URL` aligned to the staff origin
+- keep `NEXT_PUBLIC_APP_URL` aligned with the legacy app/public origin until older clients no longer read it
 - do not expose provider secrets to browser or mobile clients
 
 ## Fail-Safe UX Checklist

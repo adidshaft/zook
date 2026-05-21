@@ -41,7 +41,12 @@ import {
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
-import { publicAccountLink } from "@/lib/auth-destinations";
+import {
+  accountDestinationLabel,
+  destinationToHref,
+  publicAccountDestination,
+} from "@/lib/auth-destinations";
+import { getOrigins } from "@/lib/origins";
 import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
 
@@ -58,12 +63,22 @@ export default async function HomePage({
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const cookieStore = await cookies();
   const session = await resolveSessionSummaryFromToken(cookieStore.get(sessionCookieName)?.value);
-  const accountLink = publicAccountLink(session, {
-    dashboard: t("dashboard"),
-    desk: t("desk"),
-    coach: t("coach"),
-    membership: t("myMembership"),
-  });
+  const origins = getOrigins();
+  const accountDestination = publicAccountDestination(session);
+  const accountLabel = accountDestination
+    ? accountDestinationLabel(accountDestination, {
+        dashboard: t("dashboard"),
+        desk: t("desk"),
+        coach: t("coach"),
+        membership: t("myMembership"),
+      })
+    : null;
+  const accountHref = accountDestination
+    ? destinationToHref(accountDestination, "public", origins)
+    : null;
+  const localizedAccountHref = accountHref?.startsWith("/")
+    ? localizedPath(accountHref, locale)
+    : accountHref;
 
   const pillars: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
     { icon: Users, label: t("owners"), value: t("ownersValue"), tone: "lime" },
@@ -142,9 +157,9 @@ export default async function HomePage({
                 {t("startGym")}
               </ZookButtonLink>
             </div>
-            {accountLink ? (
-              <ZookButtonLink href={localizedPath(accountLink.href, locale)} tone="ghost" size="sm">
-                {accountLink.label}
+            {localizedAccountHref ? (
+              <ZookButtonLink href={localizedAccountHref} tone="ghost" size="sm">
+                {accountLabel}
               </ZookButtonLink>
             ) : (
               <ZookButtonLink href={localizedPath("/login", locale)} tone="ghost" size="sm">
@@ -534,12 +549,12 @@ export default async function HomePage({
         <footer className="flex flex-col gap-3 border-t border-white/10 py-7 text-sm text-white/45 md:flex-row md:items-center md:justify-between">
           <p>© {new Date().getFullYear()} Zook. All rights reserved.</p>
           <div className="flex flex-wrap gap-4">
-            {accountLink ? (
+            {localizedAccountHref ? (
               <Link
-                href={localizedPath(accountLink.href, locale)}
+                href={localizedAccountHref}
                 className="transition hover:text-white"
               >
-                {accountLink.label}
+                {accountLabel}
               </Link>
             ) : (
               <Link

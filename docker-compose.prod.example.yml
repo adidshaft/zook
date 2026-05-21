@@ -15,6 +15,7 @@ services:
       SESSION_SECRET: replace-me-with-a-long-random-secret
       ZOOK_QR_SECRET: replace-me-with-a-long-random-qr-secret
       NEXT_PUBLIC_WEB_URL: https://zook.example.com
+      NEXT_PUBLIC_DASHBOARD_URL: https://dashboard.zook.example.com
       NEXT_PUBLIC_APP_URL: https://zook.example.com
       MOBILE_API_BASE_URL: https://zook.example.com/api
       PAYMENT_PROVIDER: mock
