@@ -95,8 +95,8 @@ export default function OwnerApprovalsScreen() {
           <ApprovalQueue
             testID="pending-approvals-list"
             items={joinItems}
-            onApprove={(id) => void approveJoinRequestMutation.mutateAsync(id)}
-            onReject={(id) => void rejectJoinRequestMutation.mutateAsync(id)}
+            onApprove={(id) => approveJoinRequestMutation.mutate(id)}
+            onReject={(id) => rejectJoinRequestMutation.mutate(id)}
             emptyState={{
               title: "No join requests",
               subtitle: "New public join requests will show up here for owner approval.",
@@ -110,7 +110,7 @@ export default function OwnerApprovalsScreen() {
                 showToast({ title: "Owner approval required", tone: "amber" });
                 return;
               }
-              void approveAttendanceMutation.mutateAsync(id);
+              approveAttendanceMutation.mutate(id);
             }}
             emptyState={{
               title: "Attendance queue clear",
