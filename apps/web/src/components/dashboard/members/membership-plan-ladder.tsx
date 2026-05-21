@@ -1,12 +1,12 @@
 "use client";
 
-import { ErrorNotice } from "../../operational-shared";
-import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../../dashboard-primitives";
-import { GlassCard, Pill } from "../../../glass-card";
+import { ErrorNotice } from "../operational-shared";
+import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import { GlassCard, Pill } from "../../glass-card";
 import {
   formatPlanShape,
   type MembershipPlanRow,
-} from "../../../dashboard-operational-model";
+} from "../../dashboard-operational-model";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 
 type ResourceState<T> = {

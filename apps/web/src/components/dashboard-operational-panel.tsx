@@ -10,7 +10,7 @@ import {
 } from "./dashboard/read-only-panels";
 import { BranchesSection } from "./dashboard/sections/branches-section";
 import { ShopSection } from "./dashboard/sections/shop-section";
-import { MembersSection } from "./dashboard/sections/members-section";
+import { MembersPage } from "./dashboard/members/members-page";
 import { StaffSection } from "./dashboard/sections/staff-section";
 import { OverviewOperationalSection } from "./dashboard/sections/overview-operational-section";
 import {
@@ -216,7 +216,8 @@ export function DashboardOperationalPanel(props: DashboardOperationalPanelProps)
 
   if (mode === "members" || mode === "join-requests") {
     return (
-      <MembersSection
+      <MembersPage
+        view={mode === "join-requests" ? "join-requests" : "members"}
         orgId={orgId}
         organization={organization}
         members={members}
