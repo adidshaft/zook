@@ -41,7 +41,7 @@ export default async function DeskQrPage({
   }
 
   return (
-    <main className="grid min-h-dvh place-items-center px-4 py-6">
+    <div className="grid min-h-[calc(100dvh-9rem)] place-items-center px-4 py-6">
       <Link
         href={
           resolvedSearch.branchId
@@ -56,6 +56,6 @@ export default async function DeskQrPage({
       <div className="w-full max-w-2xl">
         <AttendanceQrPanel orgId={session.activeOrgId} branchId={resolvedSearch.branchId ?? null} />
       </div>
-    </main>
+    </div>
   );
 }
