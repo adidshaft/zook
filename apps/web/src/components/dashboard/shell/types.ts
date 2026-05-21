@@ -1,8 +1,9 @@
 import type { Permission } from "@zook/core";
 import type { LucideIcon } from "lucide-react";
+import type { DashboardData as DashboardShellData } from "@/lib/data";
 import type enMessages from "../../../../messages/dashboard/en.json";
 
-export type DashboardData = Awaited<ReturnType<typeof import("@/lib/data").getDashboardData>>;
+export type DashboardData = DashboardShellData;
 
 export type DashboardMessages = typeof enMessages;
 
