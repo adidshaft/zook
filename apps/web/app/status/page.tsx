@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Activity, CheckCircle2, CircleAlert, CircleX } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
-import { PublicNav } from "@/components/public-nav";
+import { PublicNav } from "@/components/public/nav/public-nav";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import {
   alternatePublicLocale,
@@ -127,7 +127,7 @@ export default async function StatusPage({
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
       <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
         <PublicNav
-          showLogin={false}
+          locale={locale}
           languageHref={localizedPath("/status", nextLocale)}
           languageLabel={t("languageSwitch")}
           backHref={localizedPath("/", locale)}
