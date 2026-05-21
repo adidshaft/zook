@@ -1,53 +1,31 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import { CalendarCheck, Dumbbell, MapPin, PackageCheck, QrCode, ShieldCheck, Star } from "lucide-react";
-import { resolvePlanName } from "@zook/ui";
-import { AccountAwarePublicNav } from "@/components/account-aware-public-nav";
-import { GlassCard, Pill } from "@/components/glass-card";
-import { PublicGymActions } from "@/components/public-gym-actions";
-import { ShareButton } from "@/components/share-button";
-import { formatInr } from "@/lib/format";
+import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
+import { PublicNav } from "@/components/public/nav/public-nav";
+import { GymNotFound } from "@/components/public/gym/empty-state";
+import { GymFacilities } from "@/components/public/gym/facilities";
+import { GymHero } from "@/components/public/gym/hero";
+import { MemberJourney } from "@/components/public/gym/member-journey";
+import { GymMembershipCard } from "@/components/public/gym/membership-card";
+import { GymPlansGrid } from "@/components/public/gym/plans-grid";
+import { GymReviews } from "@/components/public/gym/reviews";
+import { ShareInstall } from "@/components/public/gym/share-install";
+import { GymTrainers } from "@/components/public/gym/trainers";
+import { StructuredData } from "@/components/public/seo/structured-data";
+import { gymJsonLd, priceSummary } from "@/lib/public-gym-profile";
 import {
   alternatePublicLocale,
-  joinModeLabelForLocale,
   localizedPath,
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
 import { getPublicGymProfileData } from "@/server/public-gym-read-models";
 
+export const revalidate = 600;
+
 type GymPublicPageProps = {
   params: Promise<{ username: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function priceSummary(plans: Array<{ pricePaise: number }>, locale: "en" | "hi" = "en") {
-  if (!plans.length) {
-    return locale === "hi" ? "सदस्यताएं अभी प्रकाशित नहीं" : "Memberships not published yet";
-  }
-  const paidPlans = plans.filter((plan) => plan.pricePaise > 0);
-  if (!paidPlans.length) {
-    return locale === "hi" ? "मुफ़्त ट्रायल उपलब्ध" : "Free trial available";
-  }
-  const minPlanPrice = Math.min(...paidPlans.map((plan) => plan.pricePaise));
-  return locale === "hi"
-    ? `शुरुआत ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/माह`
-    : `Starting at ${formatInr(Number.isFinite(minPlanPrice) ? minPlanPrice : 0)}/month`;
-}
-
-function trainerProfileDetails(value: unknown) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return { certifications: [], specialties: [] };
-  }
-  const record = value as Record<string, unknown>;
-  const specialties = Array.isArray(record.specialties) ? record.specialties : [];
-  const certifications = Array.isArray(record.certifications) ? record.certifications : [];
-  return {
-    certifications: certifications.filter((item): item is string => typeof item === "string"),
-    specialties: specialties.filter((item): item is string => typeof item === "string"),
-  };
-}
 
 export async function generateMetadata({ params }: GymPublicPageProps): Promise<Metadata> {
   const { username } = await params;
@@ -82,539 +60,34 @@ export default async function GymPublicPage({ params, searchParams }: GymPublicP
   const [{ username }, query] = await Promise.all([params, searchParams ?? Promise.resolve({})]);
   const locale = resolvePublicLocale(query);
   const nextLocale = alternatePublicLocale(locale);
-  const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const data = await getPublicGymProfileData(username);
 
   if (!data) {
-    return (
-      <main
-        lang={locale === "hi" ? "hi-IN" : "en-IN"}
-        className="min-h-dvh py-1"
-      >
-        <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
-          <AccountAwarePublicNav
-            locale={locale}
-            languageHref={localizedPath(`/g/${username}`, nextLocale)}
-            languageLabel={t("languageSwitch")}
-          />
-        <GlassCard className="mx-auto max-w-xl text-center">
-          <Pill tone="amber">{t("gymNotFound")}</Pill>
-          <h1 className="mt-5 text-3xl font-semibold text-white">{t("gymNotFound")}</h1>
-          <p className="mt-3 text-sm leading-6 text-white/55">{t("gymNotFoundCopy")}</p>
-          <Link
-            href={localizedPath("/gyms", locale)}
-            className="zook-focus mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
-          >
-            {t("findGym")}
-          </Link>
-        </GlassCard>
-        </div>
-      </main>
-    );
+    return <GymNotFound locale={locale} username={username} />;
   }
-  const { org, plans, trainers } = data;
-  const paidPlans = plans.filter((plan) => plan.pricePaise > 0);
-  const minPlanPrice = paidPlans.length
-    ? Math.min(...paidPlans.map((plan) => plan.pricePaise))
-    : null;
-  const visiblePlans = plans.slice(0, 4);
-  const recommendedPlanId =
-    paidPlans.find((plan) => plan.durationDays && plan.durationDays <= 45)?.id ??
-    paidPlans[0]?.id ??
-    plans[0]?.id;
-  const hasPublicPlans = plans.length > 0;
-  const gallery = org.gallery.length
-    ? org.gallery
-    : [org.coverImageUrl].filter((imageUrl): imageUrl is string => Boolean(imageUrl));
-  const facilities = org.facilities.length ? org.facilities : org.amenities;
-  const heroAmenities = org.amenities.length
-    ? org.amenities
-    : ["Strength", "Cardio", "Personal Training", "Protein Bar", "Locker"];
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "HealthClub",
-    name: org.name,
-    url: `/g/${org.username}`,
-    image: org.coverImageUrl ?? org.logoUrl ?? undefined,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: org.address,
-      addressLocality: org.city,
-      addressRegion: org.state,
-      addressCountry: "IN",
-    },
-    openingHoursSpecification: org.openingHoursSummary
-      ? [{ "@type": "OpeningHoursSpecification", description: org.openingHoursSummary }]
-      : undefined,
-    makesOffer: plans.length
-      ? {
-          "@type": "AggregateOffer",
-          priceCurrency: "INR",
-          lowPrice: minPlanPrice === null ? 0 : Math.round(minPlanPrice / 100),
-          offerCount: plans.length,
-        }
-      : undefined,
-  };
 
+  const { org, plans, trainers } = data;
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <StructuredData data={gymJsonLd({ org, plans })} />
       <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:px-6">
-        <AccountAwarePublicNav
+        <PublicNav
           locale={locale}
           languageHref={localizedPath(`/g/${org.username}`, nextLocale)}
-          languageLabel={t("languageSwitch")}
-        />
-
+          languageLabel={publicT(locale, "languageSwitch")}
+        >
+          <AccountAwareNav locale={locale} />
+        </PublicNav>
         <section className="grid gap-5 lg:grid-cols-[1fr_380px]">
-          <div className="glass-panel relative min-h-[560px] overflow-hidden rounded-[32px] p-6 md:p-8">
-            {org.coverImageUrl ? (
-              <Image
-                src={org.coverImageUrl}
-                alt={`${org.name} gym interior`}
-                fill
-                sizes="(min-width: 1024px) calc(100vw - 430px), 100vw"
-                className="object-cover opacity-30"
-                priority={false}
-                unoptimized
-              />
-            ) : null}
-            <div className="absolute inset-0 bg-gradient-to-br from-black/82 via-black/62 to-black/82" />
-            <div className="relative">
-              {org.coverImageUrl ? (
-                <div className="relative mb-5 h-48 w-full overflow-hidden rounded-2xl border border-white/10">
-                  <Image
-                    src={org.coverImageUrl}
-                    alt={`${org.name} gym`}
-                    fill
-                    sizes="(min-width: 1024px) calc(100vw - 430px), 100vw"
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-              ) : (
-                <div className="relative mb-5 h-40 w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black">
-                  <svg
-                    aria-hidden
-                    viewBox="0 0 400 160"
-                    preserveAspectRatio="xMidYMid slice"
-                    className="absolute inset-0 h-full w-full"
-                  >
-                    <defs>
-                      <radialGradient id="gym-glow" cx="50%" cy="100%" r="80%">
-                        <stop offset="0%" stopColor="#B9F455" stopOpacity="0.18" />
-                        <stop offset="60%" stopColor="#B9F455" stopOpacity="0.04" />
-                        <stop offset="100%" stopColor="#B9F455" stopOpacity="0" />
-                      </radialGradient>
-                      <pattern id="gym-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-                        <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-                      </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#gym-grid)" />
-                    <rect width="100%" height="100%" fill="url(#gym-glow)" />
-                    {/* stylised dumbbell */}
-                    <g transform="translate(200 80)" stroke="#B9F455" strokeLinecap="round" fill="none">
-                      <line x1="-50" y1="0" x2="50" y2="0" strokeWidth="6" opacity="0.8" />
-                      <rect x="-66" y="-14" width="14" height="28" rx="3" strokeWidth="3" opacity="0.9" />
-                      <rect x="-78" y="-22" width="10" height="44" rx="3" strokeWidth="3" opacity="0.65" />
-                      <rect x="52" y="-14" width="14" height="28" rx="3" strokeWidth="3" opacity="0.9" />
-                      <rect x="68" y="-22" width="10" height="44" rx="3" strokeWidth="3" opacity="0.65" />
-                    </g>
-                  </svg>
-                  <div className="relative grid h-full place-items-center">
-                    <span
-                      className="rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-white/55 backdrop-blur"
-                    >
-                      Cover photo coming soon
-                    </span>
-                  </div>
-                </div>
-              )}
-              <div className="flex flex-wrap items-center gap-3">
-                {org.logoUrl ? (
-                  <Image
-                    src={org.logoUrl}
-                    alt={`${org.name} logo`}
-                    width={56}
-                    height={56}
-                    sizes="56px"
-                    className="h-14 w-14 rounded-2xl border border-white/15 object-cover"
-                    unoptimized
-                  />
-                ) : null}
-                <div className="flex flex-wrap gap-2">
-                  <Pill tone="lime">{joinModeLabelForLocale(org.joinMode, locale)}</Pill>
-                  {org.gymType ? <Pill tone="blue">{org.gymType}</Pill> : null}
-                </div>
-              </div>
-              <h1 className="mt-5 max-w-4xl text-5xl font-semibold tracking-tight text-white md:text-7xl">
-                {org.name}
-              </h1>
-              <p className="mt-4 flex items-center gap-2 text-white/58">
-                <MapPin size={18} /> {org.address} · {org.city}, {org.state}
-              </p>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-white/62">
-                {org.tagline || t("gymTaglineFallback")}
-              </p>
-              {org.openingHoursSummary ? (
-                <p className="mt-3 text-sm text-lime-100/75">{org.openingHoursSummary}</p>
-              ) : null}
-            </div>
-            <div className="mt-7 flex flex-wrap gap-2">
-              {heroAmenities.map((amenity) => (
-                <Pill key={amenity} className="border-white/15 bg-white/10 text-white/80">
-                  {amenity}
-                </Pill>
-              ))}
-            </div>
-            <div className="mt-10 flex flex-wrap gap-6">
-              {[t("choosePlan"), t("verifyEmail"), t("paySecurely")].map((step, index) => (
-                <div key={step} className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-lime-300 text-xs font-bold text-black">
-                    {index + 1}
-                  </span>
-                  <p className="text-sm text-zinc-300">{step}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <GlassCard variant="strong" className="h-fit">
-            <p className="text-sm text-white/45">{t("membershipPreview")}</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">
-              {hasPublicPlans ? priceSummary(plans, locale) : priceSummary([], locale)}
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-white/55">
-              {t("choosePlanProfile")}
-            </p>
-            <div className="mx-auto mt-5 w-40 rounded-[24px] border border-white/10 bg-white p-3">
-              <Image
-                src={`/qr/${org.username}?target=join`}
-                alt={`Join ${org.name} on Zook`}
-                width={160}
-                height={160}
-                sizes="160px"
-                className="aspect-square w-full rounded-[14px]"
-                unoptimized
-              />
-            </div>
-            <p className="mt-3 text-center text-xs text-white/45">{t("scanToJoin")}</p>
-            {hasPublicPlans ? (
-              <Link
-                href="#plans"
-                className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
-              >
-                {t("viewPlans")}
-              </Link>
-            ) : (
-              <div className="mt-6 rounded-[24px] border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/55">
-                {priceSummary([], locale)}
-              </div>
-            )}
-            <PublicGymActions
-              username={org.username}
-              appStoreUrl={org.appStoreUrl}
-              playStoreUrl={org.playStoreUrl}
-              openLabel={t("openInApp")}
-              copyLabel={t("copyJoinLink")}
-              copiedLabel={t("copied")}
-            />
-            <div className="mt-5 rounded-[24px] border border-white/10 bg-black/20 p-4">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="text-lime-200" size={22} />
-                <p className="text-sm font-medium text-white">{t("securePayment")}</p>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-white/50">{t("paymentActivation")}</p>
-            </div>
-          </GlassCard>
+          <GymHero org={org} locale={locale} />
+          <GymMembershipCard org={org} plans={plans} locale={locale} />
         </section>
-
-        <section id="plans" className="grid scroll-mt-5 gap-4 lg:grid-cols-3">
-          {plans.length ? (
-            visiblePlans.map((plan) => (
-              <Link
-                key={plan.id}
-                href={localizedPath(`/join/${org.username}`, locale, { plan: plan.handle })}
-                className="zook-focus block rounded-[28px] transition hover:-translate-y-0.5"
-              >
-                <GlassCard
-                  variant={plan.id === recommendedPlanId ? "selected" : "default"}
-                  className="h-full transition hover:border-lime-300/25 hover:bg-white/[0.075]"
-                >
-                  <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <Pill tone={plan.id === recommendedPlanId ? "lime" : "neutral"}>
-                        {plan.id === recommendedPlanId ? t("mostPopular") : plan.type.replaceAll("_", " ")}
-                      </Pill>
-                      <h2 className="mt-4 max-w-full truncate text-2xl font-semibold text-white">
-                        {resolvePlanName(plan)}
-                      </h2>
-                    </div>
-                    <p className="metric shrink-0 text-2xl font-semibold text-lime-200">
-                      {formatInr(plan.pricePaise)}
-                    </p>
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-white/52">{plan.description}</p>
-                  <p className="mt-4 text-sm text-white/45">
-                    {plan.durationDays
-                      ? `${plan.durationDays} ${t("days")}`
-                      : plan.type === "TRIAL"
-                        ? t("trial")
-                        : t("visitPack")}{" "}
-                    · {plan.visitLimit || t("unlimited")}{" "}
-                    {plan.visitLimit === 1 ? t("visit") : t("visits")}
-                  </p>
-                </GlassCard>
-              </Link>
-            ))
-          ) : (
-            <GlassCard className="lg:col-span-3">
-              <Pill tone="amber">{t("plansComingSoon")}</Pill>
-              <h2 className="mt-4 text-2xl font-semibold text-white">
-                {priceSummary([], locale)}
-              </h2>
-              <p className="mt-3 text-sm leading-6 text-white/55">
-                {t("noPublicPlanCopy")}
-              </p>
-            </GlassCard>
-          )}
-          {plans.length > visiblePlans.length ? (
-            <Link
-              href={localizedPath(`/join/${org.username}`, locale)}
-              className="zook-focus lg:col-span-3 inline-flex w-fit rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/75"
-            >
-              {t("seeAllPlansPrefix")} {plans.length} {t("seeAllPlansSuffix")}
-            </Link>
-          ) : null}
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <GlassCard>
-            <Pill tone="lime">{t("afterJoining")}</Pill>
-            <h2 className="mt-4 text-2xl font-semibold text-white">{t("afterJoining")}</h2>
-            <p className="mt-3 text-sm leading-6 text-white/55">{t("afterJoiningCopy")}</p>
-            <div className="mt-5 grid gap-3">
-              {[
-                {
-                  icon: CalendarCheck,
-                  title: t("afterJoinScan"),
-                  copy: t("afterJoinScanCopy"),
-                },
-                {
-                  icon: Dumbbell,
-                  title: t("afterJoinTrain"),
-                  copy: t("afterJoinTrainCopy"),
-                },
-                {
-                  icon: PackageCheck,
-                  title: t("afterJoinPickup"),
-                  copy: t("afterJoinPickupCopy"),
-                },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={item.title}
-                    className="flex gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4"
-                  >
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-lime-200/20 bg-lime-200/10 text-lime-100">
-                      <Icon size={19} />
-                    </span>
-                    <div>
-                      <p className="font-medium text-white">{item.title}</p>
-                      <p className="mt-1 text-sm leading-6 text-white/52">{item.copy}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </GlassCard>
-          <GlassCard>
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="text-lime-200" size={22} />
-              <h2 className="text-2xl font-semibold text-white">{t("trustTitle")}</h2>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-white/55">{t("trustCopy")}</p>
-            <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <p className="font-medium text-white">{t("transparentPricing")}</p>
-              <p className="mt-2 text-sm leading-6 text-white/52">{t("transparentPricingCopy")}</p>
-              <p className="mt-4 text-2xl font-semibold text-lime-100">
-                {priceSummary(plans, locale)}
-              </p>
-            </div>
-          </GlassCard>
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-          <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">{t("facilities")}</h2>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {facilities.length ? (
-                facilities.map((facility) => (
-                  <Pill key={facility} tone="blue" className="border-white/15 bg-white/10 text-white/80">
-                    {facility}
-                  </Pill>
-                ))
-              ) : (
-                <p className="text-sm text-white/50">
-                  {t("facilitiesPending")}
-                </p>
-              )}
-            </div>
-          </GlassCard>
-          <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">{t("equipment")}</h2>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {org.equipment.length ? (
-                org.equipment.map((equipment) => (
-                  <Pill
-                    key={equipment}
-                    tone="lime"
-                    className="border-white/15 bg-white/10 text-white/80"
-                  >
-                    {equipment}
-                  </Pill>
-                ))
-              ) : (
-                <p className="text-sm text-white/50">{t("equipmentPending")}</p>
-              )}
-            </div>
-          </GlassCard>
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-          <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">{t("shareOrInstall")}</h2>
-            <p className="mt-3 text-sm leading-6 text-white/55">
-              {t("shareInstallCopyPrefix")} {org.name}.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {org.appStoreUrl ? (
-                <a
-                  href={org.appStoreUrl}
-                  className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
-                >
-                  {t("appStore")}
-                </a>
-              ) : null}
-              {org.playStoreUrl ? (
-                <a
-                  href={org.playStoreUrl}
-                  className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
-                >
-                  {t("playStore")}
-                </a>
-              ) : null}
-              <a
-                href={`/qr/${org.username}?target=join&download=1`}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/72"
-              >
-                <QrCode size={16} />
-                {t("downloadQr")}
-              </a>
-              <ShareButton
-                title={`${org.name} on Zook`}
-                text={`Join ${org.name} in ${org.city} on Zook.`}
-                path={`/g/${org.username}`}
-                label={t("shareJoinLink")}
-              />
-            </div>
-          </GlassCard>
-        </section>
-
-        {gallery.length ? (
-          <section className="grid gap-4 md:grid-cols-3">
-            {gallery.slice(0, 6).map((imageUrl) => (
-              <Image
-                key={imageUrl}
-                src={imageUrl}
-                alt={`${org.name} facility photo`}
-                width={640}
-                height={480}
-                sizes="(min-width: 768px) 33vw, 100vw"
-                className="aspect-[4/3] rounded-[28px] border border-white/10 object-cover"
-                unoptimized
-              />
-            ))}
-          </section>
-        ) : null}
-
-        <section className="grid gap-4 md:grid-cols-2">
-          <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">{t("visibleTrainers")}</h2>
-            <div className="mt-5 grid gap-3">
-              {trainers.length ? (
-                trainers.map((trainer) => {
-                  const profileDetails = trainerProfileDetails(trainer.specialties);
-                  return (
-                    <div
-                      key={trainer.userId}
-                      className="flex items-start gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4"
-                    >
-                      {trainer.profilePhotoUrl ? (
-                        <Image
-                          src={trainer.profilePhotoUrl}
-                          alt={`${trainer.name} profile photo`}
-                          width={44}
-                          height={44}
-                          sizes="44px"
-                          className="h-11 w-11 rounded-2xl border border-white/10 object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-sm font-semibold text-white/72">
-                          {trainer.name.slice(0, 1)}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-medium text-white">{trainer.name}</p>
-                        <p className="mt-1 text-sm text-white/45">
-                          {trainer.bio ?? t("bioComingSoon")}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {profileDetails.specialties.slice(0, 3).map((specialty) => (
-                            <Pill key={specialty}>{specialty}</Pill>
-                          ))}
-                          {profileDetails.certifications.slice(0, 2).map((certification) => (
-                            <Pill key={certification} tone="amber">
-                              {certification}
-                            </Pill>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/50">
-                  {t("trainersPending")}
-                </p>
-              )}
-            </div>
-          </GlassCard>
-          <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">{t("referral")}</h2>
-            <p className="mt-3 text-sm leading-6 text-white/55">{t("referralCopy")}</p>
-            <Link
-              href={localizedPath(`/join/${org.username}`, locale, { ref: "" })}
-              className="zook-focus mt-5 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
-            >
-              {t("shareJoinLink")}
-            </Link>
-          </GlassCard>
-        </section>
-        <section>
-          <GlassCard>
-            <div className="flex items-center gap-3">
-              <Star className="text-amber-100" size={22} />
-              <h2 className="text-2xl font-semibold text-white">{t("reviews")}</h2>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-white/55">{t("reviewsPending")}</p>
-          </GlassCard>
-        </section>
+        <GymPlansGrid org={org} plans={plans} locale={locale} />
+        <MemberJourney plans={plans} locale={locale} />
+        <GymFacilities org={org} locale={locale} />
+        <ShareInstall org={org} locale={locale} />
+        <GymTrainers org={org} trainers={trainers} locale={locale} />
+        <GymReviews locale={locale} />
       </div>
     </main>
   );
