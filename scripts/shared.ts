@@ -30,6 +30,7 @@ export const playwrightForwardEnvKeys = [
   "ENV_PROFILE",
   "NEXT_PUBLIC_APP_URL",
   "NEXT_PUBLIC_WEB_URL",
+  "NEXT_PUBLIC_DASHBOARD_URL",
   "MOBILE_API_BASE_URL",
   "ZOOK_QR_SECRET",
   "AI_PROVIDER",

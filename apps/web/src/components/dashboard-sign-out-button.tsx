@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ZookButton } from "@/components/zook-button";
+import { getOrigins } from "@/lib/origins";
 
 export function DashboardSignOutButton({
   className,
@@ -28,7 +29,7 @@ export function DashboardSignOutButton({
     setSigningOut(true);
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
     queryClient.clear();
-    window.location.assign("/login");
+    window.location.assign(getOrigins().public);
   }
 
   return (

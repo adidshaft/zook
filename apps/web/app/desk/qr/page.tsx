@@ -2,7 +2,13 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { redirect } from "next/navigation";
 import { AttendanceQrPanel } from "@/components/attendance-qr-panel";
-import { hasDeskAccess, hasOwnerDashboardAccess, resolvePostLoginPath } from "@/lib/auth-destinations";
+import {
+  destinationToHref,
+  hasDeskAccess,
+  hasOwnerDashboardAccess,
+  resolvePostLoginDestination,
+} from "@/lib/auth-destinations";
+import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata = {
@@ -16,22 +22,32 @@ export default async function DeskQrPage({
   searchParams: Promise<{ branchId?: string }>;
 }) {
   const resolvedSearch = await searchParams;
-  const session = await requireDashboardSession();
+  const session = await requireDashboardSession({
+    expectedHost: "dashboard",
+    redirectPath: "/desk/qr",
+  });
+  const origins = getOrigins();
+  const postLoginHref = () =>
+    destinationToHref(resolvePostLoginDestination(session), "dashboard", origins);
   if (!session.activeOrgId) {
-    redirect(resolvePostLoginPath(session));
+    redirect(postLoginHref());
   }
   if (
     !session.user.isPlatformAdmin &&
     !hasOwnerDashboardAccess(session) &&
     !hasDeskAccess(session)
   ) {
-    redirect(resolvePostLoginPath(session));
+    redirect(postLoginHref());
   }
 
   return (
     <main className="grid min-h-dvh place-items-center px-4 py-6">
       <Link
-        href={resolvedSearch.branchId ? `/desk?branchId=${encodeURIComponent(resolvedSearch.branchId)}` : "/desk"}
+        href={
+          resolvedSearch.branchId
+            ? `/desk?branchId=${encodeURIComponent(resolvedSearch.branchId)}`
+            : "/desk"
+        }
         className="zook-focus fixed right-5 top-5 z-20 grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-black/40 text-white/78"
         aria-label="Close entry QR"
       >
