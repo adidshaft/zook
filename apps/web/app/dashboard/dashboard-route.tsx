@@ -1,7 +1,12 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import { resolveMode } from "@/components/dashboard-operational-model";
 import { getDashboardData } from "@/lib/data";
-import { hasCoachAccess, hasDeskAccess, hasOwnerDashboardAccess } from "@/lib/auth-destinations";
+import {
+  destinationToHref,
+  hasOwnerDashboardAccess,
+  resolvePostLoginDestination,
+} from "@/lib/auth-destinations";
+import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
 import { redirect } from "next/navigation";
 import type { Permission } from "@zook/core";
@@ -59,21 +64,21 @@ function canAccessDashboardSection(
 
 export async function loadDashboardRouteProps({ section, searchParams }: DashboardRouteProps) {
   const { branchId } = await searchParams;
-  const session = await requireDashboardSession();
+  const session = await requireDashboardSession({
+    expectedHost: "dashboard",
+    redirectPath: "/dashboard",
+  });
+  const origins = getOrigins();
+  const postLoginHref = () =>
+    destinationToHref(resolvePostLoginDestination(session), "dashboard", origins);
   if (!session.activeOrgId) {
-    redirect(session.user.isPlatformAdmin ? "/platform" : "/gyms");
+    redirect(postLoginHref());
   }
   if (!session.user.isPlatformAdmin && !hasOwnerDashboardAccess(session)) {
-    if (hasDeskAccess(session)) {
-      redirect("/desk?from=dashboard");
-    }
-    if (hasCoachAccess(session)) {
-      redirect("/coach");
-    }
-    redirect("/gyms");
+    redirect(postLoginHref());
   }
   if (!canAccessWebDashboard(session)) {
-    redirect("/gyms");
+    redirect(postLoginHref());
   }
   if (!canAccessDashboardSection(session, section?.join("/") ?? "")) {
     redirect("/dashboard");

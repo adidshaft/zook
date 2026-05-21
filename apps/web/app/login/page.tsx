@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginPanel } from "@/components/login-panel";
 import { ZookLogo } from "@/components/zook-logo";
@@ -9,7 +9,8 @@ import {
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
-import { resolvePostLoginPath } from "@/lib/auth-destinations";
+import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-destinations";
+import { getOrigins, webHostFromHeader } from "@/lib/origins";
 import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
 
@@ -32,10 +33,14 @@ export default async function LoginPage({
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const redirectTarget = safeRedirectTarget(firstParam(resolvedSearchParams.redirect));
   const switchAccount = firstParam(resolvedSearchParams.switch) === "1";
+  const origins = getOrigins();
+  const currentHost = webHostFromHeader((await headers()).get("host"), origins);
   const cookieStore = await cookies();
   const session = await resolveSessionSummaryFromToken(cookieStore.get(sessionCookieName)?.value);
   if (session && !switchAccount) {
-    redirect(resolvePostLoginPath(session, redirectTarget));
+    redirect(
+      destinationToHref(resolvePostLoginDestination(session, redirectTarget), currentHost, origins),
+    );
   }
 
   return (
@@ -59,7 +64,7 @@ export default async function LoginPage({
       </div>
       <div className="grid w-full max-w-md gap-4">
         <Suspense fallback={<div className="glass-panel h-[360px] w-full rounded-[28px]" />}>
-          <LoginPanel locale={locale} />
+          <LoginPanel locale={locale} currentHost={currentHost} origins={origins} />
         </Suspense>
       </div>
     </main>

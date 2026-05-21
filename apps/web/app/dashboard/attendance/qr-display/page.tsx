@@ -3,7 +3,12 @@ import { X } from "lucide-react";
 import { redirect } from "next/navigation";
 import { AttendanceQrPanel } from "@/components/attendance-qr-panel";
 import { getDashboardData } from "@/lib/data";
-import { hasOwnerDashboardAccess, resolvePostLoginPath } from "@/lib/auth-destinations";
+import {
+  destinationToHref,
+  hasOwnerDashboardAccess,
+  resolvePostLoginDestination,
+} from "@/lib/auth-destinations";
+import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata = {
@@ -17,9 +22,15 @@ export default async function DashboardQrDisplayPage({
   searchParams: Promise<{ branchId?: string }>;
 }) {
   const resolvedSearch = await searchParams;
-  const session = await requireDashboardSession();
+  const session = await requireDashboardSession({
+    expectedHost: "dashboard",
+    redirectPath: "/dashboard/attendance/qr-display",
+  });
+  const origins = getOrigins();
+  const postLoginHref = () =>
+    destinationToHref(resolvePostLoginDestination(session), "dashboard", origins);
   if (!session.activeOrgId) {
-    redirect(resolvePostLoginPath(session));
+    redirect(postLoginHref());
   }
   if (!session.user.isPlatformAdmin && !hasOwnerDashboardAccess(session)) {
     redirect("/desk");

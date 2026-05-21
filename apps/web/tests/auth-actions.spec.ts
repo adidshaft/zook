@@ -8,8 +8,8 @@ const seededAccounts = [
   { email: "admin@zook.local", path: /\/dashboard(?:$|[/?#])/ },
   { email: "reception@zook.local", path: /\/desk(?:$|[/?#])/ },
   { email: "trainer@zook.local", path: /\/coach(?:$|[/?#])/ },
-  { email: "member@zook.local", path: /\/me(?:$|\/|[?#])/ },
-  { email: "prospect@zook.local", path: /\/(?:gyms|me)(?:$|\/|[?#])/ },
+  { email: "member@zook.local", path: /\/(?:me|m)(?:$|\/|[?#])/ },
+  { email: "prospect@zook.local", path: /\/(?:gyms|me|m)(?:$|\/|[?#])/ },
   { email: "platform@zook.local", path: /\/platform(?:$|[/?#])/ },
 ] as const;
 
@@ -90,7 +90,7 @@ test.describe("auth actions", () => {
     expect(limitedStatus).toBe(429);
   });
 
-  test("logout clears the session cookie and returns to login", async ({ page }) => {
+  test("logout clears the session cookie and returns to public home", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     await page.goto("/dashboard/profile");
     const accountMenu = page.getByTestId("dashboard-user-menu");
@@ -103,7 +103,7 @@ test.describe("auth actions", () => {
       accountMenu.getByTestId("dashboard-sign-out").click(),
     ]);
     expect(logoutResponse.ok()).toBeTruthy();
-    await expect(page).toHaveURL(/\/login/);
+    await page.waitForURL((url) => url.pathname === "/", { timeout: 15_000 });
     const cookies = await page.context().cookies();
     expect(cookies.find((cookie) => cookie.name === "zook_session")?.value ?? "").toBe("");
   });

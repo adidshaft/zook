@@ -10,6 +10,7 @@ function isAllowedApiOrigin(origin: string | null) {
   const allowedOrigins = [
     process.env.NEXT_PUBLIC_APP_URL,
     process.env.NEXT_PUBLIC_WEB_URL,
+    process.env.NEXT_PUBLIC_DASHBOARD_URL,
     process.env.NEXT_PUBLIC_MOBILE_WEB_URL,
   ]
     .flatMap((value) => (value ? value.split(",") : []))
