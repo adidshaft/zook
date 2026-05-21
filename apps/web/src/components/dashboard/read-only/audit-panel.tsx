@@ -6,7 +6,7 @@ import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn } from "../../ui";
 import { ZookButton } from "../../zook-button";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
-import type { AIUsageRow, AuditLogRow } from "../../dashboard-operational-model";
+import type { AIUsageRow, AuditLogRow } from "@/components/dashboard/types";
 import {
   CsvExportButton,
   ErrorNotice,

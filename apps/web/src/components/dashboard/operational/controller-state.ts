@@ -9,7 +9,7 @@ import {
   type ProductCategory,
   type RewardType,
   type StaffRole,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import { defaultBranchHoursText } from "../sections/branch-hours-editor";
 import type { BranchFormState } from "../sections/branches-section";
 

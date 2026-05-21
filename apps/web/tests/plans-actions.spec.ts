@@ -8,9 +8,11 @@ import {
 } from "./helpers";
 import { requireDb } from "./helpers/db";
 
-async function expectBrowserResponseOk(response: Response) {
+async function expectBrowserResponseOk<T = unknown>(response: Response) {
   expect(response.ok(), await response.text()).toBeTruthy();
-  await expect(response.json()).resolves.toMatchObject({ ok: true });
+  const payload = (await response.json()) as { ok: true; data: T };
+  expect(payload).toMatchObject({ ok: true });
+  return payload;
 }
 
 test.describe("plans, coupons, offers, and referrals actions", () => {
@@ -30,12 +32,21 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     await page.getByPlaceholder("Duration days").first().fill("90");
     await page.getByPlaceholder("Visit limit").first().fill("45");
     await page.getByPlaceholder("Short public description").first().fill("Playwright action plan");
+    const createResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/orgs/${org.id}/membership-plans`) &&
+        response.request().method() === "POST",
+    );
     await page.getByRole("button", { name: /^Create plan$/ }).click();
-    await expect(page.getByText(planName)).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText("₹2,999")).toBeVisible();
+    const createPayload = await expectBrowserResponseOk<{ plan: { id: string } }>(
+      await createResponse,
+    );
+    const planRow = page.getByRole("row", { name: new RegExp(planName) });
+    await expect(planRow).toBeVisible({ timeout: 30_000 });
+    await expect(planRow.getByText("₹2,999")).toBeVisible();
 
-    const created = await prisma.membershipPlan.findFirstOrThrow({
-      where: { orgId: org.id, name: planName },
+    const created = await prisma.membershipPlan.findUniqueOrThrow({
+      where: { id: createPayload.data.plan.id },
     });
     expect(created.pricePaise).toBe(299900);
 

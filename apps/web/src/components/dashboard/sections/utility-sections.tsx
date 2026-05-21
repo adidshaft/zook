@@ -10,7 +10,7 @@ import type {
   OrganizationSnapshot,
   OrganizationSummary,
   PaymentRow,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 
 const copy = {
   billingEyebrow: "Billing",

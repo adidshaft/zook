@@ -102,7 +102,7 @@ label {
 }
 
 .zook-lime-glow {
-  box-shadow: var(--zook-shadow-glow-lime);
+  box-shadow: var(--shadow-glow-accent);
 }
 
 .metric {

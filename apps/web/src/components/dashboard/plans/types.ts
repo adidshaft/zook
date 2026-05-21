@@ -3,7 +3,7 @@ import type {
   CoachPlanRow,
   MembershipPlanRow,
   MembershipPlanType,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import type { OverviewOperationalSectionProps } from "../sections/overview/types";
 
 export type PlanFormState = {

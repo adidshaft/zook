@@ -25,7 +25,7 @@ import {
   type ShopOrderRow,
   type StaffAssignmentRow,
   type StaffUserRow,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import {
   useOperationalResource,
   usePagedOperationalResource,

@@ -5,7 +5,7 @@ import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboar
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn } from "../../ui";
 import { CsvExportButton, ErrorNotice } from "../operational-shared";
-import type { ShopOrderRow } from "../../dashboard-operational-model";
+import type { ShopOrderRow } from "@/components/dashboard/types";
 import type { LoadingState, PagedState } from "../read-only/types";
 import { ShopOrderPaymentControl } from "./shop-order-payment-control";
 import type { PaymentReceiptState } from "./payments-utils";

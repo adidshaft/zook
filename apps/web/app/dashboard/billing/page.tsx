@@ -1,9 +1,10 @@
-import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import { BillingDashboardRoute } from "@/components/dashboard/route-panels";
 
 export default function BillingPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["billing"], searchParams });
+  return renderDashboardPanelRoute({ section: ["billing"], searchParams }, BillingDashboardRoute);
 }

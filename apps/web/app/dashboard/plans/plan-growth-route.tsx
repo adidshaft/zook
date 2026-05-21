@@ -1,5 +1,9 @@
-import { DashboardShell } from "@/components/dashboard-shell";
-import { loadDashboardRouteProps } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import {
+  PlanCouponsDashboardRoute,
+  PlanOffersDashboardRoute,
+  PlanReferralsDashboardRoute,
+} from "@/components/dashboard/route-panels";
 
 type PlanGrowthRoute = "coupons" | "offers" | "referrals";
 
@@ -10,10 +14,11 @@ export async function renderPlanGrowthRoute({
   route: PlanGrowthRoute;
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  const shellProps = await loadDashboardRouteProps({
-    section: ["plans", route],
-    searchParams,
-  });
-
-  return <DashboardShell {...shellProps} />;
+  const RoutePanel =
+    route === "coupons"
+      ? PlanCouponsDashboardRoute
+      : route === "offers"
+        ? PlanOffersDashboardRoute
+        : PlanReferralsDashboardRoute;
+  return renderDashboardPanelRoute({ section: ["plans", route], searchParams }, RoutePanel);
 }

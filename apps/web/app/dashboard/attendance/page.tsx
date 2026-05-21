@@ -1,9 +1,13 @@
-import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import { AttendanceDashboardRoute } from "@/components/dashboard/route-panels";
 
 export default function AttendancePage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["attendance"], searchParams });
+  return renderDashboardPanelRoute(
+    { section: ["attendance"], searchParams },
+    AttendanceDashboardRoute,
+  );
 }

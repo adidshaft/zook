@@ -6,7 +6,6 @@ import {
   destinationToUrl,
   publicAccountDestination,
   resolvePostLoginDestination,
-  resolvePostLoginPath,
 } from "./auth-destinations";
 
 function session({
@@ -132,7 +131,7 @@ describe("auth destinations", () => {
     );
   });
 
-  it("keeps deprecated public account helpers compatible for one cycle", () => {
+  it("resolves public account destinations and labels", () => {
     const destination = publicAccountDestination(session({ roles: ["TRAINER"] }));
     expect(destination).toEqual({ host: "dashboard", path: "/coach" });
     expect(
@@ -144,6 +143,5 @@ describe("auth destinations", () => {
           membership: "Membership",
         }),
     ).toBe("Coach");
-    expect(resolvePostLoginPath(session({ roles: ["TRAINER"] }))).toBe("/coach");
   });
 });

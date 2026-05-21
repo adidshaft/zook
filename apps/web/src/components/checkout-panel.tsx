@@ -82,7 +82,7 @@ export function CheckoutPanel({
 
   return (
     <div className="glass-panel w-full max-w-xl rounded-[28px] p-8">
-      <div className="sticky top-4 z-10 mb-5 rounded-2xl border border-amber-300/30 bg-amber-300/15 px-4 py-3 text-sm font-semibold text-amber-50 shadow-[var(--zook-shadow-glass)]">
+      <div className="sticky top-4 z-10 mb-5 rounded-2xl border border-amber-300/30 bg-amber-300/15 px-4 py-3 text-sm font-semibold text-amber-50 shadow-[var(--shadow-lg)]">
         TEST MODE · No real payment. Click any outcome to simulate.
       </div>
       <div className="mb-5 flex items-center justify-between">

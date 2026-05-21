@@ -7,7 +7,7 @@ import { GlassCard, Pill } from "@/components/glass-card";
 import { CouponApplyForm } from "@/components/coupon-apply-form";
 import { JoinCheckoutButton } from "@/components/join-checkout-button";
 import { InviteCodeForm, JoinRequestButton } from "@/components/join-request-controls";
-import { PublicNav } from "@/components/public-nav";
+import { PublicNav } from "@/components/public/nav/public-nav";
 import { formatInr } from "@/lib/format";
 import {
   alternatePublicLocale,
@@ -165,7 +165,7 @@ export default async function JoinPage({
       <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen py-1">
         <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
           <PublicNav
-            showLogin={false}
+            locale={locale}
             languageHref={localizedPath(`/join/${username}`, nextLocale)}
             languageLabel={t("languageSwitch")}
             backHref={localizedPath("/gyms", locale)}
@@ -196,7 +196,7 @@ export default async function JoinPage({
       <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen py-1">
         <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
           <PublicNav
-            showLogin={false}
+            locale={locale}
             languageHref={localizedPath(`/join/${org.username}`, nextLocale, {
               plan: selectedPlan.handle,
               ref: referral?.code,
@@ -262,7 +262,7 @@ export default async function JoinPage({
       <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen py-1">
         <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
           <PublicNav
-            showLogin={false}
+            locale={locale}
             languageHref={localizedPath(`/join/${org.username}`, nextLocale)}
             languageLabel={t("languageSwitch")}
             backHref={localizedPath(`/g/${org.username}`, locale)}
@@ -298,7 +298,7 @@ export default async function JoinPage({
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen py-1">
       <div className="mx-auto grid max-w-6xl gap-5 px-4 sm:px-6">
         <PublicNav
-          showLogin={false}
+          locale={locale}
           languageHref={joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, nextLocale)}
           languageLabel={t("languageSwitch")}
           backHref={localizedPath(`/g/${org.username}`, locale)}

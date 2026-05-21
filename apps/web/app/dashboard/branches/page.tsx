@@ -1,9 +1,10 @@
-import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import { BranchesDashboardRoute } from "@/components/dashboard/route-panels";
 
 export default function BranchesPage({
   searchParams,
 }: {
   searchParams: Promise<{ branchId?: string }>;
 }) {
-  return renderDashboardRoute({ section: ["branches"], searchParams });
+  return renderDashboardPanelRoute({ section: ["branches"], searchParams }, BranchesDashboardRoute);
 }

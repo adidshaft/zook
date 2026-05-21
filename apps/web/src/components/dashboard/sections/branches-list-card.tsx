@@ -10,7 +10,7 @@ import type {
   BranchRow,
   StaffAssignmentRow,
   StaffUserRow,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import { BranchHoursEditor, formatBranchHoursSummary } from "./branch-hours-editor";
 import type { BranchFormState } from "./branches-section";
 import { indianStates } from "./branch-states";

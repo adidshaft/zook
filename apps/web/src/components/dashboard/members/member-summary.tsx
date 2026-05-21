@@ -2,7 +2,7 @@
 
 import { AlertCircle, UserCheck, UserPlus, Users } from "lucide-react";
 import { KPITile, PulseDot, SectionHero } from "../charts";
-import type { JoinRequestRow, MemberRow } from "../../dashboard-operational-model";
+import type { JoinRequestRow, MemberRow } from "@/components/dashboard/types";
 
 export function MemberSummary({
   members,

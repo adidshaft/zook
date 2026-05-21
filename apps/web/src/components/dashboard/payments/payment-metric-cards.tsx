@@ -1,6 +1,6 @@
 import { formatCompactNumber, formatInr } from "@/lib/format";
 import { GlassCard } from "../../glass-card";
-import type { OrganizationSummary, ShopOrderRow } from "../../dashboard-operational-model";
+import type { OrganizationSummary, ShopOrderRow } from "@/components/dashboard/types";
 
 export function PaymentMetricCards({
   summary,

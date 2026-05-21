@@ -3,7 +3,7 @@ import { ReadoutGrid, SectionHeader, StatusPill } from "../../../dashboard-primi
 import { GlassCard, Pill } from "../../../glass-card";
 import { ZookButton } from "../../../zook-button";
 import { formatCompactNumber } from "@/lib/format";
-import type { DiscountType, RewardType } from "../../../dashboard-operational-model";
+import type { DiscountType, RewardType } from "@/components/dashboard/types";
 import { CouponControls } from "./coupon-controls";
 import { OfferControls } from "./offer-controls";
 import { ReferralCodeControls } from "./referral-code-controls";

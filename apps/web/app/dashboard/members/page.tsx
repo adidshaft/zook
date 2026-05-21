@@ -1,4 +1,5 @@
-import { renderDashboardRoute } from "@/components/dashboard-route-renderer";
+import { renderDashboardPanelRoute } from "@/components/dashboard-route-renderer";
+import { MembersDashboardRoute } from "@/components/dashboard/route-panels";
 import { redirect } from "next/navigation";
 
 export default async function MembersPage({
@@ -11,5 +12,7 @@ export default async function MembersPage({
     const query = params.branchId ? `?branchId=${encodeURIComponent(params.branchId)}` : "";
     redirect(`/dashboard/members/join-requests${query}`);
   }
-  return renderDashboardRoute({ section: ["members"], searchParams });
+  return renderDashboardPanelRoute({ section: ["members"], searchParams }, MembersDashboardRoute, {
+    view: "members",
+  });
 }

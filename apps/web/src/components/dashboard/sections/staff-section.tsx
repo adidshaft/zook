@@ -14,7 +14,7 @@ import type {
   StaffAssignmentRow,
   StaffRole,
   StaffUserRow,
-} from "../../dashboard-operational-model";
+} from "@/components/dashboard/types";
 import { formatDate, formatDateTime, formatEnumLabel } from "@/lib/format";
 
 type ResourceState = {

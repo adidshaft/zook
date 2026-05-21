@@ -4,7 +4,7 @@ import { useState } from "react";
 import type * as React from "react";
 import { formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
-import type { PaymentRow } from "../../dashboard-operational-model";
+import type { PaymentRow } from "@/components/dashboard/types";
 import { PaymentHistoryCard } from "./payment-history-card";
 import { PaymentMetricCards } from "./payment-metric-cards";
 import { PaymentReconciliationCard } from "./payment-reconciliation-card";
