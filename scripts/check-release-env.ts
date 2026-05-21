@@ -38,6 +38,34 @@ function checkAbsoluteUrl(label: string, key: string) {
   return pass(label, `${key} is ${value}.`);
 }
 
+function checkDashboardUrl(profile: ReturnType<typeof resolveEnvProfile>) {
+  const value = env("NEXT_PUBLIC_DASHBOARD_URL");
+  if (value) {
+    if (!isAbsoluteHttpUrl(value)) {
+      return fail(
+        "Dashboard URL",
+        `NEXT_PUBLIC_DASHBOARD_URL=${value} is not an absolute URL.`,
+        "Use a full http:// or https:// URL."
+      );
+    }
+    return pass("Dashboard URL", `NEXT_PUBLIC_DASHBOARD_URL is ${value}.`);
+  }
+
+  const publicUrl = env("NEXT_PUBLIC_WEB_URL") ?? env("NEXT_PUBLIC_APP_URL");
+  if (profile === "local" && isLocalhostUrl(publicUrl)) {
+    return pass(
+      "Dashboard URL",
+      `NEXT_PUBLIC_DASHBOARD_URL is not set; local single-origin routing will use ${publicUrl}.`
+    );
+  }
+
+  return fail(
+    "Dashboard URL",
+    "NEXT_PUBLIC_DASHBOARD_URL is not set.",
+    "Set NEXT_PUBLIC_DASHBOARD_URL to the dashboard URL for this environment."
+  );
+}
+
 export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
   loadLocalEnvironment();
 
@@ -186,7 +214,7 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
 
   results.push(checkAbsoluteUrl("App URL", "NEXT_PUBLIC_APP_URL"));
   results.push(checkAbsoluteUrl("Web URL", "NEXT_PUBLIC_WEB_URL"));
-  results.push(checkAbsoluteUrl("Dashboard URL", "NEXT_PUBLIC_DASHBOARD_URL"));
+  results.push(checkDashboardUrl(profile));
 
   const mobileApiBaseUrl = env("MOBILE_API_BASE_URL") ?? env("EXPO_PUBLIC_API_BASE_URL");
   if (!mobileApiBaseUrl) {
