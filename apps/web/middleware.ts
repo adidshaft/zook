@@ -3,13 +3,14 @@ import { expectedHostForPath, pathBelongsToStaff } from "./src/lib/host-routing"
 
 const sessionCookieName = "zook_session";
 const refreshSessionCookieName = "zook_refresh";
-const canonicalHost = "zookfit.in";
-const STAFF_HOST = "dashboard.zookfit.in";
-const PUBLIC_HOST = "zookfit.in";
+const canonicalHost = "zookfit.com";
+const STAFF_HOST = "app.zookfit.in";
+const LEGACY_STAFF_HOST = "dashboard.zookfit.in";
+const PUBLIC_HOST = "zookfit.com";
+const LEGACY_PUBLIC_HOST = "zookfit.in";
 const DEV_STAFF_HOST = "dashboard.localhost";
 const DEV_PUBLIC_HOST = "localhost";
 const canonicalRedirectHosts = new Set([
-  "app.zookfit.in",
   "app.zook.kyokasuigetsu.xyz",
   "zook-gym-app.vercel.app",
 ]);
@@ -55,7 +56,9 @@ function buildContentSecurityPolicy(nonce: string) {
       connectSources.add(origin);
     }
   }
+  connectSources.add("https://zookfit.com");
   connectSources.add("https://zookfit.in");
+  connectSources.add("https://app.zookfit.in");
   connectSources.add("https://dashboard.zookfit.in");
   if (process.env.NODE_ENV === "development") {
     connectSources.add("http://localhost:*");
@@ -84,10 +87,21 @@ function buildContentSecurityPolicy(nonce: string) {
 }
 
 function classifyHost(hostname: string): "staff" | "public" | "unknown" {
-  if (hostname === STAFF_HOST || hostname === DEV_STAFF_HOST || hostname.startsWith("dashboard.")) {
+  if (
+    hostname === STAFF_HOST ||
+    hostname === LEGACY_STAFF_HOST ||
+    hostname === DEV_STAFF_HOST ||
+    hostname.startsWith("dashboard.")
+  ) {
     return "staff";
   }
-  if (hostname === PUBLIC_HOST || hostname === DEV_PUBLIC_HOST || hostname === "www.zookfit.in") {
+  if (
+    hostname === PUBLIC_HOST ||
+    hostname === LEGACY_PUBLIC_HOST ||
+    hostname === DEV_PUBLIC_HOST ||
+    hostname === "www.zookfit.com" ||
+    hostname === "www.zookfit.in"
+  ) {
     return "public";
   }
   return "unknown";

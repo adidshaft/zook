@@ -156,13 +156,13 @@ const runtimeVersion = appVersion;
 const apiBaseUrlByProfile: Record<MobileReleaseProfile, string> = {
   local: "http://localhost:3000/api",
   staging: "https://staging.zookfit.in/api",
-  production: "https://zookfit.in/api",
+  production: "https://app.zookfit.in/api",
 };
 
 const webUrlByProfile: Record<MobileReleaseProfile, string> = {
   local: "http://localhost:3000",
   staging: "https://staging.zookfit.in",
-  production: "https://zookfit.in",
+  production: "https://zookfit.com",
 };
 
 function normalizeProfile(value?: string | null): MobileReleaseProfile | undefined {
