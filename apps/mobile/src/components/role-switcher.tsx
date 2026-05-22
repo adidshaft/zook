@@ -194,7 +194,7 @@ export function RoleSwitcherChip() {
 
 const styles = StyleSheet.create({
   chip: {
-    maxWidth: 220,
+    maxWidth: 280,
   },
   chipText: {
     flexShrink: 1,
