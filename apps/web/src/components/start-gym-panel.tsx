@@ -100,14 +100,36 @@ function safeOwnerEmail(value: string) {
 }
 
 function normalizeIndiaPhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  const national = digits.startsWith("91") && digits.length > 10 ? digits.slice(2) : digits;
-  return national.slice(0, 10);
+  let clean = value;
+  if (clean.startsWith("+91")) {
+    clean = clean.slice(3);
+  }
+  const digits = clean.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return digits.slice(2);
+  }
+  if (digits.length === 11 && digits.startsWith("0")) {
+    return digits.slice(1);
+  }
+  return digits.slice(0, 10);
 }
 
 function formatIndiaPhone(value: string) {
-  const digits = normalizeIndiaPhone(value);
-  return digits ? `+91 ${digits}` : "+91 ";
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "+" || trimmed === "+9" || trimmed === "+91") {
+    return trimmed;
+  }
+  let clean = value;
+  if (clean.startsWith("+91")) {
+    clean = clean.slice(3);
+  }
+  let digits = clean.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  return digits ? `+91 ${digits.slice(0, 10)}` : "+91 ";
 }
 
 export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
@@ -122,6 +144,8 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
+  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
+  const [customEquipmentText, setCustomEquipmentText] = useState("");
   const [joinMode, setJoinMode] = useState<"OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY">(
     "OPEN_JOIN",
   );
@@ -179,6 +203,12 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
     setBusy(true);
     setMessage("");
     try {
+      const parsedCustomEquipment = customEquipmentText
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length >= 2 && item.length <= 80);
+      const finalEquipment = Array.from(new Set([...equipment, ...parsedCustomEquipment]));
+
       const payload = await webApiFetch<CreateOrgResponse>("/api/orgs", {
         method: "POST",
         body: {
@@ -191,8 +221,9 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
           city,
           state,
           pincode,
+          originalGoogleMapsUrl: googleMapsUrl.trim() || undefined,
           amenities: Array.from(new Set([gymType, ...amenities])),
-          equipment,
+          equipment: finalEquipment,
           joinMode,
           visibility,
         },
@@ -224,10 +255,10 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
     <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
       <GlassCard variant="strong">
         <Pill tone="lime">Owner setup</Pill>
-        <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-white md:text-6xl">
+        <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-[var(--text-primary)] md:text-6xl">
           Start your gym on Zook.
         </h1>
-        <p className="mt-5 max-w-2xl text-sm leading-6 text-white/58">
+        <p className="mt-5 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
           Create the gym, main branch, owner access, two-month trial, and public profile from the
           web. Mobile stays focused on daily execution.
         </p>
@@ -238,15 +269,15 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
             "Starts a two-month free trial before billing begins",
             "Publishes a public username for profile links",
             "Opens billing setup next so you can add the card for month 3",
-          ].map((item) => (
+          ].map((item, index) => (
             <div
               key={item}
-              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+              className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)]/60 px-4 py-3 shadow-sm"
             >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-lime-300">
-                <span className="h-2 w-2 rounded-full bg-lime-300" />
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-xs font-semibold text-[var(--accent-strong)] shadow-sm">
+                {index + 1}
               </span>
-              <p className="text-sm text-white/70">{item}</p>
+              <p className="text-sm text-[var(--text-primary)]">{item}</p>
             </div>
           ))}
         </div>
@@ -393,6 +424,17 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                   className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
                 />
               </label>
+              <label className="grid gap-2 md:col-span-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Google Maps Link (Optional)
+                </span>
+                <input
+                  value={googleMapsUrl}
+                  onChange={(event) => setGoogleMapsUrl(event.target.value)}
+                  placeholder="https://maps.google.com/?q=..."
+                  className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
+                />
+              </label>
               <label className="grid gap-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
                   City
@@ -531,6 +573,18 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                   </div>
                 </div>
               </div>
+              <label className="mt-5 grid gap-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Or enter custom equipment (comma-separated)
+                </span>
+                <textarea
+                  value={customEquipmentText}
+                  onChange={(event) => setCustomEquipmentText(event.target.value)}
+                  placeholder="e.g. Squat rack, Kettlebells, Battle ropes"
+                  rows={2}
+                  className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none resize-none"
+                />
+              </label>
             </>
           ) : null}
 

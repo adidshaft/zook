@@ -19,7 +19,7 @@ const preferences: Array<{
 ];
 
 function normalizeThemePreference(value: string | undefined): ThemePreference {
-  return value === "system" || value === "light" || value === "dark" ? value : "light";
+  return value === "system" || value === "light" || value === "dark" ? value : "system";
 }
 
 function readCookiePreference() {
@@ -30,7 +30,7 @@ function readCookiePreference() {
   try {
     return normalizeThemePreference(cookie ? decodeURIComponent(cookie) : undefined);
   } catch {
-    return "light";
+    return "system";
   }
 }
 
@@ -52,7 +52,7 @@ function persistTheme(preference: ThemePreference) {
 }
 
 export function ThemePreferenceSwitcher() {
-  const [preference, setPreference] = useState<ThemePreference>("light");
+  const [preference, setPreference] = useState<ThemePreference>("system");
 
   useEffect(() => {
     const cookiePreference = readCookiePreference();

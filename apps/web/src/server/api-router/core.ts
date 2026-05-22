@@ -6538,6 +6538,7 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
           city: body.city,
           state: body.state,
           pincode: body.pincode,
+          originalGoogleMapsUrl: body.originalGoogleMapsUrl,
           latitude: body.latitude ? new Prisma.Decimal(body.latitude) : undefined,
           longitude: body.longitude ? new Prisma.Decimal(body.longitude) : undefined,
           locationSource: "MANUAL",

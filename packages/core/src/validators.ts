@@ -124,6 +124,7 @@ export const createOrganizationSchema = z.object({
   city: z.string().min(2).max(80),
   state: z.string().min(2).max(80),
   pincode: z.string().regex(/^\d{6}$/),
+  originalGoogleMapsUrl: z.string().trim().optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   amenities: z.array(z.string()).default([]),

@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { deflateSync } from "node:zlib";
+import { execSync } from "node:child_process";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 
@@ -237,14 +238,6 @@ function iconPixels(size, mode) {
     return pixels;
   }
 
-  drawRoundedRect(
-    pixels,
-    size,
-    size,
-    { x: size * 0.0605, y: size * 0.0605, w: size * 0.879, h: size * 0.879, r: size * 0.205 },
-    COLORS.white,
-    0.055
-  );
   drawZMark(pixels, size, size, { maxDimension: size * 0.65 });
   return pixels;
 }
@@ -256,11 +249,32 @@ function writePng(relativePath, size, mode = "full") {
   console.log(`wrote ${relativePath}`);
 }
 
-writePng("apps/mobile/assets/icons/AppIcon-1024.png", 1024);
+function resizeFromSource(relativePath, size) {
+  const absolutePath = join(ROOT, relativePath);
+  mkdirSync(dirname(absolutePath), { recursive: true });
+  const sourcePath = join(ROOT, "apps/mobile/assets/icons/app-icon-512.png");
+  try {
+    execSync(`sips -z ${size} ${size} "${sourcePath}" --out "${absolutePath}"`, { stdio: "ignore" });
+    console.log(`resized from source to ${relativePath}`);
+  } catch (err) {
+    console.error(`Failed to resize ${relativePath} using sips:`, err.message);
+  }
+}
+
+// Android launcher icons are generated programmatically for adaptive/monochrome layout layers
 writePng("apps/mobile/assets/icons/ic_launcher_background.png", 432, "background");
 writePng("apps/mobile/assets/icons/ic_launcher_foreground.png", 432, "foreground");
 writePng("apps/mobile/assets/icons/ic_launcher_monochrome.png", 432, "monochrome");
-writePng("apps/web/public/icons/icon-512.png", 512);
-writePng("apps/web/public/icons/icon-192.png", 192);
-writePng("apps/web/public/icons/apple-touch-icon.png", 180);
-writePng("apps/web/public/icons/favicon.png", 32);
+
+// All standard app and store branding icons are resized cleanly from the premium source file using macOS sips
+resizeFromSource("apps/mobile/assets/icons/AppIcon-1024.png", 1024);
+resizeFromSource("apps/mobile/assets/icons/app-icon-512-fixed.png", 512);
+resizeFromSource("apps/mobile/assets/icons/icon-mac-512x512.png", 512);
+resizeFromSource("apps/web/public/icons/AppIcon-1024.png", 1024);
+resizeFromSource("apps/web/public/icons/icon-512.png", 512);
+resizeFromSource("apps/web/public/icons/icon-192.png", 192);
+resizeFromSource("apps/web/public/icons/apple-touch-icon.png", 180);
+resizeFromSource("apps/web/public/icons/favicon.png", 32);
+resizeFromSource("artifacts/play-store-assets-20260522/play-icon-512.png", 512);
+resizeFromSource("artifacts/store-assets-play-20260522/app-icon-512.png", 512);
+resizeFromSource("artifacts/store-assets-play-20260522/app-icon-512-fixed.png", 512);

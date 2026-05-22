@@ -74,7 +74,7 @@ type ThemePreference = "system" | "light" | "dark";
 type ResolvedTheme = "light" | "dark";
 
 function normalizeThemePreference(value: string | undefined): ThemePreference {
-  return value === "system" || value === "light" || value === "dark" ? value : "light";
+  return value === "system" || value === "light" || value === "dark" ? value : "system";
 }
 
 function initialServerTheme(preference: ThemePreference): ResolvedTheme {
@@ -85,7 +85,7 @@ const themeBootstrapScript = `
 (function() {
   try {
     var match = document.cookie.match(/(?:^|; )zook_theme=([^;]+)/);
-    var preference = match ? decodeURIComponent(match[1]) : "light";
+    var preference = match ? decodeURIComponent(match[1]) : "system";
     var theme = preference === "dark" || preference === "light"
       ? preference
       : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";

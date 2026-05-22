@@ -128,15 +128,22 @@ function appOrigin() {
   return window.location.origin;
 }
 
-function normalizeIndiaPhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  const national = digits.startsWith("91") && digits.length > 10 ? digits.slice(2) : digits;
-  return national.slice(0, 10);
-}
-
 function formatIndiaPhone(value: string) {
-  const digits = normalizeIndiaPhone(value);
-  return digits ? `+91 ${digits}` : "+91 ";
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "+" || trimmed === "+9" || trimmed === "+91") {
+    return trimmed;
+  }
+  let clean = value;
+  if (clean.startsWith("+91")) {
+    clean = clean.slice(3);
+  }
+  let digits = clean.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  return digits ? `+91 ${digits.slice(0, 10)}` : "+91 ";
 }
 
 export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
