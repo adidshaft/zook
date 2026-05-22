@@ -6,12 +6,12 @@ export type WebOrigins = {
 };
 
 function defaultPublicOrigin() {
-  return process.env.NODE_ENV === "production" ? "https://zookfit.in" : "http://localhost:3000";
+  return process.env.NODE_ENV === "production" ? "https://zookfit.com" : "http://localhost:3000";
 }
 
 function defaultDashboardOrigin() {
   return process.env.NODE_ENV === "production"
-    ? "https://dashboard.zookfit.in"
+    ? "https://app.zookfit.in"
     : "http://dashboard.localhost:3000";
 }
 
@@ -59,7 +59,7 @@ export function webHostFromHeader(
   const hostname = host?.split(":")[0]?.trim().toLowerCase() ?? "";
   const dashboardHostname = new URL(origins.dashboard).hostname.toLowerCase();
 
-  if (hostname === dashboardHostname || hostname.startsWith("dashboard.")) {
+  if (hostname === dashboardHostname || hostname === "dashboard.zookfit.in" || hostname.startsWith("dashboard.")) {
     return "dashboard";
   }
   return "public";
