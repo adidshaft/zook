@@ -78,6 +78,7 @@ function CameraActiveBottomNavHider() {
 }
 
 function AnimatedLaser() {
+  const { palette } = useTheme();
   const translateY = useSharedValue(-120);
 
   useEffect(() => {
@@ -95,7 +96,15 @@ function AnimatedLaser() {
     transform: [{ translateY: translateY.value }],
   }));
 
-  return <Animated.View style={[styles.scanLine, animatedStyle]} />;
+  return (
+    <Animated.View
+      style={[
+        styles.scanLine,
+        { backgroundColor: palette.accent.base, shadowColor: palette.accent.base },
+        animatedStyle,
+      ]}
+    />
+  );
 }
 
 export default function Scan() {
@@ -547,7 +556,7 @@ export default function Scan() {
                   </ScannerFrame>
                 </View>
                 <View style={styles.cameraBadge}>
-                  <View style={styles.liveDot} />
+                  <View style={[styles.liveDot, { backgroundColor: palette.accent.base }]} />
                   <Text style={styles.cameraBadgeText}>
                     {busy ? "Checking code..." : "Searching for code..."}
                   </Text>
@@ -622,10 +631,11 @@ export default function Scan() {
                   accessibilityLabel="Check code"
                   style={[
                     styles.codeButton,
+                    { backgroundColor: palette.accent.base },
                     busy || !codeReady ? styles.codeButtonDisabled : null,
                   ]}
                 >
-                  <Ionicons name="arrow-forward" size={18} color={palette.text.inverse} />
+                  <Ionicons name="arrow-forward" size={18} color={palette.text.onAccent} />
                 </Pressable>
               </View>
               {busy ? (
@@ -668,7 +678,7 @@ export default function Scan() {
           {errorMessage ? (
             <GlassCard variant="warning" contentStyle={styles.errorContent}>
               <View style={styles.errorRow}>
-                <Ionicons name="alert-circle-outline" size={18} color={legacyColors.amber} />
+                <Ionicons name="alert-circle-outline" size={18} color={palette.feedback.warning} />
                 <Text style={[styles.errorText, { color: palette.text.primary }]}>{errorMessage}</Text>
               </View>
               <ZookButton
@@ -691,7 +701,7 @@ export default function Scan() {
           {queuedScanCount > 0 ? (
             <GlassCard variant="warning" contentStyle={styles.errorContent}>
               <View style={styles.errorRow}>
-                <Ionicons name="cloud-upload-outline" size={18} color={legacyColors.amber} />
+                <Ionicons name="cloud-upload-outline" size={18} color={palette.feedback.warning} />
                 <Text style={[styles.errorText, { color: palette.text.primary }]}>
                   {queuedScanCount} scan{queuedScanCount === 1 ? "" : "s"} waiting for server
                   confirmation.
@@ -718,7 +728,7 @@ export default function Scan() {
               accessibilityLabel="Use sample data"
               style={styles.devLink}
             >
-              <Text style={styles.devLinkText}>Use sample data</Text>
+              <Text style={[styles.devLinkText, { color: palette.text.secondary }]}>Use sample data</Text>
             </Pressable>
           ) : null}
         </KeyboardAwareScreen>
