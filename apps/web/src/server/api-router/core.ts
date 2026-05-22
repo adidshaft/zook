@@ -2111,7 +2111,7 @@ async function verifyRemoteJwt(input: {
   }
   const header = decodeBase64UrlJson(parts[0]);
   const payload = decodeBase64UrlJson(parts[1]);
-  if (header.alg !== "RS256" || typeof header.kid !== "string") {
+  if ((header.alg !== "RS256" && header.alg !== "ES256") || typeof header.kid !== "string") {
     throw unauthorizedError("Invalid sign-in token.");
   }
   const response = await fetch(input.jwksUrl, { cache: "force-cache" });
@@ -2123,7 +2123,7 @@ async function verifyRemoteJwt(input: {
   if (!jwk) {
     throw unauthorizedError("Invalid sign-in token.");
   }
-  const verifier = createVerify("RSA-SHA256");
+  const verifier = createVerify(header.alg === "RS256" ? "RSA-SHA256" : "SHA256");
   verifier.update(`${parts[0]}.${parts[1]}`);
   verifier.end();
   const signatureValid = verifier.verify(
