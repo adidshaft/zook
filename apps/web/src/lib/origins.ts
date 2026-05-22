@@ -6,7 +6,7 @@ export type WebOrigins = {
 };
 
 function defaultPublicOrigin() {
-  return process.env.NODE_ENV === "production" ? "https://zookfit.com" : "http://localhost:3000";
+  return process.env.NODE_ENV === "production" ? "https://zookfit.in" : "http://localhost:3000";
 }
 
 function defaultDashboardOrigin() {

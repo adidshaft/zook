@@ -27,7 +27,7 @@ describe("origins", () => {
     delete process.env.NEXT_PUBLIC_DASHBOARD_URL;
 
     expect(getOrigins()).toEqual({
-      public: "https://zookfit.com",
+      public: "https://zookfit.in",
       dashboard: "https://app.zookfit.in",
     });
   });
@@ -75,7 +75,7 @@ describe("origins", () => {
     };
 
     expect(webHostFromHeader("dashboard.localhost:3000", origins)).toBe("dashboard");
-    expect(webHostFromHeader("app.zookfit.in", { public: "https://zookfit.com", dashboard: "https://app.zookfit.in" })).toBe("dashboard");
+    expect(webHostFromHeader("app.zookfit.in", { public: "https://zookfit.in", dashboard: "https://app.zookfit.in" })).toBe("dashboard");
     expect(webHostFromHeader("dashboard.zookfit.in", origins)).toBe("dashboard");
     expect(webHostFromHeader("localhost:3000", origins)).toBe("public");
   });
