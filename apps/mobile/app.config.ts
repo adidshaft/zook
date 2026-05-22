@@ -64,7 +64,11 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
           }
         : {}),
     },
-    associatedDomains: ["applinks:zookfit.in", "applinks:app.zookfit.in"],
+    associatedDomains: [
+      "applinks:zookfit.com",
+      "applinks:zookfit.in",
+      "applinks:app.zookfit.in",
+    ],
     icon: "./assets/icons/AppIcon-1024.png",
   },
   android: {
@@ -74,6 +78,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
         action: "VIEW",
         data: [
           { scheme: "https", host: "zookfit.in" },
+          { scheme: "https", host: "zookfit.com" },
           { scheme: "https", host: "app.zookfit.in" },
         ],
         category: ["BROWSABLE", "DEFAULT"],
