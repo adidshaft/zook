@@ -171,7 +171,7 @@ export function BillingSection({
   }, [orgId]);
 
   async function copyReferralCode() {
-    const code = subscription?.platformReferral.code;
+    const code = subscription?.platformReferral?.code;
     if (!code) return;
     try {
       await navigator.clipboard.writeText(code);
@@ -356,12 +356,12 @@ export function BillingSection({
                       : "neutral"
                 }
               >
-                Autopay {formatEnumLabel(subscription.mandate.status)}
+                Autopay {formatEnumLabel(subscription.mandate.status || "")}
               </Pill>
               <h2 className="mt-3 text-xl font-semibold text-white">Active subscription</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-white/52">
                 {formatInr(subscription.mandate.amountPaise)} per {subscription.mandate.billingPeriod}
-                {" "}via {formatEnumLabel(subscription.mandate.provider)} mandate.
+                {" "}via {formatEnumLabel(subscription.mandate.provider || "")} mandate.
               </p>
               <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm text-white/62 sm:grid-cols-2">
                 <div>

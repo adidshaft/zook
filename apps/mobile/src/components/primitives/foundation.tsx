@@ -65,7 +65,7 @@ export type ChipGroupOption<T extends string> = {
 
 // Metro resolves static image requires at build time.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const zookMarkSource = require("../../../assets/icons/ic_launcher_foreground.png");
+const zookMarkSource = require("../../../assets/icons/app-icon-512.png");
 const iconOnlyHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
 
 const brandMarkSizes: Record<BrandMarkSize, number> = {
@@ -2931,6 +2931,7 @@ const styles = StyleSheet.create({
   brandMark: {
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   brandMarkFramed: {
     borderRadius: radii.icon,

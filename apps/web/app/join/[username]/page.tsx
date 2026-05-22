@@ -9,6 +9,7 @@ import { JoinCheckoutButton } from "@/components/join-checkout-button";
 import { InviteCodeForm, JoinRequestButton } from "@/components/join-request-controls";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { formatInr } from "@/lib/format";
+import { PlanSelector } from "@/components/plan-selector";
 import {
   alternatePublicLocale,
   joinModeLabelForLocale,
@@ -366,55 +367,16 @@ export default async function JoinPage({
             </div>
 
             {data.plans.length > 1 ? (
-              <div className="mt-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-                  {t("choosePlan")}
-                </p>
-                <div
-                  className={`mt-2.5 grid gap-2.5 md:grid-cols-2 ${
-                    data.plans.length > 4 ? "max-h-[185px] overflow-y-auto pr-1 scroll-smooth" : ""
-                  }`}
-                  role="radiogroup"
-                  aria-label="Membership plan"
-                >
-                  {data.plans.map((plan) => {
-                    const isSelected = plan.id === selectedPlan.id;
-                    return (
-                      <Link
-                        key={plan.id}
-                        href={joinPath(
-                          org.username,
-                          plan.handle,
-                          referral,
-                          couponPreview?.code,
-                          locale,
-                        )}
-                        className={`zook-focus rounded-[22px] border p-4 transition ${
-                          isSelected
-                            ? "border-[var(--border-focus)] bg-[var(--surface-accent-soft)]"
-                            : "border-[var(--border)] bg-[var(--surface-raised)] hover:bg-[var(--bg-sunken)]"
-                        }`}
-                        role="radio"
-                        aria-checked={isSelected}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="truncate font-medium text-[var(--text-primary)]">
-                              {resolvePlanName(plan)}
-                            </p>
-                            <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                              {validityLabel(plan, locale)} · {visitLabel(plan.visitLimit, locale)}
-                            </p>
-                          </div>
-                          <span className="font-semibold text-[var(--accent-strong)]">
-                            {formatInr(plan.pricePaise)}
-                          </span>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
+              <PlanSelector
+                plans={data.plans}
+                selectedPlanId={selectedPlan.id}
+                username={org.username}
+                referralCode={referral?.code ?? null}
+                couponCode={couponPreview?.code ?? null}
+                locale={locale}
+                choosePlanLabel={t("choosePlan")}
+                changingPlanLabel={t("changingPlan")}
+              />
             ) : (
               <div className="mt-6 rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
@@ -445,8 +407,8 @@ export default async function JoinPage({
               </p>
 
               {/* Secure Checkout CTA high-up for immediate visibility */}
-              <div className="mt-4">
-                {viewerJoinState?.activeSubscription ? (
+              <div className="mt-4 space-y-4">
+                {viewerJoinState?.activeSubscription && (
                   <MembershipStateNotice
                     title={t("membershipInProgressTitle")}
                     copy={t("membershipInProgressCopy")}
@@ -460,7 +422,8 @@ export default async function JoinPage({
                     cta={t("viewMembership")}
                     tone="lime"
                   />
-                ) : data.connected ? (
+                )}
+                {data.connected ? (
                   <JoinCheckoutButton
                     orgId={org.id}
                     planId={selectedPlan.id}

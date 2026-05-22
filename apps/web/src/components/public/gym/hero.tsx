@@ -26,7 +26,7 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
         />
       ) : null}
       <div className="absolute inset-0 bg-gradient-to-br from-[color-mix(in_srgb,var(--bg)_95%,transparent)] via-[color-mix(in_srgb,var(--surface)_85%,transparent)] to-[color-mix(in_srgb,var(--bg-sunken)_95%,transparent)] dark:from-black/82 dark:via-black/62 dark:to-black/82" />
-      <div className="relative">
+      <div className="relative z-10">
         {org.coverImageUrl ? (
           <div className="relative mb-5 h-48 w-full overflow-hidden rounded-2xl border border-[var(--border)]">
             <Image
@@ -77,23 +77,25 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
         {org.openingHoursSummary ? (
           <p className="mt-3 text-sm text-[var(--accent-strong)] font-semibold">{org.openingHoursSummary}</p>
         ) : null}
-      </div>
-      <div className="mt-7 flex flex-wrap gap-2">
-        {fallbackAmenities(org).map((amenity) => (
-          <Pill key={amenity} className="border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]">
-            {amenity}
-          </Pill>
-        ))}
-      </div>
-      <div className="mt-10 flex flex-wrap gap-6">
-        {[t("choosePlan"), t("verifyEmail"), t("paySecurely")].map((step, index) => (
-          <div key={step} className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent-fill)] text-xs font-bold text-[var(--text-on-accent)]">
-              {index + 1}
-            </span>
-            <p className="text-sm text-[var(--text-secondary)] font-medium">{step}</p>
-          </div>
-        ))}
+
+        <div className="mt-7 flex flex-wrap gap-2 relative">
+          {fallbackAmenities(org).map((amenity) => (
+            <Pill key={amenity} className="border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]">
+              {amenity}
+            </Pill>
+          ))}
+        </div>
+
+        <div className="mt-10 flex flex-wrap gap-6 relative">
+          {[t("choosePlan"), t("verifyEmail"), t("paySecurely")].map((step, index) => (
+            <div key={step} className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent-fill)] text-xs font-bold text-[var(--text-on-accent)]">
+                {index + 1}
+              </span>
+              <p className="text-sm text-[var(--text-primary)] font-semibold">{step}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
