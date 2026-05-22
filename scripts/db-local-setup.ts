@@ -1,8 +1,8 @@
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
+import { readdirSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
 import { env, loadLocalEnvironment, rootDir } from "./shared";
 
-const baselineMigration = "20260503000000_initial_baseline";
 const schemaArgs = ["--schema", "prisma/schema.prisma"];
 
 function run(command: string, args: string[], label: string) {
@@ -86,7 +86,7 @@ function hasNoSchemaDiff(databaseUrl: string) {
   return result.status === 0;
 }
 
-function resolveBaseline() {
+function resolveMigrationAsApplied(migrationName: string) {
   run(
     "pnpm",
     [
@@ -95,11 +95,68 @@ function resolveBaseline() {
       "migrate",
       "resolve",
       "--applied",
-      baselineMigration,
+      migrationName,
       ...schemaArgs,
     ],
-    "Prisma baseline resolve",
+    `Prisma resolve ${migrationName}`,
   );
+}
+
+function rollbackFailedMigration(migrationName: string) {
+  const result = runCaptured("pnpm", [
+    "tsx",
+    "scripts/prisma-db.ts",
+    "migrate",
+    "resolve",
+    "--rolled-back",
+    migrationName,
+    ...schemaArgs,
+  ]);
+
+  printCaptured(result);
+  return result.status === 0;
+}
+
+function migrationNames() {
+  return readdirSync(`${rootDir}/packages/db/prisma/migrations`, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+}
+
+function markCurrentSchemaMigrationsApplied() {
+  for (const migrationName of migrationNames()) {
+    const applied = runCaptured("pnpm", [
+      "tsx",
+      "scripts/prisma-db.ts",
+      "migrate",
+      "resolve",
+      "--applied",
+      migrationName,
+      ...schemaArgs,
+    ]);
+
+    if (applied.status === 0) {
+      printCaptured(applied);
+      continue;
+    }
+
+    const output = `${applied.stdout ?? ""}\n${applied.stderr ?? ""}`;
+    if (output.includes("P3008") || output.includes("already recorded as applied")) {
+      printCaptured(applied);
+      continue;
+    }
+
+    if (!output.includes("failed migration")) {
+      printCaptured(applied);
+      throw new Error(`Prisma resolve ${migrationName} failed.`);
+    }
+
+    if (!rollbackFailedMigration(migrationName)) {
+      throw new Error(`Prisma rollback resolve ${migrationName} failed.`);
+    }
+    resolveMigrationAsApplied(migrationName);
+  }
 }
 
 function deployWithExistingDatabaseBaseline() {
@@ -111,7 +168,7 @@ function deployWithExistingDatabaseBaseline() {
   }
 
   const output = `${firstDeploy.stdout ?? ""}\n${firstDeploy.stderr ?? ""}`;
-  if (!output.includes("P3005")) {
+  if (!output.includes("P3005") && !output.includes("P3009")) {
     throw new Error(
       `Prisma migrate deploy failed with exit code ${firstDeploy.status ?? "unknown"}.`,
     );
@@ -132,8 +189,8 @@ function deployWithExistingDatabaseBaseline() {
     );
   }
 
-  console.log("Existing schema matches Prisma. Marking the initial baseline migration as applied.");
-  resolveBaseline();
+  console.log("Existing schema matches Prisma. Marking represented migrations as applied.");
+  markCurrentSchemaMigrationsApplied();
 
   const secondDeploy = runDeploy();
   printCaptured(secondDeploy);

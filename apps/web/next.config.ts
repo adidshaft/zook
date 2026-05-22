@@ -60,7 +60,11 @@ const sentryBuildOptions = {
 };
 
 const configuredNextConfig = withBundleAnalyzer(withNextIntl(nextConfig));
+const enableSentryBuildIntegration =
+  process.env.ERROR_REPORTER === "sentry" &&
+  process.env.SENTRY_UPLOAD_SOURCE_MAPS === "true" &&
+  process.env.NODE_ENV !== "development";
 
-export default process.env.ERROR_REPORTER === "sentry"
+export default enableSentryBuildIntegration
   ? withSentryConfig(configuredNextConfig, sentryBuildOptions)
   : configuredNextConfig;
