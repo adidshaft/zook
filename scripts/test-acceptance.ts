@@ -46,6 +46,15 @@ async function main() {
     cwd: rootDir,
     env: {
       ...process.env,
+      APPLE_BUNDLE_ID: process.env.APPLE_BUNDLE_ID ?? "com.zook.app",
+      APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID ?? "com.zook.app",
+      APPLE_SERVICE_ID: process.env.APPLE_SERVICE_ID ?? "com.zook.web",
+      NEXT_PUBLIC_APPLE_CLIENT_ID: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID ?? "com.zook.app",
+      GOOGLE_WEB_CLIENT_ID:
+        process.env.GOOGLE_WEB_CLIENT_ID ?? "test-google-web.apps.googleusercontent.com",
+      NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID:
+        process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ??
+        "test-google-web.apps.googleusercontent.com",
       RUN_DB_WEB_TESTS: "1",
     },
     stdio: "inherit",

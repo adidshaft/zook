@@ -44,7 +44,11 @@ export function DashboardSidebar({
                     key={href}
                     href={href}
                     aria-current={active ? "page" : undefined}
-                    className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+                    className={`relative flex items-center gap-3 py-2.5 text-sm transition ${
+                      item.indent
+                        ? "ml-5 pl-3 border-l border-[var(--border-subtle)] rounded-l-none rounded-r-xl"
+                        : "px-3 rounded-xl"
+                    } ${
                       active
                         ? "bg-[var(--surface-accent-soft)] text-[var(--accent-strong)] before:absolute before:left-0 before:top-1/2 before:h-3/5 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--accent-strong)]"
                         : "text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"

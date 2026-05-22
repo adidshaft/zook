@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Reanimated, {
   Easing,
   useAnimatedStyle,
@@ -12,15 +12,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BrandMark } from "@/components/primitives";
 import { useReduceMotion } from "@/lib/motion";
-import { legacyColors } from "@/lib/theme";
+import { legacyColors, useTheme } from "@/lib/theme";
 
 export default function OnboardingSplash() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
-  const wordmarkOpacity = useSharedValue(reduceMotion ? 1 : 0);
-  const wordmarkScale = useSharedValue(reduceMotion ? 1 : 0.96);
-  const markOpacity = useSharedValue(reduceMotion ? 1 : 0);
+  const { palette } = useTheme();
+  const useStaticIntro = reduceMotion || Platform.OS === "android";
+  const wordmarkOpacity = useSharedValue(useStaticIntro ? 1 : 0);
+  const wordmarkScale = useSharedValue(useStaticIntro ? 1 : 0.96);
+  const markOpacity = useSharedValue(useStaticIntro ? 1 : 0);
   const wordmarkStyle = useAnimatedStyle(() => ({
     opacity: wordmarkOpacity.value,
     transform: [{ scale: wordmarkScale.value }],
@@ -28,7 +30,7 @@ export default function OnboardingSplash() {
   const markStyle = useAnimatedStyle(() => ({ opacity: markOpacity.value }));
 
   useEffect(() => {
-    if (!reduceMotion) {
+    if (!useStaticIntro) {
       wordmarkOpacity.value = withTiming(1, {
         duration: 720,
         easing: Easing.out(Easing.cubic),
@@ -45,10 +47,10 @@ export default function OnboardingSplash() {
 
     const timer = setTimeout(() => {
       router.push("/onboarding/language" as never);
-    }, reduceMotion ? 650 : 2000);
+    }, useStaticIntro ? 650 : 2000);
 
     return () => clearTimeout(timer);
-  }, [markOpacity, reduceMotion, router, wordmarkOpacity, wordmarkScale]);
+  }, [markOpacity, router, useStaticIntro, wordmarkOpacity, wordmarkScale]);
 
   return (
     <Pressable
@@ -56,24 +58,24 @@ export default function OnboardingSplash() {
       accessibilityRole="button"
       accessibilityLabel="Skip intro"
       onPress={() => router.push("/onboarding/language" as never)}
-      style={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}
+      style={[styles.screen, { backgroundColor: palette.bg.app, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}
     >
       <View style={styles.center}>
         <Reanimated.View style={[styles.wordmark, wordmarkStyle]}>
           <BrandMark size="lg" />
-          <Text style={styles.wordmarkText}>Zook</Text>
+          <Text style={[styles.wordmarkText, { color: palette.accent.base }]}>Zook</Text>
         </Reanimated.View>
         <Reanimated.View style={[styles.scanMark, markStyle]}>
           <View style={styles.scanCorners}>
-            <View style={[styles.corner, styles.cornerTopLeft]} />
-            <View style={[styles.corner, styles.cornerTopRight]} />
-            <View style={[styles.corner, styles.cornerBottomLeft]} />
-            <View style={[styles.corner, styles.cornerBottomRight]} />
+            <View style={[styles.corner, styles.cornerTopLeft, { borderColor: palette.accent.base }]} />
+            <View style={[styles.corner, styles.cornerTopRight, { borderColor: palette.accent.base }]} />
+            <View style={[styles.corner, styles.cornerBottomLeft, { borderColor: palette.accent.base }]} />
+            <View style={[styles.corner, styles.cornerBottomRight, { borderColor: palette.accent.base }]} />
           </View>
-          <Text style={styles.scanText}>scan to enter</Text>
+          <Text style={[styles.scanText, { color: palette.text.secondary }]}>scan to enter</Text>
         </Reanimated.View>
       </View>
-      <Text style={styles.skipText}>Tap to skip</Text>
+      <Text style={[styles.skipText, { color: palette.text.tertiary }]}>Tap to skip</Text>
     </Pressable>
   );
 }
@@ -81,7 +83,6 @@ export default function OnboardingSplash() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: legacyColors.bg,
     paddingHorizontal: 24,
   },
   center: {

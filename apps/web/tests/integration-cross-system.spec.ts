@@ -35,6 +35,10 @@ test.describe.configure({ mode: "serial" });
 
 test.describe("cross-system integration scenarios", () => {
   test.beforeEach(async () => {
+    test.skip(
+      process.env.RUN_MOBILE_INTEGRATION_TESTS !== "1",
+      "Mobile integration scenarios require the iOS simulator, Maestro, and the mobile backend harness.",
+    );
     requireDb();
     await withFreshSeed();
     await expectMobileBackendHealthy();
@@ -452,9 +456,13 @@ async function getPrimaryOrg() {
 }
 
 async function expectMobileBackendHealthy() {
+  const backendUrl =
+    process.env.MOBILE_API_BASE_URL?.trim() ??
+    process.env.PLAYWRIGHT_BASE_URL?.trim() ??
+    "http://127.0.0.1:3120";
   let lastStatus = 0;
   for (let attempt = 0; attempt < 10; attempt += 1) {
-    const response = await fetch("http://127.0.0.1:3000/api/auth/sessions").catch(() => null);
+    const response = await fetch(`${backendUrl}/api/auth/sessions`).catch(() => null);
     lastStatus = response?.status ?? 0;
     if (lastStatus === 401) {
       return;

@@ -1,9 +1,10 @@
 import type { PropsWithChildren } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter, type Href } from "expo-router";
 
 import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography, useTheme } from "@/lib/theme";
 
 export function HomeCardShell({
   body,
@@ -23,18 +24,30 @@ export function HomeCardShell({
   title: string;
   tone?: "neutral" | "lime" | "amber" | "red" | "blue";
 }>) {
+  const router = useRouter();
+  const { palette } = useTheme();
+
   return (
-    <GlassCard testID={testID} variant="selected" glow contentStyle={styles.card}>
+    <GlassCard
+      testID={testID}
+      variant={Platform.OS === "android" ? "default" : "selected"}
+      glow
+      contentStyle={styles.card}
+    >
       <View style={styles.header}>
         <IconBubble icon={icon} tone={tone} size={46} />
         <View style={styles.copy}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.body}>{body}</Text>
+          <Text style={[styles.title, { color: palette.text.primary }]}>{title}</Text>
+          <Text style={[styles.body, { color: palette.text.secondary }]}>{body}</Text>
         </View>
       </View>
       {children}
       {ctaHref && ctaLabel ? (
-        <ZookButton href={ctaHref as never} icon="chevron-forward-outline" fullWidth>
+        <ZookButton
+          onPress={() => router.push(ctaHref as Href)}
+          icon="chevron-forward-outline"
+          fullWidth
+        >
           {ctaLabel}
         </ZookButton>
       ) : null}
@@ -43,19 +56,25 @@ export function HomeCardShell({
 }
 
 export function StreakChip({ value }: { value: number }) {
+  const { palette } = useTheme();
   return (
-    <View style={styles.chip}>
-      <Text style={styles.chipText}>{value} day streak</Text>
+    <View style={[styles.chip, { borderColor: palette.accent.soft, backgroundColor: palette.surface.accentSoft }]}>
+      <Text style={[styles.chipText, { color: palette.accent.base }]}>{value} day streak</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: { gap: spacing.lg },
-  header: { alignItems: "center", flexDirection: "row", gap: spacing.md },
-  copy: { flex: 1, gap: 4 },
-  title: { color: legacyColors.text, ...typography.title },
-  body: { color: legacyColors.muted, ...typography.body },
+  header: {
+    alignItems: "center",
+    backgroundColor: "transparent",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  copy: { backgroundColor: "transparent", flex: 1, gap: 4 },
+  title: { backgroundColor: "transparent", color: legacyColors.text, ...typography.title },
+  body: { backgroundColor: "transparent", color: legacyColors.muted, ...typography.body },
   chip: {
     alignSelf: "flex-start",
     backgroundColor: "rgba(188,255,0,0.10)",

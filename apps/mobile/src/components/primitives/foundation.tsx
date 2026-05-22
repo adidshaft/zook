@@ -4,7 +4,7 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { useContext, useEffect, useState, type ReactNode } from "react";
+import { useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Keyboard,
@@ -44,7 +44,7 @@ import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useBottomScrollPadding, useStickyActionOffset } from "@/lib/use-layout-padding";
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/domains";
-import { legacyColors, layout, palettes, radii, shadows, spacing, typography } from "@/lib/theme";
+import { legacyColors, layout, palettes, radii, shadows, spacing, typography, useTheme } from "@/lib/theme";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
@@ -115,6 +115,66 @@ const tonePalettes: Record<
     glowColor: "rgba(185,169,255,0.18)",
   },
 };
+
+export function getTonePalette(tone: PillTone, mode: "light" | "dark", palette: any) {
+  if (mode === "dark") {
+    return {
+      borderColor: tone === "neutral" ? "rgba(255,255,255,0.14)" :
+                   tone === "lime" ? "rgba(185,244,85,0.42)" :
+                   tone === "amber" ? "rgba(242,201,76,0.4)" :
+                   tone === "red" ? "rgba(255,90,61,0.4)" :
+                   tone === "blue" ? "rgba(125,211,252,0.35)" :
+                   "rgba(185,169,255,0.35)",
+      color: tone === "neutral" ? "#8B9586" :
+             tone === "lime" ? palette.accent.base :
+             tone === "amber" ? palette.feedback.warning :
+             tone === "red" ? palette.feedback.danger :
+             tone === "blue" ? palette.feedback.info :
+             palette.text.primary,
+      backgroundColor: tone === "neutral" ? "rgba(255,255,255,0.06)" :
+                       tone === "lime" ? "rgba(185,244,85,0.14)" :
+                       tone === "amber" ? "rgba(242,201,76,0.13)" :
+                       tone === "red" ? "rgba(255,90,61,0.13)" :
+                       tone === "blue" ? "rgba(125,211,252,0.11)" :
+                       "rgba(185,169,255,0.11)",
+      glowColor: tone === "neutral" ? "rgba(255,255,255,0.1)" :
+                 tone === "lime" ? "rgba(185,244,85,0.26)" :
+                 tone === "amber" ? "rgba(242,201,76,0.22)" :
+                 tone === "red" ? "rgba(255,90,61,0.22)" :
+                 tone === "blue" ? "rgba(125,211,252,0.18)" :
+                 "rgba(185,169,255,0.18)",
+    };
+  } else {
+    return {
+      borderColor: tone === "neutral" ? "rgba(17,21,15,0.08)" :
+                   tone === "lime" ? "rgba(30,63,32,0.18)" :
+                   tone === "amber" ? "rgba(180,83,9,0.22)" :
+                   tone === "red" ? "rgba(185,28,28,0.18)" :
+                   tone === "blue" ? "rgba(3,105,161,0.18)" :
+                   "rgba(107,33,168,0.18)",
+      color: tone === "neutral" ? "#3F463C" :
+             tone === "lime" ? "#1F3E24" :
+             tone === "amber" ? "#B45309" :
+             tone === "red" ? "#B91C1C" :
+             tone === "blue" ? "#0369A1" :
+             "#6B21A8",
+      backgroundColor: tone === "neutral" ? "rgba(17,21,15,0.04)" :
+                       tone === "lime" ? "rgba(30,63,32,0.06)" :
+                       tone === "amber" ? "rgba(180,83,9,0.06)" :
+                       tone === "red" ? "rgba(185,28,28,0.06)" :
+                       tone === "blue" ? "rgba(3,105,161,0.06)" :
+                       "rgba(107,33,168,0.06)",
+      glowColor: "rgba(17,21,15,0.04)",
+    };
+  }
+}
+
+export function useTonePalette(tone: PillTone) {
+  const { palette, mode } = useTheme();
+
+  return useMemo(() => getTonePalette(tone, mode, palette), [tone, palette, mode]);
+}
+
 
 const buttonPalettes: Record<
   ButtonVariant,
@@ -296,6 +356,7 @@ export function ZookScreen({
   testID?: string;
 }) {
   const insets = useSafeAreaInsets();
+  const { palette } = useTheme();
   return (
     <View
       testID={testID}
@@ -304,6 +365,7 @@ export function ZookScreen({
         {
           paddingTop: insets.top,
           paddingBottom: bottomInset ? insets.bottom : 0,
+          backgroundColor: palette.bg.app,
         },
         style,
       ]}
@@ -378,7 +440,7 @@ export function SafeAreaScreen(props: Parameters<typeof ZookScreen>[0]) {
 
 export function BrandMark({
   size = "md",
-  framed = false,
+  framed = true,
   style,
 }: {
   size?: BrandMarkSize;
@@ -472,9 +534,52 @@ export function GlassCard({
   onPress?: PressHandler;
   testID?: string;
 }) {
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
   const palette = glassCardVariants[variant];
   const resolvedGlowTone = glowTone ?? (glow ? "lime" : undefined);
   const resolvedRadius = radius ?? (variant === "compact" ? radii.smallCard : radii.mainCard);
+
+  // Dynamic overrides for liquid glassmorphism
+  let cardBg = palette.backgroundColor;
+  let cardBorder = palette.borderColor;
+
+  if (isDark) {
+    if (variant === "default" || variant === "compact") {
+      cardBg = "rgba(18, 20, 19, 0.65)"; // sleek dark obsidian glass
+      cardBorder = "rgba(255, 255, 255, 0.08)"; // hairline boundary
+    } else if (variant === "selected") {
+      cardBg = "rgba(185, 244, 85, 0.12)"; // lime accent soft
+      cardBorder = "rgba(185, 244, 85, 0.35)";
+    } else if (variant === "success") {
+      cardBg = "rgba(125, 211, 172, 0.12)";
+      cardBorder = "rgba(125, 211, 172, 0.35)";
+    } else if (variant === "warning") {
+      cardBg = "rgba(242, 201, 76, 0.12)";
+      cardBorder = "rgba(242, 201, 76, 0.35)";
+    } else if (variant === "danger") {
+      cardBg = "rgba(255, 90, 61, 0.12)";
+      cardBorder = "rgba(255, 90, 61, 0.35)";
+    }
+  } else {
+    if (variant === "default" || variant === "compact") {
+      cardBg = "rgba(255, 255, 255, 0.72)"; // sleek milky glass
+      cardBorder = "rgba(17, 21, 15, 0.08)"; // hairline boundary
+    } else if (variant === "selected") {
+      cardBg = "rgba(31, 62, 36, 0.06)";
+      cardBorder = "rgba(31, 62, 36, 0.16)";
+    } else if (variant === "success") {
+      cardBg = "rgba(22, 163, 74, 0.06)";
+      cardBorder = "rgba(22, 163, 74, 0.16)";
+    } else if (variant === "warning") {
+      cardBg = "rgba(217, 119, 6, 0.06)";
+      cardBorder = "rgba(217, 119, 6, 0.16)";
+    } else if (variant === "danger") {
+      cardBg = "rgba(220, 38, 38, 0.06)";
+      cardBorder = "rgba(220, 38, 38, 0.16)";
+    }
+  }
+
   // Android draws `elevation` shadows behind the view; when the same view
   // has `overflow: hidden`, the shadow gets clipped *inside* the card and
   // shows up as a phantom dark rectangle behind the content. Split the
@@ -490,8 +595,8 @@ export function GlassCard({
   const innerStyle: StyleProp<ViewStyle> = [
     styles.glassCard,
     {
-      backgroundColor: palette.backgroundColor,
-      borderColor: palette.borderColor,
+      backgroundColor: cardBg,
+      borderColor: cardBorder,
       borderRadius: resolvedRadius,
     },
     resolvedGlowTone ? styles.glassCardGlowBorder : null,
@@ -501,8 +606,8 @@ export function GlassCard({
       {Platform.OS === "ios" ? (
         <BlurView
           pointerEvents="none"
-          intensity={14}
-          tint="dark"
+          intensity={isDark ? 24 : 16}
+          tint={isDark ? "dark" : "light"}
           // iOS composes BlurView above sibling flex children unless we
           // explicitly pin it behind — without this, primary buttons inside
           // a tinted card lose contrast under the blur overlay.
@@ -512,7 +617,7 @@ export function GlassCard({
       <View
         style={[
           styles.glassContent,
-          styles.glassContentLayer,
+          Platform.OS === "ios" ? styles.glassContentLayer : null,
           padding !== undefined ? { padding } : null,
           contentStyle,
         ]}
@@ -577,7 +682,7 @@ export function ZookChip({
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
 }) {
-  const palette = tonePalettes[tone];
+  const palette = useTonePalette(tone);
   return (
     <View
       style={[
@@ -721,22 +826,63 @@ export function MobileHeader({
   showProfileShortcut?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
-  const resolvedLeading =
-    leading ?? (!centered && showProfileShortcut ? <ProfileShortcut /> : null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const { palette, mode } = useTheme();
+
+  // Root tabs where we should not display a back button
+  const isRootTab =
+    ["/", "/plan", "/scan", "/shop", "/you", "/owner", "/trainer", "/reception"].includes(pathname) ||
+    pathname === "";
+
+  const canGoBack = !isRootTab;
+
+  let resolvedLeading = leading;
+  if (!resolvedLeading) {
+    if (canGoBack) {
+      resolvedLeading = (
+        <Pressable
+          onPress={() => pressWithHaptics(() => router.canGoBack() ? router.back() : router.replace("/"))}
+          hitSlop={iconOnlyHitSlop}
+          style={({ pressed }) => [
+            {
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: mode === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(17, 21, 15, 0.04)",
+              borderWidth: 1,
+              borderColor: palette.border.subtle,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
+        </Pressable>
+      );
+    } else if (!centered && showProfileShortcut) {
+      resolvedLeading = <ProfileShortcut />;
+    }
+  }
 
   return (
     <View style={[styles.mobileHeader, centered ? styles.mobileHeaderCentered : null, style]}>
       {resolvedLeading ? <View style={styles.headerSide}>{resolvedLeading}</View> : null}
       <View style={[styles.mobileHeaderCopy, centered ? styles.centeredCopy : null]}>
         {chip}
-        {eyebrow ? <Text style={styles.headerEyebrow}>{eyebrow}</Text> : null}
-        {contextSlot ? <View style={styles.headerContextSlot}>{contextSlot}</View> : null}
-        <Text style={[styles.headerTitle, centered ? styles.centerText : null]}>{title}</Text>
+        {eyebrow ? (
+          <Text style={[styles.headerEyebrow, { color: palette.text.tertiary }]}>{eyebrow}</Text>
+        ) : null}
+        <Text style={[styles.headerTitle, centered ? styles.centerText : null, { color: palette.text.primary }]}>
+          {title}
+        </Text>
         {subtitle ? (
-          <Text style={[styles.headerSubtitle, centered ? styles.centerText : null]}>
+          <Text style={[styles.headerSubtitle, centered ? styles.centerText : null, { color: palette.text.secondary }]}>
             {subtitle}
           </Text>
         ) : null}
+        {contextSlot ? <View style={styles.headerContextSlot}>{contextSlot}</View> : null}
       </View>
       {trailing ? <View style={styles.headerSide}>{trailing}</View> : null}
     </View>
@@ -826,11 +972,16 @@ export function SectionHeader({
   subtitle?: string;
   action?: ReactNode;
 }) {
+  const { palette } = useTheme();
   return (
     <View style={styles.sectionGroup}>
-      {eyebrow ? <Text style={styles.sectionEyebrow}>{eyebrow}</Text> : null}
+      {eyebrow ? (
+        <Text style={[styles.sectionEyebrow, { color: palette.text.tertiary }]}>{eyebrow}</Text>
+      ) : null}
       <SectionLabel title={title} action={action} />
-      {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+      {subtitle ? (
+        <Text style={[styles.sectionSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
+      ) : null}
     </View>
   );
 }
@@ -883,9 +1034,10 @@ export function ActionButtonRow({ children }: { children: ReactNode }) {
 }
 
 export function SectionLabel({ title, action }: { title: string; action?: ReactNode }) {
+  const { palette } = useTheme();
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{title}</Text>
       {action ? <View>{action}</View> : null}
     </View>
   );
@@ -900,7 +1052,7 @@ export function IconBubble({
   tone?: PillTone;
   size?: number;
 }) {
-  const palette = tonePalettes[tone];
+  const palette = useTonePalette(tone);
   return (
     <View
       style={[
@@ -956,8 +1108,38 @@ export function ZookButton({
   hapticWeight?: HapticWeight;
   testID?: string;
 }) {
+  const { palette: themePalette, mode } = useTheme();
+  const isDark = mode === "dark";
   const resolvedVariant = variant ?? variantFromTone(tone);
-  const palette = buttonPalettes[resolvedVariant];
+  const staticPalette = buttonPalettes[resolvedVariant];
+
+  let btnBg = staticPalette.backgroundColor;
+  let btnBorder = staticPalette.borderColor;
+  let btnColor = staticPalette.color;
+  let btnGlow = Platform.OS === "ios" ? staticPalette.glow : null;
+
+  if (resolvedVariant === "primary") {
+    btnBg = themePalette.accent.fill;
+    btnBorder = themePalette.accent.fill;
+    btnColor = themePalette.text.onAccent;
+    btnGlow = isDark ? shadows.glowLimeSoft : null;
+  } else if (resolvedVariant === "secondary") {
+    btnBg = isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(17, 21, 15, 0.05)";
+    btnBorder = isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(17, 21, 15, 0.12)";
+    btnColor = themePalette.text.primary;
+    btnGlow = null;
+  } else if (resolvedVariant === "ghost") {
+    btnBg = "transparent";
+    btnBorder = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(17, 21, 15, 0.1)";
+    btnColor = themePalette.text.primary;
+    btnGlow = null;
+  } else if (resolvedVariant === "danger") {
+    btnBg = isDark ? "rgba(255, 90, 61, 0.1)" : "rgba(220, 38, 38, 0.06)";
+    btnBorder = isDark ? "rgba(255, 90, 61, 0.28)" : "rgba(220, 38, 38, 0.16)";
+    btnColor = themePalette.feedback.danger;
+    btnGlow = null;
+  }
+
   const buttonSizeStyle = buttonSizeStyles[size];
   const buttonTextSizeStyle = buttonTextSizeStyles[size];
   const isDisabled = disabled || busy;
@@ -965,10 +1147,10 @@ export function ZookButton({
   const staticButtonStyle = StyleSheet.flatten([
     styles.button,
     buttonSizeStyle,
-    palette.glow,
+    btnGlow,
     {
-      backgroundColor: palette.backgroundColor,
-      borderColor: palette.borderColor,
+      backgroundColor: btnBg,
+      borderColor: btnBorder,
     },
     fullWidth ? styles.fullWidth : null,
     isDisabled ? styles.disabled : null,
@@ -1003,15 +1185,15 @@ export function ZookButton({
           style={[staticButtonStyle, animatedStyle]}
         >
           {busy ? (
-            <ActivityIndicator size="small" color={palette.color} />
+            <ActivityIndicator size="small" color={btnColor} />
           ) : icon ? (
-            <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={palette.color} />
+            <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={btnColor} />
           ) : null}
           <Text
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.72}
-            style={[styles.buttonText, buttonTextSizeStyle, { color: palette.color }, textStyle]}
+            style={[styles.buttonText, buttonTextSizeStyle, { color: btnColor }, textStyle]}
           >
             {contentLabel}
           </Text>
@@ -1050,10 +1232,10 @@ export function ZookButton({
       style={({ pressed }) => [
         styles.button,
         buttonSizeStyle,
-        palette.glow,
+        btnGlow,
         {
-          backgroundColor: palette.backgroundColor,
-          borderColor: palette.borderColor,
+          backgroundColor: btnBg,
+          borderColor: btnBorder,
         },
         pressed && !isDisabled ? styles.pressed : null,
         fullWidth ? styles.fullWidth : null,
@@ -1063,15 +1245,15 @@ export function ZookButton({
       ]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={palette.color} />
+        <ActivityIndicator size="small" color={btnColor} />
       ) : icon ? (
-        <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={palette.color} />
+        <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={btnColor} />
       ) : null}
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.72}
-        style={[styles.buttonText, buttonTextSizeStyle, { color: palette.color }, textStyle]}
+        style={[styles.buttonText, buttonTextSizeStyle, { color: btnColor }, textStyle]}
       >
         {contentLabel}
       </Text>
@@ -1221,7 +1403,7 @@ export function StatusRing({
   size?: number;
   progress?: number;
 }) {
-  const palette = tonePalettes[tone];
+  const palette = useTonePalette(tone);
   const activeRotation = progress >= 0.7 ? "34deg" : progress >= 0.45 ? "-24deg" : "-72deg";
   return (
     <View
@@ -1287,7 +1469,7 @@ export function EntryCodeCard({
   detail?: string;
   tone?: PillTone;
 }) {
-  const palette = tonePalettes[tone];
+  const palette = useTonePalette(tone);
   return (
     <GlassCard
       glow={tone === "lime"}
@@ -1319,14 +1501,17 @@ export function ListRow({
   tone?: PillTone;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { palette } = useTheme();
   return (
     <View style={[styles.listRow, style]}>
       {leading ?? (icon ? <IconBubble icon={icon} tone={tone} size={40} /> : null)}
       <View style={styles.listRowCopy}>
-        <Text style={styles.listRowTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.listRowSubtitle}>{subtitle}</Text> : null}
+        <Text style={[styles.listRowTitle, { color: palette.text.primary }]}>{title}</Text>
+        {subtitle ? (
+          <Text style={[styles.listRowSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
+        ) : null}
       </View>
-      {trailing ?? <Ionicons name="chevron-forward" size={16} color={legacyColors.subtle} />}
+      {trailing ?? <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} />}
     </View>
   );
 }
@@ -1358,12 +1543,13 @@ export function TextField({
   ...props
 }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
+  const { palette, mode } = useTheme();
   const disabled = props.editable === false;
   const labelSuffix = required ? " *" : optional ? " optional" : "";
   return (
     <View style={[styles.inputGroup, style]}>
       {label ? (
-        <Text style={styles.inputLabel}>
+        <Text style={[styles.inputLabel, { color: palette.text.secondary }]}>
           {label}
           {labelSuffix}
         </Text>
@@ -1371,6 +1557,10 @@ export function TextField({
       <View
         style={[
           styles.inputWrapper,
+          {
+            borderColor: focused ? palette.border.focus : error ? palette.feedback.danger : palette.border.default,
+            backgroundColor: mode === "dark" ? "rgba(255, 255, 255, 0.03)" : "rgba(17, 21, 15, 0.03)",
+          },
           focused ? styles.inputWrapperFocused : null,
           error ? styles.inputWrapperError : null,
           readonly ? styles.inputWrapperReadonly : null,
@@ -1389,8 +1579,13 @@ export function TextField({
             setFocused(false);
             props.onBlur?.(event);
           }}
-          placeholderTextColor="rgba(255,255,255,0.55)"
-          style={[styles.input, props.multiline ? styles.inputMultiline : null, inputStyle]}
+          placeholderTextColor={palette.text.tertiary}
+          style={[
+            styles.input,
+            { color: palette.text.primary },
+            props.multiline ? styles.inputMultiline : null,
+            inputStyle,
+          ]}
         />
         {trailing}
       </View>
@@ -1399,7 +1594,7 @@ export function TextField({
           {error}
         </Text>
       ) : null}
-      {!error && hint ? <Text style={styles.inputHint}>{hint}</Text> : null}
+      {!error && hint ? <Text style={[styles.inputHint, { color: palette.text.tertiary }]}>{hint}</Text> : null}
     </View>
   );
 }
@@ -1485,7 +1680,8 @@ export function ProductCard({
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }) {
-  const palette = tonePalettes[tone];
+  const { palette: themePalette, mode } = useTheme();
+  const palette = useTonePalette(tone);
   const increment = onIncrement ?? onPress;
   const canIncrement = !disabled && !incrementDisabled && Boolean(increment);
   const canDecrement = !disabled && Boolean(onDecrement);
@@ -1519,10 +1715,10 @@ export function ProductCard({
         ) : null}
       </View>
       <View style={styles.productInfo}>
-        <Text numberOfLines={2} style={styles.productName}>
+        <Text numberOfLines={2} style={[styles.productName, { color: themePalette.text.primary }]}>
           {name}
         </Text>
-        <Text numberOfLines={1} style={styles.productMeta}>
+        <Text numberOfLines={1} style={[styles.productMeta, { color: themePalette.text.secondary }]}>
           {stock}
         </Text>
       </View>
@@ -1531,12 +1727,20 @@ export function ProductCard({
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.72}
-          style={styles.productPrice}
+          style={[styles.productPrice, { color: themePalette.text.primary }]}
         >
           {price}
         </Text>
         {quantity > 0 ? (
-          <View style={styles.productStepper}>
+          <View
+            style={[
+              styles.productStepper,
+              {
+                borderColor: themePalette.accent.base,
+                backgroundColor: mode === "dark" ? "rgba(185,244,85,0.12)" : "rgba(31,62,36,0.06)",
+              },
+            ]}
+          >
             <Pressable
               testID={testID ? `${testID}-decrement` : undefined}
               onPress={() => {
@@ -1549,9 +1753,9 @@ export function ProductCard({
               hitSlop={iconOnlyHitSlop}
               style={[styles.productStepperButton, !canDecrement ? styles.disabled : null]}
             >
-              <Ionicons name="remove" size={16} color={legacyColors.lime} />
+              <Ionicons name="remove" size={16} color={themePalette.accent.strong} />
             </Pressable>
-            <Text style={styles.productQuantity}>{quantity}</Text>
+            <Text style={[styles.productQuantity, { color: themePalette.text.primary }]}>{quantity}</Text>
             <Pressable
               testID={testID ? `${testID}-increment` : undefined}
               onPress={() => {
@@ -1564,7 +1768,7 @@ export function ProductCard({
               hitSlop={iconOnlyHitSlop}
               style={[styles.productStepperButton, !canIncrement ? styles.disabled : null]}
             >
-              <Ionicons name="add" size={16} color={legacyColors.lime} />
+              <Ionicons name="add" size={16} color={themePalette.accent.strong} />
             </Pressable>
           </View>
         ) : (
@@ -1580,12 +1784,31 @@ export function ProductCard({
             hitSlop={compact ? { top: 6, bottom: 6, left: 0, right: 0 } : undefined}
             style={[
               styles.productAdd,
+              {
+                borderColor: disabled ? themePalette.border.default : themePalette.accent.base,
+                backgroundColor: disabled
+                  ? "rgba(255,255,255,0.035)"
+                  : mode === "dark"
+                  ? "rgba(185,244,85,0.12)"
+                  : "rgba(31,62,36,0.06)",
+              },
               compact ? styles.productAddCompact : null,
               !canIncrement ? styles.productAddDisabled : null,
             ]}
           >
-            <Text style={styles.productAddText}>{disabled ? "OUT" : "ADD"}</Text>
-            <Ionicons name="add" size={16} color={legacyColors.lime} />
+            <Text
+              style={[
+                styles.productAddText,
+                { color: disabled ? themePalette.text.tertiary : themePalette.accent.strong },
+              ]}
+            >
+              {disabled ? "OUT" : "ADD"}
+            </Text>
+            <Ionicons
+              name="add"
+              size={16}
+              color={disabled ? themePalette.text.tertiary : themePalette.accent.strong}
+            />
           </Pressable>
         )}
       </View>
@@ -1608,20 +1831,39 @@ export function ExerciseRow({
   onPress?: PressHandler;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { palette } = useTheme();
   return (
     <Pressable
       onPress={() => pressWithHaptics(onPress)}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: complete }}
-      style={({ pressed }) => [styles.exerciseRow, pressed ? styles.pressed : null, style]}
+      style={({ pressed }) => [
+        styles.exerciseRow,
+        {
+          borderColor: palette.border.subtle,
+          backgroundColor: palette.surface.default,
+        },
+        pressed ? styles.pressed : null,
+        style,
+      ]}
     >
-      <View style={[styles.exerciseCheck, complete ? styles.exerciseCheckDone : null]}>
-        {complete ? <Ionicons name="checkmark" size={15} color={legacyColors.bg} /> : null}
+      <View
+        style={[
+          styles.exerciseCheck,
+          {
+            borderColor: complete ? palette.accent.strong : palette.border.strong,
+            backgroundColor: complete ? palette.accent.strong : palette.surface.default,
+          },
+        ]}
+      >
+        {complete ? <Ionicons name="checkmark" size={15} color={palette.text.onAccent} /> : null}
       </View>
       <IconBubble icon="barbell-outline" tone={complete ? "lime" : "neutral"} size={38} />
       <View style={styles.exerciseCopy}>
-        <Text style={styles.exerciseTitle}>{sets ? `${title} · ${sets}` : title}</Text>
-        <Text style={styles.exerciseDetail}>{detail}</Text>
+        <Text style={[styles.exerciseTitle, { color: palette.text.primary }]}>
+          {sets ? `${title} · ${sets}` : title}
+        </Text>
+        <Text style={[styles.exerciseDetail, { color: palette.text.secondary }]}>{detail}</Text>
       </View>
     </Pressable>
   );
@@ -1679,11 +1921,13 @@ export function ChipGroup<T extends string>({
   value: T;
   onChange: (value: T) => void;
 }) {
+  const { palette: themePalette, mode } = useTheme();
   return (
     <View accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel} style={styles.chipGroup}>
       {options.map((option) => {
         const selected = option.value === value;
-        const palette = tonePalettes[option.tone ?? (selected ? "lime" : "neutral")];
+        const tone = option.tone ?? (selected ? "lime" : "neutral");
+        const palette = getTonePalette(tone, mode, themePalette);
         return (
           <Pressable
             key={option.value}
@@ -1789,7 +2033,7 @@ export function ProgressBar({
   tone?: PillTone;
   label?: string;
 }) {
-  const palette = tonePalettes[tone];
+  const palette = useTonePalette(tone);
   const percent = Math.max(0, Math.min(1, value));
   return (
     <View style={styles.progressBarGroup}>
@@ -1815,7 +2059,7 @@ export function ScannerFrame({
   size?: number;
   tone?: PillTone;
 }) {
-  const palette = tonePalettes[tone];
+  const palette = useTonePalette(tone);
   return (
     <View style={[styles.scannerFrame, size ? { width: size, height: size } : null]}>
       <View
@@ -1873,11 +2117,21 @@ export function StickyActionBar({
 }) {
   const insets = useSafeAreaInsets();
   const computedBottomOffset = useStickyActionOffset();
+  const { palette } = useTheme();
+  const { visible: bottomNavVisible } = useContext(BottomNavVisibilityContext);
+
   return (
     <View
       style={StyleSheet.flatten([
         styles.stickyActionBar,
-        { bottom: bottomOffset ?? computedBottomOffset, paddingBottom: Math.max(insets.bottom, 14) },
+        {
+          backgroundColor: palette.bg.app,
+          borderTopWidth: 1,
+          borderTopColor: palette.border.subtle,
+          paddingTop: 14,
+          bottom: bottomNavVisible ? (bottomOffset ?? computedBottomOffset) : 0,
+          paddingBottom: Math.max(insets.bottom, 14),
+        },
       ])}
     >
       {children}
@@ -2681,8 +2935,8 @@ const styles = StyleSheet.create({
   brandMarkFramed: {
     borderRadius: radii.icon,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
+    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "#0F1411",
   },
   brandMarkImage: {
     width: "100%",
@@ -2724,6 +2978,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   glassContent: {
+    backgroundColor: "transparent",
     padding: 18,
     gap: spacing.md,
   },

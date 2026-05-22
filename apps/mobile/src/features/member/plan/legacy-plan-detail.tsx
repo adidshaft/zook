@@ -9,7 +9,7 @@ import {
 } from "@/components/expo-safe-bottom-sheet";
 import { resolvePlanName } from "@zook/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { InputAccessoryView, Keyboard, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   EmptyState,
   ExerciseRow,
@@ -46,6 +46,7 @@ const filters: Array<{ label: string; value: PlanFilter }> = [
   { label: "Workout", value: "workout" },
   { label: "Diet", value: "diet" },
 ];
+const feedbackAccessoryId = "plan-feedback-accessory";
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -341,6 +342,7 @@ export function PlanDetailScreen() {
   }
 
   function closeFeedbackSheet() {
+    Keyboard.dismiss();
     setFeedbackOpen(false);
     feedbackSheetRef.current?.dismiss();
   }
@@ -377,6 +379,8 @@ export function PlanDetailScreen() {
       setFeedbackStatus("Sign in again to send feedback.");
       return;
     }
+    Keyboard.dismiss();
+    closeFeedbackSheet();
     setFeedbackStatus("Sending...");
     try {
       await plansApi.sendFeedback({
@@ -387,7 +391,6 @@ export function PlanDetailScreen() {
       });
       setFeedbackStatus("Sent to coach.");
       showToast({ tone: "success", haptic: "success", message: "Feedback sent to coach." });
-      closeFeedbackSheet();
       setFeedbackNote("");
     } catch (error) {
       const message = getApiErrorMessage(error) || "Failed to send. Try again.";
@@ -621,16 +624,6 @@ export function PlanDetailScreen() {
                 </Pressable>
               ))}
             </View>
-            <TextInput
-              testID="plan-detail-feedback-input"
-              value={feedbackNote}
-              onChangeText={setFeedbackNote}
-              maxLength={280}
-              placeholder="Add a short note"
-              placeholderTextColor={legacyColors.muted}
-              style={styles.feedbackInput}
-            />
-            {feedbackStatus ? <Text style={styles.inlineStatus}>{feedbackStatus}</Text> : null}
             <ZookButton
               testID="plan-detail-feedback-send"
               onPress={() => void sendFeedback()}
@@ -639,6 +632,33 @@ export function PlanDetailScreen() {
             >
               Send
             </ZookButton>
+            <TextInput
+              testID="plan-detail-feedback-input"
+              inputAccessoryViewID={Platform.OS === "ios" ? feedbackAccessoryId : undefined}
+              value={feedbackNote}
+              onChangeText={setFeedbackNote}
+              onSubmitEditing={() => void sendFeedback()}
+              returnKeyType="send"
+              maxLength={280}
+              placeholder="Add a short note"
+              placeholderTextColor={legacyColors.muted}
+              style={styles.feedbackInput}
+            />
+            {Platform.OS === "ios" ? (
+              <InputAccessoryView nativeID={feedbackAccessoryId}>
+                <View style={styles.feedbackAccessory}>
+                  <ZookButton
+                    testID="plan-detail-feedback-send"
+                    onPress={() => void sendFeedback()}
+                    icon="send-outline"
+                    style={styles.feedbackAccessoryButton}
+                  >
+                    Send
+                  </ZookButton>
+                </View>
+              </InputAccessoryView>
+            ) : null}
+            {feedbackStatus ? <Text style={styles.inlineStatus}>{feedbackStatus}</Text> : null}
           </BottomSheetView>
         </BottomSheetModal>
       </>
@@ -761,6 +781,15 @@ const styles = StyleSheet.create({
   feedbackSendButton: {
     alignSelf: "flex-start",
     minWidth: 116,
+  },
+  feedbackAccessory: {
+    backgroundColor: legacyColors.panel,
+    borderTopColor: legacyColors.border,
+    borderTopWidth: 1,
+    padding: spacing.sm,
+  },
+  feedbackAccessoryButton: {
+    alignSelf: "stretch",
   },
   inlineStatus: {
     color: legacyColors.lime,

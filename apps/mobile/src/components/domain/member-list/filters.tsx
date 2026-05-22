@@ -22,12 +22,14 @@ export function MemberListFilters({
   onFilterChange,
   onSearchChange,
   searchValue,
+  searchTestID,
 }: {
   availableFilters?: MemberListFilter[];
   filter?: MemberListFilter;
   onFilterChange?: (filter: MemberListFilter) => void;
   onSearchChange?: (value: string) => void;
   searchValue?: string;
+  searchTestID?: string;
 }) {
   const { palette } = useTheme();
   const activeKey = filterKey(filter ?? { kind: "all" });
@@ -35,6 +37,7 @@ export function MemberListFilters({
     <View style={styles.stack}>
       {onSearchChange ? (
         <GlassInput
+          testID={searchTestID}
           value={searchValue ?? ""}
           onChangeText={onSearchChange}
           placeholder="Search members"

@@ -303,7 +303,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
       </GlassCard>
 
       {/* Premium Horizontal Sub-Tab bar */}
-      <div className="flex justify-start overflow-x-auto no-scrollbar rounded-full border border-[var(--border)] bg-[var(--surface)]/95 p-1.5 backdrop-blur-xl">
+      <div className="flex justify-start overflow-x-auto no-scrollbar rounded-3xl border border-[var(--border)] bg-[var(--surface)]/95 p-1.5 backdrop-blur-xl">
         <div className="flex gap-1.5 w-full">
           {tabItems.map((tab) => {
             const Icon = tab.icon;
@@ -313,14 +313,17 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold tracking-wide transition-all duration-300 ${
+                className={`relative flex items-center gap-2 rounded-2xl px-5 py-3 text-xs font-semibold tracking-wide transition-all duration-300 transform active:scale-95 ${
                   isActive
-                    ? "bg-[var(--surface-accent-soft)] text-[var(--accent-strong)] border border-[var(--border-focus)]/20 shadow-sm"
-                    : "text-[var(--text-secondary)] border border-transparent hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]/50"
+                    ? "bg-gradient-to-r from-[var(--accent-soft)]/25 to-[var(--accent-soft)]/45 text-[var(--accent-strong)] border border-[var(--accent-strong)]/30 shadow-[0_4px_12px_-3px_color-mix(in_srgb,var(--accent-strong)_20%,transparent)]"
+                    : "text-[var(--text-secondary)] border border-transparent hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]/60 hover:scale-[1.02]"
                 }`}
               >
-                <Icon size={14} className="shrink-0" />
+                <Icon size={14} className={`shrink-0 transition-transform duration-300 ${isActive ? "scale-110" : ""}`} />
                 <span>{tab.label}</span>
+                {isActive && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-strong)] animate-pulse shrink-0 ml-0.5" />
+                )}
               </button>
             );
           })}

@@ -81,6 +81,8 @@ tags:
     id: "plan-detail-feedback-input"
     optional: true
 - inputText: "Felt good in E2E"
+- hideKeyboard:
+    optional: true
 - tapOn:
     id: "plan-detail-feedback-send"
     optional: true
@@ -118,19 +120,8 @@ tags:
     id: "more-assistant"
 - extendedWaitUntil:
     visible:
-      id: "assistant-screen"
+      id: "assistant-coming-soon-screen"
     timeout: 15000
-- tapOn:
-    id: "assistant-message-input"
-- inputText: "Summarize today's gym workout progress"
-- hideKeyboard:
-    optional: true
-- tapOn:
-    id: "assistant-send-message"
-- extendedWaitUntil:
-    visible:
-      id: "assistant-message-assistant-latest"
-    timeout: 30000
 - takeScreenshot: /tmp/zook-maestro/member/assistant.png
 
 - openLink: zook:///gyms

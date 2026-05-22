@@ -1775,6 +1775,16 @@ async function main() {
     },
   });
 
+  await prisma.notification.update({
+    where: { id: notification.id },
+    data: {
+      type: NotificationType.TRANSACTIONAL,
+      title: "Pickup order ready",
+      body: "Your shop order is ready at the front desk.",
+      metadata: { orderId: shopOrder.id },
+    },
+  });
+
   await prisma.shopOrderItem.createMany({
     data: [
       {

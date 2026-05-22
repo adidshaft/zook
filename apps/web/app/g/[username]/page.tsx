@@ -15,7 +15,7 @@ import {
 } from "@/lib/public-i18n";
 import { getPublicGymProfileData } from "@/server/public-gym-read-models";
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
 
 type GymPublicPageProps = {
   params: Promise<{ username: string }>;

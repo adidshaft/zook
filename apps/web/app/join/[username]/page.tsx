@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { CheckCircle2, LockKeyhole } from "lucide-react";
+import { CheckCircle2, LockKeyhole, MapPin, Building } from "lucide-react";
 import { resolvePlanName } from "@zook/ui";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
@@ -311,6 +311,60 @@ export default async function JoinPage({
             <h1 className="mt-5 text-4xl font-semibold tracking-tight text-[var(--text-primary)]">
               {t("reviewMembership")}
             </h1>
+
+            {/* Elegant Gym Identity Card */}
+            <div className="relative mt-5 overflow-hidden rounded-3xl border border-[var(--border-focus)]/25 bg-gradient-to-br from-[var(--surface-raised)]/90 to-[var(--bg-sunken)]/90 p-5 md:p-6 shadow-md transition-all duration-300 hover:shadow-lg">
+              {/* Decorative radial ambient glow behind the logo */}
+              <div className="absolute -top-12 -left-12 h-32 w-32 rounded-full bg-[var(--accent-soft)]/20 blur-3xl pointer-events-none" />
+              
+              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+                {org.logoUrl ? (
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-inner">
+                    <img
+                      src={org.logoUrl}
+                      alt={`${org.name} logo`}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-soft)]/30 to-[var(--accent-fill)]/20 text-2xl font-bold text-[var(--accent-strong)]">
+                    {org.name.slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-strong)] bg-[var(--surface-accent-soft)] px-2 py-0.5 rounded-md">
+                      {org.gymType || "Fitness Center"}
+                    </span>
+                  </div>
+                  <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                    {org.name}
+                  </h2>
+                  {org.tagline && (
+                    <p className="text-xs text-[var(--text-secondary)] italic font-medium leading-relaxed max-w-xl">
+                      "{org.tagline}"
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-5 grid gap-3 border-t border-[var(--border-subtle)] pt-4 text-xs sm:grid-cols-2 text-[var(--text-secondary)]">
+                <div className="flex items-start gap-2.5">
+                  <MapPin size={16} className="text-[var(--accent-strong)] shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">
+                    {org.address}, {org.city}, {org.state}
+                  </span>
+                </div>
+                {org.openingHoursSummary && (
+                  <div className="flex items-center gap-2.5">
+                    <Building size={16} className="text-[var(--accent-strong)] shrink-0" />
+                    <span>{org.openingHoursSummary}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {data.plans.length > 1 ? (
               <div className="mt-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">

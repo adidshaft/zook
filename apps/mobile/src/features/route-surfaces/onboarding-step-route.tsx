@@ -21,7 +21,7 @@ import { ZookButton } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { setStoredValue } from "@/lib/storage";
 import { getMobileWebBaseUrl } from "@/lib/api";
-import { legacyColors } from "@/lib/theme";
+import { legacyColors, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
@@ -82,6 +82,7 @@ export function ValuePropsStep() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [userScrolled, setUserScrolled] = useState(false);
   const cardWidth = Math.max(280, Math.min(520, width - 48));
+  const { palette } = useTheme();
 
   useEffect(() => {
     if (userScrolled) {
@@ -117,11 +118,11 @@ export function ValuePropsStep() {
   return (
     <View
       testID="onboarding-value-props-screen"
-      style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
+      style={[styles.screen, { backgroundColor: palette.bg.app, paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
     >
       <View style={styles.header}>
-        <Text style={styles.brand}>Zook</Text>
-        <Text style={styles.kicker}>Built for gym days</Text>
+        <Text style={[styles.brand, { color: palette.text.primary }]}>Zook</Text>
+        <Text style={[styles.kicker, { color: palette.text.secondary }]}>Built for gym days</Text>
       </View>
 
       <View style={styles.valueStage}>
@@ -139,9 +140,9 @@ export function ValuePropsStep() {
           scrollEventThrottle={16}
         >
           {valueProps.map((copy, index) => (
-            <View key={copy} style={[styles.valueCard, { width: cardWidth }]}>
-              <Text style={styles.valueNumber}>0{index + 1}</Text>
-              <Text style={styles.valueCopy}>{copy}</Text>
+            <View key={copy} style={[styles.valueCard, { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle, borderRadius: 24, width: cardWidth }]}>
+              <Text style={[styles.valueNumber, { color: palette.accent.base }]}>0{index + 1}</Text>
+              <Text style={[styles.valueCopy, { color: palette.text.primary }]}>{copy}</Text>
             </View>
           ))}
         </ScrollView>
@@ -152,7 +153,11 @@ export function ValuePropsStep() {
           {valueProps.map((copy, index) => (
             <View
               key={copy}
-              style={[styles.dot, activeIndex === index ? styles.dotActive : null]}
+              style={[
+                styles.dot,
+                { backgroundColor: palette.border.strong },
+                activeIndex === index ? { backgroundColor: palette.accent.base, width: 22 } : null,
+              ]}
             />
           ))}
         </View>
@@ -172,6 +177,7 @@ export function PermissionsStep() {
   const insets = useSafeAreaInsets();
   const [, requestCameraPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
+  const { palette } = useTheme();
 
   async function continueToLogin() {
     setBusy(true);
@@ -188,22 +194,22 @@ export function PermissionsStep() {
   return (
     <View
       testID="onboarding-permissions-screen"
-      style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
+      style={[styles.screen, { backgroundColor: palette.bg.app, paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
     >
       <View style={styles.header}>
-        <Text style={styles.brand}>Zook works best with:</Text>
-        <Text style={styles.kicker}>You can change any permission later.</Text>
+        <Text style={[styles.brand, { color: palette.text.primary }]}>Zook works best with:</Text>
+        <Text style={[styles.kicker, { color: palette.text.secondary }]}>You can change any permission later.</Text>
       </View>
 
       <View style={styles.permissionList}>
         {permissionRows.map((row) => (
-          <View key={row.title} style={styles.permissionRow}>
-            <View style={styles.permissionIcon}>
-              <Ionicons name={row.icon} size={22} color={legacyColors.lime} />
+          <View key={row.title} style={[styles.permissionRow, { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle, borderRadius: 20 }]}>
+            <View style={[styles.permissionIcon, { backgroundColor: palette.surface.accentSoft }]}>
+              <Ionicons name={row.icon} size={22} color={palette.accent.base} />
             </View>
             <View style={styles.permissionCopy}>
-              <Text style={styles.permissionTitle}>{row.title}</Text>
-              <Text style={styles.permissionBody}>{row.body}</Text>
+              <Text style={[styles.permissionTitle, { color: palette.text.primary }]}>{row.title}</Text>
+              <Text style={[styles.permissionBody, { color: palette.text.secondary }]}>{row.body}</Text>
             </View>
           </View>
         ))}
@@ -255,6 +261,7 @@ export function RoleQuestionStep() {
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const { palette } = useTheme();
 
   useEffect(() => {
     if ((session?.organizations.length ?? 0) > 0) {
@@ -289,11 +296,11 @@ export function RoleQuestionStep() {
   return (
     <View
       testID="onboarding-role-question-screen"
-      style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
+      style={[styles.screen, { backgroundColor: palette.bg.app, paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
     >
       <View style={styles.header}>
-        <Text style={styles.brand}>What brings you to Zook?</Text>
-        <Text style={styles.kicker}>Pick the closest fit so we can start you in the right place.</Text>
+        <Text style={[styles.brand, { color: palette.text.primary }]}>What brings you to Zook?</Text>
+        <Text style={[styles.kicker, { color: palette.text.secondary }]}>Pick the closest fit so we can start you in the right place.</Text>
       </View>
 
       <View style={styles.roleList}>
@@ -305,22 +312,23 @@ export function RoleQuestionStep() {
             disabled={Boolean(busyAction)}
             style={({ pressed }) => [
               styles.roleOption,
-              pressed && !busyAction ? styles.roleOptionPressed : null,
+              { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle, borderRadius: 20 },
+              pressed && !busyAction ? { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft } : null,
             ]}
             accessibilityRole="button"
             accessibilityLabel={option.label}
           >
-            <View style={styles.roleIcon}>
-              <Ionicons name={option.icon} size={22} color={legacyColors.lime} />
+            <View style={[styles.roleIcon, { backgroundColor: palette.surface.accentSoft }]}>
+              <Ionicons name={option.icon} size={22} color={palette.accent.base} />
             </View>
             <View style={styles.roleOptionCopy}>
-              <Text style={styles.roleLabel}>{option.label}</Text>
-              <Text style={styles.roleBody}>{option.body}</Text>
+              <Text style={[styles.roleLabel, { color: palette.text.primary }]}>{option.label}</Text>
+              <Text style={[styles.roleBody, { color: palette.text.secondary }]}>{option.body}</Text>
             </View>
             {busyAction === option.action ? (
-              <ActivityIndicator color={legacyColors.lime} />
+              <ActivityIndicator color={palette.accent.base} />
             ) : (
-              <Ionicons name="chevron-forward" size={20} color={legacyColors.muted} />
+              <Ionicons name="chevron-forward" size={20} color={palette.text.tertiary} />
             )}
           </Pressable>
         ))}
@@ -333,7 +341,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     justifyContent: "space-between",
-    backgroundColor: legacyColors.bg,
     paddingHorizontal: 24,
   },
   header: {

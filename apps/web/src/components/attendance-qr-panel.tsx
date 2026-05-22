@@ -105,7 +105,7 @@ export function AttendanceQrPanel({
     void QRCode.toDataURL(qrPayload, {
       errorCorrectionLevel: "M",
       margin: 2,
-      width: 280,
+      width: 600,
       color: {
         dark: "#070908",
         light: "#f6ffe2",
@@ -156,14 +156,14 @@ export function AttendanceQrPanel({
             className={
               density === "compact"
                 ? "mt-4 grid gap-5"
-                : "mt-4 grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]"
+                : "mt-4 grid gap-6 lg:grid-cols-[1.1fr_1fr]"
             }
           >
             <div
               className={
                 density === "compact"
                   ? "grid min-h-[240px] place-items-center rounded-[26px] border border-lime-200/25 bg-lime-50 p-4 shadow-[0_18px_46px_rgba(185,244,85,0.18),inset_0_1px_0_rgba(255,255,255,0.45)]"
-                  : "grid min-h-[300px] place-items-center rounded-[26px] border border-lime-200/25 bg-lime-50 p-4 shadow-[0_18px_46px_rgba(185,244,85,0.18),inset_0_1px_0_rgba(255,255,255,0.45)]"
+                  : "grid min-h-[300px] lg:min-h-[560px] place-items-center rounded-[26px] border border-lime-200/25 bg-lime-50 p-8 shadow-[0_18px_46px_rgba(185,244,85,0.18),inset_0_1px_0_rgba(255,255,255,0.45)]"
               }
             >
               {qrImageUrl ? (
@@ -173,7 +173,7 @@ export function AttendanceQrPanel({
                   className={
                     density === "compact"
                       ? "h-full max-h-[240px] w-full max-w-[240px] rounded-xl"
-                      : "h-full max-h-[280px] w-full max-w-[280px] rounded-xl"
+                      : "h-full max-h-[280px] lg:max-h-[500px] w-full max-w-[280px] lg:max-w-[500px] rounded-xl"
                   }
                 />
               ) : (

@@ -14,11 +14,11 @@ import { useEffect, useId, useMemo, useRef, type ReactNode } from "react";
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 const TONE_COLORS = {
-  lime: "#B9F455",
-  amber: "#F2C94C",
-  sky: "#7DD3FC",
-  rose: "#FF8B7A",
-  violet: "#B9A9FF",
+  lime: "var(--accent)",
+  amber: "var(--feedback-warning)",
+  sky: "var(--feedback-info)",
+  rose: "var(--feedback-danger)",
+  violet: "var(--accent)",
 } as const;
 
 export type ChartTone = keyof typeof TONE_COLORS;
@@ -86,7 +86,7 @@ export function DeltaChip({
 }) {
   if (delta == null) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[11px] font-medium text-white/45">
+      <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-tertiary)]">
         <Minus size={11} /> —
       </span>
     );
@@ -95,9 +95,9 @@ export function DeltaChip({
   const isFlat = delta === 0;
   const good = isFlat ? "neutral" : invert ? (isUp ? "bad" : "good") : isUp ? "good" : "bad";
   const tones: Record<string, string> = {
-    good: "border-lime-300/30 bg-lime-300/12 text-lime-200",
-    bad: "border-rose-300/25 bg-rose-300/10 text-rose-200",
-    neutral: "border-white/10 bg-white/[0.04] text-white/50",
+    good: "border-[color-mix(in_srgb,var(--feedback-success)_35%,transparent)] bg-[var(--surface-success-soft)] text-[var(--feedback-success)]",
+    bad: "border-[color-mix(in_srgb,var(--feedback-danger)_35%,transparent)] bg-[var(--surface-danger-soft)] text-[var(--feedback-danger)]",
+    neutral: "border-[var(--border)] bg-[var(--bg-sunken)] text-[var(--text-secondary)]",
   };
   const Icon = isFlat ? Minus : isUp ? ArrowUpRight : ArrowDownRight;
   return (
@@ -213,7 +213,7 @@ export function KPITile({
 }) {
   const color = TONE_COLORS[tone];
   const reduce = useReducedMotion();
-  const className = `group relative overflow-hidden rounded-[22px] border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-5 transition-colors hover:border-white/20 ${
+  const className = `group relative overflow-hidden rounded-[22px] border border-[var(--border)] bg-gradient-to-br from-[var(--surface-raised)] to-[var(--bg-sunken)] p-5 transition-colors hover:border-[var(--border-strong)] ${
     href ? "cursor-pointer" : ""
   }`;
   const content = (
@@ -226,23 +226,23 @@ export function KPITile({
       />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
             {label}
           </p>
           <p
-            className="mt-3 font-bold tabular-nums leading-none text-white"
+            className="mt-3 font-bold tabular-nums leading-none text-[var(--text-primary)]"
             style={{ fontSize: "clamp(1.7rem, 2.4vw, 2.4rem)" }}
           >
             <AnimatedNumber value={value} {...(format ? { format } : {})} />
           </p>
           {caption ? (
-            <p className="mt-2 text-[11px] text-white/45">{caption}</p>
+            <p className="mt-2 text-[11px] text-[var(--text-tertiary)]">{caption}</p>
           ) : null}
         </div>
         {Icon ? (
           <div
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border"
-            style={{ borderColor: `${color}44`, background: `${color}14`, color }}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--border)]"
+            style={{ borderColor: `color-mix(in srgb, ${color} 26%, transparent)`, background: `color-mix(in srgb, ${color} 8%, transparent)`, color }}
           >
             <Icon size={18} />
           </div>
@@ -252,7 +252,7 @@ export function KPITile({
         {trend && trend.length > 1 ? (
           <Sparkline values={trend} tone={tone} width={96} height={28} />
         ) : (
-          <span className="text-[11px] text-white/30">No trend yet</span>
+          <span className="text-[11px] text-[var(--text-tertiary)]">No trend yet</span>
         )}
         {delta != null ? (
           <DeltaChip delta={delta} {...(invertDelta != null ? { invert: invertDelta } : {})} />
@@ -397,14 +397,14 @@ export function LineChart({
               x2={viewW - padRight}
               y1={y}
               y2={y}
-              stroke="rgba(255,255,255,0.06)"
+              stroke="var(--border-subtle)"
               strokeDasharray="2 4"
             />
             <text
               x={padLeft - 6}
               y={y + 3}
               fontSize="10"
-              fill="rgba(255,255,255,0.4)"
+              fill="var(--text-tertiary)"
               textAnchor="end"
             >
               {formatY ? formatY(tick) : Math.round(tick).toString()}
@@ -421,7 +421,7 @@ export function LineChart({
             x={x}
             y={height - 8}
             fontSize="10"
-            fill="rgba(255,255,255,0.45)"
+            fill="var(--text-tertiary)"
             textAnchor={i === 0 ? "start" : i === labels.length - 1 ? "end" : "middle"}
           >
             {label}
@@ -486,7 +486,7 @@ export function LineChart({
           y="16"
           fontSize="11"
           fontWeight="700"
-          fill="#070908"
+          fill="var(--text-inverse)"
           textAnchor="middle"
           initial={reduce ? { opacity: 1 } : { opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -555,10 +555,10 @@ export function BarChart({
               x2={viewW - padRight}
               y1={y}
               y2={y}
-              stroke="rgba(255,255,255,0.05)"
+              stroke="var(--border-subtle)"
               strokeDasharray="2 4"
             />
-            <text x={padLeft - 6} y={y + 3} fontSize="10" fill="rgba(255,255,255,0.4)" textAnchor="end">
+            <text x={padLeft - 6} y={y + 3} fontSize="10" fill="var(--text-tertiary)" textAnchor="end">
               {formatY ? formatY(tick) : Math.round(tick).toString()}
             </text>
           </g>
@@ -583,7 +583,7 @@ export function BarChart({
               x={x + barWidth / 2}
               y={height - 8}
               fontSize="10"
-              fill="rgba(255,255,255,0.5)"
+              fill="var(--text-tertiary)"
               textAnchor="middle"
             >
               {labels[i]}
@@ -629,7 +629,7 @@ export function Donut({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.07)"
+          stroke="var(--border-subtle)"
           strokeWidth={thickness}
         />
         <motion.circle
@@ -648,10 +648,10 @@ export function Donut({
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center">
         <div>
-          <div className="text-2xl font-bold tabular-nums text-white">
+          <div className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
             {centerLabel ?? `${Math.round(fraction * 100)}%`}
           </div>
-          {centerSub ? <div className="mt-1 text-[10px] text-white/45">{centerSub}</div> : null}
+          {centerSub ? <div className="mt-1 text-[10px] text-[var(--text-tertiary)]">{centerSub}</div> : null}
         </div>
       </div>
     </div>
@@ -672,15 +672,15 @@ export function LegendItem({
   value: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-white/[0.025] px-3 py-2">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2">
       <div className="flex items-center gap-2 min-w-0">
         <span
           className="h-2 w-2 shrink-0 rounded-full"
-          style={{ background: TONE_COLORS[tone], boxShadow: `0 0 8px ${TONE_COLORS[tone]}55` }}
+          style={{ background: TONE_COLORS[tone], boxShadow: `0 0 8px color-mix(in srgb, ${TONE_COLORS[tone]} 33%, transparent)` }}
         />
-        <span className="truncate text-xs text-white/65">{label}</span>
+        <span className="truncate text-xs text-[var(--text-secondary)]">{label}</span>
       </div>
-      <span className="text-xs font-semibold tabular-nums text-white">{value}</span>
+      <span className="text-xs font-semibold tabular-nums text-[var(--text-primary)]">{value}</span>
     </div>
   );
 }
@@ -708,7 +708,7 @@ export function SectionHero({
 }) {
   const color = TONE_COLORS[tone];
   return (
-    <header className="relative overflow-hidden rounded-[26px] border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.005] p-5">
+    <header className="relative overflow-hidden rounded-[26px] border border-[var(--border)] bg-gradient-to-br from-[var(--surface-raised)] to-[var(--bg-sunken)] p-5">
       <div
         aria-hidden
         className="absolute inset-x-0 top-0 h-px opacity-60"
@@ -717,28 +717,28 @@ export function SectionHero({
       <div
         aria-hidden
         className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full blur-3xl"
-        style={{ background: `${color}11` }}
+        style={{ background: `color-mix(in srgb, ${color} 8%, transparent)` }}
       />
       <div className="flex items-start gap-4">
         {Icon ? (
           <div
-            className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border"
-            style={{ borderColor: `${color}44`, background: `${color}12`, color }}
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[var(--border)]"
+            style={{ borderColor: `color-mix(in srgb, ${color} 26%, transparent)`, background: `color-mix(in srgb, ${color} 8%, transparent)`, color }}
           >
             <Icon size={20} />
           </div>
         ) : null}
         <div className="min-w-0 flex-1">
           {eyebrow ? (
-            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/40">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-tertiary)]">
               {eyebrow}
             </p>
           ) : null}
-          <h2 className="mt-1 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-2xl">
             {title}
           </h2>
           {description ? (
-            <p className="mt-1.5 max-w-xl text-sm leading-6 text-white/55">{description}</p>
+            <p className="mt-1.5 max-w-xl text-sm leading-6 text-[var(--text-secondary)]">{description}</p>
           ) : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
@@ -779,19 +779,19 @@ export function ActivityRow({
       initial={reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: 0.04 * index, ease: EASE }}
-      className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2.5 transition hover:border-white/15 hover:bg-white/[0.04]"
+      className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2.5 transition hover:border-[var(--border)] hover:bg-[var(--surface-raised)]"
     >
       {Icon ? (
         <span
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full border"
-          style={{ borderColor: `${color}44`, background: `${color}14`, color }}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)]"
+          style={{ borderColor: `color-mix(in srgb, ${color} 26%, transparent)`, background: `color-mix(in srgb, ${color} 8%, transparent)`, color }}
         >
           <Icon size={16} />
         </span>
       ) : null}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium text-white">{title}</span>
-        {subtitle ? <span className="block truncate text-xs text-white/45">{subtitle}</span> : null}
+        <span className="block truncate text-sm font-medium text-[var(--text-primary)]">{title}</span>
+        {subtitle ? <span className="block truncate text-xs text-[var(--text-tertiary)]">{subtitle}</span> : null}
       </span>
       {trailing ? <span className="shrink-0">{trailing}</span> : null}
     </Tag>

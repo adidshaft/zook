@@ -31,7 +31,7 @@ export function ApprovalQueueCard({
       {item.reason ? <Text style={[styles.reason, { color: palette.text.secondary }]}>{item.reason}</Text> : null}
       {item.context ? <View>{item.context}</View> : null}
       <View style={styles.actions}>
-        <PrimaryButton onPress={onApprove} disabled={approving} style={styles.action}>
+        <PrimaryButton testID="approve-button-first" onPress={onApprove} disabled={approving} style={styles.action}>
           {approving ? "Approving..." : "Approve"}
         </PrimaryButton>
         {onReject ? (

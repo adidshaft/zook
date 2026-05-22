@@ -48,15 +48,15 @@ export function PaymentTab({
   return (
     <GlassCard>
       <div className="flex items-center gap-3">
-        <CreditCard className="text-lime-200" size={22} />
+        <CreditCard className="text-[var(--accent)]" size={22} />
         <div>
-          <h1 className="text-2xl font-semibold text-white">{copy.recordPayment}</h1>
-          <p className="mt-1 text-sm text-white/48">{copy.paymentDescription}</p>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{copy.recordPayment}</h1>
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">{copy.paymentDescription}</p>
         </div>
       </div>
       <form className="mt-5 grid gap-4 pb-24" onSubmit={onSubmit}>
         <fieldset className="grid gap-2">
-          <legend className="text-sm text-white/62">{copy.paymentPurpose}</legend>
+          <legend className="text-sm text-[var(--text-secondary)]">{copy.paymentPurpose}</legend>
           <div className="grid gap-2 sm:grid-cols-3">
             {[
               ["MEMBERSHIP", copy.membershipPayment],
@@ -65,10 +65,10 @@ export function PaymentTab({
             ].map(([purpose, label]) => (
               <label
                 key={purpose}
-                className={`zook-focus flex min-h-12 items-center gap-3 rounded-2xl border px-4 text-sm font-semibold ${
+                className={`zook-focus flex min-h-12 items-center gap-3 rounded-2xl border px-4 text-sm font-semibold transition cursor-pointer ${
                   paymentForm.purpose === purpose
-                    ? "border-lime-300/50 bg-lime-300/12 text-lime-50"
-                    : "border-white/10 bg-black/20 text-white/62"
+                    ? "border-[var(--border-focus)] bg-[var(--accent-soft)] text-[var(--accent-strong)] dark:bg-[var(--surface-accent-soft)] dark:text-[var(--accent)]"
+                    : "border-[var(--border)] bg-[var(--bg-sunken)] text-[var(--text-primary)] hover:bg-[var(--surface-raised)]"
                 }`}
               >
                 <input
@@ -77,7 +77,7 @@ export function PaymentTab({
                   value={purpose}
                   checked={paymentForm.purpose === purpose}
                   onChange={() => onPurposeChange(purpose as PaymentPurpose)}
-                  className="accent-lime-300"
+                  className="accent-[var(--accent)]"
                 />
                 {label}
               </label>
@@ -85,45 +85,45 @@ export function PaymentTab({
           </div>
         </fieldset>
 
-        <label className="grid gap-2 text-sm text-white/62">
+        <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
           {copy.member}
           <select
             value={paymentForm.memberUserId}
             onChange={(event) => onMemberChange(event.target.value)}
-            className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
+            className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
             required={paymentForm.purpose === "MEMBERSHIP"}
           >
-            <option value="" className="bg-black">
+            <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
               {copy.chooseMember}
             </option>
             {members.map((member) => (
-              <option key={member.profile.id} value={member.user?.id ?? ""} className="bg-black">
+              <option key={member.profile.id} value={member.user?.id ?? ""} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                 {memberLabel(member)}
               </option>
             ))}
           </select>
         </label>
         {paymentForm.purpose === "SHOP_ORDER" ? (
-          <label className="grid gap-2 text-sm text-white/62">
+          <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             {copy.shopOrderPayment}
             <select
               value={paymentForm.shopOrderId}
               onChange={(event) => onOrderChange(event.target.value)}
-              className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
+              className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
               required
             >
-              <option value="" className="bg-black">
+              <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                 {copy.chooseOrder}
               </option>
               {payAtDeskOrders.map((order) => (
-                <option key={order.id} value={order.id} className="bg-black">
+                <option key={order.id} value={order.id} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                   {order.user?.name ?? "Member"} - {orderItemsSummary(order)} -{" "}
                   {formatInr(order.totalPaise)}
                 </option>
               ))}
             </select>
             {!payAtDeskOrders.length ? (
-              <span className="text-xs text-white/38">{copy.noPayAtDeskOrders}</span>
+              <span className="text-xs text-[var(--text-tertiary)]">{copy.noPayAtDeskOrders}</span>
             ) : null}
           </label>
         ) : null}
@@ -131,36 +131,36 @@ export function PaymentTab({
           {paymentForm.purpose === "MEMBERSHIP" ? (
             <div className="grid gap-3">
               {activeSubscription ? (
-                <label className="grid gap-2 text-sm text-white/62">
+                <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
                   {copy.membership}
                   <select
                     value={paymentForm.subscriptionId}
                     onChange={(event) =>
                       onFormChange({ subscriptionId: event.target.value, planId: "" })
                     }
-                    className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
+                    className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
                   >
-                    <option value="" className="bg-black">
+                    <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                       New membership
                     </option>
-                    <option value={activeSubscription.id} className="bg-black">
+                    <option value={activeSubscription.id} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                       {copy.renewExisting}
                     </option>
                   </select>
                 </label>
               ) : null}
-              <label className="grid gap-2 text-sm text-white/62">
+              <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
                 {copy.plan}
                 <select
                   value={paymentForm.planId}
                   onChange={(event) => onPlanChange(event.target.value)}
-                  className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
+                  className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
                 >
-                  <option value="" className="bg-black">
+                  <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                     {activeSubscription ? "Use selected membership" : copy.renewExisting}
                   </option>
                   {activePlans.map((plan) => (
-                    <option key={plan.id} value={plan.id} className="bg-black">
+                    <option key={plan.id} value={plan.id} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                       {plan.name} - {formatInr(plan.pricePaise)}
                     </option>
                   ))}
@@ -168,62 +168,62 @@ export function PaymentTab({
               </label>
             </div>
           ) : null}
-          <label className="grid gap-2 text-sm text-white/62">
+          <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             {copy.mode}
             <select
               value={paymentForm.mode}
               onChange={(event) => onFormChange({ mode: event.target.value })}
-              className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
+              className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
             >
-              <option value="CASH" className="bg-black">
+              <option value="CASH" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                 Cash
               </option>
-              <option value="DIRECT_UPI" className="bg-black">
+              <option value="DIRECT_UPI" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                 UPI
               </option>
-              <option value="CARD" className="bg-black">
+              <option value="CARD" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                 Card
               </option>
-              <option value="BANK_TRANSFER" className="bg-black">
+              <option value="BANK_TRANSFER" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                 Bank transfer
               </option>
-              <option value="OTHER" className="bg-black">
+              <option value="OTHER" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                 Other
               </option>
             </select>
           </label>
         </div>
         {paymentForm.purpose === "OTHER" ? (
-          <label className="grid gap-2 text-sm text-white/62">
+          <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             {copy.reason}
             <input
               value={paymentForm.description}
               onChange={(event) => onFormChange({ description: event.target.value })}
               placeholder={copy.reasonPlaceholder}
-              className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
+              className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
               required
             />
           </label>
         ) : null}
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2 text-sm text-white/62">
+          <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             {copy.amount}
             <input
               value={paymentForm.amountRupees}
               onChange={(event) => onFormChange({ amountRupees: event.target.value })}
               inputMode="decimal"
               placeholder="2500"
-              className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
+              className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
               required
             />
           </label>
-          <label className="grid gap-2 text-sm text-white/62">
+          <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             {copy.referenceNumber}
             <input
               value={paymentForm.receiptNumber}
               onChange={(event) => onFormChange({ receiptNumber: event.target.value })}
               placeholder={copy.referencePlaceholder}
-              className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/30 px-4 text-white"
+              className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
             />
           </label>
         </div>
@@ -234,12 +234,12 @@ export function PaymentTab({
           label={copy.proofFileId}
           placeholder={copy.proofPlaceholder}
         />
-        <label className="grid gap-2 text-sm text-white/62">
+        <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
           {copy.notes}
           <textarea
             value={paymentForm.notes}
             onChange={(event) => onFormChange({ notes: event.target.value })}
-            className="zook-focus min-h-24 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white"
+            className="zook-focus min-h-24 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
           />
         </label>
         <ZookButton

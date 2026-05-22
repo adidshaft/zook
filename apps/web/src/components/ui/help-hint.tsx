@@ -58,7 +58,7 @@ export function HelpHint({
           role="dialog"
           aria-label={title ?? label ?? "Help"}
           className={clsx(
-            "absolute top-full z-[160] mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-4 text-left shadow-[var(--shadow-lg)] backdrop-blur",
+            "absolute top-full z-[160] mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 text-left shadow-[var(--shadow-lg)] backdrop-blur",
             align === "start" ? "left-0" : "right-0",
           )}
         >

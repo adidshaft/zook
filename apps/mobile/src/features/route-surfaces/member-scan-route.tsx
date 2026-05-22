@@ -43,7 +43,7 @@ import {
   removeQueuedAttendanceScan,
 } from "@/lib/offline-attendance-queue";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { legacyColors, layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type ScanResult = {
@@ -99,6 +99,7 @@ function AnimatedLaser() {
 }
 
 export default function Scan() {
+  const { mode, palette } = useTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
@@ -494,8 +495,8 @@ export default function Scan() {
             <GlassCard variant="danger" contentStyle={styles.blockedPermissionContent}>
               <IconBubble icon="camera-outline" tone="red" size={42} />
               <View style={styles.blockedPermissionCopy}>
-                <Text style={styles.cameraFallbackTitle}>Camera access blocked</Text>
-                <Text style={styles.cameraFallbackText}>
+                <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>Camera access blocked</Text>
+                <Text style={[styles.cameraFallbackText, { color: palette.text.secondary }]}>
                   Allow camera access in Settings to scan QR codes.
                 </Text>
               </View>
@@ -511,7 +512,7 @@ export default function Scan() {
 
           {scanMode === "scan" ? (
             <>
-              <View style={styles.cameraCard}>
+              <View style={[styles.cameraCard, { backgroundColor: palette.bg.elevated, borderColor: palette.border.strong }]}>
                 {hasCamera ? (
                   <CameraView
                     testID="scanner-view"
@@ -522,9 +523,9 @@ export default function Scan() {
                   />
                 ) : (
                   <View style={styles.cameraFallback}>
-                    <Ionicons name="camera-outline" size={32} color={legacyColors.lime} />
-                    <Text style={styles.cameraFallbackTitle}>Camera needed</Text>
-                    <Text style={styles.cameraFallbackText}>
+                    <Ionicons name="camera-outline" size={32} color={palette.accent.strong} />
+                    <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>Camera needed</Text>
+                    <Text style={[styles.cameraFallbackText, { color: palette.text.secondary, textAlign: "center" }]}>
                       {cameraBlocked
                         ? "Camera access is blocked. Open device settings to allow scanning."
                         : "Allow camera access to scan the gym QR."}
@@ -556,27 +557,26 @@ export default function Scan() {
               <GlassCard variant="compact" contentStyle={styles.helpContent}>
                 <IconBubble icon="shield-checkmark-outline" tone="neutral" size={36} />
                 <View style={styles.helpCopy}>
-                  <Text style={styles.helpTitle}>Can’t scan?</Text>
-                  <Text style={styles.helpBody}>Enter the desk code manually.</Text>
+                  <Text style={[styles.helpTitle, { color: palette.text.primary }]}>Can’t scan?</Text>
+                  <Text style={[styles.helpBody, { color: palette.text.secondary }]}>Enter the desk code manually.</Text>
                 </View>
                 <Pressable
-                  testID="scan-enter-code"
+                  testID="scan-manual-code"
                   onPress={() => setScanMode("code")}
                   accessibilityRole="button"
-                  accessibilityLabel="Enter code instead"
-                  hitSlop={8}
+                  accessibilityLabel="Enter manual check-in code"
                   style={styles.manualCodeLink}
                 >
-                  <Text style={styles.manualCodeLinkText}>Enter code</Text>
-                  <Ionicons name="chevron-forward" size={16} color={legacyColors.lime} />
+                  <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>Enter code</Text>
+                  <Ionicons name="chevron-forward" size={16} color={palette.accent.strong} />
                 </Pressable>
               </GlassCard>
             </>
           ) : (
             <GlassCard variant="compact" contentStyle={styles.codeContent}>
               <View style={styles.codeHeader}>
-                <Text style={styles.codeTitle}>Enter check-in code</Text>
-                <Text style={styles.codeHint}>Use the two letters and four digits shown with the QR.</Text>
+                <Text style={[styles.codeTitle, { color: palette.text.primary }]}>Enter check-in code</Text>
+                <Text style={[styles.codeHint, { color: palette.text.secondary }]}>Use the two letters and four digits shown with the QR.</Text>
               </View>
               <View style={styles.codeRow}>
                 <TextInput
@@ -587,12 +587,16 @@ export default function Scan() {
                   autoCorrect={false}
                   maxLength={2}
                   placeholder="AB"
-                  placeholderTextColor="rgba(255,255,255,0.55)"
-                  style={[styles.codeInput, styles.codePrefixInput]}
+                  placeholderTextColor={mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(17,21,15,0.4)"}
+                  style={[styles.codeInput, styles.codePrefixInput, {
+                    backgroundColor: palette.bg.sunken,
+                    borderColor: palette.border.default,
+                    color: palette.text.primary
+                  }]}
                   returnKeyType="next"
                   onSubmitEditing={() => codeDigitsRef.current?.focus()}
                 />
-                <Text style={styles.codeDivider}>-</Text>
+                <Text style={[styles.codeDivider, { color: palette.text.secondary }]}>-</Text>
                 <TextInput
                   testID="scan-code-digits"
                   ref={codeDigitsRef}
@@ -601,8 +605,12 @@ export default function Scan() {
                   keyboardType="number-pad"
                   maxLength={4}
                   placeholder="1234"
-                  placeholderTextColor="rgba(255,255,255,0.55)"
-                  style={[styles.codeInput, styles.codeDigitsInput]}
+                  placeholderTextColor={mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(17,21,15,0.4)"}
+                  style={[styles.codeInput, styles.codeDigitsInput, {
+                    backgroundColor: palette.bg.sunken,
+                    borderColor: palette.border.default,
+                    color: palette.text.primary
+                  }]}
                   returnKeyType="done"
                   onSubmitEditing={submitCode}
                 />
@@ -617,12 +625,12 @@ export default function Scan() {
                     busy || !codeReady ? styles.codeButtonDisabled : null,
                   ]}
                 >
-                  <Ionicons name="arrow-forward" size={18} color={legacyColors.bg} />
+                  <Ionicons name="arrow-forward" size={18} color={palette.text.inverse} />
                 </Pressable>
               </View>
               {busy ? (
-                <Text style={styles.checkingText}>
-                  <Text style={styles.checkingDot}>● </Text>
+                <Text style={[styles.checkingText, { color: palette.text.secondary }]}>
+                  <Text style={[styles.checkingDot, { color: palette.accent.base }]}>● </Text>
                   Checking code...
                 </Text>
               ) : null}
@@ -633,17 +641,26 @@ export default function Scan() {
                 accessibilityLabel="Return to QR scanner"
                 style={styles.backToScannerLink}
               >
-                <Ionicons name="qr-code-outline" size={15} color={legacyColors.lime} />
-                <Text style={styles.manualCodeLinkText}>Back to camera scanner</Text>
+                <Ionicons name="qr-code-outline" size={15} color={palette.accent.strong} />
+                <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>Back to camera scanner</Text>
               </Pressable>
             </GlassCard>
           )}
 
           <GlassCard variant="compact" contentStyle={styles.validationContent}>
             {["Ready to scan", "Secure QR", "Desk fallback"].map((item) => (
-              <View key={item} style={styles.validationItem}>
-                <Ionicons name="checkmark-circle-outline" size={15} color={legacyColors.lime} />
-                <Text style={styles.validationText}>{item}</Text>
+              <View
+                key={item}
+                style={[
+                  styles.validationItem,
+                  {
+                    backgroundColor: mode === "dark" ? "rgba(185,244,85,0.12)" : "rgba(185,244,85,0.075)",
+                    borderColor: mode === "dark" ? "rgba(185,244,85,0.28)" : "rgba(185,244,85,0.18)",
+                  },
+                ]}
+              >
+                <Ionicons name="checkmark-circle-outline" size={15} color={palette.accent.base} />
+                <Text style={[styles.validationText, { color: palette.text.primary }]}>{item}</Text>
               </View>
             ))}
           </GlassCard>
@@ -652,7 +669,7 @@ export default function Scan() {
             <GlassCard variant="warning" contentStyle={styles.errorContent}>
               <View style={styles.errorRow}>
                 <Ionicons name="alert-circle-outline" size={18} color={legacyColors.amber} />
-                <Text style={styles.errorText}>{errorMessage}</Text>
+                <Text style={[styles.errorText, { color: palette.text.primary }]}>{errorMessage}</Text>
               </View>
               <ZookButton
                 onPress={() => {
@@ -675,7 +692,7 @@ export default function Scan() {
             <GlassCard variant="warning" contentStyle={styles.errorContent}>
               <View style={styles.errorRow}>
                 <Ionicons name="cloud-upload-outline" size={18} color={legacyColors.amber} />
-                <Text style={styles.errorText}>
+                <Text style={[styles.errorText, { color: palette.text.primary }]}>
                   {queuedScanCount} scan{queuedScanCount === 1 ? "" : "s"} waiting for server
                   confirmation.
                 </Text>
@@ -711,8 +728,19 @@ export default function Scan() {
         snapPoints={pushPromptSnapPoints}
         enablePanDownToClose
         backdropComponent={renderPushPromptBackdrop}
-        backgroundStyle={styles.sheetBackground}
-        handleIndicatorStyle={styles.sheetHandle}
+        backgroundStyle={StyleSheet.flatten([
+          styles.sheetBackground,
+          {
+            backgroundColor: palette.bg.elevated,
+            borderColor: palette.border.subtle,
+          },
+        ])}
+        handleIndicatorStyle={StyleSheet.flatten([
+          styles.sheetHandle,
+          {
+            backgroundColor: palette.border.strong,
+          },
+        ])}
         onDismiss={() => {
           if (pushPromptClosingRef.current) {
             pushPromptClosingRef.current = false;
@@ -729,8 +757,8 @@ export default function Scan() {
           <View style={styles.pushPromptHeader}>
             <IconBubble icon="barbell-outline" tone="lime" size={42} />
             <View style={styles.pushPromptCopy}>
-              <Text style={styles.pushPromptTitle}>Get plan alerts</Text>
-              <Text style={styles.pushPromptBody}>
+              <Text style={[styles.pushPromptTitle, { color: palette.text.primary }]}>Get plan alerts</Text>
+              <Text style={[styles.pushPromptBody, { color: palette.text.secondary }]}>
                 Get notified when your trainer publishes a new plan.
               </Text>
             </View>

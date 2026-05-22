@@ -120,7 +120,7 @@ export const layout = {
   formFieldGap: 12,
   sectionGap: 24,
   bottomNavHeight: 72,
-  bottomNavContentPadding: 176,
+  bottomNavContentPadding: 120,
   bottomNavHorizontalMargin: 18,
   stickyActionHeight: 108,
   demoStripHeight: 28,

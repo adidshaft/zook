@@ -66,6 +66,8 @@ export function SearchableSelect({
   className,
   disabled,
   multiple = false,
+  hideLabel = false,
+  buttonClassName,
 }: {
   label: string;
   options: SearchableSelectOption[];
@@ -79,6 +81,8 @@ export function SearchableSelect({
   className?: string | undefined;
   disabled?: boolean | undefined;
   multiple?: boolean | undefined;
+  hideLabel?: boolean | undefined;
+  buttonClassName?: string | undefined;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -133,8 +137,8 @@ export function SearchableSelect({
   }
 
   return (
-    <div className={clsx("relative grid gap-2 text-sm text-[var(--text-secondary)]", className)}>
-      <span>{label}</span>
+    <div className={clsx("relative text-sm text-[var(--text-secondary)]", !hideLabel && "grid gap-2", className)}>
+      {!hideLabel && <span>{label}</span>}
       <button
         type="button"
         aria-haspopup="listbox"
@@ -142,7 +146,7 @@ export function SearchableSelect({
         aria-label={label}
         disabled={disabled}
         onClick={() => (open ? setOpen(false) : openMenu())}
-        className="zook-focus flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 text-left text-sm text-[var(--text-primary)] transition hover:bg-[var(--bg-sunken)]/80 disabled:opacity-50"
+        className={buttonClassName || "zook-focus flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 text-left text-sm text-[var(--text-primary)] transition hover:bg-[var(--bg-sunken)]/80 disabled:opacity-50"}
       >
         <span className="min-w-0 flex-1 truncate">
           {selectedLabels.length ? selectedLabels.join(", ") : placeholder}

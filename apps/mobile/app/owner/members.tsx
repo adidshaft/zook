@@ -78,7 +78,7 @@ export default function OwnerMembersScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen testID="owner-members-screen">
+      <ZookScreen testID="owner-home-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",

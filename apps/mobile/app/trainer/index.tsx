@@ -82,7 +82,7 @@ export default function TrainerHomeScreen() {
           {clientsQuery.isError ? <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} /> : null}
 
           {priorityClient ? (
-            <GlassCard variant="compact" contentStyle={styles.priorityClientCard} pressable onPress={() => router.push(`/trainer/clients/${priorityClient.memberUserId}` as never)}>
+            <GlassCard testID="trainer-client-row-first" variant="compact" contentStyle={styles.priorityClientCard} pressable onPress={() => router.push(`/trainer/clients/${priorityClient.memberUserId}` as never)}>
               <ListRow
                 title={priorityClient.user?.name ?? "Client"}
                 subtitle={`${priorityClient.summary?.activePlans ?? 0} active plans · ${fitnessGoalFor(priorityClient)}`}

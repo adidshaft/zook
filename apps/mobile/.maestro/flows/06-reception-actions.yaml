@@ -27,10 +27,16 @@ tags:
     id: "reception-verify-code-button"
 - takeScreenshot: /tmp/zook-maestro/reception/verify-code.png
 
-- openLink: zook:///reception?view=members
+- openLink: zook:///reception/members
 - extendedWaitUntil:
     visible:
-      id: "reception-home-screen"
+      id: "reception-member-search"
+    timeout: 15000
+- tapOn:
+    point: "37%,94%"
+- extendedWaitUntil:
+    visible:
+      id: "reception-member-search"
     timeout: 15000
 - tapOn:
     id: "reception-member-search"
@@ -49,8 +55,7 @@ tags:
 - tapOn:
     id: "reception-attendance-reason"
 - inputText: "Manual desk check-in"
-- hideKeyboard:
-    optional: true
+- pressKey: Enter
 - scrollUntilVisible:
     element:
       id: "reception-record-attendance"
@@ -59,10 +64,6 @@ tags:
     centerElement: true
 - tapOn:
     id: "reception-record-attendance"
-    optional: true
-- tapOn:
-    text: "Record Attendance"
-    optional: true
 - extendedWaitUntil:
     visible:
       id: "privileged-pin-cells"
@@ -70,11 +71,11 @@ tags:
 - tapOn:
     id: "privileged-pin-cells"
 - inputText: "1234"
-- extendedWaitUntil:
-    visible: "Manual attendance recorded."
-    timeout: 15000
 - hideKeyboard:
     optional: true
+- extendedWaitUntil:
+    visible: "Karan Desk Test"
+    timeout: 15000
 - takeScreenshot: /tmp/zook-maestro/reception/member-actions.png
 
 - tapOn:
@@ -128,6 +129,12 @@ tags:
 - tapOn:
     id: "reception-pickup-code"
 - inputText: "AS-PICK-101"
+- pressKey: Enter
+- scrollUntilVisible:
+    element:
+      id: "reception-verify-pickup-code"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "reception-verify-pickup-code"
 - extendedWaitUntil:

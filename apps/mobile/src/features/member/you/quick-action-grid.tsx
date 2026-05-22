@@ -11,13 +11,14 @@ type QuickAction = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   meta?: string;
+  testID?: string;
 };
 
 export function QuickActionGrid({ gymHref = "/gyms", unreadCount }: { gymHref?: string; unreadCount: number }) {
   const actions: QuickAction[] = [
     { href: "/notifications", icon: "notifications-outline", label: "Notifications", meta: unreadCount ? `${unreadCount} unread` : undefined },
     { href: "/shop", icon: "storefront-outline", label: "Shop" },
-    { href: "/assistant", icon: "sparkles-outline", label: "Assistant" },
+    { href: "/assistant", icon: "sparkles-outline", label: "Assistant", testID: "more-assistant" },
     { href: gymHref, icon: "business-outline", label: "Gym profile" },
     { href: "/profile", icon: "gift-outline", label: "Referral" },
     { href: "/plan", icon: "pulse-outline", label: "Tracking history" },
@@ -36,6 +37,7 @@ function QuickActionTile({ action }: { action: QuickAction }) {
   return (
     <Pressable
       onPress={() => router.push(action.href as never)}
+      testID={action.testID}
       accessibilityRole="button"
       accessibilityLabel={action.label}
       style={[styles.tile, { backgroundColor: palette.surface.default, borderColor: palette.border.default }]}

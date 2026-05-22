@@ -115,6 +115,9 @@ export default function TrainerClientOverviewScreen() {
                 <Text numberOfLines={1} style={styles.metricValue}>{activePlans ? `${activePlans} active plans` : "Create first plan"}</Text>
               </View>
             </View>
+            <ZookButton testID="trainer-ai-draft-button" href={`/trainer/clients/${id}/plan` as never} icon="sparkles-outline" disabled={!client}>
+              Open AI draft
+            </ZookButton>
           </GlassCard>
 
           <GlassCard variant="compact" contentStyle={styles.stack}>

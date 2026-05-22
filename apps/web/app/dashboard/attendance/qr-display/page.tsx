@@ -11,6 +11,8 @@ import {
 import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Check-in QR | Zook",
   robots: { index: false, follow: false },
@@ -51,7 +53,7 @@ export default async function DashboardQrDisplayPage({
       >
         <X size={20} />
       </Link>
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-7xl">
         <AttendanceQrPanel
           orgId={session.activeOrgId}
           branchId={branch?.id ?? resolvedSearch.branchId ?? null}

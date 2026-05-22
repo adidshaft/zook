@@ -59,8 +59,6 @@ export default function TrainerLayout() {
         }}
       />
       <Tabs.Screen name="clients/[id]" options={{ href: null }} />
-      <Tabs.Screen name="client/[id]" options={{ href: null }} />
-      <Tabs.Screen name="client/[id]/ai-draft" options={{ href: null }} />
     </Tabs>
   );
 }

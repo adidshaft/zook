@@ -104,3 +104,46 @@ export function ThemePreferenceSwitcher() {
     </div>
   );
 }
+
+export function ThemeToggleButton() {
+  const [currentTheme, setCurrentTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const pref = readCookiePreference();
+    setCurrentTheme(resolvedTheme(pref));
+  }, []);
+
+  function toggle() {
+    const next: "light" | "dark" = currentTheme === "light" ? "dark" : "light";
+    setCurrentTheme(next);
+    persistTheme(next);
+    applyTheme(next);
+    // Dispatch custom event if any other parts of the UI need to update reactively
+    window.dispatchEvent(new CustomEvent("zook:theme-changed", { detail: next }));
+  }
+
+  useEffect(() => {
+    function handleThemeChange(e: Event) {
+      const detail = (e as CustomEvent<"light" | "dark">).detail;
+      if (detail) setCurrentTheme(detail);
+    }
+    window.addEventListener("zook:theme-changed", handleThemeChange);
+    return () => window.removeEventListener("zook:theme-changed", handleThemeChange);
+  }, []);
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      title={currentTheme === "light" ? "Switch to Dark Theme" : "Switch to Light Theme"}
+      aria-label="Toggle Theme"
+      className="zook-focus group flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:scale-105 active:scale-95"
+    >
+      {currentTheme === "light" ? (
+        <Moon size={16} className="transition-transform duration-300 group-hover:-rotate-12" />
+      ) : (
+        <Sun size={16} className="transition-transform duration-300 group-hover:rotate-45" />
+      )}
+    </button>
+  );
+}

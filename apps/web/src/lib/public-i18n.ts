@@ -193,7 +193,7 @@ export const publicMessages = {
     transparentPricing: "Transparent pricing",
     transparentPricingCopy:
       "You see duration, visits, discounts, and final amount before moving into payment.",
-    facilities: "Facilities",
+    facilities: "Photos & Facilities",
     facilitiesPending: "Facilities will appear once the gym publishes them.",
     equipment: "Equipment",
     equipmentPending: "Equipment will appear once the gym publishes the list.",
@@ -428,7 +428,7 @@ export const publicMessages = {
     transparentPricing: "साफ कीमत",
     transparentPricingCopy:
       "भुगतान से पहले अवधि, विज़िट, छूट और अंतिम राशि साफ दिखती है.",
-    facilities: "सुविधाएं",
+    facilities: "सुविधाएं और तस्वीरें",
     facilitiesPending: "जिम प्रकाशित करेगा तो सुविधाएं यहां दिखेंगी.",
     equipment: "उपकरण",
     equipmentPending: "जिम सूची प्रकाशित करेगा तो उपकरण यहां दिखेंगे.",

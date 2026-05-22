@@ -1,5 +1,5 @@
 appId: com.zook.app
-name: 02-onboarding
+name: 02b-onboarding-permissions
 tags:
   - onboarding
 ---
@@ -33,26 +33,16 @@ tags:
       id: "onboarding-permissions-screen"
     timeout: 12000
 - tapOn:
-    id: "onboarding-skip-permissions"
+    id: "onboarding-allow-permissions"
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "Allow While Using App"
+    optional: true
+- openLink: zook:///login
 - extendedWaitUntil:
     visible:
       id: "login-email"
-    timeout: 12000
-- takeScreenshot: /tmp/zook-maestro/onboarding/skip.png
-
-- launchApp:
-    clearState: true
-    clearKeychain: true
-- runFlow:
-    file: _helpers/login-as.yaml
-    env:
-      email: prospect@zook.local
-      home_id: onboarding-role-question-screen
-- tapOn:
-    id: "onboarding-role-member"
-- openLink: zook:///gyms
-- extendedWaitUntil:
-    visible:
-      id: "find-gyms-screen"
     timeout: 15000
-- takeScreenshot: /tmp/zook-maestro/onboarding/prospect-member-role.png
+- takeScreenshot: /tmp/zook-maestro/onboarding/permissions.png

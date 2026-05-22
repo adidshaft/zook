@@ -12,7 +12,7 @@ import {
 } from "@/lib/public-i18n";
 import { searchGyms, toPositivePage } from "@/lib/public-gym-discovery";
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Find a gym | Zook",
