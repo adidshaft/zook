@@ -16,7 +16,7 @@ import {
   resolvePublicLocale,
 } from "@/lib/public-i18n";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Zook | Gym OS for modern gyms",

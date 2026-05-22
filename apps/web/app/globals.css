@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 @import "@zook/ui/tokens.css";
 
 * {
@@ -148,14 +149,115 @@ label {
   outline-offset: 3px;
 }
 
-.zook-button-lime,
-a.zook-focus.bg-lime-300,
-button.zook-focus.bg-lime-300 {
+/* Pervasive Green/Lime high-contrast button contrast enforcement */
+button.bg-lime-300,
+a.bg-lime-300,
+button.bg-lime-400,
+a.bg-lime-400,
+button.bg-\[var\(--accent-fill\)\],
+a.bg-\[var\(--accent-fill\)\],
+button.bg-\[var\(--accent\)\],
+a.bg-\[var\(--accent\)\],
+.bg-lime-300,
+.bg-lime-400,
+.bg-\[var\(--accent-fill\)\],
+.bg-\[var\(--accent\)\],
+.zook-button-lime {
   color: var(--text-on-accent) !important;
 }
 
-.zook-button-lime *,
-a.zook-focus.bg-lime-300 *,
-button.zook-focus.bg-lime-300 * {
+button.bg-lime-300 *,
+a.bg-lime-300 *,
+button.bg-lime-400 *,
+a.bg-lime-400 *,
+button.bg-\[var\(--accent-fill\)\] *,
+a.bg-\[var\(--accent-fill\)\] *,
+button.bg-\[var\(--accent\)\] *,
+a.bg-\[var\(--accent\)\] *,
+.bg-lime-300 *,
+.bg-lime-400 *,
+.bg-\[var\(--accent-fill\)\] *,
+.bg-\[var\(--accent\)\] *,
+.zook-button-lime * {
   color: inherit !important;
 }
+
+/* Custom premium overrides for hardcoded dark utility properties when in Light Mode */
+[data-theme="light"] {
+  /* Low-contrast green texts in Light Mode */
+  .text-lime-100,
+  .text-lime-200,
+  .text-lime-300,
+  .text-lime-400 {
+    color: var(--accent-strong) !important;
+  }
+
+  /* Text colors: Map white/semi-white utility classes to themed variables */
+  .text-white {
+    color: var(--text-primary) !important;
+  }
+  .text-white\/90,
+  .text-white\/85,
+  .text-white\/80,
+  .text-white\/78,
+  .text-white\/75,
+  .text-white\/72,
+  .text-white\/70 {
+    color: var(--text-primary) !important;
+    opacity: 0.9 !important;
+  }
+  .text-white\/65,
+  .text-white\/60,
+  .text-white\/58,
+  .text-white\/55,
+  .text-white\/52,
+  .text-white\/50,
+  .text-white\/48 {
+    color: var(--text-secondary) !important;
+  }
+  .text-white\/45,
+  .text-white\/42,
+  .text-white\/40,
+  .text-white\/38,
+  .text-white\/35,
+  .text-white\/32,
+  .text-white\/30,
+  .text-white\/28,
+  .text-white\/25,
+  .text-white\/20,
+  .text-white\/15,
+  .text-white\/12,
+  .text-white\/10 {
+    color: var(--text-tertiary) !important;
+  }
+
+  /* Background colors: Map black/semi-black utility classes to themed sunken backgrounds */
+  .bg-black\/5,
+  .bg-black\/8,
+  .bg-black\/10,
+  .bg-black\/15,
+  .bg-black\/20,
+  .bg-black\/25,
+  .bg-black\/30,
+  .bg-black\/40,
+  .bg-black\/50,
+  .bg-white\/5,
+  .bg-white\/6,
+  .bg-white\/8,
+  .bg-white\/10,
+  .bg-white\/12 {
+    background: var(--bg-sunken) !important;
+  }
+
+  /* Border colors: Map white-opaque borders to themed subtle borders */
+  .border-white\/5,
+  .border-white\/8,
+  .border-white\/10,
+  .border-white\/12,
+  .border-white\/15,
+  .border-white\/20,
+  .border-white\/30 {
+    border-color: var(--border) !important;
+  }
+}
+

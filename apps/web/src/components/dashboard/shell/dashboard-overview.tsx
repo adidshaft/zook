@@ -503,21 +503,23 @@ export function DashboardOverview({
               Insights →
             </Link>
           </div>
-          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <Donut
-              value={summary.aiUsageThisMonth}
-              total={aiQuota}
-              size={120}
-              thickness={12}
-              tone="violet"
-              centerLabel={
-                <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
-                  {aiUsagePercent}%
-                </span>
-              }
-              centerSub="of monthly limit"
-            />
-            <div className="grid flex-1 gap-2">
+          <div className="mt-5 flex flex-col items-center gap-5 justify-between">
+            <div className="flex justify-center shrink-0">
+              <Donut
+                value={summary.aiUsageThisMonth}
+                total={aiQuota}
+                size={110}
+                thickness={10}
+                tone="violet"
+                centerLabel={
+                  <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
+                    {aiUsagePercent}%
+                  </span>
+                }
+                centerSub="of monthly limit"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2 w-full min-w-0">
               {(
                 [
                   ["AI events", `${summary.aiUsageThisMonth} / ${aiQuota}`],
@@ -527,10 +529,10 @@ export function DashboardOverview({
               ).map(([label, value]) => (
                 <div
                   key={label}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2"
+                  className="flex flex-col items-center justify-center gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-2 min-w-0 text-center"
                 >
-                  <span className="text-xs text-[var(--text-tertiary)]">{label}</span>
-                  <span className="text-sm font-semibold tabular-nums text-[var(--text-primary)]">{value}</span>
+                  <span className="text-[10px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider truncate w-full">{label}</span>
+                  <span className="text-xs font-semibold tabular-nums text-[var(--text-primary)] truncate w-full">{value}</span>
                 </div>
               ))}
             </div>

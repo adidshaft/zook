@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { BodyCompositionTimeline } from "../body-composition-timeline";
 import { ErrorNotice } from "../operational-shared";
 import { ManagedOn, SearchableSelect } from "../../ui";
@@ -40,7 +41,15 @@ export function MemberDetailDrawer({
   const selectedSubscription = memberDetailState.data?.member.subscriptions[0] ?? null;
 
   return (
-    <div className="mt-4 rounded-[22px] border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] p-4">
+    <div className="relative mt-4 rounded-[22px] border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] p-5">
+      <button
+        type="button"
+        onClick={() => setSelectedMemberId(null)}
+        className="zook-focus absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-[var(--text-tertiary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] transition"
+        aria-label="Close details"
+      >
+        <X size={16} />
+      </button>
       {memberDetailState.error ? (
         <ErrorNotice message={memberDetailState.error} />
       ) : memberDetailState.loading || !memberDetailState.data ? (
@@ -157,15 +166,6 @@ export function MemberDetailDrawer({
             <p className="mt-2 text-sm text-[var(--text-secondary)]">
               {memberDetailState.data.member.payments.length} recent records
             </p>
-            <ZookButton
-              type="button"
-              tone="ghost"
-              size="sm"
-              onClick={() => setSelectedMemberId(null)}
-              className="mt-2"
-            >
-              Close
-            </ZookButton>
           </div>
           <BodyCompositionTimeline entries={memberDetailState.data.member.bodyProgress ?? []} />
         </div>

@@ -18,7 +18,7 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
-import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert, Keyboard, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Reanimated from "@/lib/reanimated-lite";
 import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
@@ -84,6 +84,7 @@ type DomainMemberItem = ComponentProps<typeof MemberList>["items"][number];
 type ReceptionWorkspaceValue = ReturnType<typeof useReceptionWorkspaceState>;
 
 const ReceptionWorkspaceContext = createContext<ReceptionWorkspaceValue | null>(null);
+let lastReceptionMemberId: string | null = null;
 
 export function useReceptionWorkspace() {
   const value = useContext(ReceptionWorkspaceContext);
@@ -126,7 +127,9 @@ function useReceptionWorkspaceState({
   const [attendanceStatus, setAttendanceStatus] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [verifyingCode, setVerifyingCode] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(initialMemberId);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(
+    initialMemberId ?? lastReceptionMemberId,
+  );
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(() => new Set());
   const [bulkAttendanceStatus, setBulkAttendanceStatus] = useState("");
@@ -142,6 +145,12 @@ function useReceptionWorkspaceState({
   const recordPaymentMutation = useRecordManualPayment();
   const fulfillOrderMutation = useFulfillShopOrder();
   const decisionSheetRef = useRef<BottomSheetModal>(null);
+
+  useEffect(() => {
+    if (selectedMemberId) {
+      lastReceptionMemberId = selectedMemberId;
+    }
+  }, [selectedMemberId]);
   const approvalQueue = queueQuery.data?.records ?? [];
   const pendingCount = approvalQueue.filter(
     (attempt) => attempt.status === "PENDING_APPROVAL",
@@ -533,6 +542,7 @@ function useReceptionWorkspaceState({
 
   async function recordPayment() {
     if (!member?.id || !membership?.id) return;
+    Keyboard.dismiss();
     setPaymentStatus("");
     if (!(await requirePrivilegedAuth("Record manual payment"))) {
       showAuthenticationRequired();
@@ -562,6 +572,7 @@ function useReceptionWorkspaceState({
   }
 
   async function fulfillOrder(orderId: string) {
+    Keyboard.dismiss();
     if (!(await requirePrivilegedAuth("Fulfill pickup without code"))) {
       showAuthenticationRequired();
       return;
@@ -1123,6 +1134,8 @@ export function ReceptionMembersBody() {
                   label="Attendance note"
                   value={reason}
                   onChangeText={setReason}
+                  returnKeyType="done"
+                  blurOnSubmit
                   required
                   error={attendanceReasonInvalid ? "Add at least 2 characters." : undefined}
                 />
@@ -1149,7 +1162,8 @@ export function ReceptionMembersBody() {
             ) : null}
             <View style={styles.stack}>
               <MemberList
-                testID="reception-member-list"
+                testID="reception-member"
+                searchTestID="reception-member-search"
                 items={receptionMemberItems}
                 isLoading={membersQuery.isLoading}
                 isError={membersQuery.isError}
@@ -1227,6 +1241,19 @@ export function ReceptionPaymentsBody() {
                 },
               ]}
             />
+            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+              <FormField
+                testID="reception-payment-amount"
+                label="Amount received"
+                value={amount}
+                onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
+                keyboardType="decimal-pad"
+                placeholder="₹0"
+                returnKeyType="next"
+                required
+                error={amountInvalid ? "Enter an amount greater than 0." : undefined}
+              />
+            </GlassCard>
             {!memberRecord ? (
               <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
                 <SectionHeader
@@ -1340,7 +1367,6 @@ export function ReceptionPaymentsBody() {
                   })}
                 </View>
                 <FormField
-                  testID="reception-payment-amount"
                   label="Amount received"
                   value={amount}
                   onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
@@ -1447,6 +1473,8 @@ export function ReceptionOrdersBody() {
                 value={verifyCode}
                 onChangeText={handleVerifyCodeChange}
                 autoCapitalize="characters"
+                returnKeyType="done"
+                blurOnSubmit
                 placeholder="Enter pickup code"
               />
               <PrimaryButton

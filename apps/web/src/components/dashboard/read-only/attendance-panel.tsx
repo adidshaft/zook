@@ -60,6 +60,16 @@ export function AttendancePanel({
               title="QR code and entry codes"
               description="Members scan the displayed gym QR, receive a unique entry code, and show it at the floor or desk."
               badge={<StatusPill value="Self-approved QR" tone="lime" />}
+              action={
+                <a
+                  href={branchScope.selectedBranch?.id ? `/dashboard/attendance/qr-display?branchId=${encodeURIComponent(branchScope.selectedBranch.id)}` : "/dashboard/attendance/qr-display"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="zook-focus inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--bg-sunken)] px-3 py-1.5 text-xs font-semibold text-[var(--accent-strong)] transition shadow-sm"
+                >
+                  Open QR in New Tab
+                </a>
+              }
             />
             <ReadoutGrid
               className="mt-5"

@@ -42,6 +42,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         href: "/dashboard/members/join-requests",
         icon: UserPlus,
         badgeKey: "joinRequests",
+        indent: true,
         permissions: ["MEMBERS_VIEW"],
       },
       {
@@ -102,6 +103,7 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         label: "Trainers & PT",
         href: "/dashboard/staff",
         icon: Dumbbell,
+        hidden: true,
         permissions: ["ORG_MANAGE_STAFF"],
       },
       {

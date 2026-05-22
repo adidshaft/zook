@@ -11,26 +11,26 @@ export type ManagedSurface =
   | "platform";
 
 const surfaceCopy: Record<ManagedSurface, { label: string; tone: string }> = {
-  desk: { label: "Managed at Desk", tone: "border-sky-300/25 bg-sky-300/10 text-sky-100" },
+  desk: { label: "Managed at Desk", tone: "border-sky-500/30 bg-sky-500/10 text-sky-800 dark:border-sky-300/25 dark:bg-sky-300/10 dark:text-sky-200" },
   "trainer-mobile": {
     label: "Trainer app",
-    tone: "border-lime-300/25 bg-lime-300/10 text-lime-100",
+    tone: "border-lime-600/30 bg-lime-500/10 text-lime-800 dark:border-lime-300/25 dark:bg-lime-300/10 dark:text-lime-200",
   },
   "member-mobile": {
     label: "Member app",
-    tone: "border-violet-300/25 bg-violet-300/10 text-violet-100",
+    tone: "border-violet-500/30 bg-violet-500/10 text-violet-800 dark:border-violet-300/25 dark:bg-violet-300/10 dark:text-violet-200",
   },
   "reception-mobile": {
     label: "Reception app",
-    tone: "border-amber-300/25 bg-amber-300/10 text-amber-100",
+    tone: "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:border-amber-300/25 dark:bg-amber-300/10 dark:text-amber-200",
   },
   "owner-mobile": {
     label: "Owner app",
-    tone: "border-cyan-300/25 bg-cyan-300/10 text-cyan-100",
+    tone: "border-cyan-500/30 bg-cyan-500/10 text-cyan-800 dark:border-cyan-300/25 dark:bg-cyan-300/10 dark:text-cyan-200",
   },
   platform: {
     label: "Platform",
-    tone: "border-white/16 bg-white/8 text-white/74",
+    tone: "border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)]",
   },
 };
 
@@ -61,7 +61,7 @@ export function ManagedOn({
         <MonitorSmartphone className="h-3.5 w-3.5" aria-hidden="true" />
         {copy.label}
       </span>
-      <span className="text-sm leading-5 text-white/56">{children}</span>
+      <span className="text-sm leading-5 text-[var(--text-secondary)]">{children}</span>
     </>
   );
 
@@ -70,7 +70,7 @@ export function ManagedOn({
       <a
         href={href}
         className={clsx(
-          "zook-focus inline-flex max-w-2xl items-center gap-2 rounded-2xl border border-white/10 bg-black/22 px-3 py-2 transition hover:bg-white/6",
+          "zook-focus flex flex-col items-start gap-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-3 transition hover:bg-[var(--bg-sunken)]/60 shadow-sm",
           className,
         )}
       >
@@ -80,13 +80,13 @@ export function ManagedOn({
   }
 
   return (
-    <span
+    <div
       className={clsx(
-        "inline-flex max-w-2xl items-center gap-2 rounded-2xl border border-white/10 bg-black/22 px-3 py-2",
+        "flex flex-col items-start gap-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-3 shadow-sm",
         className,
       )}
     >
       {content}
-    </span>
+    </div>
   );
 }

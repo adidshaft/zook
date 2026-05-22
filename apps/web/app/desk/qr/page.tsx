@@ -53,7 +53,7 @@ export default async function DeskQrPage({
       >
         <X size={20} />
       </Link>
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-7xl">
         <AttendanceQrPanel orgId={session.activeOrgId} branchId={resolvedSearch.branchId ?? null} />
       </div>
     </div>

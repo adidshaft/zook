@@ -10,28 +10,37 @@ export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicL
     ? org.gallery
     : [org.coverImageUrl].filter((imageUrl): imageUrl is string => Boolean(imageUrl));
   return (
-    <>
+    <div className="space-y-6">
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
         <TagCard title={t("facilities")} empty={t("facilitiesPending")} items={facilities} tone="blue" />
         <TagCard title={t("equipment")} empty={t("equipmentPending")} items={org.equipment} tone="lime" />
       </section>
+      
       {gallery.length ? (
-        <section className="grid gap-4 md:grid-cols-3">
-          {gallery.slice(0, 6).map((imageUrl) => (
-            <Image
-              key={imageUrl}
-              src={imageUrl}
-              alt={`${org.name} facility photo`}
-              width={640}
-              height={480}
-              sizes="(min-width: 768px) 33vw, 100vw"
-              className="aspect-[4/3] rounded-[28px] border border-[var(--border)] object-cover"
-              unoptimized
-            />
-          ))}
-        </section>
+        <GlassCard>
+          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">Photos & Gallery</h2>
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">Explore our premium facilities, workout floor, and training space.</p>
+          <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mt-6">
+            {gallery.slice(0, 15).map((imageUrl, index) => (
+              <div 
+                key={imageUrl} 
+                className="group relative aspect-[4/3] overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] shadow-sm transition-all duration-300 hover:scale-[1.04] hover:shadow-md hover:border-[var(--accent-strong)]/30 cursor-pointer"
+              >
+                <Image
+                  src={imageUrl}
+                  alt={`${org.name} gallery photo ${index + 1}`}
+                  fill
+                  sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                  unoptimized
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              </div>
+            ))}
+          </section>
+        </GlassCard>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -52,7 +61,7 @@ function TagCard({
       <div className="mt-5 flex flex-wrap gap-2">
         {items.length ? (
           items.map((item) => (
-            <Pill key={item} tone={tone}>
+            <Pill key={item} tone={tone} className="transition-transform duration-200 hover:scale-105">
               {item}
             </Pill>
           ))

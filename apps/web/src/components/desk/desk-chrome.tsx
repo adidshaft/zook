@@ -15,6 +15,7 @@ import {
 import { DashboardLocaleToggle } from "@/components/dashboard-locale-toggle";
 import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
 import { ZookButtonLink } from "@/components/zook-button";
+import { ThemeToggleButton } from "@/components/theme-preference-switcher";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { deskTranslations } from "./copy";
 
@@ -97,15 +98,15 @@ export function DeskChrome({
   );
 
   return (
-    <div className="min-h-dvh pb-10">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#070908]/92 px-4 py-3 backdrop-blur-xl">
+    <div className="min-h-dvh pb-10 bg-[var(--bg)] text-[var(--text-primary)]">
+      <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-4 py-3 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold uppercase tracking-[0.14em] text-white/70">
+            <p className="truncate text-sm font-semibold uppercase tracking-[0.14em] text-[var(--text-primary)]">
               {orgName}
             </p>
-            <div className="mt-1 flex items-center gap-2 text-xs text-white/50">
-              <LayoutDashboard size={14} />
+            <div className="mt-1 flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
+              <LayoutDashboard size={14} className="text-[var(--text-tertiary)]" />
               <span>Reception desk</span>
             </div>
           </div>
@@ -115,6 +116,7 @@ export function DeskChrome({
                 {copy.backToManagement}
               </ZookButtonLink>
             ) : null}
+            <ThemeToggleButton />
             <DashboardLocaleToggle locale={locale ?? undefined} labels={copy.common} />
             <DashboardSignOutButton
               compact
@@ -134,14 +136,20 @@ export function DeskChrome({
                 key={tab.href}
                 href={tabHref(tab.href, branchId)}
                 aria-current={active ? "page" : undefined}
-                className={`zook-focus inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-semibold transition ${
-                  active ? "bg-lime-300 text-black" : "bg-white/6 text-white/66 hover:bg-white/10"
+                className={`zook-focus inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition border ${
+                  active
+                    ? "border-[var(--accent-fill)] bg-[var(--accent-fill)] text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)]"
+                    : "border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)]"
                 }`}
               >
                 {tab.icon}
                 <span>{tab.label}</span>
                 {tab.href === "/desk" && pendingCount > 0 ? (
-                  <span className="grid min-h-5 min-w-5 place-items-center rounded-full bg-black/20 px-1 text-xs">
+                  <span
+                    className={`grid min-h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold ${
+                      active ? "bg-black/10 dark:bg-white/20 text-[var(--text-on-accent)]" : "bg-[var(--surface-accent-soft)] text-[var(--accent-strong)] border border-[var(--border)]"
+                    }`}
+                  >
                     {pendingCount}
                   </span>
                 ) : null}

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { useHasPermission } from "@/lib/auth";
 import { useOrgJoinRequests } from "@/lib/domains/owner";
-import { legacyColors } from "@/lib/theme";
+import { legacyColors, useTheme } from "@/lib/theme";
 
 const legacyViewTargets: Record<string, "/owner/members" | "/owner/approvals" | "/owner/revenue" | "/owner/stock"> = {
   members: "/owner/members",
@@ -14,6 +14,7 @@ const legacyViewTargets: Record<string, "/owner/members" | "/owner/approvals" | 
 };
 
 export default function OwnerLayout() {
+  const { palette } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
@@ -36,11 +37,11 @@ export default function OwnerLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: legacyColors.brandLime,
-        tabBarInactiveTintColor: legacyColors.textMuted,
+        tabBarActiveTintColor: palette.accent.base,
+        tabBarInactiveTintColor: palette.text.tertiary,
         tabBarStyle: {
-          backgroundColor: legacyColors.bgElevated,
-          borderTopColor: legacyColors.glassStroke,
+          backgroundColor: palette.bg.elevated,
+          borderTopColor: palette.border.subtle,
         },
       }}
     >

@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
 import { useI18n, type LocalePreference } from "@/lib/i18n";
-import { legacyColors } from "@/lib/theme";
+import { legacyColors, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type LanguageOption = {
@@ -27,6 +27,7 @@ export default function OnboardingLanguageStep() {
   const { preference, setLocalePreference } = useI18n();
   const [selected, setSelected] = useState<LocalePreference>(preference);
   const [busy, setBusy] = useState(false);
+  const { palette } = useTheme();
 
   async function continueOn() {
     setBusy(true);
@@ -48,11 +49,11 @@ export default function OnboardingLanguageStep() {
   return (
     <View
       testID="onboarding-language-screen"
-      style={[styles.screen, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
+      style={[styles.screen, { backgroundColor: palette.bg.app, paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
     >
       <View style={styles.header}>
-        <Text style={styles.brand}>Pick your language</Text>
-        <Text style={styles.kicker}>You can change this any time in Settings.</Text>
+        <Text style={[styles.brand, { color: palette.text.primary }]}>Pick your language</Text>
+        <Text style={[styles.kicker, { color: palette.text.secondary }]}>You can change this any time in Settings.</Text>
       </View>
 
       <View style={styles.list}>
@@ -66,16 +67,20 @@ export default function OnboardingLanguageStep() {
               accessibilityState={{ selected: isSelected }}
               accessibilityLabel={option.label}
               onPress={() => setSelected(option.value)}
-              style={[styles.option, isSelected ? styles.optionSelected : null]}
+              style={[
+                styles.option,
+                { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle },
+                isSelected ? { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft } : null,
+              ]}
             >
               <View style={styles.optionCopy}>
-                <Text style={styles.optionLabel}>{option.label}</Text>
-                <Text style={styles.optionCaption}>{option.caption}</Text>
+                <Text style={[styles.optionLabel, { color: palette.text.primary }]}>{option.label}</Text>
+                <Text style={[styles.optionCaption, { color: palette.text.tertiary }]}>{option.caption}</Text>
               </View>
               <Ionicons
                 name={isSelected ? "checkmark-circle" : "ellipse-outline"}
                 size={22}
-                color={isSelected ? legacyColors.lime : legacyColors.muted}
+                color={isSelected ? palette.accent.base : palette.text.tertiary}
               />
             </Pressable>
           );
@@ -99,7 +104,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     justifyContent: "space-between",
-    backgroundColor: legacyColors.bg,
     paddingHorizontal: 24,
   },
   header: {

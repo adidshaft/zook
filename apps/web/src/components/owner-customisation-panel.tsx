@@ -125,40 +125,51 @@ export function OwnerCustomisationPanel() {
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
-    setPrefs(loadOwnerPrefs());
+    const loaded = loadOwnerPrefs();
+    setPrefs(loaded);
+    if (typeof window !== "undefined") {
+      document.documentElement.dataset.accent = loaded.accent;
+    }
     setMounted(true);
   }, []);
 
   function toggleWidget(key: OwnerWidgetKey) {
-    setPrefs((current) => {
-      const next: OwnerPrefs = {
-        ...current,
-        widgets: { ...current.widgets, [key]: !current.widgets[key] },
-      };
-      saveOwnerPrefs(next);
-      // Custom event so the dashboard refreshes its layout reactively.
+    const next: OwnerPrefs = {
+      ...prefs,
+      widgets: { ...prefs.widgets, [key]: !prefs.widgets[key] },
+    };
+    saveOwnerPrefs(next);
+    setPrefs(next);
+    setTimeout(() => {
       window.dispatchEvent(new CustomEvent("zook:owner-prefs-changed", { detail: next }));
-      return next;
-    });
+    }, 0);
     setSavedAt(Date.now());
   }
 
   function update<K extends keyof OwnerPrefs>(key: K, value: OwnerPrefs[K]) {
-    setPrefs((current) => {
-      const next: OwnerPrefs = { ...current, [key]: value };
-      saveOwnerPrefs(next);
+    const next: OwnerPrefs = { ...prefs, [key]: value };
+    saveOwnerPrefs(next);
+    setPrefs(next);
+    if (key === "accent" && typeof window !== "undefined") {
+      document.documentElement.dataset.accent = value as string;
+    }
+    setTimeout(() => {
       window.dispatchEvent(new CustomEvent("zook:owner-prefs-changed", { detail: next }));
-      return next;
-    });
+    }, 0);
     setSavedAt(Date.now());
   }
 
   function resetAll() {
     saveOwnerPrefs(OWNER_PREFS_DEFAULTS);
     setPrefs(OWNER_PREFS_DEFAULTS);
-    window.dispatchEvent(
-      new CustomEvent("zook:owner-prefs-changed", { detail: OWNER_PREFS_DEFAULTS }),
-    );
+    if (typeof window !== "undefined") {
+      document.documentElement.dataset.accent = OWNER_PREFS_DEFAULTS.accent;
+    }
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("zook:owner-prefs-changed", { detail: OWNER_PREFS_DEFAULTS }),
+      );
+    }, 0);
     setSavedAt(Date.now());
   }
 
@@ -324,10 +335,19 @@ function SegmentRow<T extends string>({
 export function useOwnerPrefs(): OwnerPrefs {
   const [prefs, setPrefs] = useState<OwnerPrefs>(OWNER_PREFS_DEFAULTS);
   useEffect(() => {
-    setPrefs(loadOwnerPrefs());
+    const loaded = loadOwnerPrefs();
+    setPrefs(loaded);
+    if (typeof window !== "undefined") {
+      document.documentElement.dataset.accent = loaded.accent;
+    }
     function onChange(event: Event) {
       const detail = (event as CustomEvent<OwnerPrefs>).detail;
-      if (detail) setPrefs(detail);
+      if (detail) {
+        setPrefs(detail);
+        if (typeof window !== "undefined") {
+          document.documentElement.dataset.accent = detail.accent;
+        }
+      }
     }
     window.addEventListener("zook:owner-prefs-changed", onChange);
     return () => window.removeEventListener("zook:owner-prefs-changed", onChange);

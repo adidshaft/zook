@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { legacyColors, spacing, typography, useTheme } from "@/lib/theme";
 
 const DAY_MS = 86_400_000;
 
@@ -92,14 +92,15 @@ function Banner({
   onDismiss?: () => void;
   title: string;
 }) {
+  const { palette } = useTheme();
   return (
     <GlassCard variant="compact" contentStyle={styles.banner}>
       <IconBubble icon={icon} tone="neutral" size={34} />
       <View style={styles.copy}>
-        <Text numberOfLines={1} style={styles.title}>
+        <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>
           {title}
         </Text>
-        <Text numberOfLines={2} style={styles.body}>
+        <Text numberOfLines={2} style={[styles.body, { color: palette.text.secondary }]}>
           {body}
         </Text>
       </View>
@@ -108,7 +109,7 @@ function Banner({
       </ZookButton>
       {onDismiss ? (
         <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel={`Dismiss ${title}`} style={styles.dismiss}>
-          <Ionicons name="close" size={16} color={legacyColors.muted} />
+          <Ionicons name="close" size={16} color={palette.text.tertiary} />
         </Pressable>
       ) : null}
     </GlassCard>

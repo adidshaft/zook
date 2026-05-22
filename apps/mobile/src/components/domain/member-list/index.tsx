@@ -24,6 +24,7 @@ export function MemberList({
   onRevealPhone,
   onSearchChange,
   searchValue,
+  searchTestID,
   testID,
 }: MemberListProps) {
   return (
@@ -34,6 +35,7 @@ export function MemberList({
         onFilterChange={onFilterChange}
         onSearchChange={onSearchChange}
         searchValue={searchValue}
+        searchTestID={searchTestID}
       />
       {isLoading ? <TrainerClientsSkeleton /> : null}
       {isError ? <QueryErrorState error={new Error("Members could not load.")} onRetry={onRetry} /> : null}

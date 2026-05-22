@@ -31,4 +31,5 @@ export type MemberListProps = {
   availableFilters?: MemberListFilter[];
   emptyState?: { title: string; subtitle?: string };
   testID?: string;
+  searchTestID?: string;
 };

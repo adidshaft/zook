@@ -39,9 +39,10 @@ tags:
     timeout: 30000
 - tapOn:
     id: "trainer-save-ai-edits"
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       id: "trainer-ai-draft-status"
+    direction: UP
     timeout: 15000
 - scrollUntilVisible:
     element:
@@ -50,9 +51,10 @@ tags:
     timeout: 10000
 - tapOn:
     id: "trainer-assign-ai-plan"
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       id: "trainer-ai-draft-status"
+    direction: UP
     timeout: 15000
 - takeScreenshot: /tmp/zook-maestro/trainer/ai-draft.png
 

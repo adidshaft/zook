@@ -115,17 +115,17 @@ export function StaffSection({
   return (
     <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
       <GlassCard>
-        <div className="mb-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
+        <div className="mb-5 grid gap-3 rounded-[24px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="inline-flex items-center gap-2 font-medium text-white">
+              <p className="inline-flex items-center gap-2 font-medium text-[var(--text-primary)]">
                 Invite staff
                 <HelpHint label="Invite email" title="Invite email">
                   We email a sign-in link. The recipient confirms with a one-time code and joins
                   this gym with the role you pick.
                 </HelpHint>
               </p>
-              <p className="mt-1 text-xs text-white/45">
+              <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                 Invite email sends a sign-in link. Reception users should be tied to one branch;
                 admins and trainers can work across assigned gym areas.
               </p>
@@ -140,7 +140,7 @@ export function StaffSection({
               }
               placeholder="staff@example.com"
               type="email"
-              className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none"
             />
             <SearchableSelect
               label="Role"
@@ -179,8 +179,8 @@ export function StaffSection({
           >
             {formBusy === "staff" ? "Inviting..." : "Invite staff"}
           </ZookButton>
-          {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
-          {formStatus ? <p className="text-sm text-lime-100">{formStatus}</p> : null}
+          {formError ? <p className="text-sm text-[var(--feedback-danger)]">{formError}</p> : null}
+          {formStatus ? <p className="text-sm text-[var(--feedback-success)]">{formStatus}</p> : null}
         </div>
         <SectionHeader
           eyebrow="Team"
@@ -207,10 +207,10 @@ export function StaffSection({
                   header: "Person",
                   render: (assignment) => (
                     <div>
-                      <p className="font-medium text-white">
+                      <p className="font-medium text-[var(--text-primary)]">
                         {staffUsersById.get(assignment.userId)?.name ?? "Staff user"}
                       </p>
-                      <p className="mt-1 text-xs text-white/45">
+                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                         {staffUsersById.get(assignment.userId)?.email ?? assignment.userId}
                       </p>
                     </div>
@@ -225,35 +225,35 @@ export function StaffSection({
                         <select
                           value={staffRoleDraft}
                           onChange={(event) => setStaffRoleDraft(event.target.value as StaffRole)}
-                          className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none"
+                          className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
                         >
-                          <option value="TRAINER" className="bg-black">
+                          <option value="TRAINER" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                             Trainer
                           </option>
-                          <option value="RECEPTIONIST" className="bg-black">
+                          <option value="RECEPTIONIST" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                             Reception
                           </option>
-                          <option value="ADMIN" className="bg-black">
+                          <option value="ADMIN" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                             Admin
                           </option>
                         </select>
                         <select
                           value={staffBranchDraft}
                           onChange={(event) => setStaffBranchDraft(event.target.value)}
-                          className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none"
+                          className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
                         >
-                          <option value="" className="bg-black">
+                          <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                             All branches
                           </option>
                           {branches.map((branch) => (
-                            <option key={branch.id} value={branch.id} className="bg-black">
+                            <option key={branch.id} value={branch.id} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                               {branch.name}
                             </option>
                           ))}
                         </select>
                       </div>
                     ) : (
-                      <span className="text-sm font-medium text-white/72">
+                      <span className="text-sm font-medium text-[var(--text-secondary)]">
                         {formatEnumLabel(assignment.role)}
                       </span>
                     ),
@@ -325,7 +325,7 @@ export function StaffSection({
                           confirmLabel="Revoke"
                           onConfirm={() => revokeStaff(assignment.id)}
                           disabled={formBusy === `staff:${assignment.id}:revoke`}
-                          className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs font-medium text-red-100/80 hover:border-red-300/45 disabled:opacity-50"
+                          className="zook-focus rounded-full border border-[color-mix(in_srgb,var(--feedback-danger)_26%,transparent)] bg-transparent px-3 py-1 text-xs font-medium text-[var(--feedback-danger)] hover:border-[color-mix(in_srgb,var(--feedback-danger)_45%,transparent)] hover:bg-[var(--surface-danger-soft)] disabled:opacity-50"
                         >
                           Revoke
                         </ConfirmActionButton>
@@ -352,22 +352,23 @@ export function StaffSection({
           {roleCapabilitySections.map((section) => (
             <div
               key={section.title}
-              className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+              className="rounded-[22px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4"
             >
-              <p className="font-semibold text-white">{section.title}</p>
-              <div className="mt-3 grid gap-2">
+              <p className="font-semibold text-[var(--text-primary)]">{section.title}</p>
+              <div className="mt-3 grid gap-2.5">
                 {section.items.map((item) => (
-                  <p key={item} className="text-sm text-white/58">
-                    {item}
-                  </p>
+                  <div key={item} className="flex items-start gap-2.5 text-sm text-[var(--text-secondary)]">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]" />
+                    <span>{item}</span>
+                  </div>
                 ))}
               </div>
             </div>
           ))}
         </div>
-        <div className="mt-5 rounded-[22px] border border-lime-300/20 bg-lime-300/6 p-4">
-          <p className="font-semibold text-white">Team profile checklist</p>
-          <p className="mt-2 text-sm leading-6 text-white/55">
+        <div className="mt-5 rounded-[22px] border border-[color-mix(in_srgb,var(--accent)_26%,transparent)] bg-[var(--surface-accent-soft)] p-4">
+          <p className="font-semibold text-[var(--accent-strong)]">Team profile checklist</p>
+          <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
             Ask every new team member to add their photo, phone number, and display name after
             accepting the invite. This keeps Reception, Trainer, Admin, and Owner records readable.
           </p>
@@ -395,11 +396,11 @@ export function StaffSection({
             />
           ) : coachPlans.length ? (
             coachPlans.slice(0, 6).map((plan) => (
-              <div key={plan.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <div key={plan.id} className="rounded-[22px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-medium text-white">{plan.title}</p>
-                    <p className="mt-1 text-xs text-white/45">
+                    <p className="font-medium text-[var(--text-primary)]">{plan.title}</p>
+                    <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                       {formatEnumLabel(plan.type)} · {plan.assignmentCount} assignments
                     </p>
                   </div>
@@ -420,13 +421,13 @@ export function StaffSection({
                       confirmLabel={plan.assignmentCount > 0 ? "Archive" : "Delete"}
                       onConfirm={() => deleteCoachPlan(plan)}
                       disabled={formBusy === `coach-plan:${plan.id}:delete`}
-                      className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs font-medium text-red-100/80 disabled:opacity-50"
+                      className="zook-focus rounded-full border border-[color-mix(in_srgb,var(--feedback-danger)_26%,transparent)] bg-transparent px-3 py-1 text-xs font-medium text-[var(--feedback-danger)] hover:border-[color-mix(in_srgb,var(--feedback-danger)_45%,transparent)] hover:bg-[var(--surface-danger-soft)] disabled:opacity-50"
                     >
                       {plan.assignmentCount > 0 ? "Archive" : "Delete"}
                     </ConfirmActionButton>
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-white/40">
+                <p className="mt-3 text-xs text-[var(--text-tertiary)]">
                   Updated {formatDateTime(plan.updatedAt)}
                 </p>
               </div>

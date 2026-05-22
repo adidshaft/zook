@@ -51,23 +51,23 @@ export function PaymentProofUpload({
   }
 
   return (
-    <label className="grid gap-2 text-sm text-white/62">
+    <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
       {label}
-      <div className="grid gap-2 rounded-2xl border border-white/10 bg-black/25 p-3">
+      <div className="grid gap-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-3">
         <input
           type="file"
           accept="image/*,application/pdf"
           disabled={busy}
           onChange={(event) => void uploadProof(event.target.files?.[0])}
-          className="zook-focus block w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white file:mr-3 file:rounded-full file:border-0 file:bg-lime-300 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-black disabled:opacity-55"
+          className="zook-focus block w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)] file:mr-3 file:rounded-full file:border-0 file:bg-[var(--accent-fill)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--text-on-accent)] disabled:opacity-55"
         />
         <input
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="zook-focus min-h-11 rounded-xl border border-white/10 bg-black/30 px-4 text-sm text-white"
+          className="zook-focus min-h-11 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)]"
         />
-        {status ? <span className="text-xs text-white/45">{status}</span> : null}
+        {status ? <span className="text-xs text-[var(--text-tertiary)]">{status}</span> : null}
       </div>
     </label>
   );

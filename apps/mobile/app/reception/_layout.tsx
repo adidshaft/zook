@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { useHasPermission } from "@/lib/auth";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
-import { legacyColors } from "@/lib/theme";
+import { legacyColors, useTheme } from "@/lib/theme";
 
 const legacyViewTargets: Record<string, "/reception/members" | "/reception/payments" | "/reception/orders"> = {
   members: "/reception/members",
@@ -13,6 +13,7 @@ const legacyViewTargets: Record<string, "/reception/members" | "/reception/payme
 };
 
 export default function ReceptionLayout() {
+  const { palette } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
@@ -34,11 +35,11 @@ export default function ReceptionLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: legacyColors.brandLime,
-        tabBarInactiveTintColor: legacyColors.textMuted,
+        tabBarActiveTintColor: palette.accent.base,
+        tabBarInactiveTintColor: palette.text.tertiary,
         tabBarStyle: {
-          backgroundColor: legacyColors.bgElevated,
-          borderTopColor: legacyColors.glassStroke,
+          backgroundColor: palette.bg.elevated,
+          borderTopColor: palette.border.subtle,
         },
       }}
     >
@@ -76,6 +77,13 @@ export default function ReceptionLayout() {
       />
       <Tabs.Screen
         name="orders"
+        listeners={{
+          tabPress: (event) => {
+            if (!canFulfillOrders) return;
+            event.preventDefault();
+            router.replace("/reception/orders");
+          },
+        }}
         options={{
           title: "Orders",
           href: canFulfillOrders ? "/reception/orders" : null,

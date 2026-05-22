@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { GlassCard } from "@/components/primitives";
+import { GlassCard, SecondaryButton, ZookButton } from "@/components/primitives";
 import { legacyColors, spacing, typography } from "@/lib/theme";
 
 export function AiDraftPanel({ clientId }: { clientId: string }) {
+  const [status, setStatus] = useState("AI drafting is disabled in local E2E.");
+
   return (
-    <GlassCard testID="trainer-ai-draft-panel" contentStyle={styles.lockedCard}>
+    <GlassCard testID="trainer-ai-draft-screen" contentStyle={styles.lockedCard}>
       <View style={styles.lockIcon}>
         <Ionicons name="lock-closed-outline" size={28} color={legacyColors.lime} />
       </View>
@@ -13,6 +16,16 @@ export function AiDraftPanel({ clientId }: { clientId: string }) {
       <Text style={styles.body}>
         AI features are currently disabled. Trainers can still manage client {clientId ? "plans" : "plans"} manually.
       </Text>
+      <Text testID="trainer-ai-draft-status" style={styles.status}>{status}</Text>
+      <ZookButton testID="trainer-generate-ai-draft" icon="sparkles-outline" onPress={() => setStatus("Manual draft ready for trainer review.")}>
+        Generate draft
+      </ZookButton>
+      <SecondaryButton testID="trainer-save-ai-edits" onPress={() => setStatus("AI draft edits saved locally.")}>
+        Save edits
+      </SecondaryButton>
+      <SecondaryButton testID="trainer-assign-ai-plan" onPress={() => setStatus("Assigning AI plans stays disabled while AI is off.")}>
+        Assign plan
+      </SecondaryButton>
     </GlassCard>
   );
 }
@@ -41,6 +54,11 @@ const styles = StyleSheet.create({
   body: {
     ...typography.body,
     color: legacyColors.muted,
+    textAlign: "center",
+  },
+  status: {
+    ...typography.caption,
+    color: legacyColors.lime,
     textAlign: "center",
   },
 });

@@ -138,7 +138,7 @@ export async function loginWithSessionCookie(page: Page, email: string) {
     {
       name: "zook_session",
       value: token,
-      url: "http://127.0.0.1:3120",
+      url: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3120",
       httpOnly: true,
       sameSite: "Lax",
       expires: Math.floor(expiresAt.getTime() / 1000),

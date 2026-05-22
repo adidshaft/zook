@@ -4,6 +4,7 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
 import { ZookLogo } from "@/components/zook-logo";
+import { ThemeToggleButton } from "@/components/theme-preference-switcher";
 import { localizedPath, publicT, type PublicLocale } from "@/lib/public-i18n";
 
 export function PublicNav({
@@ -33,6 +34,7 @@ export function PublicNav({
         </div>
       </div>
       <div className="flex items-center gap-2">
+        <ThemeToggleButton />
         {languageHref ? (
           <Link
             href={languageHref}

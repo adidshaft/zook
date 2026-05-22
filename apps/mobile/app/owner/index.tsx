@@ -1,7 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
+import { useEffect } from "react";
 import { RefreshControl, StyleSheet, Text } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
@@ -19,6 +20,7 @@ import { useAuth } from "@/lib/auth";
 
 export default function OwnerCommandScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ view?: string | string[] }>();
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
   const dashboardQuery = useOwnerDashboard();
@@ -34,6 +36,15 @@ export default function OwnerCommandScreen() {
   const paymentExceptionCount =
     paymentsQuery.data?.payments.filter((payment) => payment.status !== "SUCCEEDED").length ?? 0;
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
+
+  useEffect(() => {
+    const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
+    if (rawView === "members") router.replace("/owner/members");
+    if (rawView === "approvals") router.replace("/owner/approvals");
+    if (rawView === "revenue") router.replace("/owner/revenue");
+    if (rawView === "stock") router.replace("/owner/stock");
+  }, [params.view, router]);
+
   const items: AttentionItem[] = [
     {
       id: "approvals",
@@ -116,7 +127,7 @@ export default function OwnerCommandScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen testID="owner-command-screen">
+      <ZookScreen testID="owner-home-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",

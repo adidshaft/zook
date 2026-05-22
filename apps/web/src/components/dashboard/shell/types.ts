@@ -16,6 +16,7 @@ export type NavItem = {
   icon: LucideIcon;
   shortLabel?: string;
   hidden?: boolean;
+  indent?: boolean;
   permissions?: Permission[];
   badgeKey?: "joinRequests" | "lowStockProducts" | "notificationQueueCount" | "pendingAttendanceApprovals";
 };

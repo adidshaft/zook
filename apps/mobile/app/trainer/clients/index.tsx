@@ -57,7 +57,7 @@ export default function TrainerClientsScreen() {
           />
           <SectionHeader title="Clients" />
           <MemberList
-            testID="trainer-client-list"
+            testID="trainer-client"
             items={items}
             isLoading={clientsQuery.isLoading}
             isError={clientsQuery.isError}

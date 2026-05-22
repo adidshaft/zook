@@ -49,7 +49,7 @@ import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n } from "@/lib/i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { legacyColors, layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { PickupQrCode } from "@/components/primitives/pickup-qr";
@@ -134,6 +134,7 @@ function optimisticOrderFromCart(input: {
 }
 
 export default function Shop() {
+  const { mode, palette } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
@@ -509,9 +510,15 @@ export default function Shop() {
       onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
       accessibilityRole="button"
       accessibilityLabel="Back"
-      style={styles.iconButton}
+      style={[
+        styles.iconButton,
+        {
+          borderColor: palette.border.subtle,
+          backgroundColor: palette.bg.elevated,
+        },
+      ]}
     >
-      <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+      <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
     </Pressable>
   );
 
@@ -549,7 +556,7 @@ export default function Shop() {
           />
         ) : null}
         <GlassCard variant="success" contentStyle={styles.pickupContent}>
-          <Text style={styles.pickupLabel}>{t("shop.pickupCode")}</Text>
+          <Text style={[styles.pickupLabel, { color: palette.text.secondary }]}>{t("shop.pickupCode")}</Text>
           <Pressable
             onPress={async () => {
               if (!order.pickupCode) return;
@@ -569,15 +576,15 @@ export default function Shop() {
             disabled={!order.pickupCode}
             hitSlop={6}
           >
-            <Text style={styles.pickupCode}>{order.pickupCode ?? t("shop.pending")}</Text>
+            <Text style={[styles.pickupCode, { color: palette.text.primary }]}>{order.pickupCode ?? t("shop.pending")}</Text>
           </Pressable>
           <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
         </GlassCard>
         {canShowPickupQr ? (
           <GlassCard variant="compact" contentStyle={styles.pickupQrContent}>
-            <Text style={styles.pickupQrTitle}>Show this to collect your order</Text>
+            <Text style={[styles.pickupQrTitle, { color: palette.text.primary }]}>Show this to collect your order</Text>
             <PickupQrCode value={pickupQrPayload(order)} />
-            <Text style={styles.pickupQrCode}>Code: {order.pickupCode ?? t("shop.pending")}</Text>
+            <Text style={[styles.pickupQrCode, { color: palette.text.secondary }]}>Code: {order.pickupCode ?? t("shop.pending")}</Text>
           </GlassCard>
         ) : null}
         <GlassCard variant="compact" contentStyle={styles.stack}>
@@ -661,9 +668,9 @@ export default function Shop() {
             subtitle={t("shop.showPickupCode")}
             trailing={<StatusChip status="3" tone="lime" />}
           />
-          <View style={styles.checkoutTotal}>
-            <Text style={styles.cardBody}>{t("shop.orderTotal")}</Text>
-            <Text style={styles.totalText}>{formatInr(order.totalPaise)}</Text>
+          <View style={[styles.checkoutTotal, { borderTopColor: palette.border.subtle }]}>
+            <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.orderTotal")}</Text>
+            <Text style={[styles.totalText, { color: palette.text.primary }]}>{formatInr(order.totalPaise)}</Text>
           </View>
         </GlassCard>
       </ShopShell>
@@ -676,23 +683,14 @@ export default function Shop() {
         selectedPath="/shop"
         refreshControl={refreshControl}
         stickyAction={
-          <View style={styles.actionRow}>
-            <SecondaryButton
-              testID="shop-cart-back"
-              onPress={() => router.replace("/shop" as never)}
-              style={styles.actionHalf}
-            >
-              {t("shop.back")}
-            </SecondaryButton>
-            <ZookButton
-              testID="shop-cart-checkout"
-              onPress={() => void createCheckout()}
-              disabled={!cartItems.length || createOrder.isPending}
-              style={styles.actionHalf}
-            >
-              {createOrder.isPending ? t("shop.creating") : t("shop.continuePayment")}
-            </ZookButton>
-          </View>
+          <ZookButton
+            testID="shop-cart-checkout"
+            onPress={() => void createCheckout()}
+            disabled={!cartItems.length || createOrder.isPending}
+            fullWidth
+          >
+            {createOrder.isPending ? t("shop.creating") : t("shop.continuePayment")}
+          </ZookButton>
         }
       >
         <MobileHeader
@@ -720,10 +718,10 @@ export default function Shop() {
                 subtitle={`${item.quantity} ${t(item.quantity === 1 ? "shop.item" : "shop.items")} · ${item.product.stock} in stock`}
                 trailing={
                   <View style={styles.cartLineTrailing}>
-                    <Text style={styles.cartLinePrice}>
+                    <Text style={[styles.cartLinePrice, { color: palette.text.primary }]}>
                       {formatInr(item.product.pricePaise * item.quantity)}
                     </Text>
-                    <View style={styles.cartStepper}>
+                    <View style={[styles.cartStepper, { borderColor: palette.border.subtle, backgroundColor: palette.bg.sunken }]}>
                       <Pressable
                         testID={`shop-cart-remove-${item.product.id}`}
                         onPress={() => removeFromCart(item.product.id)}
@@ -731,9 +729,9 @@ export default function Shop() {
                         accessibilityLabel={`Remove ${item.product.name}`}
                         style={styles.cartStepperButton}
                       >
-                        <Ionicons name="remove" size={15} color={legacyColors.lime} />
+                        <Ionicons name="remove" size={15} color={palette.accent.strong} />
                       </Pressable>
-                      <Text style={styles.cartQuantity}>{item.quantity}</Text>
+                      <Text style={[styles.cartQuantity, { color: palette.text.primary }]}>{item.quantity}</Text>
                       <Pressable
                         testID={`shop-cart-add-${item.product.id}`}
                         onPress={() => addToCart(item.product.id)}
@@ -745,7 +743,7 @@ export default function Shop() {
                           item.quantity >= item.product.stock ? styles.cartStepperDisabled : null,
                         ]}
                       >
-                        <Ionicons name="add" size={15} color={legacyColors.lime} />
+                        <Ionicons name="add" size={15} color={palette.accent.strong} />
                       </Pressable>
                     </View>
                   </View>
@@ -757,8 +755,8 @@ export default function Shop() {
           )}
         </GlassCard>
         <GlassCard variant="compact" contentStyle={styles.totalRow}>
-          <Text style={styles.cardBody}>{t("shop.subtotal")}</Text>
-          <Text style={styles.totalText}>{formatInr(totalPaise)}</Text>
+          <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.subtotal")}</Text>
+          <Text style={[styles.totalText, { color: palette.text.primary }]}>{formatInr(totalPaise)}</Text>
         </GlassCard>
       </ShopShell>
     );
@@ -793,9 +791,15 @@ export default function Shop() {
             onPress={() => router.push("/shop/cart" as never)}
             accessibilityRole="button"
             accessibilityLabel={t("shop.openCart")}
-            style={styles.cartIcon}
+            style={[
+              styles.cartIcon,
+              {
+                borderColor: palette.border.subtle,
+                backgroundColor: palette.bg.elevated,
+              },
+            ]}
           >
-            <Ionicons name="bag-outline" size={22} color={legacyColors.text} />
+            <Ionicons name="bag-outline" size={22} color={palette.text.primary} />
             {itemCount ? (
               <View style={styles.cartBadge}>
                 <Text style={styles.cartBadgeText}>{itemCount}</Text>
@@ -821,23 +825,51 @@ export default function Shop() {
               onPress={() => setCategory(option.value)}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              style={[styles.categoryChip, selected ? styles.categoryChipActive : null]}
+              style={[
+                styles.categoryChip,
+                {
+                  backgroundColor: selected
+                    ? palette.accent.fill
+                    : mode === "dark"
+                      ? "rgba(255, 255, 255, 0.06)"
+                      : "rgba(17, 21, 15, 0.04)",
+                  borderColor: selected ? palette.accent.strong : palette.border.subtle,
+                },
+              ]}
             >
               <Ionicons
                 name={iconForCategory(option.value)}
                 size={15}
-                color={selected ? legacyColors.bg : legacyColors.muted}
+                color={selected ? palette.text.onAccent : palette.text.secondary}
               />
               <Text
-                style={[styles.categoryChipText, selected ? styles.categoryChipTextActive : null]}
+                style={[
+                  styles.categoryChipText,
+                  {
+                    color: selected ? palette.text.onAccent : palette.text.secondary,
+                  },
+                ]}
               >
                 {option.label}
               </Text>
-              <View style={[styles.categoryCount, selected ? styles.categoryCountActive : null]}>
+              <View
+                style={[
+                  styles.categoryCount,
+                  {
+                    backgroundColor: selected
+                      ? "rgba(0, 0, 0, 0.12)"
+                      : mode === "dark"
+                        ? "rgba(255, 255, 255, 0.08)"
+                        : "rgba(0, 0, 0, 0.06)",
+                  },
+                ]}
+              >
                 <Text
                   style={[
                     styles.categoryCountText,
-                    selected ? styles.categoryCountTextActive : null,
+                    {
+                      color: selected ? palette.text.onAccent : palette.text.secondary,
+                    },
                   ]}
                 >
                   {count}
@@ -917,12 +949,15 @@ function BrowserReturnCard({
   checking: boolean;
   onCheckStatus: () => void;
 }) {
+  const { palette } = useTheme();
   return (
     <GlassCard variant="compact" contentStyle={styles.browserReturnContent}>
-      <Ionicons name="open-outline" size={22} color={legacyColors.amber} />
+      <Ionicons name="open-outline" size={22} color={palette.feedback.warning} />
       <View style={styles.browserReturnCopy}>
-        <Text style={styles.browserReturnTitle}>Continue in browser</Text>
-        <Text style={styles.browserReturnBody}>
+        <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>
+          Continue in browser
+        </Text>
+        <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
           Come back after payment. We will refresh your order status automatically.
         </Text>
       </View>

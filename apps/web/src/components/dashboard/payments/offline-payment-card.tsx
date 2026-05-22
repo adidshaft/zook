@@ -60,8 +60,8 @@ export function OfflinePaymentCard({
               onClick={() => setManualPayment((current) => ({ ...current, mode }))}
               className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 manualPayment.mode === mode
-                  ? "border-lime-300/45 bg-lime-300/14 text-lime-100"
-                  : "border-white/10 bg-black/25 text-white/55 hover:bg-white/8"
+                  ? "border-[var(--accent-strong)]/40 bg-[var(--surface-accent-soft)] text-[var(--accent-strong)]"
+                  : "border-[var(--border)] bg-[var(--bg-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]"
               }`}
             >
               {formatPaymentMode(mode)}
@@ -113,7 +113,7 @@ export function OfflinePaymentCard({
             }
             inputMode="decimal"
             placeholder="Amount"
-            className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white"
+            className="zook-focus min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
             required
           />
           <select
@@ -121,10 +121,10 @@ export function OfflinePaymentCard({
             onChange={(event) =>
               setManualPayment((current) => ({ ...current, mode: event.target.value }))
             }
-            className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white"
+            className="zook-focus min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-sm text-[var(--text-primary)]"
           >
             {modeOptions.map((mode) => (
-              <option key={mode} value={mode} className="bg-black">
+              <option key={mode} value={mode} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                 {formatPaymentMode(mode)}
               </option>
             ))}
@@ -143,7 +143,7 @@ export function OfflinePaymentCard({
             setManualPayment((current) => ({ ...current, receiptNumber: event.target.value }))
           }
           placeholder="Reference number"
-          className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white"
+          className="zook-focus min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
         />
         <textarea
           value={manualPayment.notes}
@@ -151,7 +151,7 @@ export function OfflinePaymentCard({
             setManualPayment((current) => ({ ...current, notes: event.target.value }))
           }
           placeholder="Notes"
-          className="zook-focus min-h-24 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white"
+          className="zook-focus min-h-24 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
         />
         <ZookButton
           type="submit"
@@ -161,19 +161,19 @@ export function OfflinePaymentCard({
         >
           {manualPaymentBusy ? "Recording..." : "Record payment"}
         </ZookButton>
-        <div className="rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50/82">
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200 p-4 text-sm leading-6">
           Manual/offline payments are recorded with audit logs. Membership activation still follows
           the server confirmation rules for the selected payment path.
         </div>
-        {manualPaymentStatus ? <p className="text-sm text-white/58">{manualPaymentStatus}</p> : null}
+        {manualPaymentStatus ? <p className="text-sm text-[var(--text-tertiary)]">{manualPaymentStatus}</p> : null}
       </form>
       {lastReceipt ? (
-        <div className="mt-5 rounded-[22px] border border-lime-300/20 bg-lime-300/10 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lime-100/70">
+        <div className="mt-5 rounded-[22px] border border-[var(--accent-strong)]/20 bg-[var(--surface-accent-soft)] p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
             Receipt ready
           </p>
-          <p className="mt-2 text-lg font-semibold text-white">{lastReceipt.title}</p>
-          <div className="mt-3 grid gap-2 text-sm text-white/65">
+          <p className="mt-2 text-lg font-semibold text-[var(--text-primary)]">{lastReceipt.title}</p>
+          <div className="mt-3 grid gap-2 text-sm text-[var(--text-secondary)]">
             <p>Amount: {formatInr(lastReceipt.amountPaise)}</p>
             <p>Mode: {formatPaymentMode(lastReceipt.mode)}</p>
             <p>Reference: {lastReceipt.reference || "Not added"}</p>

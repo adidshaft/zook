@@ -18,7 +18,7 @@ import {
 } from "@/components/primitives";
 import { PlansSkeleton } from "@/components/skeletons";
 import { useMyPlans, useMyTrackingWorkouts, type MyPlanRecord } from "@/lib/domains";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { legacyColors, layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type WorkoutRecord = {
   id?: string;
@@ -45,6 +45,7 @@ export default function MemberPlanScreen() {
   const workoutPlans = plans.filter((assignment) => planKind(assignment).includes("workout"));
   const todayPlan = workoutPlans[0] ?? plans[0] ?? null;
   const recentWorkouts = (workoutsQuery.data?.workouts ?? []) as WorkoutRecord[];
+  const { palette } = useTheme();
 
   async function onRefresh() {
     setRefreshing(true);
@@ -68,7 +69,7 @@ export default function MemberPlanScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={legacyColors.lime} colors={[legacyColors.lime]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
           <MobileHeader title="Plan" subtitle="Workouts, schedule, and history" showProfileShortcut={false} />
@@ -82,8 +83,8 @@ export default function MemberPlanScreen() {
               <View style={styles.todayTop}>
                 <IconBubble icon="barbell-outline" tone="lime" size={46} />
                 <View style={styles.todayCopy}>
-                  <Text numberOfLines={1} style={styles.todayTitle}>{planTitle(todayPlan)}</Text>
-                  <Text numberOfLines={1} style={styles.todayMeta}>{planKind(todayPlan)} · trainer assigned</Text>
+                  <Text numberOfLines={1} style={[styles.todayTitle, { color: palette.text.primary }]}>{planTitle(todayPlan)}</Text>
+                  <Text numberOfLines={1} style={[styles.todayMeta, { color: palette.text.secondary }]}>{planKind(todayPlan)} · trainer assigned</Text>
                 </View>
               </View>
               <ProgressBar value={(todayPlan.progress?.completionPct ?? 0) / 100} label="Progress" />
@@ -111,7 +112,7 @@ export default function MemberPlanScreen() {
                     title={planTitle(assignment)}
                     subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
                     leading={<IconBubble icon="calendar-outline" tone="blue" />}
-                    trailing={<Ionicons name="chevron-forward" size={18} color={legacyColors.muted} />}
+                    trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
                   />
                 </GlassCard>
               </Pressable>
@@ -144,10 +145,10 @@ export default function MemberPlanScreen() {
           <SectionHeader title="Browse all plans" />
           <View style={styles.planGrid}>
             {plans.map((assignment) => (
-              <Pressable key={assignment.id} onPress={() => openAssignment(assignment.id)} accessibilityRole="button" style={styles.planTile}>
+              <Pressable key={assignment.id} onPress={() => openAssignment(assignment.id)} accessibilityRole="button" style={[styles.planTile, { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle }]}>
                 <IconBubble icon={planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"} tone={planKind(assignment).includes("diet") ? "blue" : "lime"} size={38} />
-                <Text numberOfLines={2} style={styles.planTileTitle}>{planTitle(assignment)}</Text>
-                <Text style={styles.planTileMeta}>{assignment.progress?.completionPct ?? 0}%</Text>
+                <Text numberOfLines={2} style={[styles.planTileTitle, { color: palette.text.primary }]}>{planTitle(assignment)}</Text>
+                <Text style={[styles.planTileMeta, { color: palette.text.secondary }]}>{assignment.progress?.completionPct ?? 0}%</Text>
               </Pressable>
             ))}
           </View>

@@ -384,15 +384,14 @@ function LayoutContent() {
         }}
       >
         <Stack.Screen name="(member)" options={{ animation: "none" }} />
-        <Stack.Screen name="profile" options={{ animation: "none" }} />
+        <Stack.Screen name="profile/index" options={{ animation: "none" }} />
         <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="membership" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="settings/index" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="membership/index" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="find-gyms" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="shop" options={{ animation: "none" }} />
         <Stack.Screen name="assistant" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="owner/index" options={{ animation: "none" }} />
-        <Stack.Screen name="dashboard" options={{ animation: "fade" }} />
+        <Stack.Screen name="owner" options={{ animation: "none" }} />
         <Stack.Screen name="platform" options={{ animation: "none" }} />
         <Stack.Screen name="reception" options={{ animation: "none" }} />
         <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
@@ -403,10 +402,37 @@ function LayoutContent() {
           name="attendance/[attendanceRecordId]"
           options={{ presentation: "modal", animation: "slide_from_bottom" }}
         />
-        <Stack.Screen name="owner/member/[id]" options={{ animation: "slide_from_right" }} />
       </Stack>
       <ToastHost />
     </>
+  );
+}
+
+
+function ThemedGestureRoot({ queryClient }: { queryClient: QueryClient }) {
+  const { palette } = useTheme();
+  return (
+    <View style={[styles.gestureRoot, { backgroundColor: palette.bg.app }]}>
+      <Sentry.ErrorBoundary
+        fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
+      >
+        <QueryClientProvider client={queryClient}>
+          <I18nProvider>
+            <AuthProvider>
+              <BranchSelectionProvider>
+                <BottomNavVisibilityProvider>
+                  <PrivilegedPinProvider>
+                    <PushNotificationsProvider>
+                      <LayoutContent />
+                    </PushNotificationsProvider>
+                  </PrivilegedPinProvider>
+                </BottomNavVisibilityProvider>
+              </BranchSelectionProvider>
+            </AuthProvider>
+          </I18nProvider>
+        </QueryClientProvider>
+      </Sentry.ErrorBoundary>
+    </View>
   );
 }
 
@@ -449,31 +475,11 @@ export default function Layout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <View style={styles.gestureRoot}>
-        <Sentry.ErrorBoundary
-          fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
-        >
-          <QueryClientProvider client={queryClient}>
-            <I18nProvider>
-              <ThemeProvider>
-                <AuthProvider>
-                  <BranchSelectionProvider>
-                    <BottomNavVisibilityProvider>
-                      <PrivilegedPinProvider>
-                        <PushNotificationsProvider>
-                          <LayoutContent />
-                        </PushNotificationsProvider>
-                      </PrivilegedPinProvider>
-                    </BottomNavVisibilityProvider>
-                  </BranchSelectionProvider>
-                </AuthProvider>
-              </ThemeProvider>
-            </I18nProvider>
-          </QueryClientProvider>
-        </Sentry.ErrorBoundary>
-      </View>
-    </SafeAreaProvider>
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <ThemedGestureRoot queryClient={queryClient} />
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }
 

@@ -1,16 +1,17 @@
 import { Stack } from "expo-router";
 
 import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
-import { legacyColors } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 
 export default function OnboardingLayout() {
   useHideBottomNav();
+  const { palette } = useTheme();
 
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: legacyColors.bg },
+        contentStyle: { backgroundColor: palette.bg.app },
       }}
     />
   );

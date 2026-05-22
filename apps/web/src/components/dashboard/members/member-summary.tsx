@@ -32,7 +32,7 @@ export function MemberSummary({
         tone="lime"
         meta={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] px-3 py-1 text-xs font-medium text-[var(--accent-soft)]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] px-3 py-1 text-xs font-medium text-[var(--accent-strong)]">
               <PulseDot tone="lime" size={6} />
               {members.length} {members.length === 1 ? "member" : "members"}
             </span>
