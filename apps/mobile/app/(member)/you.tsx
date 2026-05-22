@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
-    paddingTop: 14,
+    paddingTop: 20,
     width: "100%",
   },
   listContainer: {

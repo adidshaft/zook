@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
+    paddingTop: 20,
     paddingBottom: layout.bottomNavContentPadding,
     gap: 12,
   },

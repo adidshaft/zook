@@ -1054,7 +1054,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth + layout.screenPadding * 2,
     alignSelf: "center",
     paddingHorizontal: layout.screenPadding,
-    paddingTop: 14,
+    paddingTop: 20,
     gap: 12,
   },
   iconButton: {

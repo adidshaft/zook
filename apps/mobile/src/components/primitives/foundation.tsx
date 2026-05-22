@@ -695,7 +695,7 @@ export function ZookChip({
       ]}
     >
       {icon ? <Ionicons name={icon} size={13} color={palette.color} /> : null}
-      <Text style={[styles.chipText, { color: palette.color }, textStyle]}>{children}</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.chipText, { color: palette.color }, textStyle]}>{children}</Text>
     </View>
   );
 }

@@ -173,6 +173,9 @@ export function ZookButton({
   const buttonSizeStyle = buttonSizeStyles[size];
   const buttonTextSizeStyle = buttonTextSizeStyles[size];
   const isDisabled = disabled || busy;
+  const resolvedBgColor = isDisabled ? palette.bg.sunken : buttonPalette.backgroundColor;
+  const resolvedBorderColor = isDisabled ? palette.border.subtle : buttonPalette.borderColor;
+  const resolvedTextColor = isDisabled ? palette.text.secondary : buttonPalette.color;
   const contentLabel = busy && busyLabel ? busyLabel : children;
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({
@@ -183,8 +186,8 @@ export function ZookButton({
     buttonSizeStyle,
     buttonPalette.glow,
     {
-      backgroundColor: buttonPalette.backgroundColor,
-      borderColor: buttonPalette.borderColor,
+      backgroundColor: resolvedBgColor,
+      borderColor: resolvedBorderColor,
     },
     fullWidth ? styles.fullWidth : null,
     isDisabled ? styles.disabled : null,
@@ -196,15 +199,15 @@ export function ZookButton({
       numberOfLines={1}
       adjustsFontSizeToFit
       minimumFontScale={0.72}
-      style={[styles.buttonText, buttonTextSizeStyle, { color: buttonPalette.color }, textStyle]}
+      style={[styles.buttonText, buttonTextSizeStyle, { color: resolvedTextColor }, textStyle]}
     >
       {contentLabel}
     </Text>
   );
   const leading = busy ? (
-    <ActivityIndicator size="small" color={buttonPalette.color} />
+    <ActivityIndicator size="small" color={resolvedTextColor} />
   ) : icon ? (
-    <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={buttonPalette.color} />
+    <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={resolvedTextColor} />
   ) : null;
 
   if (href && !isDisabled) {
@@ -263,8 +266,8 @@ export function ZookButton({
         buttonSizeStyle,
         buttonPalette.glow,
         {
-          backgroundColor: buttonPalette.backgroundColor,
-          borderColor: buttonPalette.borderColor,
+          backgroundColor: resolvedBgColor,
+          borderColor: resolvedBorderColor,
         },
         pressed && !isDisabled ? styles.pressed : null,
         fullWidth ? styles.fullWidth : null,
@@ -362,6 +365,6 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
   disabled: {
-    opacity: 0.62,
+    opacity: 1,
   },
 });

@@ -501,7 +501,7 @@ export default function GymProfileScreen() {
             </View>
 
             <View style={styles.metricRow}>
-              <GlassCard contentStyle={styles.metricCard}>
+              <GlassCard style={{ flex: 1 }} contentStyle={styles.metricCard}>
                 <Text style={styles.metricLabel}>Join flow</Text>
                 <Text style={styles.metricValue}>
                   {needsApproval ? "Reviewed" : inviteOnlyLocked ? "Invite only" : "Instant"}
@@ -514,7 +514,7 @@ export default function GymProfileScreen() {
                       : "You can move straight to payment."}
                 </Text>
               </GlassCard>
-              <GlassCard contentStyle={styles.metricCard}>
+              <GlassCard style={{ flex: 1 }} contentStyle={styles.metricCard}>
                 <Text style={styles.metricLabel}>Membership state</Text>
                 <Text style={styles.metricValue}>
                   {viewerState?.activeMembership
@@ -856,7 +856,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth + layout.screenPadding * 2,
     alignSelf: "center",
     paddingHorizontal: layout.screenPadding,
-    paddingTop: 14,
+    paddingTop: 20,
     gap: 16,
     paddingBottom: layout.bottomNavContentPadding,
   },

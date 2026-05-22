@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
+    paddingTop: 20,
     gap: 14,
     paddingBottom: layout.bottomNavContentPadding,
   },
