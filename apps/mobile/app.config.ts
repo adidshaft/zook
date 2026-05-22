@@ -43,7 +43,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.zook.app",
-    buildNumber: "2",
+    buildNumber: "3",
     usesAppleSignIn: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
@@ -66,7 +66,6 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
         : {}),
     },
     associatedDomains: [
-      "applinks:zookfit.com",
       "applinks:zookfit.in",
       "applinks:app.zookfit.in",
     ],
@@ -74,13 +73,12 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   },
   android: {
     package: "com.zook.app",
-    versionCode: 2,
+    versionCode: 3,
     intentFilters: [
       {
         action: "VIEW",
         data: [
           { scheme: "https", host: "zookfit.in" },
-          { scheme: "https", host: "zookfit.com" },
           { scheme: "https", host: "app.zookfit.in" },
         ],
         category: ["BROWSABLE", "DEFAULT"],
@@ -169,7 +167,7 @@ const apiBaseUrlByProfile: Record<MobileReleaseProfile, string> = {
 const webUrlByProfile: Record<MobileReleaseProfile, string> = {
   local: "http://localhost:3000",
   staging: "https://staging.zookfit.in",
-  production: "https://zookfit.com",
+  production: "https://zookfit.in",
 };
 
 function normalizeProfile(value?: string | null): MobileReleaseProfile | undefined {

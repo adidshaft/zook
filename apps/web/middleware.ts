@@ -3,11 +3,10 @@ import { expectedHostForPath, pathBelongsToStaff } from "./src/lib/host-routing"
 
 const sessionCookieName = "zook_session";
 const refreshSessionCookieName = "zook_refresh";
-const canonicalHost = "zookfit.com";
+const canonicalHost = "zookfit.in";
 const STAFF_HOST = "app.zookfit.in";
 const LEGACY_STAFF_HOST = "dashboard.zookfit.in";
-const PUBLIC_HOST = "zookfit.com";
-const LEGACY_PUBLIC_HOST = "zookfit.in";
+const PUBLIC_HOST = "zookfit.in";
 const DEV_STAFF_HOST = "dashboard.localhost";
 const DEV_PUBLIC_HOST = "localhost";
 const canonicalRedirectHosts = new Set([
@@ -56,7 +55,6 @@ function buildContentSecurityPolicy(nonce: string) {
       connectSources.add(origin);
     }
   }
-  connectSources.add("https://zookfit.com");
   connectSources.add("https://zookfit.in");
   connectSources.add("https://app.zookfit.in");
   connectSources.add("https://dashboard.zookfit.in");
@@ -97,9 +95,7 @@ function classifyHost(hostname: string): "staff" | "public" | "unknown" {
   }
   if (
     hostname === PUBLIC_HOST ||
-    hostname === LEGACY_PUBLIC_HOST ||
     hostname === DEV_PUBLIC_HOST ||
-    hostname === "www.zookfit.com" ||
     hostname === "www.zookfit.in"
   ) {
     return "public";
