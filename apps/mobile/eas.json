@@ -22,7 +22,6 @@
     },
     "production": {
       "channel": "production",
-      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_ENV_PROFILE": "production",
         "EXPO_PUBLIC_API_MODE": "backend",

@@ -43,6 +43,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.zook.app",
+    buildNumber: "2",
     usesAppleSignIn: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
@@ -73,6 +74,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   },
   android: {
     package: "com.zook.app",
+    versionCode: 2,
     intentFilters: [
       {
         action: "VIEW",
