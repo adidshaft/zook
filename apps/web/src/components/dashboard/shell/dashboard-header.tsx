@@ -45,7 +45,8 @@ export function DashboardHeader({
           {data.branchScope.branches.length > 0 ? (
             <BranchSwitcher
               branches={data.branchScope.branches}
-              selectedBranchId={selectedBranch?.id}
+              selectedBranchId={data.branchScope.allBranches ? "all" : selectedBranch?.id}
+              allBranchesAllowed={data.branchScope.allBranchesAllowed}
               branchHref={branchHref}
               copy={copy}
               compact

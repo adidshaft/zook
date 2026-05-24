@@ -477,6 +477,7 @@ export class ReportsService {
       where: {
         orgId,
         ...(createdAt ? { createdAt } : {}),
+        ...(filters.branchId ? { branchId: filters.branchId } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: 500,

@@ -1,6 +1,7 @@
 import { prisma } from "@zook/db";
 import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { serializeUserForReadModel } from "@/server/domains/shared/read-serialization";
+import { shopBranchFilter } from "./branch-filter";
 
 export async function getOrganizationActiveShopOrders(
   orgId: string,
@@ -10,7 +11,7 @@ export async function getOrganizationActiveShopOrders(
     where: {
       orgId,
       status: { in: ["PENDING_PAYMENT", "PAID", "READY_FOR_PICKUP"] },
-      ...(filters.branchId ? { branchId: filters.branchId } : {}),
+      ...shopBranchFilter(filters),
     },
     orderBy: { createdAt: "desc" },
     take: 100,

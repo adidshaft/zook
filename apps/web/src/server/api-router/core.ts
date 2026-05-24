@@ -1747,11 +1747,21 @@ async function assertBranchAccessForContext(
   orgId: string,
   requestedBranchId?: string | null,
 ) {
+  const allBranchesRequested = requestedBranchId === "all";
+  const canUseAllBranches =
+    ctx.isPlatformAdmin || ctx.roles.some((role) => role === "OWNER" || role === "ADMIN");
   if (!isDeskOnlyContext(ctx)) {
-    if (requestedBranchId) {
-      await resolveOrgBranch(orgId, requestedBranchId);
+    if (allBranchesRequested) {
+      if (!canUseAllBranches) {
+        throw forbiddenError("Only owners and admins can open all branches.");
+      }
+      return undefined;
     }
-    return requestedBranchId || undefined;
+    const branch = await resolveOrgBranch(orgId, requestedBranchId);
+    return branch.id;
+  }
+  if (allBranchesRequested) {
+    throw forbiddenError("This desk account can only open its assigned branch.");
   }
   if (!ctx.userId) {
     throw unauthorizedError();
@@ -1781,6 +1791,10 @@ async function assertBranchAccessForContext(
 function queryBranchId(request: NextRequest) {
   const value = request.nextUrl.searchParams.get("branchId")?.trim();
   return value || undefined;
+}
+
+function isAllBranchesRequest(branchId?: string | null) {
+  return branchId === "all";
 }
 
 async function enrichAttendanceRecords<
@@ -8363,11 +8377,19 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "ORG_VIEW_REPORTS");
-    const branchId = queryBranchId(request);
-    if (branchId) {
-      await resolveOrgBranch(orgId, branchId);
-    }
-    return ok(await getOrganizationDashboardData(orgId, clean({ branchId })));
+    const requestedBranchId = queryBranchId(request);
+    const branchId = await assertBranchAccessForContext(ctx, orgId, requestedBranchId);
+    return ok(
+      await getOrganizationDashboardData(
+        orgId,
+        clean({
+          branchId,
+          allBranches: isAllBranchesRequest(requestedBranchId),
+          allBranchesAllowed:
+            ctx.isPlatformAdmin || ctx.roles.some((role) => role === "OWNER" || role === "ADMIN"),
+        }),
+      ),
+    );
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members"])) {
     const orgId = path[1]!;
@@ -8479,11 +8501,19 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "ORG_VIEW_REPORTS");
-    const branchId = queryBranchId(request);
-    if (branchId) {
-      await resolveOrgBranch(orgId, branchId);
-    }
-    return ok(await getOrganizationDashboardData(orgId, clean({ branchId })));
+    const requestedBranchId = queryBranchId(request);
+    const branchId = await assertBranchAccessForContext(ctx, orgId, requestedBranchId);
+    return ok(
+      await getOrganizationDashboardData(
+        orgId,
+        clean({
+          branchId,
+          allBranches: isAllBranchesRequest(requestedBranchId),
+          allBranchesAllowed:
+            ctx.isPlatformAdmin || ctx.roles.some((role) => role === "OWNER" || role === "ADMIN"),
+        }),
+      ),
+    );
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "location", "resolve"])) {
     const orgId = path[1]!;
@@ -8856,9 +8886,12 @@ export async function handleReports(request: NextRequest, path: string[]) {
       "Too many report exports from this account today.",
     );
     const filters = parseReportFilters(request.nextUrl.searchParams);
-    if (filters.branchId) {
-      await resolveOrgBranch(orgId, filters.branchId);
-    }
+    const branchId = await assertBranchAccessForContext(ctx, orgId, filters.branchId);
+    const scopedFilters = clean({
+      ...filters,
+      branchId,
+      allBranches: isAllBranchesRequest(filters.branchId),
+    });
 
     if (
       !canExportOrgReport({
@@ -8873,24 +8906,24 @@ export async function handleReports(request: NextRequest, path: string[]) {
 
     const rows: Array<Record<string, unknown>> =
       report === "members"
-        ? await reportsService.membersReport(orgId, filters)
+        ? await reportsService.membersReport(orgId, scopedFilters)
         : report === "attendance"
-          ? await reportsService.attendanceReport(orgId, filters)
+          ? await reportsService.attendanceReport(orgId, scopedFilters)
           : report === "payments"
-            ? await reportsService.paymentsReport(orgId, filters)
+            ? await reportsService.paymentsReport(orgId, scopedFilters)
             : report === "revenue"
-              ? await reportsService.revenueReport(orgId, filters)
+              ? await reportsService.revenueReport(orgId, scopedFilters)
               : report === "manual-cash"
-                ? await reportsService.manualCashReport(orgId, filters)
+                ? await reportsService.manualCashReport(orgId, scopedFilters)
                 : report === "expiring-members"
-                  ? await reportsService.membershipExpiryReport(orgId, filters)
+                  ? await reportsService.membershipExpiryReport(orgId, scopedFilters)
                   : report === "invoices"
-                    ? await reportsService.invoiceReport(orgId, filters)
+                    ? await reportsService.invoiceReport(orgId, scopedFilters)
                     : report === "referrals"
-                      ? await reportsService.referralReport(orgId, filters)
+                      ? await reportsService.referralReport(orgId, scopedFilters)
                       : report === "shop"
-                        ? await reportsService.shopReport(orgId, filters)
-                        : await reportsService.aiUsageReport(orgId, filters);
+                        ? await reportsService.shopReport(orgId, scopedFilters)
+                        : await reportsService.aiUsageReport(orgId, scopedFilters);
 
     await writeAuditLog({
       request,
@@ -8921,13 +8954,12 @@ export async function handleReports(request: NextRequest, path: string[]) {
       "Too many report exports from this account today.",
     );
     const filters = parseReportFilters(request.nextUrl.searchParams);
-    if (filters.branchId) {
-      await resolveOrgBranch(orgId, filters.branchId);
-    }
+    const branchId = await assertBranchAccessForContext(ctx, orgId, filters.branchId);
+    const scopedFilters = clean({ ...filters, branchId });
     if (!canExportOrgReport({ report: "audit-logs", ctx, actorUserId: userId })) {
       throw forbiddenError("You do not have permission to export activity history.");
     }
-    const rows = await reportsService.auditLogReport(orgId, filters);
+    const rows = await reportsService.auditLogReport(orgId, scopedFilters);
     await writeAuditLog({
       request,
       orgId,
@@ -9376,7 +9408,7 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
       "PAYMENTS_RECORD_OFFLINE",
       "MEMBERS_VIEW",
     ]);
-    const branchId = queryBranchId(request);
+    const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
     return ok({
       plans: await prisma.membershipPlan.findMany({
         where: {
@@ -14664,7 +14696,7 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       products: await prisma.product.findMany({
         where: {
           orgId,
-          ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
+          ...(branchId ? { branchId } : {}),
         },
         orderBy: [{ active: "desc" }, { stock: "asc" }],
       }),
