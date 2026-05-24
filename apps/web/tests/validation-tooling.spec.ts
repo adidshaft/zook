@@ -8,9 +8,9 @@ test.describe("validation tooling", () => {
     requireDb();
   });
 
-  const cronHeaders = process.env.CRON_SECRET
-    ? { authorization: `Bearer ${process.env.CRON_SECRET}` }
-    : undefined;
+  const cronRequestOptions = process.env.CRON_SECRET
+    ? { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } }
+    : {};
 
   test("platform admin can fire the staging diagnostics handled exception", async ({ page }) => {
     await loginWithSessionCookie(page, "platform@zook.local");
@@ -43,7 +43,7 @@ test.describe("validation tooling", () => {
     });
 
     const firstRun = await expectApiOk<{ processed: boolean; succeeded: number }>(
-      await page.request.post("/api/cron/account-deletion-purge", { headers: cronHeaders }),
+      await page.request.post("/api/cron/account-deletion-purge", cronRequestOptions),
     );
     expect(firstRun.data).toMatchObject({ processed: true, succeeded: 1 });
     await expect(
@@ -63,7 +63,7 @@ test.describe("validation tooling", () => {
       },
     });
     const skipped = await expectApiOk<{ processed: boolean; skipped: boolean; reason: string }>(
-      await page.request.post("/api/cron/account-deletion-purge", { headers: cronHeaders }),
+      await page.request.post("/api/cron/account-deletion-purge", cronRequestOptions),
     );
     expect(skipped.data).toMatchObject({
       processed: false,
