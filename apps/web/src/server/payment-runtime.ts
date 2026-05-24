@@ -502,7 +502,7 @@ export async function applyPaymentSessionStatus(input: {
           orgId: planSub.orgId,
           userId: session.userId,
           profilePhotoUrl: user.profilePhotoUrl,
-          marketingOptIn: user.isMinor ? false : user.marketingOptIn,
+          marketingOptIn: user.marketingOptIn,
         });
         const activatedSubscription = await prisma.memberSubscription.findUnique({
           where: { id: metadata.subscriptionId },
@@ -1130,7 +1130,7 @@ export async function applyAutopayProviderEvent(input: {
       orgId: mandate.orgId,
       userId: mandate.userId,
       profilePhotoUrl: user.profilePhotoUrl,
-      marketingOptIn: user.isMinor ? false : user.marketingOptIn,
+      marketingOptIn: user.marketingOptIn,
     });
     await input.createNotification({
       orgId: mandate.orgId,

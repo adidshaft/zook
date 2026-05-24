@@ -352,7 +352,6 @@ export function ReviewStep({
         <Pill tone="blue">{preview?.resolvedRecipients ?? 0} matched</Pill>
         <Pill tone="lime">{preview?.willDeliver ?? 0} will receive</Pill>
         <Pill tone="amber">{preview?.blockedByOptOut ?? 0} opted out</Pill>
-        <Pill tone="neutral">{preview?.blockedByMinor ?? 0} minors skipped</Pill>
       </div>
       {preview?.blockedByOptOut ? (
         <p className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
