@@ -69,12 +69,21 @@ test.describe("payments actions", () => {
       ),
     );
     expect(receipt.data.receiptUrl).toContain("/receipt?format=html");
+    const autoInvoice = await prisma.invoice.findFirstOrThrow({
+      where: { paymentId: paymentPayload.data.payment.id },
+    });
+    expect(autoInvoice.invoiceNumber).toMatch(/^ZK-AAROGYAS-20\d{2}-\d{2}\/\d{5}$/);
+    expect(autoInvoice.gstNumber).toBe("29ABCDE1234F1Z5");
+    expect(autoInvoice.pdfAssetId).toBeTruthy();
     const invoice = await expectApiOk<{ invoiceUrl: string }>(
       await page.request.post(
         `/api/orgs/${org.id}/payments/${paymentPayload.data.payment.id}/invoice`,
       ),
     );
-    expect(invoice.data.invoiceUrl).toContain("/invoice?format=html");
+    expect(invoice.data.invoiceUrl).toBe(`/api/orgs/${org.id}/invoices/${autoInvoice.id}/pdf`);
+    const pdfResponse = await page.request.get(invoice.data.invoiceUrl);
+    expect(pdfResponse.ok()).toBeTruthy();
+    expect(pdfResponse.headers()["content-type"]).toContain("application/pdf");
 
     await page.goto("/dashboard/payments");
     await expect(page.getByText("Payment history")).toBeVisible();
