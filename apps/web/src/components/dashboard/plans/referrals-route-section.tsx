@@ -9,6 +9,7 @@ import type { DiscountType, RewardType } from "@/components/dashboard/types";
 import { ReferralCodeControls } from "../sections/overview/referral-code-controls";
 import { RouteFeedback } from "./route-feedback";
 import type { GrowthRouteProps } from "./types";
+import { webApiFetch } from "@/lib/api-client";
 
 const copy = {
   referralsDescription:
@@ -17,6 +18,30 @@ const copy = {
   policyDescription: "Set the reward, friend discount, and monthly cap.",
   maxDiscount: "Maximum discount (%)",
 };
+
+const setupPresets = [
+  {
+    label: "7 days + 10% off",
+    referrerRewardType: "DAYS" as RewardType,
+    referrerRewardValue: "7",
+    referredDiscountType: "PERCENTAGE" as DiscountType,
+    referredDiscountValue: "1000",
+  },
+  {
+    label: "3 visits + 5% off",
+    referrerRewardType: "VISITS" as RewardType,
+    referrerRewardValue: "3",
+    referredDiscountType: "PERCENTAGE" as DiscountType,
+    referredDiscountValue: "500",
+  },
+  {
+    label: "Referral tracking only",
+    referrerRewardType: "NONE" as RewardType,
+    referrerRewardValue: "0",
+    referredDiscountType: "NONE" as DiscountType,
+    referredDiscountValue: "0",
+  },
+];
 
 function bpsToPercent(value: string) {
   if (!value.trim()) return "";
@@ -31,6 +56,19 @@ function percentToBps(value: string) {
 }
 
 export function ReferralsRouteSection(props: GrowthRouteProps) {
+  const isDefaultPolicy =
+    props.referralPolicy?.referrerRewardType === "DAYS" &&
+    props.referralPolicy.referrerRewardValue === 7 &&
+    props.referralPolicy.referredDiscountType === "PERCENTAGE" &&
+    props.referralPolicy.referredDiscountValue === 1000;
+
+  async function markRewardPaid(rewardId: string) {
+    await webApiFetch(`/api/orgs/${props.orgId}/referral-rewards/${rewardId}/mark-paid`, {
+      method: "POST",
+    });
+    window.location.reload();
+  }
+
   return (
     <div className="grid gap-4">
       <Section
@@ -77,8 +115,35 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
               },
             ]}
           />
+          {isDefaultPolicy ? (
+            <div className="rounded-[24px] border border-amber-300/20 bg-amber-300/10 p-4">
+              <p className="font-medium text-white">Set up referrals in 60 seconds</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                {setupPresets.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    className="rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-left text-sm text-white transition hover:border-lime-300/40"
+                    onClick={() =>
+                      props.setPolicyForm((current) => ({
+                        ...current,
+                        enabled: true,
+                        referrerRewardType: preset.referrerRewardType,
+                        referrerRewardValue: preset.referrerRewardValue,
+                        referredDiscountType: preset.referredDiscountType,
+                        referredDiscountValue: preset.referredDiscountValue,
+                        maxReferralsPerMonth: "10",
+                      }))
+                    }
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-            <p className="font-medium text-white">Top referrers</p>
+            <p className="font-medium text-white">Top advocates</p>
             <div className="mt-3 grid gap-2">
               {(props.referralAnalytics?.topReferrers ?? []).length ? (
                 props.referralAnalytics!.topReferrers.map((item) => (
@@ -91,6 +156,11 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                       <p className="text-xs text-white/45">
                         {item.user?.email ?? item.code.createdByRole} · {item.code.redemptionCount}{" "}
                         redemptions
+                      </p>
+                      <p className="text-xs text-white/35">
+                        {item.abuseSignals?.redemptions24h ?? 0} in 24h ·{" "}
+                        {item.abuseSignals?.uniqueInviteePhones ?? 0} phones
+                        {item.abuseSignals?.suspiciousClustering ? " · flagged" : ""}
                       </p>
                     </div>
                     <StatusPill
@@ -127,6 +197,38 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
               ) : (
                 <p className="rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white/45">
                   {copy.referralEmpty}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
+            <p className="font-medium text-white">Rewards to close</p>
+            <div className="mt-3 grid gap-2">
+              {(props.referralAnalytics?.pendingRewards ?? []).length ? (
+                props.referralAnalytics!.pendingRewards!.map((reward) => (
+                  <div
+                    key={reward.id}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/25 px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-white">
+                        {reward.rewardValue} {reward.rewardType.toLowerCase()}
+                      </p>
+                      <p className="text-xs text-white/45">Referrer {reward.referrerUserId}</p>
+                    </div>
+                    <ZookButton
+                      type="button"
+                      tone="secondary"
+                      size="sm"
+                      onClick={() => void markRewardPaid(reward.id)}
+                    >
+                      Mark paid
+                    </ZookButton>
+                  </div>
+                ))
+              ) : (
+                <p className="rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white/45">
+                  No unpaid referral credits.
                 </p>
               )}
             </div>

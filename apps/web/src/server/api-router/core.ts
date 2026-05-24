@@ -5935,6 +5935,60 @@ async function getReferralCodesPayload(input: {
   };
 }
 
+async function flagReferralAbuseIfNeeded(input: {
+  orgId: string;
+  referralCodeId: string;
+  referredUserId: string;
+}) {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recentCount = await prisma.referralRedemption.count({
+    where: { orgId: input.orgId, referralCodeId: input.referralCodeId, createdAt: { gte: since } },
+  });
+  if (recentCount <= 5) return;
+  await prisma.referralRedemption.update({
+    where: {
+      orgId_referralCodeId_referredUserId: {
+        orgId: input.orgId,
+        referralCodeId: input.referralCodeId,
+        referredUserId: input.referredUserId,
+      },
+    },
+    data: { suspicious: true, metadata: { redemptions24h: recentCount } },
+  });
+  const existingFlag = await prisma.organizationAbuseFlag.findFirst({
+    where: {
+      orgId: input.orgId,
+      type: "referral_velocity",
+      status: "open",
+      createdAt: { gte: since },
+    },
+  });
+  if (!existingFlag) {
+    await prisma.organizationAbuseFlag.create({
+      data: {
+        orgId: input.orgId,
+        userId: input.referredUserId,
+        type: "referral_velocity",
+        severity: "high",
+        metadata: { referralCodeId: input.referralCodeId, redemptions24h: recentCount },
+      },
+    });
+  }
+  const owners = await prisma.organizationRoleAssignment.findMany({
+    where: { orgId: input.orgId, role: { in: ["OWNER", "ADMIN"] } },
+    select: { userId: true },
+  });
+  await createDirectNotification({
+    orgId: input.orgId,
+    type: "SECURITY",
+    title: "Referral abuse signal",
+    body: `${recentCount} referral redemptions were recorded in 24 hours. Review the referral dashboard.`,
+    audience: "owners",
+    metadata: { referralCodeId: input.referralCodeId, redemptions24h: recentCount },
+    userIds: owners.map((owner) => owner.userId),
+  });
+}
+
 export async function handleMeData(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["me", "orgs"])) {
     const token = extractSessionToken(request);
@@ -11177,7 +11231,7 @@ export async function handleCouponsReferrals(request: NextRequest, path: string[
       referredDiscountType: "PERCENTAGE" as const,
       referredDiscountValue: 1000,
       maxDiscountCapBps: 3000,
-      maxReferralsPerMonth: 5,
+      maxReferralsPerMonth: 10,
       referralCodeExpiryDays: 90,
       trainerReferralEnabled: true,
       staffReferralEnabled: false,
@@ -11378,7 +11432,8 @@ export async function handleCouponsReferrals(request: NextRequest, path: string[
     const startOfMonth = new Date();
     startOfMonth.setUTCDate(1);
     startOfMonth.setUTCHours(0, 0, 0, 0);
-    const [codes, redemptions, rewards] = await Promise.all([
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [codes, redemptions, rewards, recentRedemptions, openFlags] = await Promise.all([
       prisma.referralCode.findMany({
         where: { orgId },
         orderBy: { redemptionCount: "desc" },
@@ -11386,21 +11441,93 @@ export async function handleCouponsReferrals(request: NextRequest, path: string[
       }),
       prisma.referralRedemption.findMany({ where: { orgId, createdAt: { gte: startOfMonth } } }),
       prisma.referralReward.findMany({ where: { orgId, createdAt: { gte: startOfMonth } } }),
+      prisma.referralRedemption.findMany({
+        where: { orgId, createdAt: { gte: last24h } },
+        select: { referralCodeId: true, referredUserId: true, metadata: true },
+      }),
+      prisma.organizationAbuseFlag.findMany({
+        where: { orgId, type: "referral_velocity", status: "open" },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }),
     ]);
     const topReferrerIds = [...new Set(codes.slice(0, 5).map((code) => code.referrerUserId))];
     const users = await prisma.user.findMany({ where: { id: { in: topReferrerIds } } });
+    const recentByCode = new Map<string, typeof recentRedemptions>();
+    for (const redemption of recentRedemptions) {
+      recentByCode.set(redemption.referralCodeId, [
+        ...(recentByCode.get(redemption.referralCodeId) ?? []),
+        redemption,
+      ]);
+    }
     return ok({
       summary: {
         activeCodes: codes.filter((code) => code.status === "active").length,
         redemptionsThisMonth: redemptions.length,
         rewardCreditsThisMonth: rewards.reduce((total, reward) => total + reward.rewardValue, 0),
         appliedRewardsThisMonth: rewards.filter((reward) => reward.status === "applied").length,
+        openAbuseFlags: openFlags.length,
       },
       topReferrers: codes.slice(0, 5).map((code) => ({
         code,
         user: users.find((user) => user.id === code.referrerUserId) ?? null,
+        abuseSignals: {
+          redemptions24h: recentByCode.get(code.id)?.length ?? 0,
+          uniqueInviteePhones: new Set(
+            (recentByCode.get(code.id) ?? [])
+              .map((redemption) =>
+                typeof redemption.metadata === "object" &&
+                redemption.metadata &&
+                "phone" in redemption.metadata
+                  ? String(redemption.metadata.phone)
+                  : "",
+              )
+              .filter(Boolean),
+          ).size,
+          suspiciousClustering: (recentByCode.get(code.id)?.length ?? 0) > 5,
+        },
       })),
+      pendingRewards: rewards
+        .filter((reward) => reward.status === "pending")
+        .slice(0, 10)
+        .map((reward) => ({
+          id: reward.id,
+          referrerUserId: reward.referrerUserId,
+          referralCodeId: reward.referralCodeId,
+          rewardType: reward.rewardType,
+          rewardValue: reward.rewardValue,
+          status: reward.status,
+          createdAt: reward.createdAt,
+        })),
+      openFlags,
     });
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "referral-rewards", /.+/, "mark-paid"])
+  ) {
+    const orgId = path[1]!;
+    const rewardId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "REFERRALS_MANAGE");
+    const reward = await prisma.referralReward.findFirst({ where: { id: rewardId, orgId } });
+    if (!reward) {
+      throw notFoundError("Referral reward not found");
+    }
+    const updated = await prisma.referralReward.update({
+      where: { id: reward.id },
+      data: { status: "applied", appliedAt: new Date() },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "referral_reward.marked_paid",
+      entityType: "referral_reward",
+      entityId: reward.id,
+      metadata: { referrerUserId: reward.referrerUserId, rewardType: reward.rewardType },
+    });
+    return ok({ reward: updated });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "referrals", "redeem"])) {
     const orgId = path[1]!;
@@ -11427,6 +11554,13 @@ export async function handleCouponsReferrals(request: NextRequest, path: string[
       entityId: redemption.id,
       metadata: { code: referral.code, referralCodeId: referral.id },
     });
+    if (!alreadyRedeemed) {
+      await flagReferralAbuseIfNeeded({
+        orgId,
+        referralCodeId: referral.id,
+        referredUserId: userId,
+      });
+    }
     return ok({ referral, redemption, alreadyRedeemed });
   }
   if (
@@ -11588,6 +11722,13 @@ export async function handleCouponsReferrals(request: NextRequest, path: string[
       entityId: redemption.id,
       metadata: { code: referral.code, referralCodeId: referral.id },
     });
+    if (!alreadyRedeemed) {
+      await flagReferralAbuseIfNeeded({
+        orgId,
+        referralCodeId: referral.id,
+        referredUserId: userId,
+      });
+    }
     return ok({ referral, redemption, alreadyRedeemed });
   }
   return undefined;
