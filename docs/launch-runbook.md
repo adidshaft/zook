@@ -77,6 +77,27 @@ Resend:
 
 ## Membership Operations
 
+Phase 5 trial-to-paid SaaS upgrade:
+- `/dashboard/billing` lets owners choose Starter, Growth, or Pro with monthly/yearly pricing and
+  starts a hosted Razorpay/mock subscription checkout through
+  `POST /api/orgs/:orgId/saas-subscription/upgrade`.
+- Apply migration `20260524200000_phase5_saas_upgrade` before promoting the Phase 5 artifact. It
+  adds SaaS billing cycle, locked price, renewal, cancel-at-period-end, and `SAAS_TRIAL_END`
+  reminder state.
+- Owner/admin write APIs return `403 SAAS_PAYMENT_REQUIRED` after the trial has been expired for
+  more than 7 days. Billing/profile routes remain writable so the owner can upgrade; member payment
+  and attendance flows are not blocked by this owner/admin wall.
+- Successful SaaS checkout creates a SaaS invoice row with a PDF endpoint under
+  `/api/orgs/:orgId/saas-subscription/invoices/:invoiceId.pdf`. Cancel-at-period-end records the
+  cancellation and attempts provider mandate cancellation when a provider mandate exists.
+- Trial-ending reminders are emitted by `POST /api/cron/renewal-reminders` at T-7d, T-3d, T-1d,
+  and T+0 using `SubscriptionReminder.kind=SAAS_TRIAL_END`.
+- Phase 5 local verification on 2026-05-24 passed `pnpm db:generate`, `pnpm test:db:prepare`,
+  `pnpm --filter @zook/web typecheck`, `pnpm typecheck`, `pnpm lint`, `pnpm test:unit`, `pnpm
+  test:services`, and targeted Playwright
+  `apps/web/tests/misc-actions.spec.ts --grep "SaaS trial|billing profile"`. CI workflows and
+  production Razorpay subscription/live invoice smoke remain deferred.
+
 Phase 4 refund flow UI:
 - Gym owners can refund duplicate/offline payments directly from `Dashboard -> Payments -> Payment
   history`. Cash/manual refunds do not call the payment provider; they update the local payment

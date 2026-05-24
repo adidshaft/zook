@@ -70,6 +70,7 @@ type InvoiceRow = {
 
 type BillingMandateResponse = {
   checkoutUrl?: string | null;
+  subscription?: SubscriptionDetail["subscription"];
   mandate: {
     id: string;
     status: string;
@@ -83,10 +84,20 @@ type SubscriptionDetail = {
     trialStartAt: string | Date;
     trialEndAt: string | Date;
     status: string;
+    tier: "FREE" | "STARTER" | "GROWTH" | "PRO";
+    billingCycle: "MONTHLY" | "YEARLY";
+    priceLockedPaise: number | null;
     billingEmail: string | null;
     nextBillingAt: string | Date | null;
+    nextRenewalAt: string | Date | null;
     cancelledAt: string | Date | null;
+    cancelAtPeriodEnd: boolean;
   };
+  activeMemberCount: number;
+  pricing: Record<
+    "STARTER" | "GROWTH" | "PRO",
+    { monthly: number; yearly: number; memberLimit: number | null }
+  >;
   mandate: {
     id: string;
     status: string;
@@ -147,6 +158,8 @@ export function BillingSection({
   const [mandateBusy, setMandateBusy] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
   const [status, setStatus] = useState("");
+  const [selectedTier, setSelectedTier] = useState<"STARTER" | "GROWTH" | "PRO">("STARTER");
+  const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
 
   useEffect(() => {
     let mounted = true;
@@ -218,10 +231,10 @@ export function BillingSection({
       setMandateBusy(true);
       setStatus("");
       const payload = await webApiFetch<BillingMandateResponse>(
-        `/api/orgs/${orgId}/billing/mandate`,
+        `/api/orgs/${orgId}/saas-subscription/upgrade`,
         {
           method: "POST",
-          body: {},
+          body: { tier: selectedTier, billingCycle },
           feedback: { success: "Billing setup started." },
         },
       );
@@ -232,6 +245,27 @@ export function BillingSection({
       setStatus(`Billing mandate is ${formatEnumLabel(payload.mandate.status)}.`);
     } catch (cause) {
       setStatus(cause instanceof Error ? cause.message : "Unable to start billing setup.");
+    } finally {
+      setMandateBusy(false);
+    }
+  }
+
+  async function cancelAtPeriodEnd() {
+    try {
+      setMandateBusy(true);
+      setStatus("");
+      const payload = await webApiFetch<SubscriptionDetail>(
+        `/api/orgs/${orgId}/saas-subscription/cancel`,
+        {
+          method: "POST",
+          body: {},
+          feedback: { success: "Subscription will cancel at period end." },
+        },
+      );
+      setSubscription((current) => (current ? { ...current, ...payload } : payload));
+      setStatus("Subscription will cancel at the end of the current period.");
+    } catch (cause) {
+      setStatus(cause instanceof Error ? cause.message : "Unable to cancel subscription.");
     } finally {
       setMandateBusy(false);
     }
@@ -333,14 +367,56 @@ export function BillingSection({
               </span>
             </p>
           </div>
-          <button
-            type="button"
-            disabled={mandateBusy}
-            onClick={() => void setupBillingMandate()}
-            className="zook-focus rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:cursor-wait disabled:opacity-60"
-          >
-            {mandateBusy ? "Opening..." : "Add card for month 3"}
-          </button>
+          <div className="grid gap-3 md:min-w-[360px]">
+            <div className="grid grid-cols-3 gap-2">
+              {(["STARTER", "GROWTH", "PRO"] as const).map((tier) => (
+                <button
+                  key={tier}
+                  type="button"
+                  onClick={() => setSelectedTier(tier)}
+                  className={`zook-focus rounded-lg border px-3 py-2 text-xs font-semibold ${
+                    selectedTier === tier
+                      ? "border-lime-300 bg-lime-300 text-black"
+                      : "border-white/10 bg-black/20 text-white/70"
+                  }`}
+                >
+                  {tier}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {(["MONTHLY", "YEARLY"] as const).map((cycle) => (
+                <button
+                  key={cycle}
+                  type="button"
+                  onClick={() => setBillingCycle(cycle)}
+                  className={`zook-focus rounded-lg border px-3 py-2 text-xs font-semibold ${
+                    billingCycle === cycle
+                      ? "border-white bg-white text-black"
+                      : "border-white/10 bg-black/20 text-white/70"
+                  }`}
+                >
+                  {cycle === "MONTHLY" ? "Monthly" : "Yearly"}
+                </button>
+              ))}
+            </div>
+            <p className="text-sm font-semibold text-white">
+              {formatInr(
+                billingCycle === "YEARLY"
+                  ? (subscription?.pricing[selectedTier].yearly ?? 0)
+                  : (subscription?.pricing[selectedTier].monthly ?? 0),
+              )}{" "}
+              / {billingCycle === "YEARLY" ? "year" : "month"}
+            </p>
+            <button
+              type="button"
+              disabled={mandateBusy}
+              onClick={() => void setupBillingMandate()}
+              className="zook-focus rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:cursor-wait disabled:opacity-60"
+            >
+              {mandateBusy ? "Opening..." : "Upgrade plan"}
+            </button>
+          </div>
         </div>
       </GlassCard>
       {subscription?.mandate ? (
@@ -360,6 +436,7 @@ export function BillingSection({
               </Pill>
               <h2 className="mt-3 text-xl font-semibold text-white">Active subscription</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-white/52">
+                {formatEnumLabel(subscription.subscription.tier)} plan ·{" "}
                 {formatInr(subscription.mandate.amountPaise)} per {subscription.mandate.billingPeriod}
                 {" "}via {formatEnumLabel(subscription.mandate.provider || "")} mandate.
               </p>
@@ -389,6 +466,18 @@ export function BillingSection({
               >
                 Complete setup
               </a>
+            ) : null}
+            {subscription.subscription.status === "ACTIVE" &&
+            !subscription.subscription.cancelAtPeriodEnd ? (
+              <ZookButton
+                type="button"
+                tone="ghost"
+                size="sm"
+                disabled={mandateBusy}
+                onClick={() => void cancelAtPeriodEnd()}
+              >
+                Cancel at period end
+              </ZookButton>
             ) : null}
           </div>
         </GlassCard>
