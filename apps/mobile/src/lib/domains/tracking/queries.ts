@@ -2,7 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { queryKeys } from "@/lib/domains/shared/keys";
-import type { BodyProgressEntryRecord } from "@/lib/domains/shared/types";
+import type {
+  BodyProgressEntryRecord,
+  DietPlanRecord,
+  MealLogRecord,
+} from "@/lib/domains/shared/types";
 
 export function useMyTracking() {
   const { status, token } = useAuth();
@@ -49,6 +53,19 @@ export function useMyTrackingHabits() {
     queryKey: queryKeys.tracking.habits(),
     queryFn: () =>
       mobileApiFetch<{ habits: Array<Record<string, unknown>> }>("/me/tracking/habits", { token }),
+    enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function useMyDiet() {
+  const { status, token, activeOrgId } = useAuth();
+  return useQuery({
+    queryKey: queryKeys.member.diet(),
+    queryFn: () =>
+      mobileApiFetch<{ plan: DietPlanRecord | null; logs: MealLogRecord[] }>("/me/diet", {
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+      }),
     enabled: status === "authenticated" && Boolean(token),
   });
 }

@@ -301,12 +301,57 @@ export const bodyProgressEntrySchema = z.object({
   measuredAt: z.string().datetime(),
   weightKg: z.number().nonnegative().optional(),
   waistCm: z.number().nonnegative().optional(),
+  hipCm: z.number().nonnegative().optional(),
   chestCm: z.number().nonnegative().optional(),
+  shoulderCm: z.number().nonnegative().optional(),
   armCm: z.number().nonnegative().optional(),
+  forearmCm: z.number().nonnegative().optional(),
+  thighCm: z.number().nonnegative().optional(),
+  calfCm: z.number().nonnegative().optional(),
+  neckCm: z.number().nonnegative().optional(),
   bodyFatPercent: z.number().nonnegative().max(100).optional(),
+  muscleMassKg: z.number().nonnegative().optional(),
+  visceralFatRating: z.number().int().nonnegative().optional(),
+  restingHeartRate: z.number().int().positive().max(240).optional(),
   photoAssetId: z.string().optional(),
   notes: z.string().max(500).optional(),
   visibility: z.enum(["PRIVATE", "TRAINER_VISIBLE"]).default("PRIVATE"),
+});
+
+export const dietPlanMealSchema = z.object({
+  name: z.string().min(2).max(80),
+  timeOfDay: z.string().max(30).optional(),
+  items: z.array(z.string().min(1).max(120)).default([]),
+  calories: z.number().int().nonnegative().optional(),
+  proteinG: z.number().int().nonnegative().optional(),
+  carbsG: z.number().int().nonnegative().optional(),
+  fatsG: z.number().int().nonnegative().optional(),
+  order: z.number().int().nonnegative().default(0),
+});
+
+export const dietPlanSchema = z.object({
+  branchId: z.string().optional(),
+  memberId: z.string(),
+  title: z.string().min(2).max(120),
+  calorieTarget: z.number().int().positive().optional(),
+  proteinG: z.number().int().nonnegative().optional(),
+  carbsG: z.number().int().nonnegative().optional(),
+  fatsG: z.number().int().nonnegative().optional(),
+  status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("DRAFT"),
+  meals: z.array(dietPlanMealSchema).min(1).max(8),
+});
+
+export const mealLogSchema = z.object({
+  organizationId: z.string().optional(),
+  dietPlanId: z.string().optional(),
+  mealName: z.string().min(2).max(100),
+  loggedAt: z.string().datetime().optional(),
+  calories: z.number().int().nonnegative().optional(),
+  proteinG: z.number().int().nonnegative().optional(),
+  carbsG: z.number().int().nonnegative().optional(),
+  fatsG: z.number().int().nonnegative().optional(),
+  photoAssetId: z.string().optional(),
+  notes: z.string().max(500).optional(),
 });
 
 export const memberHabitSchema = z.object({

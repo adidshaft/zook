@@ -17,6 +17,7 @@ export const queryKeys = {
     profile: (orgId?: string | null) => ["me", "profile", orgId] as const,
     referralCodes: (orgId?: string | null) => ["me", "referral-codes", orgId] as const,
     goals: () => ["me", "goals"] as const,
+    diet: () => ["me", "diet"] as const,
   },
   trainer: {
     all: () => ["trainer"] as const,

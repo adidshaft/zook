@@ -10,6 +10,8 @@ import {
   checkoutSchema,
   couponSchema,
   createOrganizationSchema,
+  dietPlanSchema,
+  mealLogSchema,
   memberHabitLogSchema,
   memberHabitSchema,
   membershipPlanSchema,
@@ -6617,11 +6619,28 @@ export async function handleTracking(request: NextRequest, path: string[]) {
         measuredAt: new Date(body.measuredAt),
         ...(body.weightKg !== undefined ? { weightKg: new Prisma.Decimal(body.weightKg) } : {}),
         ...(body.waistCm !== undefined ? { waistCm: new Prisma.Decimal(body.waistCm) } : {}),
+        ...(body.hipCm !== undefined ? { hipCm: new Prisma.Decimal(body.hipCm) } : {}),
         ...(body.chestCm !== undefined ? { chestCm: new Prisma.Decimal(body.chestCm) } : {}),
+        ...(body.shoulderCm !== undefined
+          ? { shoulderCm: new Prisma.Decimal(body.shoulderCm) }
+          : {}),
         ...(body.armCm !== undefined ? { armCm: new Prisma.Decimal(body.armCm) } : {}),
+        ...(body.forearmCm !== undefined
+          ? { forearmCm: new Prisma.Decimal(body.forearmCm) }
+          : {}),
+        ...(body.thighCm !== undefined ? { thighCm: new Prisma.Decimal(body.thighCm) } : {}),
+        ...(body.calfCm !== undefined ? { calfCm: new Prisma.Decimal(body.calfCm) } : {}),
+        ...(body.neckCm !== undefined ? { neckCm: new Prisma.Decimal(body.neckCm) } : {}),
         ...(body.bodyFatPercent !== undefined
           ? { bodyFatPercent: new Prisma.Decimal(body.bodyFatPercent) }
           : {}),
+        ...(body.muscleMassKg !== undefined
+          ? { muscleMassKg: new Prisma.Decimal(body.muscleMassKg) }
+          : {}),
+        ...(body.visceralFatRating !== undefined
+          ? { visceralFatRating: body.visceralFatRating }
+          : {}),
+        ...(body.restingHeartRate !== undefined ? { restingHeartRate: body.restingHeartRate } : {}),
         ...(photoAsset ? { photoAssetId: photoAsset.id } : {}),
         ...(body.notes ? { notes: body.notes } : {}),
         visibility,
@@ -6638,6 +6657,62 @@ export async function handleTracking(request: NextRequest, path: string[]) {
         take: 50,
       }),
     });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "diet"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const plan = await prisma.dietPlan.findFirst({
+      where: { memberId: userId, status: "PUBLISHED" },
+      orderBy: { updatedAt: "desc" },
+    });
+    const [meals, logs] = await Promise.all([
+      plan
+        ? prisma.dietPlanMeal.findMany({
+            where: { dietPlanId: plan.id },
+            orderBy: { order: "asc" },
+          })
+        : Promise.resolve([]),
+      prisma.mealLog.findMany({
+        where: {
+          userId,
+          loggedAt: {
+            gte: (() => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              return today;
+            })(),
+          },
+        },
+        orderBy: { loggedAt: "desc" },
+        take: 20,
+      }),
+    ]);
+    return ok({ plan: plan ? { ...plan, meals } : null, logs });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "diet", "meal-logs"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const body = mealLogSchema.parse(await readJson(request));
+    const plan = body.dietPlanId
+      ? await prisma.dietPlan.findFirst({ where: { id: body.dietPlanId, memberId: userId } })
+      : null;
+    if (body.dietPlanId && !plan) {
+      throw notFoundError("Diet plan not found");
+    }
+    const log = await prisma.mealLog.create({
+      data: clean({
+        userId,
+        organizationId: body.organizationId ?? plan?.orgId,
+        dietPlanId: plan?.id,
+        mealName: body.mealName,
+        loggedAt: body.loggedAt ? new Date(body.loggedAt) : new Date(),
+        calories: body.calories,
+        proteinG: body.proteinG,
+        carbsG: body.carbsG,
+        fatsG: body.fatsG,
+        photoAssetId: body.photoAssetId,
+        notes: body.notes,
+      }),
+    });
+    return ok({ log });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "tracking", "habits"])) {
     const userId = requireAuth(await getRequestContext(request));
@@ -12908,6 +12983,156 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
       metadata: { trainerUserId: trainerId, memberUserId: clientId },
     });
     return ok({ note: body.note });
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients", /.+/, "body-progress"])
+  ) {
+    const orgId = path[1]!;
+    const trainerId = path[3]!;
+    const clientId = path[5]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const requesterId = requireAuth(ctx);
+    if (requesterId === trainerId) {
+      requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    } else {
+      requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    }
+    const assignment = await prisma.trainerAssignment.findFirst({
+      where: { orgId, trainerUserId: trainerId, memberUserId: clientId, active: true },
+    });
+    if (!assignment) {
+      throw notFoundError("Trainer client not found");
+    }
+    const body = bodyProgressEntrySchema.parse(await readJson(request));
+    const entry = await prisma.bodyProgressEntry.create({
+      data: {
+        userId: clientId,
+        organizationId: orgId,
+        measuredAt: new Date(body.measuredAt),
+        ...(body.weightKg !== undefined ? { weightKg: new Prisma.Decimal(body.weightKg) } : {}),
+        ...(body.waistCm !== undefined ? { waistCm: new Prisma.Decimal(body.waistCm) } : {}),
+        ...(body.hipCm !== undefined ? { hipCm: new Prisma.Decimal(body.hipCm) } : {}),
+        ...(body.chestCm !== undefined ? { chestCm: new Prisma.Decimal(body.chestCm) } : {}),
+        ...(body.shoulderCm !== undefined
+          ? { shoulderCm: new Prisma.Decimal(body.shoulderCm) }
+          : {}),
+        ...(body.armCm !== undefined ? { armCm: new Prisma.Decimal(body.armCm) } : {}),
+        ...(body.forearmCm !== undefined
+          ? { forearmCm: new Prisma.Decimal(body.forearmCm) }
+          : {}),
+        ...(body.thighCm !== undefined ? { thighCm: new Prisma.Decimal(body.thighCm) } : {}),
+        ...(body.calfCm !== undefined ? { calfCm: new Prisma.Decimal(body.calfCm) } : {}),
+        ...(body.neckCm !== undefined ? { neckCm: new Prisma.Decimal(body.neckCm) } : {}),
+        ...(body.bodyFatPercent !== undefined
+          ? { bodyFatPercent: new Prisma.Decimal(body.bodyFatPercent) }
+          : {}),
+        ...(body.muscleMassKg !== undefined
+          ? { muscleMassKg: new Prisma.Decimal(body.muscleMassKg) }
+          : {}),
+        ...(body.visceralFatRating !== undefined
+          ? { visceralFatRating: body.visceralFatRating }
+          : {}),
+        ...(body.restingHeartRate !== undefined ? { restingHeartRate: body.restingHeartRate } : {}),
+        ...(body.photoAssetId ? { photoAssetId: body.photoAssetId } : {}),
+        ...(body.notes ? { notes: body.notes } : {}),
+        recordedByUserId: requesterId,
+        visibility: "TRAINER_VISIBLE",
+      },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: requesterId,
+      action: "trainer.body_progress.recorded",
+      entityType: "body_progress_entry",
+      entityId: entry.id,
+      metadata: { trainerUserId: trainerId, memberUserId: clientId },
+    });
+    return ok({ entry });
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients", /.+/, "diet-plans"])
+  ) {
+    const orgId = path[1]!;
+    const trainerId = path[3]!;
+    const clientId = path[5]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const requesterId = requireAuth(ctx);
+    if (requesterId === trainerId) {
+      requireOrgPermission(ctx, orgId, "PLANS_PUBLISH_ASSIGNED");
+    } else {
+      requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    }
+    const assignment = await prisma.trainerAssignment.findFirst({
+      where: { orgId, trainerUserId: trainerId, memberUserId: clientId, active: true },
+    });
+    if (!assignment) {
+      throw notFoundError("Trainer client not found");
+    }
+    const rawBody = (await readJson(request)) as Record<string, unknown>;
+    const body = dietPlanSchema.parse({ ...rawBody, memberId: clientId });
+    const plan = await prisma.$transaction(async (tx) => {
+      const created = await tx.dietPlan.create({
+        data: clean({
+          orgId,
+          branchId: body.branchId,
+          trainerId,
+          memberId: clientId,
+          title: body.title,
+          calorieTarget: body.calorieTarget,
+          proteinG: body.proteinG,
+          carbsG: body.carbsG,
+          fatsG: body.fatsG,
+          status: body.status,
+        }),
+      });
+      await tx.dietPlanMeal.createMany({
+        data: body.meals.map((meal, index) => ({
+          dietPlanId: created.id,
+          name: meal.name,
+          timeOfDay: meal.timeOfDay ?? null,
+          items: meal.items,
+          calories: meal.calories ?? null,
+          proteinG: meal.proteinG ?? null,
+          carbsG: meal.carbsG ?? null,
+          fatsG: meal.fatsG ?? null,
+          order: meal.order ?? index,
+        })),
+      });
+      return created;
+    });
+    if (plan.status === "PUBLISHED") {
+      await createDirectNotification({
+        orgId,
+        createdById: requesterId,
+        type: "PLAN",
+        title: `New diet plan: ${plan.title}`,
+        body: "Open Zook to review today's meals and log updates.",
+        audience: "selected_member",
+        userIds: [clientId],
+        metadata: { dietPlanId: plan.id },
+      });
+    }
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: requesterId,
+      action: "diet_plan.published",
+      entityType: "diet_plan",
+      entityId: plan.id,
+      metadata: { trainerUserId: trainerId, memberUserId: clientId, status: plan.status },
+    });
+    return ok({
+      plan: {
+        ...plan,
+        meals: await prisma.dietPlanMeal.findMany({
+          where: { dietPlanId: plan.id },
+          orderBy: { order: "asc" },
+        }),
+      },
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients"])) {
     const orgId = path[1]!;

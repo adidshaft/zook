@@ -103,11 +103,23 @@ export const trackingApi = {
       body: {
         measuredAt: string;
         weightKg?: number;
+        waistCm?: number;
+        hipCm?: number;
+        chestCm?: number;
+        shoulderCm?: number;
+        armCm?: number;
+        forearmCm?: number;
+        thighCm?: number;
+        calfCm?: number;
+        neckCm?: number;
         bodyFatPercent?: number;
+        muscleMassKg?: number;
+        visceralFatRating?: number;
+        restingHeartRate?: number;
         photoAssetId?: string;
         organizationId?: string;
         notes?: string;
-        visibility?: "PRIVATE" | "TRAINER" | "GYM";
+        visibility?: "PRIVATE" | "TRAINER_VISIBLE";
       };
     },
   ) {
@@ -559,6 +571,57 @@ export const trainerApi = {
         body: { note: options.note },
       },
     );
+  },
+  recordClientBodyProgress<T = { entry: { id: string } }>(
+    options: RequestOptions & {
+      trainerUserId: string;
+      clientId: string;
+      body: Record<string, unknown>;
+    },
+  ) {
+    return mobileApiFetch<T>(
+      `/orgs/${options.orgId}/trainers/${options.trainerUserId}/clients/${options.clientId}/body-progress`,
+      {
+        method: "POST",
+        token: options.token,
+        orgId: options.orgId,
+        body: options.body,
+      },
+    );
+  },
+  createClientDietPlan<T = { plan: { id: string } }>(
+    options: RequestOptions & {
+      trainerUserId: string;
+      clientId: string;
+      body: Record<string, unknown>;
+    },
+  ) {
+    return mobileApiFetch<T>(
+      `/orgs/${options.orgId}/trainers/${options.trainerUserId}/clients/${options.clientId}/diet-plans`,
+      {
+        method: "POST",
+        token: options.token,
+        orgId: options.orgId,
+        body: options.body,
+      },
+    );
+  },
+};
+
+export const dietApi = {
+  getMine<T = unknown>(options: RequestOptions) {
+    return mobileApiFetch<T>("/me/diet", {
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+    });
+  },
+  logMeal<T = { log: { id: string } }>(options: RequestOptions & { body: Record<string, unknown> }) {
+    return mobileApiFetch<T>("/me/diet/meal-logs", {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: options.body,
+    });
   },
 };
 
