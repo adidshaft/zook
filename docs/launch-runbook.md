@@ -77,6 +77,20 @@ Resend:
 
 ## Membership Operations
 
+Phase 3 platform operations UI:
+- `/platform` can toggle `ai.assistant` at runtime. When OFF, `/api/ai/chat` returns the platform
+  gated message without requiring a redeploy; `AI_FEATURES_ENABLED` remains the global kill switch.
+- Publishing a `PlatformBroadcast` as `LIVE` fans out in-app notifications to targeted active org
+  users immediately, with push enabled and user batches capped at 500 per send batch.
+- Platform webhook replay now reuses the same verified payment-event application path as the live
+  webhook handler. Already processed events stay duplicate/idempotent; quarantined events can be
+  replayed to apply side effects once the underlying issue is fixed.
+- Phase 3 local verification on 2026-05-24 passed `pnpm --filter @zook/web typecheck`, `pnpm
+  typecheck`, `pnpm lint`, `pnpm test:unit`, `pnpm test:services`, and targeted Playwright
+  `apps/web/tests/platform-console.spec.ts`.
+- CI workflow checks and production deployment/live smoke remain deferred for the local-only
+  hardening merge sequence.
+
 Phase 2 platform support console:
 - Platform admins can handle day-1 support from `/platform`: user lookup, session revocation,
   impersonation start/end, cross-tenant payment search/refund, webhook replay, global audit,
