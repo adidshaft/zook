@@ -24,7 +24,7 @@ import {
   type PlanTemplateId,
 } from "@/features/trainer/helpers";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
-import { plansApi } from "@/lib/domain-api";
+import { plansApi, trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/domains";
 import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -45,6 +45,10 @@ export default function TrainerClientPlanScreen() {
   const [selectedTemplate, setSelectedTemplate] = useState<PlanTemplateId>("workout");
   const [savingPlan, setSavingPlan] = useState(false);
   const [savedPlan, setSavedPlan] = useState<{ id: string; title: string } | null>(null);
+  const [dietTitle, setDietTitle] = useState("");
+  const [calorieTarget, setCalorieTarget] = useState("2000");
+  const [proteinG, setProteinG] = useState("120");
+  const [dietStatus, setDietStatus] = useState("");
 
   useEffect(() => {
     if (focus === "ai") {
@@ -135,6 +139,47 @@ export default function TrainerClientPlanScreen() {
     }
   }
 
+  async function publishDietPlan() {
+    if (!token || !activeOrgId || !client || !client.trainerUserId) {
+      setDietStatus("Select a client before publishing diet.");
+      return;
+    }
+    setSavingPlan(true);
+    setDietStatus("");
+    try {
+      const title = dietTitle.trim() || `${clientName} diet plan`;
+      const result = await trainerApi.createClientDietPlan<{ plan: { id: string; title: string } }>({
+        token,
+        orgId: activeOrgId,
+        trainerUserId: client.trainerUserId,
+        clientId: client.memberUserId,
+        body: {
+          title,
+          status: "PUBLISHED",
+          calorieTarget: Number.parseInt(calorieTarget, 10) || 2000,
+          proteinG: Number.parseInt(proteinG, 10) || 120,
+          carbsG: 220,
+          fatsG: 60,
+          meals: [
+            { name: "Breakfast", timeOfDay: "08:00", calories: 450, proteinG: 25, carbsG: 55, fatsG: 12, items: ["Poha or oats", "Curd"], order: 0 },
+            { name: "Lunch", timeOfDay: "13:00", calories: 650, proteinG: 35, carbsG: 80, fatsG: 18, items: ["Roti", "Dal", "Sabzi"], order: 1 },
+            { name: "Snack", timeOfDay: "17:00", calories: 250, proteinG: 20, carbsG: 25, fatsG: 8, items: ["Fruit", "Whey or paneer"], order: 2 },
+            { name: "Dinner", timeOfDay: "20:30", calories: 550, proteinG: 40, carbsG: 55, fatsG: 16, items: ["Rice", "Protein", "Salad"], order: 3 },
+          ],
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
+      setDietStatus(`${result.plan.title} published. ${clientName} can log meals now.`);
+      showToast({ tone: "success", haptic: "success", message: "Diet plan published." });
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      setDietStatus(message);
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+    } finally {
+      setSavingPlan(false);
+    }
+  }
+
   function selectTab(tab: ClientDetailTab) {
     router.replace(`/trainer/clients/${id}${tab === "overview" ? "" : `/${tab}`}` as never);
   }
@@ -187,6 +232,18 @@ export default function TrainerClientPlanScreen() {
             </GlassCard>
           ) : null}
           {status ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={styles.statusText}>{status}</Text></GlassCard> : null}
+          <GlassCard contentStyle={styles.stack}>
+            <SectionHeader title="Diet plan" subtitle="Four-meal publish flow for the assigned client." />
+            <FormField testID="trainer-diet-title" label="Diet title" value={dietTitle} onChangeText={setDietTitle} placeholder={`${clientName} diet plan`} />
+            <View style={styles.actionRow}>
+              <FormField label="Calories" value={calorieTarget} onChangeText={setCalorieTarget} keyboardType="number-pad" style={styles.actionHalf} />
+              <FormField label="Protein g" value={proteinG} onChangeText={setProteinG} keyboardType="number-pad" style={styles.actionHalf} />
+            </View>
+            <SecondaryButton testID="trainer-publish-diet-button" onPress={() => void publishDietPlan()} disabled={!client || savingPlan}>
+              Publish 4-meal diet
+            </SecondaryButton>
+          </GlassCard>
+          {dietStatus ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={styles.statusText}>{dietStatus}</Text></GlassCard> : null}
           <AiDraftPanel clientId={id} />
         </ScrollView>
       </ZookScreen>
