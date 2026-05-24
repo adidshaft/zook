@@ -1640,7 +1640,7 @@ model ReferralPolicy {
   referredDiscountType   String   @default("PERCENTAGE")
   referredDiscountValue  Int      @default(1000)
   maxDiscountCapBps      Int      @default(3000)
-  maxReferralsPerMonth   Int      @default(5)
+  maxReferralsPerMonth   Int      @default(10)
   referralCodeExpiryDays Int      @default(90)
   trainerReferralEnabled Boolean  @default(true)
   staffReferralEnabled   Boolean  @default(false)

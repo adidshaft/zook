@@ -175,7 +175,7 @@ export const referralPolicySchema = z.object({
   referredDiscountType: z.enum(["PERCENTAGE", "FIXED", "NONE"]).default("PERCENTAGE"),
   referredDiscountValue: z.number().int().min(0).default(1000),
   maxDiscountCapBps: z.number().int().min(0).max(3000).default(3000),
-  maxReferralsPerMonth: z.number().int().min(1).max(50).default(5),
+  maxReferralsPerMonth: z.number().int().min(1).max(50).default(10),
   referralCodeExpiryDays: z.number().int().min(0).max(365).default(90),
   trainerReferralEnabled: z.boolean().default(true),
   staffReferralEnabled: z.boolean().default(false),

@@ -2,8 +2,19 @@ import type { Role } from "@zook/core/types";
 import { resolvePlanName } from "@zook/ui";
 import { Stack, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
+import { ReferralCard } from "@/components/home";
 import { ProfileExtraFields } from "@/components/profile/profile-extra-fields";
 import { ProfilePhotoControl } from "@/components/profile/profile-photo-control";
 import {
@@ -22,6 +33,7 @@ import { useRoleContext } from "@/lib/role-context";
 import {
   useActiveMembership,
   useMemberHome,
+  useMyReferralCodes,
   useMyAttendance,
   useMyPlans,
   useMyProfile,
@@ -154,6 +166,7 @@ export default function ProfileScreen() {
   const roleContext = useRoleContext();
   const profileQuery = useMyProfile();
   const homeQuery = useMemberHome();
+  const referralQuery = useMyReferralCodes();
   const activeMembershipQuery = useActiveMembership();
   const attendanceQuery = useMyAttendance();
   const plansQuery = useMyPlans();
@@ -217,6 +230,21 @@ export default function ProfileScreen() {
     remainingVisits: membership?.remainingVisits,
     visitLimit: membershipPlan?.visitLimit,
   });
+  const referralCode = referralQuery.data?.referralCodes[0] ?? null;
+  const referralPolicy = referralQuery.data?.policy as
+    | { referrerRewardType?: string; referrerRewardValue?: number }
+    | null
+    | undefined;
+  const pendingFriends =
+    referralCode?.maxUses != null
+      ? Math.max(0, referralCode.maxUses - (referralCode.redemptionCount ?? 0))
+      : 0;
+  const referralBenefit =
+    referralPolicy?.referrerRewardType === "DAYS"
+      ? `You'll get ${referralPolicy.referrerRewardValue ?? 7} free days for every friend who joins.`
+      : referralPolicy?.referrerRewardType === "VISITS"
+        ? `You'll get ${referralPolicy.referrerRewardValue ?? 1} visits for every friend who joins.`
+        : "Share your code so the gym can track friends you bring in.";
 
   const recentActivity = useMemo<ActivityItem[]>(() => {
     const attendanceItems =
@@ -257,6 +285,7 @@ export default function ProfileScreen() {
       activeMembershipQuery.refetch(),
       attendanceQuery.refetch(),
       plansQuery.refetch(),
+      referralQuery.refetch(),
     ]);
     setRefreshing(false);
   }
@@ -382,6 +411,20 @@ export default function ProfileScreen() {
     });
   }
 
+  async function shareReferral() {
+    if (!referralCode) return;
+    const link = referralQuery.data?.links?.web ?? referralQuery.data?.links?.short ?? "";
+    await Share.share({
+      message: link ? `${referralCode.code} ${link}` : referralCode.code,
+    });
+  }
+
+  async function copyReferral() {
+    if (!referralCode) return;
+    await Clipboard.setStringAsync(referralCode.code);
+    Alert.alert("Referral copied", "Your referral code is ready to share.");
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -420,6 +463,23 @@ export default function ProfileScreen() {
               </Pressable>
             }
           />
+
+          {referralCode ? (
+            <View style={styles.section}>
+              <ReferralCard
+                code={referralCode.code}
+                maxUses={referralCode.maxUses}
+                redemptions={referralCode.redemptionCount ?? 0}
+                rewardsCount={referralQuery.data?.rewards.length ?? 0}
+                onShare={() => void shareReferral()}
+                onCopy={() => void copyReferral()}
+              />
+              <Text style={styles.referralStat}>
+                Your friends: {referralCode.redemptionCount ?? 0} joined, {pendingFriends} pending
+              </Text>
+              <Text style={styles.referralBenefit}>{referralBenefit}</Text>
+            </View>
+          ) : null}
 
           <GlassCard contentStyle={styles.identityCard}>
             <ProfilePhotoControl
@@ -679,6 +739,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.sectionTitle,
     color: legacyColors.text,
+  },
+  referralStat: {
+    ...typography.bodyStrong,
+    color: legacyColors.text,
+  },
+  referralBenefit: {
+    ...typography.body,
+    color: legacyColors.muted,
   },
   membershipCard: {
     gap: spacing.md,

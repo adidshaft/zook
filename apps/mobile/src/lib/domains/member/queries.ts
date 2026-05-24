@@ -195,6 +195,7 @@ export function useMyReferralCodes() {
         referralCodes: ReferralCodeRecord[];
         rewards: ReferralRewardRecord[];
         links?: { web?: string; short?: string; app?: string };
+        policy?: Record<string, unknown> | null;
       }>(`/me/referral-codes${queryString({ orgId: activeOrgId })}`, { token }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
   });
