@@ -1,4 +1,4 @@
-import { createHash, createPublicKey, createVerify, randomBytes } from "node:crypto";
+import { createHash, createPublicKey, createVerify, randomBytes, randomUUID } from "node:crypto";
 import { fileTypeFromBuffer } from "file-type";
 import { Parser } from "htmlparser2";
 import type { NextRequest } from "next/server";
@@ -156,6 +156,7 @@ import {
 } from "../reports-service";
 import { applyAutopayProviderEvent, applyPaymentSessionStatus } from "../payment-runtime";
 import { deliverPushForNotification } from "../push-runtime";
+import { getErrorReporter } from "../error-reporter";
 import { assertMinorConsentGranted } from "../minor-gates";
 import { getPublicCouponPreview } from "../public-gym-read-models";
 import { getOrganizationAttendanceToday, getOrganizationPendingAttendance } from "../domains/attendance";
@@ -1002,6 +1003,10 @@ const payoutMarkPaidSchema = z.object({
   method: z.string().trim().min(2).max(40),
   note: z.string().trim().max(240).optional(),
   proofFileAssetId: z.string().optional(),
+});
+
+const diagnosticsThrowSchema = z.object({
+  mode: z.enum(["handled", "unhandled"]).default("handled"),
 });
 
 const planAssignSchema = z.object({
@@ -9159,6 +9164,135 @@ export async function handleHealthReadiness(request: NextRequest, path: string[]
     return NextResponse.json(statusPayload, {
       status: statusPayload.status === "down" ? 503 : 200,
     });
+  }
+
+  if (request.method === "POST" && pathMatches(path, ["diagnostics", "throw"])) {
+    if (getAppEnv() !== "staging") {
+      throw forbiddenError("Diagnostics throw is available only when APP_ENV=staging.");
+    }
+    const ctx = await getRequestContext(request);
+    const userId = requirePlatformAdmin(ctx);
+    const body = diagnosticsThrowSchema.parse(await readJson(request).catch(() => ({})));
+    const error = new Error("Zook diagnostics throw test");
+    if (body.mode === "handled") {
+      getErrorReporter().captureException(error, {
+        method: request.method,
+        path: request.nextUrl.pathname,
+        userId,
+        metadata: {
+          email: "diagnostics-redaction@example.com",
+          phone: "+919999999999",
+          mode: body.mode,
+        },
+      });
+      return ok({ captured: true, mode: body.mode });
+    }
+    throw error;
+  }
+
+  if (request.method === "POST" && pathMatches(path, ["cron", "account-deletion-purge"])) {
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    const authHeader = request.headers.get("authorization");
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      throw forbiddenError("Invalid cron authorization.");
+    }
+    if (!cronSecret && getAppEnv() === "production") {
+      throw forbiddenError("CRON_SECRET must be set in production.");
+    }
+
+    const now = new Date();
+    const runningCutoff = new Date(now.getTime() - 30 * 60 * 1000);
+    const running = await prisma.accountDeletionJob.findFirst({
+      where: { status: "RUNNING", startedAt: { gte: runningCutoff } },
+    });
+    if (running) {
+      return ok({ processed: false, skipped: true, reason: "previous_run_active" });
+    }
+
+    const jobs = await prisma.accountDeletionJob.findMany({
+      where: { status: "QUEUED", scheduledFor: { lte: now } },
+      orderBy: { scheduledFor: "asc" },
+      take: Number(process.env.ACCOUNT_DELETION_PURGE_BATCH_SIZE ?? 25),
+    });
+    let succeeded = 0;
+    let failed = 0;
+    for (const job of jobs) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          const user = await tx.user.findUnique({
+            where: { id: job.userId },
+            select: { email: true },
+          });
+          await tx.accountDeletionJob.update({
+            where: { id: job.id },
+            data: { status: "RUNNING", startedAt: now },
+          });
+          await tx.userSession.updateMany({
+            where: { userId: job.userId, revokedAt: null },
+            data: { revokedAt: now },
+          });
+          await tx.organizationUser.updateMany({
+            where: { userId: job.userId },
+            data: { status: "inactive" },
+          });
+          await tx.user.update({
+            where: { id: job.userId },
+            data: {
+              email: `deleted-${randomUUID()}@deleted.zook.local`,
+              emailVerifiedAt: null,
+              name: "Deleted account",
+              phone: null,
+              phoneVerifiedAt: null,
+              dateOfBirth: null,
+              profilePhotoUrl: null,
+              gender: null,
+              fitnessGoal: null,
+              emergencyContact: {},
+              marketingOptIn: false,
+              aiConsent: false,
+              deletedAt: now,
+            },
+          });
+          await tx.accountDeletionRequest.update({
+            where: { id: job.requestId },
+            data: { status: "completed", processedAt: now, completedAt: now },
+          });
+          await tx.accountDeletionJob.update({
+            where: { id: job.id },
+            data: { status: "SUCCEEDED", completedAt: now, anonymizedAt: now },
+          });
+          await tx.auditLog.create({
+            data: {
+              actorUserId: job.userId,
+              action: "privacy.account_deleted",
+              entityType: "user",
+              entityId: job.userId,
+              riskLevel: "HIGH",
+              metadata: {
+                previousEmailHash: user?.email
+                  ? createHash("sha256").update(user.email.toLowerCase()).digest("hex")
+                  : null,
+                accountDeletionRequestId: job.requestId,
+              },
+            },
+          });
+        });
+        succeeded++;
+      } catch (error) {
+        failed++;
+        await prisma.accountDeletionJob.update({
+          where: { id: job.id },
+          data: {
+            status: "FAILED",
+            completedAt: new Date(),
+            errorCode: "ACCOUNT_DELETION_PURGE_FAILED",
+            errorMessage:
+              error instanceof Error ? error.message : "Unknown account deletion error",
+          },
+        });
+      }
+    }
+    return ok({ processed: true, jobs: jobs.length, succeeded, failed });
   }
 
   if (request.method === "POST" && pathMatches(path, ["cron", "renewal-reminders"])) {

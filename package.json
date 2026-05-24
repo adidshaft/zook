@@ -31,6 +31,8 @@
     "test:acceptance:db:headed": "tsx scripts/test-acceptance.ts --require-db --headed",
     "test:acceptance:db:debug": "tsx scripts/test-acceptance.ts --require-db --debug",
     "test:load": "k6 run scripts/load/pilot-smoke.js",
+    "cert:razorpay-webhook": "tsx scripts/razorpay-webhook-cert.ts",
+    "smoke:resend": "tsx scripts/resend-smoke.ts",
     "analyze:web": "pnpm --filter @zook/web analyze",
     "check:dashboard-copy": "tsx scripts/check-dashboard-copy.ts",
     "check:i18n": "tsx scripts/check-dashboard-copy.ts",
