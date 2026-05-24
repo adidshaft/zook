@@ -40,6 +40,7 @@ export function PaymentsPanel({
   const [manualPaymentStatus, setManualPaymentStatus] = useState("");
   const [manualPaymentBusy, setManualPaymentBusy] = useState(false);
   const [documentBusyId, setDocumentBusyId] = useState<string | null>(null);
+  const [refundBusyId, setRefundBusyId] = useState<string | null>(null);
   const [lastReceipt, setLastReceipt] = useState<PaymentReceiptState | null>(null);
   const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
@@ -167,6 +168,42 @@ export function PaymentsPanel({
     }
   }
 
+  async function quickRefundPayment(payment: PaymentRow) {
+    if (!payment.orgId) {
+      setManualPaymentStatus("This payment is missing its gym link.");
+      return;
+    }
+    const alreadyRefunded = payment.refundedAmountPaise ?? 0;
+    const remainingPaise = Math.max(payment.amountPaise - alreadyRefunded, 0);
+    const amount = window.prompt(
+      `Refund amount in rupees, up to ${(remainingPaise / 100).toFixed(2)}`,
+      (remainingPaise / 100).toFixed(2),
+    );
+    if (!amount) return;
+    const reason = window.prompt("Reason for refund", "Duplicate payment");
+    if (!reason?.trim()) return;
+    const amountPaise = Math.round(Number(amount) * 100);
+    if (!Number.isFinite(amountPaise) || amountPaise <= 0 || amountPaise > remainingPaise) {
+      setManualPaymentStatus(`Enter an amount between Rs. 1 and Rs. ${(remainingPaise / 100).toFixed(2)}.`);
+      return;
+    }
+    try {
+      setRefundBusyId(payment.id);
+      setManualPaymentStatus("");
+      await webApiFetch(`/api/orgs/${payment.orgId}/payments/${payment.id}/refund`, {
+        method: "POST",
+        body: { amountPaise, reason: reason.trim() },
+        feedback: { success: "Refund submitted.", error: "Unable to refund payment." },
+      });
+      paymentsState.reload?.();
+      setManualPaymentStatus("Refund submitted from payment history.");
+    } catch (cause) {
+      setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to refund payment.");
+    } finally {
+      setRefundBusyId(null);
+    }
+  }
+
   return (
     <div className="grid gap-4">
       <PaymentMetricCards summary={summary} queuedOrders={queuedOrders} />
@@ -186,6 +223,8 @@ export function PaymentsPanel({
           manualPaymentStatus={manualPaymentStatus}
           documentBusyId={documentBusyId}
           onGenerateDocument={(payment, kind) => void generatePaymentDocument(payment, kind)}
+          refundBusyId={refundBusyId}
+          onRefundPayment={(payment) => void quickRefundPayment(payment)}
         />
         <OfflinePaymentCard
           orgId={orgId}
