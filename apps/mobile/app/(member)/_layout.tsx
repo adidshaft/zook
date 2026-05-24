@@ -33,6 +33,12 @@ export default function MemberLayout() {
         }}
       />
       <Tabs.Screen
+        name="diet"
+        options={{
+          title: "Diet",
+        }}
+      />
+      <Tabs.Screen
         name="scan"
         options={{
           title: "Scan",
@@ -173,6 +179,8 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
           iconName = isFocused ? "home" : "home-outline";
         } else if (route.name === "plan") {
           iconName = isFocused ? "barbell" : "barbell-outline";
+        } else if (route.name === "diet") {
+          iconName = isFocused ? "nutrition" : "nutrition-outline";
         } else if (route.name === "shop") {
           iconName = isFocused ? "bag" : "bag-outline";
         } else if (route.name === "you") {

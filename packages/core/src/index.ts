@@ -7,6 +7,7 @@ export * from "./test-identities";
 export * from "./logger";
 export * from "./demo-fixtures";
 export * from "./mock-services";
+export * from "./nutrition-presets";
 export * from "./utils/branch";
 export * from "./utils/format";
 export * from "./utils/redact";

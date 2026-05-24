@@ -43,6 +43,9 @@ export default function TrainerClientOverviewScreen() {
   const activePlans = client?.summary?.activePlans ?? 0;
   const [noteText, setNoteText] = useState("");
   const [noteSaved, setNoteSaved] = useState(false);
+  const [bodyWeight, setBodyWeight] = useState("");
+  const [bodyWaist, setBodyWaist] = useState("");
+  const [bodyFat, setBodyFat] = useState("");
 
   useEffect(() => {
     setNoteText(client?.summary?.trainerNote ?? "");
@@ -63,6 +66,33 @@ export default function TrainerClientOverviewScreen() {
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
       setNoteSaved(true);
       showToast({ tone: "success", haptic: "success", message: "Trainer note saved." });
+    } catch (error) {
+      showToast({ title: "Action failed", message: getApiErrorMessage(error), tone: "danger", haptic: "error" });
+    }
+  }
+
+  async function saveBodyProgress() {
+    if (!token || !activeOrgId || !client || !client.trainerUserId) return;
+    try {
+      await trainerApi.recordClientBodyProgress({
+        token,
+        orgId: activeOrgId,
+        trainerUserId: client.trainerUserId,
+        clientId: client.memberUserId,
+        body: {
+          organizationId: activeOrgId,
+          measuredAt: new Date().toISOString(),
+          weightKg: Number.parseFloat(bodyWeight) || undefined,
+          waistCm: Number.parseFloat(bodyWaist) || undefined,
+          bodyFatPercent: Number.parseFloat(bodyFat) || undefined,
+          visibility: "TRAINER_VISIBLE",
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
+      setBodyWeight("");
+      setBodyWaist("");
+      setBodyFat("");
+      showToast({ tone: "success", haptic: "success", message: "Body progress recorded." });
     } catch (error) {
       showToast({ title: "Action failed", message: getApiErrorMessage(error), tone: "danger", haptic: "error" });
     }
@@ -132,6 +162,13 @@ export default function TrainerClientOverviewScreen() {
             <FormField testID="trainer-note" label="Trainer note" value={noteText} onChangeText={setNoteText} multiline placeholder="Add coaching note for your own follow-up..." />
             <ZookButton testID="trainer-save-note-button" onPress={() => void saveNote()} disabled={!client} icon={noteSaved ? "checkmark-outline" : "save-outline"}>{noteSaved ? "Saved" : "Save note"}</ZookButton>
             <AuditWarning>Only assigned trainers and owners/admins can see trainer notes.</AuditWarning>
+          </GlassCard>
+
+          <GlassCard contentStyle={styles.stack}>
+            <FormField testID="trainer-client-body-weight" label="Weight kg" value={bodyWeight} onChangeText={setBodyWeight} keyboardType="decimal-pad" placeholder="72.5" />
+            <FormField label="Waist cm" value={bodyWaist} onChangeText={setBodyWaist} keyboardType="decimal-pad" placeholder="82" />
+            <FormField label="Body fat %" value={bodyFat} onChangeText={setBodyFat} keyboardType="decimal-pad" placeholder="18" />
+            <ZookButton testID="trainer-client-body-save" onPress={() => void saveBodyProgress()} disabled={!client} icon="analytics-outline">Record body progress</ZookButton>
           </GlassCard>
         </KeyboardAwareScreen>
       </ZookScreen>
