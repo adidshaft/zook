@@ -58,6 +58,53 @@ type PlatformUsageRow = {
   createdAt: string;
 };
 
+type PlatformUserRow = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  isPlatformAdmin?: boolean;
+};
+
+type PlatformPaymentRow = {
+  id: string;
+  orgId?: string | null;
+  userId?: string | null;
+  amountPaise: number;
+  status: string;
+  provider?: string | null;
+  providerRef?: string | null;
+  createdAt: string | Date;
+};
+
+type PlatformFlagRow = {
+  key: string;
+  enabled: boolean;
+  description?: string | null;
+  rolloutPercent: number;
+  overrideOrgIds: string[];
+};
+
+type PlatformWebhookAttempt = {
+  id: string;
+  paymentEventId: string;
+  status: string;
+  processor?: string | null;
+  startedAt: string | Date;
+  errorMessage?: string | null;
+};
+
+type PlatformAuditRow = {
+  id: string;
+  orgId?: string | null;
+  actorUserId?: string | null;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  riskLevel: string;
+  createdAt: string | Date;
+};
+
 type ProviderDiagnostics = {
   category: string;
   selectedProvider?: string;
@@ -85,6 +132,11 @@ export function PlatformOperationsPanel({
 }) {
   const [busyOrgId, setBusyOrgId] = useState<string | null>(null);
   const [statusError, setStatusError] = useState("");
+  const [userQuery, setUserQuery] = useState("");
+  const [userRows, setUserRows] = useState<PlatformUserRow[]>([]);
+  const [paymentQuery, setPaymentQuery] = useState("");
+  const [paymentRows, setPaymentRows] = useState<PlatformPaymentRow[]>([]);
+  const [supportNotice, setSupportNotice] = useState("");
 
   const organizationsState = useOperationalResource<{ orgs: PlatformOrganization[] }>({
     path: "/api/platform/orgs",
@@ -102,12 +154,24 @@ export function PlatformOperationsPanel({
     path: "/api/platform/abuse-flags",
     initialData: { flags: initialFlags },
   });
+  const featureFlagsState = useOperationalResource<{ flags: PlatformFlagRow[] }>({
+    path: "/api/platform/flags",
+  });
+  const webhooksState = useOperationalResource<{ attempts: PlatformWebhookAttempt[] }>({
+    path: "/api/platform/webhooks",
+  });
+  const auditState = useOperationalResource<{ auditLogs: PlatformAuditRow[] }>({
+    path: "/api/platform/audit",
+  });
 
   const organizations = organizationsState.data?.orgs ?? initialOrgs;
   const providers = providersState.data?.providers ?? {};
   const providerEntries = Object.entries(providers);
   const usage = usageState.data?.usage ?? [];
   const flags = flagsState.data?.flags ?? initialFlags;
+  const featureFlags = featureFlagsState.data?.flags ?? [];
+  const webhooks = webhooksState.data?.attempts ?? [];
+  const auditLogs = auditState.data?.auditLogs ?? [];
 
   const misconfiguredProviders = providerEntries.filter(
     ([, provider]) => provider.status === "misconfigured" || provider.status === "unsupported",
@@ -207,6 +271,87 @@ export function PlatformOperationsPanel({
     }
   }
 
+  async function softDeleteOrganization(orgId: string) {
+    const reason = window.prompt("Reason")?.trim();
+    if (!reason) return;
+    try {
+      setStatusError("");
+      setBusyOrgId(orgId);
+      await webApiFetch(`/api/platform/orgs/${orgId}/soft-delete`, {
+        method: "POST",
+        body: { reason },
+      });
+      organizationsState.reload();
+    } catch (cause) {
+      setStatusError(
+        cause instanceof Error ? cause.message : "Unable to soft-delete organization.",
+      );
+    } finally {
+      setBusyOrgId(null);
+    }
+  }
+
+  async function searchUsers() {
+    if (!userQuery.trim()) return;
+    const response = await webApiFetch<{ users: PlatformUserRow[] }>(
+      `/api/platform/users?q=${encodeURIComponent(userQuery.trim())}`,
+    );
+    setUserRows(response.users);
+  }
+
+  async function revokeUserSessions(userId: string) {
+    await webApiFetch(`/api/platform/users/${userId}/sessions/revoke`, { method: "POST", body: {} });
+    setSupportNotice("Sessions revoked");
+  }
+
+  async function startImpersonation(userId: string) {
+    const reason = window.prompt("Reason")?.trim();
+    if (!reason) return;
+    await webApiFetch(`/api/platform/users/${userId}/impersonate`, {
+      method: "POST",
+      body: { reason, ttlMinutes: 15 },
+    });
+    setSupportNotice("Impersonation started");
+  }
+
+  async function searchPayments() {
+    const response = await webApiFetch<{ payments: PlatformPaymentRow[] }>(
+      `/api/platform/payments?q=${encodeURIComponent(paymentQuery.trim())}`,
+    );
+    setPaymentRows(response.payments);
+  }
+
+  async function refundPayment(paymentId: string) {
+    const reason = window.prompt("Reason")?.trim();
+    if (!reason) return;
+    await webApiFetch(`/api/platform/payments/${paymentId}/refund`, {
+      method: "POST",
+      body: { reason },
+    });
+    setSupportNotice("Refund submitted");
+    await searchPayments();
+  }
+
+  async function toggleFeatureFlag(flag: PlatformFlagRow) {
+    await webApiFetch("/api/platform/flags", {
+      method: "PATCH",
+      body: {
+        key: flag.key,
+        enabled: !flag.enabled,
+        rolloutPercent: !flag.enabled ? 100 : 0,
+        description: flag.description ?? undefined,
+        overrideOrgIds: flag.overrideOrgIds,
+      },
+    });
+    featureFlagsState.reload();
+  }
+
+  async function replayWebhook(attemptId: string) {
+    await webApiFetch(`/api/platform/webhooks/${attemptId}/replay`, { method: "POST", body: {} });
+    setSupportNotice("Webhook replayed");
+    webhooksState.reload();
+  }
+
   return (
     <div className="grid gap-4">
       <GlassCard>
@@ -253,6 +398,177 @@ export function PlatformOperationsPanel({
           ))}
         </div>
       </GlassCard>
+
+      <div id="support-console" className="scroll-mt-5">
+        <GlassCard>
+          <SectionHeader
+            eyebrow="Support"
+            title="Platform support console"
+            badge={supportNotice ? <Pill tone="lime">{supportNotice}</Pill> : <Pill tone="blue">Live</Pill>}
+          />
+          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  className="min-h-10 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 text-sm text-white outline-none"
+                  value={userQuery}
+                  onChange={(event) => setUserQuery(event.target.value)}
+                  placeholder="Email, phone, or name"
+                />
+                <ZookButton size="sm" onClick={() => void searchUsers()}>
+                  Search users
+                </ZookButton>
+              </div>
+              <div className="mt-4">
+                <DataTable
+                  columns={[
+                    {
+                      id: "user",
+                      header: "User",
+                      render: (user) => (
+                        <div>
+                          <p className="font-medium text-white">{user.name}</p>
+                          <p className="mt-1 text-xs text-white/45">{user.email}</p>
+                        </div>
+                      ),
+                    },
+                    {
+                      id: "actions",
+                      header: "Actions",
+                      align: "right",
+                      render: (user) => (
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <ZookButton size="sm" tone="ghost" onClick={() => void revokeUserSessions(user.id)}>
+                            Revoke
+                          </ZookButton>
+                          <ZookButton
+                            size="sm"
+                            tone="danger"
+                            disabled={Boolean(user.isPlatformAdmin)}
+                            onClick={() => void startImpersonation(user.id)}
+                          >
+                            Impersonate
+                          </ZookButton>
+                        </div>
+                      ),
+                    },
+                  ]}
+                  rows={userRows}
+                  rowKey={(user) => user.id}
+                  empty="No users loaded."
+                />
+              </div>
+            </div>
+
+            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  className="min-h-10 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 text-sm text-white outline-none"
+                  value={paymentQuery}
+                  onChange={(event) => setPaymentQuery(event.target.value)}
+                  placeholder="Payment id, phone, amount"
+                />
+                <ZookButton size="sm" onClick={() => void searchPayments()}>
+                  Search payments
+                </ZookButton>
+              </div>
+              <div className="mt-4">
+                <DataTable
+                  columns={[
+                    {
+                      id: "payment",
+                      header: "Payment",
+                      render: (payment) => (
+                        <div>
+                          <p className="font-medium text-white">{payment.id}</p>
+                          <p className="mt-1 text-xs text-white/45">{payment.providerRef ?? "Manual"}</p>
+                        </div>
+                      ),
+                    },
+                    {
+                      id: "amount",
+                      header: "Amount",
+                      render: (payment) => formatInr(payment.amountPaise),
+                    },
+                    {
+                      id: "status",
+                      header: "Status",
+                      render: (payment) => <StatusPill value={formatEnumLabel(payment.status)} />,
+                    },
+                    {
+                      id: "actions",
+                      header: "Actions",
+                      align: "right",
+                      render: (payment) => (
+                        <ZookButton size="sm" tone="ghost" onClick={() => void refundPayment(payment.id)}>
+                          Refund
+                        </ZookButton>
+                      ),
+                    },
+                  ]}
+                  rows={paymentRows}
+                  rowKey={(payment) => payment.id}
+                  empty="No payments loaded."
+                />
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <GlassCard>
+          <SectionHeader eyebrow="Flags" title="Feature flags" />
+          <div className="mt-5 grid gap-3">
+            {featureFlags.slice(0, 8).map((flag) => (
+              <div key={flag.key} className="rounded-[18px] border border-white/10 bg-black/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-white">{flag.key}</p>
+                    <p className="mt-1 text-xs text-white/45">{flag.rolloutPercent}% rollout</p>
+                  </div>
+                  <ZookButton size="sm" tone={flag.enabled ? "danger" : "ghost"} onClick={() => void toggleFeatureFlag(flag)}>
+                    {flag.enabled ? "Disable" : "Enable"}
+                  </ZookButton>
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <SectionHeader eyebrow="Webhooks" title="Webhook monitor" />
+          <div className="mt-5 grid gap-3">
+            {webhooks.slice(0, 8).map((attempt) => (
+              <div key={attempt.id} className="rounded-[18px] border border-white/10 bg-black/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <StatusPill value={formatEnumLabel(attempt.status)} />
+                    <p className="mt-2 text-xs text-white/45">{formatDateTime(attempt.startedAt)}</p>
+                  </div>
+                  <ZookButton size="sm" tone="ghost" onClick={() => void replayWebhook(attempt.id)}>
+                    Replay
+                  </ZookButton>
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <SectionHeader eyebrow="Audit" title="Global audit" />
+          <div className="mt-5 grid gap-3">
+            {auditLogs.slice(0, 8).map((log) => (
+              <div key={log.id} className="rounded-[18px] border border-white/10 bg-black/20 p-3">
+                <p className="font-medium text-white">{log.action}</p>
+                <p className="mt-1 text-xs text-white/45">
+                  {formatEnumLabel(log.riskLevel)} · {formatDateTime(log.createdAt)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      </div>
 
       <div id="readiness" className="scroll-mt-5">
         <GlassCard>
@@ -467,6 +783,14 @@ export function PlatformOperationsPanel({
                                 : "Cancel"}
                           </ZookButton>
                         ))}
+                        <ZookButton
+                          tone="danger"
+                          size="sm"
+                          onClick={() => void softDeleteOrganization(org.id)}
+                          disabled={busyOrgId === org.id || org.status === "DELETED"}
+                        >
+                          Soft delete
+                        </ZookButton>
                       </div>
                     ),
                     align: "right",

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { redactPII } from "@zook/core";
 import { Prisma, prisma } from "@zook/db";
+import { createRequestContext } from "./context";
 import { currentRequestId } from "./request-state";
 
 export async function writeAuditLog(input: {
@@ -10,9 +11,19 @@ export async function writeAuditLog(input: {
   action: string;
   entityType: string;
   entityId?: string;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  riskLevel?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   metadata?: Record<string, unknown>;
 }) {
   const requestId = currentRequestId();
+  const ctx = input.request ? await createRequestContext(input.request) : null;
+  const metadata = {
+    ...(input.metadata ?? {}),
+    ...(ctx?.impersonationSessionId
+      ? { impersonationSessionId: ctx.impersonationSessionId, originalUserId: ctx.originalUserId }
+      : {}),
+  };
   await prisma.auditLog.create({
     data: {
       action: input.action,
@@ -27,7 +38,12 @@ export async function writeAuditLog(input: {
       ...(input.request?.headers.get("user-agent")
         ? { userAgent: input.request.headers.get("user-agent") as string }
         : {}),
-      ...(input.metadata ? { metadata: redactPII(input.metadata) as Prisma.InputJsonValue } : {}),
+      ...(input.before ? { before: redactPII(input.before) as Prisma.InputJsonValue } : {}),
+      ...(input.after ? { after: redactPII(input.after) as Prisma.InputJsonValue } : {}),
+      ...(input.riskLevel ? { riskLevel: input.riskLevel } : {}),
+      ...(Object.keys(metadata).length
+        ? { metadata: redactPII(metadata) as Prisma.InputJsonValue }
+        : {}),
     },
   });
 }

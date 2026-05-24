@@ -562,6 +562,69 @@ const paymentRefundSchema = z.object({
   reason: z.string().trim().min(2).max(200).default("Owner requested refund"),
 });
 
+const platformImpersonateSchema = z.object({
+  reason: z.string().trim().min(6).max(240),
+  ttlMinutes: z.number().int().min(1).max(60).default(15),
+  targetOrgId: z.string().optional(),
+});
+
+const platformBroadcastSchema = z.object({
+  title: z.string().trim().min(2).max(120),
+  body: z.string().trim().min(2).max(1000),
+  severity: z.enum(["INFO", "WARN", "CRITICAL"]).default("INFO"),
+  status: z.enum(["DRAFT", "SCHEDULED", "LIVE", "EXPIRED"]).default("DRAFT"),
+  targetOrgIds: z.array(z.string()).max(100).default([]),
+  targetRoles: z
+    .array(z.enum(["OWNER", "ADMIN", "RECEPTIONIST", "TRAINER", "MEMBER"]))
+    .default([]),
+  scheduledAt: z.string().datetime().optional().nullable(),
+  expiresAt: z.string().datetime().optional().nullable(),
+});
+
+const platformFlagPatchSchema = z.object({
+  key: z.string().trim().min(2).max(120),
+  enabled: z.boolean().optional(),
+  description: z.string().trim().max(500).optional(),
+  rolloutPercent: z.number().int().min(0).max(100).optional(),
+  overrideOrgIds: z.array(z.string()).max(500).optional(),
+});
+
+const platformOrgTrialExtendSchema = z.object({
+  days: z.number().int().min(1).max(365),
+  reason: z.string().trim().min(2).max(240),
+});
+
+const platformOrgCreditSchema = z.object({
+  paise: z.number().int().min(-10_000_000).max(10_000_000),
+  reason: z.string().trim().min(2).max(240),
+});
+
+const platformOrgTierSchema = z.object({
+  tier: z.enum(["FREE", "STARTER", "GROWTH", "PRO"]),
+  effectiveAt: z.string().datetime().optional(),
+});
+
+const platformOrgRenameSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  username: z.string().trim().min(3).max(64).regex(/^[a-z0-9-]+$/),
+  reason: z.string().trim().min(2).max(240),
+});
+
+const platformOrgReasonSchema = z.object({
+  reason: z.string().trim().min(2).max(240),
+});
+
+const platformOrgTransferSchema = z.object({
+  newOwnerUserId: z.string(),
+  reason: z.string().trim().min(2).max(240),
+});
+
+const platformModerationDecisionSchema = z.object({
+  id: z.string(),
+  decision: z.enum(["APPROVED", "REMOVED"]),
+  reason: z.string().trim().min(2).max(240),
+});
+
 const subscriptionReminderResolveSchema = z.object({
   status: z.enum(["RESOLVED", "CANCELLED"]).default("RESOLVED"),
 });
@@ -981,6 +1044,164 @@ const aiGenerateSchema = z.object({
 
 function clean<T extends Record<string, unknown>>(input: T): any {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
+}
+
+async function isFeatureFlagEnabled(key: string, orgId?: string) {
+  const flag = await prisma.featureFlag.findUnique({ where: { key } });
+  if (!flag) {
+    return false;
+  }
+  if (orgId && flag.overrideOrgIds.includes(orgId)) {
+    return true;
+  }
+  return flag.enabled && flag.rolloutPercent > 0;
+}
+
+function assertNotImpersonating(ctx: { impersonationSessionId?: string }, action: string) {
+  if (ctx.impersonationSessionId) {
+    throw forbiddenError(`${action} is blocked during impersonation.`);
+  }
+}
+
+function jsonObject(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+async function refundPaymentForActor(input: {
+  request: NextRequest;
+  paymentId: string;
+  actorUserId: string;
+  reason: string;
+  amountPaise?: number;
+  platformRefund?: boolean;
+}) {
+  const payment = await prisma.payment.findUnique({ where: { id: input.paymentId } });
+  if (!payment) {
+    throw notFoundError("Payment not found");
+  }
+  const orgId = payment.orgId;
+  if (!orgId) {
+    throw validationError("Only organization payments can be refunded.");
+  }
+  if (!["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(payment.status)) {
+    throw conflictError("Only successful or partly refunded payments can be refunded.");
+  }
+  if (!payment.providerRef) {
+    throw validationError(
+      "This payment was not collected through Razorpay, so it cannot be refunded here.",
+    );
+  }
+  const existingRefunds = await prisma.paymentRefund.findMany({
+    where: {
+      paymentId: payment.id,
+      orgId,
+      status: { notIn: ["FAILED", "CANCELLED"] },
+    },
+  });
+  const alreadyRefundedPaise = existingRefunds.reduce(
+    (total, refund) => total + refund.amountPaise,
+    0,
+  );
+  const refundableAmountPaise = Math.max(payment.amountPaise - alreadyRefundedPaise, 0);
+  if (refundableAmountPaise <= 0) {
+    throw conflictError("This payment has already been fully refunded.");
+  }
+  const refundAmountPaise = input.amountPaise ?? refundableAmountPaise;
+  if (refundAmountPaise > refundableAmountPaise) {
+    throw validationError(
+      `Refund amount cannot exceed the remaining ${Math.round(refundableAmountPaise / 100)} rupees.`,
+    );
+  }
+  const provider = getPaymentProviderOrThrow();
+  const requestedRefund = await prisma.paymentRefund.create({
+    data: clean({
+      orgId,
+      branchId: payment.branchId,
+      paymentId: payment.id,
+      provider: payment.provider,
+      amountPaise: refundAmountPaise,
+      currency: payment.currency,
+      status: "REQUESTED",
+      reason: input.reason,
+      requestedById: input.actorUserId,
+      metadata: input.platformRefund ? { platformRefund: true } : undefined,
+    }),
+  });
+  let refund;
+  try {
+    refund = await provider.refundPayment({
+      paymentId: payment.providerRef,
+      amountPaise: refundAmountPaise,
+      reason: input.reason,
+    });
+  } catch (cause) {
+    await prisma.paymentRefund.update({
+      where: { id: requestedRefund.id },
+      data: {
+        status: "FAILED",
+        failureReason: cause instanceof Error ? cause.message : "Refund failed.",
+      },
+    });
+    throw cause;
+  }
+  const processedAt = new Date();
+  const nextRefundedAmountPaise = alreadyRefundedPaise + refundAmountPaise;
+  const nextStatus =
+    nextRefundedAmountPaise >= payment.amountPaise ? "REFUNDED" : "PARTIALLY_REFUNDED";
+  const [updatedRefund, updated] = await prisma.$transaction([
+    prisma.paymentRefund.update({
+      where: { id: requestedRefund.id },
+      data: {
+        status: refund.status,
+        providerRefundId: refund.providerRefundId ?? null,
+        processedAt,
+        providerResponse: refund as unknown as Prisma.InputJsonValue,
+        metadata: clean({
+          ...jsonObject(requestedRefund.metadata),
+          platformRefund: input.platformRefund || undefined,
+        }) as Prisma.InputJsonValue,
+      },
+    }),
+    prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: nextStatus,
+        metadata: {
+          ...jsonObject(payment.metadata),
+          refundedAmountPaise: nextRefundedAmountPaise,
+          refund: {
+            refundId: requestedRefund.id,
+            status: refund.status,
+            providerRefundId: refund.providerRefundId,
+            amountPaise: refundAmountPaise,
+            reason: input.reason,
+            refundedAt: processedAt.toISOString(),
+            refundedById: input.actorUserId,
+            platformRefund: Boolean(input.platformRefund),
+          },
+        },
+      },
+    }),
+  ]);
+  await writeAuditLog({
+    request: input.request,
+    orgId,
+    actorUserId: input.actorUserId,
+    action: input.platformRefund ? "platform.payment.refunded" : "payment.refunded",
+    entityType: "payment",
+    entityId: payment.id,
+    riskLevel: "HIGH",
+    metadata: {
+      refundId: updatedRefund.id,
+      providerRefundId: refund.providerRefundId,
+      amountPaise: refundAmountPaise,
+      status: nextStatus,
+      platformRefund: Boolean(input.platformRefund),
+    },
+  });
+  return { payment: updated, refund: updatedRefund };
 }
 
 const exclusiveOrgRoles = [...orgRoles];
@@ -5159,6 +5380,9 @@ export async function handleMeData(request: NextRequest, path: string[]) {
   if (request.method === "PATCH" && pathMatches(path, ["me", "profile"])) {
     const body = memberWellnessProfileSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
+    if (ctx.impersonationSessionId && (body.email !== undefined || body.phone !== undefined)) {
+      throw forbiddenError("Email and phone changes are blocked during impersonation.");
+    }
     const userId = requireAuth(ctx);
     assertActiveContextOrg(ctx, body.orgId);
     const orgId = body.orgId ?? ctx.orgId;
@@ -8405,121 +8629,21 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     const orgId = path[1]!;
     const paymentId = path[3]!;
     const ctx = await getRequestContext(request, { orgId });
+    assertNotImpersonating(ctx, "Refund approval");
     const userId = requireOrgPermission(ctx, orgId, "PAYMENTS_REFUND");
     const body = paymentRefundSchema.parse(await readJson(request).catch(() => ({})));
     const payment = await prisma.payment.findFirst({ where: { id: paymentId, orgId } });
     if (!payment) {
       throw notFoundError("Payment not found");
     }
-    if (!["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(payment.status)) {
-      throw conflictError("Only successful or partly refunded payments can be refunded.");
-    }
-    if (!payment.providerRef) {
-      throw validationError(
-        "This payment was not collected through Razorpay, so it cannot be refunded here.",
-      );
-    }
-    const existingRefunds = await prisma.paymentRefund.findMany({
-      where: {
-        paymentId: payment.id,
-        orgId,
-        status: { notIn: ["FAILED", "CANCELLED"] },
-      },
-    });
-    const alreadyRefundedPaise = existingRefunds.reduce(
-      (total, refund) => total + refund.amountPaise,
-      0,
-    );
-    const refundableAmountPaise = Math.max(payment.amountPaise - alreadyRefundedPaise, 0);
-    if (refundableAmountPaise <= 0) {
-      throw conflictError("This payment has already been fully refunded.");
-    }
-    const refundAmountPaise = body.amountPaise ?? refundableAmountPaise;
-    if (refundAmountPaise > refundableAmountPaise) {
-      throw validationError(
-        `Refund amount cannot exceed the remaining ${Math.round(refundableAmountPaise / 100)} rupees.`,
-      );
-    }
-    const provider = getPaymentProviderOrThrow();
-    const requestedRefund = await prisma.paymentRefund.create({
-      data: {
-        orgId,
-        branchId: payment.branchId,
-        paymentId: payment.id,
-        provider: payment.provider,
-        amountPaise: refundAmountPaise,
-        currency: payment.currency,
-        status: "REQUESTED",
-        reason: body.reason,
-        requestedById: userId,
-      },
-    });
-    let refund;
-    try {
-      refund = await provider.refundPayment({
-        paymentId: payment.providerRef,
-        amountPaise: refundAmountPaise,
-        reason: body.reason,
-      });
-    } catch (cause) {
-      await prisma.paymentRefund.update({
-        where: { id: requestedRefund.id },
-        data: {
-          status: "FAILED",
-          failureReason: cause instanceof Error ? cause.message : "Refund failed.",
-        },
-      });
-      throw cause;
-    }
-    const processedAt = new Date();
-    const nextRefundedAmountPaise = alreadyRefundedPaise + refundAmountPaise;
-    const nextStatus =
-      nextRefundedAmountPaise >= payment.amountPaise ? "REFUNDED" : "PARTIALLY_REFUNDED";
-    const [updatedRefund, updated] = await prisma.$transaction([
-      prisma.paymentRefund.update({
-        where: { id: requestedRefund.id },
-        data: {
-          status: refund.status,
-          providerRefundId: refund.providerRefundId ?? null,
-          processedAt,
-          providerResponse: refund as unknown as Prisma.InputJsonValue,
-        },
-      }),
-      prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: nextStatus,
-          metadata: {
-            ...(typeof payment.metadata === "object" && payment.metadata ? payment.metadata : {}),
-            refundedAmountPaise: nextRefundedAmountPaise,
-            refund: {
-              refundId: requestedRefund.id,
-              status: refund.status,
-              providerRefundId: refund.providerRefundId,
-              amountPaise: refundAmountPaise,
-              reason: body.reason,
-              refundedAt: processedAt.toISOString(),
-              refundedById: userId,
-            },
-          },
-        },
-      }),
-    ]);
-    await writeAuditLog({
+    const result = await refundPaymentForActor({
       request,
-      orgId,
       actorUserId: userId,
-      action: "payment.refunded",
-      entityType: "payment",
-      entityId: payment.id,
-      metadata: {
-        refundId: updatedRefund.id,
-        providerRefundId: refund.providerRefundId,
-        amountPaise: refundAmountPaise,
-        status: nextStatus,
-      },
+      paymentId: payment.id,
+      reason: body.reason,
+      ...(body.amountPaise ? { amountPaise: body.amountPaise } : {}),
     });
-    return ok({ payment: updated, refund: updatedRefund });
+    return ok(result);
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "subscription-reminders"])) {
     const orgId = path[1]!;
@@ -14105,6 +14229,7 @@ export async function handleAiNotificationsShopPrivacyPlatform(
   }
   if (request.method === "POST" && pathMatches(path, ["me", "data-export-request"])) {
     const ctx = await getRequestContext(request);
+    assertNotImpersonating(ctx, "Data export");
     const userId = requireAuth(ctx);
     await assertRateLimit(
       "privacyRequestByActor",
@@ -14210,6 +14335,7 @@ export async function handleAiNotificationsShopPrivacyPlatform(
   }
   if (request.method === "POST" && pathMatches(path, ["me", "account-deletion-request"])) {
     const ctx = await getRequestContext(request);
+    assertNotImpersonating(ctx, "Account deletion");
     const userId = requireAuth(ctx);
     await assertRateLimit(
       "privacyRequestByActor",
@@ -14270,6 +14396,779 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       ...(ctx.orgId ? { orgId: ctx.orgId } : {}),
     });
     return ok({ request: updatedRequest, job: deletionJob });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "users"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
+    if (query.length < 2) {
+      return ok({ users: [] });
+    }
+    const users = await prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { email: { contains: query, mode: "insensitive" } },
+          { phone: { contains: query } },
+          { name: { contains: query, mode: "insensitive" } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    });
+    return ok({ users: users.map(serializeUserForClient) });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "users", /.+/])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    const userId = path[2]!;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw notFoundError("User not found");
+    }
+    const [sessions, memberships, roleAssignments, orgs, payments, auditLogs] = await Promise.all([
+      prisma.userSession.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 25,
+      }),
+      prisma.organizationUser.findMany({ where: { userId }, orderBy: { joinedAt: "desc" } }),
+      prisma.organizationRoleAssignment.findMany({ where: { userId } }),
+      prisma.organization.findMany({
+        where: {
+          id: {
+            in: (
+              await prisma.organizationUser.findMany({ where: { userId }, select: { orgId: true } })
+            ).map((item) => item.orgId),
+          },
+        },
+      }),
+      prisma.payment.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 25,
+      }),
+      prisma.auditLog.findMany({
+        where: { OR: [{ actorUserId: userId }, { entityId: userId }] },
+        orderBy: { createdAt: "desc" },
+        take: 25,
+      }),
+    ]);
+    const orgById = new Map(orgs.map((org) => [org.id, org]));
+    return ok({
+      user: serializeUserForClient(user),
+      sessions,
+      organizations: memberships.map((membership) => ({
+        ...membership,
+        organization: orgById.get(membership.orgId) ?? null,
+        roles: roleAssignments
+          .filter((assignment) => assignment.orgId === membership.orgId)
+          .map((assignment) => assignment.role),
+      })),
+      payments,
+      auditLogs,
+    });
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["platform", "users", /.+/, "sessions", "revoke"])
+  ) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    assertNotImpersonating(ctx, "Session revocation");
+    const targetUserId = path[2]!;
+    const body = z.object({ sessionId: z.string().optional() }).parse(await readJson(request).catch(() => ({})));
+    const result = await prisma.userSession.updateMany({
+      where: { userId: targetUserId, ...(body.sessionId ? { id: body.sessionId } : {}) },
+      data: { revokedAt: new Date() },
+    });
+    await writeAuditLog({
+      request,
+      actorUserId,
+      action: "platform.user_sessions_revoked",
+      entityType: "user",
+      entityId: targetUserId,
+      riskLevel: "HIGH",
+      metadata: { count: result.count, sessionId: body.sessionId ?? null },
+    });
+    return ok({ revoked: result.count });
+  }
+  if (request.method === "POST" && pathMatches(path, ["platform", "users", /.+/, "impersonate"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    assertNotImpersonating(ctx, "Starting impersonation");
+    if (!(await isFeatureFlagEnabled("platform.impersonation"))) {
+      throw forbiddenError("Platform impersonation is disabled.");
+    }
+    const targetUserId = path[2]!;
+    const body = platformImpersonateSchema.parse(await readJson(request));
+    const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) {
+      throw notFoundError("User not found");
+    }
+    if (targetUser.isPlatformAdmin) {
+      throw forbiddenError("Platform admins cannot be impersonated.");
+    }
+    const expiresAt = new Date(Date.now() + body.ttlMinutes * 60 * 1000);
+    const impersonation = await prisma.impersonationSession.create({
+      data: {
+        platformAdminUserId: actorUserId,
+        targetUserId,
+        targetOrgId: body.targetOrgId ?? null,
+        reason: body.reason,
+        expiresAt,
+        ipHash: sha256(getClientIp(request)),
+        userAgentHash: sha256(request.headers.get("user-agent") ?? "unknown-user-agent"),
+      },
+    });
+    const token = AuthService.createToken();
+    const userAgent = request.headers.get("user-agent") ?? undefined;
+    const ipAddress = getClientIp(request);
+    await prisma.userSession.create({
+      data: clean({
+        userId: targetUserId,
+        originalUserId: actorUserId,
+        impersonationSessionId: impersonation.id,
+        tokenHash: AuthService.hash(token),
+        expiresAt,
+        userAgent,
+        ipAddress,
+        deviceFingerprintHash: AuthService.createDeviceFingerprint(clean({ userAgent, ipAddress })),
+        lastSeenAt: new Date(),
+      }),
+    });
+    await writeAuditLog({
+      request,
+      actorUserId,
+      action: "platform.impersonation_started",
+      entityType: "impersonation_session",
+      entityId: impersonation.id,
+      riskLevel: "CRITICAL",
+      metadata: { targetUserId, targetOrgId: body.targetOrgId ?? null, ttlMinutes: body.ttlMinutes },
+    });
+    const response = ok({ impersonation, token, expiresAt });
+    response.cookies.set(sessionCookieName, token, {
+      ...sharedSessionCookieOptions(request, expiresAt),
+    });
+    return response;
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["platform", "impersonations", /.+/, "end"])
+  ) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requireAuth(ctx);
+    const impersonationId = path[2]!;
+    const impersonation = await prisma.impersonationSession.findUnique({
+      where: { id: impersonationId },
+    });
+    if (!impersonation) {
+      throw notFoundError("Impersonation session not found");
+    }
+    const canEnd =
+      ctx.impersonationSessionId === impersonationId ||
+      (ctx.isPlatformAdmin && ctx.userId === impersonation.platformAdminUserId);
+    if (!canEnd) {
+      throw forbiddenError("Cannot end this impersonation session.");
+    }
+    const ended = await prisma.impersonationSession.update({
+      where: { id: impersonationId },
+      data: { endedAt: new Date() },
+    });
+    await prisma.userSession.updateMany({
+      where: { impersonationSessionId: impersonationId },
+      data: { revokedAt: new Date() },
+    });
+    await writeAuditLog({
+      request,
+      actorUserId: ctx.originalUserId ?? actorUserId,
+      action: "platform.impersonation_ended",
+      entityType: "impersonation_session",
+      entityId: impersonationId,
+      riskLevel: "HIGH",
+      metadata: { targetUserId: impersonation.targetUserId },
+    });
+    const response = ok({ impersonation: ended });
+    if (ctx.originalUserId) {
+      const token = AuthService.createToken();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      const userAgent = request.headers.get("user-agent") ?? undefined;
+      const ipAddress = getClientIp(request);
+      await prisma.userSession.create({
+        data: clean({
+          userId: ctx.originalUserId,
+          tokenHash: AuthService.hash(token),
+          expiresAt,
+          userAgent,
+          ipAddress,
+          deviceFingerprintHash: AuthService.createDeviceFingerprint(clean({ userAgent, ipAddress })),
+          lastSeenAt: new Date(),
+        }),
+      });
+      response.cookies.set(sessionCookieName, token, {
+        ...sharedSessionCookieOptions(request, expiresAt),
+      });
+    }
+    return response;
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "impersonations"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    return ok({
+      impersonations: await prisma.impersonationSession.findMany({
+        orderBy: { startedAt: "desc" },
+        take: 100,
+      }),
+    });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "payments"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    const q = request.nextUrl.searchParams.get("q")?.trim();
+    const userIds = q
+      ? (
+          await prisma.user.findMany({
+            where: {
+              OR: [
+                { email: { contains: q, mode: "insensitive" } },
+                { phone: { contains: q } },
+                { name: { contains: q, mode: "insensitive" } },
+              ],
+            },
+            select: { id: true },
+            take: 25,
+          })
+        ).map((user) => user.id)
+      : [];
+    const amountPaise = q && /^\d+(\.\d{1,2})?$/.test(q) ? Math.round(Number(q) * 100) : null;
+    const payments = await prisma.payment.findMany({
+      where: q
+        ? {
+            OR: [
+              { id: { contains: q } },
+              { providerRef: { contains: q } },
+              { receiptNumber: { contains: q, mode: "insensitive" } },
+              ...(userIds.length ? [{ userId: { in: userIds } }] : []),
+              ...(amountPaise ? [{ amountPaise }] : []),
+            ],
+          }
+        : {},
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    return ok({ payments });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "payments", /.+/])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    const paymentId = path[2]!;
+    const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+    if (!payment) {
+      throw notFoundError("Payment not found");
+    }
+    const [events, refunds, user, org] = await Promise.all([
+      prisma.paymentEvent.findMany({
+        where: { paymentId },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.paymentRefund.findMany({ where: { paymentId }, orderBy: { createdAt: "desc" } }),
+      payment.userId ? prisma.user.findUnique({ where: { id: payment.userId } }) : null,
+      payment.orgId ? prisma.organization.findUnique({ where: { id: payment.orgId } }) : null,
+    ]);
+    const attempts = events.length
+      ? await prisma.paymentWebhookAttempt.findMany({
+          where: { paymentEventId: { in: events.map((event) => event.id) } },
+          orderBy: { startedAt: "desc" },
+        })
+      : [];
+    return ok({
+      payment,
+      user: user ? serializeUserForClient(user) : null,
+      organization: org,
+      refunds,
+      events: events.map((event) => ({
+        ...event,
+        attempts: attempts.filter((attempt) => attempt.paymentEventId === event.id),
+      })),
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["platform", "payments", /.+/, "refund"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    assertNotImpersonating(ctx, "Platform refund");
+    const body = paymentRefundSchema.parse(await readJson(request).catch(() => ({})));
+    return ok(
+      await refundPaymentForActor({
+        request,
+        paymentId: path[2]!,
+        actorUserId,
+        reason: body.reason,
+        ...(body.amountPaise ? { amountPaise: body.amountPaise } : {}),
+        platformRefund: true,
+      }),
+    );
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "webhooks"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    const status = request.nextUrl.searchParams.get("status") || undefined;
+    const provider = request.nextUrl.searchParams.get("provider") || undefined;
+    const orgId = request.nextUrl.searchParams.get("org") || undefined;
+    const eventIds =
+      provider || orgId
+        ? (
+            await prisma.paymentEvent.findMany({
+              where: clean({ provider, orgId }),
+              select: { id: true },
+              take: 500,
+            })
+          ).map((event) => event.id)
+        : [];
+    const attempts = await prisma.paymentWebhookAttempt.findMany({
+      where: clean({
+        status: status as Prisma.PaymentWebhookAttemptWhereInput["status"],
+        ...(provider || orgId ? { paymentEventId: { in: eventIds } } : {}),
+      }),
+      orderBy: { startedAt: "desc" },
+      take: 100,
+    });
+    return ok({ attempts });
+  }
+  if (request.method === "POST" && pathMatches(path, ["platform", "webhooks", /.+/, "replay"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const attempt = await prisma.paymentWebhookAttempt.findUnique({ where: { id: path[2]! } });
+    if (!attempt) {
+      throw notFoundError("Webhook attempt not found");
+    }
+    const event = await prisma.paymentEvent.findUnique({ where: { id: attempt.paymentEventId } });
+    if (!event) {
+      throw notFoundError("Payment event not found");
+    }
+    const nextAttemptNo = event.attemptCount + 1;
+    const replay = await prisma.paymentWebhookAttempt.create({
+      data: {
+        paymentEventId: event.id,
+        attemptNo: nextAttemptNo,
+        status: "SUCCEEDED",
+        processor: "platform-replay",
+        startedAt: new Date(),
+        completedAt: new Date(),
+        result: { replayedById: actorUserId, originalAttemptId: attempt.id },
+      },
+    });
+    await prisma.paymentEvent.update({
+      where: { id: event.id },
+      data: { attemptCount: nextAttemptNo, lastAttemptAt: replay.startedAt },
+    });
+    await writeAuditLog({
+      request,
+      ...(event.orgId ? { orgId: event.orgId } : {}),
+      actorUserId,
+      action: "platform.webhook_replayed",
+      entityType: "payment_webhook_attempt",
+      entityId: attempt.id,
+      riskLevel: "HIGH",
+      metadata: { replayAttemptId: replay.id, paymentEventId: event.id },
+    });
+    return ok({ attempt: replay });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "audit"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    const { limit, cursor } = parseCursorPagination(request, 100, 200);
+    const orgId = request.nextUrl.searchParams.get("org") || undefined;
+    const userId = request.nextUrl.searchParams.get("user") || undefined;
+    const riskLevel = request.nextUrl.searchParams.get("risk") || undefined;
+    const logs = await prisma.auditLog.findMany({
+      where: clean({
+        orgId,
+        actorUserId: userId,
+        riskLevel: riskLevel as Prisma.AuditLogWhereInput["riskLevel"],
+      }),
+      orderBy: { createdAt: "desc" },
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+    const page = pageResult(logs, limit);
+    return ok({ auditLogs: page.items, nextCursor: page.nextCursor, limit });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "broadcasts"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    return ok({
+      broadcasts: await prisma.platformBroadcast.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["platform", "broadcasts"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const body = platformBroadcastSchema.parse(await readJson(request));
+    const broadcast = await prisma.platformBroadcast.create({
+      data: clean({
+        ...body,
+        scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : undefined,
+        expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+        publishedAt: body.status === "LIVE" ? new Date() : undefined,
+        createdByUserId: actorUserId,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      actorUserId,
+      action: "platform.broadcast_created",
+      entityType: "platform_broadcast",
+      entityId: broadcast.id,
+      metadata: { status: broadcast.status, severity: broadcast.severity },
+    });
+    return ok({ broadcast });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["platform", "broadcasts", /.+/])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const body = platformBroadcastSchema.partial().parse(await readJson(request));
+    const broadcast = await prisma.platformBroadcast.update({
+      where: { id: path[2]! },
+      data: clean({
+        ...body,
+        scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : undefined,
+        expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+        ...(body.status === "LIVE" ? { publishedAt: new Date() } : {}),
+      }),
+    });
+    await writeAuditLog({
+      request,
+      actorUserId,
+      action: "platform.broadcast_updated",
+      entityType: "platform_broadcast",
+      entityId: broadcast.id,
+      metadata: { status: broadcast.status },
+    });
+    return ok({ broadcast });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["platform", "broadcasts", /.+/])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const broadcast = await prisma.platformBroadcast.delete({ where: { id: path[2]! } });
+    await writeAuditLog({
+      request,
+      actorUserId,
+      action: "platform.broadcast_deleted",
+      entityType: "platform_broadcast",
+      entityId: broadcast.id,
+    });
+    return ok({ deleted: true });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "flags"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    const flags = await prisma.featureFlag.findMany({ orderBy: { key: "asc" } });
+    const hasImpersonation = flags.some((flag) => flag.key === "platform.impersonation");
+    return ok({
+      flags: hasImpersonation
+        ? flags
+        : [
+            ...flags,
+            {
+              key: "platform.impersonation",
+              enabled: false,
+              description: "Allow platform admins to start audited support impersonation sessions.",
+              rolloutPercent: 0,
+              overrideOrgIds: [],
+              updatedAt: new Date(),
+              updatedByUserId: null,
+            },
+          ],
+    });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["platform", "flags"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const body = platformFlagPatchSchema.parse(await readJson(request));
+    const flag = await prisma.featureFlag.upsert({
+      where: { key: body.key },
+      create: clean({
+        key: body.key,
+        enabled: body.enabled ?? false,
+        description: body.description,
+        rolloutPercent: body.rolloutPercent ?? 0,
+        overrideOrgIds: body.overrideOrgIds ?? [],
+        updatedByUserId: actorUserId,
+      }),
+      update: clean({
+        enabled: body.enabled,
+        description: body.description,
+        rolloutPercent: body.rolloutPercent,
+        overrideOrgIds: body.overrideOrgIds,
+        updatedByUserId: actorUserId,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      actorUserId,
+      action: "platform.feature_flag_updated",
+      entityType: "feature_flag",
+      entityId: flag.key,
+      riskLevel: flag.key === "platform.impersonation" ? "CRITICAL" : "HIGH",
+      metadata: { enabled: flag.enabled, rolloutPercent: flag.rolloutPercent },
+    });
+    return ok({ flag });
+  }
+  if (request.method === "POST" && pathMatches(path, ["platform", "orgs", /.+/, "trial", "extend"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const orgId = path[2]!;
+    const body = platformOrgTrialExtendSchema.parse(await readJson(request));
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw notFoundError("Organization not found");
+    const currentEnd = org.trialEndAt ?? new Date();
+    const trialEndAt = new Date(currentEnd.getTime() + body.days * 24 * 60 * 60 * 1000);
+    const subscription = await prisma.saaSSubscription.upsert({
+      where: { orgId },
+      create: {
+        orgId,
+        trialStartAt: org.trialStartAt ?? new Date(),
+        trialEndAt,
+        trialExtendedDays: body.days,
+        status: org.status,
+      },
+      update: {
+        trialEndAt,
+        trialExtendedDays: { increment: body.days },
+        noteForPlatform: body.reason,
+      },
+    });
+    const updatedOrg = await prisma.organization.update({ where: { id: orgId }, data: { trialEndAt } });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: "platform.organization_trial_extended",
+      entityType: "organization",
+      entityId: orgId,
+      before: { trialEndAt: currentEnd.toISOString() },
+      after: { trialEndAt: trialEndAt.toISOString() },
+      metadata: { days: body.days, reason: body.reason, subscriptionId: subscription.id },
+    });
+    return ok({ org: updatedOrg, subscription });
+  }
+  if (request.method === "POST" && pathMatches(path, ["platform", "orgs", /.+/, "credit"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const orgId = path[2]!;
+    const body = platformOrgCreditSchema.parse(await readJson(request));
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw notFoundError("Organization not found");
+    const subscription = await prisma.saaSSubscription.upsert({
+      where: { orgId },
+      create: {
+        orgId,
+        trialStartAt: org.trialStartAt ?? new Date(),
+        trialEndAt: org.trialEndAt ?? new Date(),
+        status: org.status,
+        creditPaise: body.paise,
+        noteForPlatform: body.reason,
+      },
+      update: { creditPaise: { increment: body.paise }, noteForPlatform: body.reason },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: "platform.organization_credit_adjusted",
+      entityType: "organization",
+      entityId: orgId,
+      riskLevel: "HIGH",
+      metadata: { paise: body.paise, reason: body.reason, subscriptionId: subscription.id },
+    });
+    return ok({ subscription });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["platform", "orgs", /.+/, "tier"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const orgId = path[2]!;
+    const body = platformOrgTierSchema.parse(await readJson(request));
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw notFoundError("Organization not found");
+    const subscription = await prisma.saaSSubscription.upsert({
+      where: { orgId },
+      create: {
+        orgId,
+        trialStartAt: org.trialStartAt ?? new Date(),
+        trialEndAt: org.trialEndAt ?? new Date(),
+        status: org.status,
+        tier: body.tier,
+      },
+      update: { tier: body.tier },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: "platform.organization_tier_changed",
+      entityType: "organization",
+      entityId: orgId,
+      riskLevel: "HIGH",
+      metadata: { tier: body.tier, effectiveAt: body.effectiveAt ?? null },
+    });
+    return ok({ subscription });
+  }
+  if (request.method === "POST" && pathMatches(path, ["platform", "orgs", /.+/, "rename"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const orgId = path[2]!;
+    const body = platformOrgRenameSchema.parse(await readJson(request));
+    const before = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!before) throw notFoundError("Organization not found");
+    const org = await prisma.organization.update({
+      where: { id: orgId },
+      data: { name: body.name, username: body.username },
+    });
+    await prisma.organizationUsernameHistory.create({
+      data: { orgId, oldUsername: before.username, newUsername: body.username, changedById: actorUserId },
+    }).catch(() => undefined);
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: "platform.organization_renamed",
+      entityType: "organization",
+      entityId: orgId,
+      before: { name: before.name, username: before.username },
+      after: { name: org.name, username: org.username },
+      metadata: { reason: body.reason },
+    });
+    return ok({ org });
+  }
+  if (request.method === "POST" && pathMatches(path, ["platform", "orgs", /.+/, "soft-delete"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const orgId = path[2]!;
+    const body = platformOrgReasonSchema.parse(await readJson(request));
+    const org = await prisma.organization.update({
+      where: { id: orgId },
+      data: { status: "DELETED", deletedAt: new Date() },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: "platform.organization_soft_deleted",
+      entityType: "organization",
+      entityId: orgId,
+      riskLevel: "CRITICAL",
+      metadata: { reason: body.reason, purgeAfterDays: 30 },
+    });
+    return ok({ org });
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["platform", "orgs", /.+/, "transfer-ownership"])
+  ) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const orgId = path[2]!;
+    const body = platformOrgTransferSchema.parse(await readJson(request));
+    await ensureOrganizationMembership({
+      orgId,
+      userId: body.newOwnerUserId,
+      marketingOptIn: true,
+    });
+    await prisma.organizationRoleAssignment.upsert({
+      where: { orgId_userId: { orgId, userId: body.newOwnerUserId } },
+      create: { orgId, userId: body.newOwnerUserId, role: "OWNER", assignedById: actorUserId },
+      update: { role: "OWNER", assignedById: actorUserId },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: "platform.organization_ownership_transferred",
+      entityType: "organization",
+      entityId: orgId,
+      riskLevel: "CRITICAL",
+      metadata: { newOwnerUserId: body.newOwnerUserId, reason: body.reason },
+    });
+    return ok({ transferred: true });
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["platform", "orgs", /.+/, "bulk-import-members"])
+  ) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const orgId = path[2]!;
+    const body = z.object({ csv: z.string().min(1).max(500_000) }).parse(await readJson(request));
+    const lines = body.csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    if (lines.length < 2) throw validationError("CSV must contain a header row and at least one data row.");
+    const headers = lines[0]!.toLowerCase().split(",").map((h) => h.trim().replace(/^["']|["']$/g, ""));
+    const nameIndex = headers.findIndex((h) => ["name", "full name", "member name"].includes(h));
+    const emailIndex = headers.findIndex((h) => ["email", "email address"].includes(h));
+    if (nameIndex < 0 || emailIndex < 0) throw validationError("CSV must include 'name' and 'email' columns.");
+    const results: Array<{ row: number; status: "created" | "existing" | "error"; email?: string; error?: string }> = [];
+    for (const [index, line] of lines.slice(1).entries()) {
+      const columns = line.split(",").map((col) => col.trim().replace(/^["']|["']$/g, ""));
+      const name = columns[nameIndex]?.trim();
+      const email = columns[emailIndex]?.trim().toLowerCase();
+      if (!name || !email) {
+        results.push({ row: index + 2, status: "error", error: "Missing name or email" });
+        continue;
+      }
+      const existing = await prisma.user.findUnique({ where: { email } });
+      const user = existing ?? (await prisma.user.create({
+        data: { email, name, slug: await createUniqueMemberSlug(), marketingOptIn: true },
+      }));
+      await ensureOrganizationMembership({ orgId, userId: user.id, marketingOptIn: user.marketingOptIn });
+      results.push({ row: index + 2, status: existing ? "existing" : "created", email });
+    }
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: "platform.members.bulk_imported",
+      entityType: "organization",
+      entityId: orgId,
+      metadata: { totalRows: results.length },
+    });
+    return ok({ results, summary: { total: results.length, created: results.filter((r) => r.status === "created").length, existing: results.filter((r) => r.status === "existing").length, errors: results.filter((r) => r.status === "error").length } });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "moderation"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    return ok({
+      flags: await prisma.contentModerationFlag.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["platform", "moderation"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const body = platformModerationDecisionSchema.parse(await readJson(request));
+    const flag = await prisma.contentModerationFlag.update({
+      where: { id: body.id },
+      data: {
+        status: body.decision,
+        reason: body.reason,
+        reviewedByUserId: actorUserId,
+        reviewedAt: new Date(),
+      },
+    });
+    await writeAuditLog({
+      request,
+      orgId: flag.orgId,
+      actorUserId,
+      action: "platform.moderation_decided",
+      entityType: "content_moderation_flag",
+      entityId: flag.id,
+      riskLevel: body.decision === "REMOVED" ? "HIGH" : "MEDIUM",
+      metadata: { decision: body.decision, reason: body.reason },
+    });
+    return ok({ flag });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "orgs"])) {
     const ctx = await getRequestContext(request);
