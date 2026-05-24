@@ -37,6 +37,13 @@ services, DB prep, full web Playwright, and targeted platform-console Playwright
 DB acceptance aggregate was intentionally skipped after an unrelated members workflow timeout under
 the local-only merge direction.
 
+Update on 2026-05-24: Phase 3 platform operations UI is ready for local merge with production
+deployment deferred to the end of the full hardening sequence. The `ai.assistant` feature flag now
+gates `/api/ai/chat` without redeploy, platform broadcasts fan out in-app notifications on publish,
+and platform webhook replay reuses the payment-event side-effect path idempotently. Local gate passed
+typecheck, lint, unit, services, and targeted platform-console Playwright coverage. CI workflows and
+production smoke remain intentionally deferred.
+
 ## Current Placeholder Defaults
 
 - Production domain: `zookfit.in`.

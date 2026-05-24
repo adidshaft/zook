@@ -527,7 +527,12 @@ export function PlatformOperationsPanel({
                     <p className="font-medium text-white">{flag.key}</p>
                     <p className="mt-1 text-xs text-white/45">{flag.rolloutPercent}% rollout</p>
                   </div>
-                  <ZookButton size="sm" tone={flag.enabled ? "danger" : "ghost"} onClick={() => void toggleFeatureFlag(flag)}>
+                  <ZookButton
+                    size="sm"
+                    tone={flag.enabled ? "danger" : "ghost"}
+                    aria-label={`${flag.enabled ? "Disable" : "Enable"} ${flag.key}`}
+                    onClick={() => void toggleFeatureFlag(flag)}
+                  >
                     {flag.enabled ? "Disable" : "Enable"}
                   </ZookButton>
                 </div>
