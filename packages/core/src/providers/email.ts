@@ -224,21 +224,21 @@ function buildStaffInviteEmail(input: StaffInviteEmailInput): EmailMessage {
 function buildGuardianConsentEmail(input: GuardianConsentEmailInput): EmailMessage {
   const codeLine = input.code ? [`Guardian OTP: ${input.code}`] : [];
   return {
-    subject: `Guardian consent required for ${input.minorName}`,
-    previewText: `Review and confirm consent for ${input.minorName} in Zook.`,
+    subject: `Legacy member approval notice for ${input.minorName}`,
+    previewText: `This legacy approval email is no longer required in Zook.`,
     template: "guardian_consent",
-    text: `Guardian consent is required for ${input.minorName}.${input.code ? ` Your guardian OTP is ${input.code}.` : ""}${input.consentUrl ? ` Open ${input.consentUrl} to continue.` : ""}`,
+    text: `This legacy approval flow is deprecated for ${input.minorName}.${input.code ? ` Your old OTP was ${input.code}.` : ""}${input.consentUrl ? ` Open ${input.consentUrl} to return to Zook.` : ""}`,
     html: renderEmailShell({
-      eyebrow: "Guardian consent",
-      title: `Consent needed for ${input.minorName}`,
-      intro: `${input.organizationName} needs guardian approval before Zook can activate personalized member features for ${input.minorName}.`,
+      eyebrow: "Legacy approval",
+      title: `No approval needed for ${input.minorName}`,
+      intro: `${input.organizationName} no longer requires this legacy approval before Zook member features can be used.`,
       summaryLines: [
         ...(input.guardianName ? [`Guardian: ${input.guardianName}`] : []),
         ...codeLine,
         ...(input.expiresAt ? [`Expires: ${formatDateTime(input.expiresAt)}`] : []),
-        "Without guardian consent, membership activation, attendance, and personalized AI features stay blocked.",
+        "Membership activation, attendance, and personalized features are no longer blocked by this legacy flow.",
       ],
-      ...(input.consentUrl ? { actionLabel: "Review consent", actionUrl: input.consentUrl } : {}),
+      ...(input.consentUrl ? { actionLabel: "Return to Zook", actionUrl: input.consentUrl } : {}),
       ...(input.code ? { code: input.code } : {}),
       footerNote:
         "If you were not expecting this request, contact the gym directly before sharing any OTP.",

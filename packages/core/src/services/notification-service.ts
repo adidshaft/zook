@@ -36,9 +36,6 @@ export function canReceiveNotification(type: NotificationType, user: UserSafetyS
   if (type === "TRANSACTIONAL" || type === "SECURITY") {
     return true;
   }
-  if (user.isMinor && (type === "PROMOTIONAL" || type === "ENGAGEMENT")) {
-    return false;
-  }
   if ((type === "PROMOTIONAL" || type === "ENGAGEMENT") && !user.marketingOptIn) {
     return false;
   }

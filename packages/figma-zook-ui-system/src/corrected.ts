@@ -137,7 +137,7 @@ function createEdgeStates(ctx: DesignContext): FrameNode[] {
     edgeFrame(ctx, "Edge / Member / Check-in Rejected", "Check-in not approved", "Your membership or branch could not be verified. Please contact the front desk.", "Ask Receptionist", "Back to Home", [
       row("Rejected chips", 8)
     ]),
-    edgeFrame(ctx, "Edge / Member / Minor Consent Required", "Guardian consent required", "Some features are locked until guardian consent is verified.", "Request Consent", "Learn More"),
+    edgeFrame(ctx, "Edge / Member / Profile Review", "Profile review", "Review your profile details before continuing.", "Review Profile", "Learn More"),
     edgeFrame(ctx, "Edge / Trainer / Tracking Not Opted In", "Tracking is private", "This member has not shared workout tracking with trainers.", "View Assigned Plans"),
     edgeFrame(ctx, "Edge / Receptionist / Invalid Entry Code", "Code not found", "Check the code and try again, or search for the member manually.", "Try Again", "Search Member"),
     pickupReadyFrame(ctx)
@@ -280,7 +280,7 @@ function createRulesBoard(ctx: DesignContext, page: PageNode, x: number, y: numb
     "Tracking is private unless the member opts in.",
     "Owner mobile is command view; web is full control room.",
     "In-app inbox is canonical; push is best-effort.",
-    "Minors require guardian consent before restricted features."
+    "Under-18 dates of birth use the same member flows as other accounts."
   ];
   const grid = stack("Rules grid", "VERTICAL", 12);
   for (let i = 0; i < rules.length; i += 2) {

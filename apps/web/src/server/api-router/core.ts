@@ -22,7 +22,6 @@ import {
   workoutSessionSchema,
   verifyOtpSchema,
   isInternalPhoneEmail,
-  getAllowedFixedOtp,
   getAppEnv,
   getQrSigningSecret,
   isMockPaymentCompletionAllowed,
@@ -517,18 +516,6 @@ const whatsappRegisterDeviceSchema = z.object({
 
 const whatsappUnregisterDeviceSchema = z.object({
   phone: z.string().trim().min(8).max(20),
-});
-
-const guardianConsentRequestSchema = z.object({
-  guardianName: z.string().trim().min(2).max(120),
-  guardianEmail: z.string().trim().email(),
-  guardianPhone: z.string().trim().min(8).max(20).optional(),
-  relationship: z.string().trim().min(2).max(80),
-});
-
-const guardianConsentVerifySchema = z.object({
-  challengeId: z.string(),
-  code: z.string().regex(/^\d{6}$/),
 });
 
 const productInputSchema = z.object({
@@ -3368,249 +3355,6 @@ function deriveAutopayBillingCadence(plan: {
   return { billingPeriod: "daily" as const, billingInterval: Math.max(7, days) };
 }
 
-function guardianConsentCode() {
-  const fixedOtp = getAllowedFixedOtp();
-  if (fixedOtp) return fixedOtp;
-  return String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0");
-}
-
-async function createGuardianConsentChallenge(input: {
-  userId: string;
-  userName: string;
-  guardianName: string;
-  guardianEmail: string;
-  guardianPhone?: string;
-  relationship: string;
-  orgId?: string;
-  organizationName?: string;
-}) {
-  const code = guardianConsentCode();
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
-  const existingConsent = await prisma.guardianConsent.findFirst({
-    where: { minorUserId: input.userId },
-    orderBy: { createdAt: "desc" },
-  });
-  const consent = existingConsent
-    ? await prisma.guardianConsent.update({
-        where: { id: existingConsent.id },
-        data: {
-          guardianName: input.guardianName,
-          guardianEmail: input.guardianEmail,
-          guardianPhone: input.guardianPhone ?? "",
-          relationship: input.relationship,
-          status: "PENDING",
-          metadata: clean({
-            orgId: input.orgId,
-            organizationName: input.organizationName,
-          }) as Prisma.InputJsonValue,
-        },
-      })
-    : await prisma.guardianConsent.create({
-        data: {
-          minorUserId: input.userId,
-          guardianName: input.guardianName,
-          guardianEmail: input.guardianEmail,
-          guardianPhone: input.guardianPhone ?? "",
-          relationship: input.relationship,
-          status: "PENDING",
-          metadata: clean({
-            orgId: input.orgId,
-            organizationName: input.organizationName,
-          }) as Prisma.InputJsonValue,
-        },
-      });
-
-  await prisma.guardianConsentChallenge.updateMany({
-    where: { guardianConsentId: consent.id, status: "PENDING" },
-    data: {
-      status: "EXPIRED",
-      failureReason: "Superseded by a newer guardian consent request.",
-    },
-  });
-
-  const challenge = await prisma.guardianConsentChallenge.create({
-    data: {
-      guardianConsentId: consent.id,
-      minorUserId: input.userId,
-      channel: "EMAIL_OTP",
-      status: "PENDING",
-      challengeTokenHash: AuthService.hash(code),
-      lastSentAt: now,
-      expiresAt,
-      maxAttempts: 5,
-      metadata: clean({
-        orgId: input.orgId,
-        organizationName: input.organizationName,
-      }) as Prisma.InputJsonValue,
-    },
-  });
-
-  const consentUrlBase = (
-    process.env.NEXT_PUBLIC_WEB_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    ""
-  ).replace(/\/$/, "");
-  const consentUrl = consentUrlBase
-    ? `${consentUrlBase}/guardian/consent/${challenge.id}`
-    : undefined;
-  await getEmailProviderOrThrow().sendGuardianConsentEmail({
-    to: input.guardianEmail,
-    minorName: input.userName,
-    organizationName: input.organizationName ?? process.env.NEXT_PUBLIC_APP_NAME ?? "Zook",
-    code,
-    ...(consentUrl ? { consentUrl } : {}),
-  });
-
-  await prisma.guardianConsent.update({
-    where: { id: consent.id },
-    data: {
-      activeChallengeId: challenge.id,
-      challengeStatus: "PENDING",
-      challengedAt: now,
-    },
-  });
-
-  return {
-    consentId: consent.id,
-    challengeId: challenge.id,
-    guardianEmail: input.guardianEmail,
-    expiresAt,
-    devCode: getDevOtpResponseValue(),
-  };
-}
-
-function getJsonObjectMetadata(value: Prisma.JsonValue | null | undefined) {
-  if (!value || Array.isArray(value) || typeof value !== "object") {
-    return {} as Record<string, unknown>;
-  }
-
-  return value as Record<string, unknown>;
-}
-
-function firstName(value?: string | null) {
-  const candidate = value?.trim().split(/\s+/)[0];
-  return candidate || "Minor member";
-}
-
-function getGuardianContext(input: {
-  consent?: { metadata?: Prisma.JsonValue | null } | null;
-  challenge?: { metadata?: Prisma.JsonValue | null } | null;
-}) {
-  const challengeMetadata = getJsonObjectMetadata(input.challenge?.metadata);
-  const consentMetadata = getJsonObjectMetadata(input.consent?.metadata);
-  const orgId =
-    (typeof challengeMetadata.orgId === "string" ? challengeMetadata.orgId : undefined) ??
-    (typeof consentMetadata.orgId === "string" ? consentMetadata.orgId : undefined);
-  const organizationName =
-    (typeof challengeMetadata.organizationName === "string"
-      ? challengeMetadata.organizationName
-      : undefined) ??
-    (typeof consentMetadata.organizationName === "string"
-      ? consentMetadata.organizationName
-      : undefined);
-
-  return {
-    orgId,
-    organizationName,
-  };
-}
-
-async function verifyGuardianConsentChallenge(input: {
-  challengeId: string;
-  code: string;
-  request: NextRequest;
-  expectedMinorUserId?: string;
-  verificationSource: "minor_portal" | "guardian_web";
-}) {
-  const challenge = await prisma.guardianConsentChallenge.findFirst({
-    where: clean({
-      id: input.challengeId,
-      ...(input.expectedMinorUserId ? { minorUserId: input.expectedMinorUserId } : {}),
-    }),
-  });
-  if (!challenge) {
-    throw notFoundError("Guardian consent challenge not found.");
-  }
-  if (challenge.status === "VERIFIED") {
-    return ok({ verified: true, challengeId: challenge.id });
-  }
-  if (challenge.expiresAt <= new Date()) {
-    await prisma.guardianConsentChallenge.update({
-      where: { id: challenge.id },
-      data: { status: "EXPIRED", failureReason: "Challenge expired." },
-    });
-    throw validationError("Guardian code has expired.");
-  }
-
-  const devCodeAllowed = getAllowedFixedOtp() === input.code;
-  const matches = challenge.challengeTokenHash === AuthService.hash(input.code) || devCodeAllowed;
-  if (!matches) {
-    const attempts = challenge.attempts + 1;
-    await prisma.guardianConsentChallenge.update({
-      where: { id: challenge.id },
-      data: clean({
-        attempts,
-        ...(attempts >= challenge.maxAttempts
-          ? { status: "FAILED", failureReason: "Guardian code attempts exceeded." }
-          : {}),
-      }),
-    });
-    throw validationError("Guardian code is invalid.");
-  }
-
-  const consent = await prisma.guardianConsent.findUniqueOrThrow({
-    where: { id: challenge.guardianConsentId },
-  });
-  const context = getGuardianContext({ consent, challenge });
-
-  await prisma.guardianConsentChallenge.update({
-    where: { id: challenge.id },
-    data: { status: "VERIFIED", verifiedAt: new Date(), failureReason: null },
-  });
-  await prisma.guardianConsent.update({
-    where: { id: challenge.guardianConsentId },
-    data: {
-      status: "GRANTED",
-      verifiedAt: new Date(),
-      consentedAt: new Date(),
-      activeChallengeId: challenge.id,
-      challengeStatus: "VERIFIED",
-    },
-  });
-  await prisma.user.update({
-    where: { id: challenge.minorUserId },
-    data: { guardianPending: false },
-  });
-  await prisma.consentRecord.create({
-    data: clean({
-      orgId: context.orgId,
-      userId: challenge.minorUserId,
-      type: "GUARDIAN",
-      status: "GRANTED",
-      recordedById: challenge.minorUserId,
-      metadata: {
-        guardianConsentId: challenge.guardianConsentId,
-        guardianChallengeId: challenge.id,
-        verificationSource: input.verificationSource,
-      } as Prisma.InputJsonValue,
-    }),
-  });
-  await writeAuditLog({
-    request: input.request,
-    actorUserId: challenge.minorUserId,
-    action: "privacy.guardian_consent_verified",
-    entityType: "guardian_consent",
-    entityId: challenge.guardianConsentId,
-    ...(context.orgId ? { orgId: context.orgId } : {}),
-    metadata: {
-      verificationSource: input.verificationSource,
-    },
-  });
-
-  return ok({ verified: true, challengeId: challenge.id });
-}
-
 async function generateUserDataExport(input: { userId: string; orgId?: string }) {
   const [
     user,
@@ -4194,13 +3938,9 @@ async function resolveNotificationPreview(input: {
 
   const recipientUserIds: string[] = [];
   let blockedByOptOut = 0;
-  let blockedByMinor = 0;
+  const blockedByMinor = 0;
 
   for (const user of users) {
-    if (input.excludeMinors && user.isMinor) {
-      blockedByMinor += 1;
-      continue;
-    }
     const preference = preferenceByUserId.get(user.id);
     if (!notificationPreferenceAllowsType(preference, input.type)) {
       blockedByOptOut += 1;
@@ -4216,11 +3956,7 @@ async function resolveNotificationPreview(input: {
       hasProfilePhoto: Boolean(user.profilePhotoUrl),
     });
     if (!allowed) {
-      if (user.isMinor && (input.type === "PROMOTIONAL" || input.type === "ENGAGEMENT")) {
-        blockedByMinor += 1;
-      } else {
-        blockedByOptOut += 1;
-      }
+      blockedByOptOut += 1;
       continue;
     }
     recipientUserIds.push(user.id);
@@ -5447,7 +5183,6 @@ export async function handleMeData(request: NextRequest, path: string[]) {
           throw validationError("Verify the new phone number before adding it to your account.");
         }
       }
-      const nextIsMinor = minorFromDate ?? currentUser.isMinor;
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: clean({
@@ -5456,7 +5191,7 @@ export async function handleMeData(request: NextRequest, path: string[]) {
           ...(minorFromDate !== undefined
             ? {
                 isMinor: minorFromDate,
-                guardianPending: minorFromDate ? true : false,
+                guardianPending: false,
               }
             : {}),
           gender: body.gender,
@@ -5468,8 +5203,8 @@ export async function handleMeData(request: NextRequest, path: string[]) {
                 }
               : undefined,
           fitnessGoal: body.fitnessGoal,
-          marketingOptIn: nextIsMinor ? false : body.marketingOptIn,
-          aiConsent: nextIsMinor ? false : body.aiConsent,
+          marketingOptIn: body.marketingOptIn,
+          aiConsent: body.aiConsent,
           preferredLocale: body.preferredLocale,
           weeklyWorkoutGoal: body.weeklyWorkoutGoal,
         }),
@@ -5495,7 +5230,7 @@ export async function handleMeData(request: NextRequest, path: string[]) {
             create: {
               orgId,
               userId,
-              marketingOptIn: updatedUser.isMinor ? false : updatedUser.marketingOptIn,
+              marketingOptIn: updatedUser.marketingOptIn,
               notes: JSON.stringify(nextNotes),
             },
           })
@@ -5558,7 +5293,7 @@ export async function handleMeData(request: NextRequest, path: string[]) {
               orgId: body.orgId,
               userId,
               profilePhotoUrl: asset.url,
-              marketingOptIn: updatedUser.isMinor ? false : updatedUser.marketingOptIn,
+              marketingOptIn: updatedUser.marketingOptIn,
               profilePhotoConsentAt: body.consentToAttendanceUse ? new Date() : undefined,
             }),
           })
@@ -9505,9 +9240,6 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     ) {
       throw forbiddenError("This gym is not accepting new membership purchases right now.");
     }
-    if (user.isMinor && user.guardianPending) {
-      throw forbiddenError("Guardian consent is required before purchasing a membership.");
-    }
     if (existingSubscription) {
       throw conflictError("You already have a membership in progress for this gym.");
     }
@@ -9652,9 +9384,6 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     if (pendingRenewal) {
       throw conflictError("You already have a renewal payment in progress.");
     }
-    if (user.isMinor && user.guardianPending) {
-      throw forbiddenError("Guardian consent is required before renewing a membership.");
-    }
     const referral = await resolveValidatedReferral({
       orgId,
       userId,
@@ -9798,9 +9527,6 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
       organization.status === "TRIAL_EXPIRED"
     ) {
       throw forbiddenError("This gym is not accepting autopay setup right now.");
-    }
-    if (user.isMinor && user.guardianPending) {
-      throw forbiddenError("Guardian consent is required before enabling autopay.");
     }
     if (existingMandate) {
       return ok({
@@ -10993,19 +10719,11 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         400,
       );
     }
-    try {
-      assertMinorConsentGranted({
-        isMinor: Boolean(scanUser?.isMinor),
-        guardianPending: Boolean(scanUser?.guardianPending),
-        action: "attendance check-in",
-      });
-    } catch (error) {
-      return fail(
-        "GUARDIAN_CONSENT_REQUIRED",
-        error instanceof Error ? error.message : "Guardian consent required.",
-        400,
-      );
-    }
+    assertMinorConsentGranted({
+      isMinor: Boolean(scanUser?.isMinor),
+      guardianPending: Boolean(scanUser?.guardianPending),
+      action: "attendance check-in",
+    });
     const hasProfilePhoto = Boolean(memberProfile?.profilePhotoUrl || scanUser?.profilePhotoUrl);
     if (!hasProfilePhoto) {
       return fail(
@@ -11363,15 +11081,11 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     const branchId = await assertBranchAccessForContext(ctx, orgId, body.branchId);
     const branch = await resolveOrgBranch(orgId, branchId);
     const memberUser = await prisma.user.findUniqueOrThrow({ where: { id: body.memberUserId } });
-    try {
-      assertMinorConsentGranted({
-        isMinor: memberUser.isMinor,
-        guardianPending: memberUser.guardianPending,
-        action: "manual attendance override",
-      });
-    } catch (error) {
-      throw validationError(error instanceof Error ? error.message : "Guardian consent required.");
-    }
+    assertMinorConsentGranted({
+      isMinor: memberUser.isMinor,
+      guardianPending: memberUser.guardianPending,
+      action: "manual attendance override",
+    });
     const record = await prisma.attendanceRecord.create({
       data: {
         orgId,
@@ -12099,7 +11813,7 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
       orgId,
       userId: memberUserId,
       profilePhotoUrl: memberUser.profilePhotoUrl,
-      marketingOptIn: memberUser.isMinor ? false : memberUser.marketingOptIn,
+      marketingOptIn: memberUser.marketingOptIn,
     });
     await createDirectNotification({
       orgId,
@@ -12357,15 +12071,11 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
         throw notFoundError("Personal training plan not found for this trainer.");
       }
     }
-    try {
-      assertMinorConsentGranted({
-        isMinor: memberUser.isMinor,
-        guardianPending: memberUser.guardianPending,
-        action: "PT subscription activation",
-      });
-    } catch (error) {
-      throw validationError(error instanceof Error ? error.message : "Guardian consent required.");
-    }
+    assertMinorConsentGranted({
+      isMinor: memberUser.isMinor,
+      guardianPending: memberUser.guardianPending,
+      action: "PT subscription activation",
+    });
     const proofAsset = await getOrganizationScopedFileAsset(body.proofAssetId, orgId, [
       "payment_proof",
     ]);
@@ -12652,17 +12362,11 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
       const targetUser = await prisma.user.findUniqueOrThrow({
         where: { id: body.assignedToUserId },
       });
-      try {
-        assertMinorConsentGranted({
-          isMinor: targetUser.isMinor,
-          guardianPending: targetUser.guardianPending,
-          action: "plan assignment",
-        });
-      } catch (error) {
-        throw validationError(
-          error instanceof Error ? error.message : "Guardian consent required.",
-        );
-      }
+      assertMinorConsentGranted({
+        isMinor: targetUser.isMinor,
+        guardianPending: targetUser.guardianPending,
+        action: "plan assignment",
+      });
     }
     const assignedClientUserIds = ctx.roles.includes("TRAINER")
       ? (
@@ -14334,205 +14038,43 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     return ok({ order });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "guardian-consent"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    const [consents, challenges] = await Promise.all([
-      prisma.guardianConsent.findMany({
-        where: { minorUserId: userId },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.guardianConsentChallenge.findMany({
-        where: { minorUserId: userId },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
-    return ok({ consents, challenges });
-  }
-  if (request.method === "POST" && pathMatches(path, ["me", "guardian-consent", "request"])) {
-    const ctx = await getRequestContext(request);
-    const userId = requireAuth(ctx);
-    await assertRateLimit(
-      "guardianConsentByActor",
-      `${ctx.orgId ?? "global"}:${userId}`,
-      "Too many guardian consent requests from this account.",
-    );
-    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    if (!user.isMinor) {
-      throw forbiddenError("Guardian consent is only required for minor accounts.");
-    }
-    const body = guardianConsentRequestSchema.parse(await readJson(request));
-    const organization = ctx.orgId
-      ? await prisma.organization.findUnique({ where: { id: ctx.orgId } })
-      : null;
-    const challenge = await createGuardianConsentChallenge({
-      userId,
-      userName: user.name,
-      guardianName: body.guardianName,
-      guardianEmail: body.guardianEmail,
-      ...(body.guardianPhone ? { guardianPhone: body.guardianPhone } : {}),
-      relationship: body.relationship,
-      ...(ctx.orgId ? { orgId: ctx.orgId } : {}),
-      ...(organization?.name ? { organizationName: organization.name } : {}),
-    });
-    await prisma.user.update({ where: { id: userId }, data: { guardianPending: true } });
-    await prisma.consentRecord.create({
-      data: clean({
-        orgId: ctx.orgId,
-        userId,
-        type: "GUARDIAN",
-        status: "PENDING",
-        recordedById: userId,
-        metadata: {
-          guardianConsentId: challenge.consentId,
-          guardianChallengeId: challenge.challengeId,
-          guardianEmail: challenge.guardianEmail,
-        } as Prisma.InputJsonValue,
-      }),
-    });
-    await writeAuditLog({
-      request,
-      actorUserId: userId,
-      action: "privacy.guardian_consent_requested",
-      entityType: "guardian_consent",
-      entityId: challenge.consentId,
-      ...(ctx.orgId ? { orgId: ctx.orgId } : {}),
-    });
+    requireAuth(await getRequestContext(request));
     return ok({
-      requested: true,
-      consentId: challenge.consentId,
-      challengeId: challenge.challengeId,
-      expiresAt: challenge.expiresAt,
-      devCode: challenge.devCode,
+      deprecated: true,
+      message: "Guardian consent is no longer required for membership, attendance, plans, or PT.",
+      consents: [],
+      challenges: [],
     });
   }
-  if (request.method === "POST" && pathMatches(path, ["me", "guardian-consent", "resend"])) {
-    const ctx = await getRequestContext(request);
-    const userId = requireAuth(ctx);
-    const latestConsent = await prisma.guardianConsent.findFirst({
-      where: { minorUserId: userId },
-      orderBy: { createdAt: "desc" },
-    });
-    if (!latestConsent) {
-      throw notFoundError("Guardian consent has not been started yet.");
-    }
-    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    const organization = ctx.orgId
-      ? await prisma.organization.findUnique({ where: { id: ctx.orgId } })
-      : null;
-    const challenge = await createGuardianConsentChallenge({
-      userId,
-      userName: user.name,
-      guardianName: latestConsent.guardianName,
-      guardianEmail: latestConsent.guardianEmail,
-      ...(latestConsent.guardianPhone ? { guardianPhone: latestConsent.guardianPhone } : {}),
-      relationship: latestConsent.relationship,
-      ...(ctx.orgId ? { orgId: ctx.orgId } : {}),
-      ...(organization?.name ? { organizationName: organization.name } : {}),
-    });
+  if (
+    request.method === "POST" &&
+    (pathMatches(path, ["me", "guardian-consent", "request"]) ||
+      pathMatches(path, ["me", "guardian-consent", "resend"]) ||
+      pathMatches(path, ["me", "guardian-consent", "verify"]))
+  ) {
+    requireAuth(await getRequestContext(request));
     return ok({
-      resent: true,
-      consentId: challenge.consentId,
-      challengeId: challenge.challengeId,
-      expiresAt: challenge.expiresAt,
-      devCode: challenge.devCode,
+      deprecated: true,
+      message: "Guardian consent is no longer required for membership, attendance, plans, or PT.",
     });
   }
-  if (request.method === "POST" && pathMatches(path, ["me", "guardian-consent", "verify"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    const body = guardianConsentVerifySchema.parse(await readJson(request));
-    return verifyGuardianConsentChallenge({
-      challengeId: body.challengeId,
-      code: body.code,
-      request,
-      expectedMinorUserId: userId,
-      verificationSource: "minor_portal",
-    });
-  }
-  if (request.method === "GET" && pathMatches(path, ["guardian-consent", /.+/])) {
-    const challenge = await prisma.guardianConsentChallenge.findUnique({
-      where: { id: path[1]! },
-    });
-    if (!challenge) {
-      throw notFoundError("Guardian consent challenge not found.");
-    }
-
-    if (challenge.status === "PENDING" && challenge.expiresAt <= new Date()) {
-      await prisma.guardianConsentChallenge.update({
-        where: { id: challenge.id },
-        data: { status: "EXPIRED", failureReason: "Challenge expired." },
-      });
-      challenge.status = "EXPIRED";
-    }
-
-    const [consent, minorUser] = await Promise.all([
-      prisma.guardianConsent.findUnique({ where: { id: challenge.guardianConsentId } }),
-      prisma.user.findUnique({ where: { id: challenge.minorUserId } }),
-    ]);
-    const context = getGuardianContext({ consent, challenge });
-
+  if (
+    request.method === "GET" &&
+    pathMatches(path, ["guardian-consent", /.+/])
+  ) {
     return ok({
-      challenge: {
-        id: challenge.id,
-        status: challenge.status,
-        expiresAt: challenge.expiresAt,
-        verifiedAt: challenge.verifiedAt,
-        failureReason: challenge.failureReason,
-        canResend: challenge.status !== "VERIFIED",
-      },
-      consent: {
-        guardianName: consent?.guardianName ?? null,
-        relationship: consent?.relationship ?? null,
-      },
-      minor: {
-        firstName: firstName(minorUser?.name),
-      },
-      org: context.organizationName
-        ? {
-            id: context.orgId ?? null,
-            name: context.organizationName,
-          }
-        : null,
+      deprecated: true,
+      message: "Guardian consent links are deprecated because guardian approval is no longer required.",
     });
   }
-  if (request.method === "POST" && pathMatches(path, ["guardian-consent", /.+/, "verify"])) {
-    const body = z.object({ code: z.string().trim().length(6) }).parse(await readJson(request));
-    return verifyGuardianConsentChallenge({
-      challengeId: path[1]!,
-      code: body.code,
-      request,
-      verificationSource: "guardian_web",
-    });
-  }
-  if (request.method === "POST" && pathMatches(path, ["guardian-consent", /.+/, "resend"])) {
-    const existingChallenge = await prisma.guardianConsentChallenge.findUnique({
-      where: { id: path[1]! },
-    });
-    if (!existingChallenge) {
-      throw notFoundError("Guardian consent challenge not found.");
-    }
-    const [consent, minorUser] = await Promise.all([
-      prisma.guardianConsent.findUnique({ where: { id: existingChallenge.guardianConsentId } }),
-      prisma.user.findUnique({ where: { id: existingChallenge.minorUserId } }),
-    ]);
-    if (!consent || !minorUser) {
-      throw notFoundError("Guardian consent record not found.");
-    }
-
-    const context = getGuardianContext({ consent, challenge: existingChallenge });
-    const challenge = await createGuardianConsentChallenge({
-      userId: existingChallenge.minorUserId,
-      userName: minorUser.name,
-      guardianName: consent.guardianName,
-      guardianEmail: consent.guardianEmail,
-      ...(consent.guardianPhone ? { guardianPhone: consent.guardianPhone } : {}),
-      relationship: consent.relationship,
-      ...(context.orgId ? { orgId: context.orgId } : {}),
-      ...(context.organizationName ? { organizationName: context.organizationName } : {}),
-    });
+  if (
+    request.method === "POST" &&
+    (pathMatches(path, ["guardian-consent", /.+/, "verify"]) ||
+      pathMatches(path, ["guardian-consent", /.+/, "resend"]))
+  ) {
     return ok({
-      resent: true,
-      challengeId: challenge.challengeId,
-      expiresAt: challenge.expiresAt,
-      devCode: challenge.devCode,
+      deprecated: true,
+      message: "Guardian consent links are deprecated because guardian approval is no longer required.",
     });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "consents"])) {

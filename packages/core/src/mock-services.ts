@@ -676,7 +676,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
         const challenge = findRequired(
           state.guardianConsentChallenges,
           (candidate) => candidate.id === challengeId,
-          "Guardian consent challenge",
+          "Legacy approval challenge",
         );
         challenge.status = "GRANTED";
         const minor = findRequired(

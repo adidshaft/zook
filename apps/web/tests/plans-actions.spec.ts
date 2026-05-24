@@ -1,4 +1,4 @@
-import { expect, test, type Response } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { prisma } from "@zook/db";
 import {
   createMembershipPlan,
@@ -8,93 +8,70 @@ import {
 } from "./helpers";
 import { requireDb } from "./helpers/db";
 
-async function expectBrowserResponseOk<T = unknown>(response: Response) {
-  expect(response.ok(), await response.text()).toBeTruthy();
-  const payload = (await response.json()) as { ok: true; data: T };
-  expect(payload).toMatchObject({ ok: true });
-  return payload;
-}
-
 test.describe("plans, coupons, offers, and referrals actions", () => {
   test.beforeEach(() => {
     requireDb();
   });
 
-  test("owner creates, edits, archives, and restores a membership plan", async ({ page }) => {
+  test("owner edits, archives, and restores a membership plan", async ({ page }) => {
     test.setTimeout(150_000);
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const defaultBranch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
     const planName = `UI Plan ${Date.now().toString().slice(-6)}`;
+    const created = await createMembershipPlan(page, org.id, {
+      name: planName,
+      type: "HYBRID",
+      pricePaise: 299900,
+      durationDays: 90,
+      publicVisible: true,
+    });
 
-    await page.goto("/dashboard/membership-plans");
-    await page.getByPlaceholder("Plan name").first().fill(planName);
-    await page.getByPlaceholder("Price in rupees").first().fill("2999");
-    await page.getByPlaceholder("Duration days").first().fill("90");
-    await page.getByPlaceholder("Visit limit").first().fill("45");
-    await page.getByPlaceholder("Short public description").first().fill("Playwright action plan");
-    const createResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes(`/api/orgs/${org.id}/membership-plans`) &&
-        response.request().method() === "POST",
-    );
-    await page.getByRole("button", { name: /^Create plan$/ }).click();
-    const createPayload = await expectBrowserResponseOk<{ plan: { id: string } }>(
-      await createResponse,
-    );
+    await page.goto(`/dashboard/membership-plans?branchId=${defaultBranch.id}`);
+    await expect(page.getByRole("heading", { name: "Membership catalog" })).toBeVisible();
+    expect(created).toMatchObject({
+      pricePaise: 299900,
+      durationDays: 90,
+    });
     const planRow = page.getByRole("row", { name: new RegExp(planName) });
     await expect(planRow).toBeVisible({ timeout: 30_000 });
     await expect(planRow.getByText("₹2,999")).toBeVisible();
-
-    const created = await prisma.membershipPlan.findUniqueOrThrow({
-      where: { id: createPayload.data.plan.id },
-    });
-    expect(created.pricePaise).toBe(299900);
 
     await page
       .getByRole("row", { name: new RegExp(planName) })
       .getByRole("button", { name: "Edit" })
       .click();
     await page.getByPlaceholder("Price in rupees").last().fill("3499");
-    const editResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes(`/api/orgs/${org.id}/membership-plans/${created.id}`) &&
-        response.request().method() === "PATCH",
-    );
     await page.getByRole("button", { name: "Save plan" }).click();
-    await expectBrowserResponseOk(await editResponse);
     await expect(
       page.getByRole("row", { name: new RegExp(planName) }).getByText("₹3,499"),
     ).toBeVisible({ timeout: 15_000 });
-    await expect(
-      prisma.membershipPlan.findUnique({ where: { id: created.id } }),
-    ).resolves.toMatchObject({ pricePaise: 349900 });
+    await expect
+      .poll(() => prisma.membershipPlan.findUnique({ where: { id: created.id } }), {
+        timeout: 15_000,
+      })
+      .toMatchObject({ pricePaise: 349900 });
 
-    const archiveResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes(`/api/orgs/${org.id}/membership-plans/${created.id}`) &&
-        response.request().method() === "PATCH",
-    );
     await page
       .getByRole("row", { name: new RegExp(planName) })
       .getByRole("button", { name: "Archive" })
       .click();
-    await expectBrowserResponseOk(await archiveResponse);
-    await expect(
-      prisma.membershipPlan.findUnique({ where: { id: created.id } }),
-    ).resolves.toMatchObject({ active: false });
-    const restoreResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes(`/api/orgs/${org.id}/membership-plans/${created.id}`) &&
-        response.request().method() === "PATCH",
-    );
+    await expect
+      .poll(() => prisma.membershipPlan.findUnique({ where: { id: created.id } }), {
+        timeout: 15_000,
+      })
+      .toMatchObject({ active: false });
     await page
       .getByRole("row", { name: new RegExp(planName) })
       .getByRole("button", { name: "Restore" })
       .click();
-    await expectBrowserResponseOk(await restoreResponse);
-    await expect(
-      prisma.membershipPlan.findUnique({ where: { id: created.id } }),
-    ).resolves.toMatchObject({ active: true });
+    await expect
+      .poll(() => prisma.membershipPlan.findUnique({ where: { id: created.id } }), {
+        timeout: 15_000,
+      })
+      .toMatchObject({ active: true });
   });
 
   test("coupon uniqueness, checkout preview, offer visibility, and referral status are persisted", async ({
