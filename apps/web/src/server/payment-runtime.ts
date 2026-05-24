@@ -9,6 +9,7 @@ import {
   transitionPaymentSession,
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
+import { ensurePaymentInvoiceDocument, ensureSaasInvoiceDocument } from "./invoices/generate";
 import { assertMinorConsentGranted } from "./minor-gates";
 
 function clean<T extends Record<string, unknown>>(input: T): Record<string, unknown> {
@@ -45,47 +46,6 @@ function toMembershipPlanInput(plan: {
     active: plan.active,
     publicVisible: plan.publicVisible,
   };
-}
-
-async function ensureSaasInvoice(input: {
-  orgId: string;
-  paymentId?: string | null;
-  subscriptionId?: string | null;
-  amountPaise: number;
-  tier?: string;
-  billingCycle?: string;
-}) {
-  const existing = input.paymentId
-    ? await prisma.invoice.findFirst({ where: { paymentId: input.paymentId, kind: "SAAS" } })
-    : null;
-  if (existing) return existing;
-  const sequence = (await prisma.invoice.count({ where: { orgId: input.orgId, kind: "SAAS" } })) + 1;
-  const number = `ZK-SAAS-${new Date().getFullYear()}-${String(sequence).padStart(5, "0")}`;
-  return prisma.invoice.create({
-    data: {
-      orgId: input.orgId,
-      paymentId: input.paymentId ?? null,
-      subscriptionId: input.subscriptionId ?? null,
-      kind: "SAAS",
-      number,
-      invoiceNo: number,
-      invoiceNumber: number,
-      financialYear: `${new Date().getFullYear()}-${String(new Date().getFullYear() + 1).slice(-2)}`,
-      subtotalPaise: input.amountPaise,
-      totalPaise: input.amountPaise,
-      amountPaise: input.amountPaise,
-      currency: "INR",
-      status: "SUCCEEDED",
-      invoiceStatus: "issued",
-      lineItems: [
-        {
-          description: `Zook ${input.tier ?? "SaaS"} subscription (${input.billingCycle ?? "MONTHLY"})`,
-          quantity: 1,
-          amountPaise: input.amountPaise,
-        },
-      ],
-    },
-  });
 }
 
 type PaymentSessionMetadata = {
@@ -832,7 +792,7 @@ export async function applyPaymentSessionStatus(input: {
         where: { id: session.orgId },
         data: { status: "ACTIVE" },
       });
-      await ensureSaasInvoice({
+      await ensureSaasInvoiceDocument({
         orgId: session.orgId,
         paymentId: payment.id,
         subscriptionId: saasSubscription.id,
@@ -840,6 +800,14 @@ export async function applyPaymentSessionStatus(input: {
         ...(metadata.tier ? { tier: metadata.tier } : {}),
         billingCycle,
       });
+    } else if (payment.orgId) {
+      const [org, user] = await Promise.all([
+        prisma.organization.findUnique({ where: { id: payment.orgId } }),
+        payment.userId ? prisma.user.findUnique({ where: { id: payment.userId } }) : null,
+      ]);
+      if (org) {
+        await ensurePaymentInvoiceDocument({ org, payment, user });
+      }
     }
 
     return { session, payment };

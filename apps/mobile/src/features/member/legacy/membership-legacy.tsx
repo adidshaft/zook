@@ -461,8 +461,11 @@ export default function MembershipScreen() {
     const busyKey = `${kind}:${payment.id}`;
     setDocumentBusyKey(busyKey);
     try {
-      await paymentDocument.mutateAsync({ paymentId: payment.id, kind });
+      const payload = await paymentDocument.mutateAsync({ paymentId: payment.id, kind });
       await Promise.all([membershipsQuery.refetch(), invoicesQuery.refetch()]);
+      if (kind === "invoice" && payload.invoiceUrl) {
+        await Linking.openURL(toWebUrl(payload.invoiceUrl));
+      }
       showToast({
         tone: "success",
         haptic: "success",
@@ -479,6 +482,11 @@ export default function MembershipScreen() {
     } finally {
       setDocumentBusyKey(null);
     }
+  }
+
+  async function downloadInvoice(invoice: InvoiceRecord) {
+    if (!invoice.invoiceUrl) return;
+    await Linking.openURL(toWebUrl(invoice.invoiceUrl));
   }
 
   const onRefresh = async () => {
@@ -618,6 +626,7 @@ export default function MembershipScreen() {
             documentBusyKey={documentBusyKey}
             invoices={invoices}
             onCreateDocument={(payment, kind) => void createPaymentDocument(payment, kind)}
+            onDownloadInvoice={(invoice) => void downloadInvoice(invoice)}
             payments={payments}
           />
         </ScrollView>

@@ -1545,6 +1545,19 @@ model Invoice {
   @@index([shopOrderId])
 }
 
+model InvoiceSequence {
+  id            String   @id @default(cuid())
+  orgId         String
+  scope         String
+  financialYear String
+  nextSequence Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([orgId, scope, financialYear])
+  @@index([scope, financialYear])
+}
+
 model ManualPaymentAdjustment {
   id                String   @id @default(cuid())
   orgId             String
