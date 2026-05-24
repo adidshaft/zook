@@ -8,22 +8,27 @@ export async function getBranchScope(orgId: string, filters: DashboardBranchFilt
     select: { id: true, name: true, isDefault: true, active: true },
   });
   const defaultBranch = branches.find((branch) => branch.isDefault) ?? null;
-  const selectedBranch = filters.branchId
-    ? (branches.find((branch) => branch.id === filters.branchId) ?? null)
-    : defaultBranch;
+  const selectedBranch = filters.allBranches
+    ? null
+    : filters.branchId
+      ? (branches.find((branch) => branch.id === filters.branchId) ?? null)
+      : defaultBranch;
 
-  const inventoryScope =
-    selectedBranch && !selectedBranch.isDefault ? ("BRANCH" as const) : ("ORG_WIDE" as const);
+  const inventoryScope = selectedBranch ? ("BRANCH" as const) : ("ORG_WIDE" as const);
 
   return {
     branches,
     defaultBranch,
     selectedBranch,
-    mode: selectedBranch
-      ? selectedBranch.isDefault
-        ? "default_branch"
-        : "selected_branch"
-      : "org_wide_missing_default",
+    allBranches: Boolean(filters.allBranches),
+    allBranchesAllowed: Boolean(filters.allBranchesAllowed),
+    mode: filters.allBranches
+      ? "all_branches"
+      : selectedBranch
+        ? selectedBranch.isDefault
+          ? "default_branch"
+          : "selected_branch"
+        : "org_wide_missing_default",
     inventoryScope,
   };
 }
