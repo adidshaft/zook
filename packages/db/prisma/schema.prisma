@@ -411,6 +411,52 @@ enum HabitFrequency {
   WEEKLY
 }
 
+enum DietPlanStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum InvoiceKind {
+  MEMBERSHIP
+  SHOP
+  PT
+  SAAS
+  MANUAL
+}
+
+enum PlatformBroadcastSeverity {
+  INFO
+  WARN
+  CRITICAL
+}
+
+enum PlatformBroadcastStatus {
+  DRAFT
+  SCHEDULED
+  LIVE
+  EXPIRED
+}
+
+enum SaaSTier {
+  FREE
+  STARTER
+  GROWTH
+  PRO
+}
+
+enum ContentModerationKind {
+  ORG_COVER
+  ORG_LOGO
+  PRODUCT
+  MEMBER_PROFILE
+}
+
+enum ContentModerationStatus {
+  PENDING
+  APPROVED
+  REMOVED
+}
+
 model User {
   id                String    @id @default(cuid())
   email             String    @unique
@@ -556,6 +602,7 @@ model AuditLog {
   createdAt   DateTime       @default(now())
 
   @@index([orgId, createdAt])
+  @@index([createdAt, orgId])
   @@index([actorUserId, createdAt])
   @@index([riskLevel, createdAt])
 }
@@ -704,46 +751,50 @@ model StaffInvitation {
 }
 
 model SaaSSubscription {
-  id               String             @id @default(cuid())
-  orgId            String             @unique
-  status           OrganizationStatus @default(TRIAL_ACTIVE)
-  trialStartAt     DateTime
-  trialEndAt       DateTime
-  billingEmail     String?
-  paymentSessionId String?
-  nextBillingAt    DateTime?
-  cancelledAt      DateTime?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  id                String             @id @default(cuid())
+  orgId             String             @unique
+  status            OrganizationStatus @default(TRIAL_ACTIVE)
+  tier              SaaSTier           @default(FREE)
+  trialStartAt      DateTime
+  trialEndAt        DateTime
+  trialExtendedDays Int                @default(0)
+  creditPaise       Int                @default(0)
+  noteForPlatform   String?
+  billingEmail      String?
+  paymentSessionId  String?
+  nextBillingAt     DateTime?
+  cancelledAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   @@index([status])
 }
 
 model SaaSBillingMandate {
-  id                 String               @id @default(cuid())
-  provider           String               @default("mock")
-  providerMandateId  String?
-  providerPlanId     String?
-  orgId              String               @unique
-  createdByUserId    String
-  status             PaymentMandateStatus @default(CREATED)
-  amountPaise        Int
-  currency           String               @default("INR")
-  billingPeriod      String               @default("monthly")
-  billingInterval    Int                  @default(1)
-  totalCount         Int                  @default(120)
-  paidCount          Int                  @default(0)
-  checkoutUrl        String?
-  currentStartAt     DateTime?
-  currentEndAt       DateTime?
-  nextChargeAt       DateTime?
-  authenticatedAt    DateTime?
-  activatedAt        DateTime?
-  cancelledAt        DateTime?
-  paymentSessionId   String?
-  metadata           Json?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  id                String               @id @default(cuid())
+  provider          String               @default("mock")
+  providerMandateId String?
+  providerPlanId    String?
+  orgId             String               @unique
+  createdByUserId   String
+  status            PaymentMandateStatus @default(CREATED)
+  amountPaise       Int
+  currency          String               @default("INR")
+  billingPeriod     String               @default("monthly")
+  billingInterval   Int                  @default(1)
+  totalCount        Int                  @default(120)
+  paidCount         Int                  @default(0)
+  checkoutUrl       String?
+  currentStartAt    DateTime?
+  currentEndAt      DateTime?
+  nextChargeAt      DateTime?
+  authenticatedAt   DateTime?
+  activatedAt       DateTime?
+  cancelledAt       DateTime?
+  paymentSessionId  String?
+  metadata          Json?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   @@unique([provider, providerMandateId])
   @@index([status])
@@ -756,6 +807,71 @@ model OrganizationSetting {
   keyValues Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PlatformBroadcast {
+  id              String                    @id @default(cuid())
+  title           String
+  body            String
+  severity        PlatformBroadcastSeverity @default(INFO)
+  targetOrgIds    String[]                  @default([])
+  targetRoles     Role[]                    @default([])
+  scheduledAt     DateTime?
+  expiresAt       DateTime?
+  publishedAt     DateTime?
+  status          PlatformBroadcastStatus   @default(DRAFT)
+  createdByUserId String
+  createdAt       DateTime                  @default(now())
+
+  @@index([status, scheduledAt])
+  @@index([publishedAt])
+}
+
+model FeatureFlag {
+  key             String   @id
+  enabled         Boolean  @default(false)
+  description     String?
+  rolloutPercent  Int      @default(0)
+  overrideOrgIds  String[] @default([])
+  updatedAt       DateTime @updatedAt
+  updatedByUserId String?
+}
+
+model ImpersonationSession {
+  id                  String    @id @default(cuid())
+  platformAdminUserId String
+  targetUserId        String
+  targetOrgId         String?
+  reason              String
+  startedAt           DateTime  @default(now())
+  endedAt             DateTime?
+  ipHash              String
+  userAgentHash       String
+  actionsCount        Int       @default(0)
+
+  @@index([platformAdminUserId, startedAt])
+  @@index([targetUserId, startedAt])
+  @@index([targetOrgId, startedAt])
+  @@index([endedAt])
+}
+
+model ContentModerationFlag {
+  id               String                  @id @default(cuid())
+  orgId            String
+  kind             ContentModerationKind
+  fileAssetId      String?
+  targetId         String?
+  status           ContentModerationStatus @default(PENDING)
+  reporterUserId   String?
+  reason           String?
+  reviewedByUserId String?
+  reviewedAt       DateTime?
+  createdAt        DateTime                @default(now())
+
+  @@index([orgId, status, createdAt])
+  @@index([kind, status])
+  @@index([fileAssetId])
+  @@index([targetId])
 }
 
 model MemberProfile {
@@ -976,23 +1092,87 @@ model WorkoutExerciseEntry {
 }
 
 model BodyProgressEntry {
-  id             String             @id @default(cuid())
-  userId         String
-  organizationId String?
-  measuredAt     DateTime
-  weightKg       Decimal?           @db.Decimal(6, 2)
-  waistCm        Decimal?           @db.Decimal(6, 2)
-  chestCm        Decimal?           @db.Decimal(6, 2)
-  armCm          Decimal?           @db.Decimal(6, 2)
-  bodyFatPercent Decimal?           @db.Decimal(5, 2)
-  photoAssetId   String?
-  notes          String?
-  visibility     TrackingVisibility @default(PRIVATE)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id                String             @id @default(cuid())
+  userId            String
+  organizationId    String?
+  measuredAt        DateTime
+  weightKg          Decimal?           @db.Decimal(6, 2)
+  waistCm           Decimal?           @db.Decimal(6, 2)
+  hipCm             Decimal?           @db.Decimal(6, 2)
+  chestCm           Decimal?           @db.Decimal(6, 2)
+  armCm             Decimal?           @db.Decimal(6, 2)
+  thighCm           Decimal?           @db.Decimal(6, 2)
+  neckCm            Decimal?           @db.Decimal(6, 2)
+  shoulderCm        Decimal?           @db.Decimal(6, 2)
+  forearmCm         Decimal?           @db.Decimal(6, 2)
+  calfCm            Decimal?           @db.Decimal(6, 2)
+  bodyFatPercent    Decimal?           @db.Decimal(5, 2)
+  muscleMassKg      Decimal?           @db.Decimal(6, 2)
+  visceralFatRating Int?
+  restingHeartRate  Int?
+  recordedByUserId  String?
+  photoAssetId      String?
+  notes             String?
+  visibility        TrackingVisibility @default(PRIVATE)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   @@index([userId, measuredAt])
   @@index([organizationId, userId])
+}
+
+model DietPlan {
+  id            String         @id @default(cuid())
+  orgId         String
+  branchId      String?
+  trainerId     String
+  memberId      String
+  title         String
+  calorieTarget Int?
+  proteinG      Int?
+  carbsG        Int?
+  fatsG         Int?
+  status        DietPlanStatus @default(DRAFT)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([orgId, memberId, status])
+  @@index([orgId, trainerId])
+  @@index([orgId, branchId])
+}
+
+model DietPlanMeal {
+  id         String  @id @default(cuid())
+  dietPlanId String
+  name       String
+  timeOfDay  String?
+  items      Json
+  calories   Int?
+  proteinG   Int?
+  carbsG     Int?
+  fatsG      Int?
+  order      Int     @default(0)
+
+  @@index([dietPlanId, order])
+}
+
+model MealLog {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String?
+  dietPlanId     String?
+  mealName       String
+  loggedAt       DateTime @default(now())
+  calories       Int?
+  proteinG       Int?
+  carbsG         Int?
+  fatsG          Int?
+  photoAssetId   String?
+  notes          String?
+
+  @@index([userId, loggedAt])
+  @@index([organizationId, userId])
+  @@index([dietPlanId])
 }
 
 model MemberHabit {
@@ -1162,6 +1342,7 @@ model Payment {
 
   @@index([orgId, status])
   @@index([orgId, branchId, status])
+  @@index([orgId, branchId, createdAt])
   @@index([userId])
 }
 
@@ -1305,30 +1486,45 @@ model PaymentWebhookAttempt {
 model Invoice {
   id             String        @id @default(cuid())
   orgId          String?
+  branchId       String?
+  memberId       String?
   userId         String?
   paymentId      String?
   subscriptionId String?
   shopOrderId    String?
+  kind           InvoiceKind   @default(MEMBERSHIP)
+  number         String?       @unique
   invoiceNo      String?       @unique
   invoiceNumber  String?       @unique
+  financialYear  String?
   issueDate      DateTime      @default(now())
   issuedAt       DateTime      @default(now())
   gstNumber      String?
+  buyerName      String?
+  buyerAddress   String?
+  buyerPhone     String?
+  buyerGstin     String?
+  lineItems      Json?
   gstRateBps     Int?
   subtotalPaise  Int           @default(0)
   gstPaise       Int           @default(0)
   totalPaise     Int           @default(0)
   amountPaise    Int           @default(0)
   taxPaise       Int           @default(0)
+  currency       String        @default("INR")
   status         PaymentStatus @default(SUCCEEDED)
   invoiceStatus  String        @default("issued")
+  pdfFileAssetId String?
   pdfAssetId     String?
   metadata       Json?
   createdAt      DateTime      @default(now())
 
   @@index([orgId, issueDate])
+  @@index([orgId, branchId, issueDate])
   @@index([orgId])
+  @@index([memberId])
   @@index([userId])
+  @@index([paymentId])
   @@index([subscriptionId])
   @@index([shopOrderId])
 }
@@ -2143,6 +2339,7 @@ model ShopOrder {
 
   @@index([orgId, status])
   @@index([orgId, branchId, status])
+  @@index([orgId, branchId, status, createdAt])
   @@index([userId, status])
 }
 
