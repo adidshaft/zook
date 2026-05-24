@@ -227,6 +227,7 @@ export function useDashboardOperationalResources({
   ];
 
   return {
+    orgId,
     membersState,
     joinRequestsState,
     membershipPlansState,

@@ -281,10 +281,33 @@ export type ReferralAnalyticsPayload = {
     redemptionsThisMonth: number;
     rewardCreditsThisMonth: number;
     appliedRewardsThisMonth: number;
+    openAbuseFlags?: number;
   };
   topReferrers: Array<{
     code: ReferralCodeRow;
     user: StaffUserRow | null;
+    abuseSignals?: {
+      redemptions24h: number;
+      uniqueInviteePhones: number;
+      suspiciousClustering: boolean;
+    };
+  }>;
+  pendingRewards?: Array<{
+    id: string;
+    referrerUserId: string;
+    referralCodeId: string;
+    rewardType: string;
+    rewardValue: number;
+    status: string;
+    createdAt: string | Date;
+  }>;
+  openFlags?: Array<{
+    id: string;
+    type: string;
+    severity: string;
+    status: string;
+    metadata?: unknown;
+    createdAt: string | Date;
   }>;
 };
 

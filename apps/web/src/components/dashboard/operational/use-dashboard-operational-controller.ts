@@ -63,6 +63,7 @@ export function useDashboardOperationalController({
   });
 
   return {
+    orgId,
     mode,
     queueBusyId: state.queueBusyId,
     queueError: state.queueError,
