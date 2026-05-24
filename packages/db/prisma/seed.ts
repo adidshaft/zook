@@ -378,7 +378,7 @@ async function main() {
       ["trainer", "Rohan Kulkarni", "trainer@zook.local", "+919123456780", false, false],
       ["member", "Nisha Menon", "member@zook.local", "+919876543210", false, false],
       ["prospect", "Maya Prospect", "prospect@zook.local", "+919555000111", false, false],
-      ["minor", "Ira Shah", "minor@zook.local", "+919000012345", false, true],
+      ["minor", "Ira Shah", "minor@zook.local", "+919000012345", false, false],
       ["desk-test-member", "Karan Desk Test", "desk-test-member@zook.local", "+919444000222", false, false],
     ].map(([key, name, email, phone, isPlatformAdmin, isMinor]) =>
       prisma.user.create({
@@ -387,9 +387,9 @@ async function main() {
           email: String(email),
           phone: String(phone),
           phoneVerifiedAt: new Date(),
-          dateOfBirth: isMinor ? new Date("2011-08-18") : new Date("1995-04-12"),
+          dateOfBirth: new Date("1995-04-12"),
           profilePhotoUrl: `/seed/avatars/${key}.svg`,
-          fitnessGoal: isMinor ? "Build healthy habits safely" : "Strength and consistency",
+          fitnessGoal: "Strength and consistency",
           isPlatformAdmin: Boolean(isPlatformAdmin),
           isMinor: Boolean(isMinor),
           guardianPending: Boolean(isMinor),
@@ -587,7 +587,7 @@ async function main() {
         orgId: aarogyaStrength.id,
         userId: minor.id,
         profilePhotoUrl: minor.profilePhotoUrl,
-        marketingOptIn: false,
+        marketingOptIn: true,
       },
       {
         orgId: aarogyaStrength.id,
@@ -1413,26 +1413,26 @@ async function main() {
     },
   });
 
-  const guardianReminderNotification = await prisma.notification.create({
+  const accountSecurityNotification = await prisma.notification.create({
     data: {
       orgId: aarogyaStrength.id,
       createdById: owner.id,
       type: NotificationType.SECURITY,
       status: NotificationStatus.SENT,
-      title: "Guardian approval still pending",
-      body: "Ask your guardian to complete approval before your next coached session.",
-      audience: "minor_members_pending_guardian",
+      title: "Account security review",
+      body: "Review your account details before your next coached session.",
+      audience: "single_member",
       sentAt: minutesFromNow(-12),
       pushEnabled: true,
       metadata: {
-        guardianConsentId: guardianConsent.id,
+        accountNotice: "profile_review",
       },
     },
   });
 
   const minorRecipient = await prisma.notificationRecipient.create({
     data: {
-      notificationId: guardianReminderNotification.id,
+      notificationId: accountSecurityNotification.id,
       userId: minor.id,
       deliveryStatus: "push_failed",
     },
@@ -1466,9 +1466,9 @@ async function main() {
         userId: minor.id,
         transactional: true,
         operational: true,
-        promotional: false,
-        engagement: false,
-        pushEnabled: false,
+        promotional: true,
+        engagement: true,
+        pushEnabled: true,
       },
     ],
   });
@@ -1500,10 +1500,10 @@ async function main() {
         userId: minor.id,
         platform: PushPlatform.ANDROID,
         provider: "expo",
-        token: "ExponentPushToken[minor-private-pilot-android]",
+        token: "ExponentPushToken[ira-private-pilot-android]",
         status: PushDeviceStatus.INVALIDATED,
         deviceLabel: "Ira Pixel 8",
-        deviceFingerprint: hash("minor-private-pilot-android"),
+        deviceFingerprint: hash("ira-private-pilot-android"),
         appVersion: "1.4.0-pilot.2",
         osVersion: "Android 15",
         locale: "en-IN",
@@ -1521,7 +1521,7 @@ async function main() {
   });
 
   const memberPushDevice = must(pushDevices[0], "member push device");
-  const minorPushDevice = must(pushDevices[1], "minor push device");
+  const minorPushDevice = must(pushDevices[1], "Ira push device");
 
   await prisma.pushDelivery.create({
     data: {
@@ -1550,12 +1550,12 @@ async function main() {
   const failedPushDelivery = await prisma.pushDelivery.create({
     data: {
       orgId: aarogyaStrength.id,
-      notificationId: guardianReminderNotification.id,
+      notificationId: accountSecurityNotification.id,
       notificationRecipientId: minorRecipient.id,
       userId: minor.id,
       deviceId: minorPushDevice.id,
       provider: "expo",
-      providerMessageId: "expo_seed_minor_delivery_001",
+      providerMessageId: "expo_seed_ira_delivery_001",
       status: PushDeliveryStatus.FAILED,
       attemptCount: 2,
       scheduledAt: minutesFromNow(-13),
@@ -1563,8 +1563,8 @@ async function main() {
       failureCode: "DeviceNotRegistered",
       failureReason: "Push token invalidated after app reinstall.",
       payload: {
-        title: guardianReminderNotification.title,
-        audience: guardianReminderNotification.audience,
+        title: accountSecurityNotification.title,
+        audience: accountSecurityNotification.audience,
       },
       response: {
         error: "DeviceNotRegistered",
@@ -1937,7 +1937,7 @@ async function main() {
         resolutionSummary: "Monitoring after in-app re-registration prompt shipped.",
         metadata: {
           providerHealthCheckId: pushHealthCheck.id,
-          guardianConsentId: guardianConsent.id,
+          accountNotice: "profile_review",
         },
       },
     ],
@@ -2002,7 +2002,7 @@ async function main() {
     member: member.email,
     deskTestMember: deskTestMember.email,
     prospect: prospect.email,
-    minor: minor.email,
+    iraMember: minor.email,
     otp: "000000",
     aarogyaStrength: "aarogya-strength",
     peakLab: "peaklab",

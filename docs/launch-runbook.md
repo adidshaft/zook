@@ -77,6 +77,13 @@ Resend:
 
 ## Membership Operations
 
+Phase 1 hardening:
+- Guardian-consent gating is deprecated. Under-18 DOBs must not block membership activation,
+  attendance, plan assignment, notification delivery, AI consent, or PT subscription activation.
+- Keep historical `GuardianConsent` records intact for privacy export, deletion, and audit review.
+- Legacy guardian routes should redirect home, and legacy guardian APIs should return deprecation
+  responses without creating new challenges.
+
 Plan switching:
 - Members can request a switch from their membership view.
 - Owners/admins can switch a member subscription from the members dashboard.

@@ -13,7 +13,8 @@ This file tracks launch decisions that are intentionally placeholder-backed righ
   - Gym memberships purchased through Zook.
   - Duplicate, failed, or accidental Razorpay charges.
 - Governing law and dispute jurisdiction. Default assumption for now: India.
-- Final age/minor policy for members using guardian consent.
+- Update App Store age rating, Google Play app content, screenshots, and public support copy to
+  remove guardian-consent gating language now that under-18 DOBs use normal member flows.
 - Before launching any future fitness, training, medical, diet, or data-analysis vertical beyond current gym operations, update the privacy policy, store privacy labels, and in-app consent where required.
 
 ## Current Placeholder Defaults

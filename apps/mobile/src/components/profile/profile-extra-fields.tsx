@@ -1,6 +1,6 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import {
   GlassCard,
@@ -49,17 +49,6 @@ function parseDate(value?: string | null) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function isUnder18(value?: Date | null) {
-  if (!value) return false;
-  const today = new Date();
-  let age = today.getFullYear() - value.getFullYear();
-  const monthDelta = today.getMonth() - value.getMonth();
-  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < value.getDate())) {
-    age -= 1;
-  }
-  return age < 18;
-}
-
 function displayDate(value?: Date | null) {
   if (!value) return "Add date of birth";
   return new Intl.DateTimeFormat("en-IN", {
@@ -105,7 +94,6 @@ export function ProfileExtraFields() {
   const [error, setError] = useState("");
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const minor = useMemo(() => isUnder18(dob), [dob]);
   const completedCount = [
     dob,
     gender !== "prefer_not_to_say",
@@ -222,9 +210,6 @@ export function ProfileExtraFields() {
             }}
           />
         ) : null}
-        {minor ? (
-          <Text style={styles.warningText}>Please have a guardian complete this.</Text>
-        ) : null}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -264,9 +249,9 @@ export function ProfileExtraFields() {
 
       <PreferenceToggle
         title="Marketing opt-in"
-        subtitle="Offers and gym updates. Disabled automatically for minors."
+        subtitle="Offers and gym updates."
         value={marketingOptIn}
-        disabled={minor || savingKey === "marketingOptIn"}
+        disabled={savingKey === "marketingOptIn"}
         onValueChange={(value) => {
           setMarketingOptIn(value);
           void saveField("marketingOptIn", { marketingOptIn: value });
@@ -277,7 +262,7 @@ export function ProfileExtraFields() {
         title="AI consent"
         subtitle="Allow AI features to use your profile context."
         value={aiConsent}
-        disabled={minor || savingKey === "aiConsent"}
+        disabled={savingKey === "aiConsent"}
         onValueChange={(value) => {
           setAiConsent(value);
           void saveField("aiConsent", { aiConsent: value });
@@ -426,10 +411,6 @@ const styles = StyleSheet.create({
   datePlaceholder: {
     ...typography.body,
     color: legacyColors.subtle,
-  },
-  warningText: {
-    ...typography.small,
-    color: legacyColors.amber,
   },
   preferenceRow: {
     alignItems: "center",

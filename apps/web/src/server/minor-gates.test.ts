@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { assertMinorConsentGranted } from "./minor-gates";
 
 describe("assertMinorConsentGranted", () => {
-  it("blocks pending minor actions", () => {
+  it("allows pending minor actions", () => {
     expect(() =>
       assertMinorConsentGranted({
         isMinor: true,
         guardianPending: true,
         action: "membership activation"
       }),
-    ).toThrow(/Guardian consent required before membership activation/);
+    ).not.toThrow();
   });
 
   it("allows verified minors", () => {
