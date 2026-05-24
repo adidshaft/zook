@@ -1089,11 +1089,7 @@ async function refundPaymentForActor(input: {
   if (!["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(payment.status)) {
     throw conflictError("Only successful or partly refunded payments can be refunded.");
   }
-  if (!payment.providerRef) {
-    throw validationError(
-      "This payment was not collected through Razorpay, so it cannot be refunded here.",
-    );
-  }
+  const requiresProviderRefund = Boolean(payment.providerRef && payment.provider);
   const existingRefunds = await prisma.paymentRefund.findMany({
     where: {
       paymentId: payment.id,
@@ -1115,7 +1111,7 @@ async function refundPaymentForActor(input: {
       `Refund amount cannot exceed the remaining ${Math.round(refundableAmountPaise / 100)} rupees.`,
     );
   }
-  const provider = getPaymentProviderOrThrow();
+  const provider = requiresProviderRefund ? getPaymentProviderOrThrow() : null;
   const requestedRefund = await prisma.paymentRefund.create({
     data: clean({
       orgId,
@@ -1132,11 +1128,17 @@ async function refundPaymentForActor(input: {
   });
   let refund;
   try {
-    refund = await provider.refundPayment({
-      paymentId: payment.providerRef,
-      amountPaise: refundAmountPaise,
-      reason: input.reason,
-    });
+    refund =
+      provider && payment.providerRef
+        ? await provider.refundPayment({
+            paymentId: payment.providerRef,
+            amountPaise: refundAmountPaise,
+            reason: input.reason,
+          })
+        : {
+            status: "REFUNDED" as const,
+            providerRefundId: undefined,
+          };
   } catch (cause) {
     await prisma.paymentRefund.update({
       where: { id: requestedRefund.id },
@@ -2898,6 +2900,189 @@ async function processVerifiedPaymentWebhookEvent(input: {
       },
     });
     return ok({ received: true, duplicate: true, providerEventId });
+  }
+
+  if (parsed?.eventType === "refund.created" || parsed?.eventType === "refund.processed") {
+    const rawPayload = jsonObject(parsed.rawPayload as Prisma.JsonValue);
+    const payload = jsonObject(rawPayload.payload as Prisma.JsonValue);
+    const refundPayload = jsonObject(payload.refund as Prisma.JsonValue);
+    const refundEntity = jsonObject(refundPayload.entity as Prisma.JsonValue);
+    const providerRefundId =
+      typeof refundEntity.id === "string" ? refundEntity.id : undefined;
+    const payment = parsed.providerPaymentId
+      ? await prisma.payment.findFirst({
+          where: { provider: parsed.provider, providerRef: parsed.providerPaymentId },
+          orderBy: { createdAt: "desc" },
+        })
+      : null;
+    if (!payment?.orgId) {
+      await prisma.paymentEvent.update({
+        where: { id: event.id },
+        data: {
+          status: "QUARANTINED",
+          processedAt: new Date(),
+          processingError: "Refund payment not found for provider event.",
+        },
+      });
+      await prisma.paymentWebhookAttempt.update({
+        where: {
+          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+        },
+        data: {
+          status: "SUCCEEDED",
+          httpStatusCode: 200,
+          durationMs: Date.now() - startedAt,
+          completedAt: new Date(),
+          result: { quarantined: true, reason: "refund_payment_not_found" } as Prisma.InputJsonValue,
+        },
+      });
+      return ok({ received: true, quarantined: true, providerEventId });
+    }
+
+    const refund = providerRefundId
+      ? await prisma.paymentRefund.findFirst({
+          where: { paymentId: payment.id, providerRefundId },
+          orderBy: { createdAt: "desc" },
+        })
+      : await prisma.paymentRefund.findFirst({
+          where: {
+            paymentId: payment.id,
+            status: { in: ["REQUESTED", "PENDING"] },
+            ...(parsed.amountPaise ? { amountPaise: parsed.amountPaise } : {}),
+          },
+          orderBy: { createdAt: "desc" },
+        });
+    const effectiveRefund =
+      refund ??
+      (await prisma.paymentRefund.create({
+        data: {
+          orgId: payment.orgId,
+          branchId: payment.branchId,
+          paymentId: payment.id,
+          provider: parsed.provider,
+          providerRefundId: providerRefundId ?? null,
+          amountPaise: parsed.amountPaise ?? payment.amountPaise,
+          currency: parsed.currency ?? payment.currency,
+          status: "REQUESTED",
+          reason: "Provider refund webhook",
+        },
+      }));
+    const nextRefundStatus =
+      parsed.eventType === "refund.processed" ? parsed.paymentStatus : "PENDING";
+    const processedAt = parsed.eventType === "refund.processed" ? new Date() : effectiveRefund.processedAt;
+    const updatedRefund = await prisma.paymentRefund.update({
+      where: { id: effectiveRefund.id },
+      data: clean({
+        status: nextRefundStatus,
+        providerRefundId: providerRefundId ?? effectiveRefund.providerRefundId ?? undefined,
+        processedAt: processedAt ?? undefined,
+        providerResponse: parsed.rawPayload as Prisma.InputJsonValue,
+      }),
+    });
+    if (parsed.eventType !== "refund.processed") {
+      await prisma.paymentEvent.update({
+        where: { id: event.id },
+        data: {
+          orgId: payment.orgId,
+          userId: payment.userId,
+          paymentId: payment.id,
+          status: "PROCESSED",
+          processedAt: new Date(),
+          processingError: null,
+        },
+      });
+      await prisma.paymentWebhookAttempt.update({
+        where: {
+          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+        },
+        data: {
+          status: "SUCCEEDED",
+          httpStatusCode: 200,
+          durationMs: Date.now() - startedAt,
+          completedAt: new Date(),
+          result: {
+            refundId: updatedRefund.id,
+            paymentId: payment.id,
+            refundStatus: updatedRefund.status,
+          } as Prisma.InputJsonValue,
+        },
+      });
+      return ok({
+        received: true,
+        providerEventId,
+        paymentId: payment.id,
+        refundId: updatedRefund.id,
+      });
+    }
+    const successfulRefunds = await prisma.paymentRefund.findMany({
+      where: {
+        paymentId: payment.id,
+        status: { notIn: ["FAILED", "CANCELLED", "REQUESTED", "PENDING"] },
+      },
+    });
+    const refundedAmountPaise = successfulRefunds.reduce(
+      (total, item) => total + item.amountPaise,
+      0,
+    );
+    const paymentStatus =
+      refundedAmountPaise >= payment.amountPaise ? "REFUNDED" : "PARTIALLY_REFUNDED";
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: paymentStatus,
+        metadata: {
+          ...jsonObject(payment.metadata),
+          refundedAmountPaise,
+          refund: {
+            refundId: updatedRefund.id,
+            status: updatedRefund.status,
+            providerRefundId: updatedRefund.providerRefundId,
+            amountPaise: updatedRefund.amountPaise,
+            refundedAt: (updatedRefund.processedAt ?? new Date()).toISOString(),
+          },
+        },
+      },
+    });
+    await prisma.paymentEvent.update({
+      where: { id: event.id },
+      data: {
+        orgId: payment.orgId,
+        userId: payment.userId,
+        paymentId: payment.id,
+        status: "PROCESSED",
+        processedAt: new Date(),
+        processingError: null,
+      },
+    });
+    await prisma.paymentWebhookAttempt.update({
+      where: {
+        paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+      },
+      data: {
+        status: "SUCCEEDED",
+        httpStatusCode: 200,
+        durationMs: Date.now() - startedAt,
+        completedAt: new Date(),
+        result: {
+          refundId: updatedRefund.id,
+          paymentId: payment.id,
+          paymentStatus,
+        } as Prisma.InputJsonValue,
+      },
+    });
+    if (payment.userId && parsed.eventType === "refund.processed") {
+      await createDirectNotification({
+        orgId: payment.orgId,
+        type: "TRANSACTIONAL",
+        title: "Refund processed",
+        body: `Rs. ${(updatedRefund.amountPaise / 100).toFixed(2)} has been refunded for your payment.`,
+        audience: "single_member",
+        userIds: [payment.userId],
+        pushEnabled: true,
+        metadata: { paymentId: payment.id, refundId: updatedRefund.id } as Prisma.InputJsonValue,
+      });
+    }
+    return ok({ received: true, providerEventId, paymentId: payment.id, refundId: updatedRefund.id });
   }
 
   const saasBillingProcessed = parsed ? await applySaasBillingProviderEvent({ event: parsed }) : null;
@@ -8527,6 +8712,69 @@ export async function handleHealthReadiness(request: NextRequest, path: string[]
       remindersSkipped: totalSkipped,
       notificationsSent: totalNotified,
     });
+  }
+
+  if (request.method === "POST" && pathMatches(path, ["cron", "refund-reconcile"])) {
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    const authHeader = request.headers.get("authorization");
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      throw forbiddenError("Invalid cron authorization.");
+    }
+    if (!cronSecret && getAppEnv() === "production") {
+      throw forbiddenError("CRON_SECRET must be set in production.");
+    }
+
+    const provider = getPaymentProvider();
+    const cutoff = new Date(Date.now() - 10 * 60 * 1000);
+    const refunds = await prisma.paymentRefund.findMany({
+      where: {
+        status: "REQUESTED",
+        createdAt: { lte: cutoff },
+        provider: provider.providerName,
+      },
+      orderBy: { createdAt: "asc" },
+      take: 50,
+    });
+    let reconciled = 0;
+    let skipped = 0;
+    for (const refund of refunds) {
+      const payment = await prisma.payment.findUnique({ where: { id: refund.paymentId } });
+      if (!payment?.providerRef) {
+        skipped++;
+        continue;
+      }
+      const status = await provider.getPaymentStatus({ providerPaymentId: payment.providerRef });
+      if (status !== "REFUNDED" && status !== "PARTIALLY_REFUNDED") {
+        skipped++;
+        continue;
+      }
+      await prisma.paymentRefund.update({
+        where: { id: refund.id },
+        data: { status, processedAt: new Date() },
+      });
+      const successfulRefunds = await prisma.paymentRefund.findMany({
+        where: {
+          paymentId: payment.id,
+          status: { notIn: ["FAILED", "CANCELLED", "REQUESTED", "PENDING"] },
+        },
+      });
+      const refundedAmountPaise = successfulRefunds.reduce(
+        (total, item) => total + item.amountPaise,
+        0,
+      );
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: refundedAmountPaise >= payment.amountPaise ? "REFUNDED" : "PARTIALLY_REFUNDED",
+          metadata: {
+            ...jsonObject(payment.metadata),
+            refundedAmountPaise,
+          },
+        },
+      });
+      reconciled++;
+    }
+    return ok({ inspected: refunds.length, reconciled, skipped });
   }
 
   return undefined;
@@ -14874,17 +15122,37 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     }
     const provider = getPaymentProvider();
     let parsed: ParsedPaymentWebhookEvent | null = null;
-    try {
-      parsed =
-        event.payload && provider.providerName === event.provider
-          ? await provider.parseWebhookEvent({
-              rawBody: JSON.stringify(event.payload),
-              headers: (event.headers ?? {}) as Record<string, string>,
-              ...(event.signature ? { signature: event.signature } : {}),
-            })
-          : null;
-    } catch {
-      parsed = null;
+    if (!event.eventType.startsWith("refund.")) {
+      try {
+        parsed =
+          event.payload && provider.providerName === event.provider
+            ? await provider.parseWebhookEvent({
+                rawBody: JSON.stringify(event.payload),
+                headers: (event.headers ?? {}) as Record<string, string>,
+                ...(event.signature ? { signature: event.signature } : {}),
+              })
+            : null;
+      } catch {
+        parsed = null;
+      }
+    }
+    if (event.eventType.startsWith("refund.")) {
+      const rawPayload = jsonObject(event.payload);
+      const payload = jsonObject(rawPayload.payload as Prisma.JsonValue);
+      const refundPayload = jsonObject(payload.refund as Prisma.JsonValue);
+      const refundEntity = jsonObject(refundPayload.entity as Prisma.JsonValue);
+      parsed = {
+        provider: event.provider,
+        providerEventId: event.providerEventId,
+        eventType: event.eventType,
+        paymentStatus: event.eventType === "refund.processed" ? "REFUNDED" : "PENDING",
+        ...(typeof refundEntity.payment_id === "string"
+          ? { providerPaymentId: refundEntity.payment_id }
+          : {}),
+        ...(typeof refundEntity.amount === "number" ? { amountPaise: refundEntity.amount } : {}),
+        ...(typeof refundEntity.currency === "string" ? { currency: refundEntity.currency } : {}),
+        rawPayload,
+      };
     }
     const nextAttemptNo = event.attemptCount + 1;
     const replay = await prisma.paymentWebhookAttempt.create({

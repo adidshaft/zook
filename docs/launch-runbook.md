@@ -77,6 +77,23 @@ Resend:
 
 ## Membership Operations
 
+Phase 4 refund flow UI:
+- Gym owners can refund duplicate/offline payments directly from `Dashboard -> Payments -> Payment
+  history`. Cash/manual refunds do not call the payment provider; they update the local payment
+  ledger, create a `PaymentRefund`, and write a `payment.refunded` audit event.
+- Platform admins can still refund cross-tenant payments from `/platform` without impersonating the
+  gym account. Impersonated sessions remain blocked from refund actions.
+- Razorpay refund webhooks (`refund.created` and `refund.processed`) are applied through the
+  payment webhook event pipeline, updating `PaymentRefund` and aggregate `Payment.status`
+  idempotently. The fallback reconciliation endpoint is `POST /api/cron/refund-reconcile` with
+  `CRON_SECRET` when webhook delivery is delayed.
+- Phase 4 local verification on 2026-05-24 passed `pnpm --filter @zook/web typecheck`, `pnpm
+  typecheck`, `pnpm lint`, `pnpm test:unit`, `pnpm test:services`, and targeted Playwright
+  refund coverage in `apps/web/tests/payments-actions.spec.ts` plus
+  `apps/web/tests/platform-console.spec.ts`.
+- CI workflow checks and production deployment/live Razorpay smoke remain deferred for the
+  local-only hardening merge sequence.
+
 Phase 3 platform operations UI:
 - `/platform` can toggle `ai.assistant` at runtime. When OFF, `/api/ai/chat` returns the platform
   gated message without requiring a redeploy; `AI_FEATURES_ENABLED` remains the global kill switch.
