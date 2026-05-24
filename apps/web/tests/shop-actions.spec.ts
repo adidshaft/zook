@@ -64,6 +64,97 @@ test.describe("shop actions", () => {
     await expect(page.getByText("Low-stock watch")).toBeVisible();
   });
 
+  test("owner switches between branch-scoped shop inventory", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const defaultBranch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true },
+    });
+    const secondaryBranch = await prisma.branch.create({
+      data: {
+        orgId: org.id,
+        name: `Shop Annex ${Date.now()}`,
+        address: org.address,
+        city: org.city,
+        state: org.state,
+        pincode: org.pincode,
+        active: true,
+      },
+    });
+    const defaultProductName = `Default Whey ${Date.now()}`;
+    const secondaryProductName = `Annex Bottle ${Date.now()}`;
+
+    await expectApiOk(
+      await page.request.post(`/api/orgs/${org.id}/products`, {
+        data: {
+          branchId: defaultBranch.id,
+          name: defaultProductName,
+          category: "SUPPLEMENT",
+          pricePaise: 21900,
+          stock: 3,
+          lowStockThreshold: 4,
+        },
+      }),
+    );
+    await expectApiOk(
+      await page.request.post(`/api/orgs/${org.id}/products`, {
+        data: {
+          branchId: secondaryBranch.id,
+          name: secondaryProductName,
+          category: "SHAKER",
+          pricePaise: 39900,
+          stock: 8,
+          lowStockThreshold: 2,
+        },
+      }),
+    );
+
+    const defaultProducts = await expectApiOk<{ products: Array<{ name: string }> }>(
+      await page.request.get(`/api/orgs/${org.id}/products?branchId=${defaultBranch.id}`),
+    );
+    expect(defaultProducts.data.products.map((product) => product.name)).toContain(
+      defaultProductName,
+    );
+    expect(defaultProducts.data.products.map((product) => product.name)).not.toContain(
+      secondaryProductName,
+    );
+
+    const secondaryProducts = await expectApiOk<{ products: Array<{ name: string }> }>(
+      await page.request.get(`/api/orgs/${org.id}/products?branchId=${secondaryBranch.id}`),
+    );
+    expect(secondaryProducts.data.products.map((product) => product.name)).toContain(
+      secondaryProductName,
+    );
+    expect(secondaryProducts.data.products.map((product) => product.name)).not.toContain(
+      defaultProductName,
+    );
+
+    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    const [defaultOrder, secondaryOrder] = await Promise.all([
+      prisma.shopOrder.create({
+        data: { orgId: org.id, branchId: defaultBranch.id, userId: member.id, totalPaise: 21900 },
+      }),
+      prisma.shopOrder.create({
+        data: { orgId: org.id, branchId: secondaryBranch.id, userId: member.id, totalPaise: 39900 },
+      }),
+    ]);
+    const defaultShopCsv = await page.request.get(
+      `/api/orgs/${org.id}/reports/shop.csv?branchId=${defaultBranch.id}`,
+    );
+    expect(defaultShopCsv.ok()).toBe(true);
+    const defaultShopCsvText = await defaultShopCsv.text();
+    expect(defaultShopCsvText).toContain(defaultOrder.id);
+    expect(defaultShopCsvText).not.toContain(secondaryOrder.id);
+
+    await page.goto(`/dashboard/shop?branchId=${defaultBranch.id}`);
+    await expect(page.getByText(defaultProductName)).toBeVisible();
+    await expect(page.getByText(secondaryProductName)).toHaveCount(0);
+
+    await page.goto(`/dashboard/shop?branchId=${secondaryBranch.id}`);
+    await expect(page.getByText(secondaryProductName)).toBeVisible();
+    await expect(page.getByText(defaultProductName)).toHaveCount(0);
+  });
+
   test("member order can be paid at desk and fulfilled with notification", async ({ page }) => {
     test.setTimeout(150_000);
     const org = await seedAndGetOrg({ username: "aarogya-strength" });

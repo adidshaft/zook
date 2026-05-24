@@ -42,6 +42,8 @@ export type BranchScopeSnapshot = {
   branches: Array<{ id: string; name: string; isDefault: boolean; active: boolean }>;
   defaultBranch: { id: string; name: string; isDefault: boolean; active: boolean } | null;
   selectedBranch: { id: string; name: string; isDefault: boolean; active: boolean } | null;
+  allBranches?: boolean;
+  allBranchesAllowed?: boolean;
   mode: string;
   inventoryScope: string;
 };

@@ -9,8 +9,10 @@ export async function getOrganizationDashboardData(
   orgId: string,
   filters: DashboardBranchFilter = {},
 ) {
-  return cachedJson(`org-dashboard:${orgId}:${filters.branchId ?? "default"}`, 20, () =>
-    getOrganizationDashboardDataUncached(orgId, filters),
+  return cachedJson(
+    `org-dashboard:${orgId}:${filters.allBranches ? "all" : (filters.branchId ?? "default")}`,
+    20,
+    () => getOrganizationDashboardDataUncached(orgId, filters),
   );
 }
 
@@ -27,7 +29,7 @@ async function getOrganizationDashboardDataUncached(
   const branchWhere = branchScope.selectedBranch ? { branchId: branchScope.selectedBranch.id } : {};
   const productWhere: Prisma.ProductWhereInput =
     branchScope.inventoryScope === "BRANCH" && branchScope.selectedBranch
-      ? { OR: [{ branchId: branchScope.selectedBranch.id }, { branchId: null }] }
+      ? { branchId: branchScope.selectedBranch.id }
       : {};
 
   const [

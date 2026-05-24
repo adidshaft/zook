@@ -48,9 +48,11 @@ export function useDashboardOperationalResources({
   summary: OrganizationSummary;
   branchScope: BranchScopeSnapshot;
 }) {
-  const branchParam = branchScope.selectedBranch?.id
-    ? `branchId=${encodeURIComponent(branchScope.selectedBranch.id)}`
-    : "";
+  const branchParam = branchScope.allBranches
+    ? "branchId=all"
+    : branchScope.selectedBranch?.id
+      ? `branchId=${encodeURIComponent(branchScope.selectedBranch.id)}`
+      : "";
   const withBranch = (path: string) =>
     branchParam ? `${path}${path.includes("?") ? "&" : "?"}${branchParam}` : path;
   const membersState = usePagedOperationalResource<
