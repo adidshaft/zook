@@ -11,7 +11,7 @@ const requireFromWeb = createRequire(resolve(webDir, "package.json"));
 const rawArgs = process.argv.slice(2);
 const forwardedArgs = rawArgs[1] === "--" ? [rawArgs[0], ...rawArgs.slice(2)] : rawArgs;
 const nextCommand = forwardedArgs[0] ?? "dev";
-const defaultNodeOptions = "--max-old-space-size=6144";
+const defaultNodeOptions = "--max-old-space-size=12288";
 
 function resolveNodeEnv(command) {
   if (process.env.NODE_ENV) {
