@@ -83,6 +83,18 @@ Phase 1 hardening:
 - Keep historical `GuardianConsent` records intact for privacy export, deletion, and audit review.
 - Legacy guardian routes should redirect home, and legacy guardian APIs should return deprecation
   responses without creating new challenges.
+- Production deployment on 2026-05-24 20:47 IST shipped PR #44 through Vercel deployment
+  `https://zook-gym-lkq7uwgb3-adidshafts-projects.vercel.app`, aliased to `https://zookfit.in`,
+  `https://app.zookfit.in`, `https://www.zookfit.in`, and `https://dashboard.zookfit.in`.
+- Production migration gate applied `20260524000000_hardening_pass_phase0`; Phase 1 added no
+  destructive data migration.
+- Supabase backups before deploy: schema
+  `/Users/amanpandey/Documents/keys/zook/db-backups/supabase-before-phase1-deploy-20260524-204435.sql`
+  and data
+  `/Users/amanpandey/Documents/keys/zook/db-backups/supabase-before-phase1-deploy-data-20260524-204700.sql`.
+- Smoke on 2026-05-24 20:51 IST: `/api/ready` returned `ready=true` and
+  `database.reachable=true`; `/guardian-consent` and `/guardian/consent/phase1-smoke` returned
+  200 without active "guardian consent" copy.
 
 Plan switching:
 - Members can request a switch from their membership view.

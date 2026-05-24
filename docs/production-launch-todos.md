@@ -17,6 +17,18 @@ This file tracks launch decisions that are intentionally placeholder-backed righ
   remove guardian-consent gating language now that under-18 DOBs use normal member flows.
 - Before launching any future fitness, training, medical, diet, or data-analysis vertical beyond current gym operations, update the privacy policy, store privacy labels, and in-app consent where required.
 
+Update on 2026-05-24 20:52 IST: Phase 1 guardian/minor gate removal is deployed in production
+through Vercel deployment `https://zook-gym-lkq7uwgb3-adidshafts-projects.vercel.app`, aliased to
+`https://zookfit.in`, `https://app.zookfit.in`, and `https://dashboard.zookfit.in`. The production
+migration gate applied `20260524000000_hardening_pass_phase0` after Supabase schema/data backups at
+`/Users/amanpandey/Documents/keys/zook/db-backups/supabase-before-phase1-deploy-20260524-204435.sql`
+and
+`/Users/amanpandey/Documents/keys/zook/db-backups/supabase-before-phase1-deploy-data-20260524-204700.sql`.
+Live smoke passed: `/api/ready` reported `ready=true` with the database reachable, and
+`/guardian-consent` plus `/guardian/consent/phase1-smoke` returned 200 without active "guardian
+consent" copy. Remaining manual item: Aman must update App Store age rating, Google Play app
+content, screenshots, and public support copy before the next store submission.
+
 ## Current Placeholder Defaults
 
 - Production domain: `zookfit.in`.
