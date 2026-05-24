@@ -594,6 +594,24 @@ export interface MealLogRecord {
   notes?: string | null;
 }
 
+export interface TrainerPayoutLineRecord {
+  id: string;
+  kind: string;
+  description: string;
+  amountPaise: number;
+  createdAt?: string | null;
+}
+
+export interface TrainerPayoutRecord {
+  id: string;
+  trainerId: string;
+  totalPaise: number;
+  status: string;
+  period?: string | null;
+  paidAt?: string | null;
+  lines?: TrainerPayoutLineRecord[];
+}
+
 export interface OrgJoinRequestRecord {
   id: string;
   userId: string;

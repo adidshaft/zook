@@ -15,6 +15,7 @@ export const routePermissions: Record<string, Permission | null> = {
   "/trainer/client": "MEMBERS_VIEW",
   "/trainer/clients": "MEMBERS_VIEW",
   "/trainer/plans": "PT_RECORD",
+  "/trainer/payouts": "PT_RECORD",
   "/platform": null,
 };
 
