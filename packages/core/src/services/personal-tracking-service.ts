@@ -111,9 +111,8 @@ export class PersonalTrackingService {
     isMinor: boolean;
     guardianConsentGranted: boolean;
   }): TrackingVisibility {
-    if (input.isMinor || !input.guardianConsentGranted) {
-      return "PRIVATE";
-    }
+    void input.isMinor;
+    void input.guardianConsentGranted;
     return input.requestedVisibility ?? "PRIVATE";
   }
 

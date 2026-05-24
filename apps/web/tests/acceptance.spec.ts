@@ -1247,9 +1247,11 @@ test("member privacy export and deletion requests create jobs and audit trail", 
   ).resolves.toMatchObject({ entityId: deletionPayload.data.request.id });
 });
 
-test("minor guardian web consent flow unblocks membership checkout", async ({ page }) => {
+test("under-18 DOB does not block membership, attendance, plans, or PT", async ({ page }) => {
   requireDb();
   const aarogyaStrength = await seedAndGetOrg({ username: "aarogya-strength" });
+  const branch = await prisma.branch.findFirstOrThrow({ where: { orgId: aarogyaStrength.id } });
+  const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
   const minor = await prisma.user.findUniqueOrThrow({ where: { email: "minor@zook.local" } });
   const staleSubscriptions = await prisma.memberSubscription.findMany({
     where: { orgId: aarogyaStrength.id, memberUserId: minor.id },
@@ -1276,10 +1278,20 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
     prisma.membershipJoinRequest.deleteMany({
       where: { orgId: aarogyaStrength.id, userId: minor.id },
     }),
-    prisma.guardianConsentChallenge.deleteMany({ where: { minorUserId: minor.id } }),
-    prisma.guardianConsent.deleteMany({ where: { minorUserId: minor.id } }),
-    prisma.user.update({ where: { id: minor.id }, data: { guardianPending: true } }),
+    prisma.user.update({
+      where: { id: minor.id },
+      data: {
+        dateOfBirth: new Date("2014-05-24"),
+        isMinor: true,
+        guardianPending: true,
+        marketingOptIn: true,
+        aiConsent: true,
+      },
+    }),
   ]);
+  const guardianRowsBefore = await prisma.guardianConsent.count({
+    where: { minorUserId: minor.id },
+  });
 
   await loginWithOtp(page, "minor@zook.local");
 
@@ -1289,38 +1301,6 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
   }>(await page.request.get("/api/orgs/public/aarogya-strength"));
   const planId = publicGymPayload.data.plans[0]?.id;
   expect(planId).toBeTruthy();
-
-  const blockedResponse = await page.request.post(`/api/orgs/${aarogyaStrength.id}/subscriptions`, {
-    data: { planId },
-  });
-  expect(blockedResponse.status()).toBe(403);
-  expect(await blockedResponse.text()).toContain("Guardian consent");
-
-  await expectApiOk(
-    await page.request.post("/api/me/guardian-consent/request", {
-      data: {
-        guardianName: "Zook Test Guardian",
-        guardianEmail: "guardian@zook.local",
-        guardianPhone: "+919999999999",
-        relationship: "parent",
-      },
-    }),
-  );
-  const consentPayload = await expectApiOk<{
-    challenges: Array<{ id: string; status: string }>;
-  }>(await page.request.get("/api/me/guardian-consent"));
-  const challengeId = consentPayload.data.challenges[0]?.id;
-  expect(challengeId).toBeTruthy();
-  const challengeIdValue = String(challengeId);
-
-  await page.goto(`/guardian/consent/${challengeIdValue}`);
-  await expect(page.getByText("Zook Guardian Consent")).toBeVisible();
-
-  await expectApiOk(
-    await page.request.post(`/api/guardian-consent/${challengeIdValue}/verify`, {
-      data: { code: "000000" },
-    }),
-  );
 
   await prisma.organization.update({
     where: { id: aarogyaStrength.id },
@@ -1341,6 +1321,94 @@ test("minor guardian web consent flow unblocks membership checkout", async ({ pa
       (subscription) => subscription.orgId === aarogyaStrength.id && subscription.status === "ACTIVE",
     ),
   ).toBe(true);
+
+  const receptionUser = await prisma.user.findUniqueOrThrow({
+    where: { email: "reception@zook.local" },
+    select: { id: true },
+  });
+  await prisma.organizationRoleAssignment.updateMany({
+    where: { orgId: aarogyaStrength.id, userId: receptionUser.id, role: "RECEPTIONIST" },
+    data: { branchId: branch.id },
+  });
+  await loginWithSessionCookie(page, "reception@zook.local");
+  await expectApiOk(
+    await page.request.post(`/api/orgs/${aarogyaStrength.id}/attendance/manual`, {
+      data: {
+        memberUserId: minor.id,
+        branchId: branch.id,
+        reason: "Phase 1 under-18 gate removal regression",
+      },
+    }),
+  );
+
+  await prisma.trainerAssignment.upsert({
+    where: {
+      orgId_trainerUserId_memberUserId: {
+        orgId: aarogyaStrength.id,
+        trainerUserId: trainer.id,
+        memberUserId: minor.id,
+      },
+    },
+    update: { active: true },
+    create: {
+      orgId: aarogyaStrength.id,
+      trainerUserId: trainer.id,
+      memberUserId: minor.id,
+      active: true,
+    },
+  });
+  await loginWithSessionCookie(page, "trainer@zook.local");
+  const manualPlanPayload = await expectApiOk<{ plan: { id: string } }>(
+    await page.request.post(`/api/orgs/${aarogyaStrength.id}/plans`, {
+      data: {
+        title: `Phase 1 under-18 plan ${Date.now()}`,
+        type: "WORKOUT",
+        visibility: "assigned",
+        content: {
+          days: [
+            {
+              name: "Day 1",
+              exercises: [{ name: "Bodyweight squat", sets: "3", reps: "10" }],
+            },
+          ],
+        },
+      },
+    }),
+  );
+  await expectApiOk(
+    await page.request.post(
+      `/api/orgs/${aarogyaStrength.id}/plans/${manualPlanPayload.data.plan.id}/review`,
+    ),
+  );
+  await expectApiOk(
+    await page.request.post(
+      `/api/orgs/${aarogyaStrength.id}/plans/${manualPlanPayload.data.plan.id}/assign`,
+      {
+        data: { assignedToUserId: minor.id, audience: "selected_member" },
+      },
+    ),
+  );
+
+  const ptPlan = await prisma.personalTrainingPlan.findFirstOrThrow({
+    where: { orgId: aarogyaStrength.id, trainerUserId: trainer.id },
+  });
+  await expectApiOk(
+    await page.request.post(`/api/orgs/${aarogyaStrength.id}/pt-subscriptions`, {
+      data: {
+        memberUserId: minor.id,
+        trainerUserId: trainer.id,
+        ptPlanId: ptPlan.id,
+        amountPaise: ptPlan.pricePaise,
+        paymentMode: "CASH",
+        totalSessions: ptPlan.sessionCount ?? 4,
+        notes: "Phase 1 under-18 gate removal regression.",
+      },
+    }),
+  );
+
+  await expect(
+    prisma.guardianConsent.count({ where: { minorUserId: minor.id } }),
+  ).resolves.toBe(guardianRowsBefore);
 });
 
 test("AI plan assistant is launch-gated while trainer manual plans remain assignable", async ({

@@ -67,9 +67,6 @@ export function assertAIAllowed(input: {
   quota: AIQuotaState;
   user: UserSafetyState;
 }): void {
-  if (input.user.isMinor && !input.user.guardianConsentGranted) {
-    throw new AIGuardError("guardian_consent_required", "Guardian consent required for AI", ["minor_guardian_consent"]);
-  }
   if (!input.user.aiConsent) {
     throw new AIGuardError("ai_consent_required", "AI personalization consent required", ["ai_consent_required"]);
   }
@@ -116,13 +113,13 @@ export async function runAIGuardedRequest(input: {
   if (input.requestType === "STRUCTURED_PLAN") {
     const response = await input.provider.generateStructuredPlan({
       prompt: guardedPrompt,
-      safeMode: input.user.isMinor
+      safeMode: false
     });
     return { response, tokenEstimate: estimateTokens(input.prompt, JSON.stringify(response)), safetyFlags: safety.flags, quotaConsumed: 1 };
   }
   const response = await input.provider.generateText({
     prompt: guardedPrompt,
-    safeMode: input.user.isMinor,
+    safeMode: false,
     ...(input.resources ? { resources: input.resources } : {})
   });
   return { response, tokenEstimate: estimateTokens(input.prompt, response), safetyFlags: safety.flags, quotaConsumed: 1 };

@@ -486,13 +486,21 @@ describe("minor and AI restrictions", () => {
     hasProfilePhoto: true,
   };
 
-  it("blocks minors before guardian consent", () => {
+  it("allows minors without legacy approval", () => {
     expect(() =>
       assertMinorCanUseFeature(
         { ...adult, isMinor: true, guardianConsentGranted: false },
         "JOIN_GYM",
       ),
-    ).toThrow("Guardian consent required");
+    ).not.toThrow();
+    expect(() =>
+      assertAIAllowed({
+        role: "MEMBER",
+        requestType: "CHAT",
+        quota: defaultAIQuotaForRole("MEMBER"),
+        user: { ...adult, isMinor: true, guardianConsentGranted: false },
+      }),
+    ).not.toThrow();
   });
 
   it("enforces AI quota, scope, safety, and image permissions", async () => {

@@ -26,14 +26,14 @@ describe("personal tracking service", () => {
     expect(updated.durationMinutes).toBe(85);
   });
 
-  it("keeps private visibility for minors", () => {
+  it("honors requested visibility for minors", () => {
     expect(
       service.normalizeVisibility({
         requestedVisibility: "TRAINER_VISIBLE",
         isMinor: true,
         guardianConsentGranted: true
       })
-    ).toBe("PRIVATE");
+    ).toBe("TRAINER_VISIBLE");
   });
 
   it("computes weekly consistency and plan completion impact", () => {
