@@ -58,6 +58,15 @@ export default function TrainerLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="payouts"
+        options={{
+          title: "Payouts",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "wallet" : "wallet-outline"} size={22} color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen name="clients/[id]" options={{ href: null }} />
     </Tabs>
   );

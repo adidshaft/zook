@@ -19,6 +19,7 @@ const sectionAccessPermissions: Record<string, Permission[]> = {
   "plans/offers": ["COUPONS_MANAGE"],
   "plans/referrals": ["REFERRALS_MANAGE"],
   payments: ["PAYMENTS_VIEW", "PAYMENTS_RECORD_OFFLINE"],
+  payouts: ["TRAINERS_MANAGE"],
   "payments/refunds": ["PAYMENTS_REFUND"],
   branches: ["ORG_MANAGE_LOCATION"],
   audit: ["PRIVACY_VIEW_AUDIT"],

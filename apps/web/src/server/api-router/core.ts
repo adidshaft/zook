@@ -165,6 +165,16 @@ import {
 } from "../domains/members";
 import { getOrganizationDashboardData } from "../domains/overview";
 import { getOrganizationRecentPayments } from "../domains/payments";
+import {
+  accruePtClawback,
+  accruePtSessionFee,
+  accruePtSubscriptionCommission,
+  addPayoutAdjustment,
+  getPayoutConfig,
+  listPayouts,
+  markPayoutPaid,
+  upsertPayoutConfig,
+} from "../domains/payouts";
 import { extractPlanExercises, getPlanExercisesForUser } from "../domains/plans";
 import { getMyShopOrders, getOrganizationActiveShopOrders } from "../domains/shop-orders";
 
@@ -968,6 +978,30 @@ const ptSubscriptionSchema = z.object({
   totalSessions: z.number().int().positive().optional(),
   notes: z.string().max(500).optional(),
   proofAssetId: z.string().optional(),
+});
+
+const ptSessionLogSchema = z.object({
+  subscriptionId: z.string(),
+  sessionAt: z.string().datetime().optional(),
+  notes: z.string().max(500).optional(),
+});
+
+const payoutConfigSchema = z.object({
+  baseMonthlyPaise: z.number().int().nonnegative(),
+  ptCommissionPercent: z.number().int().min(0).max(100),
+  perSessionFeePaise: z.number().int().nonnegative(),
+  payDay: z.number().int().min(1).max(28),
+});
+
+const payoutAdjustmentSchema = z.object({
+  amountPaise: z.number().int(),
+  description: z.string().trim().min(2).max(160),
+});
+
+const payoutMarkPaidSchema = z.object({
+  method: z.string().trim().min(2).max(40),
+  note: z.string().trim().max(240).optional(),
+  proofFileAssetId: z.string().optional(),
 });
 
 const planAssignSchema = z.object({
@@ -12985,6 +13019,123 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
     return ok({ note: body.note });
   }
   if (
+    request.method === "GET" &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "payout-config"])
+  ) {
+    const orgId = path[1]!;
+    const trainerId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const requesterId = requireAuth(ctx);
+    if (requesterId === trainerId) {
+      requireOrgPermission(ctx, orgId, "PT_RECORD");
+    } else {
+      requireOrgPermission(ctx, orgId, "TRAINERS_MANAGE");
+    }
+    await assertOrgUser({ orgId, userId: trainerId, role: "TRAINER" });
+    return ok({ config: await getPayoutConfig(orgId, trainerId) });
+  }
+  if (
+    request.method === "GET" &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "payouts"])
+  ) {
+    const orgId = path[1]!;
+    const trainerId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const requesterId = requireAuth(ctx);
+    if (requesterId === trainerId) {
+      requireOrgPermission(ctx, orgId, "PT_RECORD");
+    } else {
+      requireOrgPermission(ctx, orgId, "TRAINERS_MANAGE");
+    }
+    const month = request.nextUrl.searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
+    const payouts = await listPayouts(orgId, month);
+    return ok({ payouts: payouts.filter((payout) => payout.trainerId === trainerId) });
+  }
+  if (
+    request.method === "PUT" &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "payout-config"])
+  ) {
+    const orgId = path[1]!;
+    const trainerId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "TRAINERS_MANAGE");
+    await assertOrgUser({ orgId, userId: trainerId, role: "TRAINER" });
+    const body = payoutConfigSchema.parse(await readJson(request));
+    const config = await upsertPayoutConfig(orgId, trainerId, body);
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "trainer.payout_config.updated",
+      entityType: "trainer_payout_config",
+      entityId: config.id,
+      metadata: { trainerId },
+    });
+    return ok({ config });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "payouts"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "TRAINERS_MANAGE");
+    const month = request.nextUrl.searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
+    return ok({ payouts: await listPayouts(orgId, month) });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "payouts", /.+/, "adjust"])) {
+    const orgId = path[1]!;
+    const payoutId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "TRAINERS_MANAGE");
+    const body = payoutAdjustmentSchema.parse(await readJson(request));
+    const line = await addPayoutAdjustment({
+      orgId,
+      payoutId,
+      amountPaise: body.amountPaise,
+      description: body.description,
+      createdById: userId,
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "trainer.payout_adjusted",
+      entityType: "trainer_payout_line",
+      entityId: line.id,
+      metadata: { payoutId, amountPaise: body.amountPaise },
+    });
+    return ok({ line });
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "payouts", /.+/, "mark-paid"])
+  ) {
+    const orgId = path[1]!;
+    const payoutId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "TRAINERS_MANAGE");
+    const body = payoutMarkPaidSchema.parse(await readJson(request));
+    if (body.proofFileAssetId) {
+      await getOrganizationScopedFileAsset(body.proofFileAssetId, orgId, ["payment_proof"]);
+    }
+    const payout = await markPayoutPaid({
+      orgId,
+      payoutId,
+      paidById: userId,
+      method: body.method,
+      ...(body.note ? { note: body.note } : {}),
+      ...(body.proofFileAssetId ? { proofFileAssetId: body.proofFileAssetId } : {}),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "trainer.payout_paid",
+      entityType: "trainer_payout",
+      entityId: payout.id,
+      metadata: { method: body.method },
+    });
+    return ok({ payout });
+  }
+  if (
     request.method === "POST" &&
     pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients", /.+/, "body-progress"])
   ) {
@@ -13316,7 +13467,82 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
         recordedById: userId,
       }),
     });
+    await accruePtSubscriptionCommission({
+      orgId,
+      trainerId: body.trainerUserId,
+      subscriptionId: sub.id,
+      amountPaise: sub.amountPaise,
+      createdById: userId,
+    });
     return ok({ subscription: sub });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "pt-sessions"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
+    const body = ptSessionLogSchema.parse(await readJson(request));
+    const subscription = await prisma.personalTrainingSubscription.findFirst({
+      where: { id: body.subscriptionId, orgId, status: "ACTIVE" },
+    });
+    if (!subscription) {
+      throw notFoundError("Active PT subscription not found.");
+    }
+    if (ctx.roles.includes("TRAINER") && subscription.trainerUserId !== userId) {
+      throw forbiddenError("You can only log sessions for your assigned PT subscriptions.");
+    }
+    const sessionAt = body.sessionAt ? new Date(body.sessionAt) : new Date();
+    const log = await prisma.$transaction(async (tx) => {
+      const created = await tx.personalTrainingSessionLog.create({
+        data: {
+          orgId,
+          subscriptionId: subscription.id,
+          trainerUserId: subscription.trainerUserId,
+          memberUserId: subscription.memberUserId,
+          sessionAt,
+          notes: body.notes ? (sanitizeRichText(body.notes) ?? null) : null,
+        },
+      });
+      await tx.personalTrainingSubscription.update({
+        where: { id: subscription.id },
+        data:
+          subscription.remainingSessions !== null && subscription.remainingSessions !== undefined
+            ? { remainingSessions: { decrement: 1 } }
+            : {},
+      });
+      return created;
+    });
+    await accruePtSessionFee({
+      orgId,
+      trainerId: subscription.trainerUserId,
+      sessionLogId: log.id,
+      sessionAt,
+      createdById: userId,
+    });
+    return ok({ session: log });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "pt-subscriptions", /.+/, "refund"])) {
+    const orgId = path[1]!;
+    const subscriptionId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
+    const subscription = await prisma.personalTrainingSubscription.findFirst({
+      where: { id: subscriptionId, orgId },
+    });
+    if (!subscription) {
+      throw notFoundError("PT subscription not found.");
+    }
+    await prisma.personalTrainingSubscription.update({
+      where: { id: subscription.id },
+      data: { status: "REFUNDED" },
+    });
+    const line = await accruePtClawback({
+      orgId,
+      trainerId: subscription.trainerUserId,
+      subscriptionId: subscription.id,
+      amountPaise: subscription.amountPaise,
+      createdById: userId,
+    });
+    return ok({ refunded: true, line });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "plans"])) {
     const orgId = path[1]!;

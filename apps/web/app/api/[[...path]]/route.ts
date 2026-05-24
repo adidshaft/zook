@@ -33,7 +33,7 @@ function withCors(request: NextRequest, response: Response) {
   }
   const headers = new Headers(response.headers);
   headers.set("Access-Control-Allow-Origin", origin!);
-  headers.set("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
+  headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
   headers.set(
     "Access-Control-Allow-Headers",
     "authorization,content-type,x-request-id,x-zook-org-id,x-zook-branch-id",
@@ -53,6 +53,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pat
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ path?: string[] }> }) {
+  const params = await context.params;
+  return withCors(request, await handleApi(request, params.path ?? []));
+}
+
+export async function PUT(request: NextRequest, context: { params: Promise<{ path?: string[] }> }) {
   const params = await context.params;
   return withCors(request, await handleApi(request, params.path ?? []));
 }
