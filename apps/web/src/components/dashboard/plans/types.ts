@@ -57,7 +57,7 @@ export type PlansSectionProps = {
   deleteMembershipPlan: (planId: string) => Promise<void>;
 };
 
-export type GrowthRouteProps = Pick<
+export type GrowthRouteProps = { orgId: string } & Pick<
   OverviewOperationalSectionProps,
   | "referralPolicy"
   | "referralPolicyState"
