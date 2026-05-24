@@ -24,6 +24,8 @@
 3. Apply migrations with `pnpm db:deploy` before promoting web traffic.
 4. Run the load smoke baseline with `ZOOK_BASE_URL=https://staging.example pnpm test:load`.
 5. Schedule `pnpm account-deletion:purge` daily. Default retention is `ACCOUNT_DELETION_RETENTION_DAYS=30`.
+   Vercel cron also calls `/api/cron/account-deletion-purge` at `0 3 * * *`; the endpoint skips
+   when a previous purge is still running.
 6. Keep staging/prod HTTPS-only. Session cookies are always `secure`.
 
 ## Rollback
@@ -38,6 +40,15 @@
 Use `docs/production-provider-certification.md` as the evidence checklist and
 `docs/production-incident-checklist.md` as the live support checklist. Do not
 mark a provider certified from code inspection alone.
+
+Manual gate checklists:
+- Razorpay webhook certification: `docs/razorpay-webhook-certification.md`
+- OAuth real-device smoke: `docs/oauth-smoke-checklist.md`
+- Expo push physical-device QA: `docs/expo-push-device-qa.md`
+- Sentry certification: `docs/sentry-cert.md`
+- Supabase backup posture: `docs/supabase-backup-cert.md`
+- Resend transactional smoke: `docs/resend-transactional-smoke.md`
+- Load smoke template: `docs/load-smoke-template.md`
 
 Razorpay:
 - Configure live key ID, secret, and webhook secret.

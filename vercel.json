@@ -1,5 +1,15 @@
 {
   "buildCommand": "pnpm db:generate && npx turbo run build --filter=@zook/web...",
   "outputDirectory": "apps/web/.next",
-  "installCommand": "pnpm install"
+  "installCommand": "pnpm install",
+  "crons": [
+    {
+      "path": "/api/cron/renewal-reminders",
+      "schedule": "30 1 * * *"
+    },
+    {
+      "path": "/api/cron/account-deletion-purge",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }
