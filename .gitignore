@@ -36,3 +36,4 @@ packages/figma-icon-builder/dist/
 .claude/
 .codex-pet-runs/
 apps/web/.local/
+scratch/
