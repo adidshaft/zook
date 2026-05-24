@@ -77,6 +77,43 @@ type PlatformPaymentRow = {
   createdAt: string | Date;
 };
 
+type PlatformBroadcastRow = {
+  id: string;
+  title: string;
+  body: string;
+  severity: string;
+  status: string;
+  targetOrgIds: string[];
+  targetRoles: string[];
+  scheduledAt?: string | Date | null;
+  expiresAt?: string | Date | null;
+  publishedAt?: string | Date | null;
+  createdAt: string | Date;
+};
+
+type PlatformModerationRow = {
+  id: string;
+  orgId: string;
+  kind: string;
+  targetId?: string | null;
+  status: string;
+  reason?: string | null;
+  createdAt: string | Date;
+  reviewedAt?: string | Date | null;
+};
+
+type PlatformImpersonationRow = {
+  id: string;
+  platformAdminUserId: string;
+  targetUserId: string;
+  targetOrgId?: string | null;
+  reason: string;
+  startedAt: string | Date;
+  expiresAt: string | Date;
+  endedAt?: string | Date | null;
+  actionsCount: number;
+};
+
 type PlatformFlagRow = {
   key: string;
   enabled: boolean;
@@ -137,6 +174,8 @@ export function PlatformOperationsPanel({
   const [paymentQuery, setPaymentQuery] = useState("");
   const [paymentRows, setPaymentRows] = useState<PlatformPaymentRow[]>([]);
   const [supportNotice, setSupportNotice] = useState("");
+  const [broadcastBusyId, setBroadcastBusyId] = useState<string | null>(null);
+  const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
 
   const organizationsState = useOperationalResource<{ orgs: PlatformOrganization[] }>({
     path: "/api/platform/orgs",
@@ -163,6 +202,17 @@ export function PlatformOperationsPanel({
   const auditState = useOperationalResource<{ auditLogs: PlatformAuditRow[] }>({
     path: "/api/platform/audit",
   });
+  const broadcastsState = useOperationalResource<{ broadcasts: PlatformBroadcastRow[] }>({
+    path: "/api/platform/broadcasts",
+  });
+  const moderationState = useOperationalResource<{ flags: PlatformModerationRow[] }>({
+    path: "/api/platform/moderation",
+  });
+  const impersonationsState = useOperationalResource<{ impersonations: PlatformImpersonationRow[] }>(
+    {
+      path: "/api/platform/impersonations",
+    },
+  );
 
   const organizations = organizationsState.data?.orgs ?? initialOrgs;
   const providers = providersState.data?.providers ?? {};
@@ -172,6 +222,9 @@ export function PlatformOperationsPanel({
   const featureFlags = featureFlagsState.data?.flags ?? [];
   const webhooks = webhooksState.data?.attempts ?? [];
   const auditLogs = auditState.data?.auditLogs ?? [];
+  const broadcasts = broadcastsState.data?.broadcasts ?? [];
+  const moderationFlags = moderationState.data?.flags ?? [];
+  const impersonations = impersonationsState.data?.impersonations ?? [];
 
   const misconfiguredProviders = providerEntries.filter(
     ([, provider]) => provider.status === "misconfigured" || provider.status === "unsupported",
@@ -291,6 +344,88 @@ export function PlatformOperationsPanel({
     }
   }
 
+  async function extendOrganizationTrial(orgId: string) {
+    const days = Number(window.prompt("Days to extend")?.trim());
+    if (!Number.isInteger(days) || days < 1) return;
+    const reason = window.prompt("Reason")?.trim();
+    if (!reason) return;
+    await runOrgAction(orgId, `/api/platform/orgs/${orgId}/trial/extend`, "POST", {
+      days,
+      reason,
+    });
+  }
+
+  async function adjustOrganizationCredit(orgId: string) {
+    const rupees = Number(window.prompt("Credit adjustment in rupees. Use negative for debit.")?.trim());
+    if (!Number.isFinite(rupees) || rupees === 0) return;
+    const reason = window.prompt("Reason")?.trim();
+    if (!reason) return;
+    await runOrgAction(orgId, `/api/platform/orgs/${orgId}/credit`, "POST", {
+      paise: Math.round(rupees * 100),
+      reason,
+    });
+  }
+
+  async function changeOrganizationTier(orgId: string) {
+    const tier = window.prompt("Tier: FREE, STARTER, GROWTH, PRO")?.trim().toUpperCase();
+    if (!tier || !["FREE", "STARTER", "GROWTH", "PRO"].includes(tier)) return;
+    await runOrgAction(orgId, `/api/platform/orgs/${orgId}/tier`, "PATCH", { tier });
+  }
+
+  async function renameOrganization(org: PlatformOrganization) {
+    const name = window.prompt("New organization name", org.name)?.trim();
+    if (!name) return;
+    const username = window.prompt("New username", org.username)?.trim();
+    if (!username) return;
+    const reason = window.prompt("Reason")?.trim();
+    if (!reason) return;
+    await runOrgAction(org.id, `/api/platform/orgs/${org.id}/rename`, "POST", {
+      name,
+      username,
+      reason,
+    });
+  }
+
+  async function transferOrganizationOwnership(orgId: string) {
+    const newOwnerUserId = window.prompt("New owner user ID")?.trim();
+    if (!newOwnerUserId) return;
+    const reason = window.prompt("Reason")?.trim();
+    if (!reason) return;
+    await runOrgAction(orgId, `/api/platform/orgs/${orgId}/transfer-ownership`, "POST", {
+      newOwnerUserId,
+      reason,
+    });
+  }
+
+  async function bulkImportOrganizationMembers(orgId: string) {
+    const csv = window.prompt("CSV with name,email header")?.trim();
+    if (!csv) return;
+    await runOrgAction(orgId, `/api/platform/orgs/${orgId}/bulk-import-members`, "POST", {
+      csv,
+    });
+  }
+
+  async function runOrgAction(
+    orgId: string,
+    path: string,
+    method: "POST" | "PATCH",
+    body: Record<string, unknown>,
+  ) {
+    try {
+      setStatusError("");
+      setBusyOrgId(orgId);
+      await webApiFetch(path, { method, body });
+      setSupportNotice("Organization updated");
+      organizationsState.reload();
+    } catch (cause) {
+      setStatusError(
+        cause instanceof Error ? cause.message : "Unable to update organization.",
+      );
+    } finally {
+      setBusyOrgId(null);
+    }
+  }
+
   async function searchUsers() {
     if (!userQuery.trim()) return;
     const response = await webApiFetch<{ users: PlatformUserRow[] }>(
@@ -352,6 +487,73 @@ export function PlatformOperationsPanel({
     webhooksState.reload();
   }
 
+  async function createBroadcast() {
+    const title = window.prompt("Broadcast title")?.trim();
+    if (!title) return;
+    const body = window.prompt("Broadcast body")?.trim();
+    if (!body) return;
+    const severity =
+      window.prompt("Severity: INFO, WARN, CRITICAL", "INFO")?.trim().toUpperCase() || "INFO";
+    const status =
+      window.prompt("Status: DRAFT, SCHEDULED, LIVE", "DRAFT")?.trim().toUpperCase() || "DRAFT";
+    await webApiFetch("/api/platform/broadcasts", {
+      method: "POST",
+      body: {
+        title,
+        body,
+        severity: ["INFO", "WARN", "CRITICAL"].includes(severity) ? severity : "INFO",
+        status: ["DRAFT", "SCHEDULED", "LIVE"].includes(status) ? status : "DRAFT",
+        targetOrgIds: [],
+        targetRoles: [],
+      },
+    });
+    setSupportNotice("Broadcast saved");
+    broadcastsState.reload();
+  }
+
+  async function updateBroadcastStatus(broadcast: PlatformBroadcastRow, status: "DRAFT" | "LIVE" | "EXPIRED") {
+    try {
+      setBroadcastBusyId(broadcast.id);
+      await webApiFetch(`/api/platform/broadcasts/${broadcast.id}`, {
+        method: "PATCH",
+        body: { status },
+      });
+      setSupportNotice(status === "LIVE" ? "Broadcast published" : "Broadcast updated");
+      broadcastsState.reload();
+    } finally {
+      setBroadcastBusyId(null);
+    }
+  }
+
+  async function deleteBroadcast(broadcastId: string) {
+    const confirmed = window.confirm("Delete this broadcast?");
+    if (!confirmed) return;
+    try {
+      setBroadcastBusyId(broadcastId);
+      await webApiFetch(`/api/platform/broadcasts/${broadcastId}`, { method: "DELETE" });
+      setSupportNotice("Broadcast deleted");
+      broadcastsState.reload();
+    } finally {
+      setBroadcastBusyId(null);
+    }
+  }
+
+  async function decideModeration(flagId: string, decision: "APPROVED" | "REMOVED") {
+    const reason = window.prompt("Reason")?.trim();
+    if (!reason) return;
+    try {
+      setModerationBusyId(flagId);
+      await webApiFetch("/api/platform/moderation", {
+        method: "POST",
+        body: { id: flagId, decision, reason },
+      });
+      setSupportNotice("Moderation decision saved");
+      moderationState.reload();
+    } finally {
+      setModerationBusyId(null);
+    }
+  }
+
   return (
     <div className="grid gap-4">
       <GlassCard>
@@ -407,7 +609,12 @@ export function PlatformOperationsPanel({
             badge={supportNotice ? <Pill tone="lime">{supportNotice}</Pill> : <Pill tone="blue">Live</Pill>}
           />
           <div className="mt-5 grid gap-4 xl:grid-cols-2">
-            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+            <div id="payments" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <SectionHeader
+                eyebrow="Payments"
+                title="Cross-tenant payment search"
+                description="Find payments across gyms and submit audited platform refunds."
+              />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   className="min-h-10 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 text-sm text-white outline-none"
@@ -516,8 +723,208 @@ export function PlatformOperationsPanel({
         </GlassCard>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div id="broadcasts" className="scroll-mt-5">
+          <GlassCard>
+            <SectionHeader
+              eyebrow="Broadcasts"
+              title="Platform broadcasts"
+              description="Create operational notices and publish them to active gyms."
+              badge={<Pill tone="blue">{broadcasts.length} loaded</Pill>}
+              action={
+                <ZookButton size="sm" onClick={() => void createBroadcast()}>
+                  New broadcast
+                </ZookButton>
+              }
+            />
+            <div className="mt-5">
+              <DataTable
+                columns={[
+                  {
+                    id: "title",
+                    header: "Broadcast",
+                    render: (broadcast) => (
+                      <div>
+                        <p className="font-medium text-white">{broadcast.title}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-white/45">{broadcast.body}</p>
+                      </div>
+                    ),
+                  },
+                  {
+                    id: "severity",
+                    header: "Severity",
+                    render: (broadcast) => <StatusPill value={formatEnumLabel(broadcast.severity)} />,
+                  },
+                  {
+                    id: "status",
+                    header: "Status",
+                    render: (broadcast) => <StatusPill value={formatEnumLabel(broadcast.status)} />,
+                  },
+                  {
+                    id: "created",
+                    header: "Created",
+                    render: (broadcast) => formatDateTime(broadcast.createdAt),
+                  },
+                  {
+                    id: "actions",
+                    header: "Actions",
+                    align: "right",
+                    render: (broadcast) => (
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <ZookButton
+                          size="sm"
+                          tone="ghost"
+                          disabled={broadcastBusyId === broadcast.id || broadcast.status === "LIVE"}
+                          onClick={() => void updateBroadcastStatus(broadcast, "LIVE")}
+                        >
+                          Publish
+                        </ZookButton>
+                        <ZookButton
+                          size="sm"
+                          tone="ghost"
+                          disabled={broadcastBusyId === broadcast.id || broadcast.status === "EXPIRED"}
+                          onClick={() => void updateBroadcastStatus(broadcast, "EXPIRED")}
+                        >
+                          Expire
+                        </ZookButton>
+                        <ZookButton
+                          size="sm"
+                          tone="danger"
+                          disabled={broadcastBusyId === broadcast.id}
+                          onClick={() => void deleteBroadcast(broadcast.id)}
+                        >
+                          Delete
+                        </ZookButton>
+                      </div>
+                    ),
+                  },
+                ]}
+                rows={broadcasts}
+                rowKey={(broadcast) => broadcast.id}
+                empty="No broadcasts yet."
+              />
+            </div>
+          </GlassCard>
+        </div>
+
+        <div id="moderation" className="scroll-mt-5">
+          <GlassCard>
+            <SectionHeader
+              eyebrow="Moderation"
+              title="Content moderation queue"
+              description="Review flagged content and record a platform decision."
+              badge={<Pill tone={moderationFlags.some((flag) => flag.status === "PENDING") ? "amber" : "lime"}>{moderationFlags.length} flags</Pill>}
+            />
+            <div className="mt-5">
+              <DataTable
+                columns={[
+                  {
+                    id: "flag",
+                    header: "Flag",
+                    render: (flag) => (
+                      <div>
+                        <p className="font-medium text-white">{formatEnumLabel(flag.kind)}</p>
+                        <p className="mt-1 text-xs text-white/45">{flag.targetId ?? flag.orgId}</p>
+                      </div>
+                    ),
+                  },
+                  {
+                    id: "status",
+                    header: "Status",
+                    render: (flag) => <StatusPill value={formatEnumLabel(flag.status)} />,
+                  },
+                  {
+                    id: "created",
+                    header: "Created",
+                    render: (flag) => formatDateTime(flag.createdAt),
+                  },
+                  {
+                    id: "actions",
+                    header: "Actions",
+                    align: "right",
+                    render: (flag) => (
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <ZookButton
+                          size="sm"
+                          tone="ghost"
+                          disabled={moderationBusyId === flag.id || flag.status !== "PENDING"}
+                          onClick={() => void decideModeration(flag.id, "APPROVED")}
+                        >
+                          Approve
+                        </ZookButton>
+                        <ZookButton
+                          size="sm"
+                          tone="danger"
+                          disabled={moderationBusyId === flag.id || flag.status !== "PENDING"}
+                          onClick={() => void decideModeration(flag.id, "REMOVED")}
+                        >
+                          Remove
+                        </ZookButton>
+                      </div>
+                    ),
+                  },
+                ]}
+                rows={moderationFlags}
+                rowKey={(flag) => flag.id}
+                empty="No moderation flags."
+              />
+            </div>
+          </GlassCard>
+        </div>
+      </div>
+
+      <div id="impersonations" className="scroll-mt-5">
         <GlassCard>
+          <SectionHeader
+            eyebrow="Impersonations"
+            title="Support impersonation history"
+            description="Recent audited sessions started by platform support."
+            badge={<Pill tone="blue">{impersonations.length} sessions</Pill>}
+          />
+          <div className="mt-5">
+            <DataTable
+              columns={[
+                {
+                  id: "target",
+                  header: "Target",
+                  render: (session) => (
+                    <div>
+                      <p className="font-medium text-white">{session.targetUserId}</p>
+                      <p className="mt-1 text-xs text-white/45">{session.targetOrgId ?? "No org scope"}</p>
+                    </div>
+                  ),
+                },
+                {
+                  id: "reason",
+                  header: "Reason",
+                  render: (session) => session.reason,
+                },
+                {
+                  id: "started",
+                  header: "Started",
+                  render: (session) => formatDateTime(session.startedAt),
+                },
+                {
+                  id: "status",
+                  header: "Status",
+                  render: (session) => (
+                    <StatusPill
+                      value={session.endedAt ? "Ended" : new Date(session.expiresAt).getTime() < Date.now() ? "Expired" : "Active"}
+                      tone={session.endedAt ? "blue" : new Date(session.expiresAt).getTime() < Date.now() ? "amber" : "lime"}
+                    />
+                  ),
+                },
+              ]}
+              rows={impersonations}
+              rowKey={(session) => session.id}
+              empty="No impersonation sessions."
+            />
+          </div>
+        </GlassCard>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <GlassCard id="feature-flags">
           <SectionHeader eyebrow="Flags" title="Feature flags" />
           <div className="mt-5 grid gap-3">
             {featureFlags.slice(0, 8).map((flag) => (
@@ -541,7 +948,7 @@ export function PlatformOperationsPanel({
           </div>
         </GlassCard>
 
-        <GlassCard>
+        <GlassCard id="webhooks">
           <SectionHeader eyebrow="Webhooks" title="Webhook monitor" />
           <div className="mt-5 grid gap-3">
             {webhooks.slice(0, 8).map((attempt) => (
@@ -560,7 +967,7 @@ export function PlatformOperationsPanel({
           </div>
         </GlassCard>
 
-        <GlassCard>
+        <GlassCard id="audit">
           <SectionHeader eyebrow="Audit" title="Global audit" />
           <div className="mt-5 grid gap-3">
             {auditLogs.slice(0, 8).map((log) => (
@@ -795,6 +1202,54 @@ export function PlatformOperationsPanel({
                           disabled={busyOrgId === org.id || org.status === "DELETED"}
                         >
                           Soft delete
+                        </ZookButton>
+                        <ZookButton
+                          tone="ghost"
+                          size="sm"
+                          onClick={() => void extendOrganizationTrial(org.id)}
+                          disabled={busyOrgId === org.id}
+                        >
+                          Extend trial
+                        </ZookButton>
+                        <ZookButton
+                          tone="ghost"
+                          size="sm"
+                          onClick={() => void adjustOrganizationCredit(org.id)}
+                          disabled={busyOrgId === org.id}
+                        >
+                          Credit
+                        </ZookButton>
+                        <ZookButton
+                          tone="ghost"
+                          size="sm"
+                          onClick={() => void changeOrganizationTier(org.id)}
+                          disabled={busyOrgId === org.id}
+                        >
+                          Tier
+                        </ZookButton>
+                        <ZookButton
+                          tone="ghost"
+                          size="sm"
+                          onClick={() => void renameOrganization(org)}
+                          disabled={busyOrgId === org.id}
+                        >
+                          Rename
+                        </ZookButton>
+                        <ZookButton
+                          tone="danger"
+                          size="sm"
+                          onClick={() => void transferOrganizationOwnership(org.id)}
+                          disabled={busyOrgId === org.id}
+                        >
+                          Transfer owner
+                        </ZookButton>
+                        <ZookButton
+                          tone="ghost"
+                          size="sm"
+                          onClick={() => void bulkImportOrganizationMembers(org.id)}
+                          disabled={busyOrgId === org.id}
+                        >
+                          Import CSV
                         </ZookButton>
                       </div>
                     ),

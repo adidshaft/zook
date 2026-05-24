@@ -171,6 +171,7 @@ import {
   accruePtSessionFee,
   accruePtSubscriptionCommission,
   addPayoutAdjustment,
+  draftPayoutsForMonth,
   getPayoutConfig,
   listPayouts,
   markPayoutPaid,
@@ -2931,6 +2932,10 @@ function chunkArray<T>(items: T[], size: number) {
   return chunks;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function resolvePlatformBroadcastRecipients(input: {
   targetOrgIds: string[];
   targetRoles: OrgRole[];
@@ -3002,8 +3007,12 @@ async function fanOutPlatformBroadcast(input: {
   });
   let notifications = 0;
   let recipients = 0;
+  let chunksSent = 0;
   for (const [orgId, userIds] of recipientsByOrg) {
     for (const chunk of chunkArray(userIds, 500)) {
+      if (chunksSent > 0) {
+        await sleep(60_000);
+      }
       const notification = await createDirectNotification({
         orgId,
         createdById: input.broadcast.createdByUserId,
@@ -3021,9 +3030,10 @@ async function fanOutPlatformBroadcast(input: {
       });
       notifications += notification ? 1 : 0;
       recipients += chunk.length;
+      chunksSent++;
     }
   }
-  return { notifications, recipients };
+  return { notifications, recipients, chunks: chunksSent, throttleMsBetweenChunks: 60_000 };
 }
 
 async function processVerifiedPaymentWebhookEvent(input: {
@@ -9523,6 +9533,40 @@ export async function handleHealthReadiness(request: NextRequest, path: string[]
     return ok({ inspected: refunds.length, reconciled, skipped });
   }
 
+  if (request.method === "POST" && pathMatches(path, ["cron", "trainer-payouts-draft"])) {
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    const authHeader = request.headers.get("authorization");
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      throw forbiddenError("Invalid cron authorization.");
+    }
+    if (!cronSecret && getAppEnv() === "production") {
+      throw forbiddenError("CRON_SECRET must be set in production.");
+    }
+
+    const month = request.nextUrl.searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
+    const orgs = await prisma.organization.findMany({
+      where: { status: { notIn: ["DELETED", "CANCELLED"] } },
+      select: { id: true },
+      take: 500,
+    });
+    let drafted = 0;
+    let skipped = 0;
+    const failures: Array<{ orgId: string; error: string }> = [];
+    for (const org of orgs) {
+      try {
+        const payouts = await draftPayoutsForMonth(org.id, month);
+        drafted += payouts.length;
+      } catch (cause) {
+        skipped++;
+        failures.push({
+          orgId: org.id,
+          error: cause instanceof Error ? cause.message : "Unknown payout draft error",
+        });
+      }
+    }
+    return ok({ month, organizations: orgs.length, drafted, skipped, failures: failures.slice(0, 10) });
+  }
+
   return undefined;
 }
 
@@ -13478,7 +13522,7 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
     return ok({ entry });
   }
   if (
-    request.method === "POST" &&
+    (request.method === "GET" || request.method === "POST") &&
     pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients", /.+/, "diet-plans"])
   ) {
     const orgId = path[1]!;
@@ -13496,6 +13540,25 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
     });
     if (!assignment) {
       throw notFoundError("Trainer client not found");
+    }
+    if (request.method === "GET") {
+      const plans = await prisma.dietPlan.findMany({
+        where: { orgId, trainerId, memberId: clientId },
+        orderBy: { updatedAt: "desc" },
+        take: 50,
+      });
+      const meals = plans.length
+        ? await prisma.dietPlanMeal.findMany({
+            where: { dietPlanId: { in: plans.map((plan) => plan.id) } },
+            orderBy: [{ dietPlanId: "asc" }, { order: "asc" }],
+          })
+        : [];
+      return ok({
+        plans: plans.map((plan) => ({
+          ...plan,
+          meals: meals.filter((meal) => meal.dietPlanId === plan.id),
+        })),
+      });
     }
     const rawBody = (await readJson(request)) as Record<string, unknown>;
     const body = dietPlanSchema.parse({ ...rawBody, memberId: clientId });
@@ -13555,6 +13618,108 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
         ...plan,
         meals: await prisma.dietPlanMeal.findMany({
           where: { dietPlanId: plan.id },
+          orderBy: { order: "asc" },
+        }),
+      },
+    });
+  }
+  if (
+    (request.method === "PATCH" || request.method === "DELETE") &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "clients", /.+/, "diet-plans", /.+/])
+  ) {
+    const orgId = path[1]!;
+    const trainerId = path[3]!;
+    const clientId = path[5]!;
+    const planId = path[7]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const requesterId = requireAuth(ctx);
+    if (requesterId === trainerId) {
+      requireOrgPermission(ctx, orgId, "PLANS_PUBLISH_ASSIGNED");
+    } else {
+      requireOrgPermission(ctx, orgId, "MEMBERS_VIEW");
+    }
+    const plan = await prisma.dietPlan.findFirst({
+      where: { id: planId, orgId, trainerId, memberId: clientId },
+    });
+    if (!plan) {
+      throw notFoundError("Diet plan not found");
+    }
+    if (request.method === "DELETE") {
+      await prisma.$transaction([
+        prisma.dietPlanMeal.deleteMany({ where: { dietPlanId: plan.id } }),
+        prisma.dietPlan.delete({ where: { id: plan.id } }),
+      ]);
+      await writeAuditLog({
+        request,
+        orgId,
+        actorUserId: requesterId,
+        action: "diet_plan.deleted",
+        entityType: "diet_plan",
+        entityId: plan.id,
+        riskLevel: "HIGH",
+        metadata: { trainerUserId: trainerId, memberUserId: clientId },
+      });
+      return ok({ deleted: true });
+    }
+    const rawBody = (await readJson(request)) as Record<string, unknown>;
+    const body = dietPlanSchema.partial().parse(rawBody);
+    const updated = await prisma.$transaction(async (tx) => {
+      const nextPlan = await tx.dietPlan.update({
+        where: { id: plan.id },
+        data: clean({
+          title: body.title,
+          branchId: body.branchId,
+          calorieTarget: body.calorieTarget,
+          proteinG: body.proteinG,
+          carbsG: body.carbsG,
+          fatsG: body.fatsG,
+          status: body.status,
+        }),
+      });
+      if (body.meals) {
+        await tx.dietPlanMeal.deleteMany({ where: { dietPlanId: plan.id } });
+        await tx.dietPlanMeal.createMany({
+          data: body.meals.map((meal, index) => ({
+            dietPlanId: plan.id,
+            name: meal.name,
+            timeOfDay: meal.timeOfDay ?? null,
+            items: meal.items,
+            calories: meal.calories ?? null,
+            proteinG: meal.proteinG ?? null,
+            carbsG: meal.carbsG ?? null,
+            fatsG: meal.fatsG ?? null,
+            order: meal.order ?? index,
+          })),
+        });
+      }
+      return nextPlan;
+    });
+    if (updated.status === "PUBLISHED" && plan.status !== "PUBLISHED") {
+      await createDirectNotification({
+        orgId,
+        createdById: requesterId,
+        type: "PLAN",
+        title: `New diet plan: ${updated.title}`,
+        body: "Open Zook to review today's meals and log updates.",
+        audience: "selected_member",
+        userIds: [clientId],
+        metadata: { dietPlanId: updated.id },
+      });
+    }
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: requesterId,
+      action: "diet_plan.updated",
+      entityType: "diet_plan",
+      entityId: updated.id,
+      metadata: { trainerUserId: trainerId, memberUserId: clientId, status: updated.status },
+    });
+    return ok({
+      plan: {
+        ...updated,
+        meals: await prisma.dietPlanMeal.findMany({
+          where: { dietPlanId: updated.id },
           orderBy: { order: "asc" },
         }),
       },

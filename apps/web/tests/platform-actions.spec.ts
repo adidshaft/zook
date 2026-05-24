@@ -83,16 +83,22 @@ test.describe("platform admin actions", () => {
     ).toBe(403);
   });
 
-  test("impersonation banner and billing override are visible product gaps", async ({ page }) => {
-    test.fail(
-      true,
-      "Platform impersonation and billing override controls are not currently exposed by the dashboard/API.",
-    );
+  test("platform operations exposes support, payments, broadcasts, moderation, and impersonations", async ({
+    page,
+  }) => {
     await loginWithSessionCookie(page, "platform@zook.local");
-    await page.goto("/platform?section=organizations");
-    expect(await page.getByRole("button", { name: /impersonate/i }).count()).toBeGreaterThan(0);
-    expect(await page.getByRole("button", { name: /override billing/i }).count()).toBeGreaterThan(
-      0,
-    );
+    await page.goto("/platform/users");
+    await expect(page.getByRole("heading", { name: /platform support console/i })).toBeVisible();
+    await page.goto("/platform/payments");
+    await expect(page.getByRole("heading", { name: /cross-tenant payment search/i })).toBeVisible();
+    await page.goto("/platform/broadcasts");
+    await expect(page.getByRole("heading", { name: /platform broadcasts/i })).toBeVisible();
+    await page.goto("/platform/moderation");
+    await expect(page.getByRole("heading", { name: /content moderation queue/i })).toBeVisible();
+    await page.goto("/platform/impersonations");
+    await expect(page.getByRole("heading", { name: /support impersonation history/i })).toBeVisible();
+    await page.goto("/platform/gyms");
+    await expect(page.getByRole("button", { name: /extend trial/i }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /transfer owner/i }).first()).toBeVisible();
   });
 });
