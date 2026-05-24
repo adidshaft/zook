@@ -1851,9 +1851,11 @@ model PersonalTrainingSessionLog {
   memberUserId   String
   sessionAt      DateTime @default(now())
   notes          String?
+  payoutLineId   String?
   createdAt      DateTime @default(now())
 
   @@index([orgId, subscriptionId])
+  @@index([orgId, trainerUserId, sessionAt])
 }
 
 model TrainerCommission {
@@ -1874,21 +1876,63 @@ model TrainerCommission {
   @@index([trainerId, period])
 }
 
+model TrainerPayoutConfig {
+  id                  String   @id @default(cuid())
+  orgId               String
+  trainerId           String
+  baseMonthlyPaise    Int      @default(0)
+  ptCommissionPercent Int      @default(0)
+  perSessionFeePaise  Int      @default(0)
+  payDay              Int      @default(5)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([orgId, trainerId])
+  @@index([orgId])
+}
+
 model TrainerPayout {
   id            String   @id @default(cuid())
   orgId         String
   trainerId     String
+  period        DateTime @default(now())
   totalPaise    Int
   bankAccount   Json?
   upiId         String?
   mode          String   @default("upi")
   status        String   @default("pending")
+  paidAt        DateTime?
+  paidById      String?
+  paidMethod    String?
+  paidNote      String?
+  proofFileAssetId String?
   transactionId String?
   failureReason String?
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  @@unique([orgId, trainerId, period])
   @@index([orgId, status])
   @@index([trainerId, createdAt])
+}
+
+model TrainerPayoutLine {
+  id             String   @id @default(cuid())
+  orgId          String
+  trainerId      String
+  payoutId       String?
+  period         DateTime
+  kind           String
+  sourceType     String?
+  sourceId       String?
+  description    String
+  amountPaise    Int
+  createdById    String?
+  createdAt      DateTime @default(now())
+
+  @@unique([orgId, trainerId, kind, sourceId])
+  @@index([orgId, trainerId, period])
+  @@index([payoutId])
 }
 
 model Class {

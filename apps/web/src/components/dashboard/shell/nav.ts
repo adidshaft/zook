@@ -107,6 +107,13 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         permissions: ["ORG_MANAGE_STAFF"],
       },
       {
+        key: "payouts",
+        label: "Payouts",
+        href: "/dashboard/payouts",
+        icon: ReceiptText,
+        permissions: ["TRAINERS_MANAGE"],
+      },
+      {
         key: "ai",
         label: "Plans & AI",
         href: "/dashboard/ai",
