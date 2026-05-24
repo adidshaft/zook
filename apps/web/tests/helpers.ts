@@ -22,11 +22,20 @@ export const QA_DEMO_ACCOUNT = {
 };
 
 export async function expectApiOk<T = unknown>(response: APIResponse) {
-  const payload = (await response.json()) as {
+  const bodyText = await response.text();
+  let payload: {
     ok?: boolean;
     data?: T;
     error?: { message?: string };
   };
+  try {
+    payload = JSON.parse(bodyText) as typeof payload;
+  } catch (error) {
+    throw new Error(
+      `Expected JSON API response for ${response.url()}, got ${response.status()}: ${bodyText || "<empty body>"}`,
+      { cause: error },
+    );
+  }
   expect(
     response.ok(),
     payload.error?.message ?? `Expected ${response.status()} to be OK.`,

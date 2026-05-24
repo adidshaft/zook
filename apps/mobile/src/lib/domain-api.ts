@@ -606,6 +606,16 @@ export const trainerApi = {
       },
     );
   },
+  payouts<T = unknown>(options: RequestOptions & { trainerUserId: string; month?: string }) {
+    const query = options.month ? `?month=${encodeURIComponent(options.month)}` : "";
+    return mobileApiFetch<T>(
+      `/orgs/${options.orgId}/trainers/${options.trainerUserId}/payouts${query}`,
+      {
+        token: options.token,
+        orgId: options.orgId,
+      },
+    );
+  },
 };
 
 export const dietApi = {

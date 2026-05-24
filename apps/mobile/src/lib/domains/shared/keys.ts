@@ -26,6 +26,8 @@ export const queryKeys = {
       ["org", orgId, "trainer", trainerUserId, "clients"] as const,
     client: (clientId: string) => ["trainer", "client", clientId] as const,
     plans: (orgId?: string | null) => ["trainer", "plans", orgId] as const,
+    payouts: (orgId?: string | null, trainerUserId?: string | null, month?: string | null) =>
+      ["org", orgId, "trainer", trainerUserId, "payouts", month] as const,
   },
   owner: {
     all: () => ["org"] as const,
