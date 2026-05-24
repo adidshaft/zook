@@ -5,7 +5,7 @@ import { getErrorReporter } from "../error-reporter";
 import { logApiRequest } from "../request-logger";
 import { createRequestId, runWithRequestState } from "../request-state";
 import { assertSafeMutationRequest } from "../security";
-import { assertServerRuntimeConfig, withIdempotency } from "./core";
+import { assertSaasWriteAccess, assertServerRuntimeConfig, withIdempotency } from "./core";
 import { apiRouteHandlers } from "./registry";
 
 function apiLogMeta(path: string[]) {
@@ -22,6 +22,7 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
       assertSafeMutationRequest(request);
       const path = rawPath.filter(Boolean);
       assertServerRuntimeConfig(path);
+      await assertSaasWriteAccess(request, path);
       return await withIdempotency(request, path, async () => {
         for (const handler of apiRouteHandlers) {
           const response = await handler(request, path);

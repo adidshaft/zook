@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { prisma } from "@zook/db";
-import { expectApiOk, loginWithSessionCookie, seedAndGetOrg } from "./helpers";
+import { completeMockCheckout, expectApiOk, loginWithSessionCookie, seedAndGetOrg } from "./helpers";
 import { requireDb } from "./helpers/db";
 
 test.describe("misc dashboard actions", () => {
@@ -200,6 +200,81 @@ test.describe("misc dashboard actions", () => {
     await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({
       timeout: 15_000,
     });
+  });
+
+  test("owner upgrades expired SaaS trial, receives invoice PDF, and cancels at period end", async ({
+    page,
+  }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const expiredAt = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    await prisma.organization.update({
+      where: { id: org.id },
+      data: { trialEndAt: expiredAt, status: "TRIAL_ACTIVE" },
+    });
+    await prisma.saaSSubscription.upsert({
+      where: { orgId: org.id },
+      create: {
+        orgId: org.id,
+        status: "TRIAL_ACTIVE",
+        tier: "FREE",
+        trialStartAt: new Date(Date.now() - 68 * 24 * 60 * 60 * 1000),
+        trialEndAt: expiredAt,
+      },
+      update: {
+        status: "TRIAL_ACTIVE",
+        tier: "FREE",
+        trialEndAt: expiredAt,
+        nextRenewalAt: null,
+        cancelAtPeriodEnd: false,
+      },
+    });
+
+    const blocked = await page.request.post(`/api/orgs/${org.id}/membership-plans`, {
+      data: { name: "Blocked plan", type: "DURATION", pricePaise: 100000, durationDays: 30 },
+    });
+    const blockedPayload = await blocked.json();
+    expect(blocked.status()).toBe(403);
+    expect(blockedPayload.error.code).toBe("SAAS_PAYMENT_REQUIRED");
+
+    const upgrade = await expectApiOk<{
+      checkoutUrl: string;
+      session: { id: string };
+      subscription: { tier: string; billingCycle: string; priceLockedPaise: number };
+    }>(
+      await page.request.post(`/api/orgs/${org.id}/saas-subscription/upgrade`, {
+        data: { tier: "STARTER", billingCycle: "MONTHLY" },
+      }),
+    );
+    expect(upgrade.data.checkoutUrl).toContain("/checkout/mock/");
+    expect(upgrade.data.subscription).toMatchObject({
+      tier: "STARTER",
+      billingCycle: "MONTHLY",
+      priceLockedPaise: 149900,
+    });
+
+    await completeMockCheckout(page, upgrade.data.session.id);
+    await expect(prisma.saaSSubscription.findUnique({ where: { orgId: org.id } })).resolves.toMatchObject({
+      status: "ACTIVE",
+      tier: "STARTER",
+      billingCycle: "MONTHLY",
+      cancelAtPeriodEnd: false,
+    });
+    const invoice = await prisma.invoice.findFirstOrThrow({
+      where: { orgId: org.id, kind: "SAAS" },
+      orderBy: { createdAt: "desc" },
+    });
+    const pdf = await page.request.get(
+      `/api/orgs/${org.id}/saas-subscription/invoices/${invoice.id}.pdf`,
+    );
+    expect(pdf.ok()).toBe(true);
+    expect(pdf.headers()["content-type"]).toContain("application/pdf");
+
+    const cancellation = await expectApiOk<{
+      subscription: { cancelAtPeriodEnd: boolean; cancelledAt: string | Date | null };
+    }>(await page.request.post(`/api/orgs/${org.id}/saas-subscription/cancel`, { data: {} }));
+    expect(cancellation.data.subscription.cancelAtPeriodEnd).toBe(true);
+    expect(cancellation.data.subscription.cancelledAt).toBeTruthy();
   });
 
   test("owner-facing AI prompt box and save-draft action are visible product gaps", async ({
