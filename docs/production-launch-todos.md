@@ -52,6 +52,14 @@ webhook processing. Local gate passed typecheck, lint, unit, services, and targe
 coverage across owner payment history and platform console flows. Live Razorpay refund smoke remains
 deferred until the final production deployment window.
 
+Update on 2026-05-24: Phase 5 trial-to-paid SaaS upgrade is ready for local merge with production
+deployment deferred to the end of the full hardening sequence. Apply migration
+`20260524200000_phase5_saas_upgrade` before promoting the artifact. Owners can choose a paid tier and
+billing cycle from `/dashboard/billing`, start hosted checkout, receive a SaaS invoice PDF after
+successful payment, and cancel at period end. Owner/admin write APIs now return
+`SAAS_PAYMENT_REQUIRED` after the 7-day post-trial grace period while billing routes stay writable.
+Live Razorpay subscription checkout and invoice smoke remain deferred to the final deployment window.
+
 ## Current Placeholder Defaults
 
 - Production domain: `zookfit.in`.

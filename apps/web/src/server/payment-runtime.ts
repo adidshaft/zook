@@ -47,7 +47,52 @@ function toMembershipPlanInput(plan: {
   };
 }
 
+async function ensureSaasInvoice(input: {
+  orgId: string;
+  paymentId?: string | null;
+  subscriptionId?: string | null;
+  amountPaise: number;
+  tier?: string;
+  billingCycle?: string;
+}) {
+  const existing = input.paymentId
+    ? await prisma.invoice.findFirst({ where: { paymentId: input.paymentId, kind: "SAAS" } })
+    : null;
+  if (existing) return existing;
+  const sequence = (await prisma.invoice.count({ where: { orgId: input.orgId, kind: "SAAS" } })) + 1;
+  const number = `ZK-SAAS-${new Date().getFullYear()}-${String(sequence).padStart(5, "0")}`;
+  return prisma.invoice.create({
+    data: {
+      orgId: input.orgId,
+      paymentId: input.paymentId ?? null,
+      subscriptionId: input.subscriptionId ?? null,
+      kind: "SAAS",
+      number,
+      invoiceNo: number,
+      invoiceNumber: number,
+      financialYear: `${new Date().getFullYear()}-${String(new Date().getFullYear() + 1).slice(-2)}`,
+      subtotalPaise: input.amountPaise,
+      totalPaise: input.amountPaise,
+      amountPaise: input.amountPaise,
+      currency: "INR",
+      status: "SUCCEEDED",
+      invoiceStatus: "issued",
+      lineItems: [
+        {
+          description: `Zook ${input.tier ?? "SaaS"} subscription (${input.billingCycle ?? "MONTHLY"})`,
+          quantity: 1,
+          amountPaise: input.amountPaise,
+        },
+      ],
+    },
+  });
+}
+
 type PaymentSessionMetadata = {
+  orgId?: string;
+  tier?: "STARTER" | "GROWTH" | "PRO";
+  billingCycle?: "MONTHLY" | "YEARLY";
+  priceLockedPaise?: number;
   subscriptionId?: string;
   renewalOfSubscriptionId?: string;
   autopayMandateId?: string;
@@ -750,25 +795,50 @@ export async function applyPaymentSessionStatus(input: {
     }
 
     if (session.purpose === "SAAS_BILLING" && session.orgId) {
-      await prisma.saaSSubscription.upsert({
+      const billingCycle = metadata.billingCycle ?? "MONTHLY";
+      const nextRenewalAt = new Date();
+      if (billingCycle === "YEARLY") {
+        nextRenewalAt.setFullYear(nextRenewalAt.getFullYear() + 1);
+      } else {
+        nextRenewalAt.setMonth(nextRenewalAt.getMonth() + 1);
+      }
+      const saasSubscription = await prisma.saaSSubscription.upsert({
         where: { orgId: session.orgId },
         update: {
           status: "ACTIVE",
+          ...(metadata.tier ? { tier: metadata.tier } : {}),
+          billingCycle,
+          priceLockedPaise: metadata.priceLockedPaise ?? session.amountPaise,
           paymentSessionId: session.id,
-          nextBillingAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          nextBillingAt: nextRenewalAt,
+          nextRenewalAt,
+          cancelAtPeriodEnd: false,
+          cancelledAt: null,
         },
         create: {
           orgId: session.orgId,
           status: "ACTIVE",
+          tier: metadata.tier ?? "STARTER",
+          billingCycle,
           trialStartAt: new Date(),
           trialEndAt: new Date(),
           paymentSessionId: session.id,
-          nextBillingAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          nextBillingAt: nextRenewalAt,
+          nextRenewalAt,
+          priceLockedPaise: metadata.priceLockedPaise ?? session.amountPaise,
         },
       });
       await prisma.organization.update({
         where: { id: session.orgId },
         data: { status: "ACTIVE" },
+      });
+      await ensureSaasInvoice({
+        orgId: session.orgId,
+        paymentId: payment.id,
+        subscriptionId: saasSubscription.id,
+        amountPaise: session.amountPaise,
+        ...(metadata.tier ? { tier: metadata.tier } : {}),
+        billingCycle,
       });
     }
 

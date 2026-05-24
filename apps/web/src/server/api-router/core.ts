@@ -114,6 +114,7 @@ import {
   requirePlatformAdmin,
 } from "../access";
 import {
+  ApiRouteError,
   conflictError,
   forbiddenError,
   notFoundError,
@@ -944,6 +945,11 @@ const saasBillingMandateSchema = z.object({
   amountPaise: z.number().int().positive().max(2_000_000).optional(),
 });
 
+const saasUpgradeSchema = z.object({
+  tier: z.enum(["STARTER", "GROWTH", "PRO"]),
+  billingCycle: z.enum(["MONTHLY", "YEARLY"]).default("MONTHLY"),
+});
+
 const trainerProfileAssetSchema = z.object({
   upiId: z.string().trim().max(120).optional(),
   upiQrAssetId: z.string().optional(),
@@ -1459,6 +1465,98 @@ function addDaysToDate(date: Date, days: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
   return next;
+}
+
+const defaultSaasPricing = {
+  STARTER: { monthly: 149_900, yearly: 1_499_000, memberLimit: 100 },
+  GROWTH: { monthly: 399_900, yearly: 3_999_000, memberLimit: 500 },
+  PRO: { monthly: 799_900, yearly: 7_999_000, memberLimit: null },
+} as const;
+
+type PaidSaasTier = keyof typeof defaultSaasPricing;
+type SaasBillingCycle = "MONTHLY" | "YEARLY";
+
+function saasPricingFromSetting(value: unknown) {
+  const configured = jsonObject(value as Prisma.JsonValue);
+  return (["STARTER", "GROWTH", "PRO"] as const).reduce(
+    (pricing, tier) => {
+      const tierConfig = jsonObject(configured[tier.toLowerCase()] as Prisma.JsonValue);
+      pricing[tier] = {
+        monthly:
+          typeof tierConfig.monthlyPaise === "number"
+            ? tierConfig.monthlyPaise
+            : defaultSaasPricing[tier].monthly,
+        yearly:
+          typeof tierConfig.yearlyPaise === "number"
+            ? tierConfig.yearlyPaise
+            : defaultSaasPricing[tier].yearly,
+        memberLimit: defaultSaasPricing[tier].memberLimit,
+      };
+      return pricing;
+    },
+    {} as Record<PaidSaasTier, { monthly: number; yearly: number; memberLimit: number | null }>,
+  );
+}
+
+async function getSaasPricing() {
+  const setting = await prisma.platformSetting.findUnique({ where: { key: "saas.pricing" } });
+  return saasPricingFromSetting(setting?.value);
+}
+
+function priceForSaasPlan(
+  pricing: Awaited<ReturnType<typeof getSaasPricing>>,
+  tier: PaidSaasTier,
+  billingCycle: SaasBillingCycle,
+) {
+  return billingCycle === "YEARLY" ? pricing[tier].yearly : pricing[tier].monthly;
+}
+
+function renewalAfter(start: Date, billingCycle: SaasBillingCycle) {
+  const next = new Date(start);
+  if (billingCycle === "YEARLY") {
+    next.setFullYear(next.getFullYear() + 1);
+  } else {
+    next.setMonth(next.getMonth() + 1);
+  }
+  return next;
+}
+
+function isSaasBillingRoute(path: string[]) {
+  return (
+    pathMatches(path, ["orgs", /.+/, "billing", "subscription"]) ||
+    pathMatches(path, ["orgs", /.+/, "billing", "mandate"]) ||
+    pathMatches(path, ["orgs", /.+/, "saas-subscription", "upgrade"]) ||
+    pathMatches(path, ["orgs", /.+/, "saas-subscription", "cancel"]) ||
+    pathMatches(path, ["orgs", /.+/, "billing-profile"])
+  );
+}
+
+export async function assertSaasWriteAccess(request: NextRequest, path: string[]) {
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) return;
+  if (path[0] !== "orgs" || !path[1] || isSaasBillingRoute(path)) return;
+  const orgId = path[1];
+  const ctx = await getRequestContext(request, { orgId });
+  if (!ctx.roles.some((role) => role === "OWNER" || role === "ADMIN")) return;
+  const subscription = await prisma.saaSSubscription.findUnique({ where: { orgId } });
+  const trialEndAt = subscription?.trialEndAt
+    ? new Date(subscription.trialEndAt)
+    : (
+        await prisma.organization.findUnique({
+          where: { id: orgId },
+          select: { trialEndAt: true },
+        })
+      )?.trialEndAt;
+  const graceEndsAt = trialEndAt ? addDaysToDate(trialEndAt, 7) : null;
+  const isPaid =
+    subscription?.status === "ACTIVE" &&
+    (!subscription.nextRenewalAt || subscription.nextRenewalAt.getTime() >= Date.now());
+  if (isPaid || !graceEndsAt || graceEndsAt.getTime() >= Date.now()) return;
+  throw new ApiRouteError(
+    403,
+    "SAAS_PAYMENT_REQUIRED",
+    "Your Zook subscription expired. Renew to manage your gym.",
+    { orgId, trialEndAt, graceEndsAt },
+  );
 }
 
 type EngagementBadgePayload = {
@@ -3645,6 +3743,45 @@ function invoiceHtml(input: Awaited<ReturnType<typeof ensurePaymentInvoice>>) {
   });
 }
 
+function simplePdfBuffer(lines: string[]) {
+  const content = lines
+    .map((line, index) => {
+      const escaped = line.replace(/[()\\]/g, "\\$&");
+      return `BT /F1 12 Tf 72 ${740 - index * 20} Td (${escaped}) Tj ET`;
+    })
+    .join("\n");
+  const objects = [
+    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
+    "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
+    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj",
+    "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
+    `5 0 obj << /Length ${content.length} >> stream\n${content}\nendstream endobj`,
+  ];
+  let body = "%PDF-1.4\n";
+  const offsets: number[] = [];
+  for (const object of objects) {
+    offsets.push(body.length);
+    body += `${object}\n`;
+  }
+  const xrefOffset = body.length;
+  body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (const offset of offsets) {
+    body += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  }
+  body += `trailer << /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return Buffer.from(body, "utf8");
+}
+
+function saasInvoicePdf(invoice: Prisma.InvoiceGetPayload<object>) {
+  return simplePdfBuffer([
+    "Zook SaaS invoice",
+    `Invoice: ${invoice.invoiceNumber ?? invoice.invoiceNo ?? invoice.number ?? invoice.id}`,
+    `Issue date: ${(invoice.issueDate ?? invoice.issuedAt).toISOString().slice(0, 10)}`,
+    `Amount: INR ${(invoice.totalPaise / 100).toFixed(2)}`,
+    `Status: ${invoice.status}`,
+  ]);
+}
+
 function publicTrainerPhotoUrl(value: string | null | undefined) {
   if (!value || value.startsWith("/api/files/")) {
     return null;
@@ -4018,6 +4155,16 @@ async function applySaasBillingProviderEvent(input: {
   const metadataMandateId =
     typeof metadata.saasBillingMandateId === "string" ? metadata.saasBillingMandateId : undefined;
   const metadataOrgId = typeof metadata.orgId === "string" ? metadata.orgId : undefined;
+  const metadataTier =
+    typeof metadata.tier === "string" && ["STARTER", "GROWTH", "PRO"].includes(metadata.tier)
+      ? (metadata.tier as PaidSaasTier)
+      : undefined;
+  const metadataBillingCycle =
+    metadata.billingCycle === "YEARLY" || metadata.billingCycle === "MONTHLY"
+      ? (metadata.billingCycle as SaasBillingCycle)
+      : undefined;
+  const metadataPriceLockedPaise =
+    typeof metadata.priceLockedPaise === "number" ? metadata.priceLockedPaise : undefined;
   const providerSubscriptionId = input.event.providerSubscriptionId;
   const mandate =
     (metadataMandateId
@@ -4103,14 +4250,24 @@ async function applySaasBillingProviderEvent(input: {
       create: {
         orgId: mandate.orgId,
         status: nextStatus === "ACTIVE" ? "ACTIVE" : "TRIAL_ACTIVE",
+        tier: metadataTier ?? "FREE",
+        billingCycle: metadataBillingCycle ?? "MONTHLY",
         trialStartAt: new Date(),
         trialEndAt: nextChargeAt ?? mandate.nextChargeAt ?? new Date(),
         paymentSessionId: mandate.paymentSessionId,
         nextBillingAt: nextChargeAt ?? mandate.nextChargeAt ?? null,
+        nextRenewalAt: currentEndAt ?? nextChargeAt ?? mandate.nextChargeAt ?? null,
+        priceLockedPaise: metadataPriceLockedPaise ?? mandate.amountPaise,
       },
       update: clean({
+        ...(metadataTier ? { tier: metadataTier } : {}),
+        ...(metadataBillingCycle ? { billingCycle: metadataBillingCycle } : {}),
+        ...(metadataPriceLockedPaise ? { priceLockedPaise: metadataPriceLockedPaise } : {}),
         paymentSessionId: mandate.paymentSessionId,
         nextBillingAt: nextChargeAt ?? mandate.nextChargeAt ?? undefined,
+        nextRenewalAt: currentEndAt ?? nextChargeAt ?? mandate.nextChargeAt ?? undefined,
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
         ...(nextStatus === "ACTIVE" ? { status: "ACTIVE" } : {}),
       }),
     }),
@@ -5808,6 +5965,24 @@ export async function handleMeData(request: NextRequest, path: string[]) {
     }
     return ok({ organizations: summary.organizations, activeOrgId: summary.activeOrgId });
   }
+  if (request.method === "GET" && pathMatches(path, ["me", "saas-subscription"])) {
+    const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
+    const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
+    requireAuth(ctx);
+    const orgId = requestedOrgId ?? ctx.orgId;
+    if (!orgId || !ctx.roles.some((role) => role === "OWNER" || role === "ADMIN")) {
+      throw forbiddenError("Gym billing access required.");
+    }
+    const [org, subscription, mandate] = await Promise.all([
+      prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { id: true, name: true, status: true, trialStartAt: true, trialEndAt: true },
+      }),
+      prisma.saaSSubscription.findUnique({ where: { orgId } }),
+      prisma.saaSBillingMandate.findUnique({ where: { orgId } }),
+    ]);
+    return ok({ org, subscription, mandate });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "dashboard"])) {
     const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
     const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
@@ -7270,13 +7445,15 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
-    const [org, subscription, mandate] = await Promise.all([
+    const [org, subscription, mandate, activeMemberCount, pricing] = await Promise.all([
       prisma.organization.findUnique({
         where: { id: orgId },
         select: { id: true, username: true, status: true, trialStartAt: true, trialEndAt: true },
       }),
       prisma.saaSSubscription.findUnique({ where: { orgId } }),
       prisma.saaSBillingMandate.findUnique({ where: { orgId } }),
+      prisma.memberProfile.count({ where: { orgId } }),
+      getSaasPricing(),
     ]);
     if (!org) {
       throw notFoundError("Organization not found");
@@ -7292,10 +7469,17 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
         trialStartAt: org.trialStartAt,
         trialEndAt: org.trialEndAt,
         status: subscription?.status ?? org.status,
+        tier: subscription?.tier ?? "FREE",
+        billingCycle: subscription?.billingCycle ?? "MONTHLY",
+        priceLockedPaise: subscription?.priceLockedPaise ?? null,
         billingEmail: subscription?.billingEmail ?? null,
         nextBillingAt: subscription?.nextBillingAt ?? null,
+        nextRenewalAt: subscription?.nextRenewalAt ?? null,
         cancelledAt: subscription?.cancelledAt ?? null,
+        cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd ?? false,
       },
+      activeMemberCount,
+      pricing,
       mandate: mandate
         ? {
             id: mandate.id,
@@ -7327,6 +7511,226 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
         })),
       },
     });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "saas-subscription", "upgrade"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
+    await assertRateLimit(
+      "paymentSessionByActor",
+      `saas-upgrade:${orgId}:${userId}`,
+      "Too many billing setup attempts.",
+    );
+    const body = saasUpgradeSchema.parse(await readJson(request).catch(() => ({})));
+    const tier = body.tier as PaidSaasTier;
+    const billingCycle = body.billingCycle as SaasBillingCycle;
+    const [org, subscription, existingMandate, pricing] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: orgId } }),
+      prisma.saaSSubscription.findUnique({ where: { orgId } }),
+      prisma.saaSBillingMandate.findUnique({ where: { orgId } }),
+      getSaasPricing(),
+    ]);
+    if (!org) throw notFoundError("Organization not found");
+    const provider = getPaymentProviderOrThrow();
+    const amountPaise = priceForSaasPlan(pricing, tier, billingCycle);
+    const now = new Date();
+    const startsAt =
+      org.trialEndAt && org.trialEndAt.getTime() > now.getTime() ? org.trialEndAt : now;
+    const nextRenewalAt = renewalAfter(startsAt, billingCycle);
+    const session = await prisma.paymentSession.create({
+      data: {
+        orgId,
+        userId,
+        purpose: "SAAS_BILLING",
+        amountPaise,
+        currency: "INR",
+        status: "CREATED",
+        checkoutUrl: "",
+        provider: provider.providerName,
+        metadata: {
+          purpose: "SAAS_BILLING",
+          orgId,
+          tier,
+          billingCycle,
+          priceLockedPaise: amountPaise,
+        } as Prisma.InputJsonValue,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+    const mandate =
+      existingMandate ??
+      (await prisma.saaSBillingMandate.create({
+        data: {
+          orgId,
+          createdByUserId: userId,
+          provider: provider.providerName,
+          status: "CREATED",
+          amountPaise,
+          currency: "INR",
+          billingPeriod: billingCycle === "YEARLY" ? "yearly" : "monthly",
+          billingInterval: 1,
+          totalCount: billingCycle === "YEARLY" ? 10 : 120,
+          nextChargeAt: startsAt,
+          paymentSessionId: session.id,
+          metadata: { orgId, paymentSessionId: session.id, tier, billingCycle } as Prisma.InputJsonValue,
+        },
+      }));
+    const createdMandate = await provider.createMandate({
+      orgId,
+      userId,
+      amountPaise,
+      currency: "INR",
+      referenceId: session.id,
+      planName: `Zook ${tier.toLowerCase()} ${billingCycle.toLowerCase()}`,
+      description: `Zook ${tier} plan billed ${billingCycle.toLowerCase()}`,
+      billingPeriod: billingCycle === "YEARLY" ? "yearly" : "monthly",
+      billingInterval: 1,
+      totalCount: billingCycle === "YEARLY" ? 10 : 120,
+      startAt: startsAt,
+      returnUrl: `/dashboard/billing`,
+      customer: clean({
+        name: org.name,
+        email: org.contactEmail ?? subscription?.billingEmail ?? undefined,
+        phone: org.contactPhone ?? undefined,
+      }),
+      metadata: {
+        purpose: "SAAS_BILLING",
+        saasBillingMandateId: mandate.id,
+        orgId,
+        paymentSessionId: session.id,
+        tier,
+        billingCycle,
+        priceLockedPaise: amountPaise,
+      },
+    });
+    const checkoutUrl =
+      createdMandate.checkoutUrl ??
+      (provider.providerName === "mock" ? `/checkout/mock/${session.id}` : `/checkout/${session.id}`);
+    const [updatedMandate, updatedSession, updatedSubscription] = await prisma.$transaction([
+      prisma.saaSBillingMandate.update({
+        where: { id: mandate.id },
+        data: clean({
+          provider: provider.providerName,
+          status: providerMandateStatusToLocal(createdMandate.status),
+          providerMandateId: createdMandate.mandateId,
+          providerPlanId: createdMandate.providerPlanId,
+          checkoutUrl,
+          amountPaise,
+          billingPeriod: billingCycle === "YEARLY" ? "yearly" : "monthly",
+          totalCount: billingCycle === "YEARLY" ? 10 : 120,
+          nextChargeAt: createdMandate.nextChargeAt ?? startsAt,
+          currentStartAt: createdMandate.currentStartAt,
+          currentEndAt: createdMandate.currentEndAt,
+          paidCount: createdMandate.paidCount,
+          paymentSessionId: session.id,
+          metadata: {
+            ...getObjectMetadata(mandate.metadata),
+            orgId,
+            paymentSessionId: session.id,
+            tier,
+            billingCycle,
+            priceLockedPaise: amountPaise,
+            providerCheckoutData: createdMandate.checkoutData ?? null,
+          } as Prisma.InputJsonValue,
+        }),
+      }),
+      prisma.paymentSession.update({
+        where: { id: session.id },
+        data: {
+          provider: provider.providerName,
+          providerRef: createdMandate.mandateId,
+          checkoutUrl,
+          status: "CREATED",
+          metadata: {
+            ...getObjectMetadata(session.metadata),
+            saasBillingMandateId: mandate.id,
+            tier,
+            billingCycle,
+            priceLockedPaise: amountPaise,
+            providerCheckoutData: createdMandate.checkoutData ?? null,
+          } as Prisma.InputJsonValue,
+        },
+      }),
+      prisma.saaSSubscription.upsert({
+        where: { orgId },
+        create: {
+          orgId,
+          status: "TRIAL_ACTIVE",
+          tier,
+          billingCycle,
+          trialStartAt: org.trialStartAt ?? new Date(),
+          trialEndAt: org.trialEndAt ?? startsAt,
+          billingEmail: org.contactEmail,
+          paymentSessionId: session.id,
+          nextBillingAt: createdMandate.nextChargeAt ?? startsAt,
+          nextRenewalAt,
+          priceLockedPaise: amountPaise,
+        },
+        update: {
+          tier,
+          billingCycle,
+          billingEmail: org.contactEmail,
+          paymentSessionId: session.id,
+          nextBillingAt: createdMandate.nextChargeAt ?? startsAt,
+          nextRenewalAt,
+          priceLockedPaise: amountPaise,
+          cancelAtPeriodEnd: false,
+          cancelledAt: null,
+        },
+      }),
+    ]);
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "organization.saas_subscription_upgrade_started",
+      entityType: "saas_subscription",
+      entityId: updatedSubscription.id,
+      metadata: { tier, billingCycle, amountPaise },
+    });
+    return ok({
+      subscription: updatedSubscription,
+      mandate: updatedMandate,
+      checkoutUrl,
+      checkoutData: createdMandate.checkoutData ?? null,
+      session: updatedSession,
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "saas-subscription", "cancel"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
+    const [subscription, mandate] = await Promise.all([
+      prisma.saaSSubscription.findUnique({ where: { orgId } }),
+      prisma.saaSBillingMandate.findUnique({ where: { orgId } }),
+    ]);
+    if (!subscription) throw notFoundError("SaaS subscription not found.");
+    let nextMandate = mandate;
+    if (mandate?.providerMandateId && !mandate.cancelledAt && mandate.status !== "CANCELLED") {
+      const provider = getPaymentProviderOrThrow();
+      const cancellation = await provider.cancelMandate({ mandateId: mandate.providerMandateId });
+      nextMandate = await prisma.saaSBillingMandate.update({
+        where: { id: mandate.id },
+        data: {
+          status: providerMandateStatusToLocal(cancellation.status),
+          cancelledAt: new Date(),
+        },
+      });
+    }
+    const updated = await prisma.saaSSubscription.update({
+      where: { orgId },
+      data: { cancelAtPeriodEnd: true, cancelledAt: new Date() },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "organization.saas_subscription_cancel_at_period_end",
+      entityType: "saas_subscription",
+      entityId: updated.id,
+      metadata: { mandateId: nextMandate?.id },
+    });
+    return ok({ subscription: updated, mandate: nextMandate });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "billing", "mandate"])) {
     const orgId = path[1]!;
@@ -8706,6 +9110,71 @@ export async function handleHealthReadiness(request: NextRequest, path: string[]
       }
     }
 
+    for (const daysAhead of [7, 3, 1, 0]) {
+      const windowStart = new Date(now.getTime() + (daysAhead - 1) * 24 * 60 * 60 * 1000);
+      const windowEnd = new Date(now.getTime() + (daysAhead === 0 ? 1 : daysAhead) * 24 * 60 * 60 * 1000);
+      const trialSubscriptions = await prisma.saaSSubscription.findMany({
+        where: {
+          status: "TRIAL_ACTIVE",
+          trialEndAt: daysAhead === 0 ? { lte: now } : { gte: windowStart, lt: windowEnd },
+        },
+        take: 500,
+      });
+      for (const sub of trialSubscriptions) {
+        const existingReminder = await prisma.subscriptionReminder.findFirst({
+          where: {
+            orgId: sub.orgId,
+            kind: "SAAS_TRIAL_END",
+            status: { in: ["PENDING", "SENT"] },
+            metadata: { path: ["daysRemaining"], equals: daysAhead },
+          },
+        });
+        if (existingReminder) {
+          totalSkipped++;
+          continue;
+        }
+        const owner = await prisma.organizationRoleAssignment.findFirst({
+          where: { orgId: sub.orgId, role: "OWNER" },
+          orderBy: { createdAt: "asc" },
+        });
+        if (!owner) {
+          totalSkipped++;
+          continue;
+        }
+        await prisma.subscriptionReminder.create({
+          data: {
+            orgId: sub.orgId,
+            userId: owner.userId,
+            kind: "SAAS_TRIAL_END",
+            status: "SENT",
+            dueAt: sub.trialEndAt,
+            sentAt: now,
+            attemptCount: 1,
+            metadata: { daysRemaining: daysAhead, saasSubscriptionId: sub.id } as Prisma.InputJsonValue,
+          },
+        });
+        totalCreated++;
+        try {
+          await createDirectNotification({
+            orgId: sub.orgId,
+            type: "OPERATIONAL",
+            title: daysAhead === 0 ? "Zook trial ended" : "Zook trial ending soon",
+            body:
+              daysAhead === 0
+                ? "Your free Zook trial has ended. Upgrade now to keep owner tools writable."
+                : `Your free Zook trial ends in ${daysAhead} days. Upgrade now to keep owner tools writable.`,
+            audience: "selected_member",
+            userIds: [owner.userId],
+            pushEnabled: true,
+            metadata: { saasSubscriptionId: sub.id, daysRemaining: daysAhead } as Prisma.InputJsonValue,
+          });
+          totalNotified++;
+        } catch {
+          // Notification delivery is best-effort for cron
+        }
+      }
+    }
+
     return ok({
       processed: true,
       remindersCreated: totalCreated,
@@ -9221,8 +9690,29 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
         user: invoice.userId ? (usersById.get(invoice.userId) ?? null) : null,
         invoiceUrl: invoice.paymentId
           ? `/api/orgs/${orgId}/payments/${invoice.paymentId}/invoice?format=html`
-          : null,
+          : invoice.kind === "SAAS"
+            ? `/api/orgs/${orgId}/saas-subscription/invoices/${invoice.id}.pdf`
+            : null,
       })),
+    });
+  }
+  if (
+    request.method === "GET" &&
+    pathMatches(path, ["orgs", /.+/, "saas-subscription", "invoices", /.+/])
+  ) {
+    const orgId = path[1]!;
+    const invoiceId = path[4]!.replace(/\.pdf$/i, "");
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
+    const invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId, orgId, kind: "SAAS" },
+    });
+    if (!invoice) throw notFoundError("SaaS invoice not found.");
+    return new NextResponse(saasInvoicePdf(invoice), {
+      headers: {
+        "content-type": "application/pdf",
+        "content-disposition": `inline; filename="${invoice.invoiceNumber ?? invoice.id}.pdf"`,
+      },
     });
   }
   if (
