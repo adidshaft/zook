@@ -44,6 +44,14 @@ and platform webhook replay reuses the payment-event side-effect path idempotent
 typecheck, lint, unit, services, and targeted platform-console Playwright coverage. CI workflows and
 production smoke remain intentionally deferred.
 
+Update on 2026-05-24: Phase 4 refund flow UI is ready for local merge with production deployment
+deferred to the end of the full hardening sequence. Gym owners can refund duplicate cash/manual
+payments from payment history, platform admins can refund cross-tenant payments without gym login or
+impersonation, and Razorpay `refund.processed` webhooks update refund/payment status through replayable
+webhook processing. Local gate passed typecheck, lint, unit, services, and targeted refund Playwright
+coverage across owner payment history and platform console flows. Live Razorpay refund smoke remains
+deferred until the final production deployment window.
+
 ## Current Placeholder Defaults
 
 - Production domain: `zookfit.in`.

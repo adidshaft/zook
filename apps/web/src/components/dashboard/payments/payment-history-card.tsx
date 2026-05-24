@@ -15,6 +15,8 @@ export function PaymentHistoryCard({
   manualPaymentStatus,
   documentBusyId,
   onGenerateDocument,
+  refundBusyId,
+  onRefundPayment,
 }: {
   orgId: string;
   payments: PaymentRow[];
@@ -22,6 +24,8 @@ export function PaymentHistoryCard({
   manualPaymentStatus: string;
   documentBusyId: string | null;
   onGenerateDocument: (payment: PaymentRow, kind: PaymentDocumentKind) => void;
+  refundBusyId?: string | null;
+  onRefundPayment?: (payment: PaymentRow) => void;
 }) {
   return (
     <GlassCard>
@@ -87,10 +91,24 @@ export function PaymentHistoryCard({
                 },
                 {
                   id: "documents",
-                  header: "Documents",
+                  header: "Actions",
                   align: "right",
                   render: (payment) => (
                     <div className="flex flex-wrap justify-end gap-2">
+                      {onRefundPayment &&
+                      ["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(payment.status) &&
+                      (payment.refundedAmountPaise ?? 0) < payment.amountPaise ? (
+                        <ZookButton
+                          type="button"
+                          tone="ghost"
+                          size="sm"
+                          onClick={() => onRefundPayment(payment)}
+                          disabled={refundBusyId === payment.id}
+                          state={refundBusyId === payment.id ? "loading" : "idle"}
+                        >
+                          {refundBusyId === payment.id ? "Refunding..." : "Refund"}
+                        </ZookButton>
+                      ) : null}
                       <ZookButton
                         type="button"
                         tone="ghost"

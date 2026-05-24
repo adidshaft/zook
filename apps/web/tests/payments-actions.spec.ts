@@ -19,6 +19,20 @@ test.describe("payments actions", () => {
     test.setTimeout(150_000);
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    await expectApiOk(
+      await page.request.patch(`/api/orgs/${org.id}/billing-profile`, {
+        data: {
+          legalName: "Aarogya Strength Private Limited",
+          gstNumber: "29ABCDE1234F1Z5",
+          contactEmail: "billing@zook.local",
+          contactPhone: "9876543210",
+          address: "Zook Billing Street",
+          city: "Bengaluru",
+          state: "Karnataka",
+          pincode: "560001",
+        },
+      }),
+    );
     const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
     const plan = await createMembershipPlan(page, org.id, {
       name: `Payment Plan ${Date.now()}`,
@@ -67,7 +81,7 @@ test.describe("payments actions", () => {
     await expect(page.getByText("₹1,800").first()).toBeVisible({ timeout: 15_000 });
   });
 
-  test("owner refunds mock-provider payments and audit log captures the action", async ({
+  test("owner refunds duplicate cash payments quickly and audit log captures the action", async ({
     page,
   }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
@@ -82,11 +96,9 @@ test.describe("payments actions", () => {
         branchId: branch.id,
         userId: member.id,
         purpose: "MEMBERSHIP",
-        amountPaise: 250000,
+        amountPaise: 333300,
         status: "SUCCEEDED",
-        mode: "MOCK_ONLINE",
-        provider: "mock",
-        providerRef: `mock_refund_${Date.now()}`,
+        mode: "CASH",
         recordedAt: new Date(),
       },
     });
@@ -110,5 +122,109 @@ test.describe("payments actions", () => {
         where: { orgId: org.id, action: "payment.refunded", entityId: payment.id },
       }),
     ).resolves.toBeTruthy();
+
+    await page.goto("/dashboard/payments");
+    let dialogCount = 0;
+    page.on("dialog", async (dialog) => {
+      dialogCount += 1;
+      if (dialogCount === 1) {
+        expect(dialog.message()).toContain("Refund amount");
+        await dialog.accept("500");
+        return;
+      }
+      expect(dialog.message()).toContain("Reason");
+      await dialog.accept("Duplicate cash payment");
+    });
+    await page
+      .locator("tr")
+      .filter({ hasText: "₹3,333" })
+      .getByRole("button", { name: "Refund" })
+      .first()
+      .click();
+    await expect(page.locator("p", { hasText: "Refund submitted from payment history." }).first()).toBeVisible({
+      timeout: 15_000,
+    });
+  });
+
+  test("Razorpay refund processed webhook updates refund status", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true },
+    });
+    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    const payment = await prisma.payment.create({
+      data: {
+        orgId: org.id,
+        branchId: branch.id,
+        userId: member.id,
+        purpose: "MEMBERSHIP",
+        amountPaise: 300000,
+        status: "SUCCEEDED",
+        mode: "CARD",
+        provider: "mock",
+        providerRef: `mock_refund_webhook_${Date.now()}`,
+        recordedAt: new Date(),
+      },
+    });
+    const refundId = `rfnd_phase4_${Date.now()}`;
+    const refund = await prisma.paymentRefund.create({
+      data: {
+        orgId: org.id,
+        branchId: branch.id,
+        paymentId: payment.id,
+        provider: "mock",
+        providerRefundId: refundId,
+        amountPaise: 300000,
+        status: "REQUESTED",
+        reason: "Awaiting provider webhook",
+        requestedById: member.id,
+      },
+    });
+    const event = await prisma.paymentEvent.create({
+      data: {
+        orgId: org.id,
+        userId: member.id,
+        provider: "mock",
+        providerEventId: `refund.processed:${payment.providerRef}:phase4`,
+        eventType: "refund.processed",
+        status: "QUARANTINED",
+        payload: {
+          event: "refund.processed",
+          payload: {
+            refund: {
+              entity: {
+                id: refundId,
+                payment_id: payment.providerRef,
+                amount: 300000,
+                currency: "INR",
+              },
+            },
+          },
+        },
+        processedAt: new Date(),
+        attemptCount: 1,
+      },
+    });
+    const attempt = await prisma.paymentWebhookAttempt.create({
+      data: {
+        paymentEventId: event.id,
+        attemptNo: 1,
+        status: "FAILED",
+        processor: "phase4",
+      },
+    });
+    await loginWithSessionCookie(page, "platform@zook.local");
+    const replay = await expectApiOk<{ attempt: { status: string } }>(
+      await page.request.post(`/api/platform/webhooks/${attempt.id}/replay`, { data: {} }),
+    );
+    expect(replay.data.attempt.status).toBe("SUCCEEDED");
+    await expect(prisma.paymentRefund.findUnique({ where: { id: refund.id } })).resolves.toMatchObject({
+      status: "REFUNDED",
+      processedAt: expect.any(Date),
+    });
+    await expect(prisma.payment.findUnique({ where: { id: payment.id } })).resolves.toMatchObject({
+      status: "REFUNDED",
+    });
   });
 });
