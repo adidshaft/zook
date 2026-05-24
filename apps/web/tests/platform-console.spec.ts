@@ -4,8 +4,11 @@ import { expectApiOk, loginWithSessionCookie, seedAndGetOrg } from "./helpers";
 import { requireDb } from "./helpers/db";
 
 test.describe("platform support console", () => {
-  test.beforeEach(() => {
+  test.beforeEach(async () => {
     requireDb();
+    await prisma.featureFlag.deleteMany({
+      where: { key: { in: ["ai.assistant", "platform.impersonation", "platform.playwright"] } },
+    });
   });
 
   test("resolves login support, audits impersonation, and blocks silent abuse", async ({
@@ -160,15 +163,35 @@ test.describe("platform support console", () => {
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
     const platform = await prisma.user.findUniqueOrThrow({ where: { email: "platform@zook.local" } });
 
+    await expectApiOk(
+      await page.request.patch("/api/platform/flags", {
+        data: { key: "ai.assistant", enabled: true, rolloutPercent: 100 },
+      }),
+    );
+    await page.goto("/platform/users");
+    await page.getByRole("button", { name: "Disable ai.assistant" }).click();
+    await expect
+      .poll(async () => {
+        const flag = await prisma.featureFlag.findUnique({ where: { key: "ai.assistant" } });
+        return flag?.enabled;
+      })
+      .toBe(false);
+    const gatedAi = await page.request.post("/api/ai/chat", {
+      data: { prompt: "Summarize today's follow ups." },
+    });
+    expect(gatedAi.status()).toBe(503);
+    await expect(gatedAi.text()).resolves.toContain("AI assistant is disabled");
+
+    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
     const broadcast = await expectApiOk<{ broadcast: { id: string; status: string } }>(
       await page.request.post("/api/platform/broadcasts", {
         data: {
-          title: "Playwright broadcast",
+          title: "Scheduled maintenance Sunday 2-3 AM",
           body: "Platform support smoke",
           severity: "INFO",
           status: "DRAFT",
           targetOrgIds: [org.id],
-          targetRoles: ["OWNER"],
+          targetRoles: [],
         },
       }),
     );
@@ -177,6 +200,24 @@ test.describe("platform support console", () => {
         data: { status: "LIVE" },
       }),
     );
+    await expect
+      .poll(async () => {
+        const notification = await prisma.notification.findFirst({
+          where: { orgId: org.id, title: "Scheduled maintenance Sunday 2-3 AM", status: "SENT" },
+          orderBy: { createdAt: "desc" },
+        });
+        if (!notification) return false;
+        const recipient = await prisma.notificationRecipient.findUnique({
+          where: {
+            notificationId_userId: {
+              notificationId: notification.id,
+              userId: member.id,
+            },
+          },
+        });
+        return Boolean(recipient);
+      })
+      .toBe(true);
 
     const flag = await expectApiOk<{ flag: { key: string; enabled: boolean } }>(
       await page.request.patch("/api/platform/flags", {
@@ -185,14 +226,32 @@ test.describe("platform support console", () => {
     );
     expect(flag.data.flag).toMatchObject({ key: "platform.playwright", enabled: true });
 
+    const session = await prisma.paymentSession.create({
+      data: {
+        orgId: org.id,
+        userId: member.id,
+        provider: "mock",
+        purpose: "OTHER",
+        amountPaise: 32100,
+        status: "CREATED",
+        checkoutUrl: "mock://phase3-replay",
+        providerRef: `phase3_replay_${Date.now()}`,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
     const event = await prisma.paymentEvent.create({
       data: {
         orgId: org.id,
+        userId: member.id,
+        sessionId: session.id,
         provider: "mock",
         providerEventId: `evt_platform_replay_${Date.now()}`,
         eventType: "payment.captured",
-        payload: { smoke: true },
+        status: "QUARANTINED",
+        payload: { sessionId: session.id, status: "SUCCEEDED" },
         attemptCount: 1,
+        processedAt: new Date(),
+        processingError: "fixture failure before replay",
       },
     });
     const attempt = await prisma.paymentWebhookAttempt.create({
@@ -208,6 +267,18 @@ test.describe("platform support console", () => {
       await page.request.post(`/api/platform/webhooks/${attempt.id}/replay`, { data: {} }),
     );
     expect(replay.data.attempt.status).toBe("SUCCEEDED");
+    await expect
+      .poll(async () => {
+        const updated = await prisma.paymentSession.findUnique({ where: { id: session.id } });
+        return updated?.status;
+      })
+      .toBe("SUCCEEDED");
+    const paymentCount = await prisma.payment.count({ where: { sessionId: session.id } });
+    expect(paymentCount).toBe(1);
+    await expectApiOk(
+      await page.request.post(`/api/platform/webhooks/${attempt.id}/replay`, { data: {} }),
+    );
+    await expect(prisma.payment.count({ where: { sessionId: session.id } })).resolves.toBe(1);
 
     const moderation = await prisma.contentModerationFlag.create({
       data: { orgId: org.id, kind: "ORG_LOGO", reason: "Playwright review" },
@@ -224,7 +295,6 @@ test.describe("platform support console", () => {
     );
     expect(audit.data.auditLogs.some((row) => row.action.startsWith("platform."))).toBe(true);
 
-    await page.goto("/platform/users");
     await expect(page.getByRole("heading", { name: /platform support console/i })).toBeVisible({
       timeout: 15_000,
     });

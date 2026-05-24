@@ -66,6 +66,7 @@ import {
   storageFileCategories,
   verifyLocalStorageSignature,
   type StorageFileCategory,
+  type ParsedPaymentWebhookEvent,
 } from "@zook/core/providers";
 import {
   AuthService,
@@ -2764,6 +2765,396 @@ async function createDirectNotification(input: {
     userIds: input.userIds,
   });
   return notification;
+}
+
+function chunkArray<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
+async function resolvePlatformBroadcastRecipients(input: {
+  targetOrgIds: string[];
+  targetRoles: OrgRole[];
+}) {
+  const orgs = await prisma.organization.findMany({
+    where: {
+      ...(input.targetOrgIds.length ? { id: { in: input.targetOrgIds } } : {}),
+      status: { notIn: ["SUSPENDED", "DELETED"] },
+    },
+    select: { id: true },
+    take: 500,
+  });
+  const orgIds = orgs.map((org) => org.id);
+  if (!orgIds.length) {
+    return new Map<string, string[]>();
+  }
+
+  const memberships = await prisma.organizationUser.findMany({
+    where: { orgId: { in: orgIds }, status: "active" },
+    select: { orgId: true, userId: true },
+  });
+  if (!input.targetRoles.length) {
+    const byOrg = new Map<string, Set<string>>();
+    for (const membership of memberships) {
+      const users = byOrg.get(membership.orgId) ?? new Set<string>();
+      users.add(membership.userId);
+      byOrg.set(membership.orgId, users);
+    }
+    return new Map(Array.from(byOrg, ([orgId, users]) => [orgId, Array.from(users)]));
+  }
+
+  const roleAssignments = await prisma.organizationRoleAssignment.findMany({
+    where: { orgId: { in: orgIds }, role: { in: input.targetRoles } },
+    select: { orgId: true, userId: true },
+  });
+  const activeByOrg = new Map<string, Set<string>>();
+  for (const membership of memberships) {
+    const users = activeByOrg.get(membership.orgId) ?? new Set<string>();
+    users.add(membership.userId);
+    activeByOrg.set(membership.orgId, users);
+  }
+
+  const byOrg = new Map<string, Set<string>>();
+  for (const assignment of roleAssignments) {
+    if (!activeByOrg.get(assignment.orgId)?.has(assignment.userId)) {
+      continue;
+    }
+    const users = byOrg.get(assignment.orgId) ?? new Set<string>();
+    users.add(assignment.userId);
+    byOrg.set(assignment.orgId, users);
+  }
+  return new Map(Array.from(byOrg, ([orgId, users]) => [orgId, Array.from(users)]));
+}
+
+async function fanOutPlatformBroadcast(input: {
+  broadcast: {
+    id: string;
+    title: string;
+    body: string;
+    severity: string;
+    targetOrgIds: string[];
+    targetRoles: OrgRole[];
+    createdByUserId: string;
+  };
+}) {
+  const recipientsByOrg = await resolvePlatformBroadcastRecipients({
+    targetOrgIds: input.broadcast.targetOrgIds,
+    targetRoles: input.broadcast.targetRoles,
+  });
+  let notifications = 0;
+  let recipients = 0;
+  for (const [orgId, userIds] of recipientsByOrg) {
+    for (const chunk of chunkArray(userIds, 500)) {
+      const notification = await createDirectNotification({
+        orgId,
+        createdById: input.broadcast.createdByUserId,
+        type: "OPERATIONAL",
+        title: input.broadcast.title,
+        body: input.broadcast.body,
+        audience: "platform_broadcast",
+        pushEnabled: true,
+        metadata: {
+          platformBroadcastId: input.broadcast.id,
+          severity: input.broadcast.severity,
+          throttle: "max_500_push_devices_per_minute",
+        } as Prisma.InputJsonValue,
+        userIds: chunk,
+      });
+      notifications += notification ? 1 : 0;
+      recipients += chunk.length;
+    }
+  }
+  return { notifications, recipients };
+}
+
+async function processVerifiedPaymentWebhookEvent(input: {
+  event: {
+    id: string;
+    status: string;
+    processedAt: Date | null;
+  };
+  attempt: {
+    attemptNo: number;
+  };
+  parsed: ParsedPaymentWebhookEvent | null;
+  providerEventId: string;
+  startedAt: number;
+}) {
+  const { event, attempt, parsed, providerEventId, startedAt } = input;
+  if (event.processedAt && event.status !== "QUARANTINED") {
+    await prisma.paymentWebhookAttempt.update({
+      where: {
+        paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+      },
+      data: {
+        status: "SUCCEEDED",
+        httpStatusCode: 200,
+        durationMs: Date.now() - startedAt,
+        completedAt: new Date(),
+        result: { duplicate: true } as Prisma.InputJsonValue,
+      },
+    });
+    return ok({ received: true, duplicate: true, providerEventId });
+  }
+
+  const saasBillingProcessed = parsed ? await applySaasBillingProviderEvent({ event: parsed }) : null;
+  if (saasBillingProcessed) {
+    const shouldRecordSaasPayment =
+      parsed?.eventType === "invoice.paid" || parsed?.eventType === "subscription.charged";
+    const processedPayment =
+      shouldRecordSaasPayment && saasBillingProcessed.mandate.paymentSessionId
+        ? await applyPaymentSessionStatus({
+            sessionId: saasBillingProcessed.mandate.paymentSessionId,
+            nextStatus: "SUCCEEDED",
+            provider: parsed.provider,
+            ...(parsed.providerPaymentId || parsed.providerSubscriptionId
+              ? { providerRef: parsed.providerPaymentId ?? parsed.providerSubscriptionId }
+              : {}),
+            paymentMode: "CARD",
+            expectedAmountPaise: saasBillingProcessed.mandate.amountPaise,
+            createNotification: createDirectNotification,
+            ensureMembership: ensureOrganizationMembership,
+          })
+        : null;
+    await prisma.paymentEvent.update({
+      where: { id: event.id },
+      data: clean({
+        orgId: saasBillingProcessed.mandate.orgId,
+        sessionId: saasBillingProcessed.mandate.paymentSessionId,
+        paymentId: processedPayment?.payment?.id,
+        status: "PROCESSED",
+        processedAt: new Date(),
+        processingError: null,
+      }),
+    });
+    await prisma.paymentWebhookAttempt.update({
+      where: {
+        paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+      },
+      data: {
+        status: "SUCCEEDED",
+        httpStatusCode: 200,
+        durationMs: Date.now() - startedAt,
+        completedAt: new Date(),
+        result: clean({
+          saasBillingMandateId: saasBillingProcessed.mandate.id,
+          mandateStatus: saasBillingProcessed.mandate.status,
+          subscriptionStatus: saasBillingProcessed.subscription.status,
+          paymentId: processedPayment?.payment?.id,
+        }) as Prisma.InputJsonValue,
+      },
+    });
+    return ok({
+      received: true,
+      providerEventId,
+      saasBillingMandateId: saasBillingProcessed.mandate.id,
+      status: saasBillingProcessed.mandate.status,
+    });
+  }
+
+  let autopayProcessed;
+  try {
+    autopayProcessed = parsed
+      ? await applyAutopayProviderEvent({
+          event: parsed,
+          createNotification: createDirectNotification,
+          ensureMembership: ensureOrganizationMembership,
+        })
+      : null;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Autopay event application failed.";
+    await prisma.paymentEvent.update({
+      where: { id: event.id },
+      data: {
+        status: "QUARANTINED",
+        processedAt: new Date(),
+        processingError: errorMessage,
+      },
+    });
+    await prisma.paymentWebhookAttempt.update({
+      where: {
+        paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+      },
+      data: {
+        status: "FAILED",
+        httpStatusCode: 200,
+        durationMs: Date.now() - startedAt,
+        completedAt: new Date(),
+        errorCode: "autopay_application_failed",
+        errorMessage,
+        result: {
+          quarantined: true,
+          reason: "autopay_application_failed",
+        } as Prisma.InputJsonValue,
+      },
+    });
+    return ok({ received: true, quarantined: true, providerEventId });
+  }
+
+  if (autopayProcessed) {
+    await prisma.paymentEvent.update({
+      where: { id: event.id },
+      data: clean({
+        orgId: autopayProcessed.mandate.orgId,
+        userId: autopayProcessed.mandate.userId,
+        paymentId: autopayProcessed.payment?.id,
+        status: "PROCESSED",
+        processedAt: new Date(),
+        processingError: null,
+      }),
+    });
+    await prisma.paymentWebhookAttempt.update({
+      where: {
+        paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+      },
+      data: {
+        status: "SUCCEEDED",
+        httpStatusCode: 200,
+        durationMs: Date.now() - startedAt,
+        completedAt: new Date(),
+        result: clean({
+          autopayMandateId: autopayProcessed.mandate.id,
+          paymentId: autopayProcessed.payment?.id,
+          subscriptionId: autopayProcessed.subscription?.id,
+          mandateStatus: autopayProcessed.mandate.status,
+        }) as Prisma.InputJsonValue,
+      },
+    });
+    return ok({
+      received: true,
+      providerEventId,
+      autopayMandateId: autopayProcessed.mandate.id,
+      status: autopayProcessed.mandate.status,
+    });
+  }
+
+  const metadata = (parsed?.metadata ?? {}) as Record<string, unknown>;
+  const sessionIdFromMetadata =
+    typeof metadata.paymentSessionId === "string" ? metadata.paymentSessionId : undefined;
+  const paymentSession =
+    (sessionIdFromMetadata
+      ? await prisma.paymentSession.findUnique({ where: { id: sessionIdFromMetadata } })
+      : null) ??
+    (parsed?.providerOrderId
+      ? await prisma.paymentSession.findFirst({
+          where: {
+            OR: [{ providerRef: parsed.providerOrderId }, { id: parsed.providerOrderId }],
+          },
+        })
+      : null);
+
+  if (!paymentSession) {
+    await prisma.paymentEvent.update({
+      where: { id: event.id },
+      data: {
+        status: "QUARANTINED",
+        processedAt: new Date(),
+        processingError: "Payment session not found for payment event.",
+      },
+    });
+    await prisma.paymentWebhookAttempt.update({
+      where: {
+        paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+      },
+      data: {
+        status: "SUCCEEDED",
+        httpStatusCode: 200,
+        durationMs: Date.now() - startedAt,
+        completedAt: new Date(),
+        result: {
+          quarantined: true,
+          reason: "payment_session_not_found",
+        } as Prisma.InputJsonValue,
+      },
+    });
+    return ok({ received: true, quarantined: true, providerEventId });
+  }
+
+  let processed;
+  try {
+    processed = await applyPaymentSessionStatus({
+      sessionId: paymentSession.id,
+      nextStatus: parsed?.paymentStatus ?? "FAILED",
+      provider: parsed?.provider ?? paymentSession.provider,
+      ...((parsed?.providerPaymentId ?? parsed?.providerOrderId)
+        ? { providerRef: parsed?.providerPaymentId ?? parsed?.providerOrderId }
+        : {}),
+      paymentMode: "CARD",
+      ...(parsed?.amountPaise !== undefined ? { expectedAmountPaise: parsed.amountPaise } : {}),
+      createNotification: createDirectNotification,
+      ensureMembership: ensureOrganizationMembership,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Payment application failed.";
+    await prisma.paymentEvent.update({
+      where: { id: event.id },
+      data: {
+        orgId: paymentSession.orgId,
+        userId: paymentSession.userId,
+        sessionId: paymentSession.id,
+        status: "QUARANTINED",
+        processedAt: new Date(),
+        processingError: errorMessage,
+      },
+    });
+    await prisma.paymentWebhookAttempt.update({
+      where: {
+        paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+      },
+      data: {
+        status: "FAILED",
+        httpStatusCode: 200,
+        durationMs: Date.now() - startedAt,
+        completedAt: new Date(),
+        errorCode: "payment_application_failed",
+        errorMessage,
+        result: {
+          quarantined: true,
+          reason: "payment_application_failed",
+        } as Prisma.InputJsonValue,
+      },
+    });
+    return ok({ received: true, quarantined: true, providerEventId });
+  }
+
+  await prisma.paymentEvent.update({
+    where: { id: event.id },
+    data: clean({
+      orgId: processed.session.orgId,
+      userId: processed.session.userId,
+      sessionId: processed.session.id,
+      paymentId: processed.payment?.id,
+      status: "PROCESSED",
+      processedAt: new Date(),
+      processingError: null,
+    }),
+  });
+  await prisma.paymentWebhookAttempt.update({
+    where: {
+      paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
+    },
+    data: {
+      status: "SUCCEEDED",
+      httpStatusCode: 200,
+      durationMs: Date.now() - startedAt,
+      completedAt: new Date(),
+      result: clean({
+        sessionId: processed.session.id,
+        paymentId: processed.payment?.id,
+        status: processed.session.status,
+      }) as Prisma.InputJsonValue,
+    },
+  });
+
+  return ok({
+    received: true,
+    providerEventId,
+    sessionId: processed.session.id,
+    status: processed.session.status,
+  });
 }
 
 function getObjectMetadata(value: Prisma.JsonValue | null | undefined) {
@@ -8972,279 +9363,12 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
       );
     }
 
-    if (event.processedAt) {
-      await prisma.paymentWebhookAttempt.update({
-        where: {
-          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
-        },
-        data: {
-          status: "SUCCEEDED",
-          httpStatusCode: 200,
-          durationMs: Date.now() - startedAt,
-          completedAt: new Date(),
-          result: { duplicate: true } as Prisma.InputJsonValue,
-        },
-      });
-      return ok({ received: true, duplicate: true, providerEventId });
-    }
-
-    const saasBillingProcessed = parsed
-      ? await applySaasBillingProviderEvent({ event: parsed })
-      : null;
-    if (saasBillingProcessed) {
-      const shouldRecordSaasPayment =
-        parsed?.eventType === "invoice.paid" || parsed?.eventType === "subscription.charged";
-      const processedPayment =
-        shouldRecordSaasPayment && saasBillingProcessed.mandate.paymentSessionId
-          ? await applyPaymentSessionStatus({
-              sessionId: saasBillingProcessed.mandate.paymentSessionId,
-              nextStatus: "SUCCEEDED",
-              provider: parsed.provider,
-              ...(parsed.providerPaymentId || parsed.providerSubscriptionId
-                ? { providerRef: parsed.providerPaymentId ?? parsed.providerSubscriptionId }
-                : {}),
-              paymentMode: "CARD",
-              expectedAmountPaise: saasBillingProcessed.mandate.amountPaise,
-              createNotification: createDirectNotification,
-              ensureMembership: ensureOrganizationMembership,
-            })
-          : null;
-      await prisma.paymentEvent.update({
-        where: { id: event.id },
-        data: clean({
-          orgId: saasBillingProcessed.mandate.orgId,
-          sessionId: saasBillingProcessed.mandate.paymentSessionId,
-          paymentId: processedPayment?.payment?.id,
-          status: "PROCESSED",
-          processedAt: new Date(),
-          processingError: null,
-        }),
-      });
-      await prisma.paymentWebhookAttempt.update({
-        where: {
-          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
-        },
-        data: {
-          status: "SUCCEEDED",
-          httpStatusCode: 200,
-          durationMs: Date.now() - startedAt,
-          completedAt: new Date(),
-          result: clean({
-            saasBillingMandateId: saasBillingProcessed.mandate.id,
-            mandateStatus: saasBillingProcessed.mandate.status,
-            subscriptionStatus: saasBillingProcessed.subscription.status,
-            paymentId: processedPayment?.payment?.id,
-          }) as Prisma.InputJsonValue,
-        },
-      });
-      return ok({
-        received: true,
-        providerEventId,
-        saasBillingMandateId: saasBillingProcessed.mandate.id,
-        status: saasBillingProcessed.mandate.status,
-      });
-    }
-
-    let autopayProcessed;
-    try {
-      autopayProcessed = parsed
-        ? await applyAutopayProviderEvent({
-            event: parsed,
-            createNotification: createDirectNotification,
-            ensureMembership: ensureOrganizationMembership,
-          })
-        : null;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Autopay event application failed.";
-      await prisma.paymentEvent.update({
-        where: { id: event.id },
-        data: {
-          status: "QUARANTINED",
-          processedAt: new Date(),
-          processingError: errorMessage,
-        },
-      });
-      await prisma.paymentWebhookAttempt.update({
-        where: {
-          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
-        },
-        data: {
-          status: "FAILED",
-          httpStatusCode: 200,
-          durationMs: Date.now() - startedAt,
-          completedAt: new Date(),
-          errorCode: "autopay_application_failed",
-          errorMessage,
-          result: {
-            quarantined: true,
-            reason: "autopay_application_failed",
-          } as Prisma.InputJsonValue,
-        },
-      });
-      return ok({ received: true, quarantined: true, providerEventId });
-    }
-
-    if (autopayProcessed) {
-      await prisma.paymentEvent.update({
-        where: { id: event.id },
-        data: clean({
-          orgId: autopayProcessed.mandate.orgId,
-          userId: autopayProcessed.mandate.userId,
-          paymentId: autopayProcessed.payment?.id,
-          status: "PROCESSED",
-          processedAt: new Date(),
-          processingError: null,
-        }),
-      });
-      await prisma.paymentWebhookAttempt.update({
-        where: {
-          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
-        },
-        data: {
-          status: "SUCCEEDED",
-          httpStatusCode: 200,
-          durationMs: Date.now() - startedAt,
-          completedAt: new Date(),
-          result: clean({
-            autopayMandateId: autopayProcessed.mandate.id,
-            paymentId: autopayProcessed.payment?.id,
-            subscriptionId: autopayProcessed.subscription?.id,
-            mandateStatus: autopayProcessed.mandate.status,
-          }) as Prisma.InputJsonValue,
-        },
-      });
-      return ok({
-        received: true,
-        providerEventId,
-        autopayMandateId: autopayProcessed.mandate.id,
-        status: autopayProcessed.mandate.status,
-      });
-    }
-
-    const metadata = (parsed?.metadata ?? {}) as Record<string, unknown>;
-    const sessionIdFromMetadata =
-      typeof metadata.paymentSessionId === "string" ? metadata.paymentSessionId : undefined;
-    const paymentSession =
-      (sessionIdFromMetadata
-        ? await prisma.paymentSession.findUnique({ where: { id: sessionIdFromMetadata } })
-        : null) ??
-      (parsed?.providerOrderId
-        ? await prisma.paymentSession.findFirst({
-            where: {
-              OR: [{ providerRef: parsed.providerOrderId }, { id: parsed.providerOrderId }],
-            },
-          })
-        : null);
-
-    if (!paymentSession) {
-      await prisma.paymentEvent.update({
-        where: { id: event.id },
-        data: {
-          status: "QUARANTINED",
-          processedAt: new Date(),
-          processingError: "Payment session not found for Razorpay event.",
-        },
-      });
-      await prisma.paymentWebhookAttempt.update({
-        where: {
-          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
-        },
-        data: {
-          status: "SUCCEEDED",
-          httpStatusCode: 200,
-          durationMs: Date.now() - startedAt,
-          completedAt: new Date(),
-          result: {
-            quarantined: true,
-            reason: "payment_session_not_found",
-          } as Prisma.InputJsonValue,
-        },
-      });
-      return ok({ received: true, quarantined: true, providerEventId });
-    }
-
-    let processed;
-    try {
-      processed = await applyPaymentSessionStatus({
-        sessionId: paymentSession.id,
-        nextStatus: parsed?.paymentStatus ?? "FAILED",
-        provider: "razorpay",
-        ...((parsed?.providerPaymentId ?? parsed?.providerOrderId)
-          ? { providerRef: parsed?.providerPaymentId ?? parsed?.providerOrderId }
-          : {}),
-        paymentMode: "CARD",
-        ...(parsed?.amountPaise !== undefined ? { expectedAmountPaise: parsed.amountPaise } : {}),
-        createNotification: createDirectNotification,
-        ensureMembership: ensureOrganizationMembership,
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Payment application failed.";
-      await prisma.paymentEvent.update({
-        where: { id: event.id },
-        data: {
-          orgId: paymentSession.orgId,
-          userId: paymentSession.userId,
-          sessionId: paymentSession.id,
-          status: "QUARANTINED",
-          processedAt: new Date(),
-          processingError: errorMessage,
-        },
-      });
-      await prisma.paymentWebhookAttempt.update({
-        where: {
-          paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
-        },
-        data: {
-          status: "FAILED",
-          httpStatusCode: 200,
-          durationMs: Date.now() - startedAt,
-          completedAt: new Date(),
-          errorCode: "payment_application_failed",
-          errorMessage,
-          result: {
-            quarantined: true,
-            reason: "payment_application_failed",
-          } as Prisma.InputJsonValue,
-        },
-      });
-      return ok({ received: true, quarantined: true, providerEventId });
-    }
-
-    await prisma.paymentEvent.update({
-      where: { id: event.id },
-      data: clean({
-        orgId: processed.session.orgId,
-        userId: processed.session.userId,
-        sessionId: processed.session.id,
-        paymentId: processed.payment?.id,
-        status: "PROCESSED",
-        processedAt: new Date(),
-        processingError: null,
-      }),
-    });
-    await prisma.paymentWebhookAttempt.update({
-      where: {
-        paymentEventId_attemptNo: { paymentEventId: event.id, attemptNo: attempt.attemptNo },
-      },
-      data: {
-        status: "SUCCEEDED",
-        httpStatusCode: 200,
-        durationMs: Date.now() - startedAt,
-        completedAt: new Date(),
-        result: clean({
-          sessionId: processed.session.id,
-          paymentId: processed.payment?.id,
-          status: processed.session.status,
-        }) as Prisma.InputJsonValue,
-      },
-    });
-
-    return ok({
-      received: true,
+    return processVerifiedPaymentWebhookEvent({
+      event,
+      attempt,
+      parsed,
       providerEventId,
-      sessionId: processed.session.id,
-      status: processed.session.status,
+      startedAt,
     });
   }
   if (request.method === "POST" && pathMatches(path, ["payments", "mock", /.+/, "complete"])) {
@@ -12746,6 +12870,9 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     assertAiLaunchEnabled();
     const body = aiChatSchema.parse(await readJson(request));
     const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
+    if (!(await isFeatureFlagEnabled("ai.assistant", body.orgId ?? ctx.orgId))) {
+      throw serviceUnavailableError("AI assistant is disabled by platform controls.");
+    }
     const userId = requireAuth(ctx);
     await assertRateLimit(
       "aiRequestByUser",
@@ -14745,21 +14872,44 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     if (!event) {
       throw notFoundError("Payment event not found");
     }
+    const provider = getPaymentProvider();
+    let parsed: ParsedPaymentWebhookEvent | null = null;
+    try {
+      parsed =
+        event.payload && provider.providerName === event.provider
+          ? await provider.parseWebhookEvent({
+              rawBody: JSON.stringify(event.payload),
+              headers: (event.headers ?? {}) as Record<string, string>,
+              ...(event.signature ? { signature: event.signature } : {}),
+            })
+          : null;
+    } catch {
+      parsed = null;
+    }
     const nextAttemptNo = event.attemptCount + 1;
     const replay = await prisma.paymentWebhookAttempt.create({
       data: {
         paymentEventId: event.id,
         attemptNo: nextAttemptNo,
-        status: "SUCCEEDED",
+        status: "PENDING",
         processor: "platform-replay",
         startedAt: new Date(),
-        completedAt: new Date(),
         result: { replayedById: actorUserId, originalAttemptId: attempt.id },
       },
     });
     await prisma.paymentEvent.update({
       where: { id: event.id },
       data: { attemptCount: nextAttemptNo, lastAttemptAt: replay.startedAt },
+    });
+    await processVerifiedPaymentWebhookEvent({
+      event,
+      attempt: replay,
+      parsed,
+      providerEventId: event.providerEventId,
+      startedAt: replay.startedAt.getTime(),
+    });
+    const processedReplay = await prisma.paymentWebhookAttempt.findUniqueOrThrow({
+      where: { id: replay.id },
     });
     await writeAuditLog({
       request,
@@ -14769,9 +14919,13 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       entityType: "payment_webhook_attempt",
       entityId: attempt.id,
       riskLevel: "HIGH",
-      metadata: { replayAttemptId: replay.id, paymentEventId: event.id },
+      metadata: {
+        replayAttemptId: replay.id,
+        paymentEventId: event.id,
+        status: processedReplay.status,
+      },
     });
-    return ok({ attempt: replay });
+    return ok({ attempt: processedReplay });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "audit"])) {
     const ctx = await getRequestContext(request);
@@ -14816,20 +14970,38 @@ export async function handleAiNotificationsShopPrivacyPlatform(
         createdByUserId: actorUserId,
       }),
     });
+    const fanout =
+      broadcast.status === "LIVE"
+        ? await fanOutPlatformBroadcast({
+            broadcast: {
+              id: broadcast.id,
+              title: broadcast.title,
+              body: broadcast.body,
+              severity: broadcast.severity,
+              targetOrgIds: broadcast.targetOrgIds,
+              targetRoles: broadcast.targetRoles as OrgRole[],
+              createdByUserId: broadcast.createdByUserId,
+            },
+          })
+        : null;
     await writeAuditLog({
       request,
       actorUserId,
       action: "platform.broadcast_created",
       entityType: "platform_broadcast",
       entityId: broadcast.id,
-      metadata: { status: broadcast.status, severity: broadcast.severity },
+      metadata: { status: broadcast.status, severity: broadcast.severity, fanout },
     });
-    return ok({ broadcast });
+    return ok({ broadcast, fanout });
   }
   if (request.method === "PATCH" && pathMatches(path, ["platform", "broadcasts", /.+/])) {
     const ctx = await getRequestContext(request);
     const actorUserId = requirePlatformAdmin(ctx);
     const body = platformBroadcastSchema.partial().parse(await readJson(request));
+    const previous = await prisma.platformBroadcast.findUnique({ where: { id: path[2]! } });
+    if (!previous) {
+      throw notFoundError("Broadcast not found");
+    }
     const broadcast = await prisma.platformBroadcast.update({
       where: { id: path[2]! },
       data: clean({
@@ -14839,15 +15011,29 @@ export async function handleAiNotificationsShopPrivacyPlatform(
         ...(body.status === "LIVE" ? { publishedAt: new Date() } : {}),
       }),
     });
+    const fanout =
+      body.status === "LIVE" && previous.status !== "LIVE"
+        ? await fanOutPlatformBroadcast({
+            broadcast: {
+              id: broadcast.id,
+              title: broadcast.title,
+              body: broadcast.body,
+              severity: broadcast.severity,
+              targetOrgIds: broadcast.targetOrgIds,
+              targetRoles: broadcast.targetRoles as OrgRole[],
+              createdByUserId: broadcast.createdByUserId,
+            },
+          })
+        : null;
     await writeAuditLog({
       request,
       actorUserId,
       action: "platform.broadcast_updated",
       entityType: "platform_broadcast",
       entityId: broadcast.id,
-      metadata: { status: broadcast.status },
+      metadata: { status: broadcast.status, fanout },
     });
-    return ok({ broadcast });
+    return ok({ broadcast, fanout });
   }
   if (request.method === "DELETE" && pathMatches(path, ["platform", "broadcasts", /.+/])) {
     const ctx = await getRequestContext(request);
@@ -14866,22 +15052,29 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
     const flags = await prisma.featureFlag.findMany({ orderBy: { key: "asc" } });
-    const hasImpersonation = flags.some((flag) => flag.key === "platform.impersonation");
+    const defaults = [
+      {
+        key: "ai.assistant",
+        enabled: false,
+        description: "Allow AI assistant chat requests without redeploying.",
+        rolloutPercent: 0,
+        overrideOrgIds: [],
+        updatedAt: new Date(),
+        updatedByUserId: null,
+      },
+      {
+        key: "platform.impersonation",
+        enabled: false,
+        description: "Allow platform admins to start audited support impersonation sessions.",
+        rolloutPercent: 0,
+        overrideOrgIds: [],
+        updatedAt: new Date(),
+        updatedByUserId: null,
+      },
+    ];
+    const existingKeys = new Set(flags.map((flag) => flag.key));
     return ok({
-      flags: hasImpersonation
-        ? flags
-        : [
-            ...flags,
-            {
-              key: "platform.impersonation",
-              enabled: false,
-              description: "Allow platform admins to start audited support impersonation sessions.",
-              rolloutPercent: 0,
-              overrideOrgIds: [],
-              updatedAt: new Date(),
-              updatedByUserId: null,
-            },
-          ],
+      flags: [...flags, ...defaults.filter((flag) => !existingKeys.has(flag.key))],
     });
   }
   if (request.method === "PATCH" && pathMatches(path, ["platform", "flags"])) {
