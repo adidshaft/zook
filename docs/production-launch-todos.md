@@ -29,6 +29,14 @@ Live smoke passed: `/api/ready` reported `ready=true` with the database reachabl
 consent" copy. Remaining manual item: Aman must update App Store age rating, Google Play app
 content, screenshots, and public support copy before the next store submission.
 
+Update on 2026-05-24: Phase 2 platform support console is ready for local merge with production
+deployment deferred to the end of the full hardening sequence. Before deploying the Phase 2 artifact,
+apply migration `20260524160000_phase2_platform_console` and keep `platform.impersonation` OFF in
+production until pen-tested and explicitly approved. The local gate passed typecheck, lint, unit,
+services, DB prep, full web Playwright, and targeted platform-console Playwright coverage. The broad
+DB acceptance aggregate was intentionally skipped after an unrelated members workflow timeout under
+the local-only merge direction.
+
 ## Current Placeholder Defaults
 
 - Production domain: `zookfit.in`.

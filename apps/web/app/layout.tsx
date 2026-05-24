@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { QueryProvider } from "@/components/query-provider";
+import { sessionCookieName } from "@/server/context";
+import { resolveSessionSummaryFromToken } from "@/server/session";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -99,6 +102,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const cookieStore = await cookies();
   const requestHeaders = await headers();
   const themePreference = normalizeThemePreference(cookieStore.get("zook_theme")?.value);
+  const session = await resolveSessionSummaryFromToken(cookieStore.get(sessionCookieName)?.value);
   const theme = initialServerTheme(themePreference);
   const nonce = requestHeaders.get("x-nonce") ?? undefined;
 
@@ -114,7 +118,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body>
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          {session?.impersonation ? (
+            <ImpersonationBanner
+              id={session.impersonation.id}
+              targetEmail={session.user.email}
+              adminEmail={session.originalUser?.email ?? null}
+              expiresAt={new Date(session.impersonation.expiresAt).toISOString()}
+            />
+          ) : null}
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

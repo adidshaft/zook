@@ -58,7 +58,8 @@ export type OrganizationStatus =
   | "PAYMENT_PENDING"
   | "ACTIVE"
   | "SUSPENDED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "DELETED";
 
 export type GymVisibility = "PUBLIC" | "INVITE_ONLY" | "HIDDEN";
 export type GymJoinMode = "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY";
@@ -213,6 +214,8 @@ export type ConsentStatus = "PENDING" | "GRANTED" | "REVOKED" | "DENIED";
 
 export interface RequestContext {
   userId?: string;
+  originalUserId?: string;
+  impersonationSessionId?: string;
   orgId?: string;
   orgStatus?: OrganizationStatus;
   branchId?: string;
@@ -255,6 +258,15 @@ export interface AuthSessionUser {
 
 export interface AuthSessionSummary {
   user: AuthSessionUser;
+  originalUser?: AuthSessionUser;
+  impersonation?: {
+    id: string;
+    targetUserId: string;
+    platformAdminUserId: string;
+    reason: string;
+    startedAt: Date;
+    expiresAt: Date;
+  };
   organizations: AuthOrganizationSummary[];
   activeOrgId?: string;
   activeOrganization?: AuthOrganizationSummary;
