@@ -373,6 +373,7 @@ export interface InvoiceRecord {
   paymentId?: string | null;
   invoiceNumber?: string | null;
   invoiceNo?: string | null;
+  invoiceUrl?: string | null;
   issueDate?: string | null;
   issuedAt?: string | null;
   subtotalPaise?: number;

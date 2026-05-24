@@ -73,7 +73,6 @@ import {
   calculateShopOrder,
   buildAIQuotaState,
   AIGuardError,
-  buildInvoiceNumber,
   canReceiveNotification,
   canAssignPlanToUser,
   canSendNotification,
@@ -106,6 +105,8 @@ import {
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
 import { extractSessionToken, refreshSessionCookieName, sessionCookieName } from "../context";
+import { ensurePaymentInvoiceDocument } from "../invoices/generate";
+import { renderInvoicePdfBuffer } from "../invoices/pdf";
 import {
   getRequestContext,
   requireAuth,
@@ -3641,69 +3642,13 @@ async function ensurePaymentReceipt(input: { orgId: string; paymentId: string; u
   return { org, payment: updatedPayment, user, invoice, receiptNumber };
 }
 
-function inclusiveGstBreakdown(totalPaise: number, gstRateBps: number) {
-  if (!gstRateBps) {
-    return { subtotalPaise: totalPaise, gstPaise: 0, totalPaise };
-  }
-  const subtotalPaise = Math.round((totalPaise * 10_000) / (10_000 + gstRateBps));
-  return {
-    subtotalPaise,
-    gstPaise: totalPaise - subtotalPaise,
-    totalPaise,
-  };
-}
-
 async function ensurePaymentInvoice(input: { orgId: string; paymentId: string; userId?: string }) {
-  const { org, payment, user, invoice } = await getPaymentDocumentContext(input);
-  assertBillingDetailsReady(org, "invoice");
+  const { org, payment, user } = await getPaymentDocumentContext(input);
   if (payment.status !== "SUCCEEDED" && payment.status !== "PARTIALLY_REFUNDED") {
     throw conflictError("Invoices can be generated only after a payment succeeds.");
   }
-  if (invoice) {
-    return { org, payment, user, invoice };
-  }
-  const sequence = (await prisma.invoice.count({ where: { orgId: input.orgId } })) + 1;
-  const issueDate = new Date();
-  const invoiceNumber = buildInvoiceNumber({
-    orgCode: documentOrgCode(org),
-    issueDate,
-    sequence,
-  });
-  const gstRateBps = 1800;
-  const totals = inclusiveGstBreakdown(payment.amountPaise, gstRateBps);
-  const createdInvoice = await prisma.invoice.create({
-    data: {
-      orgId: input.orgId,
-      userId: payment.userId,
-      paymentId: payment.id,
-      invoiceNumber,
-      invoiceNo: invoiceNumber,
-      issueDate,
-      issuedAt: issueDate,
-      gstNumber: org.gstNumber,
-      gstRateBps,
-      subtotalPaise: totals.subtotalPaise,
-      gstPaise: totals.gstPaise,
-      totalPaise: totals.totalPaise,
-      amountPaise: totals.totalPaise,
-      taxPaise: totals.gstPaise,
-      status: payment.status,
-      invoiceStatus: "issued",
-      metadata: {
-        paymentPurpose: payment.purpose,
-        lineItems: [
-          {
-            description: `${payment.purpose.replaceAll("_", " ").toLowerCase()} payment`,
-            quantity: 1,
-            subtotalPaise: totals.subtotalPaise,
-            gstPaise: totals.gstPaise,
-            totalPaise: totals.totalPaise,
-          },
-        ],
-      } as Prisma.InputJsonValue,
-    },
-  });
-  return { org, payment, user, invoice: createdInvoice };
+  const invoice = await ensurePaymentInvoiceDocument({ org, payment, user });
+  return { org, payment, user, invoice };
 }
 
 function receiptHtml(input: Awaited<ReturnType<typeof ensurePaymentReceipt>>) {
@@ -3743,43 +3688,32 @@ function invoiceHtml(input: Awaited<ReturnType<typeof ensurePaymentInvoice>>) {
   });
 }
 
-function simplePdfBuffer(lines: string[]) {
-  const content = lines
-    .map((line, index) => {
-      const escaped = line.replace(/[()\\]/g, "\\$&");
-      return `BT /F1 12 Tf 72 ${740 - index * 20} Td (${escaped}) Tj ET`;
-    })
-    .join("\n");
-  const objects = [
-    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
-    "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
-    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj",
-    "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
-    `5 0 obj << /Length ${content.length} >> stream\n${content}\nendstream endobj`,
-  ];
-  let body = "%PDF-1.4\n";
-  const offsets: number[] = [];
-  for (const object of objects) {
-    offsets.push(body.length);
-    body += `${object}\n`;
-  }
-  const xrefOffset = body.length;
-  body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (const offset of offsets) {
-    body += `${String(offset).padStart(10, "0")} 00000 n \n`;
-  }
-  body += `trailer << /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-  return Buffer.from(body, "utf8");
+async function invoicePdfResponse(input: {
+  invoice: Prisma.InvoiceGetPayload<object>;
+  org?: Awaited<ReturnType<typeof prisma.organization.findUnique>>;
+  user?: Awaited<ReturnType<typeof prisma.user.findUnique>>;
+}) {
+  const pdf = await renderInvoicePdfBuffer({
+    invoice: input.invoice,
+    org: input.org ?? null,
+    user: input.user ?? null,
+  });
+  const filename = input.invoice.invoiceNumber ?? input.invoice.invoiceNo ?? input.invoice.number ?? input.invoice.id;
+  const safeFilename = filename.replace(/[^A-Za-z0-9._-]+/g, "_");
+  return new NextResponse(new Uint8Array(pdf), {
+    headers: {
+      "content-type": "application/pdf",
+      "content-disposition": `inline; filename="${safeFilename}.pdf"`,
+      "cache-control": "private, max-age=0, no-store",
+    },
+  });
 }
 
-function saasInvoicePdf(invoice: Prisma.InvoiceGetPayload<object>) {
-  return simplePdfBuffer([
-    "Zook SaaS invoice",
-    `Invoice: ${invoice.invoiceNumber ?? invoice.invoiceNo ?? invoice.number ?? invoice.id}`,
-    `Issue date: ${(invoice.issueDate ?? invoice.issuedAt).toISOString().slice(0, 10)}`,
-    `Amount: INR ${(invoice.totalPaise / 100).toFixed(2)}`,
-    `Status: ${invoice.status}`,
-  ]);
+async function invoiceSignedUrl(invoice: { pdfAssetId: string | null; pdfFileAssetId: string | null }) {
+  const assetId = invoice.pdfAssetId ?? invoice.pdfFileAssetId;
+  if (!assetId) return null;
+  const asset = await prisma.fileAsset.findFirst({ where: { id: assetId, deletedAt: null } });
+  return asset ? resolveFileUrl(asset, true) : null;
 }
 
 function publicTrainerPhotoUrl(value: string | null | undefined) {
@@ -6339,8 +6273,21 @@ export async function handleMeData(request: NextRequest, path: string[]) {
         gstPaise: invoice.gstPaise || invoice.taxPaise,
         totalPaise: invoice.totalPaise || invoice.amountPaise,
         pdfAsset: invoice.pdfAssetId ? (assetsById.get(invoice.pdfAssetId) ?? null) : null,
+        invoiceUrl: `/api/me/invoices/${invoice.id}/pdf`,
       })),
     });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "invoices", /.+/, "pdf"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const invoice = await prisma.invoice.findFirst({ where: { id: path[2]!, userId } });
+    if (!invoice) {
+      throw notFoundError("Invoice not found");
+    }
+    const [org, user] = await Promise.all([
+      invoice.orgId ? prisma.organization.findUnique({ where: { id: invoice.orgId } }) : null,
+      prisma.user.findUnique({ where: { id: userId } }),
+    ]);
+    return invoicePdfResponse({ invoice, org, user });
   }
   if (
     (request.method === "POST" || request.method === "GET") &&
@@ -6382,7 +6329,8 @@ export async function handleMeData(request: NextRequest, path: string[]) {
     }
     return ok({
       invoice: invoice.invoice,
-      invoiceUrl: `/api/me/payments/${paymentId}/invoice?format=html`,
+      invoiceUrl: `/api/me/invoices/${invoice.invoice.id}/pdf`,
+      signedUrl: await invoiceSignedUrl(invoice.invoice),
     });
   }
   return undefined;
@@ -9688,13 +9636,37 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
       invoices: invoices.map((invoice) => ({
         ...invoice,
         user: invoice.userId ? (usersById.get(invoice.userId) ?? null) : null,
-        invoiceUrl: invoice.paymentId
-          ? `/api/orgs/${orgId}/payments/${invoice.paymentId}/invoice?format=html`
-          : invoice.kind === "SAAS"
-            ? `/api/orgs/${orgId}/saas-subscription/invoices/${invoice.id}.pdf`
-            : null,
+        invoiceUrl: `/api/orgs/${orgId}/invoices/${invoice.id}/pdf`,
       })),
     });
+  }
+  if (
+    (request.method === "POST" || request.method === "GET") &&
+    pathMatches(path, ["orgs", /.+/, "invoices", /.+/])
+  ) {
+    const orgId = path[1]!;
+    const paymentId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgAnyPermission(ctx, orgId, ["ORG_MANAGE_BILLING", "PAYMENTS_VIEW"]);
+    const invoice = await ensurePaymentInvoice({ orgId, paymentId });
+    return ok({
+      invoice: invoice.invoice,
+      invoiceUrl: `/api/orgs/${orgId}/invoices/${invoice.invoice.id}/pdf`,
+      signedUrl: await invoiceSignedUrl(invoice.invoice),
+    });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "invoices", /.+/, "pdf"])) {
+    const orgId = path[1]!;
+    const invoiceId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgAnyPermission(ctx, orgId, ["ORG_MANAGE_BILLING", "PAYMENTS_VIEW"]);
+    const invoice = await prisma.invoice.findFirst({ where: { id: invoiceId, orgId } });
+    if (!invoice) throw notFoundError("Invoice not found.");
+    const [org, user] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: orgId } }),
+      invoice.userId ? prisma.user.findUnique({ where: { id: invoice.userId } }) : null,
+    ]);
+    return invoicePdfResponse({ invoice, org, user });
   }
   if (
     request.method === "GET" &&
@@ -9708,12 +9680,8 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
       where: { id: invoiceId, orgId, kind: "SAAS" },
     });
     if (!invoice) throw notFoundError("SaaS invoice not found.");
-    return new NextResponse(saasInvoicePdf(invoice), {
-      headers: {
-        "content-type": "application/pdf",
-        "content-disposition": `inline; filename="${invoice.invoiceNumber ?? invoice.id}.pdf"`,
-      },
-    });
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+    return invoicePdfResponse({ invoice, org });
   }
   if (
     (request.method === "POST" || request.method === "GET") &&
@@ -9751,7 +9719,8 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     }
     return ok({
       invoice: invoice.invoice,
-      invoiceUrl: `/api/orgs/${orgId}/payments/${paymentId}/invoice?format=html`,
+      invoiceUrl: `/api/orgs/${orgId}/invoices/${invoice.invoice.id}/pdf`,
+      signedUrl: await invoiceSignedUrl(invoice.invoice),
     });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "payments", /.+/, "refund"])) {
@@ -12579,6 +12548,10 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
     const proofAsset = await getOrganizationScopedFileAsset(body.proofAssetId, orgId, [
       "payment_proof",
     ]);
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) {
+      throw notFoundError("Organization not found");
+    }
 
     if (body.purpose === "SHOP_ORDER") {
       const shopOrderId = body.shopOrderId!;
@@ -12632,6 +12605,8 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
         entityId: payment.id,
         metadata: { shopOrderId: order.id, amountPaise: payment.amountPaise, mode: payment.mode },
       });
+      const orderUser = await prisma.user.findUnique({ where: { id: order.userId } });
+      await ensurePaymentInvoiceDocument({ org, payment, user: orderUser });
       return ok({ payment, order: updatedOrder });
     }
 
@@ -12662,6 +12637,7 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
         entityId: payment.id,
         metadata: { amountPaise: payment.amountPaise, mode: payment.mode },
       });
+      await ensurePaymentInvoiceDocument({ org, payment, user: null });
       return ok({ payment });
     }
 
@@ -12820,6 +12796,7 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
       entityId: payment.id,
       metadata: { amountPaise: payment.amountPaise, mode: payment.mode },
     });
+    await ensurePaymentInvoiceDocument({ org, payment, user: memberUser });
     return ok({ payment, subscription });
   }
   if (

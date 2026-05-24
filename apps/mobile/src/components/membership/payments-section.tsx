@@ -10,11 +10,13 @@ export function PaymentsSection({
   documentBusyKey,
   invoices,
   onCreateDocument,
+  onDownloadInvoice,
   payments,
 }: {
   documentBusyKey: string | null;
   invoices: InvoiceRecord[];
   onCreateDocument: (payment: MembershipPaymentRecord, kind: PaymentDocumentKind) => void;
+  onDownloadInvoice: (invoice: InvoiceRecord) => void;
   payments: MembershipPaymentRecord[];
 }) {
   return (
@@ -102,9 +104,25 @@ export function PaymentsSection({
                     {titleCaseFromCode(invoice.invoiceStatus ?? invoice.status ?? "ISSUED")}
                   </Text>
                 </View>
-                <Text style={styles.paymentAmount}>
-                  {formatInr(invoice.totalPaise ?? invoice.amountPaise)}
-                </Text>
+                <View style={styles.invoiceActions}>
+                  <Text style={styles.paymentAmount}>
+                    {formatInr(invoice.totalPaise ?? invoice.amountPaise)}
+                  </Text>
+                  {invoice.invoiceUrl ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Download invoice"
+                      onPress={() => onDownloadInvoice(invoice)}
+                      style={({ pressed }) => [
+                        styles.documentButton,
+                        pressed ? styles.documentButtonPressed : null,
+                      ]}
+                    >
+                      <Ionicons name="download-outline" size={14} color={legacyColors.lime} />
+                      <Text style={styles.documentButtonText}>Download invoice</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               </GlassCard>
             ))}
           </View>
@@ -218,6 +236,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: spacing.sm,
     paddingTop: 2,
+  },
+  invoiceActions: {
+    alignItems: "flex-end",
+    gap: spacing.xs,
   },
   documentButton: {
     minHeight: 44,
