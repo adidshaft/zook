@@ -82,6 +82,18 @@ export async function resolveSessionSummaryFromToken(
     return null;
   }
 
+  const impersonation = session.impersonationSessionId
+    ? await prisma.impersonationSession.findUnique({
+        where: { id: session.impersonationSessionId },
+      })
+    : null;
+  if (
+    session.impersonationSessionId &&
+    (!impersonation || impersonation.endedAt || impersonation.expiresAt <= new Date())
+  ) {
+    return null;
+  }
+
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) {
     return null;
@@ -148,6 +160,10 @@ export async function resolveSessionSummaryFromToken(
 
   const activeOrganization = resolveActiveOrganization(summaries, preferredOrgId);
 
+  const originalUser = session.originalUserId
+    ? await prisma.user.findUnique({ where: { id: session.originalUserId } })
+    : null;
+
   return {
     user: {
       id: user.id,
@@ -166,6 +182,39 @@ export async function resolveSessionSummaryFromToken(
       ...(user.phone ? { phone: user.phone } : {}),
       ...(user.profilePhotoUrl ? { profilePhotoUrl: user.profilePhotoUrl } : {}),
     },
+    ...(originalUser
+      ? {
+          originalUser: {
+            id: originalUser.id,
+            email: publicUserEmail(originalUser.email) ?? "",
+            name: originalUser.name,
+            slug: originalUser.slug,
+            privateHandle: privateUserHandle(originalUser.id),
+            dateOfBirth: originalUser.dateOfBirth,
+            isMinor: originalUser.isMinor,
+            guardianPending: originalUser.guardianPending,
+            isPlatformAdmin: originalUser.isPlatformAdmin,
+            marketingOptIn: originalUser.marketingOptIn,
+            aiConsent: originalUser.aiConsent,
+            preferredLocale: originalUser.preferredLocale,
+            weeklyWorkoutGoal: originalUser.weeklyWorkoutGoal,
+            ...(originalUser.phone ? { phone: originalUser.phone } : {}),
+            ...(originalUser.profilePhotoUrl ? { profilePhotoUrl: originalUser.profilePhotoUrl } : {}),
+          },
+        }
+      : {}),
+    ...(impersonation
+      ? {
+          impersonation: {
+            id: impersonation.id,
+            targetUserId: impersonation.targetUserId,
+            platformAdminUserId: impersonation.platformAdminUserId,
+            reason: impersonation.reason,
+            startedAt: impersonation.startedAt,
+            expiresAt: impersonation.expiresAt,
+          },
+        }
+      : {}),
     organizations: summaries,
     ...(activeOrganization ? { activeOrgId: activeOrganization.orgId, activeOrganization } : {}),
   };

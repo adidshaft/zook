@@ -49,6 +49,8 @@ export async function createRequestContext(
 
   return {
     userId: session.user.id,
+    ...(session.originalUser ? { originalUserId: session.originalUser.id } : {}),
+    ...(session.impersonation ? { impersonationSessionId: session.impersonation.id } : {}),
     ...(activeOrganization ? { orgId: activeOrganization.orgId } : {}),
     ...(activeOrganization ? { orgStatus: activeOrganization.status } : {}),
     roles,

@@ -61,6 +61,11 @@ function serializePlatformAbuseFlag(flag: {
 
 const platformSectionAnchors: Record<string, string> = {
   status: "readiness",
+  users: "support-console",
+  payments: "support-console",
+  webhooks: "support-console",
+  audit: "support-console",
+  flags: "support-console",
   gyms: "organizations",
   subscriptions: "subscriptions",
   assistant: "ai-traffic",
@@ -122,6 +127,11 @@ export default async function PlatformPage({
           {(
             [
               ["Status", "/platform/status", "status"],
+              ["Users", "/platform/users", "users"],
+              ["Payments", "/platform/payments", "payments"],
+              ["Webhooks", "/platform/webhooks", "webhooks"],
+              ["Audit", "/platform/audit", "audit"],
+              ["Flags", "/platform/flags", "flags"],
               ["Gyms", "/platform/gyms", "gyms"],
               ["Subscriptions", "/platform/subscriptions", "subscriptions"],
               ["Assistant", "/platform/assistant", "assistant"],

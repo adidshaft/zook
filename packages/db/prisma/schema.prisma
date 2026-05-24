@@ -76,6 +76,7 @@ enum OrganizationStatus {
   ACTIVE
   SUSPENDED
   CANCELLED
+  DELETED
 }
 
 enum GymVisibility {
@@ -489,6 +490,8 @@ model User {
 model UserSession {
   id                    String    @id @default(cuid())
   userId                String
+  originalUserId        String?
+  impersonationSessionId String?
   tokenHash             String    @unique
   refreshTokenHash      String?   @unique
   userAgent             String?
@@ -503,6 +506,8 @@ model UserSession {
   createdAt             DateTime  @default(now())
 
   @@index([userId])
+  @@index([impersonationSessionId])
+  @@index([originalUserId])
   @@index([userId, deviceFingerprintHash])
   @@index([expiresAt])
   @@index([refreshExpiresAt])
@@ -844,6 +849,7 @@ model ImpersonationSession {
   targetOrgId         String?
   reason              String
   startedAt           DateTime  @default(now())
+  expiresAt           DateTime
   endedAt             DateTime?
   ipHash              String
   userAgentHash       String

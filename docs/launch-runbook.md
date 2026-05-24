@@ -77,6 +77,27 @@ Resend:
 
 ## Membership Operations
 
+Phase 2 platform support console:
+- Platform admins can handle day-1 support from `/platform`: user lookup, session revocation,
+  impersonation start/end, cross-tenant payment search/refund, webhook replay, global audit,
+  broadcasts, feature flags, moderation decisions, and org danger actions.
+- Production migration to apply before the Phase 2 app artifact is promoted:
+  `20260524160000_phase2_platform_console`. It adds impersonation-bound session columns,
+  impersonation expiry, and `OrganizationStatus.DELETED`.
+- Keep the `platform.impersonation` feature flag OFF in production until the impersonation flow
+  is pen-tested. The console may create/read the flag row, but production rollout should remain
+  disabled unless explicitly approved.
+- Impersonation sessions have a 60-minute hard cap, show a global red banner, write
+  `impersonationSessionId`/`originalUserId` into audit metadata, and cannot be used for refunds,
+  account deletion, data export, email changes, phone changes, or platform-admin targets.
+- Phase 2 local verification on 2026-05-24 passed `pnpm db:generate`, `pnpm --filter @zook/web
+  typecheck`, `pnpm typecheck`, `pnpm lint`, `pnpm test:unit`, `pnpm test:services`, `pnpm
+  test:db:prepare`, `pnpm test:web`, and targeted Playwright
+  `apps/web/tests/platform-console.spec.ts`. The broad DB acceptance aggregate was intentionally
+  skipped after an unrelated members workflow timeout per the local-only merge direction.
+- Production deployment and live smoke for Phase 2 are deferred to the end of the full hardening
+  sequence.
+
 Phase 1 hardening:
 - Guardian-consent gating is deprecated. Under-18 DOBs must not block membership activation,
   attendance, plan assignment, notification delivery, AI consent, or PT subscription activation.
