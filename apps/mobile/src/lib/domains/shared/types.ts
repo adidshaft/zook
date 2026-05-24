@@ -560,6 +560,40 @@ export interface BodyProgressEntryRecord {
   notes?: string | null;
 }
 
+export interface DietPlanMealRecord {
+  id: string;
+  name: string;
+  timeOfDay?: string | null;
+  items?: string[] | null;
+  calories?: number | null;
+  proteinG?: number | null;
+  carbsG?: number | null;
+  fatsG?: number | null;
+  order?: number | null;
+}
+
+export interface DietPlanRecord {
+  id: string;
+  title: string;
+  calorieTarget?: number | null;
+  proteinG?: number | null;
+  carbsG?: number | null;
+  fatsG?: number | null;
+  status?: string | null;
+  meals?: DietPlanMealRecord[];
+}
+
+export interface MealLogRecord {
+  id: string;
+  mealName: string;
+  loggedAt?: string | null;
+  calories?: number | null;
+  proteinG?: number | null;
+  carbsG?: number | null;
+  fatsG?: number | null;
+  notes?: string | null;
+}
+
 export interface OrgJoinRequestRecord {
   id: string;
   userId: string;
