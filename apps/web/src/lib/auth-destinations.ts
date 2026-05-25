@@ -54,6 +54,10 @@ function matchesPathPrefix(pathname: string, prefix: string) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
+function isAuthenticatedHandoffPath(pathname: string) {
+  return matchesPathPrefix(pathname, "/start-gym") || matchesPathPrefix(pathname, "/staff/invite");
+}
+
 function privateMemberPath(session: Pick<AuthSessionSummary, "user">) {
   const user = session.user as AuthSessionSummary["user"] & {
     slug?: string | null;
@@ -119,7 +123,10 @@ function requestedPathIsAllowed(
     if (matchesPathPrefix(pathname, "/coach")) {
       return Boolean(session && hasCoachAccess(session));
     }
-    if (matchesPathPrefix(pathname, "/start-gym") || matchesPathPrefix(pathname, "/staff")) {
+    if (isAuthenticatedHandoffPath(pathname)) {
+      return Boolean(session);
+    }
+    if (matchesPathPrefix(pathname, "/staff")) {
       return Boolean(session && hasOwnerDashboardAccess(session));
     }
     return false;
@@ -142,7 +149,7 @@ export function resolvePostLoginDestination(
     session &&
     !session.user.isPlatformAdmin &&
     requestedPathname &&
-    matchesPathPrefix(requestedPathname, "/start-gym")
+    isAuthenticatedHandoffPath(requestedPathname)
   ) {
     return { host: "dashboard", path: requested };
   }

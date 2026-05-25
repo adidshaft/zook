@@ -99,6 +99,19 @@ describe("auth destinations", () => {
     });
   });
 
+  it("keeps staff invite handoff destinations before staff roles exist", () => {
+    expect(resolvePostLoginDestination(session(), "/staff/invite/inv_123")).toEqual({
+      host: "dashboard",
+      path: "/staff/invite/inv_123",
+    });
+    expect(
+      resolvePostLoginDestination(session({ roles: ["MEMBER"] }), "/staff/invite/inv_123"),
+    ).toEqual({
+      host: "dashboard",
+      path: "/staff/invite/inv_123",
+    });
+  });
+
   it("ignores requested paths that point at the wrong host", () => {
     expect(resolvePostLoginDestination(session({ roles: ["OWNER"] }), "/me/member-123")).toEqual({
       host: "dashboard",
@@ -107,6 +120,10 @@ describe("auth destinations", () => {
     expect(resolvePostLoginDestination(session({ roles: ["MEMBER"] }), "/dashboard")).toEqual({
       host: "public",
       path: "/me/member-123",
+    });
+    expect(resolvePostLoginDestination(session(), "/staff")).toEqual({
+      host: "public",
+      path: "/gyms",
     });
   });
 
