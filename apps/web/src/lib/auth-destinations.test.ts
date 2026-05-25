@@ -88,6 +88,17 @@ describe("auth destinations", () => {
     );
   });
 
+  it("keeps start-gym as an authenticated onboarding destination before owner roles exist", () => {
+    expect(resolvePostLoginDestination(session(), "/start-gym")).toEqual({
+      host: "dashboard",
+      path: "/start-gym",
+    });
+    expect(resolvePostLoginDestination(session({ roles: ["MEMBER"] }), "/start-gym")).toEqual({
+      host: "dashboard",
+      path: "/start-gym",
+    });
+  });
+
   it("ignores requested paths that point at the wrong host", () => {
     expect(resolvePostLoginDestination(session({ roles: ["OWNER"] }), "/me/member-123")).toEqual({
       host: "dashboard",

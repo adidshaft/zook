@@ -16,6 +16,13 @@ export default async function StartGymPage() {
     redirect("/login?redirect=/start-gym");
   }
 
+  const ownerOrganization = session.organizations.find((organization) =>
+    organization.roles.some((role) => role === "OWNER" || role === "ADMIN"),
+  );
+  if (ownerOrganization) {
+    redirect(`/dashboard/billing?created=${ownerOrganization.orgId}&setup=billing`);
+  }
+
   return (
     <main className="min-h-screen px-5 py-5">
       <div className="mx-auto grid max-w-7xl gap-6">

@@ -135,8 +135,19 @@ export function resolvePostLoginDestination(
   session: AuthDestinationSession,
   requestedPath?: string | null,
 ): AuthDestination {
-  const destination = defaultDestination(session);
   const requested = safePath(requestedPath);
+  const requestedPathname = requested ? pathnameForHostMatch(requested) : null;
+  if (
+    requested &&
+    session &&
+    !session.user.isPlatformAdmin &&
+    requestedPathname &&
+    matchesPathPrefix(requestedPathname, "/start-gym")
+  ) {
+    return { host: "dashboard", path: requested };
+  }
+
+  const destination = defaultDestination(session);
   if (requested && requestedPathIsAllowed(session, destination, requested)) {
     return { ...destination, path: requested };
   }
