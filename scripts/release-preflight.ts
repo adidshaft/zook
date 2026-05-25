@@ -3,7 +3,16 @@ import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { runDbCheck } from "./check-db";
 import { runReleaseEnvChecks } from "./check-release-env";
-import { env, loadLocalEnvironment, renderResult, rootDir, type CheckResult, warn, pass } from "./shared";
+import {
+  env,
+  fail,
+  loadLocalEnvironment,
+  renderResult,
+  rootDir,
+  type CheckResult,
+  warn,
+  pass,
+} from "./shared";
 
 function runPrismaDriftCheck(): CheckResult {
   const migrationsDir = resolve(rootDir, "packages/db/prisma/migrations");
@@ -11,7 +20,7 @@ function runPrismaDriftCheck(): CheckResult {
     return warn(
       "Prisma drift",
       "Migration history is not present in packages/db/prisma/migrations.",
-      "This repo still appears db-push oriented, so schema drift cannot be verified automatically yet."
+      "This repo still appears db-push oriented, so schema drift cannot be verified automatically yet.",
     );
   }
 
@@ -29,23 +38,23 @@ function runPrismaDriftCheck(): CheckResult {
       "migrate",
       "status",
       "--schema",
-      "prisma/schema.prisma"
+      "prisma/schema.prisma",
     ],
     {
       cwd: rootDir,
       env: process.env,
-      encoding: "utf8"
-    }
+      encoding: "utf8",
+    },
   );
 
   if (result.status === 0) {
     return pass("Prisma drift", "Prisma migration status completed without drift errors.");
   }
 
-  return warn(
+  return fail(
     "Prisma drift",
-    "Prisma migration status could not confirm a clean migration state.",
-    result.stderr.trim() || result.stdout.trim() || "Review Prisma migration status manually."
+    "Prisma migration status is not clean.",
+    result.stderr.trim() || result.stdout.trim() || "Review Prisma migration status manually.",
   );
 }
 
@@ -68,7 +77,9 @@ async function main() {
 
   console.log("");
   if (failures > 0) {
-    console.log(`Release preflight failed with ${failures} blocking issue(s) and ${warnings} warning(s).`);
+    console.log(
+      `Release preflight failed with ${failures} blocking issue(s) and ${warnings} warning(s).`,
+    );
     process.exit(1);
   }
 

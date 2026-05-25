@@ -4,6 +4,15 @@ import { summarizeProviderDiagnostics } from "./request-logger";
 
 type ComponentStatus = "operational" | "degraded" | "down";
 
+const requiredMigrationNames = [
+  "20260524160000_phase2_platform_console",
+  "20260524200000_phase5_saas_upgrade",
+  "20260524210000_phase6_invoice_sequences",
+  "20260524220000_phase7_branch_backfill",
+  "20260524230000_phase9_trainer_payouts",
+  "20260524233000_phase10_referral_polish",
+] as const;
+
 type StatusComponent = {
   status: ComponentStatus;
   label: string;
@@ -40,17 +49,25 @@ function safeEnvProfile() {
 export async function getReadinessPayload() {
   let dbReachable = false;
   let databaseErrorCode: string | undefined;
+  let schemaReady = false;
+  let missingMigrations: string[] = [];
 
   try {
     await prisma.$queryRawUnsafe("select 1 as ready");
     dbReachable = true;
+    const appliedMigrations = await prisma.$queryRawUnsafe<Array<{ migration_name: string }>>(
+      'select "migration_name" from "_prisma_migrations" where "finished_at" is not null',
+    );
+    const appliedMigrationNames = new Set(appliedMigrations.map((row) => row.migration_name));
+    missingMigrations = requiredMigrationNames.filter((name) => !appliedMigrationNames.has(name));
+    schemaReady = missingMigrations.length === 0;
   } catch (error) {
-    dbReachable = false;
+    schemaReady = false;
     databaseErrorCode = error instanceof Error ? error.name : "DatabaseReadinessError";
   }
 
   return {
-    ready: dbReachable,
+    ready: dbReachable && schemaReady,
     version: buildVersion(),
     envProfile: safeEnvProfile(),
     timestamp: new Date().toISOString(),
@@ -59,6 +76,15 @@ export async function getReadinessPayload() {
     },
     database: {
       reachable: dbReachable,
+      schemaReady,
+      ...(missingMigrations.length > 0
+        ? {
+            migrationStatus: "pending" as const,
+            missingRequiredMigrations: missingMigrations,
+          }
+        : dbReachable
+          ? { migrationStatus: "applied" as const }
+          : {}),
       ...(databaseErrorCode
         ? { error: "Database readiness check failed.", errorCode: databaseErrorCode }
         : {}),
@@ -130,10 +156,13 @@ export async function getStatusPayload() {
     },
     db: {
       label: "Database",
-      status: readiness.database.reachable ? "operational" : "down",
-      detail: readiness.database.reachable
-        ? "Database readiness check passed."
-        : "Database readiness check failed.",
+      status:
+        readiness.database.reachable && readiness.database.schemaReady ? "operational" : "down",
+      detail: !readiness.database.reachable
+        ? "Database readiness check failed."
+        : readiness.database.schemaReady
+          ? "Database readiness and migration checks passed."
+          : "Database is reachable, but required migrations are missing.",
     },
     razorpay: providerComponent({
       label: "Razorpay payments",
