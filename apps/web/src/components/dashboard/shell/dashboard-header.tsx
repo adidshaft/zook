@@ -1,4 +1,5 @@
-import { Bell, Building2, Calendar, ChevronDown, Search } from "lucide-react";
+import { Bell, Building2, Calendar, ChevronDown, ExternalLink, Search } from "lucide-react";
+import Link from "next/link";
 import { BranchSwitcher } from "./branch-switcher";
 import { UserMenu } from "./user-menu";
 import { ThemeToggleButton } from "@/components/theme-preference-switcher";
@@ -75,6 +76,15 @@ export function DashboardHeader({
         </div>
 
         <div className="flex items-center justify-end gap-3">
+          <Link
+            href="/pricing"
+            target="_blank"
+            rel="noreferrer"
+            className="zook-focus hidden min-h-10 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-3 text-sm font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] sm:inline-flex"
+          >
+            Pricing
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
           <ThemeToggleButton />
           <div className="relative grid h-10 w-10 place-items-center rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)]">
             <Bell className="h-4 w-4" aria-hidden="true" />

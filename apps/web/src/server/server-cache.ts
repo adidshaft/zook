@@ -25,6 +25,7 @@ const globalForCache = globalThis as unknown as {
   zookServerCacheStore?: ServerCacheStore;
   zookServerCacheProvider?: string;
   zookServerCacheMemory?: Map<string, CacheRecord>;
+  zookServerCacheInflight?: Map<string, Promise<unknown>>;
 };
 
 export class MemoryServerCacheStore implements ServerCacheStore {
@@ -213,7 +214,22 @@ export async function cachedJson<T>(key: string, ttlSeconds: number, loader: () 
   if (cached !== null) {
     return cached;
   }
-  const value = await loader();
-  await store.set(key, value, ttlSeconds).catch(() => undefined);
-  return value;
+  const inflight =
+    globalForCache.zookServerCacheInflight ?? new Map<string, Promise<unknown>>();
+  globalForCache.zookServerCacheInflight = inflight;
+  const existing = inflight.get(key);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+  const pending = (async () => {
+    const value = await loader();
+    await store.set(key, value, ttlSeconds).catch(() => undefined);
+    return value;
+  })();
+  inflight.set(key, pending);
+  try {
+    return await pending;
+  } finally {
+    inflight.delete(key);
+  }
 }

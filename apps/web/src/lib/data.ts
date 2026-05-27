@@ -1,6 +1,10 @@
 import { getAppEnv, isTruthy, zookDemoFixtures } from "@zook/core";
 import { prisma } from "@zook/db";
-import { getOrganizationDashboardData, getPlatformDashboardData } from "@/server/domains/overview";
+import {
+  getOrganizationDashboardData,
+  getOrganizationDashboardFastData,
+  getPlatformDashboardData,
+} from "@/server/domains/overview";
 import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { getBranchScope } from "@/server/domains/shared/org-context";
 import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";
@@ -222,10 +226,14 @@ async function getUnavailableOrgDashboardData(
 async function getDashboardShellData(
   orgId?: string,
   filters: DashboardBranchFilter = {},
+  mode: "fast" | "full" = "full",
 ) {
   try {
     if (orgId) {
-      const data = await getOrganizationDashboardData(orgId, filters);
+      const data =
+        mode === "fast"
+          ? await getOrganizationDashboardFastData(orgId, filters)
+          : await getOrganizationDashboardData(orgId, filters);
       return {
         scope: "org" as const,
         connected: true,
@@ -293,8 +301,12 @@ async function getDashboardShellData(
 
 export type DashboardData = Awaited<ReturnType<typeof getDashboardShellData>>;
 
-export async function getOrganizationDashboardShellData(orgId: string, branchId?: string) {
-  return getDashboardShellData(orgId, branchFilterFromParam(branchId));
+export async function getOrganizationDashboardShellData(
+  orgId: string,
+  branchId?: string,
+  mode: "fast" | "full" = "full",
+) {
+  return getDashboardShellData(orgId, branchFilterFromParam(branchId), mode);
 }
 
 export async function getPlatformDashboardShellData() {
