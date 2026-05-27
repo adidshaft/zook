@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { 
   BarChart3, 
   Calendar, 
@@ -10,7 +10,6 @@ import {
   IndianRupee,
   Users,
   ClipboardList,
-  ShieldCheck,
   CalendarDays
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,30 +31,7 @@ import {
   formatEnumLabel,
   formatInr,
 } from "@/lib/format";
-import type { OrganizationSnapshot, OrganizationSummary } from "@/components/dashboard/types";
-
-/** Synthesize a deterministic 7-day pattern around a single latest value. */
-function shapeDaily(latest: number, opts?: { amplitude?: number; floor?: number }) {
-  const amplitude = opts?.amplitude ?? 0.3;
-  const floor = opts?.floor ?? 0;
-  const seed = Math.max(1, latest);
-  const pattern = [0.78, 0.62, 0.85, 0.7, 0.92, 0.81, 1];
-  return pattern.map((p, i) => {
-    const wobble = ((i * 41 + Math.round(seed * 1.3)) % 7) / 7 - 0.5;
-    return Math.max(floor, Math.round(seed * (p + wobble * amplitude * p)));
-  });
-}
-
-function shape30Day(latest: number, opts?: { amplitude?: number; floor?: number }) {
-  const amplitude = opts?.amplitude ?? 0.25;
-  const floor = opts?.floor ?? 0;
-  const seed = Math.max(1, latest);
-  return Array.from({ length: 30 }, (_, i) => {
-    const trend = 0.65 + (i / 29) * 0.4;
-    const wobble = ((i * 53) % 11) / 11 - 0.5;
-    return Math.max(floor, Math.round(seed * trend * (1 + wobble * amplitude)));
-  });
-}
+import type { DashboardCharts, OrganizationSnapshot, OrganizationSummary } from "@/components/dashboard/types";
 
 function formatInrCompact(paise: number) {
   const rupees = paise / 100;
@@ -69,11 +45,13 @@ type TabId = "financials" | "attendance" | "members" | "snapshot";
 export function ReportsPanel({
   organization,
   summary,
+  charts,
   selectedBranchName,
   auditLogCount,
 }: {
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
+  charts: DashboardCharts;
   selectedBranchName: string;
   auditLogCount: number;
 }) {
@@ -90,26 +68,14 @@ export function ReportsPanel({
   const cashRupees = Math.round(summary.cashCollectedPaise / 100);
   const onlineRupees = Math.max(0, revenueRupees - cashRupees);
 
-  const revenue7d = useMemo(() => shapeDaily(revenueRupees || 200), [revenueRupees]);
-  const revenue30d = useMemo(() => shape30Day(revenueRupees || 200), [revenueRupees]);
-  const attendance7d = useMemo(() => shapeDaily(summary.todayAttendance || 6, { amplitude: 0.45 }), [
-    summary.todayAttendance,
-  ]);
-  const memberGrowth = useMemo(() => shape30Day(summary.activeMembers || 8, { amplitude: 0.15 }), [
-    summary.activeMembers,
-  ]);
-
-  const revenueSeries = revenueWindow === "7d" ? revenue7d : revenue30d;
+  const revenuePoints = revenueWindow === "7d" ? charts.revenue7d : charts.revenue30d;
+  const revenueSeries = revenuePoints.map((point) => point.value);
   const revenueLabels =
-    revenueWindow === "7d"
-      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-      : Array.from({ length: 30 }, (_, i) =>
-          i === 0 ? "30d ago" : i === 29 ? "Today" : (i + 1) % 5 === 0 ? `D-${30 - i}` : "",
-        );
-
-  const memberLabels = Array.from({ length: 30 }, (_, i) =>
-    i === 0 ? "30d" : i === 29 ? "Now" : (i + 1) % 5 === 0 ? `D${i + 1}` : "",
-  );
+    revenuePoints.map((point) => (revenueWindow === "30d" && point.label === "30d" ? "30d ago" : point.label));
+  const attendance7d = charts.attendance7d.map((point) => point.value);
+  const attendanceLabels = charts.attendance7d.map((point) => point.label);
+  const memberGrowth = charts.memberGrowth30d.map((point) => point.value);
+  const memberLabels = charts.memberGrowth30d.map((point) => point.label === "Today" ? "Now" : point.label);
 
   const actionTips = [
     summary.lowStockProducts > 0
@@ -249,7 +215,7 @@ export function ReportsPanel({
                         <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
                           {formatInr(summary.revenuePaise)}
                         </span>
-                        <DeltaChip delta={summary.revenuePaise > 0 ? 12.3 : 0} />
+                        <DeltaChip delta={revenueWindow === "7d" ? charts.deltas.revenue7d : charts.deltas.revenue30d} />
                         <span className="text-xs text-[var(--text-tertiary)]">{revenueWindow === "7d" ? "last 7 days" : "last 30 days"}</span>
                       </div>
                     </div>
@@ -341,7 +307,7 @@ export function ReportsPanel({
                   <div className="mt-4 h-56">
                     <BarChart
                       series={attendance7d}
-                      labels={["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
+                      labels={attendanceLabels}
                       tone="violet"
                     />
                   </div>
@@ -375,7 +341,7 @@ export function ReportsPanel({
                           {summary.activeMembers}
                         </span>
                         <span className="text-xs text-[var(--text-secondary)]">active members</span>
-                        <DeltaChip delta={3.2} />
+                        <DeltaChip delta={charts.deltas.memberGrowth30d} />
                       </div>
                     </div>
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs text-[var(--text-secondary)]">

@@ -11,9 +11,9 @@ import type {
   StaffAssignmentRow,
   StaffUserRow,
 } from "@/components/dashboard/types";
-import { BranchHoursEditor, formatBranchHoursSummary } from "./branch-hours-editor";
+import { formatBranchHoursSummary } from "./branch-hours-editor";
 import type { BranchFormState } from "./branches-section";
-import { indianStates } from "./branch-states";
+import { BranchForm } from "./branch-form";
 
 function branchSetupSteps(branch: BranchRow, hasReceptionist: boolean, hasBranchPlan: boolean) {
   return [
@@ -56,9 +56,6 @@ export function BranchesListCard({
   updateBranch: (branch: BranchRow, patch: Partial<BranchRow> | BranchFormState) => Promise<void>;
   deactivateBranch: (branch: BranchRow) => Promise<void>;
 }) {
-  const managerAssignments = staffAssignments.filter(
-    (assignment) => assignment.role === "OWNER" || assignment.role === "ADMIN",
-  );
   const receptionistBranchIds = new Set(
     staffAssignments
       .filter((assignment) => assignment.role === "RECEPTIONIST" && assignment.branchId)
@@ -78,179 +75,17 @@ export function BranchesListCard({
         {branches.map((branch) => (
           <div key={branch.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
             {editingBranchId === branch.id ? (
-              <div className="grid gap-3">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <input
-                    value={branchEditForm.name}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({ ...current, name: event.target.value }))
-                    }
-                    placeholder="Branch name"
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  />
-                  <input
-                    value={branchEditForm.address}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({ ...current, address: event.target.value }))
-                    }
-                    placeholder="Full address"
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  />
-                  <input
-                    value={branchEditForm.city}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({ ...current, city: event.target.value }))
-                    }
-                    placeholder="City"
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  />
-                  <select
-                    value={branchEditForm.state}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({ ...current, state: event.target.value }))
-                    }
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  >
-                    <option value="" className="bg-black">
-                      State
-                    </option>
-                    {indianStates.map((state) => (
-                      <option key={state} value={state} className="bg-black">
-                        {state}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    value={branchEditForm.pincode}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({ ...current, pincode: event.target.value }))
-                    }
-                    placeholder="Pincode"
-                    inputMode="numeric"
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  />
-                  <select
-                    value={branchEditForm.managerId}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({
-                        ...current,
-                        managerId: event.target.value,
-                      }))
-                    }
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  >
-                    <option value="" className="bg-black">
-                      Assign a manager later
-                    </option>
-                    {managerAssignments.map((assignment) => (
-                      <option
-                        key={assignment.userId}
-                        value={assignment.userId}
-                        className="bg-black"
-                      >
-                        {staffUsersById.get(assignment.userId)?.name ??
-                          staffUsersById.get(assignment.userId)?.email ??
-                          "Team member"}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    value={branchEditForm.contactPhone}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({
-                        ...current,
-                        contactPhone: event.target.value,
-                      }))
-                    }
-                    placeholder="Branch phone"
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  />
-                  <input
-                    value={branchEditForm.contactEmail}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({
-                        ...current,
-                        contactEmail: event.target.value,
-                      }))
-                    }
-                    placeholder="Branch email"
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  />
-                  <input
-                    value={branchEditForm.whatsappNumber}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({
-                        ...current,
-                        whatsappNumber: event.target.value,
-                      }))
-                    }
-                    placeholder="WhatsApp number"
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  />
-                  <input
-                    value={branchEditForm.amenitiesText}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({
-                        ...current,
-                        amenitiesText: event.target.value,
-                      }))
-                    }
-                    placeholder="Amenities, separated by commas"
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  />
-                  <input
-                    value={branchEditForm.latitude}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({
-                        ...current,
-                        latitude: event.target.value,
-                        locationSource: "MANUAL",
-                      }))
-                    }
-                    placeholder="Latitude"
-                    inputMode="decimal"
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  />
-                  <input
-                    value={branchEditForm.longitude}
-                    onChange={(event) =>
-                      setBranchEditForm((current) => ({
-                        ...current,
-                        longitude: event.target.value,
-                        locationSource: "MANUAL",
-                      }))
-                    }
-                    placeholder="Longitude"
-                    inputMode="decimal"
-                    className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
-                  />
-                </div>
-                <BranchHoursEditor
-                  value={branchEditForm.hoursText}
-                  onChange={(hoursText) =>
-                    setBranchEditForm((current) => ({ ...current, hoursText }))
-                  }
-                />
-                <div className="flex flex-wrap gap-2">
-                  <ZookButton
-                    type="button"
-                    size="sm"
-                    onClick={() => void saveBranchEdit(branch)}
-                    disabled={formBusy === `branch:${branch.id}`}
-                    state={formBusy === `branch:${branch.id}` ? "loading" : "idle"}
-                  >
-                    Save branch
-                  </ZookButton>
-                  <ZookButton
-                    type="button"
-                    tone="ghost"
-                    size="sm"
-                    onClick={() => setEditingBranchId(null)}
-                  >
-                    Cancel
-                  </ZookButton>
-                </div>
-              </div>
+              <BranchForm
+                mode="edit"
+                variant="full"
+                form={branchEditForm}
+                setForm={setBranchEditForm}
+                onSubmit={() => void saveBranchEdit(branch)}
+                onCancel={() => setEditingBranchId(null)}
+                formBusy={formBusy === `branch:${branch.id}`}
+                staffAssignments={staffAssignments}
+                staffUsersById={staffUsersById}
+              />
             ) : (
               <BranchSummaryRow
                 branch={branch}

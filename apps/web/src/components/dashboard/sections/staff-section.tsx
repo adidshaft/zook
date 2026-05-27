@@ -1,6 +1,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
+import Link from "next/link";
 import { ErrorNotice } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { ConfirmActionButton } from "../../confirm-action-button";
@@ -438,6 +439,14 @@ export function StaffSection({
               description="Trainers have not published any plans for this org."
             />
           )}
+          {coachPlans.length > 6 ? (
+            <Link
+              href="/dashboard/plans"
+              className="mt-2 block text-right text-xs font-semibold text-[var(--accent-strong)] hover:underline"
+            >
+              {coachPlans.length - 6} more plans →
+            </Link>
+          ) : null}
         </div>
       </GlassCard>
     </div>

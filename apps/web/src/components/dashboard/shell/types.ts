@@ -13,7 +13,7 @@ export type NavItem = {
   key: string;
   label: string;
   href: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   shortLabel?: string;
   hidden?: boolean;
   indent?: boolean;

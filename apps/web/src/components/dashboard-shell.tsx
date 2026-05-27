@@ -87,18 +87,16 @@ export function DashboardShell({
   const locale = isHindi(user.preferredLocale) ? "hi" : "en";
   const copy = dashboardMessages[locale];
   const activePermissions = new Set<Permission>(permissions ?? []);
-  const hasMultipleBranches = data.branchScope.branches.length > 1;
-  const visibleNavGroups = filterNavGroups(navGroups, activePermissions).map((group) => ({
-    ...group,
-    items: group.items.filter((item) => item.key !== "branches" || hasMultipleBranches),
-  })).filter((group) => group.items.length > 0);
-  const mobileNavGroups = visibleNavGroups.map((group) => ({
+  const visibleNavGroups = filterNavGroups(navGroups, activePermissions);
+  const serializableNavGroups = visibleNavGroups.map((group) => ({
     key: group.key,
-    items: group.items.map(({ key, label, href, shortLabel }) => ({
+    items: group.items.map(({ key, label, href, shortLabel, badgeKey, indent }) => ({
       key,
       label,
       href,
       shortLabel,
+      badgeKey,
+      indent,
     })),
   }));
   const roleLabel = roles.includes("OWNER")
@@ -151,7 +149,7 @@ export function DashboardShell({
       <div className="mx-auto grid w-full max-w-[1760px] min-w-0 items-start gap-5 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
         <DashboardSidebar
           data={data}
-          visibleNavGroups={visibleNavGroups}
+          visibleNavGroups={serializableNavGroups}
           sectionKey={sectionKey}
           isPlatformAdmin={isPlatformAdmin}
           copy={copy}
@@ -159,9 +157,11 @@ export function DashboardShell({
 
         <section className="grid min-w-0 content-start gap-4">
           <MobileDashboardMenu
-            visibleNavGroups={mobileNavGroups}
+            visibleNavGroups={serializableNavGroups}
             sectionKey={sectionKey}
             copy={copy}
+            activeOrgId={activeOrg.id}
+            activeBranchId={data.branchScope.allBranches ? "all" : selectedBranch?.id}
           />
 
           <DashboardHeader
@@ -176,18 +176,16 @@ export function DashboardShell({
           />
 
           <LayoutTransition layoutKey={sectionKey}>
-            {sectionKey === "" ? (
-              <div className="px-1 pt-3 md:px-0">
-                <h1 className="text-3xl font-black tracking-[-0.035em] text-[var(--text-primary)] md:text-4xl">
-                  {pageTitle}
-                </h1>
-                {pageDescription ? (
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">
-                    {pageDescription}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
+            <div className="px-1 pt-3 md:px-0">
+              <h1 className="text-3xl font-black tracking-[-0.035em] text-[var(--text-primary)] md:text-4xl">
+                {pageTitle}
+              </h1>
+              {pageDescription ? (
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">
+                  {pageDescription}
+                </p>
+              ) : null}
+            </div>
 
             {showOwnerSetupChecklist ? (
               <OwnerSetupChecklist

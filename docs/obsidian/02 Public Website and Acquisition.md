@@ -46,5 +46,4 @@ Referral routes and APIs support:
 
 ## Owner Onboarding
 
-`/start-gym` creates an organization and starts the SaaS trial flow. Billing/profile completion is handled later in the dashboard.
-
+`/start-gym` creates an organization, starts the SaaS trial flow, and sends the owner into dashboard setup. Production owner/admin writes require billing profile and SaaS mandate setup from `/dashboard/billing`.

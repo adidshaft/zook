@@ -6,6 +6,7 @@ import { PlatformOperationsPanel } from "@/components/platform-operations-panel"
 import { requirePlatformSession } from "@/lib/server-auth";
 import { ZookLogo } from "@/components/zook-logo";
 import { getPlatformDashboardShellData } from "@/lib/data";
+import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +62,7 @@ function serializePlatformAbuseFlag(flag: {
 
 const platformSectionAnchors: Record<string, string> = {
   status: "readiness",
-  users: "support-console",
+  users: "users",
   payments: "payments",
   webhooks: "webhooks",
   audit: "audit",
@@ -120,7 +121,8 @@ export default async function PlatformPage({
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-end">
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <DashboardSignOutButton compact />
               <ZookLogo />
             </div>
           </div>

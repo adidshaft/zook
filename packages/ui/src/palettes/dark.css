@@ -86,3 +86,15 @@
   --border-focus: #a78bfa;
   --surface-accent-soft: rgba(167, 139, 250, 0.1);
 }
+
+:root[data-theme="dark"][data-accent="paper"] {
+  --accent: #f5f5f4;
+  --accent-soft: #292524;
+  --accent-strong: #ffffff;
+  --accent-fill: #f5f5f4;
+  --shadow-glow-accent: 0 0 0 1.5px #f5f5f4;
+  --shadow-glow-accent-subtle: 0 0 0 1px rgba(255, 255, 255, 0.2);
+  --border-focus: #f5f5f4;
+  --surface-accent-soft: rgba(255, 255, 255, 0.06);
+}
+

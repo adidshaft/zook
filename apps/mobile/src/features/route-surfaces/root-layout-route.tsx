@@ -126,6 +126,15 @@ function isPaymentReturnDeepLink(url: string) {
   }
 }
 
+function paymentReturnTarget(url: string) {
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("target") ?? parsed.searchParams.get("context") ?? "";
+  } catch {
+    return "";
+  }
+}
+
 function LayoutContent() {
   const { mode, palette } = useTheme();
   const {
@@ -171,7 +180,19 @@ function LayoutContent() {
         });
         router.replace("/login?reason=expired" as never);
       },
-      onForbidden: () => {
+      onForbidden: (error) => {
+        if (
+          error.code === "SAAS_BILLING_SETUP_REQUIRED" ||
+          error.code === "SAAS_PAYMENT_REQUIRED"
+        ) {
+          showToast({
+            title: "Billing setup required",
+            message: "Open billing to set up the trial mandate before continuing.",
+            tone: "amber",
+          });
+          router.replace("/owner/billing" as never);
+          return;
+        }
         showToast({
           title: "Permission denied",
           message: "You don't have permission for that action.",
@@ -189,6 +210,7 @@ function LayoutContent() {
       if (!url || !isPaymentReturnDeepLink(url)) {
         return;
       }
+      const target = paymentReturnTarget(url);
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "membership"] }),
@@ -197,8 +219,17 @@ function LayoutContent() {
         queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] }),
         queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
         queryClient.invalidateQueries({ queryKey: ["org"] }),
+        queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "billing"] }),
       ]).finally(() => {
         showToast({ title: "Payment status refreshed" });
+        if (target === "owner-billing") {
+          router.replace("/owner/billing" as never);
+          return;
+        }
+        if (target === "shop") {
+          router.replace("/shop" as never);
+          return;
+        }
         router.replace("/membership?focus=membership" as never);
       });
     };
@@ -206,7 +237,7 @@ function LayoutContent() {
     const subscription = Linking.addEventListener("url", (event) => handleUrl(event.url));
     void Linking.getInitialURL().then(handleUrl);
     return () => subscription.remove();
-  }, [queryClient, router]);
+  }, [activeOrgId, queryClient, router]);
 
   useEffect(() => {
     if (status !== "authenticated" || !token) {

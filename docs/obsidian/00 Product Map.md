@@ -2,13 +2,15 @@
 
 Zook is an India-first gym operating system for small and medium gyms. It combines a public acquisition funnel, mobile role apps, a web dashboard, desk workflows, trainer tools, payments, attendance, referrals, notifications, privacy controls, and hidden platform operations.
 
+Current production posture: new gyms can enter trial, but owner/admin write operations are gated by SaaS billing setup. The owner must complete billing profile and create/authenticate a SaaS billing mandate from [[05 Owner and Admin Dashboard]] before the gym is treated as operational beyond setup/read-only surfaces.
+
 ## Primary Surfaces
 
 | Surface | Path / App Area | Audience | Purpose |
 | --- | --- | --- | --- |
 | Public website | `/`, `/gyms`, `/g/[username]`, `/join/[username]`, `/r/[code]` | Prospects and members | Gym discovery, public gym profiles, referrals, joining |
 | Member mobile app | `apps/mobile/app/(member)` | Members | Membership, attendance, plans, diet, shop, notifications, profile |
-| Owner mobile app | `apps/mobile/app/owner` | Gym owners | Operational overview, approvals, members, revenue, stock |
+| Owner mobile app | `apps/mobile/app/owner` | Gym owners | Operational overview, approvals, members, revenue, stock, billing setup |
 | Reception mobile app | `apps/mobile/app/reception` | Front desk | Attendance, member lookup, payments, pickup/orders |
 | Trainer mobile app | `apps/mobile/app/trainer` | Trainers | Clients, plans, sessions, payouts |
 | Web dashboard | `/dashboard` | Owners/admins/staff | Gym operations, reports, billing, settings |
@@ -34,15 +36,20 @@ Zook is an India-first gym operating system for small and medium gyms. It combin
 - `User`: a person who may belong to multiple organizations and roles.
 - `OrganizationUser`: membership of a user inside an organization.
 - `OrganizationRoleAssignment`: role assignment such as owner, admin, reception, trainer, member.
-- `Payment`, `Invoice`, `MembershipSubscription`: money and billing records.
+- `Payment`, `Invoice`, `MemberSubscription`: money and member billing records.
+- `SaaSSubscription`, `SaaSBillingMandate`, `PaymentSession`: platform subscription state, Razorpay mandate setup, and checkout/session fulfillment state.
 - `AttendanceRecord`: member entry attempt or approved visit.
 - `Plan`, `DietPlan`, `TrainerAssignment`: coaching and trainer workflows.
+- `ReferralPolicy`, `ReferralCode`, `ReferralRedemption`, `ReferralReward`, `OrgReferralPartnership`: gym referral rules, member/staff/trainer referral codes, reward fulfillment, and gym-to-gym platform referrals.
 - `Notification`, `PushDevice`, `PushDelivery`: in-app and push messaging.
 
 ## Important Constraints
 
 - Platform admin is not a gym role; it is controlled by `User.isPlatformAdmin`.
 - Payment completion must come from backend confirmation or provider webhook, not client redirects.
+- Fully discounted or trial member checkout can fulfill internally without opening provider checkout.
+- Dashboard overview and reports use backend-grouped chart payloads, not synthetic client data.
+- Dashboard section navigation keeps cached section data via React Query and prefetches likely resources from sidebar hover/focus.
+- Owner mobile surfaces use the same dashboard chart payloads, SaaS billing subscription endpoints, mandate setup, checkout return links, and referral short-link resolution as the web product.
 - Production launch still has manual gates listed in [[17 Known Manual Gates]].
 - Supabase scheduled backups and PITR were intentionally skipped while they require a paid upgrade.
-

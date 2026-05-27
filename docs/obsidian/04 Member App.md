@@ -41,3 +41,8 @@ Members can see the latest published diet plan from their trainer, log meals, tr
 
 The member app never activates purchases from redirect success alone. Membership and shop state change only after backend/provider confirmation.
 
+Checkout return URLs now include a mobile target so the app returns members to the right surface after provider checkout:
+
+- Membership checkout returns to the membership surface.
+- Shop checkout returns to the shop surface.
+- Referral short links resolve through `/r/[code]` and prefer the gym public join/profile route when the backend can identify the organization.

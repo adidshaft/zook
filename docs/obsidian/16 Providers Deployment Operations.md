@@ -39,6 +39,17 @@ vercel deploy --prod --yes
 - `/api/cron/refund-reconcile`: every 10 minutes.
 - `/api/cron/trainer-payouts-draft`: first day of each month.
 
+## Payment Provider Notes
+
+Razorpay remains the production payment provider behind the provider abstraction. Provider events must be the source of truth for payment completion. Client redirects are informational only.
+
+Important runtime behavior:
+
+- SaaS mandate setup and SaaS subscription charges share the same provider abstraction.
+- Delayed SaaS subscription charge webhooks can still fulfill against the setup payment session.
+- Zero-amount member checkouts are fulfilled internally and do not create a provider checkout.
+- Duplicate provider events must remain retry-safe and idempotent.
+
 ## Release Checks
 
 Recommended local checks:
@@ -54,4 +65,3 @@ pnpm release:preflight
 ```
 
 Some CI workflows were intentionally skipped in this thread per owner instruction.
-

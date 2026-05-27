@@ -5,6 +5,7 @@ export const routePermissions: Record<string, Permission | null> = {
   "/owner/member": "MEMBERS_VIEW",
   "/owner/members": "MEMBERS_VIEW",
   "/owner/approvals": "ATTENDANCE_APPROVE",
+  "/owner/billing": "ORG_MANAGE_BILLING",
   "/owner/revenue": "ORG_VIEW_REPORTS",
   "/owner/stock": "SHOP_MANAGE_PRODUCTS",
   "/reception": "ATTENDANCE_APPROVE",

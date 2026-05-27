@@ -439,6 +439,108 @@ export interface OwnerDashboardMetric {
   delta: string;
 }
 
+export interface OwnerDashboardChartPoint {
+  date: string;
+  label: string;
+  value: number;
+}
+
+export interface OwnerDashboardPlanMixPoint {
+  label: string;
+  value: number;
+  tone?: "lime" | "sky" | "amber" | "violet" | string;
+}
+
+export interface OwnerDashboardCharts {
+  revenue7d: OwnerDashboardChartPoint[];
+  revenue30d: OwnerDashboardChartPoint[];
+  attendance7d: OwnerDashboardChartPoint[];
+  memberGrowth30d: OwnerDashboardChartPoint[];
+  planMix: OwnerDashboardPlanMixPoint[];
+  deltas: {
+    revenue7d: number;
+    revenue30d: number;
+    attendance7d: number;
+    memberGrowth30d: number;
+  };
+}
+
+export interface OwnerBillingSubscriptionData {
+  subscription: {
+    orgStatus: string;
+    trialStartAt?: string | null;
+    trialEndAt?: string | null;
+    status: string;
+    tier: "FREE" | "STARTER" | "GROWTH" | "PRO" | string;
+    billingCycle: "MONTHLY" | "YEARLY" | string;
+    priceLockedPaise?: number | null;
+    billingEmail?: string | null;
+    nextBillingAt?: string | null;
+    nextRenewalAt?: string | null;
+    cancelledAt?: string | null;
+    cancelAtPeriodEnd?: boolean;
+  };
+  activeMemberCount: number;
+  entitlements?: {
+    memberLimit?: number | null;
+    branchLimit?: number | null;
+    staffLimit?: number | null;
+    trainerLimit?: number | null;
+    productLimit?: number | null;
+    notificationMonthlyLimit?: number | null;
+    aiTextMonthlyLimit?: number | null;
+    aiImageMonthlyLimit?: number | null;
+    reports?: string;
+    referrals?: string;
+    support?: string;
+    onboarding?: string;
+    multiBranch?: boolean;
+    apiAccess?: boolean;
+  };
+  usage?: {
+    activeMemberCount?: number;
+    branchCount?: number;
+    staffCount?: number;
+    trainerCount?: number;
+    productCount?: number;
+    notificationMonthlyCount?: number;
+    aiTextMonthlyCount?: number;
+    aiImageMonthlyCount?: number;
+  };
+  pricing: Record<
+    string,
+    {
+      monthly: number;
+      yearly: number;
+      memberLimit?: number | null;
+      entitlements?: OwnerBillingSubscriptionData["entitlements"];
+    }
+  >;
+  mandate: {
+    id: string;
+    status: string;
+    provider?: string | null;
+    providerMandateId?: string | null;
+    amountPaise: number;
+    currency: string;
+    billingPeriod: string;
+    billingInterval: number;
+    paidCount: number;
+    totalCount: number;
+    nextChargeAt?: string | null;
+    currentEndAt?: string | null;
+    authenticatedAt?: string | null;
+    activatedAt?: string | null;
+    cancelledAt?: string | null;
+    checkoutUrl?: string | null;
+  } | null;
+  platformReferral?: {
+    code: string;
+    referredCount: number;
+    recent: Array<{ id: string; targetOrgId: string; status: string; createdAt?: string | null }>;
+  };
+}
+
 export interface OwnerDashboardData {
   organization?: {
     id: string;
@@ -447,6 +549,7 @@ export interface OwnerDashboardData {
     trialEndAt?: string | null;
   } | null;
   metrics?: OwnerDashboardMetric[];
+  charts?: OwnerDashboardCharts;
   summary?: {
     activeMembers?: number;
     joinRequests?: number;

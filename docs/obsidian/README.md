@@ -2,6 +2,8 @@
 
 This folder is designed for Obsidian import. Start with [[00 Product Map]], then use the role and module notes as the operating manual for the product.
 
+Last updated: 2026-05-25.
+
 ## Index
 
 - [[00 Product Map]]
@@ -26,6 +28,6 @@ This folder is designed for Obsidian import. Start with [[00 Product Map]], then
 ## Maintenance Notes
 
 - Keep these docs aligned with code routes under `apps/web/app`, `apps/mobile/app`, and API handlers in `apps/web/src/server/api-router/core.ts`.
+- Billing, referral, and dashboard behavior changes quickly; when those modules change, update [[05 Owner and Admin Dashboard]], [[08 Platform Operations]], [[09 Memberships Payments Invoices]], [[11 Plans Training Diet]], and [[17 Known Manual Gates]] in the same pass.
 - Do not store secrets, API keys, customer data, private tokens, or live payment identifiers in this folder.
 - Mark manual or owner-confirmed items explicitly instead of presenting them as complete.
-

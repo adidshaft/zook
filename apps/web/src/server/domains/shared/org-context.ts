@@ -14,7 +14,7 @@ export async function getBranchScope(orgId: string, filters: DashboardBranchFilt
       ? (branches.find((branch) => branch.id === filters.branchId) ?? null)
       : defaultBranch;
 
-  const inventoryScope = selectedBranch ? ("BRANCH" as const) : ("ORG_WIDE" as const);
+  const inventoryScope = "ORG_WIDE" as const;
 
   return {
     branches,

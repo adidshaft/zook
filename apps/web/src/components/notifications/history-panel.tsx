@@ -98,7 +98,7 @@ export function NotificationHistoryPanel({
       <GlassCard>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold">Notifications / History</h1>
+            <h2 className="text-xl font-semibold">Message history</h2>
             <p className="mt-2 text-sm text-white/50">
               Delivery history for recent member messages, audience, and delivery state.
             </p>

@@ -1,10 +1,35 @@
+"use client";
+
 import Link from "next/link";
-import { Shield } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Bot,
+  Shield,
+} from "lucide-react";
 import { GlassCard } from "../../glass-card";
 import { ZookLogo } from "../../zook-logo";
-import { translatedNavLabel } from "./copy";
-import { filterNavGroups, isActiveNav } from "./nav";
+import { translatedGroupLabel, translatedNavLabel } from "./copy";
+import { isActiveNav, NAV_ICONS } from "./nav";
+import { prefetchDashboardHref } from "./prefetch";
 import type { DashboardCopy, DashboardData } from "./types";
+
+type SidebarNavGroup = {
+  key: keyof DashboardCopy["navGroups"];
+  items: Array<{
+    key: string;
+    label: string;
+    href: string;
+    shortLabel?: string | undefined;
+    indent?: boolean | undefined;
+    badgeKey?:
+      | "joinRequests"
+      | "lowStockProducts"
+      | "notificationQueueCount"
+      | "pendingAttendanceApprovals"
+      | undefined;
+  }>;
+};
+
 
 export function DashboardSidebar({
   data,
@@ -14,11 +39,21 @@ export function DashboardSidebar({
   copy,
 }: {
   data: DashboardData;
-  visibleNavGroups: ReturnType<typeof filterNavGroups>;
+  visibleNavGroups: SidebarNavGroup[];
   sectionKey: string;
   isPlatformAdmin: boolean;
   copy: DashboardCopy;
 }) {
+  const queryClient = useQueryClient();
+  const activeOrgId = data.orgs[0]?.id;
+  const activeBranchId = data.branchScope.allBranches
+    ? "all"
+    : data.branchScope.selectedBranch?.id;
+
+  function prefetchSection(href: string) {
+    prefetchDashboardHref({ queryClient, href, orgId: activeOrgId, branchId: activeBranchId });
+  }
+
   return (
     <aside className="sticky top-0 hidden h-dvh lg:block">
       <GlassCard
@@ -35,14 +70,21 @@ export function DashboardSidebar({
         <nav className="mt-8 grid gap-1" aria-label="Dashboard navigation">
           {visibleNavGroups.map((group) => (
             <div key={group.key} className="grid gap-1">
+              <p className="px-3 pb-1 pt-3 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)] opacity-60 first:pt-0">
+                {translatedGroupLabel(copy, group.key)}
+              </p>
               {group.items.map((item) => {
-                const { href, icon: Icon } = item;
+                const { href } = item;
+                const Icon = NAV_ICONS[item.key] ?? Bot;
                 const active = isActiveNav(href, sectionKey);
                 const badgeValue = item.badgeKey ? data.summary[item.badgeKey] : 0;
                 return (
                   <Link
                     key={href}
                     href={href}
+                    prefetch
+                    onMouseEnter={() => prefetchSection(href)}
+                    onFocus={() => prefetchSection(href)}
                     aria-current={active ? "page" : undefined}
                     className={`relative flex items-center gap-3 py-2.5 text-sm transition ${
                       item.indent

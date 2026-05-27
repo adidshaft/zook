@@ -183,9 +183,13 @@ export async function createMembershipPlan(
     pricePaise: number;
     durationDays: number;
     publicVisible: boolean;
+    branchId: string;
   }> = {},
 ) {
-  const response = await page.request.post(`/api/orgs/${orgId}/membership-plans`, {
+  const path = overrides.branchId
+    ? `/api/orgs/${orgId}/membership-plans?branchId=${encodeURIComponent(overrides.branchId)}`
+    : `/api/orgs/${orgId}/membership-plans`;
+  const response = await page.request.post(path, {
     data: {
       name: overrides.name ?? `Playwright Plan ${Date.now()}`,
       type: overrides.type ?? "DURATION",

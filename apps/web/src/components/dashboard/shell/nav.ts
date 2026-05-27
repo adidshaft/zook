@@ -15,9 +15,39 @@ import {
   Store,
   UserPlus,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import type { Permission } from "@zook/core";
 import type { DashboardMessages, NavItem } from "./types";
+
+export const NAV_ICONS: Record<string, LucideIcon> = {
+  today: LayoutGrid,
+  members: Users,
+  joinRequests: UserPlus,
+  plans: ClipboardList,
+  coupons: ClipboardList,
+  offers: ClipboardList,
+  referrals: ClipboardList,
+  payments: ReceiptText,
+  refunds: Receipt,
+  attendance: CalendarDays,
+  trainers: Dumbbell,
+  payouts: ReceiptText,
+  ai: Sparkles,
+  messages: Bell,
+  shop: Store,
+  shopOrders: Store,
+  reports: FileText,
+  team: Users,
+  templates: Bell,
+  history: History,
+  settings: Settings,
+  activity: ShieldCheck,
+  branches: Globe2,
+  gymProfile: Globe2,
+  billing: ReceiptText,
+};
+
 
 export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items: NavItem[] }> = [
   {
@@ -185,19 +215,17 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         permissions: ["ORG_MANAGE_PROFILE"],
       },
       {
-        key: "activity",
-        label: "Audit",
-        href: "/dashboard/audit",
-        icon: ShieldCheck,
-        shortLabel: "Activity",
-        permissions: ["PRIVACY_VIEW_AUDIT"],
+        key: "billing",
+        label: "Billing",
+        href: "/dashboard/billing",
+        icon: ReceiptText,
+        permissions: ["ORG_MANAGE_BILLING"],
       },
       {
         key: "branches",
         label: "Branches",
         href: "/dashboard/branches",
         icon: Globe2,
-        hidden: true,
         permissions: ["ORG_MANAGE_LOCATION"],
       },
       {
@@ -205,8 +233,15 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         label: "Gym profile",
         href: "/dashboard/public-profile",
         icon: Globe2,
-        hidden: true,
         permissions: ["ORG_MANAGE_PROFILE"],
+      },
+      {
+        key: "activity",
+        label: "Audit",
+        href: "/dashboard/audit",
+        icon: ShieldCheck,
+        shortLabel: "Activity",
+        permissions: ["PRIVACY_VIEW_AUDIT"],
       },
     ],
   },

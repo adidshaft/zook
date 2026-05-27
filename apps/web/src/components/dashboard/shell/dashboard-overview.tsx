@@ -1,5 +1,6 @@
 "use client";
 
+import { lazy, Suspense, useMemo } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -31,10 +32,15 @@ import {
   SectionHero,
 } from "../charts";
 import {
-  OwnerCustomisationPanel,
   useOwnerPrefs,
 } from "../../owner-customisation-panel";
 import type { DashboardCopy, DashboardData } from "./types";
+
+const LazyOwnerCustomisationPanel = lazy(() =>
+  import("../../owner-customisation-panel").then((module) => ({
+    default: module.OwnerCustomisationPanel,
+  }))
+);
 
 type AttentionRow = {
   icon: typeof ClipboardList;
@@ -55,24 +61,6 @@ function formatInrCompact(paise: number) {
   return `₹${Math.round(rupees)}`;
 }
 
-/**
- * Deterministic but realistic-looking 7-day trends seeded off a value.
- * Used purely for visual richness when no historical data is available
- * locally — never call this with server-truth fields you want to show
- * as-is. The chart still surfaces the real "today" number as the latest
- * point so users see the truthful current state.
- */
-function shapeWeeklyTrend(latest: number, opts?: { amplitude?: number; floor?: number }) {
-  const amplitude = opts?.amplitude ?? 0.35;
-  const floor = opts?.floor ?? 0;
-  const seed = Math.max(1, latest);
-  const pattern = [0.78, 0.62, 0.85, 0.7, 0.92, 0.81, 1];
-  return pattern.map((p, i) => {
-    const wobble = ((i * 37 + Math.round(seed * 1.7)) % 7) / 7 - 0.5;
-    return Math.max(floor, Math.round(seed * (p + wobble * amplitude * p)));
-  });
-}
-
 export function DashboardOverview({
   activeOrg,
   selectedBranch,
@@ -86,28 +74,18 @@ export function DashboardOverview({
   const prefs = useOwnerPrefs();
   const accent: ChartTone = prefs.accent;
   const summary = data.summary;
+  const charts = data.charts;
   const aiQuota = 50;
   const aiUsagePercent = Math.min(100, Math.round((summary.aiUsageThisMonth / aiQuota) * 100));
 
-  // Synthetic trends — see shapeWeeklyTrend doc above.
-  const revenueRupees = Math.round(summary.revenuePaise / 100);
-  const revenueTrend = shapeWeeklyTrend(revenueRupees || 200);
-  const memberTrend = shapeWeeklyTrend(summary.activeMembers || 12, { amplitude: 0.18 });
-  const attendanceTrend = shapeWeeklyTrend(summary.todayAttendance || 8, { amplitude: 0.45 });
+  const revenueRupees = useMemo(() => Math.round(summary.revenuePaise / 100), [summary.revenuePaise]);
+  const revenueTrend = useMemo(() => charts.revenue7d.map((point) => point.value), [charts.revenue7d]);
+  const memberTrend = useMemo(() => charts.memberGrowth30d.map((point) => point.value), [charts.memberGrowth30d]);
+  const attendanceTrend = useMemo(() => charts.attendance7d.map((point) => point.value), [charts.attendance7d]);
+  const planMix = charts.planMix;
+  const planMixTotal = useMemo(() => planMix.reduce((sum, slice) => sum + slice.value, 0), [planMix]);
 
-  // Plan mix donut — synthesized from active-member count when no plan
-  // breakdown is available on the dashboard payload. Total stays accurate.
-  type PlanSlice = { label: string; value: number; tone: "lime" | "sky" | "amber" | "violet" };
-  const planMixSeed = Math.max(1, summary.activeMembers);
-  const planMix: PlanSlice[] = [
-    { label: "Monthly Unlimited", value: Math.max(1, Math.round(planMixSeed * 0.55)), tone: "lime" },
-    { label: "Quarterly", value: Math.max(1, Math.round(planMixSeed * 0.22)), tone: "sky" },
-    { label: "Visit pack", value: Math.max(1, Math.round(planMixSeed * 0.15)), tone: "amber" },
-    { label: "Trial", value: Math.max(1, Math.round(planMixSeed * 0.08)), tone: "violet" },
-  ];
-  const planMixTotal = planMix.reduce((sum, slice) => sum + slice.value, 0);
-
-  const attentionRows: AttentionRow[] = [
+  const attentionRows: AttentionRow[] = useMemo(() => [
     {
       icon: ClipboardList,
       title: `${summary.joinRequests} pending join request${summary.joinRequests === 1 ? "" : "s"}`,
@@ -138,8 +116,9 @@ export function DashboardOverview({
       tone: "sky",
       href: "/dashboard/attendance",
     },
-  ];
-  const nextBestActions: AttentionRow[] = [
+  ], [summary, data.products]);
+
+  const nextBestActions: AttentionRow[] = useMemo(() => [
     ...(activeOrg.status !== "ACTIVE"
       ? [
           {
@@ -225,15 +204,15 @@ export function DashboardOverview({
             href: "/dashboard/payments",
           },
         ]),
-  ].slice(0, 5);
-  const setupComplete = nextBestActions.length === 1 && nextBestActions[0]?.title === "Reconcile today's money";
+  ].slice(0, 5), [activeOrg.status, selectedBranch, summary]);
 
-  const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const todayLabel = new Date().toLocaleDateString("en-IN", {
+  const setupComplete = useMemo(() => nextBestActions.length === 1 && nextBestActions[0]?.title === "Reconcile today's money", [nextBestActions]);
+
+  const todayLabel = useMemo(() => new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",
     month: "short",
-  });
+  }), []);
 
   return (
     <div className="grid gap-6">
@@ -293,8 +272,8 @@ export function DashboardOverview({
       {/* KPI row */}
       <div className={`grid gap-3 sm:gap-4 ${
         prefs.density === "compact"
-          ? "grid-cols-2 md:grid-cols-5"
-          : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+          ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+          : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
       }`}>
         <KPITile
           label="Active members"
@@ -302,7 +281,7 @@ export function DashboardOverview({
           icon={Users}
           tone={accent}
           trend={memberTrend}
-          delta={3.2}
+          delta={charts.deltas.memberGrowth30d}
           caption="Server-recorded"
         />
         <KPITile
@@ -311,7 +290,7 @@ export function DashboardOverview({
           icon={CheckCircle2}
           tone="sky"
           trend={attendanceTrend}
-          delta={summary.todayAttendance > 0 ? 8.4 : null}
+          delta={charts.deltas.attendance7d}
           caption="QR entries"
         />
         <KPITile
@@ -321,7 +300,7 @@ export function DashboardOverview({
           icon={IndianRupee}
           tone="amber"
           trend={revenueTrend}
-          delta={summary.revenuePaise > 0 ? 12.3 : null}
+          delta={charts.deltas.revenue7d}
           caption="Confirmed payments"
         />
         <KPITile
@@ -359,7 +338,7 @@ export function DashboardOverview({
                   <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
                     {formatInr(summary.revenuePaise)}
                   </span>
-                  <DeltaChip delta={summary.revenuePaise > 0 ? 12.3 : 0} />
+                  <DeltaChip delta={charts.deltas.revenue7d} />
                 </div>
                 <p className="mt-1 text-xs text-[var(--text-tertiary)]">Today is the latest mark</p>
               </div>
@@ -373,7 +352,7 @@ export function DashboardOverview({
             <div className="mt-4 h-56">
               <LineChart
                 series={revenueTrend}
-                labels={weekDays}
+                labels={charts.revenue7d.map((point) => point.label || "")}
                 tone={accent}
                 formatY={(v) => formatInrCompact(v * 100)}
                 formatTooltip={(v, label) => `${label}: ${formatInrCompact(v * 100)}`}
@@ -439,7 +418,7 @@ export function DashboardOverview({
             </Link>
           </div>
           <div className="mt-4 h-44">
-            <BarChart series={attendanceTrend} labels={weekDays} tone="sky" />
+            <BarChart series={attendanceTrend} labels={charts.attendance7d.map((point) => point.label || "")} tone="sky" />
           </div>
         </GlassCard>
         ) : null}
@@ -465,26 +444,28 @@ export function DashboardOverview({
           <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row sm:items-center">
             <Donut
               value={planMix[0]?.value ?? 1}
-              total={planMixTotal}
+              total={Math.max(planMixTotal, 1)}
               size={140}
               thickness={14}
               tone="lime"
               centerLabel={
                 <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
-                  {planMix.length}
+                  {planMixTotal}
                 </span>
               }
-              centerSub={`active plan${planMix.length === 1 ? "" : "s"}`}
+              centerSub={`active member${planMixTotal === 1 ? "" : "s"}`}
             />
             <div className="grid flex-1 gap-2">
-              {planMix.map((slice) => (
+              {planMix.length ? planMix.map((slice) => (
                 <LegendItem
                   key={slice.label}
                   tone={slice.tone}
                   label={slice.label}
-                  value={`${Math.round((slice.value / planMixTotal) * 100)}%`}
+                  value={`${Math.round((slice.value / Math.max(planMixTotal, 1)) * 100)}%`}
                 />
-              ))}
+              )) : (
+                <LegendItem tone="lime" label="No active plan mix yet" value="0%" />
+              )}
             </div>
           </div>
         </GlassCard>
@@ -593,7 +574,9 @@ export function DashboardOverview({
       </div>
       ) : null}
 
-      <OwnerCustomisationPanel />
+      <Suspense fallback={<div className="h-20 animate-pulse rounded-[28px] bg-[var(--surface-raised)]" />}>
+        <LazyOwnerCustomisationPanel />
+      </Suspense>
     </div>
   );
 }

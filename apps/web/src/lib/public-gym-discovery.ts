@@ -8,12 +8,32 @@ export type GymResult = DiscoveryGym & {
   planCount: number;
 };
 
+export type GymPeopleFilter = "OPEN_JOIN" | "APPROVAL_REQUIRED";
+export type GymPriceFilter = "FREE" | "PAID";
+
 export function toPositivePage(value?: string) {
   const page = Number(value);
   return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
 }
 
-async function demoGyms(query?: string, city?: string): Promise<GymResult[]> {
+function filterGymResults(
+  gyms: GymResult[],
+  filters: { people?: GymPeopleFilter; price?: GymPriceFilter },
+) {
+  return gyms
+    .filter((gym) => (filters.people ? gym.joinMode === filters.people : true))
+    .filter((gym) => {
+      if (filters.price === "FREE") return gym.priceFromPaise === null;
+      if (filters.price === "PAID") return gym.priceFromPaise !== null;
+      return true;
+    });
+}
+
+async function demoGyms(
+  query?: string,
+  city?: string,
+  filters: { people?: GymPeopleFilter; price?: GymPriceFilter } = {},
+): Promise<GymResult[]> {
   const [{ zookDemoFixtures }, { MockMapProvider }] = await Promise.all([
     import("@zook/core"),
     import("@zook/core/providers"),
@@ -42,7 +62,7 @@ async function demoGyms(query?: string, city?: string): Promise<GymResult[]> {
     ...(city ? { city } : {}),
     mapProvider: new MockMapProvider(),
   });
-  return withPlanSummaries(results, plansByOrgId);
+  return filterGymResults(withPlanSummaries(results, plansByOrgId), filters);
 }
 
 function withPlanSummaries(
@@ -60,7 +80,11 @@ function withPlanSummaries(
   });
 }
 
-export async function searchGyms(query?: string, city?: string): Promise<GymResult[]> {
+export async function searchGyms(
+  query?: string,
+  city?: string,
+  filters: { people?: GymPeopleFilter; price?: GymPriceFilter } = {},
+): Promise<GymResult[]> {
   try {
     const gyms = await prisma.organization.findMany({
       where: {
@@ -115,9 +139,9 @@ export async function searchGyms(query?: string, city?: string): Promise<GymResu
       ...(city ? { city } : {}),
       mapProvider: getMapProvider(),
     });
-    return withPlanSummaries(results, plansByOrgId);
+    return filterGymResults(withPlanSummaries(results, plansByOrgId), filters);
   } catch (error) {
     if (!canUsePublicDemoFallback()) throw error;
-    return demoGyms(query, city);
+    return demoGyms(query, city, filters);
   }
 }

@@ -10,7 +10,12 @@ import {
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
-import { searchGyms, toPositivePage } from "@/lib/public-gym-discovery";
+import {
+  searchGyms,
+  toPositivePage,
+  type GymPeopleFilter,
+  type GymPriceFilter,
+} from "@/lib/public-gym-discovery";
 
 export const dynamic = "force-dynamic";
 
@@ -20,17 +25,29 @@ export const metadata: Metadata = {
   alternates: { canonical: "/gyms" },
 };
 
-type GymSearchParams = Promise<{ q?: string; city?: string; page?: string; lang?: string }>;
+type GymSearchParams = Promise<{
+  q?: string;
+  city?: string;
+  people?: string;
+  price?: string;
+  page?: string;
+  lang?: string;
+}>;
 
 export default async function GymsPage({ searchParams }: { searchParams: GymSearchParams }) {
   const query = await searchParams;
   const q = query.q?.trim() || undefined;
   const city = query.city?.trim() || undefined;
+  const people = resolvePeopleFilter(query.people);
+  const price = resolvePriceFilter(query.price);
   const locale = resolvePublicLocale(query);
   const nextLocale = alternatePublicLocale(locale);
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const page = toPositivePage(query.page);
-  const gyms = await searchGyms(q, city);
+  const gyms = await searchGyms(q, city, {
+    ...(people ? { people } : {}),
+    ...(price ? { price } : {}),
+  });
   const pageSize = 50;
   const pageStart = (page - 1) * pageSize;
   const visibleGyms = gyms.slice(pageStart, pageStart + pageSize);
@@ -41,12 +58,12 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
       <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:px-6">
         <PublicNav
           locale={locale}
-          languageHref={localizedPath("/gyms", nextLocale, { q, city, page })}
+          languageHref={localizedPath("/gyms", nextLocale, { q, city, people, price, page })}
           languageLabel={t("languageSwitch")}
         >
           <AccountAwareNav locale={locale} />
         </PublicNav>
-        <GymDiscoveryFilters locale={locale} q={q} city={city} />
+        <GymDiscoveryFilters locale={locale} q={q} city={city} people={people} price={price} />
         <GymDiscoveryGrid gyms={visibleGyms} locale={locale} />
         <GymPagination
           page={page}
@@ -54,6 +71,8 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
           locale={locale}
           q={q}
           city={city}
+          people={people}
+          price={price}
         />
       </div>
     </main>
@@ -66,18 +85,29 @@ function GymPagination({
   locale,
   q,
   city,
+  people,
+  price,
 }: {
   page: number;
   totalPages: number;
   locale: "en" | "hi";
   q?: string | undefined;
   city?: string | undefined;
+  people?: GymPeopleFilter | undefined;
+  price?: GymPriceFilter | undefined;
 }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   if (totalPages <= 1) return null;
   const pageHref = (nextPage: number) => ({
     pathname: "/gyms",
-    query: { ...(q ? { q } : {}), ...(city ? { city } : {}), ...(locale === "hi" ? { lang: "hi" } : {}), page: nextPage },
+    query: {
+      ...(q ? { q } : {}),
+      ...(city ? { city } : {}),
+      ...(people ? { people } : {}),
+      ...(price ? { price } : {}),
+      ...(locale === "hi" ? { lang: "hi" } : {}),
+      page: nextPage,
+    },
   });
   return (
     <nav className="flex items-center justify-center gap-3" aria-label="Gym results pages">
@@ -86,4 +116,12 @@ function GymPagination({
       {page < totalPages ? <ZookButtonLink tone="ghost" size="sm" href={pageHref(page + 1)}>{t("next")}</ZookButtonLink> : null}
     </nav>
   );
+}
+
+function resolvePeopleFilter(value?: string): GymPeopleFilter | undefined {
+  return value === "OPEN_JOIN" || value === "APPROVAL_REQUIRED" ? value : undefined;
+}
+
+function resolvePriceFilter(value?: string): GymPriceFilter | undefined {
+  return value === "FREE" || value === "PAID" ? value : undefined;
 }

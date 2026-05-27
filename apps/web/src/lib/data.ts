@@ -1,5 +1,9 @@
 import { getAppEnv, isTruthy, zookDemoFixtures } from "@zook/core";
+import { prisma } from "@zook/db";
 import { getOrganizationDashboardData, getPlatformDashboardData } from "@/server/domains/overview";
+import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
+import { getBranchScope } from "@/server/domains/shared/org-context";
+import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";
 
 const zeroSummary = {
   activeMembers: 0,
@@ -14,6 +18,21 @@ const zeroSummary = {
   aiUsageThisMonth: 0,
   trialDaysRemaining: 0,
   staffCount: 0,
+  plansCount: 0,
+};
+
+const zeroCharts = {
+  revenue7d: [],
+  revenue30d: [],
+  attendance7d: [],
+  memberGrowth30d: [],
+  planMix: [],
+  deltas: {
+    revenue7d: 0,
+    revenue30d: 0,
+    attendance7d: 0,
+    memberGrowth30d: 0,
+  },
 };
 
 const demoOrg = zookDemoFixtures.organizations[0];
@@ -59,6 +78,7 @@ function getDemoDashboardData(scope: "org" | "platform") {
     aiUsageThisMonth: 18,
     trialDaysRemaining: 21,
     staffCount: 4,
+    plansCount: 3,
   };
   const org = {
     id: demoOrg?.id ?? "org-demo",
@@ -121,6 +141,42 @@ function getDemoDashboardData(scope: "org" | "platform") {
       inventoryScope: "BRANCH",
     },
     summary,
+    charts: {
+      revenue7d: [
+        1280, 1540, 1180, 1760, 2210, 1890, Math.round(summary.revenuePaise / 100),
+      ].map((value, index) => ({
+        date: `demo-7-${index}`,
+        label: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index] ?? "",
+        value,
+      })),
+      revenue30d: Array.from({ length: 30 }, (_, index) => ({
+        date: `demo-30-${index}`,
+        label: index === 0 ? "30d" : index === 29 ? "Today" : (index + 1) % 5 === 0 ? `D-${30 - index}` : "",
+        value: Math.round(900 + index * 55 + (index % 4) * 120),
+      })),
+      attendance7d: [42, 51, 39, 58, 62, 47, summary.todayAttendance].map((value, index) => ({
+        date: `demo-att-${index}`,
+        label: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index] ?? "",
+        value,
+      })),
+      memberGrowth30d: Array.from({ length: 30 }, (_, index) => ({
+        date: `demo-member-${index}`,
+        label: index === 0 ? "30d" : index === 29 ? "Today" : (index + 1) % 5 === 0 ? `D-${30 - index}` : "",
+        value: Math.max(0, summary.activeMembers - 28 + index),
+      })),
+      planMix: [
+        { label: "Monthly Unlimited", value: 226, tone: "lime" as const },
+        { label: "Quarterly", value: 91, tone: "sky" as const },
+        { label: "Visit pack", value: 62, tone: "amber" as const },
+        { label: "Trial", value: 33, tone: "violet" as const },
+      ],
+      deltas: {
+        revenue7d: 8.4,
+        revenue30d: 14.1,
+        attendance7d: 5.6,
+        memberGrowth30d: 7.3,
+      },
+    },
     platform: {
       aiUsageThisMonth: 18,
       abuseFlags: [],
@@ -135,10 +191,41 @@ function canUseDemoDashboardFallback() {
   );
 }
 
-async function getDashboardShellData(orgId?: string, branchId?: string) {
+function branchFilterFromParam(branchId?: string): DashboardBranchFilter {
+  return branchId === "all"
+    ? { allBranches: true, allBranchesAllowed: true }
+    : branchId
+      ? { branchId }
+      : {};
+}
+
+async function getUnavailableOrgDashboardData(
+  orgId: string,
+  filters: DashboardBranchFilter = {},
+) {
+  const emptyData = await getEmptyDashboardData(orgId);
+  const organization = await prisma.organization.findUnique({ where: { id: orgId } });
+  if (!organization) {
+    return emptyData;
+  }
+  const branchScope = await getBranchScope(orgId, filters).catch(() => emptyData.branchScope);
+  return {
+    ...emptyData,
+    orgs: [serializeOrganizationForReadModel(organization)],
+    branchScope,
+    metrics: emptyData.metrics.map((metric) =>
+      metric.label === "Trial days" ? { ...metric, delta: organization.status } : metric,
+    ),
+  };
+}
+
+async function getDashboardShellData(
+  orgId?: string,
+  filters: DashboardBranchFilter = {},
+) {
   try {
     if (orgId) {
-      const data = await getOrganizationDashboardData(orgId, branchId ? { branchId } : {});
+      const data = await getOrganizationDashboardData(orgId, filters);
       return {
         scope: "org" as const,
         connected: true,
@@ -153,6 +240,7 @@ async function getDashboardShellData(orgId?: string, branchId?: string) {
         auditLogCount: data.auditLogCount,
         branchScope: data.branchScope,
         summary: data.summary,
+        charts: data.charts,
         platform: {
           aiUsageThisMonth: 0,
           abuseFlags: [],
@@ -182,6 +270,7 @@ async function getDashboardShellData(orgId?: string, branchId?: string) {
         inventoryScope: "ORG_WIDE",
       },
       summary: zeroSummary,
+      charts: zeroCharts,
       platform: {
         aiUsageThisMonth: data.aiUsageThisMonth,
         abuseFlags: data.abuseFlags,
@@ -196,7 +285,7 @@ async function getDashboardShellData(orgId?: string, branchId?: string) {
     }
     console.error("Dashboard data read failed", error);
     if (orgId) {
-      return getEmptyDashboardData(orgId);
+      return getUnavailableOrgDashboardData(orgId, filters);
     }
     return getEmptyDashboardData();
   }
@@ -205,7 +294,7 @@ async function getDashboardShellData(orgId?: string, branchId?: string) {
 export type DashboardData = Awaited<ReturnType<typeof getDashboardShellData>>;
 
 export async function getOrganizationDashboardShellData(orgId: string, branchId?: string) {
-  return getDashboardShellData(orgId, branchId);
+  return getDashboardShellData(orgId, branchFilterFromParam(branchId));
 }
 
 export async function getPlatformDashboardShellData() {
@@ -254,6 +343,7 @@ export async function getEmptyDashboardData(orgId?: string) {
       inventoryScope: "ORG_WIDE",
     },
     summary: zeroSummary,
+    charts: zeroCharts,
     platform: {
       aiUsageThisMonth: 0,
       abuseFlags: [],

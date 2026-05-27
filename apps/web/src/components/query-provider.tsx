@@ -21,14 +21,16 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {children}
       <Toaster
-        richColors
         closeButton
         position="top-right"
         toastOptions={{
           classNames: {
-            toast: "zook-focus border-white/10 bg-zinc-950 text-white",
-            description: "text-white/62",
-            closeButton: "zook-focus",
+            toast:
+              "zook-focus border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-[var(--shadow-lg)]",
+            title: "text-[var(--text-primary)]",
+            description: "text-[var(--text-secondary)]",
+            closeButton:
+              "zook-focus border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)]",
           },
         }}
       />

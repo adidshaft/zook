@@ -72,14 +72,16 @@ export type OverviewWorkflowCard = {
   tone: PillTone;
 };
 
-export type OverviewOperationalSectionProps = {
+export type SharedOperationalProps = {
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
   auditLogCount: number;
-  initialNotifications: NotificationSnapshot[];
-  initialProducts: ProductSnapshot[];
-  initialAiUsage: AIUsageRow[];
-  overviewWorkflowCards: OverviewWorkflowCard[];
+  formBusy: string | null;
+  formError: string;
+  formStatus: string;
+};
+
+export type BranchOperationalProps = {
   branches: BranchRow[];
   branchesState: ResourceState<{ branches: BranchRow[] }>;
   branchForm: BranchFormState;
@@ -90,50 +92,65 @@ export type OverviewOperationalSectionProps = {
   setBranchEditForm: Dispatch<SetStateAction<BranchFormState>>;
   staffAssignments: StaffAssignmentRow[];
   staffUsersById: Map<string, StaffUserRow>;
-  formBusy: string | null;
-  formError: string;
-  formStatus: string;
   createBranch: () => Promise<void>;
   saveBranchEdit: (branch: BranchRow) => Promise<void>;
   startBranchEdit: (branch: BranchRow) => void;
   updateBranch: (branch: BranchRow, patch: Partial<BranchRow>) => Promise<void>;
   deactivateBranch: (branch: BranchRow) => Promise<void>;
-  referralPolicy: ReferralPolicyRow | null;
-  referralPolicyState: ResourceState<{ policy: ReferralPolicyRow }>;
-  referralAnalytics: ReferralAnalyticsPayload | undefined;
-  referralAnalyticsState: ResourceState<ReferralAnalyticsPayload>;
-  referralsState: ResourceState<{ referrals: ReferralCodeRow[]; users: StaffUserRow[]; coupons: CouponRow[] }>;
-  couponsState: ResourceState<{ coupons: CouponRow[] }>;
+};
+
+export type CouponOfferProps = {
   coupons: CouponRow[];
-  offers: OfferRow[];
-  referrals: ReferralCodeRow[];
-  referralUsersById: Map<string, StaffUserRow>;
-  membershipPlans: MembershipPlanRow[];
+  couponsState: ResourceState<{ coupons: CouponRow[] }>;
   couponForm: CouponFormState;
   setCouponForm: Dispatch<SetStateAction<CouponFormState>>;
   editingCouponId: string | null;
   setEditingCouponId: Dispatch<SetStateAction<string | null>>;
   couponEditForm: CouponFormState;
   setCouponEditForm: Dispatch<SetStateAction<CouponFormState>>;
+  createCoupon: () => Promise<void>;
+  updateCoupon: (couponId: string) => Promise<void>;
+  toggleCoupon: (coupon: CouponRow) => Promise<void>;
+  startCouponEdit: (coupon: CouponRow) => void;
+
+  offers: OfferRow[];
   offerForm: OfferFormState;
   setOfferForm: Dispatch<SetStateAction<OfferFormState>>;
   editingOfferId: string | null;
   setEditingOfferId: Dispatch<SetStateAction<string | null>>;
   offerEditForm: OfferFormState;
   setOfferEditForm: Dispatch<SetStateAction<OfferFormState>>;
-  referralForm: ReferralFormState;
-  setReferralForm: Dispatch<SetStateAction<ReferralFormState>>;
-  policyForm: PolicyFormState;
-  setPolicyForm: Dispatch<SetStateAction<PolicyFormState>>;
-  createCoupon: () => Promise<void>;
-  updateCoupon: (couponId: string) => Promise<void>;
-  toggleCoupon: (coupon: CouponRow) => Promise<void>;
-  startCouponEdit: (coupon: CouponRow) => void;
   createOffer: () => Promise<void>;
   updateOffer: (offerId: string) => Promise<void>;
   toggleOffer: (offer: OfferRow) => Promise<void>;
   startOfferEdit: (offer: OfferRow) => void;
+
+  membershipPlans: MembershipPlanRow[];
+};
+
+export type ReferralOperationalProps = {
+  referralPolicy: ReferralPolicyRow | null;
+  referralPolicyState: ResourceState<{ policy: ReferralPolicyRow }>;
+  referralAnalytics: ReferralAnalyticsPayload | undefined;
+  referralAnalyticsState: ResourceState<ReferralAnalyticsPayload>;
+  referralsState: ResourceState<{ referrals: ReferralCodeRow[]; users: StaffUserRow[]; coupons: CouponRow[] }>;
+  referrals: ReferralCodeRow[];
+  referralUsersById: Map<string, StaffUserRow>;
+  referralForm: ReferralFormState;
+  setReferralForm: Dispatch<SetStateAction<ReferralFormState>>;
+  policyForm: PolicyFormState;
+  setPolicyForm: Dispatch<SetStateAction<PolicyFormState>>;
   createReferral: () => Promise<void>;
   updateReferral: (referral: ReferralCodeRow, status: "active" | "paused") => Promise<void>;
   saveReferralPolicy: () => Promise<void>;
 };
+
+export type OverviewOperationalSectionProps = SharedOperationalProps &
+  BranchOperationalProps &
+  CouponOfferProps &
+  ReferralOperationalProps & {
+    initialNotifications: NotificationSnapshot[];
+    initialProducts: ProductSnapshot[];
+    initialAiUsage: AIUsageRow[];
+    overviewWorkflowCards: OverviewWorkflowCard[];
+  };

@@ -22,7 +22,9 @@ import {
   NotificationStatus,
   NotificationType,
   OrderStatus,
+  OrganizationStatus,
   PaymentMode,
+  PaymentMandateStatus,
   PaymentEventStatus,
   PaymentPurpose,
   PaymentStatus,
@@ -39,6 +41,8 @@ import {
   PushDeviceStatus,
   PushPlatform,
   Role,
+  SaaSBillingCycle,
+  SaaSTier,
   SubscriptionStatus,
 } from "@prisma/client";
 
@@ -107,6 +111,7 @@ const seedUserEmails = [
   "reception@zook.local",
   "trainer@zook.local",
   "member@zook.local",
+  "member2@zook.local",
   "prospect@zook.local",
   "minor@zook.local",
   "desk-test-member@zook.local",
@@ -119,12 +124,36 @@ const seedUserPhones = [
   "+919765432109",
   "+919123456780",
   "+919876543210",
+  "+919876543211",
   "+919555000111",
   "+919000012345",
   "+919444000222",
 ];
 
 const seedOrgUsernames = ["aarogya-strength", "peaklab"];
+
+const gymImageAssets = {
+  aarogyaStrength: {
+    coverImageUrl: "/seed/gyms/aarogya-strength/cover.png",
+    gallery: [
+      "/seed/gyms/aarogya-strength/gallery-01.png",
+      "/seed/gyms/aarogya-strength/gallery-02.png",
+      "/seed/gyms/aarogya-strength/gallery-03.png",
+      "/seed/gyms/aarogya-strength/gallery-04.png",
+      "/seed/gyms/aarogya-strength/gallery-05.png",
+    ],
+  },
+  yourFitness: {
+    coverImageUrl: "/seed/gyms/your-fitness/cover.png",
+    gallery: [
+      "/seed/gyms/your-fitness/gallery-01.png",
+      "/seed/gyms/your-fitness/gallery-02.png",
+      "/seed/gyms/your-fitness/gallery-03.png",
+      "/seed/gyms/your-fitness/gallery-04.png",
+      "/seed/gyms/your-fitness/gallery-05.png",
+    ],
+  },
+};
 
 async function clearProductionDemoData() {
   const nonSeedOrgCount = await prisma.organization.count({
@@ -251,6 +280,7 @@ async function clearProductionDemoData() {
   await prisma.guardianConsent.deleteMany({ where: { minorUserId: { in: seedUserIds } } });
   await prisma.memberProfile.deleteMany({ where: { OR: [orgScope, userScope] } });
   await prisma.organizationSetting.deleteMany({ where: orgScope });
+  await prisma.saaSBillingMandate.deleteMany({ where: orgScope });
   await prisma.saaSSubscription.deleteMany({ where: orgScope });
   await prisma.staffInvitation.deleteMany({ where: orgScope });
   await prisma.organizationRolePermission.deleteMany({ where: orgScope });
@@ -351,6 +381,7 @@ async function clear() {
   await prisma.guardianConsent.deleteMany();
   await prisma.memberProfile.deleteMany();
   await prisma.organizationSetting.deleteMany();
+  await prisma.saaSBillingMandate.deleteMany();
   await prisma.saaSSubscription.deleteMany();
   await prisma.staffInvitation.deleteMany();
   await prisma.organizationRolePermission.deleteMany();
@@ -377,6 +408,7 @@ async function main() {
       ["reception", "Farah Khan", "reception@zook.local", "+919765432109", false, false],
       ["trainer", "Rohan Kulkarni", "trainer@zook.local", "+919123456780", false, false],
       ["member", "Nisha Menon", "member@zook.local", "+919876543210", false, false],
+      ["member2", "Dev Mehta", "member2@zook.local", "+919876543211", false, false],
       ["prospect", "Maya Prospect", "prospect@zook.local", "+919555000111", false, false],
       ["minor", "Ira Shah", "minor@zook.local", "+919000012345", false, false],
       ["desk-test-member", "Karan Desk Test", "desk-test-member@zook.local", "+919444000222", false, false],
@@ -407,9 +439,10 @@ async function main() {
   const reception = must(users[3], "reception user");
   const trainer = must(users[4], "trainer user");
   const member = must(users[5], "member user");
-  const prospect = must(users[6], "prospect user");
-  const minor = must(users[7], "minor user");
-  const deskTestMember = must(users[8], "desk test member user");
+  const member2 = must(users[6], "second member user");
+  const prospect = must(users[7], "prospect user");
+  const minor = must(users[8], "minor user");
+  const deskTestMember = must(users[9], "desk test member user");
 
   await prisma.otpChallenge.createMany({
     data: seedUserEmails.map((email) => ({
@@ -436,6 +469,7 @@ async function main() {
       longitude: new Prisma.Decimal("73.8930"),
       locationSource: LocationSource.MOCK,
       amenities: ["Strength floor", "Cardio", "Locker room", "Personal training", "Recovery corner"],
+      coverImageUrl: gymImageAssets.aarogyaStrength.coverImageUrl,
       operatingHours: { weekday: "05:30-22:30", sunday: "07:00-14:00" },
       visibility: GymVisibility.PUBLIC,
       joinMode: GymJoinMode.OPEN_JOIN,
@@ -503,8 +537,29 @@ async function main() {
     await prisma.saaSSubscription.create({
       data: {
         orgId: org.id,
+        status: OrganizationStatus.TRIAL_ACTIVE,
+        tier: SaaSTier.STARTER,
+        billingCycle: SaaSBillingCycle.MONTHLY,
         trialStartAt: org.trialStartAt,
         trialEndAt: org.trialEndAt,
+      },
+    });
+    await prisma.saaSBillingMandate.create({
+      data: {
+        orgId: org.id,
+        createdByUserId: owner.id,
+        status: PaymentMandateStatus.ACTIVE,
+        amountPaise: paise(2999),
+        provider: "mock",
+        providerMandateId: `seed_saas_mandate_${org.username}`,
+        providerPlanId: "seed_starter_monthly",
+        checkoutUrl: `/payments/mock/seed-saas-${org.username}`,
+        currentStartAt: new Date(),
+        currentEndAt: days(30),
+        nextChargeAt: days(30),
+        authenticatedAt: new Date(),
+        activatedAt: new Date(),
+        metadata: { seeded: true, purpose: "acceptance_billing_gate" },
       },
     });
     await prisma.organizationSetting.create({
@@ -514,6 +569,11 @@ async function main() {
           attendanceMode: "EXCEPTION_APPROVAL",
           multiEntryConsumes: false,
           minorsMarketingOff: true,
+          ...(org.username === "aarogya-strength"
+            ? {
+                gallery: gymImageAssets.aarogyaStrength.gallery,
+              }
+            : {}),
         },
       },
     });
@@ -525,6 +585,7 @@ async function main() {
     [reception.id, Role.RECEPTIONIST],
     [trainer.id, Role.TRAINER],
     [member.id, Role.MEMBER],
+    [member2.id, Role.MEMBER],
     [deskTestMember.id, Role.MEMBER],
     [minor.id, Role.MEMBER],
   ] as const;
@@ -582,6 +643,14 @@ async function main() {
         profilePhotoConsentAt: new Date(),
         marketingOptIn: true,
         joinedViaReferralCodeId: null,
+      },
+      {
+        orgId: aarogyaStrength.id,
+        userId: member2.id,
+        profilePhotoUrl: member2.profilePhotoUrl,
+        profilePhotoConsentAt: new Date(),
+        marketingOptIn: true,
+        notes: "Stable spare demo member for manual transactions, referrals, and checkout flows.",
       },
       {
         orgId: aarogyaStrength.id,
@@ -1730,6 +1799,7 @@ async function main() {
     data: [
       {
         orgId: aarogyaStrength.id,
+        branchId: aarogyaBranch.id,
         name: "Water Bottle",
         description: "Reusable steel bottle.",
         category: ProductCategory.WATER,
@@ -1740,6 +1810,7 @@ async function main() {
       },
       {
         orgId: aarogyaStrength.id,
+        branchId: aarogyaBranch.id,
         name: "Protein Shake",
         description: "Post-workout shake, pickup at counter.",
         category: ProductCategory.PROTEIN_SHAKE,
@@ -1750,6 +1821,7 @@ async function main() {
       },
       {
         orgId: aarogyaStrength.id,
+        branchId: aarogyaBranch.id,
         name: "Shaker",
         description: "Leak-resistant shaker.",
         category: ProductCategory.SHAKER,
@@ -2000,6 +2072,7 @@ async function main() {
     reception: reception.email,
     trainer: trainer.email,
     member: member.email,
+    member2: member2.email,
     deskTestMember: deskTestMember.email,
     prospect: prospect.email,
     iraMember: minor.email,

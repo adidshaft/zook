@@ -13,12 +13,22 @@ import { useEffect, useId, useMemo, useRef, type ReactNode } from "react";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
+function useReduceOrPaper(): boolean {
+  const reduceSystem = useReducedMotion();
+  if (reduceSystem) return true;
+  if (typeof window !== "undefined" && document.documentElement.dataset.accent === "paper") {
+    return true;
+  }
+  return false;
+}
+
 const TONE_COLORS = {
   lime: "var(--accent)",
   amber: "var(--feedback-warning)",
   sky: "var(--feedback-info)",
   rose: "var(--feedback-danger)",
   violet: "var(--accent)",
+  paper: "var(--accent)",
 } as const;
 
 export type ChartTone = keyof typeof TONE_COLORS;
@@ -38,7 +48,7 @@ export function AnimatedNumber({
   duration?: number;
   className?: string;
 }) {
-  const reduce = useReducedMotion();
+  const reduce = useReduceOrPaper();
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "0px 0px 100px 0px" });
   const mv = useMotionValue(0);
@@ -132,7 +142,7 @@ export function Sparkline({
   showDot?: boolean;
 }) {
   const id = useId();
-  const reduce = useReducedMotion();
+  const reduce = useReduceOrPaper();
   if (!values.length) return null;
   const max = Math.max(...values);
   const min = Math.min(...values);
@@ -212,7 +222,7 @@ export function KPITile({
   caption?: string | undefined;
 }) {
   const color = TONE_COLORS[tone];
-  const reduce = useReducedMotion();
+  const reduce = useReduceOrPaper();
   const className = `group relative overflow-hidden rounded-[22px] border border-[var(--border)] bg-gradient-to-br from-[var(--surface-raised)] to-[var(--bg-sunken)] p-5 transition-colors hover:border-[var(--border-strong)] ${
     href ? "cursor-pointer" : ""
   }`;
@@ -248,14 +258,16 @@ export function KPITile({
           </div>
         ) : null}
       </div>
-      <div className="mt-3 flex items-end justify-between gap-3">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 min-w-0">
         {trend && trend.length > 1 ? (
-          <Sparkline values={trend} tone={tone} width={96} height={28} />
+          <Sparkline values={trend} tone={tone} width={80} height={24} className="shrink-0" />
         ) : (
-          <span className="text-[11px] text-[var(--text-tertiary)]">No trend yet</span>
+          <span className="text-[11px] text-[var(--text-tertiary)] shrink-0">No trend yet</span>
         )}
         {delta != null ? (
-          <DeltaChip delta={delta} {...(invertDelta != null ? { invert: invertDelta } : {})} />
+          <div className="shrink-0">
+            <DeltaChip delta={delta} {...(invertDelta != null ? { invert: invertDelta } : {})} />
+          </div>
         ) : null}
       </div>
     </>
@@ -340,8 +352,10 @@ export function LineChart({
   ariaLabel?: string;
 }) {
   const id = useId();
-  const reduce = useReducedMotion();
+  const reduce = useReduceOrPaper();
   const color = TONE_COLORS[tone];
+  const safeSeries = series.length > 1 ? series : [series[0] ?? 0, series[0] ?? 0];
+  const safeLabels = labels.length > 1 ? labels : [labels[0] ?? "", labels[0] ?? ""];
   const padTop = 18;
   const padBottom = 28;
   const padLeft = 38;
@@ -350,15 +364,15 @@ export function LineChart({
   // We use viewBox + preserveAspectRatio so the chart is responsive without ResizeObserver.
   const viewW = 480;
   const innerWidth = viewW - padLeft - padRight;
-  const max = Math.max(...series, 1);
-  const min = Math.min(...series, 0);
+  const max = Math.max(...safeSeries, 1);
+  const min = Math.min(...safeSeries, 0);
   const range = Math.max(max - min, 1);
   const yTicks = useMemo(() => {
     const t = [0, 0.25, 0.5, 0.75, 1].map((f) => min + range * f);
     return t;
   }, [min, range]);
-  const points = series.map((v, i) => {
-    const x = padLeft + (i / Math.max(series.length - 1, 1)) * innerWidth;
+  const points = safeSeries.map((v, i) => {
+    const x = padLeft + (i / Math.max(safeSeries.length - 1, 1)) * innerWidth;
     const y = padTop + innerHeight - ((v - min) / range) * innerHeight;
     return [x, y] as const;
   });
@@ -367,10 +381,10 @@ export function LineChart({
   const last = points[lastIndex]!;
   const first = points[0]!;
   const area = `${path} L ${last[0]},${padTop + innerHeight} L ${first[0]},${padTop + innerHeight} Z`;
-  const lastValue = series[lastIndex] ?? 0;
+  const lastValue = safeSeries[lastIndex] ?? 0;
   const tooltipText = formatTooltip
-    ? formatTooltip(lastValue, labels[lastIndex] ?? "")
-    : `${labels[lastIndex] ?? ""}: ${formatY ? formatY(lastValue) : lastValue}`;
+    ? formatTooltip(lastValue, safeLabels[lastIndex] ?? "")
+    : `${safeLabels[lastIndex] ?? ""}: ${formatY ? formatY(lastValue) : lastValue}`;
   const tooltipBoxWidth = Math.min(140, tooltipText.length * 7 + 16);
 
   return (
@@ -413,8 +427,8 @@ export function LineChart({
         );
       })}
       {/* x labels */}
-      {labels.map((label, i) => {
-        const x = padLeft + (i / Math.max(labels.length - 1, 1)) * innerWidth;
+      {safeLabels.map((label, i) => {
+        const x = padLeft + (i / Math.max(safeLabels.length - 1, 1)) * innerWidth;
         return (
           <text
             key={`${label}-${i}`}
@@ -422,7 +436,7 @@ export function LineChart({
             y={height - 8}
             fontSize="10"
             fill="var(--text-tertiary)"
-            textAnchor={i === 0 ? "start" : i === labels.length - 1 ? "end" : "middle"}
+            textAnchor={i === 0 ? "start" : i === safeLabels.length - 1 ? "end" : "middle"}
           >
             {label}
           </text>
@@ -517,8 +531,10 @@ export function BarChart({
   formatY?: (v: number) => string;
 }) {
   const id = useId();
-  const reduce = useReducedMotion();
+  const reduce = useReduceOrPaper();
   const color = TONE_COLORS[tone];
+  const safeSeries = series.length ? series : [0];
+  const safeLabels = labels.length ? labels : [""];
   const padTop = 14;
   const padBottom = 24;
   const padLeft = 32;
@@ -526,8 +542,8 @@ export function BarChart({
   const innerHeight = height - padTop - padBottom;
   const viewW = 480;
   const innerWidth = viewW - padLeft - padRight;
-  const max = Math.max(...series, 1);
-  const barCount = series.length;
+  const max = Math.max(...safeSeries, 1);
+  const barCount = safeSeries.length;
   const slot = innerWidth / barCount;
   const barWidth = Math.min(34, slot * 0.62);
 
@@ -564,12 +580,12 @@ export function BarChart({
           </g>
         );
       })}
-      {series.map((v, i) => {
+      {safeSeries.map((v, i) => {
         const x = padLeft + i * slot + (slot - barWidth) / 2;
         const h = (v / max) * innerHeight;
         const y = padTop + innerHeight - h;
         return (
-          <g key={`${labels[i]}-${i}`}>
+          <g key={`${safeLabels[i]}-${i}`}>
             <motion.rect
               x={x}
               width={barWidth}
@@ -586,7 +602,7 @@ export function BarChart({
               fill="var(--text-tertiary)"
               textAnchor="middle"
             >
-              {labels[i]}
+              {safeLabels[i]}
             </text>
           </g>
         );
@@ -616,7 +632,7 @@ export function Donut({
   centerLabel?: ReactNode;
   centerSub?: string;
 }) {
-  const reduce = useReducedMotion();
+  const reduce = useReduceOrPaper();
   const color = TONE_COLORS[tone];
   const radius = (size - thickness) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -770,7 +786,7 @@ export function ActivityRow({
   href?: string;
   index?: number;
 }) {
-  const reduce = useReducedMotion();
+  const reduce = useReduceOrPaper();
   const color = TONE_COLORS[iconTone];
   const Tag = href ? motion.a : motion.div;
   return (

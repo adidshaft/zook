@@ -207,7 +207,7 @@ export default function GymProfileScreen() {
       });
       setStatusMessage("Payment started. Complete it to activate your membership.");
       refreshAfterCheckoutRef.current = true;
-      await Linking.openURL(checkoutUrl(payload.checkoutUrl));
+      await Linking.openURL(checkoutUrlWithReturnUrl(payload.checkoutUrl, payload.session?.id));
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
@@ -808,6 +808,19 @@ function normalizeMediaUrl(value?: string | null) {
 
 function checkoutUrl(value: string) {
   return /^https?:\/\//i.test(value) ? value : toWebUrl(value);
+}
+
+function checkoutUrlWithReturnUrl(value: string, sessionId?: string | null) {
+  const resolvedUrl = checkoutUrl(value);
+  const returnUrl = `zook://payments/return?target=membership${sessionId ? `&session=${encodeURIComponent(sessionId)}` : ""}`;
+  try {
+    const parsed = new URL(resolvedUrl);
+    parsed.searchParams.set("return_url", returnUrl);
+    return parsed.toString();
+  } catch {
+    const separator = resolvedUrl.includes("?") ? "&" : "?";
+    return `${resolvedUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`;
+  }
 }
 
 function initialsForName(name: string) {

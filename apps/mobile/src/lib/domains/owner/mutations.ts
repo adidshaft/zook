@@ -8,7 +8,7 @@ import {
   notifyMutationSuccess,
   notifyMutationWarning,
 } from "@/lib/domains/shared/request";
-import type { OrgJoinRequestRecord } from "@/lib/domains/shared/types";
+import type { OrgJoinRequestRecord, OwnerBillingSubscriptionData } from "@/lib/domains/shared/types";
 
 export function useApproveJoinRequest(orgId?: string) {
   const queryClient = useQueryClient();
@@ -57,6 +57,101 @@ export function useRejectJoinRequest(orgId?: string) {
     },
     onError: (error) => {
       notifyMutationError(error, "Join request could not be rejected.");
+    },
+  });
+}
+
+export function useCreateSaasBillingMandate(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: () => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{
+        mandate: NonNullable<OwnerBillingSubscriptionData["mandate"]>;
+        checkoutUrl?: string | null;
+        checkoutData?: Record<string, unknown> | null;
+        session?: { id: string; status: string } | null;
+      }>(`/orgs/${ctx.orgId}/billing/mandate`, {
+        method: "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body: {},
+      });
+    },
+    onSuccess: async () => {
+      await invalidations.owner.billing(queryClient, resolvedOrgId);
+      notifyMutationSuccess("Billing mandate created.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Billing mandate could not be created.");
+    },
+  });
+}
+
+export function useUpgradeSaasSubscription(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (input: {
+      tier: "STARTER" | "GROWTH" | "PRO";
+      billingCycle: "MONTHLY" | "YEARLY";
+    }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{
+        subscription: OwnerBillingSubscriptionData["subscription"];
+        mandate: OwnerBillingSubscriptionData["mandate"];
+        checkoutUrl?: string | null;
+        checkoutData?: Record<string, unknown> | null;
+        session?: { id: string; status: string } | null;
+      }>(`/orgs/${ctx.orgId}/saas-subscription/upgrade`, {
+        method: "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body: input,
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        invalidations.owner.billing(queryClient, resolvedOrgId),
+        invalidations.owner.dashboard(queryClient, resolvedOrgId),
+      ]);
+      notifyMutationSuccess("Subscription checkout started.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Subscription checkout could not be started.");
+    },
+  });
+}
+
+export function useCancelSaasSubscription(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: () => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{
+        subscription: OwnerBillingSubscriptionData["subscription"];
+        mandate: OwnerBillingSubscriptionData["mandate"];
+      }>(`/orgs/${ctx.orgId}/saas-subscription/cancel`, {
+        method: "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body: {},
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        invalidations.owner.billing(queryClient, resolvedOrgId),
+        invalidations.owner.dashboard(queryClient, resolvedOrgId),
+      ]);
+      notifyMutationWarning("Subscription cancellation scheduled.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Subscription could not be cancelled.");
     },
   });
 }

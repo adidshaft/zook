@@ -17,8 +17,7 @@ export function OwnerSetupChecklist({
   copy: DashboardCopy;
 }) {
   const profileReady = activeOrg.status === "ACTIVE" && hasBranch && Boolean(activeOrg.city);
-  const joinReady =
-    summary.activeMembers > 0 || summary.joinRequests > 0 || summary.revenuePaise > 0;
+  const planCreated = (summary.plansCount ?? 0) > 0;
   const checklist = [
     {
       label: copy.dashboard.completeGymProfile,
@@ -30,7 +29,7 @@ export function OwnerSetupChecklist({
       label: copy.dashboard.createFirstPlanStep,
       detail: copy.dashboard.createFirstPlanDetail,
       href: "/dashboard/plans",
-      done: joinReady,
+      done: planCreated,
     },
     {
       label: copy.dashboard.inviteTeam,
@@ -46,6 +45,10 @@ export function OwnerSetupChecklist({
     },
   ];
   const completed = checklist.filter((item) => item.done).length;
+
+  if (completed === checklist.length) {
+    return null;
+  }
 
   return (
     <GlassCard variant="strong" className="overflow-hidden">
@@ -75,7 +78,14 @@ export function OwnerSetupChecklist({
               })}
             </span>
           </div>
-          <div className="mt-4 h-1 overflow-hidden rounded-full bg-[var(--bg-sunken)]">
+          <div
+            className="mt-4 h-1 overflow-hidden rounded-full bg-[var(--bg-sunken)]"
+            role="progressbar"
+            aria-valuenow={completed}
+            aria-valuemin={0}
+            aria-valuemax={checklist.length}
+            aria-label="Setup progress"
+          >
             <div
               className="h-full rounded-full bg-[var(--accent-fill)] transition-all duration-500"
               style={{ width: `${(completed / checklist.length) * 100}%` }}
@@ -87,7 +97,7 @@ export function OwnerSetupChecklist({
             const Icon = item.done ? CheckCircle2 : Circle;
             return (
               <Link
-                key={item.label}
+                key={item.href}
                 href={item.href}
                 className="group rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-4 transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
               >

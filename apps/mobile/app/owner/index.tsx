@@ -1,22 +1,23 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { RefreshControl, StyleSheet, Text } from "react-native";
+import { RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
 import { DemoBanner } from "@/components/demo-banner";
-import { QueryErrorState, ZookScreen } from "@/components/primitives";
+import { GlassCard, QueryErrorState, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherChip } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
-import { useOwnerDashboard } from "@/lib/domains/owner";
+import { useOwnerBillingSubscription, useOwnerDashboard, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
 import { legacyColors, layout, typography } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
+import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
 
 export default function OwnerCommandScreen() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function OwnerCommandScreen() {
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
   const dashboardQuery = useOwnerDashboard();
+  const billingQuery = useOwnerBillingSubscription();
+  const prefetchOwnerWorkspace = usePrefetchOwnerWorkspace();
   const attentionQuery = useOrgAttendancePending();
   const paymentsQuery = useOrgRecentPayments();
   const dashboard = dashboardQuery.data;
@@ -36,6 +39,10 @@ export default function OwnerCommandScreen() {
   const paymentExceptionCount =
     paymentsQuery.data?.payments.filter((payment) => payment.status !== "SUCCEEDED").length ?? 0;
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
+
+  useEffect(() => {
+    prefetchOwnerWorkspace();
+  }, [prefetchOwnerWorkspace]);
 
   useEffect(() => {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
@@ -81,6 +88,14 @@ export default function OwnerCommandScreen() {
       cta: { label: expiringSoon ? "Review" : "Open", onPress: () => router.replace("/owner/revenue") },
     },
   ];
+  const mandateStatus = billingQuery.data?.mandate?.status ?? null;
+  const subscription = billingQuery.data?.subscription;
+  const billingReady =
+    subscription?.status === "ACTIVE" ||
+    (mandateStatus &&
+      ["CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "PAUSED"].includes(
+        mandateStatus,
+      ));
   const branchName =
     dashboard?.branchScope?.selectedBranch?.name ??
     dashboard?.branchScope?.defaultBranch?.name ??
@@ -150,8 +165,30 @@ export default function OwnerCommandScreen() {
           {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
           {dashboard ? (
             <>
+              {!billingReady ? (
+                <GlassCard variant="warning" contentStyle={styles.billingCard}>
+                  <View style={styles.billingHeader}>
+                    <View style={styles.billingCopy}>
+                      <Text style={styles.billingTitle}>Billing setup required</Text>
+                      <Text style={styles.billingBody}>
+                        Trial access is on, but owner/admin writes need a SaaS mandate before the
+                        gym can operate normally.
+                      </Text>
+                    </View>
+                    <StatusChip status={subscription?.status ?? "SETUP"} tone="amber" />
+                  </View>
+                  <ZookButton
+                    size="sm"
+                    icon="card-outline"
+                    onPress={() => router.replace("/owner/billing" as never)}
+                  >
+                    Open billing
+                  </ZookButton>
+                </GlassCard>
+              ) : null}
               <MetricGrid testID="owner-view-command" items={metrics} />
               <AttentionCard items={items} />
+              <OwnerDashboardCharts charts={dashboard.charts} />
             </>
           ) : null}
         </KeyboardAwareScreen>
@@ -172,5 +209,26 @@ const styles = StyleSheet.create({
   headerMeta: {
     color: legacyColors.textMuted,
     ...typography.caption,
+  },
+  billingCard: {
+    gap: 12,
+  },
+  billingHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 12,
+  },
+  billingCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  billingTitle: {
+    color: legacyColors.textPrimary,
+    ...typography.cardTitle,
+  },
+  billingBody: {
+    color: legacyColors.textMuted,
+    ...typography.body,
   },
 });

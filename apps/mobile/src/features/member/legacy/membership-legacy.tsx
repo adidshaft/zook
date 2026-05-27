@@ -153,7 +153,7 @@ function checkoutUrl(url?: string | null) {
 function checkoutUrlWithReturnUrl(url?: string | null, sessionId?: string | null) {
   const resolvedUrl = checkoutUrl(url);
   if (!resolvedUrl || !sessionId) return resolvedUrl;
-  const returnUrl = `zook://payments/return?session=${encodeURIComponent(sessionId)}`;
+  const returnUrl = `zook://payments/return?target=membership&session=${encodeURIComponent(sessionId)}`;
   try {
     const parsed = new URL(resolvedUrl);
     parsed.searchParams.set("return_url", returnUrl);

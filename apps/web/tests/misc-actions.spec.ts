@@ -145,6 +145,11 @@ test.describe("misc dashboard actions", () => {
   }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    await prisma.featureFlag.upsert({
+      where: { key: "ai.assistant" },
+      create: { key: "ai.assistant", enabled: true, rolloutPercent: 100 },
+      update: { enabled: true, rolloutPercent: 100 },
+    });
     const promptMarker = `PW-AI-${Date.now()}`;
     // WHY: the seeded AI history can contain repeated natural-language prompts, so assert the row by a per-test marker.
     const prompt = `${promptMarker} Create a gym operations retention note for member Nisha's strength training attendance and renewal follow-up`;
@@ -197,7 +202,7 @@ test.describe("misc dashboard actions", () => {
     expect(subscription.data.subscription.orgStatus).toBeTruthy();
 
     await page.goto("/dashboard/billing");
-    await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Billing", exact: true })).toBeVisible({
       timeout: 15_000,
     });
   });
@@ -207,6 +212,7 @@ test.describe("misc dashboard actions", () => {
   }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
     const expiredAt = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
     await prisma.organization.update({
       where: { id: org.id },
@@ -227,6 +233,29 @@ test.describe("misc dashboard actions", () => {
         trialEndAt: expiredAt,
         nextRenewalAt: null,
         cancelAtPeriodEnd: false,
+      },
+    });
+    await prisma.saaSBillingMandate.upsert({
+      where: { orgId: org.id },
+      create: {
+        orgId: org.id,
+        createdByUserId: owner.id,
+        status: "ACTIVE",
+        amountPaise: 299900,
+        provider: "mock",
+        providerMandateId: `pw-saas-mandate-${Date.now()}`,
+        authenticatedAt: new Date(),
+        activatedAt: new Date(),
+        currentStartAt: new Date(),
+        nextChargeAt: expiredAt,
+      },
+      update: {
+        status: "ACTIVE",
+        amountPaise: 299900,
+        authenticatedAt: new Date(),
+        activatedAt: new Date(),
+        nextChargeAt: expiredAt,
+        cancelledAt: null,
       },
     });
 

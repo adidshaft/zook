@@ -7,6 +7,7 @@ import { GlassCard, Pill } from "@/components/glass-card";
 import { CouponApplyForm } from "@/components/coupon-apply-form";
 import { JoinCheckoutButton } from "@/components/join-checkout-button";
 import { InviteCodeForm, JoinRequestButton } from "@/components/join-request-controls";
+import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { formatInr } from "@/lib/format";
 import { PlanSelector } from "@/components/plan-selector";
@@ -171,7 +172,9 @@ export default async function JoinPage({
             languageLabel={t("languageSwitch")}
             backHref={localizedPath("/gyms", locale)}
             backLabel={t("findGym")}
-          />
+          >
+            <AccountAwareNav locale={locale} />
+          </PublicNav>
           <GlassCard className="mx-auto max-w-xl text-center">
             <Pill tone="amber">{t("joinUnavailable")}</Pill>
             <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">{t("joinUnavailable")}</p>
@@ -206,7 +209,9 @@ export default async function JoinPage({
             languageLabel={t("languageSwitch")}
             backHref={localizedPath(`/g/${org.username}`, locale)}
             backLabel={t("backToGym")}
-          />
+          >
+            <AccountAwareNav locale={locale} />
+          </PublicNav>
         <GlassCard className="mx-auto max-w-xl">
           <Pill tone="amber">{t("approvalRequired")}</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-[var(--text-primary)]">{t("approvalRequired")}</h1>
@@ -268,7 +273,9 @@ export default async function JoinPage({
             languageLabel={t("languageSwitch")}
             backHref={localizedPath(`/g/${org.username}`, locale)}
             backLabel={t("backToGym")}
-          />
+          >
+            <AccountAwareNav locale={locale} />
+          </PublicNav>
         <GlassCard className="mx-auto max-w-xl">
           <Pill tone="red">{joinModeLabelForLocale(joinMode, locale)}</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-[var(--text-primary)]">{t("inviteRequired")}</h1>
@@ -304,7 +311,9 @@ export default async function JoinPage({
           languageLabel={t("languageSwitch")}
           backHref={localizedPath(`/g/${org.username}`, locale)}
           backLabel={t("gymProfile")}
-        />
+        >
+          <AccountAwareNav locale={locale} />
+        </PublicNav>
 
         <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
           <GlassCard variant="strong">

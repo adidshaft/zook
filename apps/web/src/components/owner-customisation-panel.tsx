@@ -25,7 +25,7 @@ export type OwnerWidgetKey =
 
 type OwnerPrefs = {
   widgets: Record<OwnerWidgetKey, boolean>;
-  accent: "lime" | "sky" | "amber" | "violet";
+  accent: "lime" | "sky" | "amber" | "violet" | "paper";
   density: "comfortable" | "compact";
   numberFormat: "in" | "international";
 };
@@ -256,6 +256,7 @@ export function OwnerCustomisationPanel() {
             { value: "sky", label: "Sky" },
             { value: "amber", label: "Amber" },
             { value: "violet", label: "Violet" },
+            { value: "paper", label: "Paper (Tactile)" },
           ]}
         />
         <SegmentRow

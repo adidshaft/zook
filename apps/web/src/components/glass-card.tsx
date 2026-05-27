@@ -1,22 +1,24 @@
 "use client";
 
 import clsx from "clsx";
-import { motion, type HTMLMotionProps } from "framer-motion";
 
 export function GlassCard({
   children,
   className,
   variant = "default",
+  interactive = false,
+  as: Component = "div",
   ...props
 }: {
   children: React.ReactNode;
   className?: string | undefined;
   variant?: "default" | "strong" | "muted" | "selected" | "success" | "warning" | "danger";
-} & HTMLMotionProps<"section">) {
+  interactive?: boolean;
+  as?: React.ElementType;
+} & React.HTMLAttributes<HTMLDivElement>) {
   const variants = {
     default: "zook-glass rounded-[28px] p-5",
-    strong:
-      "zook-glass-strong rounded-[28px] p-6",
+    strong: "zook-glass-strong rounded-[28px] p-6",
     muted: "rounded-[24px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-5",
     selected:
       "rounded-[28px] border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] p-5 shadow-[var(--shadow-glow-accent)] backdrop-blur-2xl",
@@ -28,14 +30,18 @@ export function GlassCard({
       "rounded-[28px] border border-[color-mix(in_srgb,var(--feedback-danger)_34%,transparent)] bg-[var(--surface-danger-soft)] p-5 shadow-[var(--shadow-lg)] backdrop-blur-2xl",
   };
   return (
-    <motion.section 
+    <Component 
       {...props} 
-      className={clsx(variants[variant], className)}
-      whileHover={props.whileHover ?? { scale: 1.005 }}
-      transition={props.transition ?? { type: "spring", stiffness: 400, damping: 25 }}
+      className={clsx(
+        variants[variant], 
+        "transition-all duration-150 ease-out",
+        interactive && "hover:scale-[1.005] hover:shadow-[var(--shadow-lg)]",
+        className
+      )}
+      data-interactive={interactive ? "true" : undefined}
     >
       {children}
-    </motion.section>
+    </Component>
   );
 }
 
@@ -75,22 +81,27 @@ export function Pill({
 export function ProductPanel({
   children,
   className,
+  interactive = false,
+  as: Component = "div",
   ...props
 }: {
   children: React.ReactNode;
   className?: string | undefined;
-} & HTMLMotionProps<"section">) {
+  interactive?: boolean;
+  as?: React.ElementType;
+} & React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <motion.section
+    <Component
       {...props}
       className={clsx(
         "zook-glass-strong relative overflow-hidden rounded-[32px] p-5 before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-[var(--border-focus)] before:to-transparent md:p-6",
+        "transition-all duration-150 ease-out",
+        interactive && "hover:scale-[1.005] hover:shadow-[var(--shadow-lg)]",
         className,
       )}
-      whileHover={props.whileHover ?? { scale: 1.005 }}
-      transition={props.transition ?? { type: "spring", stiffness: 400, damping: 25 }}
+      data-interactive={interactive ? "true" : undefined}
     >
       {children}
-    </motion.section>
+    </Component>
   );
 }

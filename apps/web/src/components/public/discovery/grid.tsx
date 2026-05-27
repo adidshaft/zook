@@ -30,7 +30,22 @@ export function GymDiscoveryGrid({
     <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {gyms.map((gym) => (
         <Link key={gym.id} href={localizedPath(`/g/${gym.username}`, locale)} className="zook-focus block rounded-[28px]">
-          <GlassCard className="h-full transition hover:border-lime-300/25 hover:bg-white/[0.075]">
+          <GlassCard className="h-full overflow-hidden transition hover:border-lime-300/25 hover:bg-white/[0.075]">
+            <div className="-mx-4 -mt-4 mb-4 h-36 overflow-hidden border-b border-white/10 bg-white/[0.03] sm:-mx-5 sm:-mt-5">
+              {gym.coverImageUrl ? (
+                <img
+                  src={gym.coverImageUrl}
+                  alt={`${gym.name} cover`}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center bg-lime-300/10 text-sm font-semibold text-lime-100">
+                  {gym.name}
+                </div>
+              )}
+            </div>
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 {gym.logoUrl ? (

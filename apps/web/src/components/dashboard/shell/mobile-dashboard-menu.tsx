@@ -1,28 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  Bell,
-  Bot,
-  ClipboardList,
-  Dumbbell,
-  FileText,
   Globe2,
-  History,
   Menu,
-  QrCode,
-  Receipt,
-  ReceiptText,
-  Settings,
-  Shield,
-  Store,
-  Users,
-  type LucideIcon,
 } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { DashboardSignOutButton } from "../../dashboard-sign-out-button";
 import { translatedGroupLabel, translatedNavLabel } from "./copy";
-import { isActiveNav } from "./nav";
+import { isActiveNav, NAV_ICONS } from "./nav";
+import { prefetchDashboardHref } from "./prefetch";
 import type { DashboardCopy } from "./types";
 
 export type MobileNavGroup = {
@@ -30,48 +18,51 @@ export type MobileNavGroup = {
   items: Array<{ key: string; label: string; href: string; shortLabel?: string | undefined }>;
 };
 
-const mobileNavIcons: Record<string, LucideIcon> = {
-  today: Dumbbell,
-  attendance: QrCode,
-  payments: ReceiptText,
-  refunds: Receipt,
-  shop: Store,
-  shopOrders: Store,
-  reports: FileText,
-  billing: ReceiptText,
-  members: Users,
-  plans: ClipboardList,
-  coupons: ClipboardList,
-  offers: ClipboardList,
-  referrals: ClipboardList,
-  team: Shield,
-  messages: Bell,
-  templates: Bell,
-  history: History,
-  branches: Globe2,
-  gymProfile: Globe2,
-  activity: History,
-  ai: Bot,
-  settings: Settings,
-};
 
 export function MobileDashboardMenu({
   visibleNavGroups,
   sectionKey,
   copy,
+  activeOrgId,
+  activeBranchId,
 }: {
   visibleNavGroups: MobileNavGroup[];
   sectionKey: string;
   copy: DashboardCopy;
+  activeOrgId?: string | undefined;
+  activeBranchId?: string | undefined;
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        detailsRef.current &&
+        detailsRef.current.open &&
+        !detailsRef.current.contains(event.target as Node)
+      ) {
+        detailsRef.current.open = false;
+      }
+    }
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
+
+  function prefetchSection(href: string) {
+    prefetchDashboardHref({ queryClient, href, orgId: activeOrgId, branchId: activeBranchId });
+  }
+
   return (
     <details
       ref={detailsRef}
-      className="group relative z-[100] lg:hidden"
+      className="group relative z-[var(--z-dropdown)] lg:hidden"
       onKeyDown={(event) => {
         if (event.key === "Escape" && detailsRef.current?.open) {
           detailsRef.current.open = false;
+          detailsRef.current.querySelector("summary")?.focus();
         }
       }}
     >
@@ -83,7 +74,18 @@ export function MobileDashboardMenu({
         <span className="text-xs text-[var(--text-tertiary)] group-open:hidden">{copy.nav.today}</span>
         <span className="hidden text-xs text-[var(--text-tertiary)] group-open:inline">{copy.common.closeMenu}</span>
       </summary>
-      <div className="absolute inset-x-0 top-full z-[120] mt-2 rounded-[28px] border border-[var(--border)] bg-[var(--surface-raised)]/95 p-3 shadow-[var(--shadow-lg)] backdrop-blur">
+
+      {/* Backdrop Overlay */}
+      <div
+        className="fixed inset-0 z-[var(--z-overlay)] hidden bg-black/40 backdrop-blur-xs transition-opacity group-open:block"
+        onClick={() => {
+          if (detailsRef.current) {
+            detailsRef.current.open = false;
+          }
+        }}
+      />
+
+      <div className="absolute inset-x-0 top-full z-[var(--z-modal)] mt-2 rounded-[28px] border border-[var(--border)] bg-[var(--surface-raised)]/95 p-3 shadow-[var(--shadow-lg)] backdrop-blur">
         <nav className="grid gap-4">
           {visibleNavGroups.map((group) => (
             <div key={group.key} className="grid gap-1">
@@ -92,12 +94,15 @@ export function MobileDashboardMenu({
               </p>
               {group.items.map((item) => {
                 const { href } = item;
-                const Icon = mobileNavIcons[item.key] ?? Globe2;
+                const Icon = NAV_ICONS[item.key] ?? Globe2;
                 const active = isActiveNav(href, sectionKey);
                 return (
                   <Link
                     key={href}
                     href={href}
+                    prefetch
+                    onFocus={() => prefetchSection(href)}
+                    onTouchStart={() => prefetchSection(href)}
                     aria-current={active ? "page" : undefined}
                     className={`zook-focus flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition ${
                       active ? "bg-[var(--accent-fill)] text-[var(--text-on-accent)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
@@ -121,3 +126,4 @@ export function MobileDashboardMenu({
     </details>
   );
 }
+

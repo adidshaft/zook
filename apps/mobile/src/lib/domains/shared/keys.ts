@@ -37,6 +37,7 @@ export const queryKeys = {
     approvals: (orgId?: string | null) => ["org", orgId, "join-requests"] as const,
     revenue: (orgId?: string | null) => ["owner", "revenue", orgId] as const,
     stock: (orgId?: string | null) => ["owner", "stock", orgId] as const,
+    billing: (orgId?: string | null) => ["org", orgId, "billing", "subscription"] as const,
     member: (memberId: string) => ["owner", "member", memberId] as const,
   },
   reception: {
