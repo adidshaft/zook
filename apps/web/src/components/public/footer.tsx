@@ -12,6 +12,9 @@ export function PublicFooter({ locale }: { locale: PublicLocale }) {
         <Link href={localizedPath("/start-gym", locale)} className="transition hover:text-[var(--text-primary)]">
           {t("startGym")}
         </Link>
+        <Link href={localizedPath("/pricing", locale)} className="transition hover:text-[var(--text-primary)]">
+          Pricing
+        </Link>
         <Link href={localizedPath("/privacy", locale)} className="transition hover:text-[var(--text-primary)]">
           {t("privacy")}
         </Link>

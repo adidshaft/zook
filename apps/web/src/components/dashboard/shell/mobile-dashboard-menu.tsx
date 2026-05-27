@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ExternalLink,
   Globe2,
   Menu,
 } from "lucide-react";
@@ -117,6 +118,15 @@ export function MobileDashboardMenu({
           ))}
         </nav>
         <div className="mt-4 border-t border-[var(--border-subtle)] pt-3">
+          <Link
+            href="/pricing"
+            target="_blank"
+            rel="noreferrer"
+            className="zook-focus mb-3 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
+          >
+            <ExternalLink size={18} />
+            Pricing
+          </Link>
           <DashboardSignOutButton
             label={copy.common.signOut}
             busyLabel={copy.common.signingOut}
@@ -126,4 +136,3 @@ export function MobileDashboardMenu({
     </details>
   );
 }
-

@@ -34,6 +34,7 @@ import {
 import {
   useOwnerPrefs,
 } from "../../owner-customisation-panel";
+import { useDashboardSummary } from "@/lib/query-hooks/overview";
 import type { DashboardCopy, DashboardData } from "./types";
 
 const LazyOwnerCustomisationPanel = lazy(() =>
@@ -61,6 +62,16 @@ function formatInrCompact(paise: number) {
   return `₹${Math.round(rupees)}`;
 }
 
+function OverviewPanelSkeleton({ className = "" }: { className?: string }) {
+  return (
+    <GlassCard className={`p-5 ${className}`}>
+      <div className="h-3 w-32 animate-pulse rounded-full bg-[var(--surface-raised)]" />
+      <div className="mt-4 h-8 w-44 animate-pulse rounded-full bg-[var(--surface-raised)]" />
+      <div className="mt-5 h-40 animate-pulse rounded-[24px] bg-[var(--bg-sunken)]" />
+    </GlassCard>
+  );
+}
+
 export function DashboardOverview({
   activeOrg,
   selectedBranch,
@@ -72,9 +83,16 @@ export function DashboardOverview({
   copy: DashboardCopy;
 }) {
   const prefs = useOwnerPrefs();
+  const branchId = data.branchScope.allBranches ? "all" : selectedBranch?.id;
+  const dashboardQuery = useDashboardSummary(data.connected ? activeOrg.id : undefined, branchId);
+  const hydratedData = dashboardQuery.data;
   const accent: ChartTone = prefs.accent;
-  const summary = data.summary;
-  const charts = data.charts;
+  const summary = hydratedData?.summary ?? data.summary;
+  const charts = hydratedData?.charts ?? data.charts;
+  const products = hydratedData?.products ?? data.products;
+  const aiUsage = hydratedData?.aiUsage ?? data.aiUsage;
+  const auditLogCount = hydratedData?.auditLogCount ?? data.auditLogCount;
+  const isHydratingDetails = data.connected && !hydratedData && dashboardQuery.isPending;
   const aiQuota = 50;
   const aiUsagePercent = Math.min(100, Math.round((summary.aiUsageThisMonth / aiQuota) * 100));
 
@@ -96,8 +114,8 @@ export function DashboardOverview({
     {
       icon: Package,
       title: `${summary.lowStockProducts} items running low`,
-      subtitle: data.products.length
-        ? data.products.slice(0, 2).map((product) => product.name).join(", ")
+      subtitle: products.length
+        ? products.slice(0, 2).map((product) => product.name).join(", ")
         : "Pickup inventory is healthy",
       tone: "amber",
       href: "/dashboard/shop",
@@ -116,7 +134,7 @@ export function DashboardOverview({
       tone: "sky",
       href: "/dashboard/attendance",
     },
-  ], [summary, data.products]);
+  ], [summary, products]);
 
   const nextBestActions: AttentionRow[] = useMemo(() => [
     ...(activeOrg.status !== "ACTIVE"
@@ -230,7 +248,7 @@ export function DashboardOverview({
               Live
             </span>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)]/60 px-3 py-1 text-xs text-[var(--text-tertiary)]">
-              {data.connected ? "Server-truth data" : "Demo mode"}
+              {data.connected ? (isHydratingDetails ? "Fast metrics loaded" : "Server-truth data") : "Demo mode"}
             </span>
           </div>
         }
@@ -328,6 +346,9 @@ export function DashboardOverview({
         }`}
       >
         {prefs.widgets.revenueChart ? (
+          isHydratingDetails ? (
+            <OverviewPanelSkeleton />
+          ) : (
           <GlassCard className="overflow-hidden p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -360,6 +381,7 @@ export function DashboardOverview({
               />
             </div>
           </GlassCard>
+          )
         ) : null}
 
         <GlassCard className="p-5">
@@ -397,6 +419,9 @@ export function DashboardOverview({
         }`}
       >
         {prefs.widgets.attendanceBars ? (
+        isHydratingDetails ? (
+          <OverviewPanelSkeleton />
+        ) : (
         <GlassCard className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -421,9 +446,13 @@ export function DashboardOverview({
             <BarChart series={attendanceTrend} labels={charts.attendance7d.map((point) => point.label || "")} tone="sky" />
           </div>
         </GlassCard>
+        )
         ) : null}
 
         {prefs.widgets.planMix ? (
+        isHydratingDetails ? (
+          <OverviewPanelSkeleton />
+        ) : (
         <GlassCard className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -469,6 +498,7 @@ export function DashboardOverview({
             </div>
           </div>
         </GlassCard>
+        )
         ) : null}
       </div>
       ) : null}
@@ -504,7 +534,7 @@ export function DashboardOverview({
               {(
                 [
                   ["AI events", `${summary.aiUsageThisMonth} / ${aiQuota}`],
-                  ["Recent logs", `${data.aiUsage.length}`],
+                  ["Recent logs", `${aiUsage.length}`],
                   ["Provider", data.connected ? "Connected" : "Demo"],
                 ] as const
               ).map(([label, value]) => (
@@ -537,7 +567,7 @@ export function DashboardOverview({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm text-[var(--text-primary)]">
                 <strong className="tabular-nums">{summary.staffCount}</strong> staff roles ·{" "}
-                <strong className="tabular-nums">{data.auditLogCount}</strong> audit records
+                <strong className="tabular-nums">{auditLogCount}</strong> audit records
               </span>
               <span className="block text-xs text-[var(--text-tertiary)]">
                 Open audit log for exact actions and timestamps

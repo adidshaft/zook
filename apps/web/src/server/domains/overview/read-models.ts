@@ -12,9 +12,155 @@ export async function getOrganizationDashboardData(
 ) {
   return cachedJson(
     `org-dashboard:${orgId}:${filters.allBranches ? "all" : (filters.branchId ?? "default")}`,
-    20,
+    45,
     () => getOrganizationDashboardDataUncached(orgId, filters),
   );
+}
+
+export type OrganizationDashboardReadModel = Awaited<
+  ReturnType<typeof getOrganizationDashboardData>
+>;
+
+export async function getOrganizationDashboardFastData(
+  orgId: string,
+  filters: DashboardBranchFilter = {},
+) {
+  return cachedJson(
+    `org-dashboard-fast:${orgId}:${filters.allBranches ? "all" : (filters.branchId ?? "default")}`,
+    10,
+    () => getOrganizationDashboardFastDataUncached(orgId, filters),
+  );
+}
+
+async function getOrganizationDashboardFastDataUncached(
+  orgId: string,
+  filters: DashboardBranchFilter = {},
+) {
+  const today = startOfToday();
+  const nextWeek = endOfWindow(7);
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const branchScope = await getBranchScope(orgId, filters);
+  const branchWhere = branchScope.selectedBranch ? { branchId: branchScope.selectedBranch.id } : {};
+
+  const [
+    organization,
+    activeMembers,
+    joinRequests,
+    expiringMemberships,
+    todayAttendance,
+    pendingAttendanceApprovals,
+    manualPaymentsToday,
+    successfulPaymentsToday,
+    aiUsageThisMonth,
+    staffCount,
+    plansCount,
+  ] = await Promise.all([
+    prisma.organization.findUniqueOrThrow({ where: { id: orgId } }),
+    prisma.memberSubscription.count({ where: { orgId, status: "ACTIVE", ...branchWhere } }),
+    prisma.membershipJoinRequest.count({
+      where: { orgId, status: "pending", ...branchWhere },
+    }),
+    prisma.memberSubscription.count({
+      where: { orgId, status: "ACTIVE", endsAt: { gte: today, lte: nextWeek }, ...branchWhere },
+    }),
+    prisma.attendanceRecord.count({
+      where: { orgId, checkedInAt: { gte: today }, ...branchWhere },
+    }),
+    prisma.attendanceRecord.count({ where: { orgId, status: "PENDING_APPROVAL", ...branchWhere } }),
+    prisma.payment.aggregate({
+      where: {
+        orgId,
+        status: "SUCCEEDED",
+        mode: { in: ["CASH", "DIRECT_UPI", "BANK_TRANSFER", "OTHER"] },
+        recordedAt: { gte: today },
+        ...branchWhere,
+      },
+      _sum: { amountPaise: true },
+    }),
+    prisma.payment.aggregate({
+      where: { orgId, status: "SUCCEEDED", createdAt: { gte: today }, ...branchWhere },
+      _sum: { amountPaise: true },
+    }),
+    prisma.aIUsageLog.count({ where: { orgId, createdAt: { gte: monthStart } } }),
+    prisma.organizationRoleAssignment.count({
+      where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },
+    }),
+    prisma.membershipPlan.count({ where: { orgId } }),
+  ]);
+
+  const trialDaysRemaining = Math.max(
+    0,
+    Math.ceil((organization.trialEndAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
+  );
+
+  return {
+    organization: serializeOrganizationForReadModel(organization),
+    branchScope,
+    metrics: [
+      {
+        label: "Today attendance",
+        value: String(todayAttendance),
+        delta: branchScope.selectedBranch
+          ? `${branchScope.selectedBranch.name} QR check-ins`
+          : "Main branch unavailable",
+      },
+      {
+        label: "Active members",
+        value: String(activeMembers),
+        delta: `${joinRequests} join requests`,
+      },
+      { label: "Expiring soon", value: String(expiringMemberships), delta: "next 7 days" },
+      {
+        label: "Cash collected",
+        value: `₹${((manualPaymentsToday._sum.amountPaise ?? 0) / 100).toFixed(0)}`,
+        delta: "collected at desk today",
+      },
+      {
+        label: "Revenue",
+        value: `₹${((successfulPaymentsToday._sum.amountPaise ?? 0) / 100).toFixed(0)}`,
+        delta: "successful payments today",
+      },
+      { label: "Low stock", value: "0", delta: "loading inventory" },
+      { label: "Notification queue", value: "0", delta: "loading messages" },
+      { label: "Assistant drafts", value: String(aiUsageThisMonth), delta: "this month" },
+      { label: "Trial days", value: String(trialDaysRemaining), delta: organization.status },
+    ],
+    joinRequests: [],
+    products: [],
+    notifications: [],
+    aiUsage: [],
+    auditLogCount: 0,
+    charts: {
+      revenue7d: [],
+      revenue30d: [],
+      attendance7d: [],
+      memberGrowth30d: [],
+      planMix: [],
+      deltas: {
+        revenue7d: 0,
+        revenue30d: 0,
+        attendance7d: 0,
+        memberGrowth30d: 0,
+      },
+    },
+    summary: {
+      activeMembers,
+      joinRequests,
+      expiringMemberships,
+      todayAttendance,
+      pendingAttendanceApprovals,
+      cashCollectedPaise: manualPaymentsToday._sum.amountPaise ?? 0,
+      revenuePaise: successfulPaymentsToday._sum.amountPaise ?? 0,
+      lowStockProducts: 0,
+      notificationQueueCount: 0,
+      aiUsageThisMonth,
+      trialDaysRemaining,
+      staffCount,
+      plansCount,
+    },
+  };
 }
 
 async function getOrganizationDashboardDataUncached(
