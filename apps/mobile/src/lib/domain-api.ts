@@ -497,7 +497,9 @@ export const gymApi = {
       branchId?: string;
     },
   ) {
-    return mobileApiFetch<{ checkoutUrl: string }>(`/orgs/${options.orgId}/subscriptions`, {
+    return mobileApiFetch<{ checkoutUrl: string; session?: { id?: string; status?: string } }>(
+      `/orgs/${options.orgId}/subscriptions`,
+      {
       method: "POST",
       token: options.token,
       ...(options.branchId ? { branchId: options.branchId } : {}),
@@ -506,7 +508,8 @@ export const gymApi = {
         ...(options.referralCode ? { referralCode: options.referralCode } : {}),
         ...(options.branchId ? { branchId: options.branchId } : {}),
       },
-    });
+      },
+    );
   },
 };
 

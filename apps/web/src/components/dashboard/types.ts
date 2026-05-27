@@ -23,6 +23,33 @@ export type OrganizationSummary = {
   notificationQueueCount: number;
   aiUsageThisMonth: number;
   trialDaysRemaining: number;
+  staffCount: number;
+};
+
+export type DashboardChartPoint = {
+  date: string;
+  label: string;
+  value: number;
+};
+
+export type DashboardPlanMixPoint = {
+  label: string;
+  value: number;
+  tone: "lime" | "sky" | "amber" | "violet";
+};
+
+export type DashboardCharts = {
+  revenue7d: DashboardChartPoint[];
+  revenue30d: DashboardChartPoint[];
+  attendance7d: DashboardChartPoint[];
+  memberGrowth30d: DashboardChartPoint[];
+  planMix: DashboardPlanMixPoint[];
+  deltas: {
+    revenue7d: number;
+    revenue30d: number;
+    attendance7d: number;
+    memberGrowth30d: number;
+  };
 };
 
 export type OrganizationSnapshot = {

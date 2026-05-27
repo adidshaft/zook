@@ -1,15 +1,20 @@
 import { Search } from "lucide-react";
 import { GlassCard, Pill } from "@/components/glass-card";
-import { publicT, type PublicLocale } from "@/lib/public-i18n";
+import { joinModeLabelForLocale, publicT, type PublicLocale } from "@/lib/public-i18n";
+import type { GymPeopleFilter, GymPriceFilter } from "@/lib/public-gym-discovery";
 
 export function GymDiscoveryFilters({
   locale,
   q,
   city,
+  people,
+  price,
 }: {
   locale: PublicLocale;
   q?: string | undefined;
   city?: string | undefined;
+  people?: GymPeopleFilter | undefined;
+  price?: GymPriceFilter | undefined;
 }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   return (
@@ -50,6 +55,36 @@ export function GymDiscoveryFilters({
             <button type="submit" className="zook-focus min-h-12 bg-lime-300 px-5 text-sm font-semibold text-black transition hover:bg-lime-200">
               {t("searchGyms")}
             </button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">{t("people")}</span>
+              <select
+                name="people"
+                defaultValue={people ?? ""}
+                className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm text-white outline-none"
+              >
+                <option className="bg-black" value="">{t("allPeople")}</option>
+                <option className="bg-black" value="OPEN_JOIN">
+                  {joinModeLabelForLocale("OPEN_JOIN", locale)}
+                </option>
+                <option className="bg-black" value="APPROVAL_REQUIRED">
+                  {joinModeLabelForLocale("APPROVAL_REQUIRED", locale)}
+                </option>
+              </select>
+            </label>
+            <label className="grid gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">{t("price")}</span>
+              <select
+                name="price"
+                defaultValue={price ?? ""}
+                className="zook-focus min-h-12 rounded-2xl border border-white/10 bg-black/25 px-4 text-sm text-white outline-none"
+              >
+                <option className="bg-black" value="">{t("anyPrice")}</option>
+                <option className="bg-black" value="FREE">{t("freeToJoin")}</option>
+                <option className="bg-black" value="PAID">{t("paidPlans")}</option>
+              </select>
+            </label>
           </div>
         </form>
       </div>

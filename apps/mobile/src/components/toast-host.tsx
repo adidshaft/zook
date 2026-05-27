@@ -6,30 +6,12 @@ import Reanimated, {
   withTiming,
 } from "@/lib/reanimated-lite";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { legacyColors, radii, shadows, spacing, typography } from "@/lib/theme";
+import { radii, shadows, spacing, typography, useTheme } from "@/lib/theme";
 import { subscribeToast, type ToastPayload, type ToastTone } from "@/lib/toast";
-
-const toneStyles: Record<ToastTone, { borderColor: string; backgroundColor: string }> = {
-  neutral: {
-    borderColor: "rgba(255,255,255,0.14)",
-    backgroundColor: "rgba(17,22,20,0.96)",
-  },
-  amber: {
-    borderColor: "rgba(242,201,76,0.42)",
-    backgroundColor: "rgba(42,34,14,0.97)",
-  },
-  danger: {
-    borderColor: "rgba(255,90,61,0.44)",
-    backgroundColor: "rgba(42,18,14,0.97)",
-  },
-  success: {
-    borderColor: "rgba(185,244,85,0.42)",
-    backgroundColor: "rgba(18,34,20,0.97)",
-  },
-};
 
 export function ToastHost() {
   const insets = useSafeAreaInsets();
+  const { palette } = useTheme();
   const [toast, setToast] = useState<ToastPayload | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const opacity = useSharedValue(0);
@@ -75,6 +57,24 @@ export function ToastHost() {
   if (!toast) {
     return null;
   }
+  const toneStyle = {
+    neutral: {
+      borderColor: palette.border.default,
+      backgroundColor: palette.bg.elevated,
+    },
+    amber: {
+      borderColor: palette.feedback.warning,
+      backgroundColor: palette.surface.warningSoft,
+    },
+    danger: {
+      borderColor: palette.feedback.danger,
+      backgroundColor: palette.surface.dangerSoft,
+    },
+    success: {
+      borderColor: palette.feedback.success,
+      backgroundColor: palette.surface.successSoft,
+    },
+  } satisfies Record<ToastTone, { borderColor: string; backgroundColor: string }>;
 
   return (
     <View
@@ -90,12 +90,14 @@ export function ToastHost() {
         accessibilityRole="alert"
         style={[
           styles.toast,
-          toneStyles[toast.tone],
+          toneStyle[toast.tone],
           toastStyle,
         ]}
       >
-        <Text style={styles.title}>{toast.title}</Text>
-        {toast.message ? <Text style={styles.message}>{toast.message}</Text> : null}
+        <Text style={[styles.title, { color: palette.text.primary }]}>{toast.title}</Text>
+        {toast.message ? (
+          <Text style={[styles.message, { color: palette.text.secondary }]}>{toast.message}</Text>
+        ) : null}
       </Reanimated.View>
     </View>
   );
@@ -121,12 +123,10 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   title: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   message: {
     marginTop: spacing.xs,
-    color: legacyColors.muted,
     ...typography.caption,
   },
 });

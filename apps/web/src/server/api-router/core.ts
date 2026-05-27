@@ -167,6 +167,14 @@ import {
 import { getOrganizationDashboardData } from "../domains/overview";
 import { getOrganizationRecentPayments } from "../domains/payments";
 import {
+  pricingFromPlanCatalog,
+  saasPlanCatalogFromSetting,
+  type PaidSaasTier,
+  type SaasBillingCycle,
+  type SaasEntitlements,
+  type SaasTier,
+} from "../domains/billing/saas-plans";
+import {
   accruePtClawback,
   accruePtSessionFee,
   accruePtSubscriptionCommission,
@@ -619,6 +627,43 @@ const platformOrgCreditSchema = z.object({
 const platformOrgTierSchema = z.object({
   tier: z.enum(["FREE", "STARTER", "GROWTH", "PRO"]),
   effectiveAt: z.string().datetime().optional(),
+});
+
+const saasEntitlementsSchema = z.object({
+  memberLimit: z.number().int().min(0).nullable().optional(),
+  branchLimit: z.number().int().min(0).nullable().optional(),
+  staffLimit: z.number().int().min(0).nullable().optional(),
+  trainerLimit: z.number().int().min(0).nullable().optional(),
+  productLimit: z.number().int().min(0).nullable().optional(),
+  notificationMonthlyLimit: z.number().int().min(0).nullable().optional(),
+  aiTextMonthlyLimit: z.number().int().min(0).optional(),
+  aiImageMonthlyLimit: z.number().int().min(0).optional(),
+});
+
+const platformSaasPlanPatchSchema = z.object({
+  monthlyPaise: z.number().int().positive().max(100_000_000),
+  yearlyPaise: z.number().int().positive().max(1_000_000_000),
+  entitlements: saasEntitlementsSchema.optional(),
+});
+
+const platformSaasPricingSchema = z.object({
+  starter: platformSaasPlanPatchSchema,
+  growth: platformSaasPlanPatchSchema,
+  pro: platformSaasPlanPatchSchema,
+});
+
+const platformSubscriptionNoteSchema = z.object({
+  note: z.string().trim().max(1000),
+});
+
+const platformReferralPolicySchema = z.object({
+  enabled: z.boolean().default(true),
+  referrerRewardType: z.enum(["TRIAL_DAYS", "CREDIT_PAISE", "NONE"]).default("TRIAL_DAYS"),
+  referrerRewardValue: z.number().int().min(0).max(10_000_000).default(30),
+  referredRewardType: z.enum(["TRIAL_DAYS", "DISCOUNT_PERCENT_BPS", "CREDIT_PAISE", "NONE"]).default("TRIAL_DAYS"),
+  referredRewardValue: z.number().int().min(0).max(10_000_000).default(30),
+  maxRedemptionsPerOrg: z.number().int().min(1).max(1000).default(25),
+  expiresInDays: z.number().int().min(1).max(730).default(180),
 });
 
 const platformOrgRenameSchema = z.object({
@@ -1510,40 +1555,164 @@ function addDaysToDate(date: Date, days: number) {
   return next;
 }
 
-const defaultSaasPricing = {
-  STARTER: { monthly: 149_900, yearly: 1_499_000, memberLimit: 100 },
-  GROWTH: { monthly: 399_900, yearly: 3_999_000, memberLimit: 500 },
-  PRO: { monthly: 799_900, yearly: 7_999_000, memberLimit: null },
-} as const;
-
-type PaidSaasTier = keyof typeof defaultSaasPricing;
-type SaasBillingCycle = "MONTHLY" | "YEARLY";
-
-function saasPricingFromSetting(value: unknown) {
-  const configured = jsonObject(value as Prisma.JsonValue);
-  return (["STARTER", "GROWTH", "PRO"] as const).reduce(
-    (pricing, tier) => {
-      const tierConfig = jsonObject(configured[tier.toLowerCase()] as Prisma.JsonValue);
-      pricing[tier] = {
-        monthly:
-          typeof tierConfig.monthlyPaise === "number"
-            ? tierConfig.monthlyPaise
-            : defaultSaasPricing[tier].monthly,
-        yearly:
-          typeof tierConfig.yearlyPaise === "number"
-            ? tierConfig.yearlyPaise
-            : defaultSaasPricing[tier].yearly,
-        memberLimit: defaultSaasPricing[tier].memberLimit,
-      };
-      return pricing;
-    },
-    {} as Record<PaidSaasTier, { monthly: number; yearly: number; memberLimit: number | null }>,
-  );
+async function getSaasPlanCatalog() {
+  const setting = await prisma.platformSetting.findUnique({ where: { key: "saas.pricing" } });
+  return saasPlanCatalogFromSetting(setting?.value);
 }
 
 async function getSaasPricing() {
-  const setting = await prisma.platformSetting.findUnique({ where: { key: "saas.pricing" } });
-  return saasPricingFromSetting(setting?.value);
+  return pricingFromPlanCatalog(await getSaasPlanCatalog());
+}
+
+async function getOrgSaasTier(orgId: string): Promise<SaasTier> {
+  const subscription = await prisma.saaSSubscription.findUnique({
+    where: { orgId },
+    select: { tier: true },
+  });
+  const tier = subscription?.tier;
+  return tier === "STARTER" || tier === "GROWTH" || tier === "PRO" ? tier : "FREE";
+}
+
+async function getOrgSaasEntitlements(orgId: string): Promise<{
+  tier: SaasTier;
+  entitlements: SaasEntitlements;
+}> {
+  const [catalog, tier] = await Promise.all([getSaasPlanCatalog(), getOrgSaasTier(orgId)]);
+  return { tier, entitlements: catalog[tier].entitlements };
+}
+
+function assertLimitAvailable(input: {
+  limit: number | null;
+  used: number;
+  add?: number;
+  label: string;
+  tier: SaasTier;
+}) {
+  if (input.limit === null) return;
+  const add = input.add ?? 1;
+  if (input.used + add <= input.limit) return;
+  throw new ApiRouteError(
+    402,
+    "SAAS_PLAN_LIMIT_REACHED",
+    `${input.label} limit reached for the ${input.tier.toLowerCase()} plan. Upgrade to continue.`,
+    {
+      tier: input.tier,
+      limit: input.limit,
+      used: input.used,
+      requested: add,
+      label: input.label,
+    },
+  );
+}
+
+async function assertSaasMemberCapacity(orgId: string, userId?: string) {
+  const existing = userId
+    ? await prisma.memberProfile.findUnique({ where: { orgId_userId: { orgId, userId } } })
+    : null;
+  if (existing) return;
+  const [{ tier, entitlements }, used] = await Promise.all([
+    getOrgSaasEntitlements(orgId),
+    prisma.memberProfile.count({ where: { orgId } }),
+  ]);
+  assertLimitAvailable({
+    limit: entitlements.memberLimit,
+    used,
+    label: "Active member",
+    tier,
+  });
+}
+
+async function assertSaasMemberCapacityForUsers(orgId: string, userIds: string[]) {
+  const uniqueUserIds = Array.from(new Set(userIds));
+  if (!uniqueUserIds.length) return;
+  const [existingProfiles, { tier, entitlements }, used] = await Promise.all([
+    prisma.memberProfile.findMany({
+      where: { orgId, userId: { in: uniqueUserIds } },
+      select: { userId: true },
+    }),
+    getOrgSaasEntitlements(orgId),
+    prisma.memberProfile.count({ where: { orgId } }),
+  ]);
+  const existingUserIds = new Set(existingProfiles.map((profile) => profile.userId));
+  const newMembers = uniqueUserIds.filter((userId) => !existingUserIds.has(userId)).length;
+  assertLimitAvailable({
+    limit: entitlements.memberLimit,
+    used,
+    add: newMembers,
+    label: "Active member",
+    tier,
+  });
+}
+
+async function getOrgSaasUsage(orgId: string) {
+  const monthStart = startOfMonth();
+  const notificationIds = await prisma.notification.findMany({
+    where: { orgId, createdAt: { gte: monthStart } },
+    select: { id: true },
+  });
+  const [
+    activeMemberCount,
+    branchCount,
+    staffCount,
+    trainerCount,
+    productCount,
+    notificationMonthlyCount,
+    aiTextMonthlyCount,
+    aiImageMonthlyCount,
+  ] = await Promise.all([
+    prisma.memberProfile.count({ where: { orgId } }),
+    prisma.branch.count({ where: { orgId, active: true } }),
+    prisma.organizationRoleAssignment.count({ where: { orgId, role: { not: "MEMBER" } } }),
+    prisma.organizationRoleAssignment.count({ where: { orgId, role: "TRAINER" } }),
+    prisma.product.count({ where: { orgId } }),
+    notificationIds.length
+      ? prisma.notificationRecipient.count({
+          where: { notificationId: { in: notificationIds.map((row) => row.id) } },
+        })
+      : 0,
+    prisma.aIUsageLog.count({
+      where: {
+        orgId,
+        requestType: { in: ["CHAT", "STRUCTURED_PLAN"] },
+        createdAt: { gte: monthStart },
+      },
+    }),
+    prisma.aIUsageLog.count({
+      where: { orgId, requestType: "IMAGE", createdAt: { gte: monthStart } },
+    }),
+  ]);
+  return {
+    activeMemberCount,
+    branchCount,
+    staffCount,
+    trainerCount,
+    productCount,
+    notificationMonthlyCount,
+    aiTextMonthlyCount,
+    aiImageMonthlyCount,
+  };
+}
+
+async function assertSaasAiAllowance(orgId: string, requestType: AIRequestType) {
+  const [{ tier, entitlements }, usage] = await Promise.all([
+    getOrgSaasEntitlements(orgId),
+    getOrgSaasUsage(orgId),
+  ]);
+  if (requestType === "IMAGE") {
+    assertLimitAvailable({
+      limit: entitlements.aiImageMonthlyLimit,
+      used: usage.aiImageMonthlyCount,
+      label: "Monthly AI image",
+      tier,
+    });
+    return;
+  }
+  assertLimitAvailable({
+    limit: entitlements.aiTextMonthlyLimit,
+    used: usage.aiTextMonthlyCount,
+    label: "Monthly AI text",
+    tier,
+  });
 }
 
 function priceForSaasPlan(
@@ -1570,7 +1739,8 @@ function isSaasBillingRoute(path: string[]) {
     pathMatches(path, ["orgs", /.+/, "billing", "mandate"]) ||
     pathMatches(path, ["orgs", /.+/, "saas-subscription", "upgrade"]) ||
     pathMatches(path, ["orgs", /.+/, "saas-subscription", "cancel"]) ||
-    pathMatches(path, ["orgs", /.+/, "billing-profile"])
+    pathMatches(path, ["orgs", /.+/, "billing-profile"]) ||
+    pathMatches(path, ["orgs", /.+/, "profile"])
   );
 }
 
@@ -1580,7 +1750,10 @@ export async function assertSaasWriteAccess(request: NextRequest, path: string[]
   const orgId = path[1];
   const ctx = await getRequestContext(request, { orgId });
   if (!ctx.roles.some((role) => role === "OWNER" || role === "ADMIN")) return;
-  const subscription = await prisma.saaSSubscription.findUnique({ where: { orgId } });
+  const [subscription, mandate] = await Promise.all([
+    prisma.saaSSubscription.findUnique({ where: { orgId } }),
+    prisma.saaSBillingMandate.findUnique({ where: { orgId } }),
+  ]);
   const trialEndAt = subscription?.trialEndAt
     ? new Date(subscription.trialEndAt)
     : (
@@ -1593,6 +1766,15 @@ export async function assertSaasWriteAccess(request: NextRequest, path: string[]
   const isPaid =
     subscription?.status === "ACTIVE" &&
     (!subscription.nextRenewalAt || subscription.nextRenewalAt.getTime() >= Date.now());
+  const hasBillingSetup = Boolean(mandate && liveMandateStatuses.includes(mandate.status));
+  if (!isPaid && !hasBillingSetup) {
+    throw new ApiRouteError(
+      403,
+      "SAAS_BILLING_SETUP_REQUIRED",
+      "Add billing before managing this gym.",
+      { orgId, trialEndAt, graceEndsAt },
+    );
+  }
   if (isPaid || !graceEndsAt || graceEndsAt.getTime() >= Date.now()) return;
   throw new ApiRouteError(
     403,
@@ -2830,7 +3012,11 @@ async function ensureOrganizationMembership(input: {
   joinedAt?: Date;
   profilePhotoUrl?: string | null;
   marketingOptIn?: boolean;
+  skipSaasMemberLimit?: boolean;
 }) {
+  if (!input.skipSaasMemberLimit) {
+    await assertSaasMemberCapacity(input.orgId, input.userId);
+  }
   await prisma.organizationUser.upsert({
     where: { orgId_userId: { orgId: input.orgId, userId: input.userId } },
     update: { status: "active", leftAt: null },
@@ -3253,6 +3439,16 @@ async function processVerifiedPaymentWebhookEvent(input: {
   if (saasBillingProcessed) {
     const shouldRecordSaasPayment =
       parsed?.eventType === "invoice.paid" || parsed?.eventType === "subscription.charged";
+    if (shouldRecordSaasPayment && saasBillingProcessed.mandate.paymentSessionId) {
+      await prisma.paymentSession.updateMany({
+        where: {
+          id: saasBillingProcessed.mandate.paymentSessionId,
+          purpose: "SAAS_BILLING",
+          expiresAt: { lt: new Date() },
+        },
+        data: { expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+      });
+    }
     const processedPayment =
       shouldRecordSaasPayment && saasBillingProcessed.mandate.paymentSessionId
         ? await applyPaymentSessionStatus({
@@ -7585,7 +7781,7 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
-    const [org, subscription, mandate, activeMemberCount, pricing] = await Promise.all([
+    const [org, subscription, mandate, activeMemberCount, planCatalog, usage] = await Promise.all([
       prisma.organization.findUnique({
         where: { id: orgId },
         select: { id: true, username: true, status: true, trialStartAt: true, trialEndAt: true },
@@ -7593,11 +7789,16 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
       prisma.saaSSubscription.findUnique({ where: { orgId } }),
       prisma.saaSBillingMandate.findUnique({ where: { orgId } }),
       prisma.memberProfile.count({ where: { orgId } }),
-      getSaasPricing(),
+      getSaasPlanCatalog(),
+      getOrgSaasUsage(orgId),
     ]);
     if (!org) {
       throw notFoundError("Organization not found");
     }
+    const resolvedTier =
+      subscription?.tier === "STARTER" || subscription?.tier === "GROWTH" || subscription?.tier === "PRO"
+        ? subscription.tier
+        : "FREE";
     const referralPartnerships = await prisma.orgReferralPartnership.findMany({
       where: { sourceOrgId: orgId },
       orderBy: { createdAt: "desc" },
@@ -7619,7 +7820,10 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
         cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd ?? false,
       },
       activeMemberCount,
-      pricing,
+      pricing: pricingFromPlanCatalog(planCatalog),
+      planCatalog,
+      entitlements: planCatalog[resolvedTier].entitlements,
+      usage,
       mandate: mandate
         ? {
             id: mandate.id,
@@ -8287,7 +8491,20 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
     if (duplicate) {
       throw conflictError("A branch with this address already exists.");
     }
+    const [{ tier, entitlements }, activeBranchCount] = await Promise.all([
+      getOrgSaasEntitlements(orgId),
+      prisma.branch.count({ where: { orgId, active: true } }),
+    ]);
+    assertLimitAvailable({
+      limit: entitlements.branchLimit,
+      used: activeBranchCount,
+      label: "Branch",
+      tier,
+    });
     const branch = await prisma.$transaction(async (tx) => {
+      const previousDefault = await tx.branch.findFirst({
+        where: { orgId, isDefault: true, active: true },
+      });
       if (body.isDefault) {
         await tx.branch.updateMany({
           where: { orgId, isDefault: true },
@@ -8320,20 +8537,21 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
       const activeDefault = await tx.branch.findFirst({
         where: { orgId, isDefault: true, active: true },
       });
-      if (body.commerceSetup === "SHARED" && activeDefault) {
+      const sharedCommerceSource = body.isDefault ? previousDefault : activeDefault;
+      if (body.commerceSetup === "SHARED" && sharedCommerceSource) {
         const [plans, products] = await Promise.all([
           tx.membershipPlan.findMany({
             where: {
               orgId,
               active: true,
-              OR: [{ branchId: null }, { branchId: activeDefault.id }],
+              OR: [{ branchId: null }, { branchId: sharedCommerceSource.id }],
             },
           }),
           tx.product.findMany({
             where: {
               orgId,
               active: true,
-              OR: [{ branchId: null }, { branchId: activeDefault.id }],
+              OR: [{ branchId: null }, { branchId: sharedCommerceSource.id }],
             },
           }),
         ]);
@@ -9765,7 +9983,7 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_PLAN_MANAGE");
     const body = membershipPlanSchema.parse(await readJson(request));
-    const branch = await resolveOrgBranch(orgId);
+    const branch = await resolveOrgBranch(orgId, queryBranchId(request));
     const plan = await prisma.membershipPlan.create({
       data: clean({
         orgId,
@@ -9944,6 +10162,10 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     if (!existingJoinRequests.length) {
       throw notFoundError("No pending join requests found");
     }
+    await assertSaasMemberCapacityForUsers(
+      orgId,
+      existingJoinRequests.map((joinRequest) => joinRequest.userId),
+    );
     await prisma.membershipJoinRequest.updateMany({
       where: { id: { in: existingJoinRequests.map((joinRequest) => joinRequest.id) }, orgId },
       data: { status: "approved", reviewedById: userId, reviewedAt: new Date() },
@@ -10184,6 +10406,7 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     if (!existingJoinRequest) {
       throw notFoundError("Join request not found");
     }
+    await assertSaasMemberCapacity(orgId, existingJoinRequest.userId);
     const joinRequest = await prisma.membershipJoinRequest.update({
       where: { id: existingJoinRequest.id },
       data: { status: "approved", reviewedById: userId, reviewedAt: new Date() },
@@ -10571,6 +10794,7 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     if (existingSubscription) {
       throw conflictError("You already have a membership in progress for this gym.");
     }
+    await assertSaasMemberCapacity(orgId, userId);
     const referral = await resolveValidatedReferral({
       orgId,
       userId,
@@ -10602,7 +10826,6 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
       couponDiscountPaise: pricing.discountPaise + offerPricing.discountPaise,
       ...(referral ? { referralCodeId: referral.id } : {}),
     });
-    getPaymentProviderOrThrow();
     const subscription = await prisma.memberSubscription.create({
       data: {
         orgId,
@@ -10636,6 +10859,28 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
       },
     });
+    if (session.amountPaise === 0) {
+      const processed = await applyPaymentSessionStatus({
+        sessionId: session.id,
+        nextStatus: "SUCCEEDED",
+        provider: "internal",
+        providerRef: `zero_${session.id}`,
+        paymentMode: "OTHER",
+        expectedAmountPaise: 0,
+        createNotification: createDirectNotification,
+        ensureMembership: ensureOrganizationMembership,
+      });
+      const activatedSubscription = await prisma.memberSubscription.findUnique({
+        where: { id: subscription.id },
+      });
+      return ok({
+        subscription: activatedSubscription ?? subscription,
+        checkoutUrl: `/checkout/${processed.session.id}`,
+        checkoutData: null,
+        session: processed.session,
+      });
+    }
+    getPaymentProviderOrThrow();
     let started;
     try {
       started = await startPaymentSessionCheckout({
@@ -10737,7 +10982,6 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
       couponDiscountPaise: pricing.discountPaise + offerPricing.discountPaise,
       ...(referral ? { referralCodeId: referral.id } : {}),
     });
-    getPaymentProviderOrThrow();
     const branch = await resolveOrgBranch(orgId, plan.branchId ?? currentSubscription.branchId);
     const subscription = await prisma.memberSubscription.create({
       data: {
@@ -10773,6 +11017,28 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
       },
     });
+    if (session.amountPaise === 0) {
+      const processed = await applyPaymentSessionStatus({
+        sessionId: session.id,
+        nextStatus: "SUCCEEDED",
+        provider: "internal",
+        providerRef: `zero_${session.id}`,
+        paymentMode: "OTHER",
+        expectedAmountPaise: 0,
+        createNotification: createDirectNotification,
+        ensureMembership: ensureOrganizationMembership,
+      });
+      const activatedSubscription = await prisma.memberSubscription.findUnique({
+        where: { id: subscription.id },
+      });
+      return ok({
+        subscription: activatedSubscription ?? subscription,
+        checkoutUrl: `/checkout/${processed.session.id}`,
+        checkoutData: null,
+        session: processed.session,
+      });
+    }
+    getPaymentProviderOrThrow();
     let started;
     try {
       started = await startPaymentSessionCheckout({
@@ -12676,6 +12942,30 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
       }
     }
     const inviteEmail = body.email.toLowerCase();
+    const [{ tier, entitlements }, staffCount, pendingInviteCount, trainerCount, pendingTrainerInviteCount] =
+      await Promise.all([
+        getOrgSaasEntitlements(orgId),
+        prisma.organizationRoleAssignment.count({ where: { orgId, role: { not: "MEMBER" } } }),
+        prisma.staffInvitation.count({ where: { orgId, acceptedAt: null, expiresAt: { gt: new Date() } } }),
+        prisma.organizationRoleAssignment.count({ where: { orgId, role: "TRAINER" } }),
+        prisma.staffInvitation.count({
+          where: { orgId, role: "TRAINER", acceptedAt: null, expiresAt: { gt: new Date() } },
+        }),
+      ]);
+    assertLimitAvailable({
+      limit: entitlements.staffLimit,
+      used: staffCount + pendingInviteCount,
+      label: "Staff",
+      tier,
+    });
+    if (body.role === "TRAINER") {
+      assertLimitAvailable({
+        limit: entitlements.trainerLimit,
+        used: trainerCount + pendingTrainerInviteCount,
+        label: "Trainer",
+        tier,
+      });
+    }
     const invitedUser = await prisma.user.findFirst({
       where: { email: { equals: inviteEmail, mode: "insensitive" } },
       select: { id: true },
@@ -14520,6 +14810,7 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (body.orgId) {
       requireOrgPermission(ctx, body.orgId, "AI_USE_TEXT");
+      await assertSaasAiAllowance(body.orgId, "CHAT");
     }
     const role = (ctx.roles[0] ?? "MEMBER") as OrgRole;
     const quota = await resolveAIQuotaState({ userId, role });
@@ -14615,6 +14906,7 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       body.orgId,
       requestType === "IMAGE" ? "AI_GENERATE_IMAGE" : "AI_GENERATE_PLAN",
     );
+    await assertSaasAiAllowance(body.orgId, requestType);
     const role = (ctx.roles[0] ?? "MEMBER") as OrgRole;
     if (requestType === "STRUCTURED_PLAN" && !ctx.roles.includes("TRAINER")) {
       throw forbiddenError("Trainer plan generation requires a trainer role.");
@@ -14856,6 +15148,17 @@ export async function handleAiNotificationsShopPrivacyPlatform(
         excludeMinors: body.excludeMinors,
       }),
     );
+    const [{ tier, entitlements }, usage] = await Promise.all([
+      getOrgSaasEntitlements(orgId),
+      getOrgSaasUsage(orgId),
+    ]);
+    assertLimitAvailable({
+      limit: entitlements.notificationMonthlyLimit,
+      used: usage.notificationMonthlyCount,
+      add: recipientUserIds.length,
+      label: "Monthly notification recipient",
+      tier,
+    });
     const recipientSplit = body.scheduleAt
       ? { sendNowUserIds: recipientUserIds, scheduledUserIds: [] as string[] }
       : await splitRecipientsByDailyCap({ orgId, recipientUserIds });
@@ -15599,6 +15902,16 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     const userId = assertOrgServicePermission(ctx, orgId, "SHOP_MANAGE_PRODUCTS");
     const body = productInputSchema.parse(await readJson(request));
     const branch = await resolveOrgBranch(orgId, body.branchId);
+    const [{ tier, entitlements }, productCount] = await Promise.all([
+      getOrgSaasEntitlements(orgId),
+      prisma.product.count({ where: { orgId } }),
+    ]);
+    assertLimitAvailable({
+      limit: entitlements.productLimit,
+      used: productCount,
+      label: "Product",
+      tier,
+    });
     const imageUrls = await resolveProductImageUrls(orgId, body);
     const product = await prisma.product.create({
       data: clean({
@@ -16166,20 +16479,20 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
     const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
-    if (query.length < 2) {
-      return ok({ users: [] });
-    }
     const users = await prisma.user.findMany({
-      where: {
-        deletedAt: null,
-        OR: [
-          { email: { contains: query, mode: "insensitive" } },
-          { phone: { contains: query } },
-          { name: { contains: query, mode: "insensitive" } },
-        ],
-      },
+      where:
+        query.length >= 2
+          ? {
+              deletedAt: null,
+              OR: [
+                { email: { contains: query, mode: "insensitive" } },
+                { phone: { contains: query } },
+                { name: { contains: query, mode: "insensitive" } },
+              ],
+            }
+          : { deletedAt: null },
       orderBy: { createdAt: "desc" },
-      take: 25,
+      take: query.length >= 2 ? 25 : 50,
     });
     return ok({ users: users.map(serializeUserForClient) });
   }
@@ -16768,6 +17081,85 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     });
     return ok({ flag });
   }
+  if (request.method === "GET" && pathMatches(path, ["platform", "saas-pricing"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    const planCatalog = await getSaasPlanCatalog();
+    return ok({ pricing: pricingFromPlanCatalog(planCatalog), planCatalog });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["platform", "saas-pricing"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const body = platformSaasPricingSchema.parse(await readJson(request));
+    const setting = await prisma.platformSetting.upsert({
+      where: { key: "saas.pricing" },
+      create: {
+        key: "saas.pricing",
+        value: body as Prisma.InputJsonValue,
+        updatedById: actorUserId,
+      },
+      update: {
+        value: body as Prisma.InputJsonValue,
+        updatedById: actorUserId,
+      },
+    });
+    await writeAuditLog({
+      request,
+      actorUserId,
+      action: "platform.saas_pricing_updated",
+      entityType: "platform_setting",
+      entityId: setting.id,
+      riskLevel: "HIGH",
+      metadata: { key: setting.key },
+    });
+    const planCatalog = await getSaasPlanCatalog();
+    return ok({ pricing: pricingFromPlanCatalog(planCatalog), planCatalog, setting });
+  }
+  if (request.method === "GET" && pathMatches(path, ["platform", "referral-policy"])) {
+    const ctx = await getRequestContext(request);
+    requirePlatformAdmin(ctx);
+    const setting = await prisma.platformSetting.findUnique({ where: { key: "platform.referralPolicy" } });
+    return ok({
+      policy:
+        setting?.value ??
+        ({
+          enabled: true,
+          referrerRewardType: "TRIAL_DAYS",
+          referrerRewardValue: 30,
+          referredRewardType: "TRIAL_DAYS",
+          referredRewardValue: 30,
+          maxRedemptionsPerOrg: 25,
+          expiresInDays: 180,
+        } satisfies z.infer<typeof platformReferralPolicySchema>),
+    });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["platform", "referral-policy"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const body = platformReferralPolicySchema.parse(await readJson(request));
+    const setting = await prisma.platformSetting.upsert({
+      where: { key: "platform.referralPolicy" },
+      create: {
+        key: "platform.referralPolicy",
+        value: body as Prisma.InputJsonValue,
+        updatedById: actorUserId,
+      },
+      update: {
+        value: body as Prisma.InputJsonValue,
+        updatedById: actorUserId,
+      },
+    });
+    await writeAuditLog({
+      request,
+      actorUserId,
+      action: "platform.referral_policy_updated",
+      entityType: "platform_setting",
+      entityId: setting.id,
+      riskLevel: "HIGH",
+      metadata: body,
+    });
+    return ok({ policy: body, setting });
+  }
   if (request.method === "POST" && pathMatches(path, ["platform", "orgs", /.+/, "trial", "extend"])) {
     const ctx = await getRequestContext(request);
     const actorUserId = requirePlatformAdmin(ctx);
@@ -16834,6 +17226,35 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       entityId: orgId,
       riskLevel: "HIGH",
       metadata: { paise: body.paise, reason: body.reason, subscriptionId: subscription.id },
+    });
+    return ok({ subscription });
+  }
+  if (request.method === "POST" && pathMatches(path, ["platform", "orgs", /.+/, "subscription-note"])) {
+    const ctx = await getRequestContext(request);
+    const actorUserId = requirePlatformAdmin(ctx);
+    const orgId = path[2]!;
+    const body = platformSubscriptionNoteSchema.parse(await readJson(request));
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw notFoundError("Organization not found");
+    const subscription = await prisma.saaSSubscription.upsert({
+      where: { orgId },
+      create: {
+        orgId,
+        trialStartAt: org.trialStartAt ?? new Date(),
+        trialEndAt: org.trialEndAt ?? new Date(),
+        status: org.status,
+        noteForPlatform: body.note,
+      },
+      update: { noteForPlatform: body.note },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: "platform.organization_subscription_note_updated",
+      entityType: "saas_subscription",
+      entityId: subscription.id,
+      metadata: { noteLength: body.note.length },
     });
     return ok({ subscription });
   }
@@ -16927,6 +17348,7 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       orgId,
       userId: body.newOwnerUserId,
       marketingOptIn: true,
+      skipSaasMemberLimit: true,
     });
     await prisma.organizationRoleAssignment.upsert({
       where: { orgId_userId: { orgId, userId: body.newOwnerUserId } },
@@ -17029,7 +17451,18 @@ export async function handleAiNotificationsShopPrivacyPlatform(
   if (request.method === "GET" && pathMatches(path, ["platform", "subscriptions"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
-    const [orgs, subscriptions, mandates, referrals] = await Promise.all([
+    const [
+      orgs,
+      subscriptions,
+      mandates,
+      referrals,
+      planCatalog,
+      memberGroups,
+      branchGroups,
+      staffGroups,
+      trainerGroups,
+      productGroups,
+    ] = await Promise.all([
       prisma.organization.findMany({
         select: {
           id: true,
@@ -17046,9 +17479,28 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       prisma.saaSSubscription.findMany(),
       prisma.saaSBillingMandate.findMany(),
       prisma.orgReferralPartnership.findMany(),
+      getSaasPlanCatalog(),
+      prisma.memberProfile.groupBy({ by: ["orgId"], _count: { _all: true } }),
+      prisma.branch.groupBy({ by: ["orgId"], where: { active: true }, _count: { _all: true } }),
+      prisma.organizationRoleAssignment.groupBy({
+        by: ["orgId"],
+        where: { role: { not: "MEMBER" } },
+        _count: { _all: true },
+      }),
+      prisma.organizationRoleAssignment.groupBy({
+        by: ["orgId"],
+        where: { role: "TRAINER" },
+        _count: { _all: true },
+      }),
+      prisma.product.groupBy({ by: ["orgId"], _count: { _all: true } }),
     ]);
     const subByOrg = new Map(subscriptions.map((sub) => [sub.orgId, sub]));
     const mandateByOrg = new Map(mandates.map((mandate) => [mandate.orgId, mandate]));
+    const memberCountByOrg = new Map(memberGroups.map((row) => [row.orgId, row._count._all]));
+    const branchCountByOrg = new Map(branchGroups.map((row) => [row.orgId, row._count._all]));
+    const staffCountByOrg = new Map(staffGroups.map((row) => [row.orgId, row._count._all]));
+    const trainerCountByOrg = new Map(trainerGroups.map((row) => [row.orgId, row._count._all]));
+    const productCountByOrg = new Map(productGroups.map((row) => [row.orgId, row._count._all]));
     const referralCountBySource = new Map<string, number>();
     for (const partnership of referrals) {
       referralCountBySource.set(
@@ -17069,6 +17521,8 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       rows: orgs.map((org) => {
         const subscription = subByOrg.get(org.id);
         const mandate = mandateByOrg.get(org.id);
+        const tier = subscription?.tier ?? "FREE";
+        const entitlements = planCatalog[tier].entitlements;
         return {
           orgId: org.id,
           orgName: org.name,
@@ -17078,13 +17532,27 @@ export async function handleAiNotificationsShopPrivacyPlatform(
           createdAt: org.createdAt,
           contactEmail: org.contactEmail,
           subscriptionStatus: subscription?.status ?? null,
+          tier,
+          billingCycle: subscription?.billingCycle ?? "MONTHLY",
+          priceLockedPaise: subscription?.priceLockedPaise ?? null,
+          creditPaise: subscription?.creditPaise ?? 0,
+          noteForPlatform: subscription?.noteForPlatform ?? null,
           nextBillingAt: subscription?.nextBillingAt ?? null,
           mandateStatus: mandate?.status ?? null,
           mandateNextChargeAt: mandate?.nextChargeAt ?? null,
           mandatePaidCount: mandate?.paidCount ?? 0,
           referredCount: referralCountBySource.get(org.id) ?? 0,
+          usage: {
+            activeMemberCount: memberCountByOrg.get(org.id) ?? 0,
+            branchCount: branchCountByOrg.get(org.id) ?? 0,
+            staffCount: staffCountByOrg.get(org.id) ?? 0,
+            trainerCount: trainerCountByOrg.get(org.id) ?? 0,
+            productCount: productCountByOrg.get(org.id) ?? 0,
+          },
+          entitlements,
         };
       }),
+      planCatalog,
     });
   }
   if (request.method === "PATCH" && pathMatches(path, ["platform", "orgs", /.+/, "status"])) {

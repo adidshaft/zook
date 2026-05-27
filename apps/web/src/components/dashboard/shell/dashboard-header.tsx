@@ -31,7 +31,7 @@ export function DashboardHeader({
   const locationLabel = [activeOrg.city, activeOrg.state].filter(Boolean).join(", ");
 
   return (
-    <div className="sticky top-0 z-40 -mx-3 border-b border-[var(--border-subtle)] bg-[var(--bg)]/92 px-3 py-3 backdrop-blur-xl sm:-mx-5 sm:px-5 lg:mx-0 lg:px-5">
+    <div className="sticky top-0 z-[var(--z-header)] -mx-3 border-b border-[var(--border-subtle)] bg-[var(--bg)]/92 px-3 py-3 backdrop-blur-xl sm:-mx-5 sm:px-5 lg:mx-0 lg:px-5">
       <div className="flex min-h-[var(--header-height)] flex-col gap-3 xl:flex-row xl:items-center">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <div className="flex min-h-10 min-w-0 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-sm text-[var(--text-secondary)]">
@@ -49,7 +49,6 @@ export function DashboardHeader({
               allBranchesAllowed={data.branchScope.allBranchesAllowed}
               branchHref={branchHref}
               copy={copy}
-              compact
             />
           ) : null}
           <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-sm text-[var(--text-secondary)]">

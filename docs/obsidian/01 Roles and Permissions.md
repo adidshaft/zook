@@ -23,7 +23,7 @@ Zook uses organization-scoped roles plus explicit permissions. A user can belong
 - Shop: manage products, stock, and order fulfillment.
 - Notifications: create messages, manage templates, view history.
 - Reports and audit: export reports and inspect audit trail.
-- Billing: billing profile, SaaS subscription, autopay mandate.
+- Billing: billing profile, SaaS subscription, SaaS billing mandate, and member autopay mandate.
 - Trainer management: assignments, PT plans, payouts.
 - AI: assistant usage and AI settings.
 
@@ -41,11 +41,13 @@ Platform admins can access:
 - Broadcasts.
 - Moderation queue.
 - Organization support actions.
+- SaaS pricing, trial, credit, tier, platform note, and platform referral policy controls.
 
 ## Risk Rules
 
 - High-risk actions are audited.
 - Impersonation is feature-flagged and CRITICAL-risk audited.
 - Refunds and billing changes are money-adjacent and should include a clear reason.
+- Owner/admin tenant writes can be gated until trial plus SaaS mandate setup is complete.
+- SaaS plan limits are separate from role permissions. A user may have permission to create a branch, invite staff, add products, send notifications, or use AI, but the backend can still block the write when the organization has reached its plan entitlement.
 - Platform admins cannot use tenant routes as a shortcut for tenant actions.
-

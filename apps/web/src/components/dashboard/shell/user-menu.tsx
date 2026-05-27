@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { UserCircle2 } from "lucide-react";
 import { DashboardLocaleToggle } from "../../dashboard-locale-toggle";
@@ -16,8 +19,36 @@ export function UserMenu({
   copy: DashboardCopy;
   showSwitchOrganization: boolean;
 }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        detailsRef.current &&
+        detailsRef.current.open &&
+        !detailsRef.current.contains(event.target as Node)
+      ) {
+        detailsRef.current.open = false;
+      }
+    }
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
+
   return (
-    <details className="group relative z-[110]" data-testid="dashboard-user-menu">
+    <details
+      ref={detailsRef}
+      className="group relative z-[var(--z-dropdown)]"
+      data-testid="dashboard-user-menu"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && detailsRef.current?.open) {
+          detailsRef.current.open = false;
+          detailsRef.current.querySelector("summary")?.focus();
+        }
+      }}
+    >
       <summary
         className="zook-focus flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)] [&::-webkit-details-marker]:hidden"
         aria-label={copy.common.account}
@@ -28,7 +59,7 @@ export function UserMenu({
           {roleLabel ?? (user.preferredLocale === "hi" ? copy.common.hindi : copy.common.english)}
         </span>
       </summary>
-      <div className="absolute right-0 z-[120] mt-2 w-[min(92vw,24rem)] rounded-[24px] border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-lg)]">
+      <div className="absolute right-0 z-[var(--z-modal)] mt-2 w-[min(92vw,24rem)] rounded-[24px] border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-lg)]">
         <div className="rounded-2xl bg-[var(--bg-sunken)] p-3">
           <p className="truncate text-sm font-medium text-[var(--text-primary)]">{user.name}</p>
           <p className="mt-1 truncate text-xs text-[var(--text-tertiary)]">{user.email}</p>

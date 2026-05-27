@@ -64,6 +64,7 @@ type PlatformUserRow = {
   email: string;
   phone?: string | null;
   isPlatformAdmin?: boolean;
+  createdAt?: string | Date;
 };
 
 type PlatformPaymentRow = {
@@ -75,6 +76,72 @@ type PlatformPaymentRow = {
   provider?: string | null;
   providerRef?: string | null;
   createdAt: string | Date;
+};
+
+type PlatformUserDetail = {
+  user: PlatformUserRow & {
+    privateHandle?: string;
+    slug?: string | null;
+    createdAt?: string | Date;
+    lastLoginAt?: string | Date | null;
+  };
+  sessions: Array<{
+    id: string;
+    createdAt: string | Date;
+    lastSeenAt?: string | Date | null;
+    expiresAt: string | Date;
+    revokedAt?: string | Date | null;
+  }>;
+  organizations: Array<{
+    orgId: string;
+    status: string;
+    joinedAt: string | Date;
+    roles: string[];
+    organization?: {
+      name: string;
+      username: string;
+      status: string;
+      city?: string | null;
+      state?: string | null;
+    } | null;
+  }>;
+  payments: PlatformPaymentRow[];
+  auditLogs: PlatformAuditRow[];
+};
+
+type PlatformPaymentDetail = {
+  payment: PlatformPaymentRow & {
+    currency?: string | null;
+    mode?: string | null;
+    receiptNumber?: string | null;
+    recordedAt?: string | Date | null;
+    metadata?: unknown;
+  };
+  user: PlatformUserRow | null;
+  organization: PlatformOrganization | null;
+  refunds: Array<{
+    id: string;
+    amountPaise: number;
+    status: string;
+    providerRefundId?: string | null;
+    reason?: string | null;
+    createdAt: string | Date;
+  }>;
+  events: Array<{
+    id: string;
+    type?: string | null;
+    status?: string | null;
+    providerEventId?: string | null;
+    processingError?: string | null;
+    createdAt: string | Date;
+    attempts?: Array<{
+      id: string;
+      status: string;
+      processor?: string | null;
+      startedAt: string | Date;
+      errorMessage?: string | null;
+    }>;
+  }>;
 };
 
 type PlatformBroadcastRow = {
@@ -171,8 +238,12 @@ export function PlatformOperationsPanel({
   const [statusError, setStatusError] = useState("");
   const [userQuery, setUserQuery] = useState("");
   const [userRows, setUserRows] = useState<PlatformUserRow[]>([]);
+  const [selectedUser, setSelectedUser] = useState<PlatformUserDetail | null>(null);
+  const [userDetailBusyId, setUserDetailBusyId] = useState<string | null>(null);
   const [paymentQuery, setPaymentQuery] = useState("");
   const [paymentRows, setPaymentRows] = useState<PlatformPaymentRow[]>([]);
+  const [selectedPayment, setSelectedPayment] = useState<PlatformPaymentDetail | null>(null);
+  const [paymentDetailBusyId, setPaymentDetailBusyId] = useState<string | null>(null);
   const [supportNotice, setSupportNotice] = useState("");
   const [broadcastBusyId, setBroadcastBusyId] = useState<string | null>(null);
   const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
@@ -303,6 +374,26 @@ export function PlatformOperationsPanel({
     document.getElementById(initialSection)?.scrollIntoView({ block: "start" });
   }, [initialSection]);
 
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      webApiFetch<{ users: PlatformUserRow[] }>("/api/platform/users"),
+      webApiFetch<{ payments: PlatformPaymentRow[] }>("/api/platform/payments"),
+    ])
+      .then(([usersPayload, paymentsPayload]) => {
+        if (!mounted) return;
+        setUserRows(usersPayload.users);
+        setPaymentRows(paymentsPayload.payments);
+      })
+      .catch((cause) => {
+        if (!mounted) return;
+        setSupportNotice(cause instanceof Error ? cause.message : "Unable to load platform records.");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   async function updateOrganizationStatus(
     orgId: string,
     status: "ACTIVE" | "SUSPENDED" | "CANCELLED",
@@ -427,11 +518,20 @@ export function PlatformOperationsPanel({
   }
 
   async function searchUsers() {
-    if (!userQuery.trim()) return;
     const response = await webApiFetch<{ users: PlatformUserRow[] }>(
       `/api/platform/users?q=${encodeURIComponent(userQuery.trim())}`,
     );
     setUserRows(response.users);
+  }
+
+  async function loadUserDetails(userId: string) {
+    try {
+      setUserDetailBusyId(userId);
+      const response = await webApiFetch<PlatformUserDetail>(`/api/platform/users/${userId}`);
+      setSelectedUser(response);
+    } finally {
+      setUserDetailBusyId(null);
+    }
   }
 
   async function revokeUserSessions(userId: string) {
@@ -454,6 +554,16 @@ export function PlatformOperationsPanel({
       `/api/platform/payments?q=${encodeURIComponent(paymentQuery.trim())}`,
     );
     setPaymentRows(response.payments);
+  }
+
+  async function loadPaymentDetails(paymentId: string) {
+    try {
+      setPaymentDetailBusyId(paymentId);
+      const response = await webApiFetch<PlatformPaymentDetail>(`/api/platform/payments/${paymentId}`);
+      setSelectedPayment(response);
+    } finally {
+      setPaymentDetailBusyId(null);
+    }
   }
 
   async function refundPayment(paymentId: string) {
@@ -606,14 +716,16 @@ export function PlatformOperationsPanel({
           <SectionHeader
             eyebrow="Support"
             title="Platform support console"
+            description="Recent users and payments are loaded by default. Search narrows the list, and Details opens the full operational record."
             badge={supportNotice ? <Pill tone="lime">{supportNotice}</Pill> : <Pill tone="blue">Live</Pill>}
           />
           <div className="mt-5 grid gap-4 xl:grid-cols-2">
-            <div id="payments" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
+            <div id="users" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <SectionHeader
-                eyebrow="Payments"
-                title="Cross-tenant payment search"
-                description="Find payments across gyms and submit audited platform refunds."
+                eyebrow="Users"
+                title="User search and details"
+                description="Find members, staff, owners, and demo accounts across the platform."
+                badge={<Pill tone="blue">{userRows.length} visible</Pill>}
               />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
@@ -636,7 +748,18 @@ export function PlatformOperationsPanel({
                         <div>
                           <p className="font-medium text-white">{user.name}</p>
                           <p className="mt-1 text-xs text-white/45">{user.email}</p>
+                          {user.phone ? <p className="mt-1 text-xs text-white/45">{user.phone}</p> : null}
                         </div>
+                      ),
+                    },
+                    {
+                      id: "kind",
+                      header: "Kind",
+                      render: (user) => (
+                        <StatusPill
+                          value={user.isPlatformAdmin ? "Platform admin" : "User"}
+                          tone={user.isPlatformAdmin ? "amber" : "blue"}
+                        />
                       ),
                     },
                     {
@@ -645,6 +768,14 @@ export function PlatformOperationsPanel({
                       align: "right",
                       render: (user) => (
                         <div className="flex flex-wrap justify-end gap-2">
+                          <ZookButton
+                            size="sm"
+                            tone="ghost"
+                            disabled={userDetailBusyId === user.id}
+                            onClick={() => void loadUserDetails(user.id)}
+                          >
+                            Details
+                          </ZookButton>
                           <ZookButton size="sm" tone="ghost" onClick={() => void revokeUserSessions(user.id)}>
                             Revoke
                           </ZookButton>
@@ -662,12 +793,110 @@ export function PlatformOperationsPanel({
                   ]}
                   rows={userRows}
                   rowKey={(user) => user.id}
-                  empty="No users loaded."
+                  empty="No users match this search."
                 />
               </div>
+              {selectedUser ? (
+                <div className="mt-4 rounded-[22px] border border-white/10 bg-black/25 p-4">
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                        User details
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold text-white">{selectedUser.user.name}</h3>
+                      <p className="mt-1 text-sm text-white/55">{selectedUser.user.email}</p>
+                      {selectedUser.user.phone ? (
+                        <p className="mt-1 text-sm text-white/45">{selectedUser.user.phone}</p>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      className="zook-focus rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/65 hover:bg-white/8 hover:text-white"
+                      onClick={() => setSelectedUser(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <ReadoutGrid
+                    className="mt-4"
+                    columns={3}
+                    items={[
+                      {
+                        label: "Organizations",
+                        value: formatCompactNumber(selectedUser.organizations.length),
+                        meta: "Active and historical links",
+                      },
+                      {
+                        label: "Payments",
+                        value: formatCompactNumber(selectedUser.payments.length),
+                        meta: "Recent payment records",
+                      },
+                      {
+                        label: "Sessions",
+                        value: formatCompactNumber(selectedUser.sessions.length),
+                        meta: "Recent auth sessions",
+                      },
+                    ]}
+                  />
+                  <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                    <div className="rounded-[18px] border border-white/10 bg-black/20 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                        Gym access
+                      </p>
+                      <div className="mt-3 grid gap-2">
+                        {selectedUser.organizations.length ? (
+                          selectedUser.organizations.slice(0, 6).map((membership) => (
+                            <div key={membership.orgId} className="rounded-2xl bg-white/[0.04] p-3">
+                              <p className="font-medium text-white">
+                                {membership.organization?.name ?? membership.orgId}
+                              </p>
+                              <p className="mt-1 text-xs text-white/45">
+                                {membership.roles.map(formatEnumLabel).join(", ") || "No roles"} ·{" "}
+                                {formatEnumLabel(membership.status)}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-white/45">No gym access found.</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="rounded-[18px] border border-white/10 bg-black/20 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                        Recent payments
+                      </p>
+                      <div className="mt-3 grid gap-2">
+                        {selectedUser.payments.length ? (
+                          selectedUser.payments.slice(0, 6).map((payment) => (
+                            <button
+                              type="button"
+                              key={payment.id}
+                              className="zook-focus rounded-2xl bg-white/[0.04] p-3 text-left"
+                              onClick={() => void loadPaymentDetails(payment.id)}
+                            >
+                              <p className="font-medium text-white">{formatInr(payment.amountPaise)}</p>
+                              <p className="mt-1 text-xs text-white/45">
+                                {formatEnumLabel(payment.status)} · {formatDateTime(payment.createdAt)}
+                              </p>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="text-sm text-white/45">No payments found for this user.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
-            <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+            <div id="payments" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <SectionHeader
+                eyebrow="Payments"
+                title="Payment ledger"
+                description="Demo and live payment records appear here immediately after checkout or desk payment creation."
+                badge={<Pill tone="blue">{paymentRows.length} visible</Pill>}
+              />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   className="min-h-10 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 text-sm text-white outline-none"
@@ -688,7 +917,9 @@ export function PlatformOperationsPanel({
                       render: (payment) => (
                         <div>
                           <p className="font-medium text-white">{payment.id}</p>
-                          <p className="mt-1 text-xs text-white/45">{payment.providerRef ?? "Manual"}</p>
+                          <p className="mt-1 text-xs text-white/45">
+                            {payment.providerRef ?? payment.provider ?? "Manual/demo"}
+                          </p>
                         </div>
                       ),
                     },
@@ -707,17 +938,128 @@ export function PlatformOperationsPanel({
                       header: "Actions",
                       align: "right",
                       render: (payment) => (
-                        <ZookButton size="sm" tone="ghost" onClick={() => void refundPayment(payment.id)}>
-                          Refund
-                        </ZookButton>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <ZookButton
+                            size="sm"
+                            tone="ghost"
+                            disabled={paymentDetailBusyId === payment.id}
+                            onClick={() => void loadPaymentDetails(payment.id)}
+                          >
+                            Details
+                          </ZookButton>
+                          <ZookButton size="sm" tone="ghost" onClick={() => void refundPayment(payment.id)}>
+                            Refund
+                          </ZookButton>
+                        </div>
                       ),
                     },
                   ]}
                   rows={paymentRows}
                   rowKey={(payment) => payment.id}
-                  empty="No payments loaded."
+                  empty="No payments match this search."
                 />
               </div>
+              {selectedPayment ? (
+                <div className="mt-4 rounded-[22px] border border-white/10 bg-black/25 p-4">
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                        Payment details
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold text-white">
+                        {formatInr(selectedPayment.payment.amountPaise)}
+                      </h3>
+                      <p className="mt-1 text-sm text-white/55">{selectedPayment.payment.id}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="zook-focus rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/65 hover:bg-white/8 hover:text-white"
+                      onClick={() => setSelectedPayment(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <ReadoutGrid
+                    className="mt-4"
+                    columns={3}
+                    items={[
+                      {
+                        label: "Status",
+                        value: formatEnumLabel(selectedPayment.payment.status),
+                        meta: selectedPayment.payment.provider ?? "manual/demo",
+                      },
+                      {
+                        label: "Refunds",
+                        value: formatCompactNumber(selectedPayment.refunds.length),
+                        meta: selectedPayment.refunds.length
+                          ? `${formatInr(
+                              selectedPayment.refunds.reduce((sum, refund) => sum + refund.amountPaise, 0),
+                            )} total`
+                          : "No refund records",
+                      },
+                      {
+                        label: "Events",
+                        value: formatCompactNumber(selectedPayment.events.length),
+                        meta: "Provider and mock events",
+                      },
+                    ]}
+                  />
+                  <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                    <div className="rounded-[18px] border border-white/10 bg-black/20 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                        Context
+                      </p>
+                      <div className="mt-3 grid gap-2 text-sm text-white/60">
+                        <p>
+                          Gym:{" "}
+                          <span className="text-white">
+                            {selectedPayment.organization?.name ?? selectedPayment.payment.orgId ?? "None"}
+                          </span>
+                        </p>
+                        <p>
+                          User:{" "}
+                          <span className="text-white">
+                            {selectedPayment.user?.email ?? selectedPayment.payment.userId ?? "None"}
+                          </span>
+                        </p>
+                        <p>
+                          Created:{" "}
+                          <span className="text-white">{formatDateTime(selectedPayment.payment.createdAt)}</span>
+                        </p>
+                        {selectedPayment.payment.receiptNumber ? (
+                          <p>
+                            Receipt: <span className="text-white">{selectedPayment.payment.receiptNumber}</span>
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="rounded-[18px] border border-white/10 bg-black/20 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                        Events
+                      </p>
+                      <div className="mt-3 grid gap-2">
+                        {selectedPayment.events.length ? (
+                          selectedPayment.events.slice(0, 6).map((event) => (
+                            <div key={event.id} className="rounded-2xl bg-white/[0.04] p-3">
+                              <p className="font-medium text-white">
+                                {formatEnumLabel(event.type ?? event.status ?? "event")}
+                              </p>
+                              <p className="mt-1 text-xs text-white/45">
+                                {event.providerEventId ?? event.id} · {formatDateTime(event.createdAt)}
+                              </p>
+                              {event.processingError ? (
+                                <p className="mt-1 text-xs text-red-100">{event.processingError}</p>
+                              ) : null}
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-white/45">No payment events recorded yet.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </GlassCard>
@@ -1465,28 +1807,69 @@ type SubscriptionRow = {
   createdAt: string | Date;
   contactEmail: string | null;
   subscriptionStatus: string | null;
+  tier?: string | null;
+  billingCycle?: string | null;
+  priceLockedPaise?: number | null;
+  creditPaise?: number | null;
+  noteForPlatform?: string | null;
   nextBillingAt: string | Date | null;
   mandateStatus: string | null;
   mandateNextChargeAt: string | Date | null;
   mandatePaidCount: number;
   referredCount: number;
+  usage?: {
+    activeMemberCount?: number;
+    branchCount?: number;
+    staffCount?: number;
+    trainerCount?: number;
+    productCount?: number;
+  };
+  entitlements?: {
+    memberLimit?: number | null;
+    branchLimit?: number | null;
+    staffLimit?: number | null;
+    trainerLimit?: number | null;
+    productLimit?: number | null;
+    notificationMonthlyLimit?: number | null;
+    aiTextMonthlyLimit?: number | null;
+    aiImageMonthlyLimit?: number | null;
+    reports?: string;
+    support?: string;
+    referrals?: string;
+  };
 };
+
+type PlatformPlanCatalog = Record<
+  string,
+  {
+    name: string;
+    monthly: number;
+    yearly: number;
+    entitlements: NonNullable<SubscriptionRow["entitlements"]>;
+  }
+>;
+
+function limitLabel(limit?: number | null) {
+  return limit == null ? "unlimited" : formatCompactNumber(limit);
+}
 
 function PlatformSubscriptionsSection() {
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [rows, setRows] = useState<SubscriptionRow[]>([]);
+  const [planCatalog, setPlanCatalog] = useState<PlatformPlanCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    webApiFetch<{ summary: SubscriptionSummary; rows: SubscriptionRow[] }>(
+    webApiFetch<{ summary: SubscriptionSummary; rows: SubscriptionRow[]; planCatalog?: PlatformPlanCatalog }>(
       "/api/platform/subscriptions",
     )
       .then((payload) => {
         if (!mounted) return;
         setSummary(payload.summary);
         setRows(payload.rows);
+        setPlanCatalog(payload.planCatalog ?? null);
       })
       .catch((cause) => {
         if (!mounted) return;
@@ -1547,6 +1930,38 @@ function PlatformSubscriptionsSection() {
           />
         ) : null}
         <div className="mt-5">
+          {planCatalog ? (
+            <div className="mb-5 grid gap-3 lg:grid-cols-3">
+              {(["STARTER", "GROWTH", "PRO"] as const).map((tier) => {
+                const plan = planCatalog[tier];
+                if (!plan) return null;
+                return (
+                  <div key={tier} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-white">{plan.name ?? formatEnumLabel(tier)}</p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {formatInr(plan.monthly)} / mo · {formatInr(plan.yearly)} / yr
+                        </p>
+                      </div>
+                      <StatusPill value={tier} tone={tier === "PRO" ? "lime" : "blue"} />
+                    </div>
+                    <p className="mt-3 text-xs leading-5 text-white/52">
+                      {limitLabel(plan.entitlements.memberLimit)} members ·{" "}
+                      {limitLabel(plan.entitlements.branchLimit)} branches ·{" "}
+                      {limitLabel(plan.entitlements.staffLimit)} staff ·{" "}
+                      {limitLabel(plan.entitlements.productLimit)} products
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-white/42">
+                      {limitLabel(plan.entitlements.notificationMonthlyLimit)} message recipients/mo ·{" "}
+                      {limitLabel(plan.entitlements.aiTextMonthlyLimit)} AI text/mo ·{" "}
+                      {formatEnumLabel(plan.entitlements.support ?? "standard")} support
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
           {error ? (
             <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
               {error}
@@ -1562,10 +1977,27 @@ function PlatformSubscriptionsSection() {
                   render: (row: SubscriptionRow) => (
                     <div>
                       <p className="font-medium text-white">{row.orgName}</p>
-                      <p className="mt-1 text-xs text-white/45">
-                        {row.username} · {row.contactEmail ?? "no email"}
-                      </p>
-                    </div>
+                        <p className="mt-1 text-xs text-white/45">
+                          {row.username} · {row.contactEmail ?? "no email"}
+                        </p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {formatEnumLabel(row.tier ?? "FREE")} · {formatEnumLabel(row.billingCycle ?? "MONTHLY")}
+                          {row.creditPaise ? ` · ${formatInr(row.creditPaise)} credit` : ""}
+                        </p>
+                        {row.noteForPlatform ? (
+                          <p className="mt-1 max-w-xs truncate text-xs text-white/45">
+                            Note: {row.noteForPlatform}
+                          </p>
+                        ) : null}
+                        {row.usage ? (
+                          <p className="mt-1 text-xs text-white/45">
+                            {formatCompactNumber(row.usage.activeMemberCount ?? 0)} /{" "}
+                            {limitLabel(row.entitlements?.memberLimit)} members ·{" "}
+                            {formatCompactNumber(row.usage.branchCount ?? 0)} /{" "}
+                            {limitLabel(row.entitlements?.branchLimit)} branches
+                          </p>
+                        ) : null}
+                      </div>
                   ),
                 },
                 {

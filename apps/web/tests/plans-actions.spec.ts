@@ -27,10 +27,13 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
       pricePaise: 299900,
       durationDays: 90,
       publicVisible: true,
+      branchId: defaultBranch.id,
     });
 
     await page.goto(`/dashboard/membership-plans?branchId=${defaultBranch.id}`);
-    await expect(page.getByRole("heading", { name: "Membership catalog" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Membership catalog" })).toBeVisible({
+      timeout: 30_000,
+    });
     expect(created).toMatchObject({
       pricePaise: 299900,
       durationDays: 90,

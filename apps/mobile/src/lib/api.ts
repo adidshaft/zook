@@ -13,7 +13,7 @@ type MobileReleaseProfile = "local" | "staging" | "production";
 type MobilePushEnvironment = "development" | "preview" | "production";
 type ApiAuthHandlers = {
   onExpired?: () => Promise<string | void> | string | void;
-  onForbidden?: () => Promise<void> | void;
+  onForbidden?: (error: ApiError) => Promise<void> | void;
 };
 type MobileApiRequestInit = Omit<RequestInit, "body"> & {
   token?: string;
@@ -188,7 +188,7 @@ function createHttpTransport(): MobileApiTransport {
         throw error;
       }
       if (error instanceof ApiError && error.status === 403) {
-        await apiAuthHandlers.onForbidden?.();
+        await apiAuthHandlers.onForbidden?.(error);
         throw error;
       }
       if (error instanceof ApiError) {

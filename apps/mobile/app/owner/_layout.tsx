@@ -4,13 +4,17 @@ import { useEffect } from "react";
 
 import { useHasPermission } from "@/lib/auth";
 import { useOrgJoinRequests } from "@/lib/domains/owner";
-import { legacyColors, useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 
-const legacyViewTargets: Record<string, "/owner/members" | "/owner/approvals" | "/owner/revenue" | "/owner/stock"> = {
+const legacyViewTargets: Record<
+  string,
+  "/owner/members" | "/owner/approvals" | "/owner/revenue" | "/owner/stock" | "/owner/billing"
+> = {
   members: "/owner/members",
   approvals: "/owner/approvals",
   revenue: "/owner/revenue",
   stock: "/owner/stock",
+  billing: "/owner/billing",
 };
 
 export default function OwnerLayout() {
@@ -20,6 +24,7 @@ export default function OwnerLayout() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const canViewRevenue = useHasPermission("ORG_VIEW_REPORTS");
   const canViewStock = useHasPermission("SHOP_MANAGE_PRODUCTS");
+  const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
   const approvalsQuery = useOrgJoinRequests();
   const pendingCount =
     approvalsQuery.data?.joinRequests.filter(
@@ -30,7 +35,7 @@ export default function OwnerLayout() {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
     if (!rawView || pathname !== "/owner") return;
     const target = legacyViewTargets[rawView];
-    if (target) router.replace(target);
+    if (target) router.replace(target as never);
   }, [params.view, pathname, router]);
 
   return (
@@ -95,6 +100,17 @@ export default function OwnerLayout() {
           tabBarButtonTestID: "bottom-nav-stock",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "cube" : "cube-outline"} size={22} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="billing"
+        options={{
+          title: "Billing",
+          href: canManageBilling ? ("/owner/billing" as never) : null,
+          tabBarButtonTestID: "bottom-nav-billing",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "card" : "card-outline"} size={22} color={color} />
           ),
         }}
       />

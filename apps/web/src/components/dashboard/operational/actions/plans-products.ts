@@ -53,6 +53,13 @@ export function payloadForProductForm(form: ProductForm, branchId?: string | nul
   };
 }
 
+function appendBranchParam(path: string, branchId?: string | null) {
+  if (!branchId) {
+    return path;
+  }
+  return `${path}${path.includes("?") ? "&" : "?"}branchId=${encodeURIComponent(branchId)}`;
+}
+
 export function createPlansProductsActions({
   orgId,
   state,
@@ -74,7 +81,7 @@ export function createPlansProductsActions({
       state.setFormBusy("plan");
       state.setFormError("");
       state.setFormStatus("");
-      await webApiFetch(`/api/orgs/${orgId}/membership-plans`, {
+      await webApiFetch(appendBranchParam(`/api/orgs/${orgId}/membership-plans`, selectedBranchId), {
         method: "POST",
         body: payloadForPlanForm(state.planForm),
         feedback: { success: "Membership plan created." },

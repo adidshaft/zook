@@ -7,14 +7,12 @@ export function BranchSwitcher({
   allBranchesAllowed,
   branchHref,
   copy,
-  compact: _compact = false,
 }: {
   branches: DashboardData["branchScope"]["branches"];
   selectedBranchId: string | undefined;
   allBranchesAllowed?: boolean;
   branchHref: (branchId: string) => string;
   copy: DashboardCopy;
-  compact?: boolean;
 }) {
   const options = [
     ...(allBranchesAllowed

@@ -1,7 +1,6 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { webApiFetch } from "./api-client";
 
 type CursorPage = {
@@ -27,94 +26,26 @@ export function useOperationalResource<T>({
   initialData?: T | undefined;
   refreshMs?: number | undefined;
 }) {
-  const hasLoadedRef = useRef(initialData !== undefined);
-  const [data, setData] = useState<T | undefined>(initialData);
-  const [loading, setLoading] = useState(Boolean(enabled && path && initialData === undefined));
-  const [error, setError] = useState("");
-  const [revision, setRevision] = useState(0);
-
-  const initialDataString = JSON.stringify(initialData);
-
-  useEffect(() => {
-    if (!initialDataString) {
-      return;
-    }
-    hasLoadedRef.current = true;
-    setData(JSON.parse(initialDataString));
-  }, [initialDataString]);
-
-  useEffect(() => {
-    const resourcePath = path;
-
-    if (!enabled || !resourcePath) {
-      return;
-    }
-    const resolvedPath: string = resourcePath;
-    let active = true;
-
-    async function load(showSpinner: boolean) {
-      if (showSpinner && !hasLoadedRef.current) {
-        setLoading(true);
-      }
-      try {
-        const payload = await webApiFetch<T>(resolvedPath);
-        if (!active) {
-          return;
-        }
-        hasLoadedRef.current = true;
-        setData(payload);
-        setError("");
-      } catch (cause) {
-        if (!active) {
-          return;
-        }
-        setError(cause instanceof Error ? cause.message : "Unable to load this view.");
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void load(revision === 0);
-
-    if (!refreshMs) {
-      return () => {
-        active = false;
-      };
-    }
-
-    const timer = window.setInterval(() => {
-      void load(false);
-    }, refreshMs);
-
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [enabled, path, refreshMs, revision]);
+  const query = useQuery<T, Error>({
+    queryKey: ["operational-resource", path],
+    enabled: Boolean(enabled && path),
+    queryFn: () => webApiFetch<T>(path!),
+    ...(initialData !== undefined ? { initialData } : {}),
+    ...(initialData !== undefined ? { initialDataUpdatedAt: Date.now() } : {}),
+    placeholderData: keepPreviousData,
+    staleTime: refreshMs ? Math.min(refreshMs, 60_000) : 120_000,
+    gcTime: 10 * 60_000,
+    ...(refreshMs ? { refetchInterval: refreshMs } : {}),
+    refetchOnWindowFocus: false,
+  });
 
   return {
-    data,
-    loading,
-    error,
+    data: query.data,
+    loading: query.isLoading && !query.data,
+    error: query.error?.message ?? "",
     async reload() {
-      const resourcePath = path;
-      if (!enabled || !resourcePath) {
-        setRevision((current) => current + 1);
-        return;
-      }
-      setLoading(true);
-      try {
-        const payload = await webApiFetch<T>(resourcePath);
-        hasLoadedRef.current = true;
-        setData(payload);
-        setError("");
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Unable to load this view.");
-      } finally {
-        setLoading(false);
-      }
+      if (!path) return;
+      await query.refetch();
     }
   };
 }
@@ -134,6 +65,10 @@ export function usePagedOperationalResource<TPage extends CursorPage, TItem>({
     initialPageParam: null,
     queryFn: ({ pageParam }) => webApiFetch<TPage>(withCursor(path!, pageParam as string | null)),
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
   });
   const pages = query.data?.pages ?? [];
   const items = pages.flatMap((page) => {

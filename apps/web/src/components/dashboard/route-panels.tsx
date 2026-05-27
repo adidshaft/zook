@@ -12,11 +12,9 @@ import { BranchesSection } from "./sections/branches-section";
 import { ShopSection } from "./shop/section";
 import { MembersPage } from "./members/members-page";
 import { StaffSection } from "./sections/staff-section";
-import {
-  BillingSection,
-  RefundsSection,
-  SettingsSection,
-} from "./sections/utility-sections";
+import { BillingSection } from "./sections/billing-section";
+import { RefundsSection } from "./sections/refunds-section";
+import { SettingsSection } from "./sections/settings-section";
 import {
   CouponsRouteSection,
   OffersRouteSection,
@@ -35,370 +33,268 @@ export type DashboardRoutePanelBaseProps = Omit<
   "mode" | "shopView"
 >;
 
+const REGISTRY: Record<
+  string,
+  (props: DashboardOperationalPanelProps, controller: any) => React.ReactNode
+> = {
+  "public-profile": (props) => <GymProfileSetupPanel orgId={props.orgId} />,
+  "attendance": (props, c) => (
+    <AttendancePanel
+      orgId={props.orgId}
+      organization={props.organization}
+      summary={props.summary}
+      branchScope={props.branchScope}
+      selectedBranchName={c.selectedBranchName}
+      attendanceRecords={c.attendanceRecords}
+      attendanceState={c.attendanceState}
+    />
+  ),
+  "notifications": (props) => (
+    <NotificationsPanel
+      orgId={props.orgId}
+      organization={props.organization}
+      summary={props.summary}
+      initialNotifications={props.initialNotifications}
+      roles={props.roles ?? []}
+      permissions={props.permissions ?? []}
+      view="compose"
+    />
+  ),
+  "notification-templates": (props) => (
+    <NotificationsPanel
+      orgId={props.orgId}
+      organization={props.organization}
+      summary={props.summary}
+      initialNotifications={props.initialNotifications}
+      roles={props.roles ?? []}
+      permissions={props.permissions ?? []}
+      view="templates"
+    />
+  ),
+  "notification-history": (props) => (
+    <NotificationsPanel
+      orgId={props.orgId}
+      organization={props.organization}
+      summary={props.summary}
+      initialNotifications={props.initialNotifications}
+      roles={props.roles ?? []}
+      permissions={props.permissions ?? []}
+      view="history"
+    />
+  ),
+  "members": (props, c) => (
+    <MembersPage
+      view="members"
+      orgId={props.orgId}
+      organization={props.organization}
+      members={c.members}
+      membersState={c.membersState}
+      selectedMemberId={c.selectedMemberId}
+      setSelectedMemberId={c.setSelectedMemberId}
+      memberDetailState={c.memberDetailState}
+      joinRequests={c.joinRequests}
+      joinRequestsState={c.joinRequestsState}
+      queueError={c.queueError}
+      queueBusyId={c.queueBusyId}
+      updateJoinRequest={c.updateJoinRequest}
+      membershipPlans={c.membershipPlans}
+      membershipPlansState={c.membershipPlansState}
+      planNamesById={c.planNamesById}
+    />
+  ),
+  "join-requests": (props, c) => (
+    <MembersPage
+      view="join-requests"
+      orgId={props.orgId}
+      organization={props.organization}
+      members={c.members}
+      membersState={c.membersState}
+      selectedMemberId={c.selectedMemberId}
+      setSelectedMemberId={c.setSelectedMemberId}
+      memberDetailState={c.memberDetailState}
+      joinRequests={c.joinRequests}
+      joinRequestsState={c.joinRequestsState}
+      queueError={c.queueError}
+      queueBusyId={c.queueBusyId}
+      updateJoinRequest={c.updateJoinRequest}
+      membershipPlans={c.membershipPlans}
+      membershipPlansState={c.membershipPlansState}
+      planNamesById={c.planNamesById}
+    />
+  ),
+  "shop": (props, c) => (
+    <ShopSection
+      view={props.shopView ?? "products"}
+      orgId={props.orgId}
+      summary={props.summary}
+      branchScope={props.branchScope}
+      selectedBranchName={c.selectedBranchName}
+      inventory={c.inventory}
+      shopOrders={c.shopOrders}
+      queuedOrders={c.queuedOrders}
+      readyOrders={c.readyOrders}
+      productsState={c.productsState}
+      shopOrdersState={c.shopOrdersState}
+      productForm={c.productForm}
+      setProductForm={c.setProductForm}
+      productEditForm={c.productEditForm}
+      setProductEditForm={c.setProductEditForm}
+      editingProductId={c.editingProductId}
+      setEditingProductId={c.setEditingProductId}
+      stockAdjustment={c.stockAdjustment}
+      setStockAdjustment={c.setStockAdjustment}
+      formError={c.formError}
+      formStatus={c.formStatus}
+      formBusy={c.formBusy}
+      createProduct={c.createProduct}
+      startProductEdit={c.startProductEdit}
+      updateProduct={c.updateProduct}
+      adjustStock={c.adjustStock}
+      deleteProduct={c.deleteProduct}
+    />
+  ),
+  "staff": (props, c) => (
+    <StaffSection
+      organization={props.organization}
+      staffInvite={c.staffInvite}
+      setStaffInvite={c.setStaffInvite}
+      staffAssignments={c.staffAssignments}
+      staffUsersById={c.staffUsersById}
+      staffState={c.staffState}
+      editingStaffId={c.editingStaffId}
+      setEditingStaffId={c.setEditingStaffId}
+      staffRoleDraft={c.staffRoleDraft}
+      setStaffRoleDraft={c.setStaffRoleDraft}
+      staffBranchDraft={c.staffBranchDraft}
+      setStaffBranchDraft={c.setStaffBranchDraft}
+      branches={c.branches}
+      coachPlans={c.coachPlans}
+      coachPlansState={c.coachPlansState}
+      formError={c.formError}
+      formStatus={c.formStatus}
+      formBusy={c.formBusy}
+      inviteStaff={c.inviteStaff}
+      updateStaffRole={c.updateStaffRole}
+      revokeStaff={c.revokeStaff}
+      deleteCoachPlan={c.deleteCoachPlan}
+    />
+  ),
+  "plan-coupons": (props, c) => <CouponsRouteSection {...c} />,
+  "plan-offers": (props, c) => <OffersRouteSection {...c} />,
+  "plan-referrals": (props, c) => <ReferralsRouteSection {...c} />,
+  "plans": (props, c) => (
+    <PlansSection
+      membershipPlans={c.membershipPlans}
+      membershipPlansState={c.membershipPlansState}
+      coachPlans={c.coachPlans}
+      coachPlansState={c.coachPlansState}
+      activeCouponCount={c.coupons.filter((coupon: any) => coupon.active).length}
+      activeOfferCount={c.offers.filter((offer: any) => offer.active).length}
+      referralCodeCount={c.referrals.length}
+      planForm={c.planForm}
+      setPlanForm={c.setPlanForm}
+      planEditForm={c.planEditForm}
+      setPlanEditForm={c.setPlanEditForm}
+      editingPlanId={c.editingPlanId}
+      setEditingPlanId={c.setEditingPlanId}
+      formError={c.formError}
+      formStatus={c.formStatus}
+      formBusy={c.formBusy}
+      createMembershipPlan={c.createMembershipPlan}
+      startPlanEdit={c.startPlanEdit}
+      updateMembershipPlan={c.updateMembershipPlan}
+      deleteMembershipPlan={c.deleteMembershipPlan}
+    />
+  ),
+  "branches": (props, c) => (
+    <BranchesSection
+      branches={c.branches}
+      branchesState={c.branchesState}
+      branchForm={c.branchForm}
+      setBranchForm={c.setBranchForm}
+      branchEditForm={c.branchEditForm}
+      setBranchEditForm={c.setBranchEditForm}
+      editingBranchId={c.editingBranchId}
+      setEditingBranchId={c.setEditingBranchId}
+      staffAssignments={c.staffAssignments}
+      staffUsersById={c.staffUsersById}
+      membershipPlans={c.membershipPlans}
+      formError={c.formError}
+      formStatus={c.formStatus}
+      formBusy={c.formBusy}
+      createBranch={c.createBranch}
+      saveBranchEdit={c.saveBranchEdit}
+      startBranchEdit={c.startBranchEdit}
+      updateBranch={c.updateBranch}
+      deactivateBranch={c.deactivateBranch}
+    />
+  ),
+  "payments": (props, c) => (
+    <PaymentsPanel
+      orgId={props.orgId}
+      summary={props.summary}
+      queuedOrders={c.queuedOrders}
+      membershipPlans={c.membershipPlans}
+      members={c.members}
+      payments={c.payments}
+      paymentsState={c.paymentsState}
+      shopOrders={c.shopOrders}
+      shopOrdersState={c.shopOrdersState}
+      permissions={props.permissions ?? []}
+    />
+  ),
+  "payment-refunds": (props, c) => (
+    <RefundsSection payments={c.payments} onRefundSubmitted={c.paymentsState.reload} />
+  ),
+  "billing": (props) => (
+    <BillingSection orgId={props.orgId} organization={props.organization} summary={props.summary} />
+  ),
+  "settings": (props) => (
+    <SettingsSection
+      orgId={props.orgId}
+      organization={props.organization}
+      summary={props.summary}
+      branchScope={props.branchScope}
+      permissions={props.permissions ?? []}
+    />
+  ),
+  "reports": (props, c) => (
+    <ReportsPanel
+      organization={props.organization}
+      summary={props.summary}
+      charts={props.charts}
+      selectedBranchName={c.selectedBranchName}
+      auditLogCount={props.auditLogCount}
+    />
+  ),
+  "audit": (props, c) => (
+    <AuditPanel
+      orgId={props.orgId}
+      auditLogs={c.auditLogs}
+      auditLogsState={c.auditLogsState}
+      auditLogCount={props.auditLogCount}
+      aiUsage={c.aiUsage}
+      aiUsageState={c.aiUsageState}
+      misconfiguredAiCount={c.misconfiguredAiCount}
+    />
+  ),
+  "ai": (props, c) => (
+    <AiPanel
+      summary={props.summary}
+      aiUsage={c.aiUsage}
+      aiUsageState={c.aiUsageState}
+      coachPlans={c.coachPlans}
+      misconfiguredAiCount={c.misconfiguredAiCount}
+    />
+  ),
+};
+
 function DashboardPanelContent(props: DashboardOperationalPanelProps) {
   const controller = useDashboardOperationalController(props);
-  const {
-    orgId,
-    mode,
-    shopView = "products",
-    organization,
-    summary,
-    branchScope,
-    auditLogCount,
-    initialNotifications,
-    roles = [],
-    permissions = [],
-  } = props;
-  const {
-    queueBusyId,
-    queueError,
-    planForm,
-    setPlanForm,
-    planEditForm,
-    setPlanEditForm,
-    editingPlanId,
-    setEditingPlanId,
-    productForm,
-    setProductForm,
-    productEditForm,
-    setProductEditForm,
-    editingProductId,
-    setEditingProductId,
-    stockAdjustment,
-    setStockAdjustment,
-    editingStaffId,
-    setEditingStaffId,
-    staffRoleDraft,
-    setStaffRoleDraft,
-    staffBranchDraft,
-    setStaffBranchDraft,
-    staffInvite,
-    setStaffInvite,
-    branchForm,
-    setBranchForm,
-    editingBranchId,
-    setEditingBranchId,
-    branchEditForm,
-    setBranchEditForm,
-    selectedMemberId,
-    setSelectedMemberId,
-    formStatus,
-    formError,
-    formBusy,
-    membersState,
-    joinRequestsState,
-    membershipPlansState,
-    staffState,
-    coachPlansState,
-    productsState,
-    shopOrdersState,
-    paymentsState,
-    attendanceState,
-    auditLogsState,
-    aiUsageState,
-    branchesState,
-    memberDetailState,
-    membershipPlans,
-    members,
-    joinRequests,
-    staffAssignments,
-    coachPlans,
-    inventory,
-    shopOrders,
-    payments,
-    attendanceRecords,
-    auditLogs,
-    aiUsage,
-    coupons,
-    offers,
-    branches,
-    referrals,
-    selectedBranchName,
-    planNamesById,
-    staffUsersById,
-    queuedOrders,
-    readyOrders,
-    misconfiguredAiCount,
-    updateJoinRequest,
-    createMembershipPlan,
-    createProduct,
-    startPlanEdit,
-    updateMembershipPlan,
-    deleteMembershipPlan,
-    startProductEdit,
-    updateProduct,
-    adjustStock,
-    deleteProduct,
-    inviteStaff,
-    updateStaffRole,
-    revokeStaff,
-    deleteCoachPlan,
-    createBranch,
-    updateBranch,
-    startBranchEdit,
-    saveBranchEdit,
-    deactivateBranch,
-  } = controller;
-
-  if (mode === "public-profile") {
-    return <GymProfileSetupPanel orgId={orgId} />;
+  const renderer = REGISTRY[props.mode];
+  if (renderer) {
+    return renderer(props, controller);
   }
-
-  if (mode === "attendance") {
-    return (
-      <AttendancePanel
-        orgId={orgId}
-        organization={organization}
-        summary={summary}
-        branchScope={branchScope}
-        selectedBranchName={selectedBranchName}
-        attendanceRecords={attendanceRecords}
-        attendanceState={attendanceState}
-      />
-    );
-  }
-
-  if (
-    mode === "notifications" ||
-    mode === "notification-templates" ||
-    mode === "notification-history"
-  ) {
-    return (
-      <NotificationsPanel
-        orgId={orgId}
-        organization={organization}
-        summary={summary}
-        initialNotifications={initialNotifications}
-        roles={roles}
-        permissions={permissions}
-        view={
-          mode === "notification-templates"
-            ? "templates"
-            : mode === "notification-history"
-              ? "history"
-              : "compose"
-        }
-      />
-    );
-  }
-
-  if (mode === "members" || mode === "join-requests") {
-    return (
-      <MembersPage
-        view={mode === "join-requests" ? "join-requests" : "members"}
-        orgId={orgId}
-        organization={organization}
-        members={members}
-        membersState={membersState}
-        selectedMemberId={selectedMemberId}
-        setSelectedMemberId={setSelectedMemberId}
-        memberDetailState={memberDetailState}
-        joinRequests={joinRequests}
-        joinRequestsState={joinRequestsState}
-        queueError={queueError}
-        queueBusyId={queueBusyId}
-        updateJoinRequest={updateJoinRequest}
-        membershipPlans={membershipPlans}
-        membershipPlansState={membershipPlansState}
-        planNamesById={planNamesById}
-      />
-    );
-  }
-
-  if (mode === "shop") {
-    return (
-      <ShopSection
-        view={shopView}
-        orgId={orgId}
-        summary={summary}
-        branchScope={branchScope}
-        selectedBranchName={selectedBranchName}
-        inventory={inventory}
-        shopOrders={shopOrders}
-        queuedOrders={queuedOrders}
-        readyOrders={readyOrders}
-        productsState={productsState}
-        shopOrdersState={shopOrdersState}
-        productForm={productForm}
-        setProductForm={setProductForm}
-        productEditForm={productEditForm}
-        setProductEditForm={setProductEditForm}
-        editingProductId={editingProductId}
-        setEditingProductId={setEditingProductId}
-        stockAdjustment={stockAdjustment}
-        setStockAdjustment={setStockAdjustment}
-        formError={formError}
-        formStatus={formStatus}
-        formBusy={formBusy}
-        createProduct={createProduct}
-        startProductEdit={startProductEdit}
-        updateProduct={updateProduct}
-        adjustStock={adjustStock}
-        deleteProduct={deleteProduct}
-      />
-    );
-  }
-
-  if (mode === "staff") {
-    return (
-      <StaffSection
-        organization={organization}
-        staffInvite={staffInvite}
-        setStaffInvite={setStaffInvite}
-        staffAssignments={staffAssignments}
-        staffUsersById={staffUsersById}
-        staffState={staffState}
-        editingStaffId={editingStaffId}
-        setEditingStaffId={setEditingStaffId}
-        staffRoleDraft={staffRoleDraft}
-        setStaffRoleDraft={setStaffRoleDraft}
-        staffBranchDraft={staffBranchDraft}
-        setStaffBranchDraft={setStaffBranchDraft}
-        branches={branches}
-        coachPlans={coachPlans}
-        coachPlansState={coachPlansState}
-        formError={formError}
-        formStatus={formStatus}
-        formBusy={formBusy}
-        inviteStaff={inviteStaff}
-        updateStaffRole={updateStaffRole}
-        revokeStaff={revokeStaff}
-        deleteCoachPlan={deleteCoachPlan}
-      />
-    );
-  }
-
-  if (mode === "plan-coupons") {
-    return <CouponsRouteSection {...controller} />;
-  }
-
-  if (mode === "plan-offers") {
-    return <OffersRouteSection {...controller} />;
-  }
-
-  if (mode === "plan-referrals") {
-    return <ReferralsRouteSection {...controller} />;
-  }
-
-  if (mode === "plans") {
-    return (
-      <PlansSection
-        membershipPlans={membershipPlans}
-        membershipPlansState={membershipPlansState}
-        coachPlans={coachPlans}
-        coachPlansState={coachPlansState}
-        activeCouponCount={coupons.filter((coupon) => coupon.active).length}
-        activeOfferCount={offers.filter((offer) => offer.active).length}
-        referralCodeCount={referrals.length}
-        planForm={planForm}
-        setPlanForm={setPlanForm}
-        planEditForm={planEditForm}
-        setPlanEditForm={setPlanEditForm}
-        editingPlanId={editingPlanId}
-        setEditingPlanId={setEditingPlanId}
-        formError={formError}
-        formStatus={formStatus}
-        formBusy={formBusy}
-        createMembershipPlan={createMembershipPlan}
-        startPlanEdit={startPlanEdit}
-        updateMembershipPlan={updateMembershipPlan}
-        deleteMembershipPlan={deleteMembershipPlan}
-      />
-    );
-  }
-
-  if (mode === "branches") {
-    return (
-      <BranchesSection
-        branches={branches}
-        branchesState={branchesState}
-        branchForm={branchForm}
-        setBranchForm={setBranchForm}
-        branchEditForm={branchEditForm}
-        setBranchEditForm={setBranchEditForm}
-        editingBranchId={editingBranchId}
-        setEditingBranchId={setEditingBranchId}
-        staffAssignments={staffAssignments}
-        staffUsersById={staffUsersById}
-        membershipPlans={membershipPlans}
-        formError={formError}
-        formStatus={formStatus}
-        formBusy={formBusy}
-        createBranch={createBranch}
-        saveBranchEdit={saveBranchEdit}
-        startBranchEdit={startBranchEdit}
-        updateBranch={updateBranch}
-        deactivateBranch={deactivateBranch}
-      />
-    );
-  }
-
-  if (mode === "payments") {
-    return (
-      <PaymentsPanel
-        orgId={orgId}
-        summary={summary}
-        queuedOrders={queuedOrders}
-        membershipPlans={membershipPlans}
-        members={members}
-        payments={payments}
-        paymentsState={paymentsState}
-        shopOrders={shopOrders}
-        shopOrdersState={shopOrdersState}
-        permissions={permissions}
-      />
-    );
-  }
-
-  if (mode === "payment-refunds") {
-    return <RefundsSection payments={payments} onRefundSubmitted={paymentsState.reload} />;
-  }
-
-  if (mode === "billing") {
-    return <BillingSection orgId={orgId} organization={organization} summary={summary} />;
-  }
-
-  if (mode === "settings") {
-    return <SettingsSection organization={organization} />;
-  }
-
-  if (mode === "reports") {
-    return (
-      <ReportsPanel
-        organization={organization}
-        summary={summary}
-        selectedBranchName={selectedBranchName}
-        auditLogCount={auditLogCount}
-      />
-    );
-  }
-
-  if (mode === "audit") {
-    return (
-      <AuditPanel
-        orgId={orgId}
-        auditLogs={auditLogs}
-        auditLogsState={auditLogsState}
-        auditLogCount={auditLogCount}
-        aiUsage={aiUsage}
-        aiUsageState={aiUsageState}
-        misconfiguredAiCount={misconfiguredAiCount}
-      />
-    );
-  }
-
-  if (mode === "ai") {
-    return (
-      <AiPanel
-        summary={summary}
-        aiUsage={aiUsage}
-        aiUsageState={aiUsageState}
-        coachPlans={coachPlans}
-        misconfiguredAiCount={misconfiguredAiCount}
-      />
-    );
-  }
-
   return null;
 }
 
@@ -415,7 +311,15 @@ export function PublicProfileDashboardRoute(props: DashboardRoutePanelBaseProps)
 }
 
 export function SettingsDashboardRoute(props: DashboardRoutePanelBaseProps) {
-  return withMode(props, "settings");
+  return (
+    <SettingsSection
+      orgId={props.orgId}
+      organization={props.organization}
+      summary={props.summary}
+      branchScope={props.branchScope}
+      permissions={props.permissions ?? []}
+    />
+  );
 }
 
 export function MembersDashboardRoute(
@@ -441,7 +345,19 @@ export function NotificationsDashboardRoute(
 }
 
 export function ReportsDashboardRoute(props: DashboardRoutePanelBaseProps) {
-  return withMode(props, "reports");
+  return (
+    <ReportsPanel
+      organization={props.organization}
+      summary={props.summary}
+      charts={props.charts}
+      selectedBranchName={
+        props.branchScope.selectedBranch?.name ??
+        props.branchScope.branches[0]?.name ??
+        "Selected branch"
+      }
+      auditLogCount={props.auditLogCount}
+    />
+  );
 }
 
 export function ShopDashboardRoute(
@@ -471,7 +387,13 @@ export function PlansDashboardRoute(props: DashboardRoutePanelBaseProps) {
 }
 
 export function BillingDashboardRoute(props: DashboardRoutePanelBaseProps) {
-  return withMode(props, "billing");
+  return (
+    <BillingSection
+      orgId={props.orgId}
+      organization={props.organization}
+      summary={props.summary}
+    />
+  );
 }
 
 export function PaymentRefundsDashboardRoute(props: DashboardRoutePanelBaseProps) {

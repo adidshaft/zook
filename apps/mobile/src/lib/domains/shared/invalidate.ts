@@ -30,6 +30,8 @@ export const invalidations = {
       qc.invalidateQueries({ queryKey: queryKeys.owner.members(orgId) }),
     approvals: (qc: QueryClient, orgId?: string | null) =>
       qc.invalidateQueries({ queryKey: queryKeys.owner.approvals(orgId) }),
+    billing: (qc: QueryClient, orgId?: string | null) =>
+      qc.invalidateQueries({ queryKey: queryKeys.owner.billing(orgId) }),
   },
   reception: {
     queue: (qc: QueryClient, orgId?: string | null) =>

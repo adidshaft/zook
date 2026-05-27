@@ -2,6 +2,7 @@ import { type Permission, type Role } from "@zook/core";
 import {
   type AIUsageRow,
   type BranchScopeSnapshot,
+  type DashboardCharts,
   type JoinRequestRow,
   type NotificationSnapshot,
   type OrganizationSnapshot,
@@ -38,6 +39,7 @@ export type DashboardOperationalPanelProps = {
   shopView?: "products" | "orders";
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
+  charts: DashboardCharts;
   branchScope: BranchScopeSnapshot;
   auditLogCount: number;
   initialJoinRequests: JoinRequestRow[];

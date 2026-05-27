@@ -4,6 +4,7 @@ import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { getBranchScope } from "@/server/domains/shared/org-context";
 import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";
 import { cachedJson } from "@/server/server-cache";
+import { buildOrganizationDashboardCharts, dayWindow } from "./chart-series";
 
 export async function getOrganizationDashboardData(
   orgId: string,
@@ -22,15 +23,14 @@ async function getOrganizationDashboardDataUncached(
 ) {
   const today = startOfToday();
   const nextWeek = endOfWindow(7);
+  const sevenDayWindow = dayWindow(7);
+  const thirtyDayWindow = dayWindow(30);
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
   const branchScope = await getBranchScope(orgId, filters);
   const branchWhere = branchScope.selectedBranch ? { branchId: branchScope.selectedBranch.id } : {};
-  const productWhere: Prisma.ProductWhereInput =
-    branchScope.inventoryScope === "BRANCH" && branchScope.selectedBranch
-      ? { branchId: branchScope.selectedBranch.id }
-      : {};
+  const productWhere: Prisma.ProductWhereInput = {};
 
   const [
     organization,
@@ -48,6 +48,11 @@ async function getOrganizationDashboardDataUncached(
     failedNotifications,
     auditLogCount,
     staffCount,
+    plansCount,
+    revenueRows30d,
+    attendanceRows7d,
+    memberSubscriptions30d,
+    planGroups,
   ] = await Promise.all([
     prisma.organization.findUniqueOrThrow({ where: { id: orgId } }),
     prisma.memberSubscription.count({ where: { orgId, status: "ACTIVE", ...branchWhere } }),
@@ -90,7 +95,53 @@ async function getOrganizationDashboardDataUncached(
     prisma.organizationRoleAssignment.count({
       where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },
     }),
+    prisma.membershipPlan.count({ where: { orgId } }),
+    prisma.payment.findMany({
+      where: {
+        orgId,
+        status: "SUCCEEDED",
+        createdAt: { gte: thirtyDayWindow.start, lt: thirtyDayWindow.end },
+        ...branchWhere,
+      },
+      select: { amountPaise: true, createdAt: true },
+    }),
+    prisma.attendanceRecord.findMany({
+      where: {
+        orgId,
+        checkedInAt: { gte: sevenDayWindow.start, lt: sevenDayWindow.end },
+        ...branchWhere,
+      },
+      select: { checkedInAt: true },
+    }),
+    prisma.memberSubscription.findMany({
+      where: {
+        orgId,
+        status: "ACTIVE",
+        OR: [
+          { startsAt: null },
+          { startsAt: { lt: thirtyDayWindow.end } },
+        ],
+        AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: thirtyDayWindow.start } }] }],
+        ...branchWhere,
+      },
+      select: { startsAt: true, endsAt: true, createdAt: true },
+    }),
+    prisma.memberSubscription.groupBy({
+      by: ["planId"],
+      where: { orgId, status: "ACTIVE", ...branchWhere },
+      _count: { _all: true },
+    }),
   ]);
+
+  const topPlanGroups = [...planGroups].sort((a, b) => b._count._all - a._count._all).slice(0, 6);
+  const planIds = topPlanGroups.map((group) => group.planId);
+  const planRows = planIds.length
+    ? await prisma.membershipPlan.findMany({
+        where: { id: { in: planIds }, orgId },
+        select: { id: true, name: true },
+      })
+    : [];
+  const planNameById = new Map(planRows.map((plan) => [plan.id, plan.name]));
 
   const lowStockProducts = lowStockProductsRaw
     .filter((product) => product.stock <= product.lowStockThreshold)
@@ -100,6 +151,16 @@ async function getOrganizationDashboardDataUncached(
     0,
     Math.ceil((organization.trialEndAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
   );
+
+  const charts = buildOrganizationDashboardCharts({
+    sevenDayWindow,
+    thirtyDayWindow,
+    revenueRows30d,
+    attendanceRows7d,
+    memberSubscriptions30d,
+    planGroups,
+    planNameById,
+  });
 
   return {
     organization: serializeOrganizationForReadModel(organization),
@@ -142,6 +203,7 @@ async function getOrganizationDashboardDataUncached(
     notifications,
     aiUsage,
     auditLogCount,
+    charts,
     summary: {
       activeMembers,
       joinRequests: joinRequests.length,
@@ -155,6 +217,7 @@ async function getOrganizationDashboardDataUncached(
       aiUsageThisMonth,
       trialDaysRemaining,
       staffCount,
+      plansCount,
     },
   };
 }

@@ -10,7 +10,6 @@ import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-desti
 import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
 import type { DashboardRoutePanelBaseProps } from "./dashboard/route-panels";
-import { prisma } from "@zook/db";
 
 type DashboardRouteProps = {
   section?: string[] | undefined;
@@ -35,25 +34,6 @@ export async function loadDashboardRouteProps({ section, searchParams }: Dashboa
   requireDashboardSectionPermission(session, section?.join("/") ?? "");
 
   const data = await getOrganizationDashboardShellData(session.activeOrgId, branchId);
-  const activeRoles = session.activeOrganization?.roles ?? [];
-  if (
-    activeRoles.some((role) => role === "OWNER" || role === "ADMIN") &&
-    section?.[0] !== "billing"
-  ) {
-    const subscription = await prisma.saaSSubscription.findUnique({
-      where: { orgId: session.activeOrgId },
-    });
-    const trialEndAt = subscription?.trialEndAt ?? data.orgs[0]?.trialEndAt;
-    const graceEndsAt = trialEndAt
-      ? new Date(new Date(trialEndAt).getTime() + 7 * 24 * 60 * 60 * 1000)
-      : null;
-    const paid =
-      subscription?.status === "ACTIVE" &&
-      (!subscription.nextRenewalAt || subscription.nextRenewalAt.getTime() >= Date.now());
-    if (!paid && graceEndsAt && graceEndsAt.getTime() < Date.now()) {
-      redirect("/dashboard/billing");
-    }
-  }
   return {
     section,
     data,
@@ -99,6 +79,7 @@ function getDashboardRoutePanelProps({
       contactPhone: activeOrg.contactPhone,
     },
     summary: data.summary,
+    charts: data.charts,
     branchScope: data.branchScope,
     auditLogCount: data.auditLogCount,
     initialJoinRequests: data.joinRequests,

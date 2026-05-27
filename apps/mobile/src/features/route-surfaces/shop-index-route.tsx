@@ -93,7 +93,7 @@ function checkoutUrl(url: string) {
 
 function checkoutUrlWithReturnUrl(url: string, sessionId: string) {
   const resolvedUrl = checkoutUrl(url);
-  const returnUrl = `zook://payments/return?session=${encodeURIComponent(sessionId)}`;
+  const returnUrl = `zook://payments/return?target=shop&session=${encodeURIComponent(sessionId)}`;
   try {
     const parsed = new URL(resolvedUrl);
     parsed.searchParams.set("return_url", returnUrl);

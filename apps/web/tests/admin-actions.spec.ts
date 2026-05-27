@@ -45,7 +45,7 @@ test.describe("branches, staff, settings, and billing actions", () => {
     );
     expect(archived.data.branch.active).toBe(false);
     await page.goto("/dashboard/branches");
-    await expect(page.getByText(/Branches|Branch network/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Branches|Branch network/i })).toBeVisible();
   });
 
   test("owner invites, changes, and removes staff with RBAC taking effect", async ({ page }) => {
