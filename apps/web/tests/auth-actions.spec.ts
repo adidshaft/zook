@@ -57,6 +57,7 @@ test.describe("auth actions", () => {
 
   test("wrong OTP stays on verification step and reports an inline error", async ({ page }) => {
     await page.goto("/login");
+    await page.getByTestId("login-method-email").click();
     await page.getByTestId("login-email").fill("member@zook.local");
     await page.getByTestId("login-send-code").click();
     await expect(page.getByTestId("login-otp")).toBeVisible();

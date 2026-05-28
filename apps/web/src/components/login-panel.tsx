@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
-import { ArrowRight, Mail } from "lucide-react";
+import { ArrowRight, Mail, Smartphone } from "lucide-react";
 import { ApiError, parseApiResponse } from "@zook/core";
 import type { AuthSessionSummary } from "@zook/core";
 import { toast } from "sonner";
@@ -56,6 +56,7 @@ const isDev = process.env.NODE_ENV === "development";
 const googleOAuthStateKey = "zook.googleOAuthState";
 const googleOAuthRedirectKey = "zook.googleOAuthRedirect";
 type LoginSession = Parameters<typeof resolvePostLoginDestination>[0];
+type LoginMethod = "phone" | "email";
 
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
@@ -87,6 +88,18 @@ function isValidEmail(value: string) {
   return /^\S+@\S+\.\S+$/.test(value.trim());
 }
 
+function isValidPhone(value: string) {
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  if (!digits) {
+    return false;
+  }
+  if (trimmed.startsWith("+")) {
+    return /^\+[1-9]\d{7,14}$/.test(`+${digits}`);
+  }
+  return digits.length === 10 || (digits.length === 12 && digits.startsWith("91"));
+}
+
 function randomOAuthValue() {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -114,7 +127,11 @@ export function LoginPanel({
     replacements: Record<string, string | number> = {},
   ) => publicT(locale, key, replacements);
   const initialIdentifier = searchParams.get("email") ?? "";
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>(
+    initialIdentifier.includes("@") ? "email" : "phone",
+  );
   const [email, setEmail] = useState(initialIdentifier.includes("@") ? initialIdentifier : "");
+  const [phone, setPhone] = useState(initialIdentifier && !initialIdentifier.includes("@") ? initialIdentifier : "");
   const [identifier, setIdentifier] = useState(
     initialIdentifier.includes("@") ? initialIdentifier : "",
   );
@@ -125,6 +142,7 @@ export function LoginPanel({
   const [hydrated, setHydrated] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const emailRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
   const otpRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState(
     searchParams.get("redirect") === "/platform" ? t("signInPlatform") : t("signInDefault"),
@@ -170,7 +188,11 @@ export function LoginPanel({
   useEffect(() => {
     if (stage === "identifier") {
       const timer = window.setTimeout(() => {
-        emailRef.current?.focus();
+        if (loginMethod === "email") {
+          emailRef.current?.focus();
+        } else {
+          phoneRef.current?.focus();
+        }
       }, 80);
       return () => window.clearTimeout(timer);
     }
@@ -178,7 +200,7 @@ export function LoginPanel({
       otpRef.current?.focus();
     }
     return undefined;
-  }, [stage]);
+  }, [loginMethod, stage]);
 
   useEffect(() => {
     if (resendCooldown <= 0) {
@@ -191,7 +213,7 @@ export function LoginPanel({
   }, [resendCooldown]);
 
   function selectedIdentifier() {
-    return email.trim().toLowerCase();
+    return loginMethod === "email" ? email.trim().toLowerCase() : phone.trim();
   }
 
   function redirectHrefForSession(session: LoginSession, redirect: string | null) {
@@ -212,8 +234,8 @@ export function LoginPanel({
     setSubmitting("request");
     try {
       const trimmedIdentifier = selectedIdentifier();
-      if (!isValidEmail(trimmedIdentifier)) {
-        setMessage(t("invalidEmail"));
+      if (loginMethod === "email" ? !isValidEmail(trimmedIdentifier) : !isValidPhone(trimmedIdentifier)) {
+        setMessage(loginMethod === "email" ? t("invalidEmail") : t("invalidPhone"));
         setSubmitting(null);
         return;
       }
@@ -401,7 +423,7 @@ export function LoginPanel({
         variants={itemVariants}
         className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-fill)] text-[var(--text-on-accent)]"
       >
-        <Mail size={22} />
+        {loginMethod === "email" ? <Mail size={22} /> : <Smartphone size={22} />}
       </motion.div>
       <motion.h1 variants={itemVariants} className="text-3xl font-semibold tracking-tight">
         {t("signInTitle")}
@@ -428,26 +450,74 @@ export function LoginPanel({
       >
         {stage === "identifier" ? (
           <>
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-1">
+              {(["phone", "email"] as const).map((method) => {
+                const active = method === loginMethod;
+                return (
+                  <button
+                    key={method}
+                    type="button"
+                    data-testid={`login-method-${method}`}
+                    aria-pressed={active}
+                    className={`zook-focus rounded-xl px-3 py-2 text-sm font-medium transition ${
+                      active
+                        ? "bg-[var(--accent-fill)] text-[var(--text-on-accent)]"
+                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    }`}
+                    disabled={!hydrated || submitting !== null}
+                    onClick={() => {
+                      setLoginMethod(method);
+                      setMessage(t("signInDefault"));
+                    }}
+                  >
+                    {method === "phone" ? t("mobileNumber") : t("emailAddress")}
+                  </button>
+                );
+              })}
+            </div>
             <div className="grid gap-2">
-              <label htmlFor="login-email" className="text-xs font-medium uppercase text-[var(--text-tertiary)]">
-                {t("emailAddress")}
+              <label
+                htmlFor={loginMethod === "email" ? "login-email" : "login-phone"}
+                className="text-xs font-medium uppercase text-[var(--text-tertiary)]"
+              >
+                {loginMethod === "email" ? t("emailAddress") : t("mobileNumber")}
               </label>
-              <input
-                id="login-email"
-                data-testid="login-email"
-                aria-label={t("emailAddress")}
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                ref={emailRef}
-                required
-                disabled={!hydrated || submitting !== null}
-                onChange={(event) => setEmail(event.target.value)}
-                className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
-              />
-              <p className="text-xs leading-5 text-[var(--text-tertiary)]">{t("emailHint")}</p>
+              {loginMethod === "email" ? (
+                <input
+                  id="login-email"
+                  data-testid="login-email"
+                  aria-label={t("emailAddress")}
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  ref={emailRef}
+                  required
+                  disabled={!hydrated || submitting !== null}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
+                />
+              ) : (
+                <input
+                  id="login-phone"
+                  data-testid="login-phone"
+                  aria-label={t("mobileNumber")}
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="+91 98765 43210"
+                  value={phone}
+                  ref={phoneRef}
+                  required
+                  disabled={!hydrated || submitting !== null}
+                  onChange={(event) => setPhone(event.target.value)}
+                  className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
+                />
+              )}
+              <p className="text-xs leading-5 text-[var(--text-tertiary)]">
+                {loginMethod === "email" ? t("emailHint") : t("mobileHint")}
+              </p>
             </div>
           </>
         ) : null}

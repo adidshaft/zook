@@ -32,6 +32,7 @@ import { useI18n } from "@/lib/i18n";
 import { legacyColors, spacing, typography } from "@/lib/theme";
 
 type BusyAction = "otp" | "apple" | "google" | null;
+type LoginMethod = "phone" | "email";
 
 const TERMS_URL = "https://zookfit.in/terms";
 const PRIVACY_URL = "https://zookfit.in/privacy";
@@ -107,15 +108,8 @@ function isValidPhoneIdentifier(value: string) {
   return digits.length === 10 || (digits.length === 12 && digits.startsWith("91"));
 }
 
-function isValidLoginIdentifier(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return false;
-  }
-  if (trimmed.includes("@")) {
-    return /^\S+@\S+\.\S+$/.test(trimmed);
-  }
-  return isValidPhoneIdentifier(trimmed);
+function isValidEmailIdentifier(value: string) {
+  return /^\S+@\S+\.\S+$/.test(value.trim());
 }
 
 async function configureGoogleSignIn() {
@@ -145,7 +139,9 @@ export default function Login() {
   const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
   const otpInputRef = useRef<OtpInputHandle>(null);
   const verifyingRef = useRef(false);
-  const [identifierValue, setIdentifierValue] = useState("");
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>("phone");
+  const [emailValue, setEmailValue] = useState("");
+  const [phoneValue, setPhoneValue] = useState("");
   const [identifierTouched, setIdentifierTouched] = useState(false);
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"identifier" | "otp">("identifier");
@@ -162,7 +158,13 @@ export default function Login() {
     if (!prefill) {
       return;
     }
-    setIdentifierValue(prefill.includes("@") ? prefill.trim().toLowerCase() : prefill.trim());
+    const nextMethod = prefill.includes("@") ? "email" : "phone";
+    setLoginMethod(nextMethod);
+    if (nextMethod === "email") {
+      setEmailValue(prefill.trim().toLowerCase());
+    } else {
+      setPhoneValue(prefill.trim());
+    }
     setIdentifierTouched(false);
   }, [params.prefill]);
 
@@ -210,14 +212,23 @@ export default function Login() {
   }
 
   function selectedIdentifier() {
-    const trimmed = identifierValue.trim();
+    const trimmed = (loginMethod === "email" ? emailValue : phoneValue).trim();
     return trimmed.includes("@") ? trimmed.toLowerCase() : trimmed;
   }
 
+  const identifierValue = loginMethod === "email" ? emailValue : phoneValue;
+  const identifierLabel =
+    loginMethod === "email" ? t("auth.emailLabel") : t("auth.mobileLabel");
+  const identifierPlaceholder =
+    loginMethod === "email" ? t("auth.emailPlaceholderLogin") : t("auth.mobilePlaceholder");
+  const identifierInvalidMessage =
+    loginMethod === "email" ? t("auth.invalidEmailOnly") : t("auth.invalidMobile");
   const identifierInvalid =
     identifierTouched &&
     identifierValue.trim().length > 0 &&
-    !isValidLoginIdentifier(identifierValue);
+    !(loginMethod === "email"
+      ? isValidEmailIdentifier(identifierValue)
+      : isValidPhoneIdentifier(identifierValue));
 
   function handleOtpError(error: unknown) {
     if (isAccountLockedError(error)) {
@@ -239,8 +250,12 @@ export default function Login() {
       return;
     }
     const identifier = selectedIdentifier();
-    if (!isValidLoginIdentifier(identifier)) {
-      setMessage(t("auth.invalidEmail"));
+    if (
+      loginMethod === "email"
+        ? !isValidEmailIdentifier(identifier)
+        : !isValidPhoneIdentifier(identifier)
+    ) {
+      setMessage(identifierInvalidMessage);
       return;
     }
     setBusyAction("otp");
@@ -406,23 +421,72 @@ export default function Login() {
             {stage === "identifier" ? (
               <>
                 <GlassInput
-                  testID="login-email"
-                  label={t("auth.identifierLabel")}
+                  testID={loginMethod === "email" ? "login-email" : "login-phone"}
+                  label={identifierLabel}
                   value={identifierValue}
                   onChangeText={(value) => {
-                    setIdentifierValue(value);
-                    if (message === t("auth.invalidEmail")) setMessage("");
+                    if (loginMethod === "email") {
+                      setEmailValue(value);
+                    } else {
+                      setPhoneValue(value);
+                    }
+                    if (
+                      message === t("auth.invalidEmail") ||
+                      message === t("auth.invalidEmailOnly") ||
+                      message === t("auth.invalidMobile")
+                    ) {
+                      setMessage("");
+                    }
                   }}
                   onBlur={() => setIdentifierTouched(true)}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  keyboardType="default"
+                  keyboardType={loginMethod === "email" ? "email-address" : "phone-pad"}
+                  textContentType={loginMethod === "email" ? "emailAddress" : "telephoneNumber"}
                   returnKeyType="next"
-                  placeholder={t("auth.identifierPlaceholder")}
+                  placeholder={identifierPlaceholder}
                   editable={!busy}
                 />
+                <View style={styles.methodTabs}>
+                  {(["phone", "email"] as const).map((method) => {
+                    const active = method === loginMethod;
+                    return (
+                      <Pressable
+                        key={method}
+                        testID={`login-method-${method}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          method === "phone" ? t("auth.useMobile") : t("auth.useEmail")
+                        }
+                        accessibilityState={{ selected: active }}
+                        disabled={busy}
+                        onPress={() => {
+                          setLoginMethod(method);
+                          setIdentifierTouched(false);
+                          if (
+                            message === t("auth.invalidEmail") ||
+                            message === t("auth.invalidEmailOnly") ||
+                            message === t("auth.invalidMobile")
+                          ) {
+                            setMessage("");
+                          }
+                        }}
+                        style={[styles.methodTab, active ? styles.methodTabActive : null]}
+                      >
+                        <Text
+                          style={[
+                            styles.methodTabText,
+                            active ? styles.methodTabTextActive : null,
+                          ]}
+                        >
+                          {method === "phone" ? t("auth.mobileLabel") : t("auth.emailLabel")}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
                 {identifierInvalid ? (
-                  <Text style={styles.inlineError}>{t("auth.invalidEmail")}</Text>
+                  <Text style={styles.inlineError}>{identifierInvalidMessage}</Text>
                 ) : null}
               </>
             ) : (
@@ -635,6 +699,32 @@ const styles = StyleSheet.create({
     marginTop: -spacing.sm,
     color: legacyColors.red,
     ...typography.caption,
+  },
+  methodTabs: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: -spacing.sm,
+  },
+  methodTab: {
+    flex: 1,
+    minHeight: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: legacyColors.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  methodTabActive: {
+    borderColor: "rgba(185,244,85,0.7)",
+    backgroundColor: "rgba(185,244,85,0.14)",
+  },
+  methodTabText: {
+    color: legacyColors.muted,
+    ...typography.button,
+  },
+  methodTabTextActive: {
+    color: legacyColors.lime,
   },
   otpActions: {
     flexDirection: "row",
