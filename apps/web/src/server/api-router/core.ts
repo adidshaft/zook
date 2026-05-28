@@ -12233,6 +12233,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         branchId: branch.id,
         userId,
         dateKey,
+        status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
       },
       orderBy: { checkedInAt: "desc" },
     });
@@ -12377,6 +12378,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
             branchId: decoded.branchId,
             userId,
             dateKey: operationalDateKey(now),
+            status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
           },
           orderBy: { checkedInAt: "desc" },
         }),
@@ -12413,13 +12415,6 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       action: "attendance check-in",
     });
     const hasProfilePhoto = Boolean(memberProfile?.profilePhotoUrl || scanUser?.profilePhotoUrl);
-    if (!hasProfilePhoto) {
-      return fail(
-        "PROFILE_PHOTO_REQUIRED",
-        "Add a profile photo before check-in so the desk can verify you.",
-        400,
-      );
-    }
     if (!plan) return fail("PLAN_NOT_FOUND", "Plan not found", 400);
     const validation = validateAttendanceScan({
       subscription: clean({
@@ -12773,6 +12768,23 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     const branchId = await assertBranchAccessForContext(ctx, orgId, body.branchId);
     const branch = await resolveOrgBranch(orgId, branchId);
     const memberUser = await prisma.user.findUniqueOrThrow({ where: { id: body.memberUserId } });
+    const existing = await prisma.attendanceRecord.findFirst({
+      where: {
+        orgId,
+        branchId: branch.id,
+        userId: body.memberUserId,
+        dateKey: operationalDateKey(),
+        status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
+      },
+      orderBy: { checkedInAt: "desc" },
+    });
+    if (existing) {
+      return fail(
+        "ALREADY_CHECKED_IN",
+        "Already checked in. Check out before checking in again.",
+        409,
+      );
+    }
     assertMinorConsentGranted({
       isMinor: memberUser.isMinor,
       guardianPending: memberUser.guardianPending,
