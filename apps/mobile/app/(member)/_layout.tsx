@@ -1,13 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { View, Pressable, Text, StyleSheet, Platform } from "react-native";
+import { View, Pressable, Text, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useMyNotifications } from "@/lib/domains/notifications";
 import { useTheme } from "@/lib/theme/index";
 
 export default function MemberLayout() {
-  const { palette } = useTheme();
   const notificationsQuery = useMyNotifications();
   const unread =
     notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt).length ??
@@ -29,13 +28,14 @@ export default function MemberLayout() {
       <Tabs.Screen
         name="plan"
         options={{
-          title: "Tracking",
+          title: "Plan",
         }}
       />
       <Tabs.Screen
         name="diet"
         options={{
           title: "Diet",
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -61,7 +61,7 @@ export default function MemberLayout() {
 }
 
 function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
-  const { palette, mode } = useTheme();
+  const { palette } = useTheme();
   const insets = useSafeAreaInsets();
   const backdropHeight = 100 + insets.bottom;
 
@@ -110,125 +110,125 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
           },
         ]}
       >
-      {state.routes.map((route: any, index: number) => {
-        const { options } = descriptors[route.key];
-        const label =
-          options.tabBarLabel !== undefined
-            ? options.tabBarLabel
-            : options.title !== undefined
-            ? options.title
-            : route.name;
+        {state.routes
+          .filter((route: any) => descriptors[route.key]?.options?.href !== null)
+          .map((route: any) => {
+            const { options } = descriptors[route.key];
+            const label =
+              options.tabBarLabel !== undefined
+                ? options.tabBarLabel
+                : options.title !== undefined
+                  ? options.title
+                  : route.name;
 
-        const isFocused = state.index === index;
+            const isFocused = state.routes[state.index]?.key === route.key;
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
+            const onPress = () => {
+              const event = navigation.emit({
+                type: "tabPress",
+                target: route.key,
+                canPreventDefault: true,
+              });
 
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
+            };
 
-        const onLongPress = () => {
-          navigation.emit({
-            type: "tabLongPress",
-            target: route.key,
-          });
-        };
+            const onLongPress = () => {
+              navigation.emit({
+                type: "tabLongPress",
+                target: route.key,
+              });
+            };
 
-        // Render Special Center Button for Scan
-        if (route.name === "scan") {
-          return (
-            <View key={route.key} style={styles.scanButtonContainer}>
+            // Render Special Center Button for Scan
+            if (route.name === "scan") {
+              return (
+                <View key={route.key} style={styles.scanButtonContainer}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={isFocused ? { selected: true } : {}}
+                    onPress={onPress}
+                    onLongPress={onLongPress}
+                    style={[
+                      styles.scanButton,
+                      {
+                        backgroundColor: "#B9F455", // High-contrast raw lime green
+                        borderColor: palette.bg.app, // Match the page background for outline effect
+                      },
+                    ]}
+                  >
+                    <Ionicons name="qr-code" size={26} color="#000000" />
+                  </Pressable>
+                  <Text
+                    style={[
+                      styles.scanLabel,
+                      {
+                        color: isFocused ? palette.accent.base : palette.text.tertiary,
+                      },
+                    ]}
+                  >
+                    {label as string}
+                  </Text>
+                </View>
+              );
+            }
+
+            // Get matching icon based on route name
+            let iconName: keyof typeof Ionicons.glyphMap = "home-outline";
+            if (route.name === "index") {
+              iconName = isFocused ? "home" : "home-outline";
+            } else if (route.name === "plan") {
+              iconName = isFocused ? "barbell" : "barbell-outline";
+            } else if (route.name === "shop") {
+              iconName = isFocused ? "bag" : "bag-outline";
+            } else if (route.name === "you") {
+              iconName = isFocused ? "person" : "person-outline";
+            }
+
+            return (
               <Pressable
+                key={route.key}
                 accessibilityRole="button"
                 accessibilityState={isFocused ? { selected: true } : {}}
                 onPress={onPress}
                 onLongPress={onLongPress}
-                style={[
-                  styles.scanButton,
-                  {
-                    backgroundColor: "#B9F455", // High-contrast raw lime green
-                    borderColor: palette.bg.app, // Match the page background for outline effect
-                  },
-                ]}
+                style={styles.tabItem}
               >
-                <Ionicons name="qr-code" size={26} color="#000000" />
-              </Pressable>
-              <Text
-                style={[
-                  styles.scanLabel,
-                  {
-                    color: isFocused ? palette.accent.base : palette.text.tertiary,
-                  },
-                ]}
-              >
-                {label as string}
-              </Text>
-            </View>
-          );
-        }
-
-        // Get matching icon based on route name
-        let iconName: keyof typeof Ionicons.glyphMap = "home-outline";
-        if (route.name === "index") {
-          iconName = isFocused ? "home" : "home-outline";
-        } else if (route.name === "plan") {
-          iconName = isFocused ? "barbell" : "barbell-outline";
-        } else if (route.name === "diet") {
-          iconName = isFocused ? "nutrition" : "nutrition-outline";
-        } else if (route.name === "shop") {
-          iconName = isFocused ? "bag" : "bag-outline";
-        } else if (route.name === "you") {
-          iconName = isFocused ? "person" : "person-outline";
-        }
-
-        return (
-          <Pressable
-            key={route.key}
-            accessibilityRole="button"
-            accessibilityState={isFocused ? { selected: true } : {}}
-            onPress={onPress}
-            onLongPress={onLongPress}
-            style={styles.tabItem}
-          >
-            <View
-              style={[
-                styles.tabItemWrapper,
-                isFocused && {
-                  backgroundColor: palette.surface.accentSoft,
-                },
-              ]}
-            >
-              {route.name === "you" && unread > 0 ? (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unread}</Text>
+                <View
+                  style={[
+                    styles.tabItemWrapper,
+                    isFocused && {
+                      backgroundColor: palette.surface.accentSoft,
+                    },
+                  ]}
+                >
+                  {route.name === "you" && unread > 0 ? (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{unread}</Text>
+                    </View>
+                  ) : null}
+                  <Ionicons
+                    name={iconName}
+                    size={22}
+                    color={isFocused ? palette.accent.base : palette.text.tertiary}
+                  />
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      {
+                        color: isFocused ? palette.accent.base : palette.text.tertiary,
+                      },
+                    ]}
+                  >
+                    {label as string}
+                  </Text>
                 </View>
-              ) : null}
-              <Ionicons
-                name={iconName}
-                size={22}
-                color={isFocused ? palette.accent.base : palette.text.tertiary}
-              />
-              <Text
-                style={[
-                  styles.tabLabel,
-                  {
-                    color: isFocused ? palette.accent.base : palette.text.tertiary,
-                  },
-                ]}
-              >
-                {label as string}
-              </Text>
-            </View>
-          </Pressable>
-        );
-      })}
-    </View>
+              </Pressable>
+            );
+          })}
+      </View>
     </>
   );
 }

@@ -13,11 +13,13 @@ import {
   ProgressBar,
   QueryErrorState,
   SectionHeader,
+  StatusChip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { PlansSkeleton } from "@/components/skeletons";
 import { useMyPlans, useMyTrackingWorkouts, type MyPlanRecord } from "@/lib/domains";
+import { useMyDiet } from "@/lib/domains/tracking/queries";
 import { legacyColors, layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type WorkoutRecord = {
@@ -40,17 +42,21 @@ export default function MemberPlanScreen() {
   const router = useRouter();
   const plansQuery = useMyPlans();
   const workoutsQuery = useMyTrackingWorkouts();
+  const dietQuery = useMyDiet();
   const [refreshing, setRefreshing] = useState(false);
   const plans = plansQuery.data?.plans ?? [];
   const workoutPlans = plans.filter((assignment) => planKind(assignment).includes("workout"));
   const todayPlan = workoutPlans[0] ?? plans[0] ?? null;
   const recentWorkouts = (workoutsQuery.data?.workouts ?? []) as WorkoutRecord[];
+  const dietPlan = dietQuery.data?.plan ?? null;
+  const dietLogs = dietQuery.data?.logs ?? [];
+  const loggedCalories = dietLogs.reduce((total, log) => total + (log.calories ?? 0), 0);
   const { palette } = useTheme();
 
   async function onRefresh() {
     setRefreshing(true);
     try {
-      await Promise.all([plansQuery.refetch(), workoutsQuery.refetch()]);
+      await Promise.all([plansQuery.refetch(), workoutsQuery.refetch(), dietQuery.refetch()]);
     } finally {
       setRefreshing(false);
     }
@@ -142,6 +148,31 @@ export default function MemberPlanScreen() {
             ) : null}
           </View>
 
+          <SectionHeader title="Diet plan" subtitle="Meals now live inside Plan." />
+          <Pressable
+            testID="plan-open-diet"
+            onPress={() => router.push("/diet" as never)}
+            accessibilityRole="button"
+          >
+            <GlassCard variant="compact">
+              <ListRow
+                title={dietPlan?.title ?? "Meal logging"}
+                subtitle={
+                  dietPlan
+                    ? `${loggedCalories} / ${dietPlan.calorieTarget ?? "-"} kcal today`
+                    : "Open meal logging and trainer-published diet details"
+                }
+                leading={<IconBubble icon="nutrition-outline" tone="blue" />}
+                trailing={
+                  <View style={styles.dietTrailing}>
+                    <StatusChip status={dietPlan ? "Active" : "Open"} tone={dietPlan ? "lime" : "neutral"} />
+                    <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
+                  </View>
+                }
+              />
+            </GlassCard>
+          </Pressable>
+
           <SectionHeader title="Browse all plans" />
           <View style={styles.planGrid}>
             {plans.map((assignment) => (
@@ -187,4 +218,5 @@ const styles = StyleSheet.create({
   },
   planTileTitle: { color: legacyColors.text, ...typography.cardTitle },
   planTileMeta: { color: legacyColors.muted, ...typography.caption },
+  dietTrailing: { alignItems: "center", flexDirection: "row", gap: 8 },
 });
