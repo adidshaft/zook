@@ -350,7 +350,7 @@ describe("attendance", () => {
     ).toThrow("expired");
   });
 
-  it("allows repeat same-day attendance without a duplicate exception", () => {
+  it("blocks repeat same-day attendance until checkout", () => {
     const scan = validateAttendanceScan({
       subscription: activeSubscription,
       plan: durationPlan,
@@ -359,15 +359,13 @@ describe("attendance", () => {
       alreadyCheckedInToday: true,
       now,
     });
-    expect(scan.allowed).toBe(true);
+    expect(scan.allowed).toBe(false);
+    expect(scan.reason).toBe("already_checked_in");
     expect(scan.suspiciousFlags).not.toContain("duplicate_same_day");
-    expect(
-      decideAttendanceStatus({ mode: "EXCEPTION_APPROVAL", suspiciousFlags: scan.suspiciousFlags }),
-    ).toBe("APPROVED");
     expect(decideAttendanceStatus({ mode: "AUTOMATIC", suspiciousFlags: [] })).toBe("APPROVED");
   });
 
-  it("allows a same-day repeat scan after a visit pack was consumed once", () => {
+  it("blocks a same-day repeat scan after a visit pack was consumed once", () => {
     const scan = validateAttendanceScan({
       subscription: { ...activeSubscription, planId: hybridPlan.id, remainingVisits: 0 },
       plan: hybridPlan,
@@ -376,7 +374,11 @@ describe("attendance", () => {
       alreadyCheckedInToday: true,
       now,
     });
-    expect(scan).toMatchObject({ allowed: true, suspiciousFlags: [] });
+    expect(scan).toMatchObject({
+      allowed: false,
+      reason: "already_checked_in",
+      suspiciousFlags: [],
+    });
   });
 
   it("requires a manual override reason", () => {

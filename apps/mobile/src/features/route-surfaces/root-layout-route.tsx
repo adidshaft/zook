@@ -30,7 +30,7 @@ import { PrivilegedPinProvider } from "@/components/privileged-pin-modal";
 import { checkRouteAccess, routeForRole } from "@/lib/route-guards";
 import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { memberDashboardQueryOptions } from "@/lib/domains";
+import { memberHomeQueryOptions } from "@/lib/domains";
 import { legacyColors } from "@/lib/theme";
 import { ThemeProvider, useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
@@ -243,7 +243,7 @@ function LayoutContent() {
     if (status !== "authenticated" || !token) {
       return;
     }
-    void queryClient.prefetchQuery(memberDashboardQueryOptions({ activeOrgId, token }));
+    void queryClient.prefetchQuery(memberHomeQueryOptions({ activeOrgId, token }));
   }, [activeOrgId, queryClient, status, token]);
 
   useEffect(() => {

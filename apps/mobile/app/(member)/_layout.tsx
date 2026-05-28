@@ -64,6 +64,11 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
   const { palette } = useTheme();
   const insets = useSafeAreaInsets();
   const backdropHeight = 100 + insets.bottom;
+  const focusedRouteName = state.routes[state.index]?.name;
+  const visibleRoutes = state.routes.filter((route: any) => {
+    const options = descriptors[route.key]?.options;
+    return route.name !== "diet" && options?.href !== null;
+  });
 
   return (
     <>
@@ -110,9 +115,7 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
           },
         ]}
       >
-        {state.routes
-          .filter((route: any) => descriptors[route.key]?.options?.href !== null)
-          .map((route: any) => {
+        {visibleRoutes.map((route: any) => {
             const { options } = descriptors[route.key];
             const label =
               options.tabBarLabel !== undefined
@@ -121,7 +124,7 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
                   ? options.title
                   : route.name;
 
-            const isFocused = state.routes[state.index]?.key === route.key;
+            const isFocused = focusedRouteName === route.name || (focusedRouteName === "diet" && route.name === "plan");
 
             const onPress = () => {
               const event = navigation.emit({

@@ -16,6 +16,8 @@ export function useDashboardSummary(orgId?: string, branchId?: string) {
       return webApiFetch(`/api/orgs/${orgId}/dashboard${query ? `?${query}` : ""}`);
     },
     enabled: Boolean(orgId),
-    staleTime: 30_000,
+    staleTime: 8_000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: true,
   });
 }

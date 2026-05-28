@@ -99,11 +99,14 @@ function AnimatedLaser() {
   return (
     <Animated.View
       style={[
-        styles.scanLine,
-        { backgroundColor: palette.accent.base, shadowColor: palette.accent.base },
+        styles.scanLineRail,
+        { shadowColor: palette.accent.base },
         animatedStyle,
       ]}
-    />
+    >
+      <View style={[styles.scanLineGlow, { backgroundColor: palette.accent.base }]} />
+      <View style={[styles.scanLineCore, { backgroundColor: palette.accent.base }]} />
+    </Animated.View>
   );
 }
 
@@ -912,16 +915,29 @@ const styles = StyleSheet.create({
     color: legacyColors.text,
     ...typography.caption,
   },
-  scanLine: {
+  scanLineRail: {
     width: 238,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: legacyColors.lime,
-    opacity: 0.72,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: legacyColors.lime,
-    shadowOpacity: 0.32,
-    shadowRadius: 12,
+    shadowOpacity: 0.9,
+    shadowRadius: 18,
     shadowOffset: { width: 0, height: 0 },
+  },
+  scanLineGlow: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 14,
+    borderRadius: 999,
+    opacity: 0.24,
+  },
+  scanLineCore: {
+    width: "100%",
+    height: 3,
+    borderRadius: 999,
+    opacity: 0.96,
   },
   helpContent: {
     minHeight: 74,
