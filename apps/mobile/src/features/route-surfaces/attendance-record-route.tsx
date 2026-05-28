@@ -26,6 +26,9 @@ import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 type AttendanceRecord = {
   id: string;
   checkedInAt?: string | null;
+  checkedOutAt?: string | null;
+  checkoutReason?: string | null;
+  durationSeconds?: number | null;
   status?: string | null;
   entryCode?: string | null;
   branchName?: string | null;
@@ -43,6 +46,18 @@ function formatTime(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "--:--";
   return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+function formatDuration(totalSeconds?: number | null) {
+  if (typeof totalSeconds !== "number" || totalSeconds < 0) {
+    return "In progress";
+  }
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${Math.max(minutes, 1)}m`;
 }
 
 function titleCaseStatus(status?: string | null) {
@@ -72,10 +87,7 @@ export default function AttendanceResultScreen() {
         token,
         attendanceRecordId: attendanceRecordId!,
       }),
-    enabled:
-      status === "authenticated" &&
-      Boolean(token) &&
-      Boolean(attendanceRecordId),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(attendanceRecordId),
     retry: false,
   });
   const { refetch: refetchAttendance } = attendanceQuery;
@@ -158,6 +170,7 @@ export default function AttendanceResultScreen() {
   const pending = record.status === "PENDING_APPROVAL";
   const blocked = record.status === "REJECTED" || record.status === "FLAGGED";
   const approved = !pending && !blocked;
+  const checkedOut = Boolean(record.checkedOutAt);
   const tone = pending ? "amber" : approved ? "lime" : "red";
   const code = record.entryCode?.trim() || null;
   const branchName =
@@ -200,14 +213,22 @@ export default function AttendanceResultScreen() {
               progress={pending ? 0.52 : 0.86}
             />
             <Text style={styles.heroTitle}>
-              {pending ? "Waiting for desk approval" : blocked ? "Desk help needed" : "Checked in"}
+              {pending
+                ? "Waiting for desk approval"
+                : blocked
+                  ? "Desk help needed"
+                  : checkedOut
+                    ? "Checked out"
+                    : "Checked in"}
             </Text>
             <Text style={styles.heroBody}>
               {pending
                 ? "Your check-in was received. Show this code at the front desk."
                 : blocked
                   ? (record.reason ?? "Please ask the front desk to review this check-in.")
-                  : (record.reason ?? "Entry approved for your gym")}
+                  : checkedOut
+                    ? "Your gym time was recorded."
+                    : (record.reason ?? "Entry approved for your gym")}
             </Text>
           </View>
 
@@ -311,9 +332,19 @@ export default function AttendanceResultScreen() {
                 </View>
                 <View style={styles.divider} />
                 <DetailLine
-                  label="Time"
+                  label="Check-in"
                   value={formatTime(record.checkedInAt)}
                   icon="time-outline"
+                />
+                <DetailLine
+                  label="Check-out"
+                  value={record.checkedOutAt ? formatTime(record.checkedOutAt) : "In progress"}
+                  icon="stop-circle-outline"
+                />
+                <DetailLine
+                  label="Duration"
+                  value={formatDuration(record.durationSeconds)}
+                  icon="timer-outline"
                 />
                 <DetailLine label="Branch" value={branchName} icon="shield-checkmark-outline" />
                 <DetailLine label="Plan" value={planName} icon="reader-outline" />

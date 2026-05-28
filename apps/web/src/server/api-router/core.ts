@@ -1549,6 +1549,32 @@ function attendanceWithEntryCode<T extends { id: string }>(record: T) {
   return { ...record, entryCode: entryCodeForAttendanceId(record.id) };
 }
 
+const attendanceCheckoutSchema = z.object({
+  reason: z.enum(["manual", "geofence", "qr_scan"]).default("manual"),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+});
+
+function attendanceDurationSeconds(checkedInAt: Date, checkedOutAt: Date) {
+  return Math.max(0, Math.floor((checkedOutAt.getTime() - checkedInAt.getTime()) / 1000));
+}
+
+async function closeAttendanceSession<
+  T extends { id: string; checkedInAt: Date; checkedOutAt?: Date | null },
+>(record: T, reason: "manual" | "geofence" | "qr_scan", now = new Date()) {
+  if (record.checkedOutAt) {
+    return record;
+  }
+  return prisma.attendanceRecord.update({
+    where: { id: record.id },
+    data: {
+      checkedOutAt: now,
+      checkoutReason: reason,
+      durationSeconds: attendanceDurationSeconds(record.checkedInAt, now),
+    },
+  });
+}
+
 function addDaysToDate(date: Date, days: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
@@ -6537,6 +6563,41 @@ export async function handleMeData(request: NextRequest, path: string[]) {
       return [updatedUser, updatedProfile] as const;
     });
     return ok({ user: serializeUserForClient(user), profile, file: asset });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "attendance", /.+/, "checkout"])) {
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const { id } = attendanceDetailParamsSchema.parse({ id: path[2] });
+    const body = attendanceCheckoutSchema.parse(await readJson(request));
+    const record = await prisma.attendanceRecord.findFirst({
+      where: { id, userId },
+    });
+    if (!record) {
+      throw notFoundError("Attendance record not found");
+    }
+    if (record.status === "REJECTED") {
+      throw conflictError("Rejected attendance records cannot be checked out.");
+    }
+    const checkedOutRecord = await closeAttendanceSession(record, body.reason);
+    await writeAuditLog({
+      request,
+      orgId: record.orgId,
+      actorUserId: userId,
+      action: "attendance.checked_out",
+      entityType: "AttendanceRecord",
+      entityId: record.id,
+      metadata: clean({
+        reason: body.reason,
+        latitude: body.latitude,
+        longitude: body.longitude,
+      }),
+    });
+    const [attendance] = await enrichAttendanceRecords([checkedOutRecord]);
+    return ok({
+      attendance,
+      action: record.checkedOutAt ? "already_checked_out" : "checkout",
+      checkedOut: true,
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "attendance", /.+/])) {
     const userId = requireAuth(await getRequestContext(request));
@@ -12227,22 +12288,44 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     }
     const branch = await resolveOrgBranch(orgId);
     const dateKey = operationalDateKey();
-    const existing = await prisma.attendanceRecord.findFirst({
+    const openSession = await prisma.attendanceRecord.findFirst({
       where: {
         orgId,
         branchId: branch.id,
         userId,
-        dateKey,
+        checkedOutAt: null,
         status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
       },
       orderBy: { checkedInAt: "desc" },
     });
-    if (existing) {
-      return fail(
-        "ALREADY_CHECKED_IN",
-        "Already checked in. Check out before checking in again.",
-        409,
-      );
+    if (openSession) {
+      const checkedOutRecord = await closeAttendanceSession(openSession, "qr_scan");
+      await writeAuditLog({
+        request,
+        orgId,
+        actorUserId: userId,
+        action: "attendance.dev_checkout",
+        entityType: "AttendanceRecord",
+        entityId: checkedOutRecord.id,
+        metadata: { source: "local_dev_scan" },
+      });
+      return ok({
+        attendance: {
+          ...attendanceWithEntryCode(checkedOutRecord),
+          checkedInAt: checkedOutRecord.checkedInAt,
+          checkedOutAt: checkedOutRecord.checkedOutAt,
+          durationSeconds: checkedOutRecord.durationSeconds,
+          checkoutReason: checkedOutRecord.checkoutReason,
+          branchName: branch.name,
+          planName: "Test check-in",
+        },
+        status: checkedOutRecord.status,
+        action: "checkout",
+        checkedOut: true,
+        duplicate: false,
+        suspiciousFlags: [],
+        newBadges: [],
+      });
     }
     const record = await prisma.attendanceRecord.create({
       data: {
@@ -12273,7 +12356,8 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         planName: "Test check-in",
       },
       status: record.status,
-      duplicate: Boolean(existing),
+      action: "checkin",
+      duplicate: false,
       suspiciousFlags: [],
       newBadges,
     });
@@ -12365,49 +12449,110 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         "This QR code has expired due to scan volume. Ask reception to refresh it.",
       );
     }
-    const [org, memberProfile, scanUser, subscription, expiredSubscription, recentCheckIn, branch] =
-      await Promise.all([
-        prisma.organization.findUnique({ where: { id: decoded.orgId } }),
-        prisma.memberProfile.findUnique({
-          where: { orgId_userId: { orgId: decoded.orgId, userId } },
-        }),
-        prisma.user.findUnique({ where: { id: userId } }),
-        prisma.memberSubscription.findFirst({
-          where: { orgId: decoded.orgId, memberUserId: userId, status: "ACTIVE" },
-          orderBy: { createdAt: "desc" },
-        }),
-        prisma.memberSubscription.findFirst({
-          where: { orgId: decoded.orgId, memberUserId: userId, status: "EXPIRED" },
-          orderBy: { createdAt: "desc" },
-        }),
-        prisma.attendanceRecord.findFirst({
-          where: {
-            orgId: decoded.orgId,
-            branchId: decoded.branchId,
-            userId,
-            dateKey: operationalDateKey(now),
-            status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
-          },
-          orderBy: { checkedInAt: "desc" },
-        }),
-        prisma.branch.findUnique({
-          where: { id: decoded.branchId },
-          select: { id: true, name: true, operatingHours: true },
-        }),
-      ]);
+    const [
+      org,
+      memberProfile,
+      scanUser,
+      subscription,
+      expiredSubscription,
+      openCheckIn,
+      todayCheckIn,
+      branch,
+    ] = await Promise.all([
+      prisma.organization.findUnique({ where: { id: decoded.orgId } }),
+      prisma.memberProfile.findUnique({
+        where: { orgId_userId: { orgId: decoded.orgId, userId } },
+      }),
+      prisma.user.findUnique({ where: { id: userId } }),
+      prisma.memberSubscription.findFirst({
+        where: { orgId: decoded.orgId, memberUserId: userId, status: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.memberSubscription.findFirst({
+        where: { orgId: decoded.orgId, memberUserId: userId, status: "EXPIRED" },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.attendanceRecord.findFirst({
+        where: {
+          orgId: decoded.orgId,
+          userId,
+          checkedOutAt: null,
+          status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
+        },
+        orderBy: { checkedInAt: "desc" },
+      }),
+      prisma.attendanceRecord.findFirst({
+        where: {
+          orgId: decoded.orgId,
+          userId,
+          dateKey: operationalDateKey(now),
+          status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
+        },
+        select: { id: true },
+        orderBy: { checkedInAt: "desc" },
+      }),
+      prisma.branch.findUnique({
+        where: { id: decoded.branchId },
+        select: { id: true, name: true, operatingHours: true },
+      }),
+    ]);
     const plan = subscription
       ? await prisma.membershipPlan.findUnique({
           where: { id: subscription.planId },
         })
       : null;
-    if (!org || !subscription) {
+    if (!org) {
+      return fail("GYM_NOT_FOUND", "Gym not found", 404);
+    }
+    if (!branch) {
+      return fail("BRANCH_NOT_FOUND", "Branch not found", 404);
+    }
+    if (openCheckIn) {
+      if (openCheckIn.branchId !== decoded.branchId) {
+        const activeBranch = await prisma.branch.findUnique({
+          where: { id: openCheckIn.branchId },
+          select: { name: true },
+        });
+        return fail(
+          "CHECKOUT_BRANCH_MISMATCH",
+          `You are checked in at ${activeBranch?.name ?? "another branch"}. Scan that branch QR or stop the session from Home.`,
+          409,
+        );
+      }
+      const checkedOutRecord = await closeAttendanceSession(openCheckIn, "qr_scan", now);
+      await writeAuditLog({
+        request,
+        orgId: decoded.orgId,
+        actorUserId: userId,
+        action: "attendance.qr_checkout",
+        entityType: "AttendanceRecord",
+        entityId: checkedOutRecord.id,
+        metadata: { branchId: decoded.branchId, qrTokenId: decoded.nonce },
+      });
+      return ok({
+        attendance: {
+          ...attendanceWithEntryCode(checkedOutRecord),
+          checkedInAt: checkedOutRecord.checkedInAt,
+          checkedOutAt: checkedOutRecord.checkedOutAt,
+          durationSeconds: checkedOutRecord.durationSeconds,
+          checkoutReason: checkedOutRecord.checkoutReason,
+          branchName: branch.name,
+          planName: plan?.name ?? null,
+        },
+        status: checkedOutRecord.status,
+        action: "checkout",
+        checkedOut: true,
+        duplicate: false,
+        suspiciousFlags: [],
+        warnings: [],
+        newBadges: [],
+      });
+    }
+    if (!subscription) {
       if (expiredSubscription) {
         return fail("MEMBERSHIP_EXPIRED", "Membership expired. Renew before checking in.", 400);
       }
       return fail("NO_ACTIVE_MEMBERSHIP", "No active membership", 400);
-    }
-    if (!branch) {
-      return fail("BRANCH_NOT_FOUND", "Branch not found", 404);
     }
     const branchHours = evaluateOperatingHours({ operatingHours: branch.operatingHours, now });
     if (!branchHours.open) {
@@ -12439,7 +12584,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       plan: toMembershipPlanInput(plan),
       orgStatus: org.status,
       hasProfilePhoto,
-      alreadyCheckedInToday: Boolean(recentCheckIn),
+      alreadyCheckedInToday: false,
       wrongBranch: false,
       multiEntryConsumes: org.multiEntryConsumes,
       now,
@@ -12480,7 +12625,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
               subscription,
               plan,
               recordId: record.id,
-              alreadyCheckedInToday: Boolean(recentCheckIn),
+              alreadyCheckedInToday: Boolean(todayCheckIn),
               multiEntryConsumes: org.multiEntryConsumes,
             });
             return awardEngagementBadges({ orgId: decoded.orgId, userId });
@@ -12494,7 +12639,8 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         planName: plan.name,
       },
       status,
-      duplicate: Boolean(recentCheckIn),
+      action: "checkin",
+      duplicate: false,
       suspiciousFlags: validation.suspiciousFlags,
       warnings: validation.warnings,
       newBadges,
@@ -12781,7 +12927,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         orgId,
         branchId: branch.id,
         userId: body.memberUserId,
-        dateKey: operationalDateKey(),
+        checkedOutAt: null,
         status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
       },
       orderBy: { checkedInAt: "desc" },

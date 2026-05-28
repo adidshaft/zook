@@ -1745,6 +1745,9 @@ model AttendanceRecord {
   dateKey         String
   checkedInAt     DateTime         @default(now())
   approvedById    String?
+  checkedOutAt    DateTime?
+  checkoutReason  String?
+  durationSeconds Int?
   approvedAt      DateTime?
   rejectedById    String?
   rejectedAt      DateTime?
@@ -1758,6 +1761,7 @@ model AttendanceRecord {
   @@index([orgId, status, checkedInAt])
   @@index([orgId, status, branchId, createdAt])
   @@index([userId, checkedInAt])
+  @@index([orgId, branchId, userId, checkedOutAt])
 }
 
 model AttendanceOverride {

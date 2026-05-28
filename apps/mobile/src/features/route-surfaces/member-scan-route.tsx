@@ -52,12 +52,17 @@ type ScanResult = {
     id: string;
     status?: string | null;
     checkedInAt?: string | null;
+    checkedOutAt?: string | null;
+    checkoutReason?: string | null;
+    durationSeconds?: number | null;
     branchName?: string | null;
     planName?: string | null;
     entryCode?: string | null;
     reason?: string | null;
   };
   status?: string | null;
+  action?: "checkin" | "checkout" | "already_checked_out" | string | null;
+  checkedOut?: boolean;
   duplicate?: boolean;
   suspiciousFlags?: unknown;
   warnings?: unknown;
@@ -95,16 +100,11 @@ function AnimatedLaser() {
       RNAnimated.sequence([
         RNAnimated.timing(translateY, {
           toValue: 1,
-          duration: 1200,
-          easing: RNEasing.inOut(RNEasing.quad),
+          duration: 1700,
+          easing: RNEasing.linear,
           useNativeDriver: true,
         }),
-        RNAnimated.timing(translateY, {
-          toValue: 0,
-          duration: 1200,
-          easing: RNEasing.inOut(RNEasing.quad),
-          useNativeDriver: true,
-        }),
+        RNAnimated.timing(translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
       ]),
     );
     animation.start();
@@ -116,7 +116,7 @@ function AnimatedLaser() {
       {
         translateY: translateY.interpolate({
           inputRange: [0, 1],
-          outputRange: [-118, 118],
+          outputRange: [-128, 128],
         }),
       },
     ],
@@ -281,9 +281,13 @@ export default function Scan() {
     const recentAttendance: MemberHomeData["recentAttendance"][number] = {
       id: result.attendance.id,
       checkedInAt: result.attendance.checkedInAt,
+      checkedOutAt: result.attendance.checkedOutAt,
+      checkoutReason: result.attendance.checkoutReason,
+      durationSeconds: result.attendance.durationSeconds,
       status,
       source: "MOBILE",
     };
+    const checkedOut = result.checkedOut || result.action === "checkout";
     const mergeHome = (home?: MemberHomeData) => {
       if (!home) {
         return home;
@@ -293,6 +297,20 @@ export default function Scan() {
       );
       return {
         ...home,
+        activeCheckIn: checkedOut
+          ? home.activeCheckIn?.id === recentAttendance.id
+            ? null
+            : home.activeCheckIn
+          : {
+              id: result.attendance.id,
+              checkedInAt: result.attendance.checkedInAt ?? recentAttendance.checkedInAt,
+              checkedOutAt: result.attendance.checkedOutAt,
+              checkoutReason: result.attendance.checkoutReason,
+              durationSeconds: result.attendance.durationSeconds,
+              status,
+              source: "MOBILE",
+              branchName: result.attendance.branchName,
+            },
         recentAttendance: [recentAttendance, ...existing].slice(0, 10),
         streakDays: status === "APPROVED" ? Math.max(home.streakDays ?? 0, 1) : home.streakDays,
       };
@@ -361,10 +379,6 @@ export default function Scan() {
                 ? { checkInCode: queuedScan.payload, deviceId: queuedScan.deviceId ?? deviceId }
                 : { qrPayload: queuedScan.payload, deviceId: queuedScan.deviceId ?? deviceId },
           });
-          if (result.duplicate) {
-            await removeQueuedAttendanceScan(queuedScan.id);
-            continue;
-          }
           synced += 1;
           await removeQueuedAttendanceScan(queuedScan.id);
           const status = result.status ?? result.attendance.status ?? "APPROVED";
@@ -488,11 +502,9 @@ export default function Scan() {
       }
       const result = await attendanceApi.scan<ScanResult>({
         token,
-        body: kind === "code" ? { checkInCode: payload, deviceId } : { qrPayload: payload, deviceId },
+        body:
+          kind === "code" ? { checkInCode: payload, deviceId } : { qrPayload: payload, deviceId },
       });
-      if (result.duplicate) {
-        throw new Error("Already checked in. Check out before checking in again.");
-      }
       const status = result.status ?? result.attendance.status ?? "APPROVED";
       const failed = status === "REJECTED" || status === "FLAGGED";
       setScanState(failed ? "failed" : "accepted");
@@ -554,9 +566,6 @@ export default function Scan() {
         token,
         orgId: activeOrgId,
       });
-      if (result.duplicate) {
-        throw new Error("Already checked in. Check out before checking in again.");
-      }
       const status = result.status ?? result.attendance.status ?? "APPROVED";
       const failed = status === "REJECTED" || status === "FLAGGED";
       setScanState(failed ? "failed" : "accepted");
@@ -1099,26 +1108,26 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   scanLineRail: {
-    width: 238,
-    height: 16,
+    width: 248,
+    height: 22,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: legacyColors.lime,
-    shadowOpacity: 0.9,
-    shadowRadius: 18,
+    shadowOpacity: 1,
+    shadowRadius: 22,
     shadowOffset: { width: 0, height: 0 },
   },
   scanLineGlow: {
     position: "absolute",
     left: 0,
     right: 0,
-    height: 14,
+    height: 18,
     borderRadius: 999,
-    opacity: 0.24,
+    opacity: 0.34,
   },
   scanLineCore: {
     width: "100%",
-    height: 3,
+    height: 4,
     borderRadius: 999,
     opacity: 0.96,
   },

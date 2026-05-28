@@ -110,7 +110,18 @@ export async function getMemberHomeData(userId: string, preferredOrgId?: string)
     prisma.attendanceRecord.findMany({
       where: { userId, ...(activeOrgId ? { orgId: activeOrgId } : {}) },
       orderBy: { checkedInAt: "desc" },
-      select: { id: true, checkedInAt: true, status: true, source: true, dateKey: true },
+      select: {
+        id: true,
+        orgId: true,
+        branchId: true,
+        checkedInAt: true,
+        checkedOutAt: true,
+        checkoutReason: true,
+        durationSeconds: true,
+        status: true,
+        source: true,
+        dateKey: true,
+      },
       take: 12,
     }),
     prisma.attendanceRecord.findMany({
@@ -138,9 +149,7 @@ export async function getMemberHomeData(userId: string, preferredOrgId?: string)
         select: { title: true },
       })
     : null;
-  const attendanceKeys = new Set(
-    streakAttendance.map((record) => record.dateKey),
-  );
+  const attendanceKeys = new Set(streakAttendance.map((record) => record.dateKey));
   let streakDays = 0;
   for (let offset = 0; offset < 365; offset += 1) {
     if (!attendanceKeys.has(toDateKey(addDays(new Date(), -offset)))) {
@@ -149,6 +158,17 @@ export async function getMemberHomeData(userId: string, preferredOrgId?: string)
     streakDays += 1;
   }
   const checkedInToday = attendanceKeys.has(toDateKey(new Date()));
+  const activeCheckIn =
+    recentAttendance.find(
+      (record) =>
+        !record.checkedOutAt && ["APPROVED", "PENDING_APPROVAL", "FLAGGED"].includes(record.status),
+    ) ?? null;
+  const activeBranch = activeCheckIn
+    ? await prisma.branch.findUnique({
+        where: { id: activeCheckIn.branchId },
+        select: { id: true, name: true, latitude: true, longitude: true },
+      })
+    : null;
 
   return {
     activeOrganization: serializeOrganizationForReadModel(organization),
@@ -160,6 +180,14 @@ export async function getMemberHomeData(userId: string, preferredOrgId?: string)
         }
       : null,
     activePlan: plan,
+    activeCheckIn: activeCheckIn
+      ? {
+          ...activeCheckIn,
+          branchName: activeBranch?.name ?? null,
+          branchLatitude: activeBranch?.latitude ? Number(activeBranch.latitude) : null,
+          branchLongitude: activeBranch?.longitude ? Number(activeBranch.longitude) : null,
+        }
+      : null,
     recentAttendance,
     unreadNotifications: notificationsUnread,
     activeGoals: goalsCount,

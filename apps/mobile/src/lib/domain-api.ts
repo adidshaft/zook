@@ -77,9 +77,7 @@ export const filesApi = {
       body: formData,
     });
   },
-  uploadBodyProgressPhoto(
-    options: RequestOptions & { file: MobileUploadFile },
-  ) {
+  uploadBodyProgressPhoto(options: RequestOptions & { file: MobileUploadFile }) {
     const formData = new FormData();
     formData.append("category", "body_progress_photo");
     formData.append("visibility", "private");
@@ -355,6 +353,19 @@ export const attendanceApi = {
       ...(options.orgId ? { orgId: options.orgId } : {}),
     });
   },
+  checkout<T = unknown>(
+    options: RequestOptions & {
+      attendanceRecordId: string;
+      body?: { reason?: "manual" | "geofence"; latitude?: number; longitude?: number };
+    },
+  ) {
+    return mobileApiFetch<T>(`/me/attendance/${options.attendanceRecordId}/checkout`, {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: options.body ?? { reason: "manual" },
+    });
+  },
   approve(options: RequestOptions & { recordId: string }) {
     return mobileApiFetch(`/orgs/${options.orgId}/attendance/${options.recordId}/approve`, {
       method: "POST",
@@ -500,14 +511,14 @@ export const gymApi = {
     return mobileApiFetch<{ checkoutUrl: string; session?: { id?: string; status?: string } }>(
       `/orgs/${options.orgId}/subscriptions`,
       {
-      method: "POST",
-      token: options.token,
-      ...(options.branchId ? { branchId: options.branchId } : {}),
-      body: {
-        planId: options.planId,
-        ...(options.referralCode ? { referralCode: options.referralCode } : {}),
+        method: "POST",
+        token: options.token,
         ...(options.branchId ? { branchId: options.branchId } : {}),
-      },
+        body: {
+          planId: options.planId,
+          ...(options.referralCode ? { referralCode: options.referralCode } : {}),
+          ...(options.branchId ? { branchId: options.branchId } : {}),
+        },
       },
     );
   },
@@ -628,7 +639,9 @@ export const dietApi = {
       ...(options.orgId ? { orgId: options.orgId } : {}),
     });
   },
-  logMeal<T = { log: { id: string } }>(options: RequestOptions & { body: Record<string, unknown> }) {
+  logMeal<T = { log: { id: string } }>(
+    options: RequestOptions & { body: Record<string, unknown> },
+  ) {
     return mobileApiFetch<T>("/me/diet/meal-logs", {
       method: "POST",
       token: options.token,

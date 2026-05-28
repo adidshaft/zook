@@ -27,9 +27,27 @@ export interface MemberHomeData {
     visitLimit?: number | null;
     validityDays?: number | null;
   } | null;
+  activeCheckIn: {
+    id: string;
+    orgId?: string;
+    branchId?: string;
+    branchName?: string | null;
+    branchLatitude?: number | null;
+    branchLongitude?: number | null;
+    checkedInAt: string;
+    checkedOutAt?: string | null;
+    checkoutReason?: string | null;
+    durationSeconds?: number | null;
+    status: string;
+    source?: string | null;
+  } | null;
   recentAttendance: Array<{
     id: string;
     checkedInAt: string;
+    checkedOutAt?: string | null;
+    checkoutReason?: string | null;
+    durationSeconds?: number | null;
+    branchId?: string | null;
     status: string;
     source?: string;
   }>;
