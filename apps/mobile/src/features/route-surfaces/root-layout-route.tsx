@@ -29,6 +29,7 @@ import { PushNotificationsProvider } from "@/lib/push-notifications";
 import { PrivilegedPinProvider } from "@/components/privileged-pin-modal";
 import { checkRouteAccess, routeForRole } from "@/lib/route-guards";
 import { Sentry, initMobileSentry } from "@/lib/sentry";
+import { enableFreeze } from "react-native-screens";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberHomeQueryOptions } from "@/lib/domains";
 import { legacyColors } from "@/lib/theme";
@@ -37,6 +38,7 @@ import { showToast } from "@/lib/toast";
 import { useRoleContext } from "@/lib/role-context";
 
 initMobileSentry();
+enableFreeze(true);
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
 const ONBOARDING_COMPLETED = "true";
@@ -159,6 +161,14 @@ function LayoutContent() {
   const isPlatformAdmin = Boolean(roleContext?.isPlatformAdmin ?? session?.user.isPlatformAdmin);
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
   const [onboardingFlag, setOnboardingFlag] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (status !== "loading" && onboardingFlag !== undefined) {
+      void SplashScreen.hideAsync().catch(() => {
+        // Ignore splash cleanup races during local development.
+      });
+    }
+  }, [status, onboardingFlag]);
 
   useEffect(() => {
     return setAuthQueryClient(queryClient);
@@ -393,9 +403,9 @@ function LayoutContent() {
 
   if (status === "loading") {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={legacyColors.lime} />
-        <Text style={styles.loadingText}>{t("app.loadingSession")}</Text>
+      <View style={[styles.loading, { backgroundColor: palette.bg.app }]}>
+        <ActivityIndicator color={palette.accent.base} />
+        <Text style={[styles.loadingText, { color: palette.text.secondary }]}>{t("app.loadingSession")}</Text>
       </View>
     );
   }
@@ -493,13 +503,7 @@ export default function Layout() {
     });
   }, []);
 
-  useEffect(() => {
-    if (fontsLoaded) {
-      void SplashScreen.hideAsync().catch(() => {
-        // Ignore splash cleanup races during local development.
-      });
-    }
-  }, [fontsLoaded]);
+  // Splash hide is now deferred until both fonts are loaded and Auth hydration completes in LayoutContent.
 
   if (!fontsLoaded) {
     return null;

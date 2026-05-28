@@ -2,8 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { invalidations } from "@/lib/domains/shared/invalidate";
+import { queryKeys } from "@/lib/domains/shared/keys";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/domains/shared/request";
-import type { PlanProgressRecord } from "@/lib/domains/shared/types";
+import type { MemberHomeData, PlanProgressRecord } from "@/lib/domains/shared/types";
 
 export function useCompletePlanAssignment() {
   const queryClient = useQueryClient();
@@ -41,6 +42,21 @@ export function useCompletePlanAssignment() {
         },
       );
     },
+    onMutate: async () => {
+      const queryKeyHome = queryKeys.member.home(activeOrgId ?? null);
+      await queryClient.cancelQueries({ queryKey: queryKeyHome });
+
+      const previousHome = queryClient.getQueryData<MemberHomeData>(queryKeyHome);
+
+      if (previousHome) {
+        queryClient.setQueryData<MemberHomeData>(queryKeyHome, {
+          ...previousHome,
+          todayWorkoutLoggedAt: new Date().toISOString(),
+        });
+      }
+
+      return { previousHome };
+    },
     onSuccess: async (_, input) => {
       await Promise.all([
         invalidations.plans.all(queryClient),
@@ -50,8 +66,15 @@ export function useCompletePlanAssignment() {
       ]);
       notifyMutationSuccess("Plan progress saved.");
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      if (context?.previousHome) {
+        queryClient.setQueryData(queryKeys.member.home(activeOrgId ?? null), context.previousHome);
+      }
       notifyMutationError(error, "Plan progress could not be saved.");
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.member.home(activeOrgId ?? null) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.plans.list() });
     },
   });
 }

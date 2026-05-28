@@ -7,6 +7,7 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "r
 import {
   AppState,
   type AppStateStatus,
+  FlatList,
   Linking,
   Pressable,
   RefreshControl,
@@ -778,166 +779,183 @@ export default function Shop() {
       </Pressable>
     ) : null;
 
+  const contentPaddingBottom = useBottomScrollPadding({
+    hasStickyAction: Boolean(miniCart),
+  });
+
   return (
-    <ShopShell selectedPath="/shop" floatingAction={miniCart} refreshControl={refreshControl}>
-      <MobileHeader
-        title={t("shop.deskPickup")}
-        subtitle={activeOrganization?.name ?? t("shop.activeGym")}
-        chip={<BranchSelectorChip />}
-        showProfileShortcut={false}
-        trailing={
-          <Pressable
-            testID="shop-open-cart"
-            onPress={() => router.push("/shop/cart" as never)}
-            accessibilityRole="button"
-            accessibilityLabel={t("shop.openCart")}
-            style={[
-              styles.cartIcon,
-              {
-                borderColor: palette.border.subtle,
-                backgroundColor: palette.bg.elevated,
-              },
-            ]}
-          >
-            <Ionicons name="bag-outline" size={22} color={palette.text.primary} />
-            {itemCount ? (
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>{itemCount}</Text>
-              </View>
-            ) : null}
-          </Pressable>
-        }
-      />
-
-      <SearchBar value={query} onChangeText={setQuery} placeholder={t("shop.searchEssentials")} />
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryRail}
-      >
-        {categories.map((option) => {
-          const selected = option.value === category;
-          const count = categoryCounts[option.value] ?? 0;
+    <ShopShell selectedPath="/shop" floatingAction={miniCart} refreshControl={refreshControl} noScroll={true}>
+      <FlatList
+        data={productsQuery.isLoading || !cartHydrated || productsQuery.isError ? [] : filteredProducts}
+        numColumns={2}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item, index }) => {
+          const lowStock = item.stock <= item.lowStockThreshold;
+          const fulfillmentLabel =
+            item.stock > 0
+              ? lowStock
+                ? `Only ${item.stock} left`
+                : `${item.stock} in stock`
+              : "Out of stock";
+          const productImageUrl = item.imageUrl ?? item.imageUrls?.[0] ?? null;
           return (
-            <Pressable
-              key={option.value}
-              onPress={() => setCategory(option.value)}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              style={[
-                styles.categoryChip,
-                {
-                  backgroundColor: selected
-                    ? palette.accent.fill
-                    : mode === "dark"
-                      ? "rgba(255, 255, 255, 0.06)"
-                      : "rgba(17, 21, 15, 0.04)",
-                  borderColor: selected ? palette.accent.strong : palette.border.subtle,
-                },
-              ]}
-            >
-              <Ionicons
-                name={iconForCategory(option.value)}
-                size={15}
-                color={selected ? palette.text.onAccent : palette.text.secondary}
-              />
-              <Text
-                style={[
-                  styles.categoryChipText,
-                  {
-                    color: selected ? palette.text.onAccent : palette.text.secondary,
-                  },
-                ]}
-              >
-                {option.label}
-              </Text>
-              <View
-                style={[
-                  styles.categoryCount,
-                  {
-                    backgroundColor: selected
-                      ? "rgba(0, 0, 0, 0.12)"
-                      : mode === "dark"
-                        ? "rgba(255, 255, 255, 0.08)"
-                        : "rgba(0, 0, 0, 0.06)",
-                  },
-                ]}
-              >
-                <Text
+            <ProductCard
+              testID={index === 0 ? "shop-product-first" : `shop-product-${item.id}`}
+              name={item.name}
+              price={formatInr(item.pricePaise)}
+              stock={fulfillmentLabel}
+              tone={item.stock <= 0 ? "red" : lowStock ? "amber" : "lime"}
+              imageUrl={productImageUrl}
+              quantity={cart[item.id] ?? 0}
+              icon={iconForCategory(item.category as Category)}
+              compact
+              disabled={item.stock <= 0}
+              incrementDisabled={(cart[item.id] ?? 0) >= item.stock}
+              onIncrement={() => addToCart(item.id)}
+              onDecrement={() => removeFromCart(item.id)}
+              style={styles.productCard}
+            />
+          );
+        }}
+        columnWrapperStyle={styles.columnWrapper}
+        ListHeaderComponent={
+          <View style={{ gap: 12, marginBottom: 12 }}>
+            <MobileHeader
+              title={t("shop.deskPickup")}
+              subtitle={activeOrganization?.name ?? t("shop.activeGym")}
+              chip={<BranchSelectorChip />}
+              showProfileShortcut={false}
+              trailing={
+                <Pressable
+                  testID="shop-open-cart"
+                  onPress={() => router.push("/shop/cart" as never)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("shop.openCart")}
                   style={[
-                    styles.categoryCountText,
+                    styles.cartIcon,
                     {
-                      color: selected ? palette.text.onAccent : palette.text.secondary,
+                      borderColor: palette.border.subtle,
+                      backgroundColor: palette.bg.elevated,
                     },
                   ]}
                 >
-                  {count}
-                </Text>
-              </View>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+                  <Ionicons name="bag-outline" size={22} color={palette.text.primary} />
+                  {itemCount ? (
+                    <View style={styles.cartBadge}>
+                      <Text style={styles.cartBadgeText}>{itemCount}</Text>
+                    </View>
+                  ) : null}
+                </Pressable>
+              }
+            />
 
-      <SectionHeader
-        title={t("shop.availableNow")}
-        subtitle={`${filteredProducts.length} ${t(filteredProducts.length === 1 ? "shop.item" : "shop.items")}`}
+            <SearchBar value={query} onChangeText={setQuery} placeholder={t("shop.searchEssentials")} />
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryRail}
+              style={{ marginVertical: 6 }}
+            >
+              {categories.map((option) => {
+                const selected = option.value === category;
+                const count = categoryCounts[option.value] ?? 0;
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => setCategory(option.value)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    style={[
+                      styles.categoryChip,
+                      {
+                        backgroundColor: selected
+                          ? palette.accent.fill
+                          : mode === "dark"
+                            ? "rgba(255, 255, 255, 0.06)"
+                            : "rgba(17, 21, 15, 0.04)",
+                        borderColor: selected ? palette.accent.strong : palette.border.subtle,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={iconForCategory(option.value)}
+                      size={15}
+                      color={selected ? palette.text.onAccent : palette.text.secondary}
+                    />
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        {
+                          color: selected ? palette.text.onAccent : palette.text.secondary,
+                        },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                    <View
+                      style={[
+                        styles.categoryCount,
+                        {
+                          backgroundColor: selected
+                            ? "rgba(0, 0, 0, 0.12)"
+                            : mode === "dark"
+                              ? "rgba(255, 255, 255, 0.08)"
+                              : "rgba(0, 0, 0, 0.06)",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryCountText,
+                          {
+                            color: selected ? palette.text.onAccent : palette.text.secondary,
+                          },
+                        ]}
+                      >
+                        {count}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <SectionHeader
+              title={t("shop.availableNow")}
+              subtitle={`${filteredProducts.length} ${t(filteredProducts.length === 1 ? "shop.item" : "shop.items")}`}
+            />
+
+            {productsQuery.isError ? (
+              <GlassCard variant="danger" contentStyle={styles.stateCardContent}>
+                <ErrorState
+                  title={t("shop.shopCouldNotLoad")}
+                  body={t("shop.shopCouldNotLoadBody")}
+                  action={
+                    <ZookButton
+                      onPress={() => void productsQuery.refetch()}
+                      tone="secondary"
+                      icon="refresh-outline"
+                    >
+                      {t("shop.tryAgain")}
+                    </ZookButton>
+                  }
+                />
+              </GlassCard>
+            ) : productsQuery.isLoading || !cartHydrated ? (
+              <ShopSkeleton />
+            ) : null}
+          </View>
+        }
+        ListEmptyComponent={
+          !productsQuery.isLoading && cartHydrated && !productsQuery.isError && !filteredProducts.length ? (
+            <EmptyState title={t("shop.noProductsFound")} body={t("shop.noProductsFoundBody")} />
+          ) : null
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
+        refreshControl={refreshControl}
       />
-
-      {productsQuery.isError ? (
-        <GlassCard variant="danger" contentStyle={styles.stateCardContent}>
-          <ErrorState
-            title={t("shop.shopCouldNotLoad")}
-            body={t("shop.shopCouldNotLoadBody")}
-            action={
-              <ZookButton
-                onPress={() => void productsQuery.refetch()}
-                tone="secondary"
-                icon="refresh-outline"
-              >
-                {t("shop.tryAgain")}
-              </ZookButton>
-            }
-          />
-        </GlassCard>
-      ) : productsQuery.isLoading || !cartHydrated ? (
-        <ShopSkeleton />
-      ) : filteredProducts.length ? (
-        <View style={styles.productGrid}>
-          {filteredProducts.map((product, index) => {
-            const lowStock = product.stock <= product.lowStockThreshold;
-            const fulfillmentLabel =
-              product.stock > 0
-                ? lowStock
-                  ? `Only ${product.stock} left`
-                  : `${product.stock} in stock`
-                : "Out of stock";
-            const productImageUrl = product.imageUrl ?? product.imageUrls?.[0] ?? null;
-            return (
-              <ProductCard
-                testID={index === 0 ? "shop-product-first" : `shop-product-${product.id}`}
-                key={product.id}
-                name={product.name}
-                price={formatInr(product.pricePaise)}
-                stock={fulfillmentLabel}
-                tone={product.stock <= 0 ? "red" : lowStock ? "amber" : "lime"}
-                imageUrl={productImageUrl}
-                quantity={cart[product.id] ?? 0}
-                icon={iconForCategory(product.category as Category)}
-                compact
-                disabled={product.stock <= 0}
-                incrementDisabled={(cart[product.id] ?? 0) >= product.stock}
-                onIncrement={() => addToCart(product.id)}
-                onDecrement={() => removeFromCart(product.id)}
-                style={styles.productCard}
-              />
-            );
-          })}
-        </View>
-      ) : (
-        <EmptyState title={t("shop.noProductsFound")} body={t("shop.noProductsFoundBody")} />
-      )}
     </ShopShell>
   );
 }
@@ -1002,12 +1020,14 @@ function ShopShell({
   floatingAction,
   stickyAction,
   refreshControl,
+  noScroll = false,
 }: {
   children: ReactNode;
   selectedPath: string;
   floatingAction?: ReactNode;
   stickyAction?: ReactNode;
   refreshControl?: ScrollViewProps["refreshControl"];
+  noScroll?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const { visible: bottomNavVisible } = useContext(BottomNavVisibilityContext);
@@ -1021,16 +1041,22 @@ function ShopShell({
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID={`shop-${selectedPath.replace(/\W+/g, "-").replace(/^-|-$/g, "")}-screen`}>
-        <ScrollView
-          style={styles.scroller}
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
-          refreshControl={refreshControl}
-        >
-          <View style={styles.content}>{children}</View>
-        </ScrollView>
+        {noScroll ? (
+          <View style={{ flex: 1, paddingHorizontal: layout.screenPadding, paddingTop: 20 }}>
+            {children}
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.scroller}
+            contentInsetAdjustmentBehavior="never"
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
+            refreshControl={refreshControl}
+          >
+            <View style={styles.content}>{children}</View>
+          </ScrollView>
+        )}
         {floatingAction ? (
           <View
             pointerEvents="box-none"
@@ -1123,10 +1149,13 @@ const styles = StyleSheet.create({
     rowGap: 12,
   },
   productCard: {
-    flexBasis: "48.5%",
-    flexGrow: 0,
-    flexShrink: 0,
+    flex: 1,
+    maxWidth: "48.5%",
     height: 206,
+  },
+  columnWrapper: {
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
   categoryRail: {
     gap: 8,
