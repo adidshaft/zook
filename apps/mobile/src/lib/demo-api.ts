@@ -62,6 +62,7 @@ function demoMemberHomePayload() {
           visitLimit: 12,
         }
       : null,
+    activeCheckIn: null,
     recentAttendance: zookDemoFixtures.attendanceAttempts.map((attempt) => ({
       id: attempt.id,
       checkedInAt: attempt.checkedInAt,
@@ -241,7 +242,8 @@ function demoOwnerDashboard() {
       })),
       revenue30d: Array.from({ length: 30 }, (_, index) => ({
         date: `2026-05-${String(index + 1).padStart(2, "0")}`,
-        label: index === 0 ? "30d" : index === 29 ? "Today" : index % 5 === 0 ? `D-${30 - index}` : "",
+        label:
+          index === 0 ? "30d" : index === 29 ? "Today" : index % 5 === 0 ? `D-${30 - index}` : "",
         value: 900 + ((index * 137) % 1600),
       })),
       attendance7d: [32, 41, 38, 45, 47, 43, 52].map((value, index) => ({
@@ -251,7 +253,8 @@ function demoOwnerDashboard() {
       })),
       memberGrowth30d: Array.from({ length: 30 }, (_, index) => ({
         date: `2026-05-${String(index + 1).padStart(2, "0")}`,
-        label: index === 0 ? "30d" : index === 29 ? "Today" : index % 5 === 0 ? `D-${30 - index}` : "",
+        label:
+          index === 0 ? "30d" : index === 29 ? "Today" : index % 5 === 0 ? `D-${30 - index}` : "",
         value: 104 + index,
       })),
       planMix: [
@@ -516,6 +519,7 @@ export async function demoMobileApiFetch<T>(
             visitLimit: 12,
           }
         : null,
+      activeCheckIn: null,
       recentAttendance: zookDemoFixtures.attendanceAttempts.map((attempt) => ({
         id: attempt.id,
         checkedInAt: attempt.checkedInAt,
@@ -584,7 +588,9 @@ export async function demoMobileApiFetch<T>(
   if (pathname === "/me/membership/active") return { membership: activeMembership() } as T;
   if (pathname.startsWith("/r/")) {
     const referralCode = pathname.split("/").at(-1)?.toUpperCase();
-    const referral = zookDemoFixtures.referralCodes.find((candidate) => candidate.code === referralCode);
+    const referral = zookDemoFixtures.referralCodes.find(
+      (candidate) => candidate.code === referralCode,
+    );
     return {
       referral: referral ?? null,
       org: referral ? activeOrg() : null,
@@ -923,7 +929,11 @@ export async function demoMobileApiFetch<T>(
         billingCycle: body?.billingCycle ?? "MONTHLY",
         priceLockedPaise: body?.tier === "PRO" ? 799900 : body?.tier === "GROWTH" ? 399900 : 149900,
       },
-      mandate: { id: "offline-saas-mandate", status: "CREATED", checkoutUrl: "/checkout/mock/offline-saas" },
+      mandate: {
+        id: "offline-saas-mandate",
+        status: "CREATED",
+        checkoutUrl: "/checkout/mock/offline-saas",
+      },
       checkoutUrl: "/checkout/mock/offline-saas",
       session: { id: "offline-saas", status: "CREATED" },
     } as T;

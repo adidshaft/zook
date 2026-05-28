@@ -9,6 +9,7 @@ function home(overrides: Partial<MemberHomeData> & Record<string, unknown> = {})
     activeMembership: { daysLeft: 20, status: "ACTIVE" },
     activeOrganization: { id: "org_1", name: "Zook Gym", status: "ACTIVE", username: "zook" },
     activePlan: { id: "plan_1", name: "Strength", type: "WORKOUT" },
+    activeCheckIn: null,
     assignedPlans: 1,
     nextCheckInEstimate: null,
     recentAttendance: [],
@@ -31,11 +32,16 @@ describe("deriveHomeState", () => {
   });
 
   it("returns expiredMembership for an expired membership", () => {
-    expect(deriveHomeState(home({ activeMembership: { daysLeft: 0, status: "EXPIRED" } })).kind).toBe("expiredMembership");
+    expect(
+      deriveHomeState(home({ activeMembership: { daysLeft: 0, status: "EXPIRED" } })).kind,
+    ).toBe("expiredMembership");
   });
 
   it("returns noPlan for an active membership without a plan", () => {
-    expect(deriveHomeState(home({ activePlan: null }))).toMatchObject({ kind: "noPlan", gymName: "Zook Gym" });
+    expect(deriveHomeState(home({ activePlan: null }))).toMatchObject({
+      kind: "noPlan",
+      gymName: "Zook Gym",
+    });
   });
 
   it("returns todayRest when active with no workout today", () => {
@@ -43,7 +49,9 @@ describe("deriveHomeState", () => {
   });
 
   it("returns todayWorkout when a plan assignment is due today", () => {
-    expect(deriveHomeState(home({ todayPlanAssignmentId: "assign_1", todayPlanName: "Leg day" }))).toMatchObject({
+    expect(
+      deriveHomeState(home({ todayPlanAssignmentId: "assign_1", todayPlanName: "Leg day" })),
+    ).toMatchObject({
       assignmentId: "assign_1",
       kind: "todayWorkout",
       planName: "Leg day",
@@ -58,7 +66,11 @@ describe("deriveHomeState", () => {
   });
 
   it("returns workoutLoggedToday after logging today's workout", () => {
-    expect(deriveHomeState(home({ todayWorkoutLoggedAt: "2026-05-20T10:00:00Z", tomorrowPlanName: "Push" }))).toMatchObject({
+    expect(
+      deriveHomeState(
+        home({ todayWorkoutLoggedAt: "2026-05-20T10:00:00Z", tomorrowPlanName: "Push" }),
+      ),
+    ).toMatchObject({
       kind: "workoutLoggedToday",
       nextPlanName: "Push",
     });
