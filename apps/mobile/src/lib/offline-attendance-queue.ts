@@ -7,6 +7,7 @@ export type QueuedAttendanceScan = {
   id: string;
   payload: string;
   kind: "qr" | "code";
+  deviceId?: string | null;
   createdAt: string;
 };
 
@@ -39,7 +40,9 @@ export async function getQueuedAttendanceScans() {
   return parseQueue(await getStoredValue(QUEUE_STORAGE_KEY));
 }
 
-export async function enqueueAttendanceScan(input: Pick<QueuedAttendanceScan, "payload" | "kind">) {
+export async function enqueueAttendanceScan(
+  input: Pick<QueuedAttendanceScan, "payload" | "kind" | "deviceId">,
+) {
   const queue = await getQueuedAttendanceScans();
   const duplicate = queue.find(
     (item) => item.payload === input.payload && item.kind === input.kind,
@@ -53,6 +56,7 @@ export async function enqueueAttendanceScan(input: Pick<QueuedAttendanceScan, "p
       id: `scan_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
       payload: input.payload,
       kind: input.kind,
+      deviceId: input.deviceId ?? null,
       createdAt: new Date().toISOString(),
     },
   ].slice(-MAX_QUEUE_SIZE);

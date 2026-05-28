@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { AuthSessionSummary } from "@zook/core";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { queryKeys } from "@/lib/domains/shared/keys";
 import { queryString } from "@/lib/domains/shared/request";
+import { getStoredValue, setStoredValue } from "@/lib/storage";
 import type {
   ActiveMembershipRecord,
   MemberBadgeRecord,
@@ -15,6 +17,70 @@ import type {
   ReferralCodeRecord,
   ReferralRewardRecord,
 } from "@/lib/domains/shared/types";
+
+const MEMBER_QUERY_CACHE_NAMESPACE = "zook_member_query_cache";
+const MEMBER_QUERY_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+
+type CachedQuerySnapshot<T> = {
+  cachedAt: number;
+  data: T;
+};
+
+function memberQueryCacheKey(scope: "home" | "dashboard", orgId?: string | null) {
+  return `${MEMBER_QUERY_CACHE_NAMESPACE}:${scope}:${encodeURIComponent(orgId ?? "no-org")}`;
+}
+
+function readCachedQuerySnapshot<T>(value: string | null): T | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed = JSON.parse(value) as Partial<CachedQuerySnapshot<T>>;
+    if (typeof parsed.cachedAt !== "number" || parsed.data === undefined) {
+      return undefined;
+    }
+    if (Date.now() - parsed.cachedAt > MEMBER_QUERY_CACHE_TTL_MS) {
+      return undefined;
+    }
+    return parsed.data;
+  } catch {
+    return undefined;
+  }
+}
+
+function useStoredQuerySnapshot<T>(key: string, enabled: boolean) {
+  const [snapshot, setSnapshot] = useState<T | undefined>(undefined);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!enabled) {
+      setSnapshot(undefined);
+      return () => {
+        mounted = false;
+      };
+    }
+    void getStoredValue(key).then((value) => {
+      if (mounted) {
+        setSnapshot(readCachedQuerySnapshot<T>(value));
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [enabled, key]);
+
+  return snapshot;
+}
+
+function persistQuerySnapshot<T>(key: string, data: T) {
+  void setStoredValue(
+    key,
+    JSON.stringify({
+      cachedAt: Date.now(),
+      data,
+    } satisfies CachedQuerySnapshot<T>),
+  ).catch(() => {
+    // Cache persistence is best-effort; the network response remains authoritative.
+  });
+}
 
 export function useCurrentUser() {
   const { activeOrgId, session, status, token } = useAuth();
@@ -85,10 +151,22 @@ export function useActiveOrganization() {
 
 export function useMemberHome() {
   const { activeOrgId, status, token } = useAuth();
-  return useQuery({
+  const enabled = status === "authenticated" && Boolean(token);
+  const cacheKey = memberQueryCacheKey("home", activeOrgId);
+  const cachedHome = useStoredQuerySnapshot<MemberHomeData>(cacheKey, enabled);
+  const query = useQuery({
     ...memberHomeQueryOptions({ activeOrgId, token }),
-    enabled: status === "authenticated" && Boolean(token),
+    enabled,
+    placeholderData: cachedHome,
   });
+
+  useEffect(() => {
+    if (query.data && !query.isPlaceholderData) {
+      persistQuerySnapshot(cacheKey, query.data);
+    }
+  }, [cacheKey, query.data, query.isPlaceholderData]);
+
+  return query;
 }
 
 export function memberHomeQueryOptions(input: {
@@ -126,10 +204,22 @@ export function memberDashboardQueryOptions(input: {
 
 export function useMemberDashboard() {
   const { activeOrgId, status, token } = useAuth();
-  return useQuery({
+  const enabled = status === "authenticated" && Boolean(token);
+  const cacheKey = memberQueryCacheKey("dashboard", activeOrgId);
+  const cachedDashboard = useStoredQuerySnapshot<MemberDashboardData>(cacheKey, enabled);
+  const query = useQuery({
     ...memberDashboardQueryOptions({ activeOrgId, token }),
-    enabled: status === "authenticated" && Boolean(token),
+    enabled,
+    placeholderData: cachedDashboard,
   });
+
+  useEffect(() => {
+    if (query.data && !query.isPlaceholderData) {
+      persistQuerySnapshot(cacheKey, query.data);
+    }
+  }, [cacheKey, query.data, query.isPlaceholderData]);
+
+  return query;
 }
 
 export function useMyEngagement() {

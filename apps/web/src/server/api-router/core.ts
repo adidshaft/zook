@@ -12288,51 +12288,59 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       "Too many attendance scans. Please wait before trying again.",
     );
     const now = new Date();
-    const decoded = body.qrPayload
-      ? validateSignedQrToken({
-          encoded: body.qrPayload,
-          secret: getQrSigningSecret(),
-          now,
-        })
-      : await (async () => {
-          const normalizedCode = normalizeCheckInCode(body.checkInCode ?? "");
-          if (!normalizedCode) {
-            throw validationError("Enter the check-in code as two letters and four digits.");
-          }
-          await assertRateLimit(
-            "qrScanByToken",
-            `code:${normalizedCode}`,
-            "Too many code attempts. Please wait before trying again.",
-          );
-          const activeTokens = await prisma.attendanceQrToken.findMany({
-            where: { expiresAt: { gt: now } },
-            orderBy: { issuedAt: "desc" },
-            take: 500,
-          });
-          const matches = activeTokens.filter(
-            (token) => checkInCodeForQrNonce(token.nonce) === normalizedCode,
-          );
-          if (matches.length !== 1) {
-            throw validationError(
-              matches.length > 1
-                ? "This check-in code matched more than one active branch. Please scan the QR."
-                : "Check-in code is invalid or expired.",
-            );
-          }
-          const token = matches[0]!;
+    const decoded = await (async () => {
+      try {
+        if (body.qrPayload) {
           return validateSignedQrToken({
-            encoded: encodeQrPayload({
-              orgId: token.orgId,
-              branchId: token.branchId,
-              timestamp: token.issuedAt.getTime(),
-              nonce: token.nonce,
-              expiry: token.expiresAt.getTime(),
-              signature: token.signature,
-            }),
+            encoded: body.qrPayload,
             secret: getQrSigningSecret(),
             now,
           });
-        })();
+        }
+        const normalizedCode = normalizeCheckInCode(body.checkInCode ?? "");
+        if (!normalizedCode) {
+          throw validationError("Enter the check-in code as two letters and four digits.");
+        }
+        await assertRateLimit(
+          "qrScanByToken",
+          `code:${normalizedCode}`,
+          "Too many code attempts. Please wait before trying again.",
+        );
+        const activeTokens = await prisma.attendanceQrToken.findMany({
+          where: { expiresAt: { gt: now } },
+          orderBy: { issuedAt: "desc" },
+          take: 500,
+        });
+        const matches = activeTokens.filter(
+          (token) => checkInCodeForQrNonce(token.nonce) === normalizedCode,
+        );
+        if (matches.length !== 1) {
+          throw validationError(
+            matches.length > 1
+              ? "This check-in code matched more than one active branch. Please scan the QR."
+              : "Check-in code is invalid or expired.",
+          );
+        }
+        const token = matches[0]!;
+        return validateSignedQrToken({
+          encoded: encodeQrPayload({
+            orgId: token.orgId,
+            branchId: token.branchId,
+            timestamp: token.issuedAt.getTime(),
+            nonce: token.nonce,
+            expiry: token.expiresAt.getTime(),
+            signature: token.signature,
+          }),
+          secret: getQrSigningSecret(),
+          now,
+        });
+      } catch (error) {
+        if (error instanceof ApiRouteError) {
+          throw error;
+        }
+        throw validationError("QR token is invalid or expired.");
+      }
+    })();
     await assertRateLimit(
       "qrScanByToken",
       decoded.nonce,

@@ -11,6 +11,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Linking,
+  Animated as RNAnimated,
+  Easing as RNEasing,
   Platform,
   Pressable,
   StyleSheet,
@@ -18,7 +20,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing } from "@/lib/reanimated-lite";
 import { Ionicons } from "@expo/vector-icons";
 import {
   GlassCard,
@@ -71,6 +72,14 @@ type AttendanceResultHref = {
 };
 
 const PUSH_PROMPTED_STORAGE_KEY = "zook_push_prompted";
+const ATTENDANCE_DEVICE_ID_STORAGE_KEY = "zook_attendance_device_id";
+const SCAN_CONFIRMATION_VISIBLE_MS = 420;
+
+type VerificationStep = {
+  key: "capture" | "decode" | "server";
+  label: string;
+  state: "idle" | "active" | "complete" | "failed";
+};
 
 function CameraActiveBottomNavHider() {
   useHideBottomNav();
@@ -79,25 +88,42 @@ function CameraActiveBottomNavHider() {
 
 function AnimatedLaser() {
   const { palette } = useTheme();
-  const translateY = useSharedValue(-120);
+  const translateY = useRef(new RNAnimated.Value(0)).current;
 
   useEffect(() => {
-    translateY.value = withRepeat(
-      withSequence(
-        withTiming(120, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(-120, { duration: 1500, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      false
+    const animation = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(translateY, {
+          toValue: 1,
+          duration: 1200,
+          easing: RNEasing.inOut(RNEasing.quad),
+          useNativeDriver: true,
+        }),
+        RNAnimated.timing(translateY, {
+          toValue: 0,
+          duration: 1200,
+          easing: RNEasing.inOut(RNEasing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
     );
+    animation.start();
+    return () => animation.stop();
   }, [translateY]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
+  const animatedStyle = {
+    transform: [
+      {
+        translateY: translateY.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-118, 118],
+        }),
+      },
+    ],
+  };
 
   return (
-    <Animated.View
+    <RNAnimated.View
       style={[
         styles.scanLineRail,
         { shadowColor: palette.accent.base },
@@ -106,8 +132,63 @@ function AnimatedLaser() {
     >
       <View style={[styles.scanLineGlow, { backgroundColor: palette.accent.base }]} />
       <View style={[styles.scanLineCore, { backgroundColor: palette.accent.base }]} />
-    </Animated.View>
+    </RNAnimated.View>
   );
+}
+
+function createAttendanceDeviceId() {
+  return `mobile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+async function getAttendanceDeviceId() {
+  const existing = await getStoredValue(ATTENDANCE_DEVICE_ID_STORAGE_KEY);
+  if (existing) {
+    return existing;
+  }
+  const next = createAttendanceDeviceId();
+  await setStoredValue(ATTENDANCE_DEVICE_ID_STORAGE_KEY, next);
+  return next;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizeCheckInCode(value: string) {
+  const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const match = /^([A-Z]{2})([0-9]{4})$/.exec(compact);
+  return match ? `${match[1]}-${match[2]}` : "";
+}
+
+function readScannedAttendancePayload(data: string): { kind: "qr" | "code"; payload: string } | null {
+  const trimmed = data.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const directCode = normalizeCheckInCode(trimmed);
+  if (directCode) {
+    return { kind: "code", payload: directCode };
+  }
+  try {
+    const parsed = new URL(trimmed);
+    const qrPayload =
+      parsed.searchParams.get("qrPayload") ??
+      parsed.searchParams.get("payload") ??
+      parsed.searchParams.get("attendanceQr");
+    if (qrPayload) {
+      return { kind: "qr", payload: qrPayload };
+    }
+    const checkInCode =
+      parsed.searchParams.get("checkInCode") ??
+      parsed.searchParams.get("code") ??
+      normalizeCheckInCode(parsed.pathname);
+    if (checkInCode) {
+      return { kind: "code", payload: checkInCode };
+    }
+  } catch {
+    // Raw signed QR payloads are expected, so non-URL values continue below.
+  }
+  return { kind: "qr", payload: trimmed };
 }
 
 export default function Scan() {
@@ -126,6 +207,7 @@ export default function Scan() {
   const [errorMessage, setErrorMessage] = useState("");
   const [queuedScanCount, setQueuedScanCount] = useState(0);
   const [replayingQueue, setReplayingQueue] = useState(false);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
   const [pendingPushPromptHref, setPendingPushPromptHref] = useState<AttendanceResultHref | null>(
     null,
   );
@@ -137,6 +219,18 @@ export default function Scan() {
 
   useEffect(() => {
     void getQueuedAttendanceScans().then((queue) => setQueuedScanCount(queue.length));
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    void getAttendanceDeviceId().then((value) => {
+      if (mounted) {
+        setDeviceId(value);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   function scanReason(result: ScanResult) {
@@ -264,8 +358,8 @@ export default function Scan() {
             token,
             body:
               queuedScan.kind === "code"
-                ? { checkInCode: queuedScan.payload }
-                : { qrPayload: queuedScan.payload },
+                ? { checkInCode: queuedScan.payload, deviceId: queuedScan.deviceId ?? deviceId }
+                : { qrPayload: queuedScan.payload, deviceId: queuedScan.deviceId ?? deviceId },
           });
           if (result.duplicate) {
             await removeQueuedAttendanceScan(queuedScan.id);
@@ -311,7 +405,52 @@ export default function Scan() {
     if (token) {
       void replayQueuedScans();
     }
-  }, [token]);
+  }, [deviceId, token]);
+
+  const hasCamera = permission?.granted;
+  const cameraBlocked = permission && !permission.granted && permission.canAskAgain === false;
+  const needsProfilePhoto = /profile photo/i.test(errorMessage);
+  const codeReady = codePrefix.length === 2 && codeDigits.length === 4;
+
+  const verificationSteps = useMemo<VerificationStep[]>(() => {
+    const captureComplete = scanMode === "code" ? codeReady : hasCamera;
+    return [
+      {
+        key: "capture",
+        label: scanMode === "code" ? (codeReady ? "Code ready" : "Enter code") : hasCamera ? "Camera ready" : "Camera needed",
+        state: captureComplete ? "complete" : "idle",
+      },
+      {
+        key: "decode",
+        label:
+          scanState === "idle"
+            ? scanMode === "code"
+              ? "Awaiting submit"
+              : "Awaiting QR"
+            : "Code captured",
+        state: scanState === "idle" ? "idle" : scanState === "failed" ? "failed" : "complete",
+      },
+      {
+        key: "server",
+        label:
+          scanState === "accepted"
+            ? "Server verified"
+            : scanState === "failed"
+              ? "Not verified"
+              : scanState === "checking"
+                ? "Verifying"
+                : "Server check",
+        state:
+          scanState === "accepted"
+            ? "complete"
+            : scanState === "failed"
+              ? "failed"
+              : scanState === "checking"
+                ? "active"
+                : "idle",
+      },
+    ];
+  }, [codeReady, hasCamera, scanMode, scanState]);
 
   const renderPushPromptBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -349,7 +488,7 @@ export default function Scan() {
       }
       const result = await attendanceApi.scan<ScanResult>({
         token,
-        body: kind === "code" ? { checkInCode: payload } : { qrPayload: payload },
+        body: kind === "code" ? { checkInCode: payload, deviceId } : { qrPayload: payload, deviceId },
       });
       if (result.duplicate) {
         throw new Error("Already checked in. Check out before checking in again.");
@@ -366,6 +505,9 @@ export default function Scan() {
       void queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       const nextHref = attendanceResultHref(result, status);
+      if (!failed) {
+        await sleep(SCAN_CONFIRMATION_VISIBLE_MS);
+      }
       if (!failed && await maybeShowPushPrompt(nextHref)) {
         return;
       }
@@ -373,7 +515,7 @@ export default function Scan() {
     } catch (error) {
       if (isRetriableAttendanceError(error)) {
         completedRef.current = false;
-        const nextQueue = await enqueueAttendanceScan({ payload, kind });
+        const nextQueue = await enqueueAttendanceScan({ payload, kind, deviceId });
         setQueuedScanCount(nextQueue.length);
         setScanState("failed");
         setErrorMessage(
@@ -438,13 +580,15 @@ export default function Scan() {
   }
 
   function handleBarcode({ data }: BarcodeScanningResult) {
-    if (!data || data.trim() === "") {
+    const scanned = readScannedAttendancePayload(data ?? "");
+    if (!scanned) {
       completedRef.current = false;
       setErrorMessage("Could not read QR code. Try again.");
       setScanState("failed");
       return;
     }
-    void completeScan(data);
+    void Haptics.selectionAsync();
+    void completeScan(scanned.payload, scanned.kind);
   }
 
   function submitCode() {
@@ -488,11 +632,6 @@ export default function Scan() {
     setCodePrefix("");
     setCodeDigits("");
   }
-
-  const hasCamera = permission?.granted;
-  const cameraBlocked = permission && !permission.granted && permission.canAskAgain === false;
-  const needsProfilePhoto = /profile photo/i.test(errorMessage);
-  const codeReady = codePrefix.length === 2 && codeDigits.length === 4;
 
   return (
     <>
@@ -671,19 +810,53 @@ export default function Scan() {
           )}
 
           <GlassCard variant="compact" contentStyle={styles.validationContent}>
-            {["Ready to scan", "Secure QR", "Desk fallback"].map((item) => (
+            {verificationSteps.map((item) => (
               <View
-                key={item}
+                key={item.key}
                 style={[
                   styles.validationItem,
                   {
-                    backgroundColor: mode === "dark" ? "rgba(185,244,85,0.12)" : "rgba(185,244,85,0.075)",
-                    borderColor: mode === "dark" ? "rgba(185,244,85,0.28)" : "rgba(185,244,85,0.18)",
+                    backgroundColor:
+                      item.state === "failed"
+                        ? mode === "dark" ? "rgba(255,90,61,0.12)" : "rgba(185,28,28,0.06)"
+                        : item.state === "active"
+                          ? mode === "dark" ? "rgba(125,211,252,0.12)" : "rgba(3,105,161,0.06)"
+                          : item.state === "complete"
+                            ? mode === "dark" ? "rgba(185,244,85,0.12)" : "rgba(30,63,32,0.06)"
+                            : mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(17,21,15,0.04)",
+                    borderColor:
+                      item.state === "failed"
+                        ? mode === "dark" ? "rgba(255,90,61,0.32)" : "rgba(185,28,28,0.16)"
+                        : item.state === "active"
+                          ? mode === "dark" ? "rgba(125,211,252,0.3)" : "rgba(3,105,161,0.16)"
+                          : item.state === "complete"
+                            ? mode === "dark" ? "rgba(185,244,85,0.28)" : "rgba(30,63,32,0.16)"
+                            : mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(17,21,15,0.08)",
                   },
                 ]}
               >
-                <Ionicons name="checkmark-circle-outline" size={15} color={palette.accent.base} />
-                <Text style={[styles.validationText, { color: palette.text.primary }]}>{item}</Text>
+                <Ionicons
+                  name={
+                    item.state === "failed"
+                      ? "close-circle-outline"
+                      : item.state === "active"
+                        ? "radio-button-on"
+                        : item.state === "complete"
+                          ? "checkmark-circle"
+                          : "ellipse-outline"
+                  }
+                  size={15}
+                  color={
+                    item.state === "failed"
+                      ? palette.feedback.danger
+                      : item.state === "active"
+                        ? palette.feedback.info
+                        : item.state === "complete"
+                          ? palette.accent.base
+                          : palette.text.secondary
+                  }
+                />
+                <Text style={[styles.validationText, { color: palette.text.primary }]}>{item.label}</Text>
               </View>
             ))}
           </GlassCard>
