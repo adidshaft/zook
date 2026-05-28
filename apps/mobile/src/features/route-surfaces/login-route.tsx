@@ -95,6 +95,29 @@ function isAccountLockedError(error: unknown) {
   return error instanceof ApiError && (error.status === 423 || error.code === "account_locked");
 }
 
+function isValidPhoneIdentifier(value: string) {
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  if (!digits) {
+    return false;
+  }
+  if (trimmed.startsWith("+")) {
+    return /^\+[1-9]\d{7,14}$/.test(`+${digits}`);
+  }
+  return digits.length === 10 || (digits.length === 12 && digits.startsWith("91"));
+}
+
+function isValidLoginIdentifier(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+  if (trimmed.includes("@")) {
+    return /^\S+@\S+\.\S+$/.test(trimmed);
+  }
+  return isValidPhoneIdentifier(trimmed);
+}
+
 async function configureGoogleSignIn() {
   if (googleSignInConfigured) return;
   const module = await getGoogleSigninModule();
@@ -122,8 +145,8 @@ export default function Login() {
   const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
   const otpInputRef = useRef<OtpInputHandle>(null);
   const verifyingRef = useRef(false);
-  const [email, setEmail] = useState("");
-  const [emailTouched, setEmailTouched] = useState(false);
+  const [identifierValue, setIdentifierValue] = useState("");
+  const [identifierTouched, setIdentifierTouched] = useState(false);
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"identifier" | "otp">("identifier");
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
@@ -139,10 +162,8 @@ export default function Login() {
     if (!prefill) {
       return;
     }
-    if (prefill.includes("@")) {
-      setEmail(prefill.trim().toLowerCase());
-      setEmailTouched(false);
-    }
+    setIdentifierValue(prefill.includes("@") ? prefill.trim().toLowerCase() : prefill.trim());
+    setIdentifierTouched(false);
   }, [params.prefill]);
 
   useEffect(() => {
@@ -189,11 +210,14 @@ export default function Login() {
   }
 
   function selectedIdentifier() {
-    return email.trim().toLowerCase();
+    const trimmed = identifierValue.trim();
+    return trimmed.includes("@") ? trimmed.toLowerCase() : trimmed;
   }
 
-  const emailInvalid =
-    emailTouched && email.trim().length > 0 && !/^\S+@\S+\.\S+$/.test(email.trim());
+  const identifierInvalid =
+    identifierTouched &&
+    identifierValue.trim().length > 0 &&
+    !isValidLoginIdentifier(identifierValue);
 
   function handleOtpError(error: unknown) {
     if (isAccountLockedError(error)) {
@@ -215,7 +239,7 @@ export default function Login() {
       return;
     }
     const identifier = selectedIdentifier();
-    if (!/^\S+@\S+\.\S+$/.test(identifier)) {
+    if (!isValidLoginIdentifier(identifier)) {
       setMessage(t("auth.invalidEmail"));
       return;
     }
@@ -374,7 +398,7 @@ export default function Login() {
               </Text>
               <Text style={styles.formSubtitle}>
                 {stage === "identifier"
-                  ? "Enter your registered email address."
+                  ? t("auth.identifierSubtitle")
                   : t("auth.otpSubtitle")}
               </Text>
             </View>
@@ -383,21 +407,21 @@ export default function Login() {
               <>
                 <GlassInput
                   testID="login-email"
-                  label="Email"
-                  value={email}
+                  label={t("auth.identifierLabel")}
+                  value={identifierValue}
                   onChangeText={(value) => {
-                    setEmail(value);
+                    setIdentifierValue(value);
                     if (message === t("auth.invalidEmail")) setMessage("");
                   }}
-                  onBlur={() => setEmailTouched(true)}
+                  onBlur={() => setIdentifierTouched(true)}
                   autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
+                  autoCorrect={false}
+                  keyboardType="default"
                   returnKeyType="next"
-                  placeholder="email@example.com"
+                  placeholder={t("auth.identifierPlaceholder")}
                   editable={!busy}
                 />
-                {emailInvalid ? (
+                {identifierInvalid ? (
                   <Text style={styles.inlineError}>{t("auth.invalidEmail")}</Text>
                 ) : null}
               </>
@@ -426,7 +450,7 @@ export default function Login() {
               busy={busyAction === "otp"}
               busyLabel={t("auth.working")}
             >
-              {stage === "identifier" ? "Send email code" : t("auth.verifyAndSignIn")}
+              {stage === "identifier" ? t("auth.sendCode") : t("auth.verifyAndSignIn")}
             </ZookButton>
 
             {stage === "otp" ? (

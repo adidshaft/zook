@@ -37,6 +37,7 @@ export interface MemberHomeData {
   activeGoals: number;
   assignedPlans: number;
   streakDays?: number;
+  todayWorkoutLoggedAt?: string | null;
   todayPlanName?: string | null;
   todayPlanAssignmentId?: string | null;
   todayPlanTrainer?: {
