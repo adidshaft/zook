@@ -87,7 +87,13 @@ export async function getLatestOtpFromMockOrUseDevCode(page: Page, _identifier: 
 
 export async function loginWithOtp(page: Page, identifier: string) {
   await page.goto("/login");
-  await page.getByLabel(/email/i).fill(identifier);
+  if (identifier.includes("@")) {
+    await page.getByTestId("login-method-email").click();
+    await page.getByTestId("login-email").fill(identifier);
+  } else {
+    await page.getByTestId("login-method-phone").click();
+    await page.getByTestId("login-phone").fill(identifier);
+  }
   const readResponseText = (response: Awaited<ReturnType<Page["waitForResponse"]>>) =>
     response.text().catch(() => "<response body unavailable>");
   const waitForAuthResponse = (path: string) =>

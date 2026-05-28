@@ -55,6 +55,12 @@ export type TranslationKey =
   | "auth.otpSubtitle"
   | "auth.identifierLabel"
   | "auth.identifierPlaceholder"
+  | "auth.useMobile"
+  | "auth.useEmail"
+  | "auth.mobileLabel"
+  | "auth.emailLabel"
+  | "auth.mobilePlaceholder"
+  | "auth.emailPlaceholderLogin"
   | "auth.otpLabel"
   | "auth.otpAccessibility"
   | "auth.sendCode"
@@ -69,6 +75,7 @@ export type TranslationKey =
   | "auth.freshCodeSent"
   | "auth.signedIn"
   | "auth.invalidEmail"
+  | "auth.invalidEmailOnly"
   | "auth.invalidMobile"
   | "auth.sessionExpired"
   | "auth.sessionExpiredTitle"
@@ -284,6 +291,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.otpSubtitle": "Check your messages.",
     "auth.identifierLabel": "Email or mobile number",
     "auth.identifierPlaceholder": "you@example.com or 98765 43210",
+    "auth.useMobile": "Use mobile number",
+    "auth.useEmail": "Use email",
+    "auth.mobileLabel": "Mobile number",
+    "auth.emailLabel": "Email",
+    "auth.mobilePlaceholder": "+91 98765 43210",
+    "auth.emailPlaceholderLogin": "you@example.com",
     "auth.otpLabel": "One-time code",
     "auth.otpAccessibility": "One-time code",
     "auth.sendCode": "Send Code",
@@ -298,6 +311,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.freshCodeSent": "Fresh code sent to {{identifier}}.",
     "auth.signedIn": "Signed in.",
     "auth.invalidEmail": "Enter a valid email or mobile number.",
+    "auth.invalidEmailOnly": "Enter a valid email address.",
     "auth.invalidMobile": "Enter a valid 10-digit mobile number.",
     "auth.sessionExpired": "Your session expired. Sign in again to continue.",
     "auth.sessionExpiredTitle": "Session expired",
@@ -512,6 +526,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.otpSubtitle": "अपने संदेश देखें.",
     "auth.identifierLabel": "ईमेल या मोबाइल नंबर",
     "auth.identifierPlaceholder": "you@example.com या 98765 43210",
+    "auth.useMobile": "मोबाइल नंबर इस्तेमाल करें",
+    "auth.useEmail": "ईमेल इस्तेमाल करें",
+    "auth.mobileLabel": "मोबाइल नंबर",
+    "auth.emailLabel": "ईमेल",
+    "auth.mobilePlaceholder": "+91 98765 43210",
+    "auth.emailPlaceholderLogin": "you@example.com",
     "auth.otpLabel": "वन-टाइम कोड",
     "auth.otpAccessibility": "वन-टाइम कोड",
     "auth.sendCode": "कोड भेजें",
@@ -526,6 +546,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.freshCodeSent": "{{identifier}} पर नया कोड भेजा गया.",
     "auth.signedIn": "साइन इन हो गया.",
     "auth.invalidEmail": "मान्य ईमेल या मोबाइल नंबर दर्ज करें.",
+    "auth.invalidEmailOnly": "मान्य ईमेल पता दर्ज करें.",
     "auth.invalidMobile": "मान्य 10-digit मोबाइल नंबर दर्ज करें.",
     "auth.sessionExpired": "आपका session expire हो गया है. जारी रखने के लिए फिर से sign in करें.",
     "auth.sessionExpiredTitle": "Session expire हो गया",
