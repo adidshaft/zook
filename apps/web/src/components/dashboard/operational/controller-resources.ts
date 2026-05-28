@@ -112,6 +112,7 @@ export function useDashboardOperationalResources({
     path: withBranch(`/api/orgs/${orgId}/attendance?limit=50`),
     enabled: mode === "attendance",
     itemKey: "attendance",
+    refreshMs: 10_000,
   });
   const auditLogsState = usePagedOperationalResource<
     { auditLogs: AuditLogRow[]; nextCursor?: string | null; limit: number },
