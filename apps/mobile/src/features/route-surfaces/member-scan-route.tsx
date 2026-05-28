@@ -267,6 +267,10 @@ export default function Scan() {
                 ? { checkInCode: queuedScan.payload }
                 : { qrPayload: queuedScan.payload },
           });
+          if (result.duplicate) {
+            await removeQueuedAttendanceScan(queuedScan.id);
+            continue;
+          }
           synced += 1;
           await removeQueuedAttendanceScan(queuedScan.id);
           const status = result.status ?? result.attendance.status ?? "APPROVED";
@@ -347,6 +351,9 @@ export default function Scan() {
         token,
         body: kind === "code" ? { checkInCode: payload } : { qrPayload: payload },
       });
+      if (result.duplicate) {
+        throw new Error("Already checked in. Check out before checking in again.");
+      }
       const status = result.status ?? result.attendance.status ?? "APPROVED";
       const failed = status === "REJECTED" || status === "FLAGGED";
       setScanState(failed ? "failed" : "accepted");
@@ -405,6 +412,9 @@ export default function Scan() {
         token,
         orgId: activeOrgId,
       });
+      if (result.duplicate) {
+        throw new Error("Already checked in. Check out before checking in again.");
+      }
       const status = result.status ?? result.attendance.status ?? "APPROVED";
       const failed = status === "REJECTED" || status === "FLAGGED";
       setScanState(failed ? "failed" : "accepted");
