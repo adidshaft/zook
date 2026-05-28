@@ -12236,6 +12236,13 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       },
       orderBy: { checkedInAt: "desc" },
     });
+    if (existing) {
+      return fail(
+        "ALREADY_CHECKED_IN",
+        "Already checked in. Check out before checking in again.",
+        409,
+      );
+    }
     const record = await prisma.attendanceRecord.create({
       data: {
         orgId,
@@ -12435,10 +12442,14 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       now,
     });
     if (!validation.allowed) {
+      const message =
+        validation.reason === "already_checked_in"
+          ? "Already checked in. Check out before checking in again."
+          : (validation.reason ?? "Attendance blocked");
       return fail(
         validation.reason?.toUpperCase() ?? "ATTENDANCE_BLOCKED",
-        validation.reason ?? "Attendance blocked",
-        400,
+        message,
+        validation.reason === "already_checked_in" ? 409 : 400,
       );
     }
     const status = validation.suspiciousFlags.length

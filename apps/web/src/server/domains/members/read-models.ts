@@ -84,7 +84,8 @@ export async function getMemberHomeData(userId: string, preferredOrgId?: string)
   const [
     organization,
     plan,
-    attendance,
+    recentAttendance,
+    streakAttendance,
     notificationsUnread,
     goalsCount,
     plansCount,
@@ -94,12 +95,29 @@ export async function getMemberHomeData(userId: string, preferredOrgId?: string)
       ? prisma.organization.findUnique({ where: { id: activeOrgId } })
       : Promise.resolve(null),
     subscription
-      ? prisma.membershipPlan.findUnique({ where: { id: subscription.planId } })
+      ? prisma.membershipPlan.findUnique({
+          where: { id: subscription.planId },
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            durationDays: true,
+            visitLimit: true,
+            validityDays: true,
+          },
+        })
       : Promise.resolve(null),
     prisma.attendanceRecord.findMany({
       where: { userId, ...(activeOrgId ? { orgId: activeOrgId } : {}) },
       orderBy: { checkedInAt: "desc" },
-      take: 400,
+      select: { id: true, checkedInAt: true, status: true, source: true, dateKey: true },
+      take: 12,
+    }),
+    prisma.attendanceRecord.findMany({
+      where: { userId, status: "APPROVED", ...(activeOrgId ? { orgId: activeOrgId } : {}) },
+      orderBy: { checkedInAt: "desc" },
+      select: { dateKey: true },
+      take: 366,
     }),
     prisma.notificationRecipient.count({ where: { userId, readAt: null } }),
     prisma.userGoal.count({ where: { userId, active: true } }),
@@ -111,13 +129,17 @@ export async function getMemberHomeData(userId: string, preferredOrgId?: string)
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
       },
       orderBy: { createdAt: "desc" },
+      select: { id: true, planId: true },
     }),
   ]);
   const todayPlan = todayPlanAssignment
-    ? await prisma.planContent.findUnique({ where: { id: todayPlanAssignment.planId } })
+    ? await prisma.planContent.findUnique({
+        where: { id: todayPlanAssignment.planId },
+        select: { title: true },
+      })
     : null;
   const attendanceKeys = new Set(
-    attendance.filter((record) => record.status === "APPROVED").map((record) => record.dateKey),
+    streakAttendance.map((record) => record.dateKey),
   );
   let streakDays = 0;
   for (let offset = 0; offset < 365; offset += 1) {
@@ -138,12 +160,13 @@ export async function getMemberHomeData(userId: string, preferredOrgId?: string)
         }
       : null,
     activePlan: plan,
-    recentAttendance: attendance,
+    recentAttendance,
     unreadNotifications: notificationsUnread,
     activeGoals: goalsCount,
     assignedPlans: plansCount,
     streakDays,
     todayPlanName: todayPlan?.title ?? null,
+    todayPlanAssignmentId: todayPlanAssignment?.id ?? null,
     nextCheckInEstimate: checkedInToday ? "Tomorrow" : subscription ? "Available today" : null,
   };
 }

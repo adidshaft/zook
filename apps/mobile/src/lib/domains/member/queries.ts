@@ -86,14 +86,24 @@ export function useActiveOrganization() {
 export function useMemberHome() {
   const { activeOrgId, status, token } = useAuth();
   return useQuery({
-    queryKey: queryKeys.member.home(activeOrgId),
-    queryFn: () =>
-      mobileApiFetch<MemberHomeData>("/me/home", {
-        token,
-        ...(activeOrgId ? { orgId: activeOrgId } : {}),
-      }),
+    ...memberHomeQueryOptions({ activeOrgId, token }),
     enabled: status === "authenticated" && Boolean(token),
   });
+}
+
+export function memberHomeQueryOptions(input: {
+  activeOrgId?: string | null;
+  token?: string | null;
+}) {
+  return {
+    queryKey: queryKeys.member.home(input.activeOrgId ?? null),
+    queryFn: () =>
+      mobileApiFetch<MemberHomeData>("/me/home", {
+        token: input.token ?? undefined,
+        ...(input.activeOrgId ? { orgId: input.activeOrgId } : {}),
+      }),
+    staleTime: 30_000,
+  };
 }
 
 export function memberDashboardQueryOptions(input: {

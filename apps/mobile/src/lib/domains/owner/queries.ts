@@ -23,7 +23,9 @@ export function useOwnerDashboard(orgId?: string) {
       }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
     placeholderData: keepPreviousData,
-    staleTime: 60_000,
+    staleTime: 8_000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: true,
   });
 }
 
