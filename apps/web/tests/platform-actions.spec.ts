@@ -90,7 +90,7 @@ test.describe("platform admin actions", () => {
     await page.goto("/platform/users");
     await expect(page.getByRole("heading", { name: /platform support console/i })).toBeVisible();
     await page.goto("/platform/payments");
-    await expect(page.getByRole("heading", { name: /cross-tenant payment search/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /payment ledger/i })).toBeVisible();
     await page.goto("/platform/broadcasts");
     await expect(page.getByRole("heading", { name: /platform broadcasts/i })).toBeVisible();
     await page.goto("/platform/moderation");
