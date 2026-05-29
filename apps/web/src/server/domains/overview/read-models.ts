@@ -3,8 +3,29 @@ import { endOfWindow, startOfToday } from "@/server/domains/shared/date";
 import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { getBranchScope } from "@/server/domains/shared/org-context";
 import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";
-import { cachedJson } from "@/server/server-cache";
+import { cachedJson, getServerCacheStore } from "@/server/server-cache";
 import { buildOrganizationDashboardCharts, dayWindow } from "./chart-series";
+
+function organizationDashboardCacheKeys(orgId: string, branchId?: string | null) {
+  const branchKeys = branchId ? [branchId] : [];
+  const scopes = Array.from(new Set(["default", "all", ...branchKeys]));
+  return scopes.flatMap((scope) => [
+    `org-dashboard:${orgId}:${scope}`,
+    `org-dashboard-fast:${orgId}:${scope}`,
+  ]);
+}
+
+export async function invalidateOrganizationDashboardCache(
+  orgId: string,
+  input: { branchId?: string | null } = {},
+) {
+  const store = getServerCacheStore();
+  await Promise.all(
+    organizationDashboardCacheKeys(orgId, input.branchId).map((key) =>
+      store.delete(key).catch(() => undefined),
+    ),
+  );
+}
 
 export async function getOrganizationDashboardData(
   orgId: string,

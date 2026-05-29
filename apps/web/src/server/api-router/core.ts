@@ -164,7 +164,10 @@ import {
   getActiveMembershipData,
   getMemberHomeData,
 } from "../domains/members";
-import { getOrganizationDashboardData } from "../domains/overview";
+import {
+  getOrganizationDashboardData,
+  invalidateOrganizationDashboardCache,
+} from "../domains/overview";
 import { getOrganizationRecentPayments } from "../domains/payments";
 import {
   pricingFromPlanCatalog,
@@ -6579,6 +6582,7 @@ export async function handleMeData(request: NextRequest, path: string[]) {
       throw conflictError("Rejected attendance records cannot be checked out.");
     }
     const checkedOutRecord = await closeAttendanceSession(record, body.reason);
+    await invalidateOrganizationDashboardCache(record.orgId, { branchId: record.branchId });
     await writeAuditLog({
       request,
       orgId: record.orgId,
@@ -8687,6 +8691,7 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
         commerceSetup: body.commerceSetup,
       },
     });
+    await invalidateOrganizationDashboardCache(orgId, { branchId: branch.id });
     return ok({ branch, warnings });
   }
   if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "branches", /.+/])) {
@@ -8799,6 +8804,7 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
       entityId: branch.id,
       metadata: { name: branch.name, isDefault: branch.isDefault, active: branch.active },
     });
+    await invalidateOrganizationDashboardCache(orgId, { branchId: branch.id });
     return ok({ branch, warnings });
   }
   if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "branches", /.+/])) {
@@ -8828,6 +8834,7 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
       entityId: branch.id,
       metadata: { name: branch.name },
     });
+    await invalidateOrganizationDashboardCache(orgId, { branchId: branch.id });
     return ok({ branch });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "dashboard"])) {
@@ -12300,6 +12307,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     });
     if (openSession) {
       const checkedOutRecord = await closeAttendanceSession(openSession, "qr_scan");
+      await invalidateOrganizationDashboardCache(orgId, { branchId: branch.id });
       await writeAuditLog({
         request,
         orgId,
@@ -12338,6 +12346,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         suspiciousFlags: ["local_dev_scan"],
       },
     });
+    await invalidateOrganizationDashboardCache(orgId, { branchId: branch.id });
     await writeAuditLog({
       request,
       orgId,
@@ -12520,6 +12529,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         );
       }
       const checkedOutRecord = await closeAttendanceSession(openCheckIn, "qr_scan", now);
+      await invalidateOrganizationDashboardCache(decoded.orgId, { branchId: decoded.branchId });
       await writeAuditLog({
         request,
         orgId: decoded.orgId,
@@ -12617,6 +12627,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         deviceId: body.deviceId,
       }),
     });
+    await invalidateOrganizationDashboardCache(decoded.orgId, { branchId: decoded.branchId });
     const newBadges =
       status === "APPROVED"
         ? await (async () => {
@@ -12862,6 +12873,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       entityType: "attendance_record",
       entityId: record.id,
     });
+    await invalidateOrganizationDashboardCache(orgId, { branchId: record.branchId });
     return ok({
       record,
       newBadges,
@@ -12910,6 +12922,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       entityId: record.id,
       metadata: { reason: body.reason },
     });
+    await invalidateOrganizationDashboardCache(orgId, { branchId: record.branchId });
     return ok({ record });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "attendance", "manual"])) {
@@ -13004,6 +13017,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       entityId: record.id,
       metadata: { memberUserId: body.memberUserId, reason: body.reason },
     });
+    await invalidateOrganizationDashboardCache(orgId, { branchId: record.branchId });
     return ok({ record, newBadges });
   }
   return undefined;
