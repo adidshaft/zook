@@ -21,6 +21,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { RoleSwitcherChip } from "@/components/role-switcher";
+import { HomeSkeleton } from "@/components/skeletons";
 import { Banners } from "@/features/member/home/banners";
 import { renderHomeCard } from "@/features/member/home/render";
 import { deriveHomeState } from "@/features/member/home/state";
@@ -297,7 +298,7 @@ export default function HomeScreen() {
             showProfileShortcut={false}
           />
 
-          {homeQuery.isLoading ? <HomeLoading /> : null}
+          {homeQuery.isLoading ? <HomeSkeleton /> : null}
           {homeQuery.isError ? (
             <QueryErrorState error={homeQuery.error} onRetry={() => void homeQuery.refetch()} />
           ) : null}

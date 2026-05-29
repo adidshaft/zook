@@ -165,7 +165,7 @@ function PillActionRow({
       style={({ pressed }) => [
         styles.pillRow,
         {
-          backgroundColor: mode === "dark" ? "#000000" : palette.bg.elevated,
+          backgroundColor: mode === "dark" ? palette.bg.app : palette.bg.elevated,
           borderColor: palette.border.default,
           opacity: pressed ? 0.85 : 1,
         },

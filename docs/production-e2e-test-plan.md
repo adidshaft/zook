@@ -1,20 +1,64 @@
 # Production E2E Test Plan
 
-This plan tests both web and mobile production flows while keeping money movement in demo/mock mode only.
+This plan tests both web and mobile production flows while avoiding unintended real money movement.
 
 ## Ground Rules
 
-- Every transactional money flow must stay demo/mock/offline.
-- Use OTP `000000` for all demo accounts.
+- Do not complete any real Razorpay payment unless it is an explicitly approved live-payment test.
+- Use demo/mock/offline payment paths where available. If production opens Razorpay, stop before payment confirmation.
+- Use OTP `000000` only for seeded demo accounts that intentionally support the fixed test code.
+- Real phone-number login can send a live MSG91 SMS. Test it only with a phone number you own/control.
 - Test one surface at a time: each step is tagged either `[web]` or `[mobile]`.
 - Record bugs with account used, surface, page/screen, action, expected result, actual result, and screenshot.
+
+## Current Production Pre-Checks
+
+Run these before the main checklist:
+
+- [ ] [web] Open `https://zookfit.in/api/health` and confirm `envProfile` is `production`.
+- [ ] [web] Open `https://zookfit.in/api/ready` and confirm `ready` is `true`.
+- [ ] [web] Confirm production DB status shows reachable/schema-ready/migrations applied.
+- [ ] [web] Confirm SMS provider is `msg91`, mode is `live`, and status is `ready`.
+- [ ] [web] Confirm payment provider is live Razorpay before deciding whether to skip payment completion.
+- [ ] [web] Confirm server cache and rate limiting are distributed/ready.
+
+## Recent Feature Regression Checks
+
+Add these to the pass before signing off production:
+
+- [ ] [web] Login page lets the user choose email login.
+- [ ] [web] Login page lets the user choose mobile login.
+- [ ] [mobile] App login lets the user choose email login.
+- [ ] [mobile] App login lets the user choose mobile login.
+- [ ] [web] Seeded demo phone login with `+919876543210` accepts OTP `000000` and creates a member session.
+- [ ] [web] Real phone login sends SMS only to an owned/control number, and OTP verification creates a session.
+- [ ] [web] Profile completion allows adding a missing phone or email later.
+- [ ] [mobile] Profile completion allows adding a missing phone or email later.
+- [ ] [web] Pricing page opens and shows four plans including the two-month free trial plan.
+- [ ] [web] Pricing page first fold shows only main points.
+- [ ] [web] Pricing page expands/collapses full plan details from More/Expand.
+- [ ] [web] Dashboard pricing link opens the pricing page in a new tab.
+- [ ] [mobile] Bottom navigation does not show Diet as a standalone tab.
+- [ ] [mobile] Diet is reachable under the Plan section.
+- [ ] [mobile] QR scanner has a smooth neon horizontal scan bar moving vertically.
+- [ ] [mobile] QR check-in succeeds and starts a live timer on member home.
+- [ ] [mobile] Manual stop/check-out stops the timer and records duration.
+- [ ] [mobile] Re-scanning the same branch QR checks the member out.
+- [ ] [mobile] Already checked-in members cannot create another check-in without checking out.
+- [ ] [mobile] Geofence checkout stops the active timer when leaving the branch area, if location permission is granted.
+- [ ] [mobile] Multi-branch check-in resolves the branch from QR payload.
+- [ ] [mobile] Multi-branch check-in resolves the nearest branch from geolocation when QR is not involved.
+- [ ] [web] Owner dashboard attendance count updates after member check-in without waiting for stale cache.
+- [ ] [web] Owner dashboard attendance/history updates after member checkout.
+- [ ] [mobile] Member can view recorded attendance durations later.
+- [ ] [mobile] QR verification success completes dynamically, shows the resolved verification state, and gives haptic feedback.
 
 ## Checklist
 
 1. [ ] [web] Open production in a clean browser profile or incognito window.
 2. [ ] [web] Confirm you are on the production domain.
 3. [ ] [web] Confirm the demo org exists and is clearly identifiable, for example `aarogya-strength`.
-4. [ ] [web] Confirm payment mode is demo/mock before doing any transaction.
+4. [ ] [web] Confirm whether the current payment path is demo/offline or live Razorpay before doing any transaction.
 5. [ ] [web] Log in as `platform@zook.local` with OTP `000000`.
 6. [ ] [web] Open the platform dashboard.
 7. [ ] [web] Confirm the demo org appears in platform orgs.
@@ -54,7 +98,7 @@ This plan tests both web and mobile production flows while keeping money movemen
 41. [ ] [web] Confirm inventory movement appears if supported.
 42. [ ] [web] Go to Payments.
 43. [ ] [web] Confirm demo payment records are visible.
-44. [ ] [web] Confirm refunds/payment events are clearly demo/mock.
+44. [ ] [web] Confirm refunds/payment events are clearly demo/offline, or skip before any live capture.
 45. [ ] [web] Go to Notifications.
 46. [ ] [web] Create a draft notification for selected demo members.
 47. [ ] [web] Send the notification only to demo members.
@@ -82,7 +126,7 @@ This plan tests both web and mobile production flows while keeping money movemen
 69. [ ] [web] Perform a check-in.
 70. [ ] [web] Confirm check-in succeeds.
 71. [ ] [web] Search for `desk-test-member@zook.local`.
-72. [ ] [web] Activate/process pending membership using demo/offline/mock payment.
+72. [ ] [web] Activate/process pending membership using demo/offline payment.
 73. [ ] [web] Confirm no real payment page or real charge appears.
 74. [ ] [web] Confirm attendance history updates.
 75. [ ] [web] Log out.
@@ -110,7 +154,7 @@ This plan tests both web and mobile production flows while keeping money movemen
 97. [ ] [mobile] Confirm the web-sent notification appears if mobile receives it.
 98. [ ] [mobile] Open shop.
 99. [ ] [mobile] Place a demo shop order.
-100. [ ] [mobile] Confirm checkout uses demo/mock money.
+100. [ ] [mobile] Confirm checkout uses demo/offline money, or stop before live Razorpay confirmation.
 101. [ ] [mobile] Confirm order success appears.
 102. [ ] [mobile] Confirm order appears in member orders.
 103. [ ] [mobile] Create or open referral code/link.
@@ -119,7 +163,7 @@ This plan tests both web and mobile production flows while keeping money movemen
 106. [ ] [mobile] Log in as `member2@zook.local` with OTP `000000`.
 107. [ ] [mobile] Open the referral link from `member@zook.local`.
 108. [ ] [mobile] Join/buy a membership through referral flow.
-109. [ ] [mobile] Confirm payment is demo/mock.
+109. [ ] [mobile] Confirm payment is demo/offline, or stop before live Razorpay confirmation.
 110. [ ] [mobile] Confirm `member2` membership activates.
 111. [ ] [mobile] Log out.
 112. [ ] [web] Log in as `owner@zook.local`.
@@ -128,7 +172,7 @@ This plan tests both web and mobile production flows while keeping money movemen
 115. [ ] [web] Open referrals/offers.
 116. [ ] [web] Confirm `member@zook.local` received the referral reward/credit if supported.
 117. [ ] [web] Open payments.
-118. [ ] [web] Confirm the `member2` transaction is present and marked demo/mock.
+118. [ ] [web] Confirm the `member2` transaction is present and marked demo/offline if completed.
 119. [ ] [web] Open shop orders.
 120. [ ] [web] Confirm the `member@zook.local` mobile shop order appears.
 121. [ ] [web] Log out.
@@ -144,7 +188,7 @@ This plan tests both web and mobile production flows while keeping money movemen
 131. [ ] [mobile] Open the demo gym page.
 132. [ ] [mobile] Start a join flow.
 133. [ ] [mobile] Confirm prospect can join only through intended flow.
-134. [ ] [mobile] Confirm payment remains demo/mock.
+134. [ ] [mobile] Confirm payment remains demo/offline, or stop before live Razorpay confirmation.
 135. [ ] [mobile] Log out.
 136. [ ] [web] Log in as `owner@zook.local`.
 137. [ ] [web] Confirm all mobile-created transactions appear in dashboard metrics.
@@ -173,4 +217,3 @@ This plan tests both web and mobile production flows while keeping money movemen
 | `desk-test-member@zook.local` | Reception desk and manual payment account |
 | `minor@zook.local` | Guardian/minor behavior |
 | `prospect@zook.local` | Discovery and first-join behavior |
-

@@ -15,6 +15,7 @@ export function useMyPlans() {
     queryKey: queryKeys.plans.list(),
     queryFn: () => mobileApiFetch<{ plans: MyPlanRecord[] }>("/me/plans", { token }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -25,6 +26,7 @@ export function usePlanDetail(assignmentId?: string) {
     queryFn: () =>
       mobileApiFetch<{ assignment: MyPlanRecord }>(`/me/plans/${assignmentId}`, { token }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(assignmentId),
+    staleTime: 5 * 60_000,
   });
 }
 

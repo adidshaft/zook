@@ -5,6 +5,7 @@ import {
   Platform,
   ScrollView,
   TouchableWithoutFeedback,
+  View,
   type KeyboardAvoidingViewProps,
   type ScrollViewProps,
 } from "react-native";
@@ -12,11 +13,13 @@ import {
 type KeyboardAwareScreenProps = Omit<KeyboardAvoidingViewProps, "children" | "behavior"> & {
   children: ReactNode;
   scrollViewProps?: ScrollViewProps;
+  noScroll?: boolean;
 };
 
 export function KeyboardAwareScreen({
   children,
   scrollViewProps,
+  noScroll = false,
   ...rest
 }: KeyboardAwareScreenProps) {
   return (
@@ -27,13 +30,17 @@ export function KeyboardAwareScreen({
       {...rest}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
-          {...scrollViewProps}
-        >
-          {children}
-        </ScrollView>
+        {noScroll ? (
+          <View style={{ flex: 1 }}>{children}</View>
+        ) : (
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+            {...scrollViewProps}
+          >
+            {children}
+          </ScrollView>
+        )}
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );

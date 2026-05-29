@@ -108,6 +108,7 @@ export function useMyOrganizations() {
       return session.organizations;
     },
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -121,6 +122,7 @@ export function useMyProfile() {
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
       }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -245,6 +247,7 @@ export function useMyBadges() {
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
       }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 10 * 60_000,
   });
 }
 
@@ -260,6 +263,7 @@ export function useMyMemberships() {
         token,
       }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -273,6 +277,7 @@ export function useActiveMembership() {
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
       }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -283,6 +288,7 @@ export function useMyAttendance() {
     queryFn: () =>
       mobileApiFetch<{ attendance: Array<Record<string, unknown>> }>("/me/attendance", { token }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
 

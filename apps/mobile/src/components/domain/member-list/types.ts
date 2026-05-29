@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export type DomainTone = "neutral" | "lime" | "amber" | "danger" | "blue" | "violet";
 
 export type MemberRowItem = {
@@ -32,4 +34,7 @@ export type MemberListProps = {
   emptyState?: { title: string; subtitle?: string };
   testID?: string;
   searchTestID?: string;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+  header?: ReactNode;
 };

@@ -3,6 +3,7 @@ import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { invalidations } from "@/lib/domains/shared/invalidate";
+import { queryKeys } from "@/lib/domains/shared/keys";
 import {
   getMutationContext,
   notifyMutationError,
@@ -13,6 +14,7 @@ import type { ShopOrderRecord } from "@/lib/domains/shared/types";
 export function useFulfillShopOrder(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useMutation({
     mutationFn: (
@@ -42,6 +44,22 @@ export function useFulfillShopOrder(orgId?: string) {
         },
       );
     },
+    onMutate: async (input) => {
+      const orderId = typeof input === "string" ? input : input.orderId;
+      const queryKeyActive = queryKeys.shop.activeOrders(resolvedOrgId, selectedBranchId);
+
+      await queryClient.cancelQueries({ queryKey: queryKeyActive });
+
+      const previousOrders = queryClient.getQueryData<{ orders: ShopOrderRecord[] }>(queryKeyActive);
+
+      if (previousOrders) {
+        queryClient.setQueryData(queryKeyActive, {
+          orders: previousOrders.orders.filter((order) => order.id !== orderId),
+        });
+      }
+
+      return { previousOrders };
+    },
     onSuccess: async () => {
       await Promise.all([
         invalidations.shop.activeOrders(queryClient, resolvedOrgId),
@@ -51,8 +69,19 @@ export function useFulfillShopOrder(orgId?: string) {
       ]);
       notifyMutationSuccess("Pickup order fulfilled.");
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      if (context?.previousOrders) {
+        queryClient.setQueryData(
+          queryKeys.shop.activeOrders(resolvedOrgId, selectedBranchId),
+          context.previousOrders,
+        );
+      }
       notifyMutationError(error, "Pickup order could not be fulfilled.");
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.shop.activeOrders(resolvedOrgId, selectedBranchId),
+      });
     },
   });
 }

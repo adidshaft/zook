@@ -497,6 +497,8 @@ export function ProfileShortcut({
       {remotePhotoUrl ? (
         <Image
           source={{ uri: remotePhotoUrl }}
+          placeholder="L6PZfMAR00yXQD%Mt7V@00_4g9-;"
+          transition={250}
           style={styles.profileShortcutImage}
           contentFit="cover"
         />

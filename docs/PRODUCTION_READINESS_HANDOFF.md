@@ -287,7 +287,7 @@ Payment-specific hardening gaps found in the audit:
 
 ## Additional Checks Run During Deployment Readiness
 
-- Docs-only release-readiness pass updated `README.md`, `docs/deployment.md`, `docs/eas-builds.md`, `docs/mobile-runtime.md`, `docs/QA_CHECKLIST.md`, and `docs/NEXT_PRODUCTION_HARDENING_PLAN.md`.
+- Docs-only release-readiness pass updated `README.md`, `docs/deployment.md`, `docs/eas-builds.md`, `docs/mobile-runtime.md`, and `docs/QA_CHECKLIST.md`.
 - The release runbook, iPhone install checklist, and fail-safe UX checklist were documented but not executed against staging or a physical iPhone.
 - `git diff --check`: passed for the docs-only release-readiness pass.
 

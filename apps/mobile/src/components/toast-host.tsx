@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Keyboard, StyleSheet, Text, View } from "react-native";
+import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from "@/lib/reanimated-lite";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,13 +30,13 @@ export function ToastHost() {
       }
       setToast(payload);
       opacity.value = 0;
-      translateY.value = 16;
-      opacity.value = withTiming(1, { duration: 180 });
-      translateY.value = withTiming(0, { duration: 180 });
+      translateY.value = 24;
+      opacity.value = withTiming(1, { duration: 150 });
+      translateY.value = withSpring(0, { damping: 14, stiffness: 140 });
       timeoutRef.current = setTimeout(() => {
-        opacity.value = withTiming(0, { duration: 220 });
-        translateY.value = withTiming(12, { duration: 220 });
-        timeoutRef.current = setTimeout(() => setToast(null), 240);
+        opacity.value = withTiming(0, { duration: 200 });
+        translateY.value = withTiming(16, { duration: 200 });
+        timeoutRef.current = setTimeout(() => setToast(null), 220);
       }, 3200);
     });
   }, [opacity, translateY]);
@@ -76,9 +77,18 @@ export function ToastHost() {
     },
   } satisfies Record<ToastTone, { borderColor: string; backgroundColor: string }>;
 
+  const dismissToast = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    opacity.value = withTiming(0, { duration: 120 });
+    translateY.value = withTiming(20, { duration: 120 });
+    timeoutRef.current = setTimeout(() => setToast(null), 140);
+  };
+
   return (
     <View
-      pointerEvents="none"
+      pointerEvents="box-none"
       style={[
         styles.host,
         {
@@ -86,19 +96,26 @@ export function ToastHost() {
         },
       ]}
     >
-      <Reanimated.View
-        accessibilityRole="alert"
-        style={[
-          styles.toast,
-          toneStyle[toast.tone],
-          toastStyle,
-        ]}
+      <Pressable
+        onPress={dismissToast}
+        style={{ width: "100%", maxWidth: 520 }}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss notification"
       >
-        <Text style={[styles.title, { color: palette.text.primary }]}>{toast.title}</Text>
-        {toast.message ? (
-          <Text style={[styles.message, { color: palette.text.secondary }]}>{toast.message}</Text>
-        ) : null}
-      </Reanimated.View>
+        <Reanimated.View
+          accessibilityRole="alert"
+          style={[
+            styles.toast,
+            toneStyle[toast.tone],
+            toastStyle,
+          ]}
+        >
+          <Text style={[styles.title, { color: palette.text.primary }]}>{toast.title}</Text>
+          {toast.message ? (
+            <Text style={[styles.message, { color: palette.text.secondary }]}>{toast.message}</Text>
+          ) : null}
+        </Reanimated.View>
+      </Pressable>
     </View>
   );
 }

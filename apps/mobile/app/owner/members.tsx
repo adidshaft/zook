@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { RefreshControl, StyleSheet } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { StyleSheet } from "react-native";
 
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
 import { ZookScreen } from "@/components/primitives";
@@ -18,10 +18,18 @@ export default function OwnerMembersScreen() {
   const { activeOrgId } = useAuth();
   const membersQuery = useOrgMembers();
   const [memberSearch, setMemberSearch] = useState("");
+  const [debouncedMemberSearch, setDebouncedMemberSearch] = useState("");
   const [memberFilter, setMemberFilter] = useState<MemberFilter>("all");
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMemberSearch(memberSearch);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [memberSearch]);
+
   const filteredMembers = useMemo(() => {
-    const term = memberSearch.trim().toLowerCase();
+    const term = debouncedMemberSearch.trim().toLowerCase();
     return (membersQuery.data?.members ?? []).filter((member) => {
       const name = member.user?.name.toLowerCase() ?? "";
       const email = member.user?.email.toLowerCase() ?? "";
@@ -79,14 +87,7 @@ export default function OwnerMembersScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="owner-home-screen">
-        <KeyboardAwareScreen
-          scrollViewProps={{
-            contentInsetAdjustmentBehavior: "never",
-            showsVerticalScrollIndicator: false,
-            contentContainerStyle: styles.content,
-            refreshControl: <RefreshControl refreshing={membersQuery.isRefetching} onRefresh={onRefresh} tintColor={legacyColors.brandLime} colors={[legacyColors.brandLime]} />,
-          }}
-        >
+        <KeyboardAwareScreen noScroll={true} style={styles.content}>
           <MemberList
             testID="owner-view-members"
             items={memberItems}
@@ -110,6 +111,8 @@ export default function OwnerMembersScreen() {
             onPressMember={(member) =>
               router.push({ pathname: "/owner/member/[id]", params: { id: member.id } })
             }
+            refreshing={membersQuery.isRefetching}
+            onRefresh={onRefresh}
           />
         </KeyboardAwareScreen>
       </ZookScreen>
@@ -118,5 +121,5 @@ export default function OwnerMembersScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
+  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, paddingHorizontal: 16, flex: 1 },
 });

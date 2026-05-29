@@ -2,7 +2,7 @@
 
 Updated: 2026-05-08 (Asia/Kolkata)
 
-Scope covered: `zook-product-proposal-v2.md` sections 1, 3, 5.10, 5.11, 5.12, 6.2, and the landable items from 6.3. Code-side Phase 1 and Phase 2 work is implemented and locally verified. Public rollout still depends on provider credentials, quota windows, and physical-device certification.
+Scope covered: early product-readiness findings from the May 2026 launch pass. Code-side Phase 1 and Phase 2 work is implemented and locally verified. Public rollout still depends on provider credentials, quota windows, and physical-device certification.
 
 ## Executive Status
 

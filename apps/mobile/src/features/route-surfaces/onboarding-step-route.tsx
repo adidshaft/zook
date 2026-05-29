@@ -49,11 +49,11 @@ const permissionRows = [
 
 const roleOptions = [
   { label: "Join a gym", body: "Find nearby gyms and start as a member.", action: "member", icon: "walk-outline" },
-  { label: "I run a gym", body: "Open the gym setup flow on the web.", action: "owner", icon: "business-outline" },
-  { label: "I'm a trainer", body: "Remember trainer interest for coach tools.", action: "trainer", icon: "barbell-outline" },
+  { label: "I run a gym", body: "Set up your gym on the web dashboard.", action: "owner", icon: "business-outline" },
+  { label: "I'm a trainer", body: "Your gym adds you — sign in once they send an invite.", action: "trainer", icon: "barbell-outline" },
   {
     label: "I work the front desk",
-    body: "Remember desk interest for reception tools.",
+    body: "Your gym adds you — sign in once they send an invite.",
     action: "front_desk",
     icon: "desktop-outline",
   },

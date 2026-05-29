@@ -151,6 +151,7 @@ export default function Shop() {
   const { selectedBranchId } = useBranchSelection();
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [cartHydrated, setCartHydrated] = useState(false);
   const [order, setOrder] = useState<ShopOrderViewRecord | null>(null);
@@ -179,13 +180,21 @@ export default function Shop() {
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
   const cartStorageKey = `zook_shop_cart_${activeOrgId ?? activeOrganization?.orgId ?? "default"}`;
   const products = productsQuery.data?.products ?? [];
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const categoryMatch = category === "ALL" || product.category === category;
-      const queryMatch = !query || product.name.toLowerCase().includes(query.toLowerCase());
+      const queryMatch = !debouncedQuery || product.name.toLowerCase().includes(debouncedQuery.toLowerCase());
       return categoryMatch && queryMatch;
     });
-  }, [category, products, query]);
+  }, [category, products, debouncedQuery]);
   const categoryCounts = useMemo(() => {
     const counts: Record<Category, number> = {
       ALL: products.length,

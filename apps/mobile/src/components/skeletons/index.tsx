@@ -236,6 +236,36 @@ export function SettingsSkeleton() {
   );
 }
 
+export function HomeSkeleton() {
+  return (
+    <View style={styles.stack}>
+      {/* Banner Skeleton */}
+      <GlassCard variant="compact" contentStyle={styles.row}>
+        <Skeleton width={34} height={34} borderRadius={17} />
+        <View style={styles.copy}>
+          <Skeleton width="60%" height={14} borderRadius={7} />
+          <Skeleton width="80%" height={11} borderRadius={5} />
+        </View>
+        <Skeleton width={58} height={28} borderRadius={14} />
+      </GlassCard>
+
+      {/* Main Home Card Skeleton */}
+      <GlassCard variant="selected" contentStyle={styles.membershipCard}>
+        <View style={styles.row}>
+          <Skeleton width={46} height={46} borderRadius={23} />
+          <View style={styles.copy}>
+            <Skeleton width="68%" height={20} borderRadius={10} />
+            <Skeleton width="88%" height={14} borderRadius={7} />
+            <Skeleton width="48%" height={14} borderRadius={7} />
+          </View>
+        </View>
+        <Skeleton width="100%" height={48} borderRadius={24} />
+      </GlassCard>
+    </View>
+  );
+}
+
+
 const styles = StyleSheet.create({
   stack: {
     gap: 10,
