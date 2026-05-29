@@ -79,6 +79,19 @@ test.describe("attendance actions", () => {
       where: { orgId: org.id, isDefault: true },
     });
     const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    await prisma.attendanceRecord.updateMany({
+      where: {
+        orgId: org.id,
+        userId: member.id,
+        checkedOutAt: null,
+        status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
+      },
+      data: {
+        checkedOutAt: new Date(),
+        checkoutReason: "manual",
+        durationSeconds: 0,
+      },
+    });
 
     const payload = await expectApiOk<{ record: { id: string; status: string; source: string } }>(
       await page.request.post(`/api/orgs/${org.id}/attendance/manual`, {
