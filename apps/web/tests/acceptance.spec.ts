@@ -205,6 +205,10 @@ test("owner can manage branches and public offers", async ({ page }) => {
   requireDb();
   await loginWithSessionCookie(page, "owner@zook.local");
   const org = await seedAndGetOrg({ username: "aarogya-strength" });
+  await prisma.saaSSubscription.update({
+    where: { orgId: org.id },
+    data: { tier: "GROWTH" },
+  });
 
   const branchPayload = await expectApiOk<{ branch: { id: string; isDefault: boolean } }>(
     await page.request.post(`/api/orgs/${org.id}/branches`, {

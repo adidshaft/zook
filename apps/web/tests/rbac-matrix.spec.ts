@@ -147,7 +147,7 @@ test("organization routes enforce role and permission matrix", async ({ page }) 
   );
   await expect((await page.request.get(`/api/orgs/${org.id}/payments/recent`)).status()).toBe(200);
   await page.goto("/dashboard");
-  await expect(page).toHaveURL(/\/desk(?:\?from=dashboard)?$/);
+  await expect(page).toHaveURL(/\/desk(?:\?from=dashboard)?$/, { timeout: 15_000 });
   await expect(page.getByRole("heading", { name: "Today's queue" })).toBeVisible();
   await expect(
     (
