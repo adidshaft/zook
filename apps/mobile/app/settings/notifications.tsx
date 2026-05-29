@@ -46,6 +46,9 @@ export default function NotificationSettingsScreen() {
               <PreferenceRow key={row.key} title={row.title} value={preferences[row.key]} onChange={(value) => void update(row.key, value)} />
             ))}
           </GlassCard>
+          <GlassCard variant="compact" contentStyle={styles.stack}>
+            <ComingSoonRow title="WhatsApp updates" />
+          </GlassCard>
           <Text style={[styles.note, { color: palette.text.secondary }]}>Changes sync to your active gym when available.</Text>
         </ScrollView>
       </ZookScreen>
@@ -63,10 +66,24 @@ function PreferenceRow({ onChange, title, value }: { onChange: (value: boolean) 
   );
 }
 
+function ComingSoonRow({ title }: { title: string }) {
+  const { palette } = useTheme();
+  return (
+    <View style={styles.row}>
+      <Text style={[styles.title, { color: palette.text.secondary }]}>{title}</Text>
+      <View style={[styles.comingSoonBadge, { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base }]}>
+        <Text style={[styles.comingSoonText, { color: palette.accent.base }]}>Coming Soon!</Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
   stack: { gap: spacing.md },
   row: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 48 },
   title: typography.cardTitle,
   note: typography.small,
+  comingSoonBadge: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
+  comingSoonText: { ...typography.caption },
 });
