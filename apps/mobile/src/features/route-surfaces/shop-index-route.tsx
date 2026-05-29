@@ -28,7 +28,6 @@ import {
   MobileHeader,
   ProductCard,
   SearchBar,
-  SecondaryButton,
   SectionHeader,
   Skeleton,
   StickyActionBar,

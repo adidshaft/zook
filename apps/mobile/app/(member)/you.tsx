@@ -7,7 +7,6 @@ import { IdentityCard } from "@/features/member/you/identity-card";
 import { MembershipSummary } from "@/features/member/you/membership-summary";
 import { useAuth } from "@/lib/auth";
 import { useMemberHome } from "@/lib/domains/member";
-import { useMyNotifications } from "@/lib/domains/notifications";
 import { useCanSwitchRole, useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
@@ -26,7 +25,6 @@ export default function YouScreen() {
   const canSwitch = useCanSwitchRole();
   const ctx = useRoleContext();
   const homeQuery = useMemberHome();
-  const notificationsQuery = useMyNotifications();
   const { palette, preference, mode } = useTheme();
   
   const nextRole = ctx?.availableRoles.find((role) => role !== ctx?.role);

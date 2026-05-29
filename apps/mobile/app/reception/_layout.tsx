@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { useHasPermission } from "@/lib/auth";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
-import { legacyColors, useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 
 const legacyViewTargets: Record<string, "/reception/members" | "/reception/payments" | "/reception/orders"> = {
   members: "/reception/members",

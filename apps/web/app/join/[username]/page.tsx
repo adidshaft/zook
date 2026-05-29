@@ -584,15 +584,6 @@ function MembershipStateNotice({
   );
 }
 
-function Readout({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">{label}</p>
-      <p className="mt-1 font-medium text-sm text-[var(--text-primary)] truncate" title={value}>{value}</p>
-    </div>
-  );
-}
-
 function BreakdownRow({
   label,
   value,

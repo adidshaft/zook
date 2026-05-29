@@ -1,7 +1,6 @@
 "use client";
 
 import clsx from "clsx";
-import { ZookButton } from "../zook-button";
 
 export function EmptyState({
   title,
