@@ -22,6 +22,7 @@ import {
 import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { toWebUrl } from "@/lib/api";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 type Tier = "STARTER" | "GROWTH" | "PRO";
 type BillingCycle = "MONTHLY" | "YEARLY";
@@ -69,13 +70,29 @@ export default function OwnerBillingScreen() {
   const busy = createMandate.isPending || upgrade.isPending || cancel.isPending;
 
   async function startMandateSetup() {
-    const result = await createMandate.mutateAsync();
-    await openCheckout(result.checkoutUrl ?? result.mandate?.checkoutUrl);
+    try {
+      const result = await createMandate.mutateAsync();
+      showToast({ tone: "success", message: "Opening billing setup." });
+      await openCheckout(result.checkoutUrl ?? result.mandate?.checkoutUrl);
+    } catch (error) {
+      showToast({
+        tone: "danger",
+        message: error instanceof Error ? error.message : "Could not start billing setup.",
+      });
+    }
   }
 
   async function upgradeTier(tier: Tier) {
-    const result = await upgrade.mutateAsync({ tier, billingCycle: cycle });
-    await openCheckout(result.checkoutUrl ?? result.mandate?.checkoutUrl);
+    try {
+      const result = await upgrade.mutateAsync({ tier, billingCycle: cycle });
+      showToast({ tone: "success", message: "Opening plan checkout." });
+      await openCheckout(result.checkoutUrl ?? result.mandate?.checkoutUrl);
+    } catch (error) {
+      showToast({
+        tone: "danger",
+        message: error instanceof Error ? error.message : "Could not open plan checkout.",
+      });
+    }
   }
 
   function confirmCancel() {
@@ -85,7 +102,17 @@ export default function OwnerBillingScreen() {
         text: "Cancel",
         style: "destructive",
         onPress: () => {
-          void cancel.mutateAsync();
+          void cancel
+            .mutateAsync()
+            .then(() => {
+              showToast({ tone: "success", message: "Subscription cancellation requested." });
+            })
+            .catch((error) => {
+              showToast({
+                tone: "danger",
+                message: error instanceof Error ? error.message : "Could not cancel subscription.",
+              });
+            });
         },
       },
     ]);
