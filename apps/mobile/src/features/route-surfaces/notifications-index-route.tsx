@@ -9,7 +9,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Constants from "expo-constants";
 import type * as NotificationsModule from "expo-notifications";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -295,7 +295,19 @@ export default function NotificationsScreen() {
     }
   };
 
-  const dateGroups = groupByDate(notifications);
+  const dateGroups = useMemo(() => {
+    return groupByDate(notifications).map((group) => {
+      const displayItems =
+        group.label === "notifications.older" && !olderExpanded
+          ? group.items.slice(0, 3)
+          : group.items;
+      return {
+        title: group.label,
+        data: displayItems,
+        originalCount: group.items.length,
+      };
+    });
+  }, [notifications, olderExpanded]);
 
   useFocusEffect(
     useCallback(() => {
@@ -306,8 +318,109 @@ export default function NotificationsScreen() {
   return (
     <>
       <ZookScreen testID="notifications-screen">
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
+        <SectionList
+          sections={dateGroups}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => (
+            <NotificationRow
+              item={item}
+              first={index === 0}
+              busy={busyIds.has(item.id)}
+              highlighted={item.notification?.id === routeParams.notificationId}
+              onPress={() => void openNotification(item)}
+            />
+          )}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={styles.dateGroupLabel}>{t(title)}</Text>
+          )}
+          renderSectionFooter={({ section }) => {
+            if (section.title === "notifications.older" && section.originalCount > 3) {
+              return (
+                <Pressable
+                  onPress={() => setOlderExpanded((current) => !current)}
+                  accessibilityRole="button"
+                  accessibilityLabel={olderExpanded ? "Show fewer older notifications" : "Show older notifications"}
+                  style={styles.showOlderButton}
+                >
+                  <Text style={styles.showOlderText}>
+                    {olderExpanded ? "Show fewer" : `Show ${section.originalCount - 3} older`}
+                  </Text>
+                </Pressable>
+              );
+            }
+            return null;
+          }}
+          ListHeaderComponent={
+            <View style={{ gap: 14, marginBottom: 14 }}>
+              <MobileHeader
+                title="Inbox"
+                subtitle={
+                  unreadCount > 0
+                    ? `${unreadCount} unread${latestLabel ? ` · latest ${latestLabel}` : ""}`
+                    : latestLabel
+                      ? `All caught up · latest ${latestLabel}`
+                      : "All caught up"
+                }
+                leading={
+                  <Pressable
+                    onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
+                    accessibilityRole="button"
+                    accessibilityLabel="Back"
+                    style={styles.iconButton}
+                  >
+                    <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+                  </Pressable>
+                }
+                trailing={
+                  unreadCount > 0 ? (
+                    <Pressable
+                      testID="notifications-mark-all-read"
+                      onPress={() => void markAllRead()}
+                      disabled={markAllBusy}
+                      accessibilityRole="button"
+                      accessibilityLabel="Mark all read"
+                      accessibilityState={{ busy: markAllBusy }}
+                      style={styles.markAllButton}
+                    >
+                      <Ionicons name="checkmark-done" size={18} color={legacyColors.lime} />
+                      <Text numberOfLines={1} style={styles.markAllText}>
+                        Mark all read
+                      </Text>
+                    </Pressable>
+                  ) : null
+                }
+              />
+
+              {routeParams.notificationId ? (
+                <GlassCard variant="selected" contentStyle={styles.calloutContent}>
+                  <IconBubble icon="notifications" tone="blue" size={36} />
+                  <Text style={styles.calloutText}>
+                    {routeParams.focus === "attendance"
+                      ? "Attendance alert received"
+                      : "Opened from push notification"}
+                  </Text>
+                </GlassCard>
+              ) : null}
+
+              {notificationsQuery.isLoading ? (
+                <NotificationsSkeleton />
+              ) : null}
+
+              {notificationsQuery.isError ? (
+                <QueryErrorState error={notificationsQuery.error} onRetry={() => void notificationsQuery.refetch()} />
+              ) : null}
+
+              {!notificationsQuery.isLoading && !notificationsQuery.isError && !notifications.length ? (
+                <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+                  <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
+                  <View style={styles.emptyCopy}>
+                    <Text style={styles.emptyTitle}>No notifications</Text>
+                    <Text style={styles.emptyBody}>You're all caught up.</Text>
+                  </View>
+                </GlassCard>
+              ) : null}
+            </View>
+          }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
           refreshControl={
@@ -318,109 +431,8 @@ export default function NotificationsScreen() {
               colors={[legacyColors.lime]}
             />
           }
-        >
-          <MobileHeader
-            title="Inbox"
-            subtitle={
-              unreadCount > 0
-                ? `${unreadCount} unread${latestLabel ? ` · latest ${latestLabel}` : ""}`
-                : latestLabel
-                  ? `All caught up · latest ${latestLabel}`
-                  : "All caught up"
-            }
-            leading={
-              <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
-                accessibilityRole="button"
-                accessibilityLabel="Back"
-                style={styles.iconButton}
-              >
-                <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
-              </Pressable>
-            }
-            trailing={
-              unreadCount > 0 ? (
-                <Pressable
-                  testID="notifications-mark-all-read"
-                  onPress={() => void markAllRead()}
-                  disabled={markAllBusy}
-                  accessibilityRole="button"
-                  accessibilityLabel="Mark all read"
-                  accessibilityState={{ busy: markAllBusy }}
-                  style={styles.markAllButton}
-                >
-                  <Ionicons name="checkmark-done" size={18} color={legacyColors.lime} />
-                  <Text numberOfLines={1} style={styles.markAllText}>
-                    Mark all read
-                  </Text>
-                </Pressable>
-              ) : null
-            }
-          />
-
-          {routeParams.notificationId ? (
-            <GlassCard variant="selected" contentStyle={styles.calloutContent}>
-              <IconBubble icon="notifications" tone="blue" size={36} />
-              <Text style={styles.calloutText}>
-                {routeParams.focus === "attendance"
-                  ? "Attendance alert received"
-                  : "Opened from push notification"}
-              </Text>
-            </GlassCard>
-          ) : null}
-
-          {notificationsQuery.isLoading ? (
-            <NotificationsSkeleton />
-          ) : null}
-
-          {notificationsQuery.isError ? (
-            <QueryErrorState error={notificationsQuery.error} onRetry={() => void notificationsQuery.refetch()} />
-          ) : null}
-
-          {!notificationsQuery.isLoading && !notificationsQuery.isError && !notifications.length ? (
-            <GlassCard variant="compact" contentStyle={styles.emptyContent}>
-              <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
-              <View style={styles.emptyCopy}>
-                <Text style={styles.emptyTitle}>No notifications</Text>
-                <Text style={styles.emptyBody}>You're all caught up.</Text>
-              </View>
-            </GlassCard>
-          ) : null}
-
-          {/* Grouped notifications */}
-          {dateGroups.map((group) => (
-            <View key={group.label} style={styles.dateGroup}>
-              <Text style={styles.dateGroupLabel}>{t(group.label)}</Text>
-              <View style={styles.list}>
-                {(group.label === "notifications.older" && !olderExpanded
-                  ? group.items.slice(0, 3)
-                  : group.items
-                ).map((item, index) => (
-                    <NotificationRow
-                      key={item.id}
-                      item={item}
-                      first={index === 0}
-                      busy={busyIds.has(item.id)}
-                      highlighted={item.notification?.id === routeParams.notificationId}
-                      onPress={() => void openNotification(item)}
-                    />
-                  ))}
-              </View>
-              {group.label === "notifications.older" && group.items.length > 3 ? (
-                <Pressable
-                  onPress={() => setOlderExpanded((current) => !current)}
-                  accessibilityRole="button"
-                  accessibilityLabel={olderExpanded ? "Show fewer older notifications" : "Show older notifications"}
-                  style={styles.showOlderButton}
-                >
-                  <Text style={styles.showOlderText}>
-                    {olderExpanded ? "Show fewer" : `Show ${group.items.length - 3} older`}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ))}
-        </ScrollView>
+          SectionSeparatorComponent={() => <View style={{ height: 8 }} />}
+        />
         <BottomSheetModal
           ref={detailSheetRef}
           snapPoints={detailSnapPoints}

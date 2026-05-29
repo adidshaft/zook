@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
+import { LayoutAnimation, Platform, UIManager } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { OfflineBanner } from "./foundation";
 import { useT } from "@/lib/i18n";
+
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export function NetworkBanner() {
   const t = useT();
@@ -9,7 +14,9 @@ export function NetworkBanner() {
 
   useEffect(() => {
     return NetInfo.addEventListener((state) => {
-      setOffline(state.isConnected === false || state.isInternetReachable === false);
+      const isOffline = state.isConnected === false || state.isInternetReachable === false;
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setOffline(isOffline);
     });
   }, []);
 

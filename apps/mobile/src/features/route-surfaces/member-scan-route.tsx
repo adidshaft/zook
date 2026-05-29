@@ -15,6 +15,7 @@ import {
   Easing as RNEasing,
   Platform,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
@@ -91,32 +92,49 @@ function CameraActiveBottomNavHider() {
   return null;
 }
 
-function AnimatedLaser() {
+function AnimatedLaser({ frameSize = 280 }: { frameSize?: number }) {
   const { palette } = useTheme();
-  const translateY = useRef(new RNAnimated.Value(0)).current;
+  const progress = useRef(new RNAnimated.Value(0)).current;
+  // Sweep edge-to-edge within the frame with a small inset so the line never
+  // clips the corner brackets. Derived from the real frame size instead of a
+  // magic constant so it always spans the full scan window.
+  const travel = Math.max(40, frameSize / 2 - 20);
 
   useEffect(() => {
+    // Smooth ping-pong sweep (down then back up). The previous version snapped
+    // the line from the bottom back to the top with a zero-duration reset,
+    // which read as a glitchy teleport rather than a continuous scan.
     const animation = RNAnimated.loop(
       RNAnimated.sequence([
-        RNAnimated.timing(translateY, {
+        RNAnimated.timing(progress, {
           toValue: 1,
-          duration: 1700,
-          easing: RNEasing.linear,
+          duration: 1500,
+          easing: RNEasing.inOut(RNEasing.ease),
           useNativeDriver: true,
         }),
-        RNAnimated.timing(translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
+        RNAnimated.timing(progress, {
+          toValue: 0,
+          duration: 1500,
+          easing: RNEasing.inOut(RNEasing.ease),
+          useNativeDriver: true,
+        }),
       ]),
     );
     animation.start();
     return () => animation.stop();
-  }, [translateY]);
+  }, [progress]);
 
   const animatedStyle = {
+    opacity: progress.interpolate({
+      // Fade slightly at the turn-around points so the reversal feels soft.
+      inputRange: [0, 0.08, 0.92, 1],
+      outputRange: [0.35, 1, 1, 0.35],
+    }),
     transform: [
       {
-        translateY: translateY.interpolate({
+        translateY: progress.interpolate({
           inputRange: [0, 1],
-          outputRange: [-128, 128],
+          outputRange: [-travel, travel],
         }),
       },
     ],
@@ -124,11 +142,7 @@ function AnimatedLaser() {
 
   return (
     <RNAnimated.View
-      style={[
-        styles.scanLineRail,
-        { shadowColor: palette.accent.base },
-        animatedStyle,
-      ]}
+      style={[styles.scanLineRail, { shadowColor: palette.accent.base }, animatedStyle]}
     >
       <View style={[styles.scanLineGlow, { backgroundColor: palette.accent.base }]} />
       <View style={[styles.scanLineCore, { backgroundColor: palette.accent.base }]} />
@@ -160,7 +174,9 @@ function normalizeCheckInCode(value: string) {
   return match ? `${match[1]}-${match[2]}` : "";
 }
 
-function readScannedAttendancePayload(data: string): { kind: "qr" | "code"; payload: string } | null {
+function readScannedAttendancePayload(
+  data: string,
+): { kind: "qr" | "code"; payload: string } | null {
   const trimmed = data.trim();
   if (!trimmed) {
     return null;
@@ -197,6 +213,9 @@ export default function Scan() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const memberHomeQuery = useMemberHome();
+  const onRefresh = useCallback(async () => {
+    await memberHomeQuery.refetch();
+  }, [memberHomeQuery]);
   const { permissionState, requestEnablePush } = usePushNotifications();
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
@@ -214,12 +233,22 @@ export default function Scan() {
   const completedRef = useRef(false);
   const pushPromptClosingRef = useRef(false);
   const pushPromptSheetRef = useRef<BottomSheetModal>(null);
+  const codePrefixRef = useRef<TextInput>(null);
   const codeDigitsRef = useRef<TextInput>(null);
   const pushPromptSnapPoints = useMemo(() => ["36%"], []);
 
   useEffect(() => {
     void getQueuedAttendanceScans().then((queue) => setQueuedScanCount(queue.length));
   }, []);
+
+  useEffect(() => {
+    if (scanMode === "code") {
+      const timer = setTimeout(() => {
+        codePrefixRef.current?.focus();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [scanMode]);
 
   useEffect(() => {
     let mounted = true;
@@ -265,7 +294,10 @@ export default function Scan() {
         reason: scanReason(result),
       },
     });
-    queryClient.setQueryData(["me", "attendanceWarning", result.attendance.id], scanWarnings(result));
+    queryClient.setQueryData(
+      ["me", "attendanceWarning", result.attendance.id],
+      scanWarnings(result),
+    );
     return {
       pathname: "/attendance/[attendanceRecordId]",
       params: {
@@ -431,7 +463,14 @@ export default function Scan() {
     return [
       {
         key: "capture",
-        label: scanMode === "code" ? (codeReady ? "Code ready" : "Enter code") : hasCamera ? "Camera ready" : "Camera needed",
+        label:
+          scanMode === "code"
+            ? codeReady
+              ? "Code ready"
+              : "Enter code"
+            : hasCamera
+              ? "Camera ready"
+              : "Camera needed",
         state: captureComplete ? "complete" : "idle",
       },
       {
@@ -520,7 +559,7 @@ export default function Scan() {
       if (!failed) {
         await sleep(SCAN_CONFIRMATION_VISIBLE_MS);
       }
-      if (!failed && await maybeShowPushPrompt(nextHref)) {
+      if (!failed && (await maybeShowPushPrompt(nextHref))) {
         return;
       }
       navigateToAttendance(nextHref);
@@ -545,6 +584,13 @@ export default function Scan() {
       setScanState("failed");
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setErrorMessage(getApiErrorMessage(error));
+      if (kind === "code") {
+        setTimeout(() => {
+          setCodePrefix("");
+          setCodeDigits("");
+          codePrefixRef.current?.focus();
+        }, 1800);
+      }
     } finally {
       setBusy(false);
     }
@@ -583,6 +629,11 @@ export default function Scan() {
       setScanState("failed");
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setErrorMessage(getApiErrorMessage(error));
+      setTimeout(() => {
+        setCodePrefix("");
+        setCodeDigits("");
+        codePrefixRef.current?.focus();
+      }, 1800);
     } finally {
       setBusy(false);
     }
@@ -652,6 +703,14 @@ export default function Scan() {
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
+            refreshControl: (
+              <RefreshControl
+                refreshing={memberHomeQuery.isRefetching}
+                onRefresh={onRefresh}
+                tintColor={palette.accent.fill}
+                colors={[palette.accent.fill]}
+              />
+            ),
           }}
         >
           <MobileHeader
@@ -665,7 +724,9 @@ export default function Scan() {
             <GlassCard variant="danger" contentStyle={styles.blockedPermissionContent}>
               <IconBubble icon="camera-outline" tone="red" size={42} />
               <View style={styles.blockedPermissionCopy}>
-                <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>Camera access blocked</Text>
+                <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>
+                  Camera access blocked
+                </Text>
                 <Text style={[styles.cameraFallbackText, { color: palette.text.secondary }]}>
                   Allow camera access in Settings to scan QR codes.
                 </Text>
@@ -682,7 +743,12 @@ export default function Scan() {
 
           {scanMode === "scan" ? (
             <>
-              <View style={[styles.cameraCard, { backgroundColor: palette.bg.elevated, borderColor: palette.border.strong }]}>
+              <View
+                style={[
+                  styles.cameraCard,
+                  { backgroundColor: palette.bg.elevated, borderColor: palette.border.strong },
+                ]}
+              >
                 {hasCamera ? (
                   <CameraView
                     testID="scanner-view"
@@ -694,8 +760,15 @@ export default function Scan() {
                 ) : (
                   <View style={styles.cameraFallback}>
                     <Ionicons name="camera-outline" size={32} color={palette.accent.strong} />
-                    <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>Camera needed</Text>
-                    <Text style={[styles.cameraFallbackText, { color: palette.text.secondary, textAlign: "center" }]}>
+                    <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>
+                      Camera needed
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cameraFallbackText,
+                        { color: palette.text.secondary, textAlign: "center" },
+                      ]}
+                    >
                       {cameraBlocked
                         ? "Camera access is blocked. Open device settings to allow scanning."
                         : "Allow camera access to scan the gym QR."}
@@ -713,7 +786,7 @@ export default function Scan() {
                 )}
                 <View pointerEvents="none" style={styles.scannerOverlay}>
                   <ScannerFrame size={280} tone={scanState === "failed" ? "red" : "lime"}>
-                    <AnimatedLaser />
+                    <AnimatedLaser frameSize={280} />
                   </ScannerFrame>
                 </View>
                 <View style={styles.cameraBadge}>
@@ -727,8 +800,12 @@ export default function Scan() {
               <GlassCard variant="compact" contentStyle={styles.helpContent}>
                 <IconBubble icon="shield-checkmark-outline" tone="neutral" size={36} />
                 <View style={styles.helpCopy}>
-                  <Text style={[styles.helpTitle, { color: palette.text.primary }]}>Can’t scan?</Text>
-                  <Text style={[styles.helpBody, { color: palette.text.secondary }]}>Enter the desk code manually.</Text>
+                  <Text style={[styles.helpTitle, { color: palette.text.primary }]}>
+                    Can’t scan?
+                  </Text>
+                  <Text style={[styles.helpBody, { color: palette.text.secondary }]}>
+                    Enter the desk code manually.
+                  </Text>
                 </View>
                 <Pressable
                   testID="scan-manual-code"
@@ -737,7 +814,9 @@ export default function Scan() {
                   accessibilityLabel="Enter manual check-in code"
                   style={styles.manualCodeLink}
                 >
-                  <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>Enter code</Text>
+                  <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>
+                    Enter code
+                  </Text>
                   <Ionicons name="chevron-forward" size={16} color={palette.accent.strong} />
                 </Pressable>
               </GlassCard>
@@ -745,24 +824,35 @@ export default function Scan() {
           ) : (
             <GlassCard variant="compact" contentStyle={styles.codeContent}>
               <View style={styles.codeHeader}>
-                <Text style={[styles.codeTitle, { color: palette.text.primary }]}>Enter check-in code</Text>
-                <Text style={[styles.codeHint, { color: palette.text.secondary }]}>Use the two letters and four digits shown with the QR.</Text>
+                <Text style={[styles.codeTitle, { color: palette.text.primary }]}>
+                  Enter check-in code
+                </Text>
+                <Text style={[styles.codeHint, { color: palette.text.secondary }]}>
+                  Use the two letters and four digits shown with the QR.
+                </Text>
               </View>
               <View style={styles.codeRow}>
                 <TextInput
                   testID="scan-code-prefix"
+                  ref={codePrefixRef}
                   value={codePrefix}
                   onChangeText={handlePrefixChange}
                   autoCapitalize="characters"
                   autoCorrect={false}
                   maxLength={2}
                   placeholder="AB"
-                  placeholderTextColor={mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(17,21,15,0.4)"}
-                  style={[styles.codeInput, styles.codePrefixInput, {
-                    backgroundColor: palette.bg.sunken,
-                    borderColor: palette.border.default,
-                    color: palette.text.primary
-                  }]}
+                  placeholderTextColor={
+                    mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(17,21,15,0.4)"
+                  }
+                  style={[
+                    styles.codeInput,
+                    styles.codePrefixInput,
+                    {
+                      backgroundColor: palette.bg.sunken,
+                      borderColor: palette.border.default,
+                      color: palette.text.primary,
+                    },
+                  ]}
                   returnKeyType="next"
                   onSubmitEditing={() => codeDigitsRef.current?.focus()}
                 />
@@ -775,12 +865,18 @@ export default function Scan() {
                   keyboardType="number-pad"
                   maxLength={4}
                   placeholder="1234"
-                  placeholderTextColor={mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(17,21,15,0.4)"}
-                  style={[styles.codeInput, styles.codeDigitsInput, {
-                    backgroundColor: palette.bg.sunken,
-                    borderColor: palette.border.default,
-                    color: palette.text.primary
-                  }]}
+                  placeholderTextColor={
+                    mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(17,21,15,0.4)"
+                  }
+                  style={[
+                    styles.codeInput,
+                    styles.codeDigitsInput,
+                    {
+                      backgroundColor: palette.bg.sunken,
+                      borderColor: palette.border.default,
+                      color: palette.text.primary,
+                    },
+                  ]}
                   returnKeyType="done"
                   onSubmitEditing={submitCode}
                 />
@@ -799,6 +895,13 @@ export default function Scan() {
                   <Ionicons name="arrow-forward" size={18} color={palette.text.onAccent} />
                 </Pressable>
               </View>
+              {!codeReady && (codePrefix.length > 0 || codeDigits.length > 0) ? (
+                <Text style={[styles.codeValidationHint, { color: palette.text.secondary }]}>
+                  {codePrefix.length < 2
+                    ? "Need 2 letters (e.g. AB)"
+                    : "Need 4 numbers (e.g. 1234)"}
+                </Text>
+              ) : null}
               {busy ? (
                 <Text style={[styles.checkingText, { color: palette.text.secondary }]}>
                   <Text style={[styles.checkingDot, { color: palette.accent.base }]}>● </Text>
@@ -813,7 +916,9 @@ export default function Scan() {
                 style={styles.backToScannerLink}
               >
                 <Ionicons name="qr-code-outline" size={15} color={palette.accent.strong} />
-                <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>Back to camera scanner</Text>
+                <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>
+                  Back to camera scanner
+                </Text>
               </Pressable>
             </GlassCard>
           )}
@@ -827,20 +932,36 @@ export default function Scan() {
                   {
                     backgroundColor:
                       item.state === "failed"
-                        ? mode === "dark" ? "rgba(255,90,61,0.12)" : "rgba(185,28,28,0.06)"
+                        ? mode === "dark"
+                          ? "rgba(255,90,61,0.12)"
+                          : "rgba(185,28,28,0.06)"
                         : item.state === "active"
-                          ? mode === "dark" ? "rgba(125,211,252,0.12)" : "rgba(3,105,161,0.06)"
+                          ? mode === "dark"
+                            ? "rgba(125,211,252,0.12)"
+                            : "rgba(3,105,161,0.06)"
                           : item.state === "complete"
-                            ? mode === "dark" ? "rgba(185,244,85,0.12)" : "rgba(30,63,32,0.06)"
-                            : mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(17,21,15,0.04)",
+                            ? mode === "dark"
+                              ? "rgba(185,244,85,0.12)"
+                              : "rgba(30,63,32,0.06)"
+                            : mode === "dark"
+                              ? "rgba(255,255,255,0.06)"
+                              : "rgba(17,21,15,0.04)",
                     borderColor:
                       item.state === "failed"
-                        ? mode === "dark" ? "rgba(255,90,61,0.32)" : "rgba(185,28,28,0.16)"
+                        ? mode === "dark"
+                          ? "rgba(255,90,61,0.32)"
+                          : "rgba(185,28,28,0.16)"
                         : item.state === "active"
-                          ? mode === "dark" ? "rgba(125,211,252,0.3)" : "rgba(3,105,161,0.16)"
+                          ? mode === "dark"
+                            ? "rgba(125,211,252,0.3)"
+                            : "rgba(3,105,161,0.16)"
                           : item.state === "complete"
-                            ? mode === "dark" ? "rgba(185,244,85,0.28)" : "rgba(30,63,32,0.16)"
-                            : mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(17,21,15,0.08)",
+                            ? mode === "dark"
+                              ? "rgba(185,244,85,0.28)"
+                              : "rgba(30,63,32,0.16)"
+                            : mode === "dark"
+                              ? "rgba(255,255,255,0.1)"
+                              : "rgba(17,21,15,0.08)",
                   },
                 ]}
               >
@@ -865,7 +986,9 @@ export default function Scan() {
                           : palette.text.secondary
                   }
                 />
-                <Text style={[styles.validationText, { color: palette.text.primary }]}>{item.label}</Text>
+                <Text style={[styles.validationText, { color: palette.text.primary }]}>
+                  {item.label}
+                </Text>
               </View>
             ))}
           </GlassCard>
@@ -874,7 +997,9 @@ export default function Scan() {
             <GlassCard variant="warning" contentStyle={styles.errorContent}>
               <View style={styles.errorRow}>
                 <Ionicons name="alert-circle-outline" size={18} color={palette.feedback.warning} />
-                <Text style={[styles.errorText, { color: palette.text.primary }]}>{errorMessage}</Text>
+                <Text style={[styles.errorText, { color: palette.text.primary }]}>
+                  {errorMessage}
+                </Text>
               </View>
               <ZookButton
                 onPress={() => {
@@ -923,7 +1048,9 @@ export default function Scan() {
               accessibilityLabel="Use sample data"
               style={styles.devLink}
             >
-              <Text style={[styles.devLinkText, { color: palette.text.secondary }]}>Use sample data</Text>
+              <Text style={[styles.devLinkText, { color: palette.text.secondary }]}>
+                Use sample data
+              </Text>
             </Pressable>
           ) : null}
         </KeyboardAwareScreen>
@@ -962,7 +1089,9 @@ export default function Scan() {
           <View style={styles.pushPromptHeader}>
             <IconBubble icon="barbell-outline" tone="lime" size={42} />
             <View style={styles.pushPromptCopy}>
-              <Text style={[styles.pushPromptTitle, { color: palette.text.primary }]}>Get plan alerts</Text>
+              <Text style={[styles.pushPromptTitle, { color: palette.text.primary }]}>
+                Get plan alerts
+              </Text>
               <Text style={[styles.pushPromptBody, { color: palette.text.secondary }]}>
                 Get notified when your trainer publishes a new plan.
               </Text>
@@ -1286,5 +1415,11 @@ const styles = StyleSheet.create({
   },
   pushPromptAction: {
     flex: 1,
+  },
+  codeValidationHint: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    marginTop: 6,
+    paddingLeft: 4,
   },
 });

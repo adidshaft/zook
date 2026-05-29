@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Alert, Linking, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Switch, Text, View } from "react-native";
 import {
   AuditWarning,
   CollapsibleSection,
@@ -82,9 +82,22 @@ export default function Settings() {
   const [privacyStatus, setPrivacyStatus] = useState("");
   const [clipboardStatus, setClipboardStatus] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const latestExport = privacyQuery.data?.exportRequests?.[0] ?? null;
   const latestDeletion = privacyQuery.data?.deletionRequests?.[0] ?? null;
   const settingsLoading = privacyQuery.isLoading || notificationPreferencesQuery.isLoading;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        privacyQuery.refetch(),
+        notificationPreferencesQuery.refetch(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   function sectionProps(section: SettingsSection) {
     return {
@@ -186,6 +199,14 @@ export default function Settings() {
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
+            refreshControl: (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={legacyColors.lime}
+                colors={[legacyColors.lime]}
+              />
+            ),
           }}
         >
           <MobileHeader

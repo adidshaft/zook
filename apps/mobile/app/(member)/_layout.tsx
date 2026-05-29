@@ -1,8 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { memo, useContext, useEffect } from "react";
 import { View, Pressable, Text, StyleSheet } from "react-native";
+import * as Haptics from "expo-haptics";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 import { useMyNotifications } from "@/lib/domains/notifications";
 import { useTheme } from "@/lib/theme/index";
 
@@ -60,9 +64,54 @@ export default function MemberLayout() {
   );
 }
 
+// Static fade backdrop behind the floating tab bar. Memoized so the 15-segment
+// gradient is not rebuilt on every tab switch / unread-count change.
+const TabBarBackdrop = memo(function TabBarBackdrop({
+  height,
+  color,
+}: {
+  height: number;
+  color: string;
+}) {
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height,
+        backgroundColor: "transparent",
+      }}
+    >
+      {Array.from({ length: 15 }).map((_, i) => {
+        const opacity = (i / 14) ** 1.8; // Exponential scaling for a buttery smooth fade out
+        const top = (i / 15) * height;
+        const segmentHeight = height / 15 + 2;
+        return (
+          <View
+            key={i}
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top,
+              height: segmentHeight,
+              backgroundColor: color,
+              opacity,
+            }}
+          />
+        );
+      })}
+    </View>
+  );
+});
+
 function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
   const { palette } = useTheme();
   const insets = useSafeAreaInsets();
+  const { visible } = useContext(BottomNavVisibilityContext);
   const backdropHeight = 100 + insets.bottom;
   const focusedRouteName = state.routes[state.index]?.name;
   const visibleRoutes = state.routes.filter((route: any) => {
@@ -70,40 +119,38 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
     return route.name !== "diet" && options?.href !== null;
   });
 
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    translateY.value = withTiming(visible ? 0 : 120, { duration: 250 });
+    opacity.value = withTiming(visible ? 1 : 0, { duration: 250 });
+  }, [visible]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+      opacity: opacity.value,
+    };
+  });
+
   return (
-    <>
-      {/* Fading Opaque backdrop to hide scrolling content behind tab bar */}
-      <View
-        pointerEvents="none"
-        style={{
+    <Animated.View
+      pointerEvents={visible ? "auto" : "none"}
+      style={[
+        {
           position: "absolute",
           left: 0,
           right: 0,
           bottom: 0,
           height: backdropHeight,
-          backgroundColor: "transparent",
-        }}
-      >
-        {Array.from({ length: 15 }).map((_, i) => {
-          const opacity = (i / 14) ** 1.8; // Exponential scaling for a buttery smooth fade out
-          const top = (i / 15) * backdropHeight;
-          const segmentHeight = backdropHeight / 15 + 2;
-          return (
-            <View
-              key={i}
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: top,
-                height: segmentHeight,
-                backgroundColor: palette.bg.app,
-                opacity: opacity,
-              }}
-            />
-          );
-        })}
-      </View>
+          zIndex: 100,
+        },
+        animatedStyle,
+      ]}
+    >
+      {/* Fading Opaque backdrop to hide scrolling content behind tab bar */}
+      <TabBarBackdrop height={backdropHeight} color={palette.bg.app} />
 
       <View
         style={[
@@ -116,123 +163,130 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
         ]}
       >
         {visibleRoutes.map((route: any) => {
-            const { options } = descriptors[route.key];
-            const label =
-              options.tabBarLabel !== undefined
-                ? options.tabBarLabel
-                : options.title !== undefined
-                  ? options.title
-                  : route.name;
+          const { options } = descriptors[route.key];
+          const label =
+            options.tabBarLabel !== undefined
+              ? options.tabBarLabel
+              : options.title !== undefined
+                ? options.title
+                : route.name;
 
-            const isFocused = focusedRouteName === route.name || (focusedRouteName === "diet" && route.name === "plan");
+          const isFocused = focusedRouteName === route.name || (focusedRouteName === "diet" && route.name === "plan");
 
-            const onPress = () => {
-              const event = navigation.emit({
-                type: "tabPress",
-                target: route.key,
-                canPreventDefault: true,
-              });
-
-              if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
-              }
-            };
-
-            const onLongPress = () => {
-              navigation.emit({
-                type: "tabLongPress",
-                target: route.key,
-              });
-            };
-
-            // Render Special Center Button for Scan
+          const onPress = () => {
             if (route.name === "scan") {
-              return (
-                <View key={route.key} style={styles.scanButtonContainer}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={isFocused ? { selected: true } : {}}
-                    onPress={onPress}
-                    onLongPress={onLongPress}
-                    style={[
-                      styles.scanButton,
-                      {
-                        backgroundColor: "#B9F455", // High-contrast raw lime green
-                        borderColor: palette.bg.app, // Match the page background for outline effect
-                      },
-                    ]}
-                  >
-                    <Ionicons name="qr-code" size={26} color="#000000" />
-                  </Pressable>
-                  <Text
-                    style={[
-                      styles.scanLabel,
-                      {
-                        color: isFocused ? palette.accent.base : palette.text.tertiary,
-                      },
-                    ]}
-                  >
-                    {label as string}
-                  </Text>
-                </View>
-              );
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            } else {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }
 
-            // Get matching icon based on route name
-            let iconName: keyof typeof Ionicons.glyphMap = "home-outline";
-            if (route.name === "index") {
-              iconName = isFocused ? "home" : "home-outline";
-            } else if (route.name === "plan") {
-              iconName = isFocused ? "barbell" : "barbell-outline";
-            } else if (route.name === "shop") {
-              iconName = isFocused ? "bag" : "bag-outline";
-            } else if (route.name === "you") {
-              iconName = isFocused ? "person" : "person-outline";
-            }
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
 
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          const onLongPress = () => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            navigation.emit({
+              type: "tabLongPress",
+              target: route.key,
+            });
+          };
+
+          // Render Special Center Button for Scan
+          if (route.name === "scan") {
             return (
-              <Pressable
-                key={route.key}
-                accessibilityRole="button"
-                accessibilityState={isFocused ? { selected: true } : {}}
-                onPress={onPress}
-                onLongPress={onLongPress}
-                style={styles.tabItem}
-              >
-                <View
+              <View key={route.key} style={styles.scanButtonContainer}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={isFocused ? { selected: true } : {}}
+                  onPress={onPress}
+                  onLongPress={onLongPress}
                   style={[
-                    styles.tabItemWrapper,
-                    isFocused && {
-                      backgroundColor: palette.surface.accentSoft,
+                    styles.scanButton,
+                    {
+                      backgroundColor: "#B9F455", // High-contrast raw lime green
+                      borderColor: palette.bg.app, // Match the page background for outline effect
                     },
                   ]}
                 >
-                  {route.name === "you" && unread > 0 ? (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{unread}</Text>
-                    </View>
-                  ) : null}
-                  <Ionicons
-                    name={iconName}
-                    size={22}
-                    color={isFocused ? palette.accent.base : palette.text.tertiary}
-                  />
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      {
-                        color: isFocused ? palette.accent.base : palette.text.tertiary,
-                      },
-                    ]}
-                  >
-                    {label as string}
-                  </Text>
-                </View>
-              </Pressable>
+                  <Ionicons name="qr-code" size={26} color="#000000" />
+                </Pressable>
+                <Text
+                  style={[
+                    styles.scanLabel,
+                    {
+                      color: isFocused ? palette.accent.base : palette.text.tertiary,
+                    },
+                  ]}
+                >
+                  {label as string}
+                </Text>
+              </View>
             );
-          })}
+          }
+
+          // Get matching icon based on route name
+          let iconName: keyof typeof Ionicons.glyphMap = "home-outline";
+          if (route.name === "index") {
+            iconName = isFocused ? "home" : "home-outline";
+          } else if (route.name === "plan") {
+            iconName = isFocused ? "barbell" : "barbell-outline";
+          } else if (route.name === "shop") {
+            iconName = isFocused ? "bag" : "bag-outline";
+          } else if (route.name === "you") {
+            iconName = isFocused ? "person" : "person-outline";
+          }
+
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={styles.tabItem}
+            >
+              <View
+                style={[
+                  styles.tabItemWrapper,
+                  isFocused && {
+                    backgroundColor: palette.surface.accentSoft,
+                  },
+                ]}
+              >
+                {route.name === "you" && unread > 0 ? (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{unread}</Text>
+                  </View>
+                ) : null}
+                <Ionicons
+                  name={iconName}
+                  size={22}
+                  color={isFocused ? palette.accent.base : palette.text.tertiary}
+                />
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    {
+                      color: isFocused ? palette.accent.base : palette.text.tertiary,
+                    },
+                  ]}
+                >
+                  {label as string}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
-    </>
+    </Animated.View>
   );
 }
 

@@ -20,9 +20,9 @@ export function useMyTracking() {
         habits: Array<Record<string, unknown>>;
       }>("/me/tracking/summary", { token }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
-
 export function useMyBodyProgress() {
   const { status, token } = useAuth();
   return useQuery({
@@ -32,6 +32,7 @@ export function useMyBodyProgress() {
         token,
       }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -44,6 +45,7 @@ export function useMyTrackingWorkouts() {
         token,
       }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -54,6 +56,7 @@ export function useMyTrackingHabits() {
     queryFn: () =>
       mobileApiFetch<{ habits: Array<Record<string, unknown>> }>("/me/tracking/habits", { token }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -67,5 +70,6 @@ export function useMyDiet() {
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
       }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }

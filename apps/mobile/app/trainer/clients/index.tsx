@@ -1,7 +1,7 @@
 import { Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { MemberList, type MemberRowItem } from "@/components/domain/member-list";
 import {
   MobileHeader,
@@ -43,19 +43,7 @@ export default function TrainerClientsScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="trainer-clients-screen">
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={legacyColors.lime} colors={[legacyColors.lime]} />}
-        >
-          <MobileHeader
-            eyebrow="Trainer mode"
-            title="Clients"
-            subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
-            chip={<StatusChip status="Trainer" tone="neutral" />}
-          />
-          <SectionHeader title="Clients" />
+        <View style={styles.container}>
           <MemberList
             testID="trainer-client"
             items={items}
@@ -67,20 +55,33 @@ export default function TrainerClientsScreen() {
               title: "No clients yet",
               subtitle: "Clients will appear here when your gym adds them.",
             }}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            header={
+              <>
+                <MobileHeader
+                  eyebrow="Trainer mode"
+                  title="Clients"
+                  subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
+                  chip={<StatusChip status="Trainer" tone="neutral" />}
+                />
+                <SectionHeader title="Clients" />
+              </>
+            }
           />
-        </ScrollView>
+        </View>
       </ZookScreen>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
+  container: {
     alignSelf: "center",
-    gap: 10,
     maxWidth: layout.contentWidth,
-    paddingBottom: layout.bottomNavContentPadding + 32,
-    paddingTop: 8,
     width: "100%",
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
 });

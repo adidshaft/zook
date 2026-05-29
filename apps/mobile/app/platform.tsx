@@ -6,6 +6,7 @@ import {
   IconBubble,
   ListRow,
   MobileHeader,
+  QueryErrorState,
   SecondaryButton,
   StatusChip,
   ZookButton,
@@ -150,12 +151,13 @@ export default function PlatformMobile() {
                   <Text style={styles.metricLabel}>referrals</Text>
                 </View>
               </View>
+            ) : subscriptionsQuery.isError ? (
+              <QueryErrorState
+                error={subscriptionsQuery.error}
+                onRetry={() => void subscriptionsQuery.refetch()}
+              />
             ) : (
-              <Text style={styles.body}>
-                {subscriptionsQuery.isError
-                  ? "Unable to load platform subscriptions right now."
-                  : "Loading subscription health..."}
-              </Text>
+              <Text style={styles.body}>Loading subscription health...</Text>
             )}
           </GlassCard>
 

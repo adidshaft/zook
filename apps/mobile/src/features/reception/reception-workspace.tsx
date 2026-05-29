@@ -118,6 +118,7 @@ function useReceptionWorkspaceState({
     profilePhotoUrl?: string | null;
   } | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
+  const [debouncedMemberSearch, setDebouncedMemberSearch] = useState("");
   const [paymentMode, setPaymentMode] = useState<DeskPaymentMode>("DIRECT_UPI");
   const [amount, setAmount] = useState("");
   const [referenceId, setReferenceId] = useState("");
@@ -171,15 +172,22 @@ function useReceptionWorkspaceState({
     }
   }, [initialMemberId]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMemberSearch(memberSearch);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [memberSearch]);
+
   const filteredMembers = useMemo(() => {
-    const query = memberSearch.toLowerCase();
+    const query = debouncedMemberSearch.toLowerCase();
     return (membersQuery.data?.members ?? []).filter((member) => {
       const name = member.user?.name.toLowerCase() ?? "";
       const email = member.user?.email.toLowerCase() ?? "";
       const phone = member.user?.phone?.toLowerCase() ?? "";
       return !query || name.includes(query) || email.includes(query) || phone.includes(query);
     });
-  }, [memberSearch, membersQuery.data?.members]);
+  }, [debouncedMemberSearch, membersQuery.data?.members]);
   const memberResultLimit = memberSearch.trim().length ? 25 : 10;
   const visibleMembers = filteredMembers.slice(0, memberResultLimit);
   const hiddenMemberCount = Math.max(0, filteredMembers.length - visibleMembers.length);

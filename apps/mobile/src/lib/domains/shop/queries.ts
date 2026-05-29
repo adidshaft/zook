@@ -22,6 +22,7 @@ export function useShopProducts(orgId?: string) {
         },
       ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -35,6 +36,7 @@ export function useMyShopOrders() {
     queryKey: queryKeys.shop.orders(),
     queryFn: () => mobileApiFetch<{ orders: ShopOrderRecord[] }>("/me/shop-orders", { token }),
     enabled: status === "authenticated" && Boolean(token),
+    staleTime: 5 * 60_000,
   });
 }
 

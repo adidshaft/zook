@@ -232,7 +232,7 @@ export default function MembershipScreen() {
   const [pauseResumesAt, setPauseResumesAt] = useState(() => pauseDefaultDate());
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  useAppFocusInvalidation([["me", "memberships"], ["me", "membership"], ["me", "home"]]);
+  useAppFocusInvalidation([["me", "home"]]);
   const selectedPlan = useMemo(
     () => availablePlans.find((plan) => plan.id === selectedPlanId) ?? renewalTarget?.plan ?? null,
     [availablePlans, renewalTarget?.plan, selectedPlanId],

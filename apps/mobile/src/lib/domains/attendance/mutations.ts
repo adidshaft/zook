@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { invalidations } from "@/lib/domains/shared/invalidate";
+import { queryKeys } from "@/lib/domains/shared/keys";
 import {
   getMutationContext,
   notifyMutationError,
@@ -29,6 +30,36 @@ export function useApproveAttendance(orgId?: string) {
         },
       );
     },
+    onMutate: async (input) => {
+      const recordId = typeof input === "string" ? input : input.recordId;
+      const queryKeyPending = queryKeys.attendance.pending(resolvedOrgId);
+      const queryKeyToday = queryKeys.attendance.today(resolvedOrgId);
+
+      await queryClient.cancelQueries({ queryKey: queryKeyPending });
+      await queryClient.cancelQueries({ queryKey: queryKeyToday });
+
+      const previousPending = queryClient.getQueryData<{ records: ReceptionQueueRecord[] }>(queryKeyPending);
+      const previousToday = queryClient.getQueryData<{ records: ReceptionQueueRecord[] }>(queryKeyToday);
+
+      if (previousPending) {
+        const approvedRecord = previousPending.records.find((r) => r.id === recordId);
+        queryClient.setQueryData(queryKeyPending, {
+          records: previousPending.records.filter((r) => r.id !== recordId),
+        });
+
+        if (previousToday && approvedRecord) {
+          const updatedRecord = { ...approvedRecord, status: "APPROVED" };
+          const exists = previousToday.records.some((r) => r.id === recordId);
+          queryClient.setQueryData(queryKeyToday, {
+            records: exists
+              ? previousToday.records.map((r) => (r.id === recordId ? updatedRecord : r))
+              : [updatedRecord, ...previousToday.records],
+          });
+        }
+      }
+
+      return { previousPending, previousToday };
+    },
     onSuccess: async () => {
       await Promise.all([
         invalidations.attendance.all(queryClient, resolvedOrgId),
@@ -36,8 +67,18 @@ export function useApproveAttendance(orgId?: string) {
       ]);
       notifyMutationSuccess("Attendance approved.");
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      if (context) {
+        const queryKeyPending = queryKeys.attendance.pending(resolvedOrgId);
+        const queryKeyToday = queryKeys.attendance.today(resolvedOrgId);
+        if (context.previousPending) queryClient.setQueryData(queryKeyPending, context.previousPending);
+        if (context.previousToday) queryClient.setQueryData(queryKeyToday, context.previousToday);
+      }
       notifyMutationError(error, "Attendance could not be approved.");
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.attendance.pending(resolvedOrgId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.attendance.today(resolvedOrgId) });
     },
   });
 }
@@ -54,6 +95,35 @@ export function useRejectAttendance(orgId?: string) {
         { method: "POST", token: ctx.token, orgId: ctx.orgId, body: { reason } },
       );
     },
+    onMutate: async ({ recordId }) => {
+      const queryKeyPending = queryKeys.attendance.pending(resolvedOrgId);
+      const queryKeyToday = queryKeys.attendance.today(resolvedOrgId);
+
+      await queryClient.cancelQueries({ queryKey: queryKeyPending });
+      await queryClient.cancelQueries({ queryKey: queryKeyToday });
+
+      const previousPending = queryClient.getQueryData<{ records: ReceptionQueueRecord[] }>(queryKeyPending);
+      const previousToday = queryClient.getQueryData<{ records: ReceptionQueueRecord[] }>(queryKeyToday);
+
+      if (previousPending) {
+        const rejectedRecord = previousPending.records.find((r) => r.id === recordId);
+        queryClient.setQueryData(queryKeyPending, {
+          records: previousPending.records.filter((r) => r.id !== recordId),
+        });
+
+        if (previousToday && rejectedRecord) {
+          const updatedRecord = { ...rejectedRecord, status: "REJECTED" };
+          const exists = previousToday.records.some((r) => r.id === recordId);
+          queryClient.setQueryData(queryKeyToday, {
+            records: exists
+              ? previousToday.records.map((r) => (r.id === recordId ? updatedRecord : r))
+              : [updatedRecord, ...previousToday.records],
+          });
+        }
+      }
+
+      return { previousPending, previousToday };
+    },
     onSuccess: async () => {
       await Promise.all([
         invalidations.attendance.all(queryClient, resolvedOrgId),
@@ -61,8 +131,18 @@ export function useRejectAttendance(orgId?: string) {
       ]);
       notifyMutationWarning("Attendance rejected.");
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      if (context) {
+        const queryKeyPending = queryKeys.attendance.pending(resolvedOrgId);
+        const queryKeyToday = queryKeys.attendance.today(resolvedOrgId);
+        if (context.previousPending) queryClient.setQueryData(queryKeyPending, context.previousPending);
+        if (context.previousToday) queryClient.setQueryData(queryKeyToday, context.previousToday);
+      }
       notifyMutationError(error, "Attendance could not be rejected.");
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.attendance.pending(resolvedOrgId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.attendance.today(resolvedOrgId) });
     },
   });
 }
