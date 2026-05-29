@@ -74,7 +74,7 @@ const brandMarkSizes: Record<BrandMarkSize, number> = {
   lg: 56,
 };
 
-const tonePalettes: Record<
+const _tonePalettes: Record<
   PillTone,
   { borderColor: string; color: string; backgroundColor: string; glowColor: string }
 > = {

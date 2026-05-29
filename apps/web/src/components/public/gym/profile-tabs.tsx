@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ClipboardList, Users, Sparkles, Star, Smartphone, Dumbbell } from "lucide-react";
+import { Users, Sparkles, Star, Smartphone, Dumbbell } from "lucide-react";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym, PublicGymPlan, PublicGymTrainer } from "./types";
 import { GymPlansGrid } from "./plans-grid";
