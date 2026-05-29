@@ -45,6 +45,37 @@ gates), and `pnpm --filter @zook/mobile test` (31 tests) — all green. No new d
   `TabBarBackdrop`, so it no longer rebuilds on every tab switch / unread-count change. No new
   dep, no visual change. `(member)/_layout.tsx`.
 
+### B–E pass (2026-05-30, second batch — branch `launch-coming-soon-signposting`)
+
+- ✅ **B3 animation audit — clean.** Reviewed every animation surface (`motion.ts`, `toast-host`,
+  `foundation`, `buttons`, `animated-appear`, `reanimated-lite`). The shared motion library is
+  premium-grade: respects `reduce-motion` (accessibility), spring physics, ease-in-out loops,
+  ping-pong reversal. The scanner was the **only** defect (it bypassed the lib with raw
+  `RNAnimated`); now fixed. No further motion defects found.
+- ✅ **C1 AI assistant — already correct.** The assistant route already renders a proper
+  "Coming Soon!" screen (`assistant-route.tsx`); left as-is, visible and on-brand.
+- ✅ **C2 WhatsApp — added.** Notification settings now shows a visible "Coming Soon!" WhatsApp
+  channel row (`settings/notifications.tsx`).
+- ✅ **C3 Languages — added.** Onboarding + settings language pickers now show display-only
+  "Coming Soon!" chips for Tamil/Telugu/Kannada/Marathi/Bengali in native script; English + Hindi
+  remain the selectable launch languages.
+- ✅ **B4 tab-bar perf** — done in first batch (memoized backdrop).
+- ⚠️ **D1 classes / D2 multi-branch — no code needed.** Group classes currently have **no
+  front-end at all** (backend/API only), so they are already effectively "not launched / hidden" —
+  nothing half-shipped is visible to users. Multi-branch: keep single-branch positioning for
+  launch (copy/positioning decision, not code). Recorded as resolved.
+- ⚠️ **E1 config reconcile — needs founder.** Flipping the local `.env.production.local`
+  `SMS_PROVIDER` to match the deployed `msg91` requires the real MSG91 credentials (which would
+  otherwise fail preflight), and the file is gitignored. Founder action; documented here.
+- ✅ **E2 commit — done.** Remaining work committed on branch
+  `launch-coming-soon-signposting` (the bulk was already committed to `main` as
+  `b666c03 "Polish mobile launch readiness"`).
+
+**Net: B, C, and the code-doable parts of D and E are complete. What genuinely remains is
+non-code:** the live Razorpay transaction (A — you're doing it later), on-device QA + push +
+low-light scan (B2/B5), store metadata (E3), the MSG91 env reconcile (E1), and UPI-first
+emphasis (A4 — lives in Razorpay's hosted checkout, not our code).
+
 ### Deliberately NOT done today (with reasons)
 
 - ⏸ **In-app checkout (P1).** Requires a new native dep (`expo-web-browser`) **and** on-device
