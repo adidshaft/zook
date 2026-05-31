@@ -5,10 +5,12 @@ import {
   canAccessWebDashboard,
   requireDashboardSectionPermission,
 } from "@/lib/dashboard-guards";
+import type { MemberRow } from "@/components/dashboard/types";
 import { getOrganizationDashboardShellData } from "@/lib/data";
 import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
+import { getOrganizationMembers } from "@/server/domains/members/read-models";
 import type { DashboardRoutePanelBaseProps } from "./dashboard/route-panels";
 
 type DashboardRouteProps = {
@@ -61,7 +63,10 @@ function getDashboardRoutePanelProps({
   data,
   roles,
   permissions,
-}: LoadedDashboardRouteProps): DashboardRoutePanelBaseProps | null {
+  initialMembers,
+}: LoadedDashboardRouteProps & {
+  initialMembers?: MemberRow[] | undefined;
+}): DashboardRoutePanelBaseProps | null {
   const activeOrg = data.orgs[0];
   if (!activeOrg) {
     return null;
@@ -88,9 +93,14 @@ function getDashboardRoutePanelProps({
     initialNotifications: data.notifications,
     initialProducts: data.products,
     initialAiUsage: data.aiUsage,
+    ...(initialMembers ? { initialMembers } : {}),
     roles,
     permissions,
   };
+}
+
+function serializeForClient<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 export async function renderDashboardPanelRoute<TExtra extends object = object>(
@@ -99,7 +109,15 @@ export async function renderDashboardPanelRoute<TExtra extends object = object>(
   panelProps?: TExtra,
 ) {
   const shellProps = await loadDashboardRouteProps(routeProps);
-  const routePanelProps = getDashboardRoutePanelProps(shellProps);
+  const activeOrgId = shellProps.data.orgs[0]?.id;
+  const initialMembers =
+    routeProps.section?.[0] === "members" && activeOrgId
+      ? (serializeForClient(await getOrganizationMembers(activeOrgId)) as unknown as MemberRow[])
+      : undefined;
+  const routePanelProps = getDashboardRoutePanelProps({
+    ...shellProps,
+    ...(initialMembers ? { initialMembers } : {}),
+  });
   const sectionContent = routePanelProps ? (
     <Panel {...routePanelProps} {...(panelProps ?? ({} as TExtra))} />
   ) : null;

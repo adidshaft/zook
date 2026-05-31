@@ -4,6 +4,7 @@ import {
   type BranchScopeSnapshot,
   type DashboardCharts,
   type JoinRequestRow,
+  type MemberRow,
   type NotificationSnapshot,
   type OrganizationSnapshot,
   type OrganizationSummary,
@@ -46,6 +47,7 @@ export type DashboardOperationalPanelProps = {
   initialNotifications: NotificationSnapshot[];
   initialProducts: ProductSnapshot[];
   initialAiUsage: AIUsageRow[];
+  initialMembers?: MemberRow[];
   roles?: Role[];
   permissions?: Permission[];
 };

@@ -55,11 +55,13 @@ export function usePagedOperationalResource<TPage extends CursorPage, TItem>({
   enabled = true,
   itemKey,
   refreshMs,
+  initialPage,
 }: {
   path?: string | undefined;
   enabled?: boolean | undefined;
   itemKey: keyof TPage & string;
   refreshMs?: number | undefined;
+  initialPage?: TPage | undefined;
 }) {
   const query = useInfiniteQuery<TPage, Error>({
     queryKey: ["operational-resource", path],
@@ -67,6 +69,8 @@ export function usePagedOperationalResource<TPage extends CursorPage, TItem>({
     initialPageParam: null,
     queryFn: ({ pageParam }) => webApiFetch<TPage>(withCursor(path!, pageParam as string | null)),
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    ...(initialPage ? { initialData: { pages: [initialPage], pageParams: [null] } } : {}),
+    ...(initialPage ? { initialDataUpdatedAt: Date.now() } : {}),
     placeholderData: keepPreviousData,
     staleTime: refreshMs ? Math.min(refreshMs, 60_000) : 60_000,
     gcTime: 10 * 60_000,
