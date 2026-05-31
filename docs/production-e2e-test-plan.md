@@ -6,6 +6,7 @@ This plan tests both web and mobile production flows while avoiding unintended r
 
 Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile-only checks that require a physical device, camera, haptics, or geofence movement remain unverified.
 
+- Clean production deploy from the pushed tree completed on 2026-05-31: Vercel deployment `https://zook-gym-erks8k0rk-adidshafts-projects.vercel.app`, aliased to `https://zookfit.in`.
 - Pre-checks passed on production: `/api/health` returned `envProfile: "production"` and `/api/ready` returned `ready: true` with database, migrations, MSG91 SMS, live Razorpay, distributed cache, and distributed rate limiting ready.
 - Web login passed for both email and mobile modes. Seeded phone login with `+919876543210` accepted OTP `000000` and opened Nisha Menon's member web membership page.
 - Pricing page passed on web: four plans are visible, including the `₹0 for 2 months` trial, and details expand/collapse. Owner dashboard pricing link opens the pricing page in a separate tab.
