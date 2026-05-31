@@ -21,6 +21,13 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Reception Payments route passed as a safe collection surface: `/desk/payments` rendered the offline desk payment form for membership/shop/other collections with cash mode default and did not open Razorpay. No payment was submitted without action-time approval.
 - Platform wrap-up was rechecked in production Chrome on 2026-05-31: `/api/ready` showed `ready: true`, production DB reachable/schema-ready/migrations applied, MSG91 live ready, Razorpay live ready, distributed cache, and distributed rate limiting. `/api/health` showed `alive: true` and `envProfile: "production"`. The platform dashboard showed 3 gym accounts, `Aarogya Strength` / `aarogya-strength` active, 14 visible users including all seeded demo accounts, 0 provider setup gaps, 0 suspended gyms, 1 existing mock-seed succeeded payment, and the subscription table showed `Aarogya Strength` on Growth monthly with autopay `Created`, `0 cycles paid`, and next charge `16 Jul 2026`.
 - Admin role retest passed in production Chrome: `admin@zook.local` logged in with OTP `000000`, landed on the dashboard, and could open Members, Plans, Attendance, Shop, and Reports. Members showed Karan Desk Test, Dev Mehta, Nisha Menon, and Ira Shah. Plans showed 4 membership offers plus the reviewed Starter Strength Week workout plan. Attendance showed the live rolling QR, zero exceptions, and recent Nisha Menon scans. Shop showed Shaker, Protein Shake, and Water Bottle stock without touching create/edit/archive/delete actions. Reports showed the CSV export pack and live KPI panels. Direct navigation to `/dashboard/billing` redirected the admin back to `/dashboard`, confirming that owner-only billing stayed blocked for this role. Admin was then signed out to the public homepage.
+- Owner member detail bug found and fixed during the 2026-05-31 run: `member2@zook.local` / Dev Mehta appeared in the branch-scoped roster but the detail panel failed with `This member belongs to another branch.` The server now allows branch detail access for member profiles with no subscriptions while still blocking members subscribed to a different branch. Production deploy `dpl_2DQ1ujxN475BvcZuVRMsPSacJ8uq` was retested live: Dev Mehta, Ira Shah, and Karan Desk Test detail views now open.
+- Owner member details were verified read-only after the fix: Nisha Menon shows active membership/payment/attendance/progress context, Dev Mehta opens as a fresh no-plan/no-subscription profile, Ira Shah opens with minor/marketing-off state visible, and Karan Desk Test opens with Monthly Unlimited pending payment for desk flow testing.
+- Owner Plans passed read-only: branch selector was present but only `Aarogya Strength Koregaon Park` was available, Membership catalog showed 4 public active offers, Discounts/Offers/Referrals entry points were visible, and the reviewed `Starter Strength Week` trainer plan appeared with 1 assignment.
+- Owner Shop passed read-only: Products showed seeded Shaker, Protein Shake, and Water Bottle inventory with stock counts; create/edit/archive/delete actions were intentionally not clicked.
+- Owner Payments passed read-only: `/dashboard/payments` rendered reconciliation, offline desk payment controls, payment CSV export, refund guidance, and the settled ready-for-pickup order `5EFJWZNL` for ₹548 without clicking record, refund, or settle actions.
+- Owner Notifications passed read-only: `/dashboard/notifications` rendered the 4-step composer, delivery status, and recent sent notifications (`Guardian approval still pending`, `Evening floor maintenance`) without creating or sending a new notification.
+- Production performance issue recorded: owner member list/detail APIs were successful after deploy but slow in Vercel logs (`/api/orgs/.../members` about 6-9s and member detail about 6s). This explains the visible skeleton/stale-looking dashboard delay and needs a follow-up query/cache optimization pass.
 
 ## Ground Rules
 
@@ -89,19 +96,19 @@ Add these to the pass before signing off production:
 12. [x] [web] Log in as `owner@zook.local` with OTP `000000`.
 13. [x] [web] Confirm owner lands on dashboard.
 14. [x] [web] Confirm dashboard summary cards load.
-15. [ ] [web] Switch branches if branch selector exists.
+15. [x] [web] Switch branches if branch selector exists.
 16. [x] [web] Confirm revenue, active members, attendance, and shop metrics render.
 17. [x] [web] Go to Members.
 18. [x] [web] Confirm member profiles exist for `member`, `member2`, `minor`, and `desk-test-member`.
-19. [ ] [web] Open `member@zook.local`.
-20. [ ] [web] Confirm membership status, payments, attendance, notes, and trainer assignment look correct.
-21. [ ] [web] Open `member2@zook.local`.
-22. [ ] [web] Confirm this account is available for fresh manual/referral/checkout testing.
-23. [ ] [web] Open `minor@zook.local`.
-24. [ ] [web] Confirm minor/guardian-related state is visible where expected.
-25. [ ] [web] Open `desk-test-member@zook.local`.
-26. [ ] [web] Confirm it is ready for reception/payment desk flows.
-27. [ ] [web] Go to Membership Plans.
+19. [x] [web] Open `member@zook.local`.
+20. [x] [web] Confirm membership status, payments, attendance, notes, and trainer assignment look correct.
+21. [x] [web] Open `member2@zook.local`.
+22. [x] [web] Confirm this account is available for fresh manual/referral/checkout testing.
+23. [x] [web] Open `minor@zook.local`.
+24. [x] [web] Confirm minor/guardian-related state is visible where expected.
+25. [x] [web] Open `desk-test-member@zook.local`.
+26. [x] [web] Confirm it is ready for reception/payment desk flows.
+27. [x] [web] Go to Membership Plans.
 28. [ ] [web] Create a new demo membership plan.
 29. [ ] [web] Edit the demo membership plan.
 30. [ ] [web] Confirm the edited plan is saved.
@@ -111,15 +118,15 @@ Add these to the pass before signing off production:
 34. [x] [web] Go to Staff.
 35. [x] [web] Confirm owner, admin, reception, and trainer roles are visible.
 36. [ ] [web] Invite a staff member only if the target email is safe/demo.
-37. [ ] [web] Go to Shop/Products.
-38. [ ] [web] Confirm seeded products exist.
+37. [x] [web] Go to Shop/Products.
+38. [x] [web] Confirm seeded products exist.
 39. [ ] [web] Create a demo product.
 40. [ ] [web] Edit stock and price.
 41. [ ] [web] Confirm inventory movement appears if supported.
-42. [ ] [web] Go to Payments.
+42. [x] [web] Go to Payments.
 43. [ ] [web] Confirm demo payment records are visible.
-44. [ ] [web] Confirm refunds/payment events are clearly demo/offline, or skip before any live capture.
-45. [ ] [web] Go to Notifications.
+44. [x] [web] Confirm refunds/payment events are clearly demo/offline, or skip before any live capture.
+45. [x] [web] Go to Notifications.
 46. [ ] [web] Create a draft notification for selected demo members.
 47. [ ] [web] Send the notification only to demo members.
 48. [ ] [web] Confirm notification history records delivery.
