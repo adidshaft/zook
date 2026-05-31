@@ -1,9 +1,15 @@
 import { Prisma, prisma } from "@zook/db";
+import { getProviderRegistryDiagnostics } from "@zook/core/providers";
 import { endOfWindow, startOfToday } from "@/server/domains/shared/date";
 import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { getBranchScope } from "@/server/domains/shared/org-context";
 import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";
-import { cachedJson, getServerCacheStore } from "@/server/server-cache";
+import {
+  cachedJson,
+  getServerCacheDiagnostics,
+  getServerCacheStore,
+} from "@/server/server-cache";
+import { getRateLimitDiagnostics } from "@/server/rate-limit";
 import { buildOrganizationDashboardCharts, dayWindow } from "./chart-series";
 
 function organizationDashboardCacheKeys(orgId: string, branchId?: string | null) {
@@ -390,6 +396,10 @@ async function getOrganizationDashboardDataUncached(
 }
 
 export async function getPlatformDashboardData() {
+  return cachedJson("platform-dashboard:shell", 30, getPlatformDashboardDataUncached);
+}
+
+async function getPlatformDashboardDataUncached() {
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
@@ -444,5 +454,80 @@ export async function getPlatformDashboardData() {
       { label: "Assistant drafts", value: String(aiUsageThisMonth), delta: "this month" },
       { label: "Safety reviews", value: String(abuseFlags.length), delta: "recent signals" },
     ],
+  };
+}
+
+export type PlatformProviderDiagnostics = {
+  category: string;
+  selectedProvider: string;
+  activeProvider: string | null;
+  status: string;
+  configured: boolean;
+  missingEnv: string[];
+  env: Record<string, boolean>;
+  provider: string;
+  mode: string;
+  lastCheckedAt?: string;
+  notes?: string;
+  metadata?: Record<string, string | number | boolean | null>;
+};
+
+function normalizePlatformProviderDiagnostics(
+  name: string,
+  value: unknown,
+): PlatformProviderDiagnostics {
+  const record = value as {
+    selectedProvider?: unknown;
+    activeProvider?: unknown;
+    status?: unknown;
+    missingEnv?: unknown;
+    env?: unknown;
+    provider?: unknown;
+    mode?: unknown;
+    configured?: unknown;
+    lastCheckedAt?: unknown;
+    notes?: unknown;
+    metadata?: unknown;
+  };
+  const selectedProvider =
+    typeof record.selectedProvider === "string" ? record.selectedProvider : name;
+  const activeProvider =
+    typeof record.activeProvider === "string" ? record.activeProvider : null;
+  const missingEnv = Array.isArray(record.missingEnv)
+    ? record.missingEnv.filter((item): item is string => typeof item === "string")
+    : [];
+  return {
+    category: name,
+    selectedProvider,
+    activeProvider,
+    status: typeof record.status === "string" ? record.status : "unknown",
+    configured: Boolean(record.configured),
+    missingEnv,
+    env:
+      record.env && typeof record.env === "object"
+        ? (record.env as Record<string, boolean>)
+        : {},
+    provider: typeof record.provider === "string" ? record.provider : selectedProvider,
+    mode: typeof record.mode === "string" ? record.mode : selectedProvider,
+    ...(typeof record.lastCheckedAt === "string" ? { lastCheckedAt: record.lastCheckedAt } : {}),
+    ...(typeof record.notes === "string" ? { notes: record.notes } : {}),
+    ...(record.metadata && typeof record.metadata === "object"
+      ? { metadata: record.metadata as Record<string, string | number | boolean | null> }
+      : {}),
+  };
+}
+
+export function getPlatformProviderDiagnostics() {
+  const registry = getProviderRegistryDiagnostics();
+  const coarseProviders = Object.fromEntries(
+    Object.entries(registry).map(([name, value]) => [
+      name,
+      normalizePlatformProviderDiagnostics(name, value),
+    ]),
+  );
+  return {
+    ...coarseProviders,
+    rateLimit: normalizePlatformProviderDiagnostics("rateLimit", getRateLimitDiagnostics()),
+    cache: normalizePlatformProviderDiagnostics("cache", getServerCacheDiagnostics()),
   };
 }

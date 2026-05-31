@@ -6,6 +6,7 @@ import { PlatformOperationsPanel } from "@/components/platform-operations-panel"
 import { requirePlatformSession } from "@/lib/server-auth";
 import { ZookLogo } from "@/components/zook-logo";
 import { getPlatformDashboardShellData } from "@/lib/data";
+import { getPlatformProviderDiagnostics } from "@/server/domains/overview";
 import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
 
 export const dynamic = "force-dynamic";
@@ -103,7 +104,10 @@ export default async function PlatformPage({
   const { section } = await params;
   const sectionKey = section?.[0] ?? "status";
   const activeAnchor = platformSectionAnchors[sectionKey] ?? "readiness";
-  const data = await getPlatformDashboardShellData();
+  const [data, providerDiagnostics] = await Promise.all([
+    getPlatformDashboardShellData(),
+    getPlatformProviderDiagnostics(),
+  ]);
   const runtimeLabel = data.connected
     ? "System online"
     : data.fallbackMode === "demo"
@@ -119,10 +123,10 @@ export default async function PlatformPage({
     platformNavItems.find(([, , key]) => key === sectionKey)?.[0] ?? "Status";
 
   return (
-    <main className="min-h-screen px-4 py-4 md:px-6">
-      <div className="mx-auto grid max-w-[1440px] gap-4">
-        <GlassCard variant="strong" className="p-4 md:p-5">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+    <main className="min-h-screen px-3 py-3 md:px-5">
+      <div className="mx-auto grid max-w-[1280px] gap-3 md:gap-4">
+        <GlassCard variant="strong" className="rounded-[22px] p-4 md:p-5">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
@@ -132,10 +136,10 @@ export default async function PlatformPage({
               <div className="mt-3 flex items-center gap-3">
                 {hasAlerts ? <AlertTriangle className="h-5 w-5 text-amber-100" /> : null}
                 <div>
-                  <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">
+                  <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
                     Platform operations
                   </h1>
-                  <p className="mt-1 max-w-3xl text-sm leading-6 text-white/55">
+                  <p className="mt-1 max-w-3xl text-sm leading-5 text-white/55">
                     Fast lane for production health, support lookups, gym accounts, and risk queues.
                   </p>
                 </div>
@@ -148,12 +152,12 @@ export default async function PlatformPage({
           </div>
         </GlassCard>
 
-        <nav className="sticky top-3 z-20 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/72 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl">
+        <nav className="sticky top-3 z-20 grid grid-cols-2 gap-2 rounded-[20px] border border-white/10 bg-black/72 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl sm:grid-cols-3 md:flex md:flex-wrap">
           {platformNavItems.map(([item, href, key]) => (
             <Link
               key={item}
               href={href}
-              className={`zook-focus shrink-0 rounded-xl px-3 py-2 text-sm font-medium transition ${
+              className={`zook-focus rounded-xl px-3 py-2 text-center text-sm font-medium transition md:shrink-0 ${
                 key === sectionKey
                   ? "bg-lime-300 text-black"
                   : "border border-white/10 text-white/68 hover:bg-white/8 hover:text-white"
@@ -164,7 +168,7 @@ export default async function PlatformPage({
           ))}
         </nav>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {data.metrics.map((metric) => (
             <MetricCard
               key={metric.label}
@@ -182,6 +186,7 @@ export default async function PlatformPage({
                   <ShieldAlert size={18} className="text-amber-100" />
                 ) : undefined
               }
+              className="rounded-[20px] p-4"
             />
           ))}
         </div>
@@ -190,6 +195,7 @@ export default async function PlatformPage({
           initialSection={activeAnchor}
           initialOrgs={data.orgs.map(serializePlatformOrganization)}
           initialFlags={data.platform.abuseFlags.map(serializePlatformAbuseFlag)}
+          initialProviders={providerDiagnostics}
         />
       </div>
     </main>
