@@ -239,14 +239,14 @@ export function PlatformOperationsPanel({
   const [busyOrgId, setBusyOrgId] = useState<string | null>(null);
   const [statusError, setStatusError] = useState("");
   const [userQuery, setUserQuery] = useState("");
-  const [userRows, setUserRows] = useState<PlatformUserRow[]>([]);
+  const [userSearchRows, setUserSearchRows] = useState<PlatformUserRow[] | null>(null);
   const [selectedUser, setSelectedUser] = useState<PlatformUserDetail | null>(null);
   const [selectedOrganization, setSelectedOrganization] = useState<PlatformOrganization | null>(
     null,
   );
   const [userDetailBusyId, setUserDetailBusyId] = useState<string | null>(null);
   const [paymentQuery, setPaymentQuery] = useState("");
-  const [paymentRows, setPaymentRows] = useState<PlatformPaymentRow[]>([]);
+  const [paymentSearchRows, setPaymentSearchRows] = useState<PlatformPaymentRow[] | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PlatformPaymentDetail | null>(null);
   const [paymentDetailBusyId, setPaymentDetailBusyId] = useState<string | null>(null);
   const [supportNotice, setSupportNotice] = useState("");
@@ -316,6 +316,14 @@ export function PlatformOperationsPanel({
       enabled: showImpersonations,
     },
   );
+  const usersState = useOperationalResource<{ users: PlatformUserRow[] }>({
+    path: "/api/platform/users",
+    enabled: showUsers,
+  });
+  const paymentsState = useOperationalResource<{ payments: PlatformPaymentRow[] }>({
+    path: "/api/platform/payments",
+    enabled: showPayments,
+  });
 
   const organizations = organizationsState.data?.orgs ?? initialOrgs;
   const providers = providersState.data?.providers;
@@ -328,6 +336,8 @@ export function PlatformOperationsPanel({
   const broadcasts = broadcastsState.data?.broadcasts ?? [];
   const moderationFlags = moderationState.data?.flags ?? [];
   const impersonations = impersonationsState.data?.impersonations ?? [];
+  const userRows = userSearchRows ?? usersState.data?.users ?? [];
+  const paymentRows = paymentSearchRows ?? paymentsState.data?.payments ?? [];
 
   const misconfiguredProviders = useMemo(
     () =>
@@ -419,31 +429,6 @@ export function PlatformOperationsPanel({
         : "No active trial expires this week",
     },
   ], [misconfiguredProviders, openFlags.length, suspendedOrganizations.length, trialRiskOrganizations.length]);
-
-  useEffect(() => {
-    let mounted = true;
-    if (!showUsers && !showPayments) {
-      return () => {
-        mounted = false;
-      };
-    }
-    Promise.all([
-      showUsers ? webApiFetch<{ users: PlatformUserRow[] }>("/api/platform/users") : null,
-      showPayments ? webApiFetch<{ payments: PlatformPaymentRow[] }>("/api/platform/payments") : null,
-    ])
-      .then(([usersPayload, paymentsPayload]) => {
-        if (!mounted) return;
-        if (usersPayload) setUserRows(usersPayload.users);
-        if (paymentsPayload) setPaymentRows(paymentsPayload.payments);
-      })
-      .catch((cause) => {
-        if (!mounted) return;
-        setSupportNotice(cause instanceof Error ? cause.message : "Unable to load platform records.");
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [showPayments, showUsers]);
 
   async function updateOrganizationStatus(
     orgId: string,
@@ -569,10 +554,15 @@ export function PlatformOperationsPanel({
   }
 
   async function searchUsers() {
+    const query = userQuery.trim();
+    if (!query) {
+      setUserSearchRows(null);
+      return;
+    }
     const response = await webApiFetch<{ users: PlatformUserRow[] }>(
-      `/api/platform/users?q=${encodeURIComponent(userQuery.trim())}`,
+      `/api/platform/users?q=${encodeURIComponent(query)}`,
     );
-    setUserRows(response.users);
+    setUserSearchRows(response.users);
   }
 
   async function loadUserDetails(userId: string) {
@@ -601,10 +591,15 @@ export function PlatformOperationsPanel({
   }
 
   async function searchPayments() {
+    const query = paymentQuery.trim();
+    if (!query) {
+      setPaymentSearchRows(null);
+      return;
+    }
     const response = await webApiFetch<{ payments: PlatformPaymentRow[] }>(
-      `/api/platform/payments?q=${encodeURIComponent(paymentQuery.trim())}`,
+      `/api/platform/payments?q=${encodeURIComponent(query)}`,
     );
-    setPaymentRows(response.payments);
+    setPaymentSearchRows(response.payments);
   }
 
   async function loadPaymentDetails(paymentId: string) {
@@ -780,7 +775,11 @@ export function PlatformOperationsPanel({
                 eyebrow="Users"
                 title="User search and details"
                 description="Find members, staff, owners, and demo accounts across the platform."
-                badge={<Pill tone="blue">{userRows.length} visible</Pill>}
+                badge={
+                  <Pill tone={usersState.loading ? "amber" : "blue"}>
+                    {usersState.loading && !userRows.length ? "Loading" : `${userRows.length} visible`}
+                  </Pill>
+                }
               />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
@@ -848,7 +847,7 @@ export function PlatformOperationsPanel({
                   ]}
                   rows={userRows}
                   rowKey={(user) => user.id}
-                  empty="No users match this search."
+                  empty={usersState.error || "No users match this search."}
                 />
               </div>
               {selectedUser ? (
@@ -952,7 +951,13 @@ export function PlatformOperationsPanel({
                 eyebrow="Payments"
                 title="Payment ledger"
                 description="Demo and live payment records appear here immediately after checkout or desk payment creation."
-                badge={<Pill tone="blue">{paymentRows.length} visible</Pill>}
+                badge={
+                  <Pill tone={paymentsState.loading ? "amber" : "blue"}>
+                    {paymentsState.loading && !paymentRows.length
+                      ? "Loading"
+                      : `${paymentRows.length} visible`}
+                  </Pill>
+                }
               />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
@@ -1013,7 +1018,7 @@ export function PlatformOperationsPanel({
                   ]}
                   rows={paymentRows}
                   rowKey={(payment) => payment.id}
-                  empty="No payments match this search."
+                  empty={paymentsState.error || "No payments match this search."}
                 />
               </div>
               {selectedPayment ? (

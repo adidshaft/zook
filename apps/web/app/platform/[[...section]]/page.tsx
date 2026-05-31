@@ -124,8 +124,8 @@ export default async function PlatformPage({
 
   return (
     <main className="min-h-screen px-3 py-3 md:px-5">
-      <div className="mx-auto grid max-w-[1280px] gap-3 md:gap-4">
-        <GlassCard variant="strong" className="rounded-[22px] p-4 md:p-5">
+      <div className="mx-auto grid max-w-[1320px] gap-3 md:gap-4">
+        <GlassCard variant="strong" className="rounded-2xl p-4 md:p-5">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -152,12 +152,16 @@ export default async function PlatformPage({
           </div>
         </GlassCard>
 
-        <nav className="sticky top-3 z-20 grid grid-cols-2 gap-2 rounded-[20px] border border-white/10 bg-black/72 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl sm:grid-cols-3 md:flex md:flex-wrap">
+        <nav
+          aria-label="Platform sections"
+          className="sticky top-3 z-20 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/78 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl"
+        >
           {platformNavItems.map(([item, href, key]) => (
             <Link
               key={item}
               href={href}
-              className={`zook-focus rounded-xl px-3 py-2 text-center text-sm font-medium transition md:shrink-0 ${
+              prefetch={false}
+              className={`zook-focus shrink-0 rounded-xl px-3 py-2 text-center text-sm font-medium transition ${
                 key === sectionKey
                   ? "bg-lime-300 text-black"
                   : "border border-white/10 text-white/68 hover:bg-white/8 hover:text-white"
