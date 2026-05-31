@@ -20,6 +20,7 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Reception Orders passed read-only in production Chrome: `/desk/orders` rendered the branch-scoped shop pickup surface, including an existing paid `Nisha Menon` order for `1 x Water Bottle, 1 x Protein Shake`, pickup code hidden, and verify/skip/fulfill controls. Fulfillment was intentionally not clicked because it mutates production order state.
 - Reception Payments route passed as a safe collection surface: `/desk/payments` rendered the offline desk payment form for membership/shop/other collections with cash mode default and did not open Razorpay. No payment was submitted without action-time approval.
 - Platform wrap-up was rechecked in production Chrome on 2026-05-31: `/api/ready` showed `ready: true`, production DB reachable/schema-ready/migrations applied, MSG91 live ready, Razorpay live ready, distributed cache, and distributed rate limiting. `/api/health` showed `alive: true` and `envProfile: "production"`. The platform dashboard showed 3 gym accounts, `Aarogya Strength` / `aarogya-strength` active, 14 visible users including all seeded demo accounts, 0 provider setup gaps, 0 suspended gyms, 1 existing mock-seed succeeded payment, and the subscription table showed `Aarogya Strength` on Growth monthly with autopay `Created`, `0 cycles paid`, and next charge `16 Jul 2026`.
+- Admin role retest passed in production Chrome: `admin@zook.local` logged in with OTP `000000`, landed on the dashboard, and could open Members, Plans, Attendance, Shop, and Reports. Members showed Karan Desk Test, Dev Mehta, Nisha Menon, and Ira Shah. Plans showed 4 membership offers plus the reviewed Starter Strength Week workout plan. Attendance showed the live rolling QR, zero exceptions, and recent Nisha Menon scans. Shop showed Shaker, Protein Shake, and Water Bottle stock without touching create/edit/archive/delete actions. Reports showed the CSV export pack and live KPI panels. Direct navigation to `/dashboard/billing` redirected the admin back to `/dashboard`, confirming that owner-only billing stayed blocked for this role. Admin was then signed out to the public homepage.
 
 ## Ground Rules
 
@@ -132,13 +133,13 @@ Add these to the pass before signing off production:
 56. [x] [web] Log out.
 57. [x] [web] Log in as `admin@zook.local` with OTP `000000`.
 58. [x] [web] Confirm admin lands on dashboard.
-59. [ ] [web] Test members access.
-60. [ ] [web] Test plans access.
-61. [ ] [web] Test attendance access.
-62. [ ] [web] Test shop access.
-63. [ ] [web] Test reports access.
-64. [ ] [web] Confirm admin cannot access owner-only areas if those boundaries exist.
-65. [ ] [web] Log out.
+59. [x] [web] Test members access.
+60. [x] [web] Test plans access.
+61. [x] [web] Test attendance access.
+62. [x] [web] Test shop access.
+63. [x] [web] Test reports access.
+64. [x] [web] Confirm admin cannot access owner-only areas if those boundaries exist.
+65. [x] [web] Log out.
 66. [x] [web] Log in as `reception@zook.local` with OTP `000000`.
 67. [x] [web] Open desk/check-in.
 68. [x] [web] Search for `member@zook.local`.
