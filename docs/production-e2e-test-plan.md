@@ -31,6 +31,7 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Owner membership plan lifecycle passed in production Chrome on 2026-05-31: created private demo plan `E2E Browser Plan May 31` at `₹101`, edited it to `₹111`, confirmed the edited price persisted in the membership catalog, then archived it so it shows `Private` / `Paused` with Restore available.
 - Owner coupon lifecycle passed in production Chrome on 2026-05-31: after hard reload, the coupon form default percentage value showed `10`; created demo coupon `E2EFIVE31A` as `5% off` with max uses `1`, confirmed it appeared as `5% off · Active`, then deactivated it so it shows `5% off · Inactive`.
 - Owner Shop passed read-only: Products showed seeded Shaker, Protein Shake, and Water Bottle inventory with stock counts; create/edit/archive/delete actions were intentionally not clicked.
+- Owner Shop product lifecycle passed in production Chrome on 2026-05-31: first navigation to `/dashboard/shop` stayed on the dashboard-section skeleton until reload, then created private demo product `E2E Browser Towel May 31` at `₹99` with stock `3`, edited it to `₹109` with stock `7`, and archived it instead of hard-deleting it. The archived row remains visible with Restore available.
 - Owner Payments passed read-only: `/dashboard/payments` rendered reconciliation, offline desk payment controls, payment CSV export, refund guidance, the settled ready-for-pickup order `5EFJWZNL` for ₹548, and the seeded membership payment row for Nisha Menon (`Succeeded`, `Online`, `₹1,799`) without clicking record, refund, receipt, invoice, or settle actions.
 - Owner Notifications passed read-only: `/dashboard/notifications` rendered the 4-step composer, delivery status, and recent sent notifications (`Guardian approval still pending`, `Evening floor maintenance`) without creating or sending a new notification.
 - Production performance issue partially mitigated: platform dashboard section loading is fixed, but owner/member and desk member APIs are still slow in Vercel logs in some runs (`/api/orgs/.../members` and attendance endpoints can take roughly 4-9s). This explains remaining visible skeleton/stale-looking delay and still needs a dedicated query/cache optimization pass for non-platform dashboard data.
@@ -129,9 +130,9 @@ Add these to the pass before signing off production:
 36. [ ] [web] Invite a staff member only if the target email is safe/demo.
 37. [x] [web] Go to Shop/Products.
 38. [x] [web] Confirm seeded products exist.
-39. [ ] [web] Create a demo product.
-40. [ ] [web] Edit stock and price.
-41. [ ] [web] Confirm inventory movement appears if supported.
+39. [x] [web] Create a demo product.
+40. [x] [web] Edit stock and price.
+41. [x] [web] Confirm inventory movement appears if supported.
 42. [x] [web] Go to Payments.
 43. [x] [web] Confirm demo payment records are visible.
 44. [x] [web] Confirm refunds/payment events are clearly demo/offline, or skip before any live capture.
