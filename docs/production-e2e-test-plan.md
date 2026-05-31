@@ -12,8 +12,8 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Platform, owner, admin, reception, and trainer seeded accounts all logged in with OTP `000000`. Platform and owner/admin/reception web surfaces loaded; owner dashboard metrics rendered; staff roles rendered after a reload; reception desk member detail opened for Nisha Menon.
 - Production seed gap: owner Members currently shows only `member@zook.local` / Nisha Menon. `member2@zook.local`, `minor@zook.local`, and `desk-test-member@zook.local` are not visible in the production owner roster, so referral, minor, and desk-test-member flows cannot be completed as written.
 - Trainer web gap: `trainer@zook.local` lands on `/coach`, but assigned clients, assigned plans, sessions, and progress notes all show `0`; quick actions point to `/me` and say the full coaching surface lives on mobile.
-- Reports gap found during this run: the Reports page rendered tabs and date filters but had no CSV export controls for the required report downloads. A local fix adds a CSV export pack and wires `membership-sales.csv`; this still needs deployment before production retest.
-- Attendance history gap found during this run: production attendance rows showed generic `Member` / `Membership` labels even when member data exists. Local commit `6bccb1d` fixes attendance record enrichment; this still needs deployment before production retest.
+- Reports gap found and fixed during this run: the Reports page rendered tabs and date filters but had no CSV export controls for the required report downloads. Production now shows the CSV export pack, and Members, Attendance, Payments, Membership sales, and Expiry downloads completed from Chrome.
+- Attendance history gap found and fixed during this run: production attendance rows showed generic `Member` / `Membership` labels even when member data exists. Production now shows `Nisha Menon` and `Monthly Unlimited` in recent attendance rows after deploy.
 
 ## Ground Rules
 
