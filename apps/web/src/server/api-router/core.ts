@@ -8949,10 +8949,14 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
       throw notFoundError("Member not found");
     }
     if (branchId) {
-      const branchSubscription = await prisma.memberSubscription.findFirst({
-        where: { orgId, branchId, memberUserId },
+      const subscriptionsForMember = await prisma.memberSubscription.findMany({
+        where: { orgId, memberUserId },
+        select: { branchId: true },
       });
-      if (!branchSubscription) {
+      const hasSubscriptionInBranch = subscriptionsForMember.some(
+        (subscription) => subscription.branchId === branchId,
+      );
+      if (subscriptionsForMember.length > 0 && !hasSubscriptionInBranch) {
         throw forbiddenError("This member belongs to another branch.");
       }
     }
