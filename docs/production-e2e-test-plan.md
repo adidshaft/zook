@@ -39,6 +39,7 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Platform console was rechecked after loading settled: provider readiness showed 8 ready services, 0 setup gaps, 14 visible users, and one platform payment ledger row (`mock_seed_membership`, ₹1,799, Succeeded). The demo gym `Aarogya Strength` is visible inline with Pune location, Open Join, Active status, trial end `16 Jul 2026`, Growth monthly subscription/autopay details, and a safe read-only `Details` action. The details panel opens with status `Active`, join mode `Open Join`, trial end `16 Jul 2026`, location `Pune, Maharashtra`, contact `hello@aarogyastrength.example`, created date `17 May 2026`, and safety-review metadata.
 - Owner payment history data-surface gap was fixed and verified in production Chrome: branch-scoped owner `/dashboard/payments` now shows the seeded Nisha Menon membership payment as `Succeeded`, `Online`, `₹1,799`, with the reconciliation settled count updated to `1`.
 - Trainer role was retested in production Chrome and signed out: `trainer@zook.local` opened `/coach`, showing 1 assigned client, 1 assigned plan, 0 sessions this week, 1 progress note, and pinned client Nisha Menon with `Upper Body Strength`. The web coach page does not expose a client-detail/member workflow; its quick actions route to `/me` and state the full coaching surface lives on mobile. Trainer mutation/progress checklist items remain open.
+- Member web contact completion shipped and verified in production Chrome on 2026-05-31: `member@zook.local` opened the private member page at `/m/09pyn5jn`, the new Account contact panel rendered `2/2 contacts`, `OTP verified`, email `member@zook.local`, phone `+919876543210`, and add/change OTP controls. The `Send code` action was intentionally not clicked because it would transmit a real email/SMS without action-time approval.
 
 ## Ground Rules
 
@@ -70,7 +71,7 @@ Add these to the pass before signing off production:
 - [ ] [mobile] App login lets the user choose mobile login.
 - [x] [web] Seeded demo phone login with `+919876543210` accepts OTP `000000` and creates a member session.
 - [ ] [web] Real phone login sends SMS only to an owned/control number, and OTP verification creates a session.
-- [ ] [web] Profile completion allows adding a missing phone or email later.
+- [x] [web] Profile completion allows adding a missing phone or email later.
 - [ ] [mobile] Profile completion allows adding a missing phone or email later.
 - [x] [web] Pricing page opens and shows four plans including the two-month free trial plan.
 - [x] [web] Pricing page first fold shows only main points.
