@@ -108,6 +108,7 @@ export function DeskWorkspace({
           onSelectMember={actions.selectMember}
           onRecordPayment={actions.handleMemberPayment}
           onOverrideEntry={(member) => void actions.overrideMemberEntry(member)}
+          onCheckOut={(member) => void actions.checkOutMember(member)}
           onSendMessage={(member) => void actions.sendMemberMessage(member)}
         />
       ) : null}
