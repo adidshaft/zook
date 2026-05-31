@@ -9349,6 +9349,7 @@ export async function handleReports(request: NextRequest, path: string[]) {
     "payments.csv": "payments",
     "revenue.csv": "revenue",
     "manual-cash.csv": "manual-cash",
+    "membership-sales.csv": "membership-sales",
     "expiring-members.csv": "expiring-members",
     "invoices.csv": "invoices",
     "referrals.csv": "referrals",
@@ -9406,15 +9407,17 @@ export async function handleReports(request: NextRequest, path: string[]) {
               ? await reportsService.revenueReport(orgId, scopedFilters)
               : report === "manual-cash"
                 ? await reportsService.manualCashReport(orgId, scopedFilters)
-                : report === "expiring-members"
-                  ? await reportsService.membershipExpiryReport(orgId, scopedFilters)
-                  : report === "invoices"
-                    ? await reportsService.invoiceReport(orgId, scopedFilters)
-                    : report === "referrals"
-                      ? await reportsService.referralReport(orgId, scopedFilters)
-                      : report === "shop"
-                        ? await reportsService.shopReport(orgId, scopedFilters)
-                        : await reportsService.aiUsageReport(orgId, scopedFilters);
+                : report === "membership-sales"
+                  ? await reportsService.membershipSalesReport(orgId, scopedFilters)
+                  : report === "expiring-members"
+                    ? await reportsService.membershipExpiryReport(orgId, scopedFilters)
+                    : report === "invoices"
+                      ? await reportsService.invoiceReport(orgId, scopedFilters)
+                      : report === "referrals"
+                        ? await reportsService.referralReport(orgId, scopedFilters)
+                        : report === "shop"
+                          ? await reportsService.shopReport(orgId, scopedFilters)
+                          : await reportsService.aiUsageReport(orgId, scopedFilters);
 
     await writeAuditLog({
       request,

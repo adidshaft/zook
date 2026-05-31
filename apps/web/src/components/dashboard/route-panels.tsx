@@ -264,6 +264,7 @@ const REGISTRY: Record<
       summary={props.summary}
       charts={props.charts}
       selectedBranchName={c.selectedBranchName}
+      selectedBranchId={c.branchScope.selectedBranch?.id ?? null}
       auditLogCount={props.auditLogCount}
     />
   ),
@@ -355,6 +356,7 @@ export function ReportsDashboardRoute(props: DashboardRoutePanelBaseProps) {
         props.branchScope.branches[0]?.name ??
         "Selected branch"
       }
+      selectedBranchId={props.branchScope.selectedBranch?.id ?? null}
       auditLogCount={props.auditLogCount}
     />
   );
