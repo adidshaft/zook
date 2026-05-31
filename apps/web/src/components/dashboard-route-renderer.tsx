@@ -33,11 +33,9 @@ export async function loadDashboardRouteProps({ section, searchParams }: Dashboa
   }
   requireDashboardSectionPermission(session, section?.join("/") ?? "");
 
-  const data = await getOrganizationDashboardShellData(
-    session.activeOrgId,
-    branchId,
-    section?.length ? "full" : "fast",
-  );
+  const sectionKey = section?.join("/") ?? "";
+  const shellDataMode = sectionKey === "reports" ? "full" : "fast";
+  const data = await getOrganizationDashboardShellData(session.activeOrgId, branchId, shellDataMode);
   return {
     section,
     data,
