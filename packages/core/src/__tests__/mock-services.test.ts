@@ -32,8 +32,12 @@ describe("Zook mock service facades", () => {
     expect(isSeededDemoIdentifier(QA_FRESH_ACCOUNT_EMAIL)).toBe(false);
     expect(SEEDED_DEMO_ACCOUNT_EMAILS).toContain("trainer@zook.local");
     expect(SEEDED_DEMO_ACCOUNT_EMAILS).toContain("prospect@zook.local");
+    expect(SEEDED_DEMO_ACCOUNT_EMAILS).toContain("member2@zook.local");
+    expect(SEEDED_DEMO_ACCOUNT_EMAILS).toContain("desk-test-member@zook.local");
     expect(SEEDED_DEMO_ACCOUNT_PHONES).toContain("+919123456780");
     expect(SEEDED_DEMO_ACCOUNT_PHONES).toContain("+919555000111");
+    expect(SEEDED_DEMO_ACCOUNT_PHONES).toContain("+919876543211");
+    expect(SEEDED_DEMO_ACCOUNT_PHONES).toContain("+919444000222");
   });
 
   it("keeps membership activation behind mock payment confirmation", async () => {
