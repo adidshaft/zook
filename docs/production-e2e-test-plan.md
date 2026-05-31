@@ -37,7 +37,9 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Owner Notifications selected-member bug was fixed and verified in production Chrome on 2026-05-31: before the fix, searching `member` returned `No members match` even though members existed because the composer expected a legacy member row shape. Production deployment `https://zook-gym-54lqvkmcs-adidshafts-projects.vercel.app`, aliased to `https://zookfit.in`, now lists Karan Desk Test, Dev Mehta, Nisha Menon, and Ira Shah. A review-only draft for selected demo member Karan Desk Test reached the preview screen with `1 matched` and `1 will receive`; the actual send was intentionally not clicked without action-time approval.
 - Production performance issue follow-up on 2026-05-31: production DB migration `20260531182000_dashboard_branch_read_indexes` was applied to Supabase, adding branch/read indexes for member subscriptions, member profiles, payments, and attendance. Owner dashboard section routes now use fast shell data outside Reports, and `/dashboard/members` preloads the first member roster page from the server so Karan Desk Test, Dev Mehta, Nisha Menon, and Ira Shah do not wait on the client-side roster fetch. Local typecheck, lint, and web build passed before deploy.
 - Platform console performance/formatting follow-up on 2026-05-31: production deployment `https://zook-gym-c50l4wntj-adidshafts-projects.vercel.app`, aliased to `https://zookfit.in`, cached the platform shell read model for 30s, moved provider diagnostics into the first server render, removed duplicate diagnostic normalisation from the API route, tightened the header/nav/card layout, and kept inactive platform operational API calls gated by section. Chrome production retest as `platform@zook.local` showed the updated wrapped nav, 3 organizations, 8 ready providers, 0 provider gaps, and the status table in the initial rendered content. Fresh post-deploy cold navigation was still slow at about 15.6s; warm repeat was about 5.9s, so cold-start/route response latency remains worth monitoring even though the visible zero-provider hydration issue is fixed.
+- Owner dashboard perceived-loading fix shipped on 2026-05-31: production deployment `https://zook-gym-jrfaccz8p-adidshafts-projects.vercel.app`, aliased to `https://zookfit.in`, stopped showing large chart/card skeleton panels while the fast shell upgrades to full dashboard detail. Production Chrome retest as `owner@zook.local` showed the dashboard rendering real revenue, attention, attendance, plan mix, AI, staff, and tip panels immediately; after hydration, `.animate-pulse` count settled to `0`, Active Members settled to `1`, and Plan Mix settled to `Monthly Unlimited` / `1 active member`.
 - Platform console was rechecked after loading settled: provider readiness showed 8 ready services, 0 setup gaps, 14 visible users, and one platform payment ledger row (`mock_seed_membership`, ₹1,799, Succeeded). The demo gym `Aarogya Strength` is visible inline with Pune location, Open Join, Active status, trial end `16 Jul 2026`, Growth monthly subscription/autopay details, and a safe read-only `Details` action. The details panel opens with status `Active`, join mode `Open Join`, trial end `16 Jul 2026`, location `Pune, Maharashtra`, contact `hello@aarogyastrength.example`, created date `17 May 2026`, and safety-review metadata.
+- Owner follow-up checks after dashboard speed work passed in production Chrome: `owner@zook.local` opened Members (`4 profiles`: Karan Desk Test, Dev Mehta, Nisha Menon, Ira Shah; summary settled to 4 total / 1 active), Plans → Referrals (0 active codes/redemptions/credits, policy form visible), Payments (Nisha Menon membership payment, Succeeded, Online, ₹1,799; refund/receipt/invoice controls not clicked), Shop → Orders (`5EFJWZNL`, Ready For Pickup, ₹548, desk handoff only), then signed out. These checks were read-only; no staff invite, notification send, payment record, refund, invoice, pickup, or reset action was performed.
 - Owner payment history data-surface gap was fixed and verified in production Chrome: branch-scoped owner `/dashboard/payments` now shows the seeded Nisha Menon membership payment as `Succeeded`, `Online`, `₹1,799`, with the reconciliation settled count updated to `1`.
 - Trainer role was retested in production Chrome and signed out: `trainer@zook.local` opened `/coach`, showing 1 assigned client, 1 assigned plan, 0 sessions this week, 1 progress note, and pinned client Nisha Menon with `Upper Body Strength`. The web coach page does not expose a client-detail/member workflow; its quick actions route to `/me` and state the full coaching surface lives on mobile. Trainer mutation/progress checklist items remain open.
 - Member web contact completion shipped and verified in production Chrome on 2026-05-31: `member@zook.local` opened the private member page at `/m/09pyn5jn`, the new Account contact panel rendered `2/2 contacts`, `OTP verified`, email `member@zook.local`, phone `+919876543210`, and add/change OTP controls. The `Send code` action was intentionally not clicked because it would transmit a real email/SMS without action-time approval.
@@ -206,16 +208,16 @@ Add these to the pass before signing off production:
 109. [ ] [mobile] Confirm payment is demo/offline, or stop before live Razorpay confirmation.
 110. [ ] [mobile] Confirm `member2` membership activates.
 111. [ ] [mobile] Log out.
-112. [ ] [web] Log in as `owner@zook.local`.
-113. [ ] [web] Open members.
+112. [x] [web] Log in as `owner@zook.local`.
+113. [x] [web] Open members.
 114. [ ] [web] Confirm `member2@zook.local` now shows activated membership.
-115. [ ] [web] Open referrals/offers.
+115. [x] [web] Open referrals/offers.
 116. [ ] [web] Confirm `member@zook.local` received the referral reward/credit if supported.
-117. [ ] [web] Open payments.
+117. [x] [web] Open payments.
 118. [ ] [web] Confirm the `member2` transaction is present and marked demo/offline if completed.
-119. [ ] [web] Open shop orders.
+119. [x] [web] Open shop orders.
 120. [ ] [web] Confirm the `member@zook.local` mobile shop order appears.
-121. [ ] [web] Log out.
+121. [x] [web] Log out.
 122. [ ] [mobile] Log in as `minor@zook.local` with OTP `000000`.
 123. [ ] [mobile] Confirm minor home loads.
 124. [ ] [mobile] Test membership screen.
