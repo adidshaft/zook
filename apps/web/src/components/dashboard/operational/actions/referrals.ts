@@ -13,12 +13,21 @@ import {
 } from "../controller-state";
 import { type DashboardOperationalResources } from "../controller-resources";
 
+function percentInputToBps(value: string) {
+  return Math.round(Number(value || 0) * 100);
+}
+
+function bpsToPercentInput(value: number | null | undefined) {
+  const percent = (value ?? 0) / 100;
+  return Number.isInteger(percent) ? percent.toString() : percent.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
 function payloadForCouponForm(form: CouponForm) {
   return {
     code: form.code,
     type: form.type,
     ...(form.type === "PERCENTAGE"
-      ? { valuePercentBps: Number(form.value || 0) }
+      ? { valuePercentBps: percentInputToBps(form.value) }
       : { valuePaise: Math.round(Number(form.value || 0) * 100) }),
     ...(form.maxRedemptions ? { maxRedemptions: Number(form.maxRedemptions) } : {}),
     ...(form.perUserLimit ? { perUserLimit: Number(form.perUserLimit) } : {}),
@@ -95,7 +104,7 @@ export function createReferralActions({
           code: state.couponForm.code,
           type: state.couponForm.type,
           ...(state.couponForm.type === "PERCENTAGE"
-            ? { valuePercentBps: Number(state.couponForm.value || 0) }
+            ? { valuePercentBps: percentInputToBps(state.couponForm.value) }
             : { valuePaise: Math.round(Number(state.couponForm.value || 0) * 100) }),
           maxRedemptions: state.couponForm.maxRedemptions
             ? Number(state.couponForm.maxRedemptions)
@@ -141,7 +150,7 @@ export function createReferralActions({
       type: coupon.type,
       value:
         coupon.type === "PERCENTAGE"
-          ? (coupon.valuePercentBps ?? 0).toString()
+          ? bpsToPercentInput(coupon.valuePercentBps)
           : ((coupon.valuePaise ?? 0) / 100).toString(),
       maxRedemptions: coupon.maxRedemptions?.toString() ?? "",
       perUserLimit: coupon.perUserLimit?.toString() ?? "1",
@@ -184,7 +193,7 @@ export function createReferralActions({
           discountType: state.offerForm.discountType,
           discountValue:
             state.offerForm.discountType === "PERCENTAGE"
-              ? Number(state.offerForm.discountValue || 0)
+              ? percentInputToBps(state.offerForm.discountValue)
               : Math.round(Number(state.offerForm.discountValue || 0) * 100),
           applicablePlanIds: state.offerForm.applicablePlanId
             ? [state.offerForm.applicablePlanId]
@@ -237,7 +246,7 @@ export function createReferralActions({
       discountType: offer.discountType,
       discountValue:
         offer.discountType === "PERCENTAGE"
-          ? offer.discountValue.toString()
+          ? bpsToPercentInput(offer.discountValue)
           : (offer.discountValue / 100).toString(),
       applicablePlanId: firstPlanId,
       endsInDays: daysLeft.toString(),
@@ -261,7 +270,7 @@ export function createReferralActions({
           discountType: state.offerEditForm.discountType,
           discountValue:
             state.offerEditForm.discountType === "PERCENTAGE"
-              ? Number(state.offerEditForm.discountValue || 0)
+              ? percentInputToBps(state.offerEditForm.discountValue)
               : Math.round(Number(state.offerEditForm.discountValue || 0) * 100),
           applicablePlanIds: state.offerEditForm.applicablePlanId
             ? [state.offerEditForm.applicablePlanId]

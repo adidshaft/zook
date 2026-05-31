@@ -50,7 +50,7 @@ export function createEmptyCouponForm() {
   return {
     code: "",
     type: "PERCENTAGE" as CouponKind,
-    value: "1000",
+    value: "10",
     maxRedemptions: "",
     perUserLimit: "1",
     applicablePlanId: "",
@@ -63,7 +63,7 @@ export function createEmptyOfferForm() {
   return {
     name: "",
     discountType: "PERCENTAGE" as CouponKind,
-    discountValue: "1500",
+    discountValue: "15",
     applicablePlanId: "",
     endsInDays: "30",
     stackable: true,

@@ -17807,13 +17807,45 @@ export async function handleAiNotificationsShopPrivacyPlatform(
   if (request.method === "GET" && pathMatches(path, ["platform", "orgs"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
-    return ok({ orgs: await prisma.organization.findMany({ orderBy: { createdAt: "desc" } }) });
+    return ok({
+      orgs: await prisma.organization.findMany({
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          city: true,
+          state: true,
+          status: true,
+          joinMode: true,
+          trialEndAt: true,
+          createdAt: true,
+          contactEmail: true,
+          contactPhone: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "subscriptions"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
+    const orgs = await prisma.organization.findMany({
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        status: true,
+        trialEndAt: true,
+        createdAt: true,
+        contactEmail: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    const orgIds = orgs.map((org) => org.id);
+    const orgScope = { orgId: { in: orgIds } };
     const [
-      orgs,
       subscriptions,
       mandates,
       referrals,
@@ -17824,36 +17856,27 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       trainerGroups,
       productGroups,
     ] = await Promise.all([
-      prisma.organization.findMany({
-        select: {
-          id: true,
-          name: true,
-          username: true,
-          status: true,
-          trialEndAt: true,
-          createdAt: true,
-          contactEmail: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: 500,
-      }),
-      prisma.saaSSubscription.findMany(),
-      prisma.saaSBillingMandate.findMany(),
-      prisma.orgReferralPartnership.findMany(),
+      prisma.saaSSubscription.findMany({ where: orgScope }),
+      prisma.saaSBillingMandate.findMany({ where: orgScope }),
+      prisma.orgReferralPartnership.findMany({ where: { sourceOrgId: { in: orgIds } } }),
       getSaasPlanCatalog(),
-      prisma.memberProfile.groupBy({ by: ["orgId"], _count: { _all: true } }),
-      prisma.branch.groupBy({ by: ["orgId"], where: { active: true }, _count: { _all: true } }),
-      prisma.organizationRoleAssignment.groupBy({
+      prisma.memberProfile.groupBy({ by: ["orgId"], where: orgScope, _count: { _all: true } }),
+      prisma.branch.groupBy({
         by: ["orgId"],
-        where: { role: { not: "MEMBER" } },
+        where: { ...orgScope, active: true },
         _count: { _all: true },
       }),
       prisma.organizationRoleAssignment.groupBy({
         by: ["orgId"],
-        where: { role: "TRAINER" },
+        where: { ...orgScope, role: { not: "MEMBER" } },
         _count: { _all: true },
       }),
-      prisma.product.groupBy({ by: ["orgId"], _count: { _all: true } }),
+      prisma.organizationRoleAssignment.groupBy({
+        by: ["orgId"],
+        where: { ...orgScope, role: "TRAINER" },
+        _count: { _all: true },
+      }),
+      prisma.product.groupBy({ by: ["orgId"], where: orgScope, _count: { _all: true } }),
     ]);
     const subByOrg = new Map(subscriptions.map((sub) => [sub.orgId, sub]));
     const mandateByOrg = new Map(mandates.map((mandate) => [mandate.orgId, mandate]));
