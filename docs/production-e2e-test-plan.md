@@ -28,6 +28,9 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Owner Payments passed read-only: `/dashboard/payments` rendered reconciliation, offline desk payment controls, payment CSV export, refund guidance, and the settled ready-for-pickup order `5EFJWZNL` for ₹548 without clicking record, refund, or settle actions.
 - Owner Notifications passed read-only: `/dashboard/notifications` rendered the 4-step composer, delivery status, and recent sent notifications (`Guardian approval still pending`, `Evening floor maintenance`) without creating or sending a new notification.
 - Production performance issue recorded: owner member list/detail APIs were successful after deploy but slow in Vercel logs (`/api/orgs/.../members` about 6-9s and member detail about 6s). This explains the visible skeleton/stale-looking dashboard delay and needs a follow-up query/cache optimization pass.
+- Platform console was rechecked after loading settled: provider readiness showed 8 ready services, 0 setup gaps, 14 visible users, and one platform payment ledger row (`mock_seed_membership`, ₹1,799, Succeeded). The demo gym `Aarogya Strength` is visible inline with Pune location, Open Join, Active status, trial end `16 Jul 2026`, and Growth monthly subscription/autopay details, but the platform gym table has no separate safe `Details` action; only mutating actions are exposed. Checklist item 8 remains open as a product/checklist gap.
+- Owner payment history remains a data-surface gap: owner `/dashboard/payments` showed reconciliation/offline controls and a settled shop order, while the actual mock-seed membership payment is only visible in the platform payment ledger. Checklist item 43 remains open until tenant payment history shows a demo/offline payment row or the checklist is clarified.
+- Trainer role was retested in production Chrome and signed out: `trainer@zook.local` opened `/coach`, showing 1 assigned client, 1 assigned plan, 0 sessions this week, 1 progress note, and pinned client Nisha Menon with `Upper Body Strength`. The web coach page does not expose a client-detail/member workflow; its quick actions route to `/me` and state the full coaching surface lives on mobile. Trainer mutation/progress checklist items remain open.
 
 ## Ground Rules
 
@@ -129,7 +132,7 @@ Add these to the pass before signing off production:
 45. [x] [web] Go to Notifications.
 46. [ ] [web] Create a draft notification for selected demo members.
 47. [ ] [web] Send the notification only to demo members.
-48. [ ] [web] Confirm notification history records delivery.
+48. [x] [web] Confirm notification history records delivery.
 49. [x] [web] Go to Reports.
 50. [x] [web] Download members report.
 51. [x] [web] Download attendance report.
@@ -165,7 +168,7 @@ Add these to the pass before signing off production:
 81. [ ] [web] Create or assign a diet plan if available.
 82. [ ] [web] Add trainer notes or measurements.
 83. [ ] [web] Confirm member progress/report views update.
-84. [ ] [web] Log out.
+84. [x] [web] Log out.
 85. [ ] [mobile] Open the production mobile app.
 86. [ ] [mobile] Confirm the app points to production API.
 87. [ ] [mobile] Log in as `member@zook.local` with OTP `000000`.
