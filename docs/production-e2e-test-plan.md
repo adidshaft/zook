@@ -19,6 +19,7 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Reception QR display passed in production Chrome: `/desk/qr` generated a rolling server-signed attendance QR, showed a short entry code, countdown/expiry, replay/branch/membership validation checklist, live token metadata, and zero pending/flagged scans.
 - Reception Orders passed read-only in production Chrome: `/desk/orders` rendered the branch-scoped shop pickup surface, including an existing paid `Nisha Menon` order for `1 x Water Bottle, 1 x Protein Shake`, pickup code hidden, and verify/skip/fulfill controls. Fulfillment was intentionally not clicked because it mutates production order state.
 - Reception Payments route passed as a safe collection surface: `/desk/payments` rendered the offline desk payment form for membership/shop/other collections with cash mode default and did not open Razorpay. No payment was submitted without action-time approval.
+- Platform wrap-up was rechecked in production Chrome on 2026-05-31: `/api/ready` showed `ready: true`, production DB reachable/schema-ready/migrations applied, MSG91 live ready, Razorpay live ready, distributed cache, and distributed rate limiting. `/api/health` showed `alive: true` and `envProfile: "production"`. The platform dashboard showed 3 gym accounts, `Aarogya Strength` / `aarogya-strength` active, 14 visible users including all seeded demo accounts, 0 provider setup gaps, 0 suspended gyms, 1 existing mock-seed succeeded payment, and the subscription table showed `Aarogya Strength` on Growth monthly with autopay `Created`, `0 cycles paid`, and next charge `16 Jul 2026`.
 
 ## Ground Rules
 
@@ -33,29 +34,29 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 
 Run these before the main checklist:
 
-- [ ] [web] Open `https://zookfit.in/api/health` and confirm `envProfile` is `production`.
-- [ ] [web] Open `https://zookfit.in/api/ready` and confirm `ready` is `true`.
-- [ ] [web] Confirm production DB status shows reachable/schema-ready/migrations applied.
-- [ ] [web] Confirm SMS provider is `msg91`, mode is `live`, and status is `ready`.
-- [ ] [web] Confirm payment provider is live Razorpay before deciding whether to skip payment completion.
-- [ ] [web] Confirm server cache and rate limiting are distributed/ready.
+- [x] [web] Open `https://zookfit.in/api/health` and confirm `envProfile` is `production`.
+- [x] [web] Open `https://zookfit.in/api/ready` and confirm `ready` is `true`.
+- [x] [web] Confirm production DB status shows reachable/schema-ready/migrations applied.
+- [x] [web] Confirm SMS provider is `msg91`, mode is `live`, and status is `ready`.
+- [x] [web] Confirm payment provider is live Razorpay before deciding whether to skip payment completion.
+- [x] [web] Confirm server cache and rate limiting are distributed/ready.
 
 ## Recent Feature Regression Checks
 
 Add these to the pass before signing off production:
 
-- [ ] [web] Login page lets the user choose email login.
-- [ ] [web] Login page lets the user choose mobile login.
+- [x] [web] Login page lets the user choose email login.
+- [x] [web] Login page lets the user choose mobile login.
 - [ ] [mobile] App login lets the user choose email login.
 - [ ] [mobile] App login lets the user choose mobile login.
-- [ ] [web] Seeded demo phone login with `+919876543210` accepts OTP `000000` and creates a member session.
+- [x] [web] Seeded demo phone login with `+919876543210` accepts OTP `000000` and creates a member session.
 - [ ] [web] Real phone login sends SMS only to an owned/control number, and OTP verification creates a session.
 - [ ] [web] Profile completion allows adding a missing phone or email later.
 - [ ] [mobile] Profile completion allows adding a missing phone or email later.
-- [ ] [web] Pricing page opens and shows four plans including the two-month free trial plan.
-- [ ] [web] Pricing page first fold shows only main points.
-- [ ] [web] Pricing page expands/collapses full plan details from More/Expand.
-- [ ] [web] Dashboard pricing link opens the pricing page in a new tab.
+- [x] [web] Pricing page opens and shows four plans including the two-month free trial plan.
+- [x] [web] Pricing page first fold shows only main points.
+- [x] [web] Pricing page expands/collapses full plan details from More/Expand.
+- [x] [web] Dashboard pricing link opens the pricing page in a new tab.
 - [ ] [mobile] Bottom navigation does not show Diet as a standalone tab.
 - [ ] [mobile] Diet is reachable under the Plan section.
 - [ ] [mobile] QR scanner has a smooth neon horizontal scan bar moving vertically.
@@ -73,24 +74,24 @@ Add these to the pass before signing off production:
 
 ## Checklist
 
-1. [ ] [web] Open production in a clean browser profile or incognito window.
-2. [ ] [web] Confirm you are on the production domain.
-3. [ ] [web] Confirm the demo org exists and is clearly identifiable, for example `aarogya-strength`.
-4. [ ] [web] Confirm whether the current payment path is demo/offline or live Razorpay before doing any transaction.
-5. [ ] [web] Log in as `platform@zook.local` with OTP `000000`.
-6. [ ] [web] Open the platform dashboard.
-7. [ ] [web] Confirm the demo org appears in platform orgs.
+1. [x] [web] Open production in a clean browser profile or incognito window.
+2. [x] [web] Confirm you are on the production domain.
+3. [x] [web] Confirm the demo org exists and is clearly identifiable, for example `aarogya-strength`.
+4. [x] [web] Confirm whether the current payment path is demo/offline or live Razorpay before doing any transaction.
+5. [x] [web] Log in as `platform@zook.local` with OTP `000000`.
+6. [x] [web] Open the platform dashboard.
+7. [x] [web] Confirm the demo org appears in platform orgs.
 8. [ ] [web] Open the demo org details.
-9. [ ] [web] Confirm subscription/billing status is demo-safe, not real charged billing.
-10. [ ] [web] Confirm the demo users are visible or searchable.
-11. [ ] [web] Log out.
-12. [ ] [web] Log in as `owner@zook.local` with OTP `000000`.
-13. [ ] [web] Confirm owner lands on dashboard.
-14. [ ] [web] Confirm dashboard summary cards load.
+9. [x] [web] Confirm subscription/billing status is demo-safe, not real charged billing.
+10. [x] [web] Confirm the demo users are visible or searchable.
+11. [x] [web] Log out.
+12. [x] [web] Log in as `owner@zook.local` with OTP `000000`.
+13. [x] [web] Confirm owner lands on dashboard.
+14. [x] [web] Confirm dashboard summary cards load.
 15. [ ] [web] Switch branches if branch selector exists.
-16. [ ] [web] Confirm revenue, active members, attendance, and shop metrics render.
-17. [ ] [web] Go to Members.
-18. [ ] [web] Confirm member profiles exist for `member`, `member2`, `minor`, and `desk-test-member`.
+16. [x] [web] Confirm revenue, active members, attendance, and shop metrics render.
+17. [x] [web] Go to Members.
+18. [x] [web] Confirm member profiles exist for `member`, `member2`, `minor`, and `desk-test-member`.
 19. [ ] [web] Open `member@zook.local`.
 20. [ ] [web] Confirm membership status, payments, attendance, notes, and trainer assignment look correct.
 21. [ ] [web] Open `member2@zook.local`.
@@ -106,8 +107,8 @@ Add these to the pass before signing off production:
 31. [ ] [web] Archive/delete the demo plan if supported.
 32. [ ] [web] Create a coupon or referral offer.
 33. [ ] [web] Confirm the offer appears in the UI.
-34. [ ] [web] Go to Staff.
-35. [ ] [web] Confirm owner, admin, reception, and trainer roles are visible.
+34. [x] [web] Go to Staff.
+35. [x] [web] Confirm owner, admin, reception, and trainer roles are visible.
 36. [ ] [web] Invite a staff member only if the target email is safe/demo.
 37. [ ] [web] Go to Shop/Products.
 38. [ ] [web] Confirm seeded products exist.
@@ -121,16 +122,16 @@ Add these to the pass before signing off production:
 46. [ ] [web] Create a draft notification for selected demo members.
 47. [ ] [web] Send the notification only to demo members.
 48. [ ] [web] Confirm notification history records delivery.
-49. [ ] [web] Go to Reports.
-50. [ ] [web] Download members report.
-51. [ ] [web] Download attendance report.
-52. [ ] [web] Download payments report.
-53. [ ] [web] Download membership sales report.
-54. [ ] [web] Download expiry report.
-55. [ ] [web] Confirm downloaded files contain demo data only.
-56. [ ] [web] Log out.
-57. [ ] [web] Log in as `admin@zook.local` with OTP `000000`.
-58. [ ] [web] Confirm admin lands on dashboard.
+49. [x] [web] Go to Reports.
+50. [x] [web] Download members report.
+51. [x] [web] Download attendance report.
+52. [x] [web] Download payments report.
+53. [x] [web] Download membership sales report.
+54. [x] [web] Download expiry report.
+55. [x] [web] Confirm downloaded files contain demo data only.
+56. [x] [web] Log out.
+57. [x] [web] Log in as `admin@zook.local` with OTP `000000`.
+58. [x] [web] Confirm admin lands on dashboard.
 59. [ ] [web] Test members access.
 60. [ ] [web] Test plans access.
 61. [ ] [web] Test attendance access.
@@ -138,19 +139,19 @@ Add these to the pass before signing off production:
 63. [ ] [web] Test reports access.
 64. [ ] [web] Confirm admin cannot access owner-only areas if those boundaries exist.
 65. [ ] [web] Log out.
-66. [ ] [web] Log in as `reception@zook.local` with OTP `000000`.
-67. [ ] [web] Open desk/check-in.
-68. [ ] [web] Search for `member@zook.local`.
+66. [x] [web] Log in as `reception@zook.local` with OTP `000000`.
+67. [x] [web] Open desk/check-in.
+68. [x] [web] Search for `member@zook.local`.
 69. [ ] [web] Perform a check-in.
 70. [ ] [web] Confirm check-in succeeds.
-71. [ ] [web] Search for `desk-test-member@zook.local`.
+71. [x] [web] Search for `desk-test-member@zook.local`.
 72. [ ] [web] Activate/process pending membership using demo/offline payment.
-73. [ ] [web] Confirm no real payment page or real charge appears.
+73. [x] [web] Confirm no real payment page or real charge appears.
 74. [ ] [web] Confirm attendance history updates.
-75. [ ] [web] Log out.
-76. [ ] [web] Log in as `trainer@zook.local` with OTP `000000`.
-77. [ ] [web] Open coach/client list.
-78. [ ] [web] Confirm assigned members appear.
+75. [x] [web] Log out.
+76. [x] [web] Log in as `trainer@zook.local` with OTP `000000`.
+77. [x] [web] Open coach/client list.
+78. [x] [web] Confirm assigned members appear.
 79. [ ] [web] Open `member@zook.local`.
 80. [ ] [web] Create or assign a workout plan.
 81. [ ] [web] Create or assign a diet plan if available.
@@ -218,12 +219,12 @@ Add these to the pass before signing off production:
 143. [ ] [web] Download reports again.
 144. [ ] [web] Confirm reports include the transactions created during mobile testing.
 145. [ ] [web] Log out.
-146. [ ] [web] Log in as `platform@zook.local`.
-147. [ ] [web] Confirm production did not create unexpected real billing.
-148. [ ] [web] Confirm demo org status is still healthy.
-149. [ ] [web] Confirm no real payment captures occurred.
+146. [x] [web] Log in as `platform@zook.local`.
+147. [x] [web] Confirm production did not create unexpected real billing.
+148. [x] [web] Confirm demo org status is still healthy.
+149. [x] [web] Confirm no real payment captures occurred.
 150. [ ] [web] Confirm no real external emails/SMS were sent unless intentionally tested.
-151. [ ] [web] Record bugs with account used, platform, page/screen, action, expected result, actual result, and screenshot.
+151. [x] [web] Record bugs with account used, platform, page/screen, action, expected result, actual result, and screenshot.
 152. [ ] [web] Decide whether to keep the demo transaction history or reseed/reset demo data.
 
 ## Recommended Account Usage
