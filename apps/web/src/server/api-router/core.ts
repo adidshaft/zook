@@ -2357,6 +2357,15 @@ function pageResult<T extends { id: string }>(items: T[], limit: number) {
   };
 }
 
+function appendToMapList<K, V>(map: Map<K, V[]>, key: K, value: V) {
+  const existing = map.get(key);
+  if (existing) {
+    existing.push(value);
+  } else {
+    map.set(key, [value]);
+  }
+}
+
 async function listOrganizationMembersPage(orgId: string, request: NextRequest, branchId?: string) {
   const { limit, cursor } = parseCursorPagination(request, 50, 100);
   const scopedUserIds = branchId
@@ -2397,19 +2406,78 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
     where: { orgId, ...(scopedUserIds ? { userId: { in: scopedUserIds } } : {}) },
     orderBy: { createdAt: "desc" },
     take: limit + 1,
+    select: {
+      id: true,
+      orgId: true,
+      userId: true,
+      profilePhotoUrl: true,
+      marketingOptIn: true,
+      publicVisibility: true,
+      notes: true,
+      createdAt: true,
+      updatedAt: true,
+    },
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
   const page = pageResult(profiles, limit);
   const memberUserIds = page.items.map((profile) => profile.userId);
   const [users, subscriptions, recentAttendance, activeAttendance, payments] = await Promise.all([
-    prisma.user.findMany({ where: { id: { in: memberUserIds } } }),
+    memberUserIds.length
+      ? prisma.user.findMany({
+          where: { id: { in: memberUserIds } },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            slug: true,
+            dateOfBirth: true,
+            profilePhotoUrl: true,
+            fitnessGoal: true,
+            marketingOptIn: true,
+            createdAt: true,
+          },
+        })
+      : Promise.resolve([]),
     prisma.memberSubscription.findMany({
       where: { orgId, memberUserId: { in: memberUserIds } },
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        orgId: true,
+        branchId: true,
+        memberUserId: true,
+        planId: true,
+        status: true,
+        startsAt: true,
+        endsAt: true,
+        remainingVisits: true,
+        paymentId: true,
+        pausedAt: true,
+        resumesAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     }),
     prisma.attendanceRecord.findMany({
       where: { orgId, userId: { in: memberUserIds } },
       orderBy: { checkedInAt: "desc" },
+      select: {
+        id: true,
+        orgId: true,
+        branchId: true,
+        userId: true,
+        subscriptionId: true,
+        status: true,
+        source: true,
+        dateKey: true,
+        checkedInAt: true,
+        checkedOutAt: true,
+        checkoutReason: true,
+        durationSeconds: true,
+        suspiciousFlags: true,
+        createdAt: true,
+      },
       take: Math.max(memberUserIds.length * 3, 20),
     }),
     prisma.attendanceRecord.findMany({
@@ -2420,10 +2488,42 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
         status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
       },
       orderBy: { checkedInAt: "desc" },
+      select: {
+        id: true,
+        orgId: true,
+        branchId: true,
+        userId: true,
+        subscriptionId: true,
+        status: true,
+        source: true,
+        dateKey: true,
+        checkedInAt: true,
+        checkedOutAt: true,
+        checkoutReason: true,
+        durationSeconds: true,
+        suspiciousFlags: true,
+        createdAt: true,
+      },
     }),
     prisma.payment.findMany({
       where: { orgId, userId: { in: memberUserIds } },
       orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        orgId: true,
+        branchId: true,
+        userId: true,
+        purpose: true,
+        amountPaise: true,
+        currency: true,
+        status: true,
+        mode: true,
+        provider: true,
+        providerRef: true,
+        receiptNumber: true,
+        recordedAt: true,
+        createdAt: true,
+      },
       take: Math.max(memberUserIds.length * 3, 20),
     }),
   ]);
@@ -2450,21 +2550,35 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
       })
     : [];
   const plansById = new Map(plans.map((plan) => [plan.id, plan]));
+  const subscriptionsByUserId = new Map<string, typeof subscriptions>();
+  for (const subscription of subscriptions) {
+    appendToMapList(subscriptionsByUserId, subscription.memberUserId, subscription);
+  }
+  const attendanceByUserId = new Map<string, typeof attendance>();
+  for (const record of attendance) {
+    appendToMapList(attendanceByUserId, record.userId, record);
+  }
+  const paymentsByUserId = new Map<string, typeof payments>();
+  for (const payment of payments) {
+    if (payment.userId) appendToMapList(paymentsByUserId, payment.userId, payment);
+  }
   return {
     members: page.items.map((profile) => {
       const user = usersById.get(profile.userId) ?? null;
+      const userSubscriptions = subscriptionsByUserId.get(profile.userId) ?? [];
+      const userAttendance = attendanceByUserId.get(profile.userId) ?? [];
       const activeSubscription =
-        subscriptions.find(
+        userSubscriptions.find(
           (subscription) =>
             subscription.memberUserId === profile.userId && subscription.status === "ACTIVE",
         ) ??
-        subscriptions.find((subscription) => subscription.memberUserId === profile.userId) ??
+        userSubscriptions[0] ??
         null;
       return {
         profile,
         user: user ? serializeUserForClient(user) : null,
         activeCheckIn:
-          attendance
+          userAttendance
             .filter(
               (record) =>
                 record.userId === profile.userId &&
@@ -2477,22 +2591,20 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
               branchName: branchNamesById.get(record.branchId) ?? null,
             }))[0] ?? null,
         lastCheckIn:
-          attendance
-            .filter((record) => record.userId === profile.userId)
+          userAttendance
             .map(attendanceWithEntryCode)
             .map((record) => ({
               ...record,
               branchName: branchNamesById.get(record.branchId) ?? null,
             }))[0] ?? null,
-        recentCheckIns: attendance
-          .filter((record) => record.userId === profile.userId)
+        recentCheckIns: userAttendance
           .slice(0, 3)
           .map(attendanceWithEntryCode)
           .map((record) => ({
             ...record,
             branchName: branchNamesById.get(record.branchId) ?? null,
           })),
-        lastPayment: payments.find((payment) => payment.userId === profile.userId) ?? null,
+        lastPayment: paymentsByUserId.get(profile.userId)?.[0] ?? null,
         activeSubscription: activeSubscription
           ? { ...activeSubscription, plan: plansById.get(activeSubscription.planId) ?? null }
           : null,

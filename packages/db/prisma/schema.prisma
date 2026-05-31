@@ -906,6 +906,7 @@ model MemberProfile {
 
   @@unique([orgId, userId])
   @@index([orgId])
+  @@index([orgId, createdAt])
   @@index([userId])
 }
 
@@ -1274,6 +1275,7 @@ model MemberSubscription {
   updatedAt          DateTime           @updatedAt
 
   @@index([orgId, memberUserId, status])
+  @@index([orgId, branchId, memberUserId])
   @@index([orgId, status])
   @@index([orgId, planId])
   @@index([endsAt])
@@ -1359,6 +1361,8 @@ model Payment {
   @@index([orgId, status])
   @@index([orgId, branchId, status])
   @@index([orgId, branchId, createdAt])
+  @@index([orgId, branchId, recordedAt, createdAt])
+  @@index([orgId, recordedAt, createdAt])
   @@index([userId])
 }
 
@@ -1760,6 +1764,8 @@ model AttendanceRecord {
   @@index([orgId, branchId, userId, dateKey])
   @@index([orgId, status, checkedInAt])
   @@index([orgId, status, branchId, createdAt])
+  @@index([orgId, branchId, checkedInAt])
+  @@index([orgId, checkedInAt])
   @@index([userId, checkedInAt])
   @@index([orgId, branchId, userId, checkedOutAt])
 }
