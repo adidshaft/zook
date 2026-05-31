@@ -2,6 +2,19 @@
 
 This plan tests both web and mobile production flows while avoiding unintended real money movement.
 
+## 2026-05-31 Production Run Notes
+
+Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile-only checks that require a physical device, camera, haptics, or geofence movement remain unverified.
+
+- Pre-checks passed on production: `/api/health` returned `envProfile: "production"` and `/api/ready` returned `ready: true` with database, migrations, MSG91 SMS, live Razorpay, distributed cache, and distributed rate limiting ready.
+- Web login passed for both email and mobile modes. Seeded phone login with `+919876543210` accepted OTP `000000` and opened Nisha Menon's member web membership page.
+- Pricing page passed on web: four plans are visible, including the `₹0 for 2 months` trial, and details expand/collapse. Owner dashboard pricing link opens the pricing page in a separate tab.
+- Platform, owner, admin, reception, and trainer seeded accounts all logged in with OTP `000000`. Platform and owner/admin/reception web surfaces loaded; owner dashboard metrics rendered; staff roles rendered after a reload; reception desk member detail opened for Nisha Menon.
+- Production seed gap: owner Members currently shows only `member@zook.local` / Nisha Menon. `member2@zook.local`, `minor@zook.local`, and `desk-test-member@zook.local` are not visible in the production owner roster, so referral, minor, and desk-test-member flows cannot be completed as written.
+- Trainer web gap: `trainer@zook.local` lands on `/coach`, but assigned clients, assigned plans, sessions, and progress notes all show `0`; quick actions point to `/me` and say the full coaching surface lives on mobile.
+- Reports gap found during this run: the Reports page rendered tabs and date filters but had no CSV export controls for the required report downloads. A local fix adds a CSV export pack and wires `membership-sales.csv`; this still needs deployment before production retest.
+- Attendance history gap found during this run: production attendance rows showed generic `Member` / `Membership` labels even when member data exists. Local commit `6bccb1d` fixes attendance record enrichment; this still needs deployment before production retest.
+
 ## Ground Rules
 
 - Do not complete any real Razorpay payment unless it is an explicitly approved live-payment test.

@@ -32,6 +32,7 @@ import {
   formatInr,
 } from "@/lib/format";
 import type { DashboardCharts, OrganizationSnapshot, OrganizationSummary } from "@/components/dashboard/types";
+import { CsvExportButton } from "../operational-shared";
 
 function formatInrCompact(paise: number) {
   const rupees = paise / 100;
@@ -47,12 +48,14 @@ export function ReportsPanel({
   summary,
   charts,
   selectedBranchName,
+  selectedBranchId,
   auditLogCount,
 }: {
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
   charts: DashboardCharts;
   selectedBranchName: string;
+  selectedBranchId?: string | null;
   auditLogCount: number;
 }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -98,6 +101,23 @@ export function ReportsPanel({
     { id: "members" as TabId, label: "Members & Growth", icon: Users },
     { id: "snapshot" as TabId, label: "Snapshot & Governance", icon: ClipboardList },
   ];
+  const exportReports = [
+    { fileName: "members.csv", label: "Members" },
+    { fileName: "attendance.csv", label: "Attendance" },
+    { fileName: "payments.csv", label: "Payments" },
+    { fileName: "membership-sales.csv", label: "Membership sales" },
+    { fileName: "expiring-members.csv", label: "Expiry" },
+  ];
+  const buildExportHref = (fileName: string) => {
+    const params = new URLSearchParams({
+      from: dateRange.from,
+      to: dateRange.to,
+    });
+    if (selectedBranchId) {
+      params.set("branchId", selectedBranchId);
+    }
+    return `/api/orgs/${organization.id}/reports/${fileName}?${params.toString()}`;
+  };
 
   return (
     <div className="grid gap-5">
@@ -185,6 +205,28 @@ export function ReportsPanel({
           </div>
         </div>
       </div>
+
+      <GlassCard className="p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+              CSV exports
+            </p>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              Downloads use the selected date range and branch scope.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {exportReports.map((report) => (
+              <CsvExportButton
+                key={report.fileName}
+                href={buildExportHref(report.fileName)}
+                label={report.label}
+              />
+            ))}
+          </div>
+        </div>
+      </GlassCard>
 
       {invalidRange && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-danger-soft)] px-4 py-3 text-xs text-[var(--feedback-danger)]">
