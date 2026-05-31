@@ -154,7 +154,7 @@ export default async function PlatformPage({
 
         <nav
           aria-label="Platform sections"
-          className="sticky top-3 z-20 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/78 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl"
+          className="no-scrollbar sticky top-3 z-20 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/78 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl"
         >
           {platformNavItems.map(([item, href, key]) => (
             <Link
