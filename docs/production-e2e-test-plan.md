@@ -48,6 +48,9 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Platform Broadcasts was checked read-only as `platform@zook.local`: `/platform/broadcasts` showed `0 loaded` and `No broadcasts yet`, so no platform-wide broadcast was sent during this run. MSG91 dashboard verification could not be completed from Chrome because `https://control.msg91.com/app/` redirected to MSG91's logged-out thank-you page; no credentials were used, and the external SMS/email no-send checklist item remains open because provider-side logs were not proven.
 - Owner notification history was rechecked read-only in production Chrome as `owner@zook.local`: `/dashboard/notifications/history` showed `0 messages` / `No messages match this view`, and `/dashboard/notifications` showed `Recent sends 0` plus `No notifications sent yet`. This proves no owner-composed in-app notification is currently recorded for the demo org after the run; it still does not prove MSG91/email provider-side logs, so the external SMS/email verification item remains open.
 - Member web contact completion shipped and verified in production Chrome on 2026-05-31: `member@zook.local` opened the private member page at `/m/09pyn5jn`, the new Account contact panel rendered `2/2 contacts`, `OTP verified`, email `member@zook.local`, phone `+919876543210`, and add/change OTP controls. The `Send code` action was intentionally not clicked because it would transmit a real email/SMS without action-time approval.
+- Native iOS simulator production-backed smoke continued on 2026-05-31 using `com.zook.app` against `https://app.zookfit.in/api`: the app opened, showed both Mobile number and Email login modes, sent the seeded email OTP for `member@zook.local`, accepted OTP `000000`, and reached Nisha Menon's member home. Two simulator-only launch blockers were found and fixed during this check: the member floating tab bar no longer uses Reanimated UI worklets, and the shared `ZookButton` no longer wraps `Pressable` with Reanimated, avoiding the dev render error `You attempted to set the key current with the value undefined on an object that is meant to be immutable and has been frozen.`
+- Mobile member home/Plan/Scan evidence was captured after the fixes: home rendered Aarogya Strength/Nisha with real cards and no standalone Diet tab; the Plan route opened with workouts/schedule/history and a visible Diet Plan section; the Scan route opened with the server-authoritative scanner frame, camera-permission boundary, manual `Enter code` fallback, and scanner progress chips. Actual camera QR recognition, the moving laser over camera preview, haptic success feedback, geofence exit, and physical branch QR re-scan flows remain physical-device checks.
+- Expo/EAS production update shipped for the mobile fixes on 2026-05-31: branch `production`, runtime `0.1.0`, update group `e2c3e62f-364b-4f96-93c1-cbbb92405f1c`, Android update `019e7f49-1c7e-72b9-9842-bffa47ba890c`, iOS update `019e7f49-1c7e-7f29-9a4d-b7f02330dcaa`, message `Fix mobile member launch blockers`, commit `9f8d1edde92c45250a1e9969cbb7bd5ce20a6444`.
 
 ## Ground Rules
 
@@ -75,8 +78,8 @@ Add these to the pass before signing off production:
 
 - [x] [web] Login page lets the user choose email login.
 - [x] [web] Login page lets the user choose mobile login.
-- [ ] [mobile] App login lets the user choose email login.
-- [ ] [mobile] App login lets the user choose mobile login.
+- [x] [mobile] App login lets the user choose email login.
+- [x] [mobile] App login lets the user choose mobile login.
 - [x] [web] Seeded demo phone login with `+919876543210` accepts OTP `000000` and creates a member session.
 - [ ] [web] Real phone login sends SMS only to an owned/control number, and OTP verification creates a session.
 - [x] [web] Profile completion allows adding a missing phone or email later.
@@ -85,8 +88,8 @@ Add these to the pass before signing off production:
 - [x] [web] Pricing page first fold shows only main points.
 - [x] [web] Pricing page expands/collapses full plan details from More/Expand.
 - [x] [web] Dashboard pricing link opens the pricing page in a new tab.
-- [ ] [mobile] Bottom navigation does not show Diet as a standalone tab.
-- [ ] [mobile] Diet is reachable under the Plan section.
+- [x] [mobile] Bottom navigation does not show Diet as a standalone tab.
+- [x] [mobile] Diet is reachable under the Plan section.
 - [ ] [mobile] QR scanner has a smooth neon horizontal scan bar moving vertically.
 - [ ] [mobile] QR check-in succeeds and starts a live timer on member home.
 - [ ] [mobile] Manual stop/check-out stops the timer and records duration.
@@ -186,15 +189,15 @@ Add these to the pass before signing off production:
 82. [ ] [web] Add trainer notes or measurements.
 83. [ ] [web] Confirm member progress/report views update.
 84. [x] [web] Log out.
-85. [ ] [mobile] Open the production mobile app.
-86. [ ] [mobile] Confirm the app points to production API.
-87. [ ] [mobile] Log in as `member@zook.local` with OTP `000000`.
-88. [ ] [mobile] Confirm member home loads.
+85. [x] [mobile] Open the production mobile app.
+86. [x] [mobile] Confirm the app points to production API.
+87. [x] [mobile] Log in as `member@zook.local` with OTP `000000`.
+88. [x] [mobile] Confirm member home loads.
 89. [ ] [mobile] Open membership screen.
 90. [ ] [mobile] Confirm active membership appears.
-91. [ ] [mobile] Open attendance/check-in area.
+91. [x] [mobile] Open attendance/check-in area.
 92. [ ] [mobile] Confirm attendance history is visible.
-93. [ ] [mobile] Open assigned plans.
+93. [x] [mobile] Open assigned plans.
 94. [ ] [mobile] Complete a workout/task if available.
 95. [ ] [mobile] Log progress.
 96. [ ] [mobile] Open notifications.

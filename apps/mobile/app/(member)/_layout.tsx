@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { memo, useContext, useEffect } from "react";
-import { View, Pressable, Text, StyleSheet } from "react-native";
+import { memo, useContext, useEffect, useRef } from "react";
+import { Animated as RNAnimated, View, Pressable, Text, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
@@ -119,23 +118,31 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
     return route.name !== "diet" && options?.href !== null;
   });
 
-  const translateY = useSharedValue(0);
-  const opacity = useSharedValue(1);
+  const translateY = useRef(new RNAnimated.Value(0)).current;
+  const opacity = useRef(new RNAnimated.Value(1)).current;
 
   useEffect(() => {
-    translateY.value = withTiming(visible ? 0 : 120, { duration: 250 });
-    opacity.value = withTiming(visible ? 1 : 0, { duration: 250 });
-  }, [visible]);
+    RNAnimated.parallel([
+      RNAnimated.timing(translateY, {
+        toValue: visible ? 0 : 120,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      RNAnimated.timing(opacity, {
+        toValue: visible ? 1 : 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [opacity, translateY, visible]);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateY: translateY.value }],
-      opacity: opacity.value,
-    };
-  });
+  const animatedStyle = {
+    transform: [{ translateY }],
+    opacity,
+  };
 
   return (
-    <Animated.View
+    <RNAnimated.View
       pointerEvents={visible ? "auto" : "none"}
       style={[
         {
@@ -286,7 +293,7 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
           );
         })}
       </View>
-    </Animated.View>
+    </RNAnimated.View>
   );
 }
 
