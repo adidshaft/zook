@@ -25,11 +25,11 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Owner member details were verified read-only after the fix: Nisha Menon shows active membership/payment/attendance/progress context, Dev Mehta opens as a fresh no-plan/no-subscription profile, Ira Shah opens with minor/marketing-off state visible, and Karan Desk Test opens with Monthly Unlimited pending payment for desk flow testing.
 - Owner Plans passed read-only: branch selector was present but only `Aarogya Strength Koregaon Park` was available, Membership catalog showed 4 public active offers, Discounts/Offers/Referrals entry points were visible, and the reviewed `Starter Strength Week` trainer plan appeared with 1 assignment.
 - Owner Shop passed read-only: Products showed seeded Shaker, Protein Shake, and Water Bottle inventory with stock counts; create/edit/archive/delete actions were intentionally not clicked.
-- Owner Payments passed read-only: `/dashboard/payments` rendered reconciliation, offline desk payment controls, payment CSV export, refund guidance, and the settled ready-for-pickup order `5EFJWZNL` for ₹548 without clicking record, refund, or settle actions.
+- Owner Payments passed read-only: `/dashboard/payments` rendered reconciliation, offline desk payment controls, payment CSV export, refund guidance, the settled ready-for-pickup order `5EFJWZNL` for ₹548, and the seeded membership payment row for Nisha Menon (`Succeeded`, `Online`, `₹1,799`) without clicking record, refund, receipt, invoice, or settle actions.
 - Owner Notifications passed read-only: `/dashboard/notifications` rendered the 4-step composer, delivery status, and recent sent notifications (`Guardian approval still pending`, `Evening floor maintenance`) without creating or sending a new notification.
 - Production performance issue recorded: owner member list/detail APIs were successful after deploy but slow in Vercel logs (`/api/orgs/.../members` about 6-9s and member detail about 6s). This explains the visible skeleton/stale-looking dashboard delay and needs a follow-up query/cache optimization pass.
-- Platform console was rechecked after loading settled: provider readiness showed 8 ready services, 0 setup gaps, 14 visible users, and one platform payment ledger row (`mock_seed_membership`, ₹1,799, Succeeded). The demo gym `Aarogya Strength` is visible inline with Pune location, Open Join, Active status, trial end `16 Jul 2026`, and Growth monthly subscription/autopay details, but the platform gym table has no separate safe `Details` action; only mutating actions are exposed. Checklist item 8 remains open as a product/checklist gap.
-- Owner payment history remains a data-surface gap: owner `/dashboard/payments` showed reconciliation/offline controls and a settled shop order, while the actual mock-seed membership payment is only visible in the platform payment ledger. Checklist item 43 remains open until tenant payment history shows a demo/offline payment row or the checklist is clarified.
+- Platform console was rechecked after loading settled: provider readiness showed 8 ready services, 0 setup gaps, 14 visible users, and one platform payment ledger row (`mock_seed_membership`, ₹1,799, Succeeded). The demo gym `Aarogya Strength` is visible inline with Pune location, Open Join, Active status, trial end `16 Jul 2026`, Growth monthly subscription/autopay details, and a safe read-only `Details` action. The details panel opens with status `Active`, join mode `Open Join`, trial end `16 Jul 2026`, location `Pune, Maharashtra`, contact `hello@aarogyastrength.example`, created date `17 May 2026`, and safety-review metadata.
+- Owner payment history data-surface gap was fixed and verified in production Chrome: branch-scoped owner `/dashboard/payments` now shows the seeded Nisha Menon membership payment as `Succeeded`, `Online`, `₹1,799`, with the reconciliation settled count updated to `1`.
 - Trainer role was retested in production Chrome and signed out: `trainer@zook.local` opened `/coach`, showing 1 assigned client, 1 assigned plan, 0 sessions this week, 1 progress note, and pinned client Nisha Menon with `Upper Body Strength`. The web coach page does not expose a client-detail/member workflow; its quick actions route to `/me` and state the full coaching surface lives on mobile. Trainer mutation/progress checklist items remain open.
 
 ## Ground Rules
@@ -92,7 +92,7 @@ Add these to the pass before signing off production:
 5. [x] [web] Log in as `platform@zook.local` with OTP `000000`.
 6. [x] [web] Open the platform dashboard.
 7. [x] [web] Confirm the demo org appears in platform orgs.
-8. [ ] [web] Open the demo org details.
+8. [x] [web] Open the demo org details.
 9. [x] [web] Confirm subscription/billing status is demo-safe, not real charged billing.
 10. [x] [web] Confirm the demo users are visible or searchable.
 11. [x] [web] Log out.
@@ -127,7 +127,7 @@ Add these to the pass before signing off production:
 40. [ ] [web] Edit stock and price.
 41. [ ] [web] Confirm inventory movement appears if supported.
 42. [x] [web] Go to Payments.
-43. [ ] [web] Confirm demo payment records are visible.
+43. [x] [web] Confirm demo payment records are visible.
 44. [x] [web] Confirm refunds/payment events are clearly demo/offline, or skip before any live capture.
 45. [x] [web] Go to Notifications.
 46. [ ] [web] Create a draft notification for selected demo members.
