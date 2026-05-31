@@ -62,16 +62,6 @@ function formatInrCompact(paise: number) {
   return `₹${Math.round(rupees)}`;
 }
 
-function OverviewPanelSkeleton({ className = "" }: { className?: string }) {
-  return (
-    <GlassCard className={`p-5 ${className}`}>
-      <div className="h-3 w-32 animate-pulse rounded-full bg-[var(--surface-raised)]" />
-      <div className="mt-4 h-8 w-44 animate-pulse rounded-full bg-[var(--surface-raised)]" />
-      <div className="mt-5 h-40 animate-pulse rounded-[24px] bg-[var(--bg-sunken)]" />
-    </GlassCard>
-  );
-}
-
 export function DashboardOverview({
   activeOrg,
   selectedBranch,
@@ -346,9 +336,6 @@ export function DashboardOverview({
         }`}
       >
         {prefs.widgets.revenueChart ? (
-          isHydratingDetails ? (
-            <OverviewPanelSkeleton />
-          ) : (
           <GlassCard className="overflow-hidden p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -381,7 +368,6 @@ export function DashboardOverview({
               />
             </div>
           </GlassCard>
-          )
         ) : null}
 
         <GlassCard className="p-5">
@@ -419,9 +405,6 @@ export function DashboardOverview({
         }`}
       >
         {prefs.widgets.attendanceBars ? (
-        isHydratingDetails ? (
-          <OverviewPanelSkeleton />
-        ) : (
         <GlassCard className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -446,13 +429,9 @@ export function DashboardOverview({
             <BarChart series={attendanceTrend} labels={charts.attendance7d.map((point) => point.label || "")} tone="sky" />
           </div>
         </GlassCard>
-        )
         ) : null}
 
         {prefs.widgets.planMix ? (
-        isHydratingDetails ? (
-          <OverviewPanelSkeleton />
-        ) : (
         <GlassCard className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -498,7 +477,6 @@ export function DashboardOverview({
             </div>
           </div>
         </GlassCard>
-        )
         ) : null}
       </div>
       ) : null}
