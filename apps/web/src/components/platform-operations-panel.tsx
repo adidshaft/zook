@@ -228,10 +228,12 @@ type ProviderDiagnostics = {
 export function PlatformOperationsPanel({
   initialOrgs,
   initialFlags,
+  initialProviders,
   initialSection = "readiness",
 }: {
   initialOrgs: PlatformOrganization[];
   initialFlags: PlatformAbuseFlag[];
+  initialProviders?: Record<string, ProviderDiagnostics> | undefined;
   initialSection?: string;
 }) {
   const [busyOrgId, setBusyOrgId] = useState<string | null>(null);
@@ -275,6 +277,7 @@ export function PlatformOperationsPanel({
   const providersState = useOperationalResource<{ providers: Record<string, ProviderDiagnostics> }>(
     {
       path: "/api/platform/provider-status",
+      initialData: initialProviders ? { providers: initialProviders } : undefined,
       enabled: needsStatusData,
     },
   );

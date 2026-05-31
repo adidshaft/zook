@@ -57,7 +57,6 @@ import {
   getPaymentProviderDiagnostics,
   getPushProvider,
   getPushProviderDiagnostics,
-  getProviderRegistryDiagnostics,
   getStorageProvider,
   getStorageProviderDiagnostics,
   getSmsProvider,
@@ -132,8 +131,8 @@ import { createUniqueMemberSlug } from "../member-slug";
 import { privateUserHandle } from "../private-user-handle";
 import { writeAuditLog } from "../audit";
 import { getDevOtpResponseValue } from "../auth-response";
-import { assertRateLimit, defaultRateLimitRules, getRateLimitDiagnostics } from "../rate-limit";
-import { getServerCacheDiagnostics } from "../server-cache";
+import { assertRateLimit, defaultRateLimitRules } from "../rate-limit";
+import { getPlatformProviderDiagnostics } from "../domains/overview";
 import { currentRequestId } from "../request-state";
 import { getClientIp } from "../security";
 import { buildGymDiscoveryResults } from "../gym-discovery";
@@ -18080,62 +18079,7 @@ export async function handleAiNotificationsShopPrivacyPlatform(
   if (request.method === "GET" && pathMatches(path, ["platform", "provider-status"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
-    const registry = getProviderRegistryDiagnostics();
-    const normalizeProviderDiagnostics = (name: string, value: unknown) => {
-      const record = value as {
-        selectedProvider?: unknown;
-        activeProvider?: unknown;
-        status?: unknown;
-        missingEnv?: unknown;
-        env?: unknown;
-        provider?: unknown;
-        mode?: unknown;
-        configured?: unknown;
-        lastCheckedAt?: unknown;
-        notes?: unknown;
-        metadata?: unknown;
-      };
-      const selectedProvider =
-        typeof record.selectedProvider === "string" ? record.selectedProvider : name;
-      const activeProvider =
-        typeof record.activeProvider === "string" ? record.activeProvider : null;
-      const missingEnv = Array.isArray(record.missingEnv)
-        ? record.missingEnv.filter((item): item is string => typeof item === "string")
-        : [];
-      return {
-        selectedProvider,
-        activeProvider,
-        status: typeof record.status === "string" ? record.status : "unknown",
-        configured: Boolean(record.configured),
-        missingEnv,
-        env:
-          record.env && typeof record.env === "object"
-            ? (record.env as Record<string, boolean>)
-            : {},
-        provider: typeof record.provider === "string" ? record.provider : selectedProvider,
-        mode: typeof record.mode === "string" ? record.mode : selectedProvider,
-        ...(typeof record.lastCheckedAt === "string"
-          ? { lastCheckedAt: record.lastCheckedAt }
-          : {}),
-        ...(typeof record.notes === "string" ? { notes: record.notes } : {}),
-        ...(record.metadata && typeof record.metadata === "object"
-          ? { metadata: record.metadata as Record<string, string | number | boolean | null> }
-          : {}),
-      };
-    };
-    const coarseProviders = Object.fromEntries(
-      Object.entries(registry).map(([name, value]) => [
-        name,
-        normalizeProviderDiagnostics(name, value),
-      ]),
-    );
-    return ok({
-      providers: {
-        ...coarseProviders,
-        rateLimit: normalizeProviderDiagnostics("rateLimit", getRateLimitDiagnostics()),
-        cache: normalizeProviderDiagnostics("cache", getServerCacheDiagnostics()),
-      },
-    });
+    return ok({ providers: getPlatformProviderDiagnostics() });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "abuse-flags"])) {
     const ctx = await getRequestContext(request);
