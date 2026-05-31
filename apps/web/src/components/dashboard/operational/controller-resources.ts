@@ -38,6 +38,7 @@ export function useDashboardOperationalResources({
   initialJoinRequests,
   initialAiUsage,
   initialMembers,
+  initialPaymentsPage,
   summary,
   branchScope,
 }: {
@@ -47,6 +48,9 @@ export function useDashboardOperationalResources({
   initialJoinRequests: JoinRequestRow[];
   initialAiUsage: AIUsageRow[];
   initialMembers?: MemberRow[] | undefined;
+  initialPaymentsPage?:
+    | { payments: PaymentRow[]; nextCursor?: string | null; limit: number }
+    | undefined;
   summary: OrganizationSummary;
   branchScope: BranchScopeSnapshot;
 }) {
@@ -115,6 +119,10 @@ export function useDashboardOperationalResources({
     path: withBranch(`/api/orgs/${orgId}/payments?limit=50`),
     enabled: mode === "payments" || mode === "payment-refunds",
     itemKey: "payments",
+    initialPage:
+      (mode === "payments" || mode === "payment-refunds") && initialPaymentsPage
+        ? initialPaymentsPage
+        : undefined,
   });
   const attendanceState = usePagedOperationalResource<
     { attendance: AttendanceRecordRow[]; nextCursor?: string | null; limit: number },

@@ -167,7 +167,10 @@ import {
   getOrganizationDashboardData,
   invalidateOrganizationDashboardCache,
 } from "../domains/overview";
-import { getOrganizationRecentPayments } from "../domains/payments";
+import {
+  getOrganizationPaymentsPage,
+  getOrganizationRecentPayments,
+} from "../domains/payments";
 import {
   pricingFromPlanCatalog,
   saasPlanCatalogFromSetting,
@@ -2618,41 +2621,7 @@ async function listOrganizationPaymentsPage(orgId: string, request: NextRequest)
   const { limit, cursor } = parseCursorPagination(request, 50, 100);
   const ctx = await getRequestContext(request, { orgId });
   const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
-  const payments = await prisma.payment.findMany({
-    where: { orgId, ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}) },
-    orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
-    take: limit + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-  });
-  const page = pageResult(payments, limit);
-  const users = await prisma.user.findMany({
-    where: {
-      id: { in: page.items.map((payment) => payment.userId).filter(Boolean) as string[] },
-    },
-  });
-  const refunds = page.items.length
-    ? await prisma.paymentRefund.findMany({
-        where: { orgId, paymentId: { in: page.items.map((payment) => payment.id) } },
-        orderBy: { createdAt: "desc" },
-      })
-    : [];
-  const usersById = new Map(users.map((user) => [user.id, user]));
-  return {
-    payments: page.items.map((payment) => {
-      const user = payment.userId ? usersById.get(payment.userId) : undefined;
-      const paymentRefunds = refunds.filter((refund) => refund.paymentId === payment.id);
-      return {
-        ...payment,
-        refunds: paymentRefunds,
-        refundedAmountPaise: paymentRefunds
-          .filter((refund) => !["FAILED", "CANCELLED"].includes(refund.status))
-          .reduce((total, refund) => total + refund.amountPaise, 0),
-        user: user ? { ...user, email: publicUserEmail(user.email) ?? "" } : null,
-      };
-    }),
-    nextCursor: page.nextCursor,
-    limit,
-  };
+  return getOrganizationPaymentsPage({ orgId, branchId, cursor: cursor ?? undefined, limit });
 }
 
 async function listOrganizationAttendancePage(orgId: string, request: NextRequest) {

@@ -19,6 +19,7 @@ export function useDashboardOperationalController({
   initialJoinRequests,
   initialAiUsage,
   initialMembers,
+  initialPaymentsPage,
 }: DashboardOperationalPanelProps) {
   const state = useDashboardOperationalState(organization);
   const resources = useDashboardOperationalResources({
@@ -28,6 +29,7 @@ export function useDashboardOperationalController({
     initialJoinRequests,
     initialAiUsage,
     initialMembers,
+    initialPaymentsPage,
     summary,
     branchScope,
   });
