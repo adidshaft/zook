@@ -7,7 +7,10 @@ export async function getOrganizationRecentPayments(
   filters: DashboardBranchFilter = {},
 ) {
   const payments = await prisma.payment.findMany({
-    where: { orgId, ...(filters.branchId ? { branchId: filters.branchId } : {}) },
+    where: {
+      orgId,
+      ...(filters.branchId ? { OR: [{ branchId: filters.branchId }, { branchId: null }] } : {}),
+    },
     orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
     take: 50,
   });
