@@ -250,41 +250,65 @@ export function PlatformOperationsPanel({
   const [supportNotice, setSupportNotice] = useState("");
   const [broadcastBusyId, setBroadcastBusyId] = useState<string | null>(null);
   const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
+  const activeSection = initialSection;
+  const showStatus = activeSection === "readiness" || activeSection === "incident-checklist";
+  const showUsers = activeSection === "users";
+  const showPayments = activeSection === "payments";
+  const showBroadcasts = activeSection === "broadcasts";
+  const showModeration = activeSection === "moderation";
+  const showImpersonations = activeSection === "impersonations";
+  const showFeatureFlags = activeSection === "feature-flags";
+  const showWebhooks = activeSection === "webhooks";
+  const showAudit = activeSection === "audit";
+  const showOrganizations = activeSection === "organizations";
+  const showSubscriptions = activeSection === "subscriptions";
+  const showAssistant = activeSection === "ai-traffic";
+  const showSafety = activeSection === "abuse-flags";
 
   const organizationsState = useOperationalResource<{ orgs: PlatformOrganization[] }>({
     path: "/api/platform/orgs",
     initialData: { orgs: initialOrgs },
+    enabled: showOrganizations,
   });
   const providersState = useOperationalResource<{ providers: Record<string, ProviderDiagnostics> }>(
     {
       path: "/api/platform/provider-status",
+      enabled: showStatus,
     },
   );
   const usageState = useOperationalResource<{ usage: PlatformUsageRow[] }>({
     path: "/api/platform/ai-usage",
+    enabled: showAssistant,
   });
   const flagsState = useOperationalResource<{ flags: PlatformAbuseFlag[] }>({
     path: "/api/platform/abuse-flags",
     initialData: { flags: initialFlags },
+    enabled: showSafety,
   });
   const featureFlagsState = useOperationalResource<{ flags: PlatformFlagRow[] }>({
     path: "/api/platform/flags",
+    enabled: showFeatureFlags,
   });
   const webhooksState = useOperationalResource<{ attempts: PlatformWebhookAttempt[] }>({
     path: "/api/platform/webhooks",
+    enabled: showWebhooks,
   });
   const auditState = useOperationalResource<{ auditLogs: PlatformAuditRow[] }>({
     path: "/api/platform/audit",
+    enabled: showAudit,
   });
   const broadcastsState = useOperationalResource<{ broadcasts: PlatformBroadcastRow[] }>({
     path: "/api/platform/broadcasts",
+    enabled: showBroadcasts,
   });
   const moderationState = useOperationalResource<{ flags: PlatformModerationRow[] }>({
     path: "/api/platform/moderation",
+    enabled: showModeration,
   });
   const impersonationsState = useOperationalResource<{ impersonations: PlatformImpersonationRow[] }>(
     {
       path: "/api/platform/impersonations",
+      enabled: showImpersonations,
     },
   );
 
@@ -379,14 +403,19 @@ export function PlatformOperationsPanel({
 
   useEffect(() => {
     let mounted = true;
+    if (!showUsers && !showPayments) {
+      return () => {
+        mounted = false;
+      };
+    }
     Promise.all([
-      webApiFetch<{ users: PlatformUserRow[] }>("/api/platform/users"),
-      webApiFetch<{ payments: PlatformPaymentRow[] }>("/api/platform/payments"),
+      showUsers ? webApiFetch<{ users: PlatformUserRow[] }>("/api/platform/users") : null,
+      showPayments ? webApiFetch<{ payments: PlatformPaymentRow[] }>("/api/platform/payments") : null,
     ])
       .then(([usersPayload, paymentsPayload]) => {
         if (!mounted) return;
-        setUserRows(usersPayload.users);
-        setPaymentRows(paymentsPayload.payments);
+        if (usersPayload) setUserRows(usersPayload.users);
+        if (paymentsPayload) setPaymentRows(paymentsPayload.payments);
       })
       .catch((cause) => {
         if (!mounted) return;
@@ -395,7 +424,7 @@ export function PlatformOperationsPanel({
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [showPayments, showUsers]);
 
   async function updateOrganizationStatus(
     orgId: string,
@@ -669,7 +698,7 @@ export function PlatformOperationsPanel({
 
   return (
     <div className="grid gap-4">
-      <GlassCard>
+      <GlassCard className={showStatus ? undefined : "hidden"}>
         <SectionHeader
           eyebrow="Command"
           title="Platform health cockpit"
@@ -714,7 +743,10 @@ export function PlatformOperationsPanel({
         </div>
       </GlassCard>
 
-      <div id="support-console" className="scroll-mt-5">
+      <div
+        id="support-console"
+        className={`scroll-mt-5 ${showUsers || showPayments ? "" : "hidden"}`}
+      >
         <GlassCard>
           <SectionHeader
             eyebrow="Support"
@@ -722,8 +754,11 @@ export function PlatformOperationsPanel({
             description="Recent users and payments are loaded by default. Search narrows the list, and Details opens the full operational record."
             badge={supportNotice ? <Pill tone="lime">{supportNotice}</Pill> : <Pill tone="blue">Live</Pill>}
           />
-          <div className="mt-5 grid gap-4 xl:grid-cols-2">
-            <div id="users" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
+          <div className={`mt-5 grid gap-4 ${showUsers && showPayments ? "xl:grid-cols-2" : ""}`}>
+            <div
+              id="users"
+              className={`scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4 ${showUsers ? "" : "hidden"}`}
+            >
               <SectionHeader
                 eyebrow="Users"
                 title="User search and details"
@@ -893,7 +928,10 @@ export function PlatformOperationsPanel({
               ) : null}
             </div>
 
-            <div id="payments" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
+            <div
+              id="payments"
+              className={`scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4 ${showPayments ? "" : "hidden"}`}
+            >
               <SectionHeader
                 eyebrow="Payments"
                 title="Payment ledger"
@@ -1068,8 +1106,10 @@ export function PlatformOperationsPanel({
         </GlassCard>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <div id="broadcasts" className="scroll-mt-5">
+      <div
+        className={`grid gap-4 ${showBroadcasts && showModeration ? "xl:grid-cols-[1.1fr_0.9fr]" : ""}`}
+      >
+        <div id="broadcasts" className={`scroll-mt-5 ${showBroadcasts ? "" : "hidden"}`}>
           <GlassCard>
             <SectionHeader
               eyebrow="Broadcasts"
@@ -1152,7 +1192,7 @@ export function PlatformOperationsPanel({
           </GlassCard>
         </div>
 
-        <div id="moderation" className="scroll-mt-5">
+        <div id="moderation" className={`scroll-mt-5 ${showModeration ? "" : "hidden"}`}>
           <GlassCard>
             <SectionHeader
               eyebrow="Moderation"
@@ -1218,7 +1258,7 @@ export function PlatformOperationsPanel({
         </div>
       </div>
 
-      <div id="impersonations" className="scroll-mt-5">
+      <div id="impersonations" className={`scroll-mt-5 ${showImpersonations ? "" : "hidden"}`}>
         <GlassCard>
           <SectionHeader
             eyebrow="Impersonations"
@@ -1268,8 +1308,14 @@ export function PlatformOperationsPanel({
         </GlassCard>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        <GlassCard id="feature-flags">
+      <div
+        className={`grid gap-4 ${
+          [showFeatureFlags, showWebhooks, showAudit].filter(Boolean).length > 1
+            ? "xl:grid-cols-3"
+            : ""
+        }`}
+      >
+        <GlassCard id="feature-flags" className={showFeatureFlags ? undefined : "hidden"}>
           <SectionHeader eyebrow="Flags" title="Feature flags" />
           <div className="mt-5 grid gap-3">
             {featureFlags.slice(0, 8).map((flag) => (
@@ -1293,7 +1339,7 @@ export function PlatformOperationsPanel({
           </div>
         </GlassCard>
 
-        <GlassCard id="webhooks">
+        <GlassCard id="webhooks" className={showWebhooks ? undefined : "hidden"}>
           <SectionHeader eyebrow="Webhooks" title="Webhook monitor" />
           <div className="mt-5 grid gap-3">
             {webhooks.slice(0, 8).map((attempt) => (
@@ -1312,7 +1358,7 @@ export function PlatformOperationsPanel({
           </div>
         </GlassCard>
 
-        <GlassCard id="audit">
+        <GlassCard id="audit" className={showAudit ? undefined : "hidden"}>
           <SectionHeader eyebrow="Audit" title="Global audit" />
           <div className="mt-5 grid gap-3">
             {auditLogs.slice(0, 8).map((log) => (
@@ -1327,7 +1373,7 @@ export function PlatformOperationsPanel({
         </GlassCard>
       </div>
 
-      <div id="readiness" className="scroll-mt-5">
+      <div id="readiness" className={`scroll-mt-5 ${showStatus ? "" : "hidden"}`}>
         <GlassCard>
           <SectionHeader
             eyebrow="System checks"
@@ -1428,7 +1474,7 @@ export function PlatformOperationsPanel({
         </GlassCard>
       </div>
 
-      <div id="incident-checklist" className="scroll-mt-5">
+      <div id="incident-checklist" className={`scroll-mt-5 ${showStatus ? "" : "hidden"}`}>
         <GlassCard>
           <SectionHeader
             eyebrow="Incident mode"
@@ -1461,7 +1507,7 @@ export function PlatformOperationsPanel({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.18fr_0.82fr]">
-        <div id="organizations" className="scroll-mt-5">
+        <div id="organizations" className={`scroll-mt-5 ${showOrganizations ? "" : "hidden"}`}>
           <GlassCard>
             <SectionHeader
               eyebrow="Organizations"
@@ -1525,21 +1571,6 @@ export function PlatformOperationsPanel({
                     header: "Actions",
                     render: (org) => (
                       <div className="flex flex-wrap justify-end gap-2">
-                        {(["ACTIVE", "SUSPENDED", "CANCELLED"] as const).map((nextStatus) => (
-                          <ZookButton
-                            key={nextStatus}
-                            tone={nextStatus === "CANCELLED" ? "danger" : "ghost"}
-                            size="sm"
-                            onClick={() => void updateOrganizationStatus(org.id, nextStatus)}
-                            disabled={busyOrgId === org.id || org.status === nextStatus}
-                          >
-                            {nextStatus === "ACTIVE"
-                              ? "Activate"
-                              : nextStatus === "SUSPENDED"
-                                ? "Suspend"
-                                : "Cancel"}
-                          </ZookButton>
-                        ))}
                         <ZookButton
                           tone="ghost"
                           size="sm"
@@ -1547,62 +1578,25 @@ export function PlatformOperationsPanel({
                         >
                           Details
                         </ZookButton>
-                        <ZookButton
-                          tone="danger"
-                          size="sm"
-                          onClick={() => void softDeleteOrganization(org.id)}
-                          disabled={busyOrgId === org.id || org.status === "DELETED"}
-                        >
-                          Soft delete
-                        </ZookButton>
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => void extendOrganizationTrial(org.id)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Extend trial
-                        </ZookButton>
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => void adjustOrganizationCredit(org.id)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Credit
-                        </ZookButton>
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => void changeOrganizationTier(org.id)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Tier
-                        </ZookButton>
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => void renameOrganization(org)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Rename
-                        </ZookButton>
-                        <ZookButton
-                          tone="danger"
-                          size="sm"
-                          onClick={() => void transferOrganizationOwnership(org.id)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Transfer owner
-                        </ZookButton>
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => void bulkImportOrganizationMembers(org.id)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Import CSV
-                        </ZookButton>
+                        {org.status !== "ACTIVE" ? (
+                          <ZookButton
+                            tone="ghost"
+                            size="sm"
+                            onClick={() => void updateOrganizationStatus(org.id, "ACTIVE")}
+                            disabled={busyOrgId === org.id}
+                          >
+                            Activate
+                          </ZookButton>
+                        ) : (
+                          <ZookButton
+                            tone="ghost"
+                            size="sm"
+                            onClick={() => void updateOrganizationStatus(org.id, "SUSPENDED")}
+                            disabled={busyOrgId === org.id}
+                          >
+                            Suspend
+                          </ZookButton>
+                        )}
                       </div>
                     ),
                     align: "right",
@@ -1678,12 +1672,90 @@ export function PlatformOperationsPanel({
                     },
                   ]}
                 />
+                <div className="mt-4 rounded-[18px] border border-white/10 bg-black/20 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                    Advanced actions
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(["ACTIVE", "SUSPENDED", "CANCELLED"] as const).map((nextStatus) => (
+                      <ZookButton
+                        key={nextStatus}
+                        tone={nextStatus === "CANCELLED" ? "danger" : "ghost"}
+                        size="sm"
+                        onClick={() => void updateOrganizationStatus(selectedOrganization.id, nextStatus)}
+                        disabled={busyOrgId === selectedOrganization.id || selectedOrganization.status === nextStatus}
+                      >
+                        {nextStatus === "ACTIVE"
+                          ? "Activate"
+                          : nextStatus === "SUSPENDED"
+                            ? "Suspend"
+                            : "Cancel"}
+                      </ZookButton>
+                    ))}
+                    <ZookButton
+                      tone="ghost"
+                      size="sm"
+                      onClick={() => void extendOrganizationTrial(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Extend trial
+                    </ZookButton>
+                    <ZookButton
+                      tone="ghost"
+                      size="sm"
+                      onClick={() => void adjustOrganizationCredit(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Credit
+                    </ZookButton>
+                    <ZookButton
+                      tone="ghost"
+                      size="sm"
+                      onClick={() => void changeOrganizationTier(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Tier
+                    </ZookButton>
+                    <ZookButton
+                      tone="ghost"
+                      size="sm"
+                      onClick={() => void renameOrganization(selectedOrganization)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Rename
+                    </ZookButton>
+                    <ZookButton
+                      tone="ghost"
+                      size="sm"
+                      onClick={() => void bulkImportOrganizationMembers(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Import CSV
+                    </ZookButton>
+                    <ZookButton
+                      tone="danger"
+                      size="sm"
+                      onClick={() => void transferOrganizationOwnership(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Transfer owner
+                    </ZookButton>
+                    <ZookButton
+                      tone="danger"
+                      size="sm"
+                      onClick={() => void softDeleteOrganization(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id || selectedOrganization.status === "DELETED"}
+                    >
+                      Soft delete
+                    </ZookButton>
+                  </div>
+                </div>
               </div>
             ) : null}
           </GlassCard>
         </div>
 
-        <div className="grid gap-4">
+        <div className={`grid gap-4 ${showOrganizations ? "" : "hidden"}`}>
           <GlassCard>
             <SectionHeader
               eyebrow="Watchlist"
@@ -1734,8 +1806,14 @@ export function PlatformOperationsPanel({
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <div id="ai-traffic" className="scroll-mt-5">
+      <div
+        className={`grid gap-4 ${
+          [showAssistant, showSubscriptions, showSafety].filter(Boolean).length > 1
+            ? "xl:grid-cols-[1.05fr_0.95fr]"
+            : ""
+        }`}
+      >
+        <div id="ai-traffic" className={`scroll-mt-5 ${showAssistant ? "" : "hidden"}`}>
           <GlassCard>
             <SectionHeader
               eyebrow="Assistant"
@@ -1799,9 +1877,9 @@ export function PlatformOperationsPanel({
           </GlassCard>
         </div>
 
-        <PlatformSubscriptionsSection />
+        {showSubscriptions ? <PlatformSubscriptionsSection /> : null}
 
-        <div id="abuse-flags" className="scroll-mt-5">
+        <div id="abuse-flags" className={`scroll-mt-5 ${showSafety ? "" : "hidden"}`}>
           <GlassCard>
             <SectionHeader
               eyebrow="Safety"
