@@ -13,12 +13,9 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "@/lib/reanimated-lite";
 import { radii, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { Palette } from "@/lib/theme/index";
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
@@ -177,10 +174,6 @@ export function ZookButton({
   const resolvedBorderColor = isDisabled ? palette.border.subtle : buttonPalette.borderColor;
   const resolvedTextColor = isDisabled ? palette.text.secondary : buttonPalette.color;
   const contentLabel = busy && busyLabel ? busyLabel : children;
-  const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
   const staticButtonStyle = StyleSheet.flatten([
     styles.button,
     buttonSizeStyle,
@@ -213,16 +206,12 @@ export function ZookButton({
   if (href && !isDisabled) {
     return (
       <Link href={href} asChild>
-        <AnimatedPressable
+        <Pressable
           testID={testID}
           onPressIn={() => {
             if (hapticWeight !== "none") {
               pressWithHaptics(undefined, hapticWeight);
             }
-            scale.value = withSpring(0.95, { mass: 0.5, damping: 12 });
-          }}
-          onPressOut={() => {
-            scale.value = withSpring(1, { mass: 0.5, damping: 12 });
           }}
           onLongPress={() => pressWithHaptics(onLongPress, hapticWeight)}
           accessibilityRole="link"
@@ -230,28 +219,18 @@ export function ZookButton({
             accessibilityLabel ?? (typeof children === "string" ? children : undefined)
           }
           accessibilityState={{ disabled: isDisabled, busy }}
-          style={[staticButtonStyle, animatedStyle]}
+          style={staticButtonStyle}
         >
           {leading}
           {label}
-        </AnimatedPressable>
+        </Pressable>
       </Link>
     );
   }
 
   return (
-    <AnimatedPressable
+    <Pressable
       testID={testID}
-      onPressIn={() => {
-        if (!isDisabled) {
-          scale.value = withSpring(0.95, { mass: 0.5, damping: 12 });
-        }
-      }}
-      onPressOut={() => {
-        if (!isDisabled) {
-          scale.value = withSpring(1, { mass: 0.5, damping: 12 });
-        }
-      }}
       onPress={() => {
         if (!isDisabled) pressWithHaptics(onPress, hapticWeight);
       }}
@@ -273,12 +252,11 @@ export function ZookButton({
         fullWidth ? styles.fullWidth : null,
         isDisabled ? styles.disabled : null,
         style,
-        animatedStyle,
       ]}
     >
       {leading}
       {label}
-    </AnimatedPressable>
+    </Pressable>
   );
 }
 
