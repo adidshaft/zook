@@ -255,6 +255,12 @@ Add these to the pass before signing off production:
 151. [x] [web] Record bugs with account used, platform, page/screen, action, expected result, actual result, and screenshot.
 152. [ ] [web] Decide whether to keep the demo transaction history or reseed/reset demo data.
 
+## Current Mobile Evidence
+
+- 2026-05-31: Attempted to build and launch the native iOS app on the booted iPhone 17 Pro simulator via `Zook.xcworkspace` / `Zook` / `com.zook.app` with production API env. The build/run tool hit its 120s timeout and no `com.zook.app` install was present afterward, so native app checklist items remain unchecked.
+- 2026-05-31: Ran the Expo mobile web target on `http://localhost:8082/login` with `MOBILE_API_BASE_URL=https://app.zookfit.in/api`, `EXPO_PUBLIC_API_BASE_URL=https://app.zookfit.in/api`, and production env. The login UI showed both `Use mobile number` and `Use email`; switching to email changed the identifier field to the email path. Sending `member@zook.local` from localhost showed `We cannot connect right now`, while a direct production API request succeeded, so this appears to be a local web/CORS-style limitation rather than production API downtime.
+- 2026-05-31: Production API smoke for `member@zook.local` succeeded with seeded OTP `000000`. Read-only member data returned active org `Aarogya Strength`, active membership `ACTIVE`, `2` memberships, `3` attendance records, `1` assigned plan, `3` notifications, and `1` shop order. This verifies the backend data needed by mobile home/membership/attendance/plans/notifications/shop, but not the native rendering, camera scan, haptic, or geofence behavior.
+
 ## Recommended Account Usage
 
 | Account | Use |
