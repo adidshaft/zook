@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { formatInr } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
@@ -102,6 +102,16 @@ export function useDeskWorkspace({
       })
       .slice(0, 12);
   }, [memberQuery, members]);
+
+  useEffect(() => {
+    if (!selectedMember?.user?.id) return;
+    const nextSelectedMember = members.find(
+      (member) => member.user?.id === selectedMember.user?.id,
+    );
+    if (nextSelectedMember && nextSelectedMember !== selectedMember) {
+      setSelectedMember(nextSelectedMember);
+    }
+  }, [members, selectedMember]);
 
   function memberPaymentDefaults(member: MemberRow | null) {
     const subscription = member?.activeSubscription;
@@ -220,8 +230,28 @@ export function useDeskWorkspace({
           reason: "Allowed by reception after identity check.",
         },
       });
-      todayState.reload();
+      void Promise.all([todayState.reload(), membersState.reload()]);
       setToast(copy.entryApproved);
+    } catch (cause) {
+      void membersState.reload();
+      setToast(cause instanceof Error ? cause.message : copy.unableEntry);
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function checkOutMember(member: MemberRow) {
+    const activeCheckIn = member.activeCheckIn;
+    if (!activeCheckIn?.id) return;
+    try {
+      setBusyId(`checkout:${member.user?.id ?? activeCheckIn.id}`);
+      setToast("");
+      await webApiFetch(`/api/orgs/${orgId}/attendance/${activeCheckIn.id}/checkout`, {
+        method: "POST",
+        body: { reason: "manual" },
+      });
+      void Promise.all([todayState.reload(), membersState.reload()]);
+      setToast(copy.entryCheckedOut);
     } catch (cause) {
       setToast(cause instanceof Error ? cause.message : copy.unableEntry);
     } finally {
@@ -429,6 +459,7 @@ export function useDeskWorkspace({
       jumpToShopPayment,
       skipPickupCode,
       overrideMemberEntry,
+      checkOutMember,
       sendMemberMessage,
       submitMemberMessage,
       updateAttendance,

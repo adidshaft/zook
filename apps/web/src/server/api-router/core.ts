@@ -2401,7 +2401,7 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
   });
   const page = pageResult(profiles, limit);
   const memberUserIds = page.items.map((profile) => profile.userId);
-  const [users, subscriptions, attendance, payments] = await Promise.all([
+  const [users, subscriptions, recentAttendance, activeAttendance, payments] = await Promise.all([
     prisma.user.findMany({ where: { id: { in: memberUserIds } } }),
     prisma.memberSubscription.findMany({
       where: { orgId, memberUserId: { in: memberUserIds } },
@@ -2412,13 +2412,36 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
       orderBy: { checkedInAt: "desc" },
       take: Math.max(memberUserIds.length * 3, 20),
     }),
+    prisma.attendanceRecord.findMany({
+      where: {
+        orgId,
+        userId: { in: memberUserIds },
+        checkedOutAt: null,
+        status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
+      },
+      orderBy: { checkedInAt: "desc" },
+    }),
     prisma.payment.findMany({
       where: { orgId, userId: { in: memberUserIds } },
       orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
       take: Math.max(memberUserIds.length * 3, 20),
     }),
   ]);
+  const attendanceById = new Map(
+    [...activeAttendance, ...recentAttendance].map((record) => [record.id, record]),
+  );
+  const attendance = Array.from(attendanceById.values()).sort(
+    (left, right) => right.checkedInAt.getTime() - left.checkedInAt.getTime(),
+  );
   const usersById = new Map(users.map((user) => [user.id, user]));
+  const branchIds = Array.from(new Set(attendance.map((record) => record.branchId)));
+  const branches = branchIds.length
+    ? await prisma.branch.findMany({
+        where: { id: { in: branchIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const branchNamesById = new Map(branches.map((branch) => [branch.id, branch.name]));
   const planIds = Array.from(new Set(subscriptions.map((subscription) => subscription.planId)));
   const plans = planIds.length
     ? await prisma.membershipPlan.findMany({
@@ -2440,11 +2463,35 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
       return {
         profile,
         user: user ? serializeUserForClient(user) : null,
-        lastCheckIn: attendance.find((record) => record.userId === profile.userId) ?? null,
+        activeCheckIn:
+          attendance
+            .filter(
+              (record) =>
+                record.userId === profile.userId &&
+                !record.checkedOutAt &&
+                ["APPROVED", "PENDING_APPROVAL", "FLAGGED"].includes(record.status),
+            )
+            .map(attendanceWithEntryCode)
+            .map((record) => ({
+              ...record,
+              branchName: branchNamesById.get(record.branchId) ?? null,
+            }))[0] ?? null,
+        lastCheckIn:
+          attendance
+            .filter((record) => record.userId === profile.userId)
+            .map(attendanceWithEntryCode)
+            .map((record) => ({
+              ...record,
+              branchName: branchNamesById.get(record.branchId) ?? null,
+            }))[0] ?? null,
         recentCheckIns: attendance
           .filter((record) => record.userId === profile.userId)
           .slice(0, 3)
-          .map(attendanceWithEntryCode),
+          .map(attendanceWithEntryCode)
+          .map((record) => ({
+            ...record,
+            branchName: branchNamesById.get(record.branchId) ?? null,
+          })),
         lastPayment: payments.find((payment) => payment.userId === profile.userId) ?? null,
         activeSubscription: activeSubscription
           ? { ...activeSubscription, plan: plansById.get(activeSubscription.planId) ?? null }
@@ -12872,6 +12919,70 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     requireOrgPermission(ctx, orgId, "ATTENDANCE_APPROVE");
     const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
     return ok({ records: await getOrganizationPendingAttendance(orgId, clean({ branchId })) });
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "attendance", /.+/, "checkout"])
+  ) {
+    const orgId = path[1]!;
+    const attendanceRecordId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgAnyPermission(ctx, orgId, [
+      "ATTENDANCE_APPROVE",
+      "ATTENDANCE_MANUAL_OVERRIDE",
+    ]);
+    const body = attendanceCheckoutSchema.parse(await readJson(request));
+    const record = await prisma.attendanceRecord.findFirst({
+      where: { id: attendanceRecordId, orgId },
+    });
+    if (!record) {
+      throw notFoundError("Attendance record not found");
+    }
+    await assertBranchAccessForContext(ctx, orgId, record.branchId);
+    if (record.status === "REJECTED") {
+      throw conflictError("Rejected attendance records cannot be checked out.");
+    }
+    const openRecords = await prisma.attendanceRecord.findMany({
+      where: {
+        orgId,
+        userId: record.userId,
+        branchId: record.branchId,
+        checkedOutAt: null,
+        status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
+      },
+      orderBy: { checkedInAt: "desc" },
+    });
+    const recordsToClose = openRecords.some((openRecord) => openRecord.id === record.id)
+      ? openRecords
+      : [record, ...openRecords];
+    const checkedOutRecords = await Promise.all(
+      recordsToClose.map((openRecord) => closeAttendanceSession(openRecord, body.reason)),
+    );
+    const checkedOutRecord =
+      checkedOutRecords.find((candidate) => candidate.id === record.id) ?? checkedOutRecords[0]!;
+    await invalidateOrganizationDashboardCache(orgId, { branchId: record.branchId });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "attendance.desk_checked_out",
+      entityType: "AttendanceRecord",
+      entityId: record.id,
+      metadata: clean({
+        memberUserId: record.userId,
+        branchId: record.branchId,
+        reason: body.reason,
+        closedRecordIds: recordsToClose.map((openRecord) => openRecord.id),
+        latitude: body.latitude,
+        longitude: body.longitude,
+      }),
+    });
+    const [attendance] = await enrichAttendanceRecords([checkedOutRecord]);
+    return ok({
+      attendance,
+      action: record.checkedOutAt ? "already_checked_out" : "checkout",
+      checkedOut: true,
+    });
   }
   if (
     request.method === "POST" &&

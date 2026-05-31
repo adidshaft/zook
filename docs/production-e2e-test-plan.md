@@ -21,6 +21,8 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Reception Orders passed read-only in production Chrome: `/desk/orders` rendered the branch-scoped shop pickup surface, including an existing paid `Nisha Menon` order for `1 x Water Bottle, 1 x Protein Shake`, pickup code hidden, and verify/skip/fulfill controls. Fulfillment was intentionally not clicked because it mutates production order state.
 - Reception Payments route passed as a safe collection surface: `/desk/payments` rendered the offline desk payment form for membership/shop/other collections with cash mode default and did not open Razorpay. No payment was submitted without action-time approval.
 - Platform wrap-up was rechecked in production Chrome on 2026-05-31: `/api/ready` showed `ready: true`, production DB reachable/schema-ready/migrations applied, MSG91 live ready, Razorpay live ready, distributed cache, and distributed rate limiting. `/api/health` showed `alive: true` and `envProfile: "production"`. The platform dashboard showed 3 gym accounts, `Aarogya Strength` / `aarogya-strength` active, 14 visible users including all seeded demo accounts, 0 provider setup gaps, 0 suspended gyms, 1 existing mock-seed succeeded payment, and the subscription table showed `Aarogya Strength` on Growth monthly with autopay `Created`, `0 cycles paid`, and next charge `16 Jul 2026`.
+- Platform dashboard formatting/performance fix shipped on 2026-05-31: Vercel deployment `https://zook-gym-8lqfsrcq2-adidshafts-projects.vercel.app` reduced platform section loading by gating operational API calls to the active section and moving dense row actions into the detail panel.
+- Desk attendance checkout gap found and fixed on 2026-05-31: production initially showed Nisha Menon blocked by historical open check-ins with no desk-side checkout action. Vercel deployments `https://zook-gym-lr6k3l7v9-adidshafts-projects.vercel.app` and `https://zook-gym-o1m0089o7-adidshafts-projects.vercel.app` added an active check-in panel, a desk checkout action, stale-open-session cleanup for the selected branch, and non-blocking desk refreshes. Production API retest with `reception@zook.local` checked Nisha in as `cmptmqnhw0000jm04ldft73g4`, then checked her out with `durationSeconds: 55`; member readback showed `activeCheckIn: null`, and owner readback showed `todayAttendance: 1` plus the checked-out attendance row in history.
 - Admin role retest passed in production Chrome: `admin@zook.local` logged in with OTP `000000`, landed on the dashboard, and could open Members, Plans, Attendance, Shop, and Reports. Members showed Karan Desk Test, Dev Mehta, Nisha Menon, and Ira Shah. Plans showed 4 membership offers plus the reviewed Starter Strength Week workout plan. Attendance showed the live rolling QR, zero exceptions, and recent Nisha Menon scans. Shop showed Shaker, Protein Shake, and Water Bottle stock without touching create/edit/archive/delete actions. Reports showed the CSV export pack and live KPI panels. Direct navigation to `/dashboard/billing` redirected the admin back to `/dashboard`, confirming that owner-only billing stayed blocked for this role. Admin was then signed out to the public homepage.
 - Owner member detail bug found and fixed during the 2026-05-31 run: `member2@zook.local` / Dev Mehta appeared in the branch-scoped roster but the detail panel failed with `This member belongs to another branch.` The server now allows branch detail access for member profiles with no subscriptions while still blocking members subscribed to a different branch. Production deploy `dpl_2DQ1ujxN475BvcZuVRMsPSacJ8uq` was retested live: Dev Mehta, Ira Shah, and Karan Desk Test detail views now open.
 - Owner member details were verified read-only after the fix: Nisha Menon shows active membership/payment/attendance/progress context, Dev Mehta opens as a fresh no-plan/no-subscription profile, Ira Shah opens with minor/marketing-off state visible, and Karan Desk Test opens with Monthly Unlimited pending payment for desk flow testing.
@@ -28,7 +30,7 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Owner Shop passed read-only: Products showed seeded Shaker, Protein Shake, and Water Bottle inventory with stock counts; create/edit/archive/delete actions were intentionally not clicked.
 - Owner Payments passed read-only: `/dashboard/payments` rendered reconciliation, offline desk payment controls, payment CSV export, refund guidance, the settled ready-for-pickup order `5EFJWZNL` for ₹548, and the seeded membership payment row for Nisha Menon (`Succeeded`, `Online`, `₹1,799`) without clicking record, refund, receipt, invoice, or settle actions.
 - Owner Notifications passed read-only: `/dashboard/notifications` rendered the 4-step composer, delivery status, and recent sent notifications (`Guardian approval still pending`, `Evening floor maintenance`) without creating or sending a new notification.
-- Production performance issue recorded: owner member list/detail APIs were successful after deploy but slow in Vercel logs (`/api/orgs/.../members` about 6-9s and member detail about 6s). This explains the visible skeleton/stale-looking dashboard delay and needs a follow-up query/cache optimization pass.
+- Production performance issue partially mitigated: platform dashboard section loading is fixed, but owner/member and desk member APIs are still slow in Vercel logs in some runs (`/api/orgs/.../members` and attendance endpoints can take roughly 4-9s). This explains remaining visible skeleton/stale-looking delay and still needs a dedicated query/cache optimization pass for non-platform dashboard data.
 - Platform console was rechecked after loading settled: provider readiness showed 8 ready services, 0 setup gaps, 14 visible users, and one platform payment ledger row (`mock_seed_membership`, ₹1,799, Succeeded). The demo gym `Aarogya Strength` is visible inline with Pune location, Open Join, Active status, trial end `16 Jul 2026`, Growth monthly subscription/autopay details, and a safe read-only `Details` action. The details panel opens with status `Active`, join mode `Open Join`, trial end `16 Jul 2026`, location `Pune, Maharashtra`, contact `hello@aarogyastrength.example`, created date `17 May 2026`, and safety-review metadata.
 - Owner payment history data-surface gap was fixed and verified in production Chrome: branch-scoped owner `/dashboard/payments` now shows the seeded Nisha Menon membership payment as `Succeeded`, `Online`, `₹1,799`, with the reconciliation settled count updated to `1`.
 - Trainer role was retested in production Chrome and signed out: `trainer@zook.local` opened `/coach`, showing 1 assigned client, 1 assigned plan, 0 sessions this week, 1 progress note, and pinned client Nisha Menon with `Upper Body Strength`. The web coach page does not expose a client-detail/member workflow; its quick actions route to `/me` and state the full coaching surface lives on mobile. Trainer mutation/progress checklist items remain open.
@@ -79,8 +81,8 @@ Add these to the pass before signing off production:
 - [ ] [mobile] Geofence checkout stops the active timer when leaving the branch area, if location permission is granted.
 - [ ] [mobile] Multi-branch check-in resolves the branch from QR payload.
 - [ ] [mobile] Multi-branch check-in resolves the nearest branch from geolocation when QR is not involved.
-- [ ] [web] Owner dashboard attendance count updates after member check-in without waiting for stale cache.
-- [ ] [web] Owner dashboard attendance/history updates after member checkout.
+- [x] [web] Owner dashboard attendance count updates after member check-in without waiting for stale cache.
+- [x] [web] Owner dashboard attendance/history updates after member checkout.
 - [ ] [mobile] Member can view recorded attendance durations later.
 - [ ] [mobile] QR verification success completes dynamically, shows the resolved verification state, and gives haptic feedback.
 
@@ -154,12 +156,12 @@ Add these to the pass before signing off production:
 66. [x] [web] Log in as `reception@zook.local` with OTP `000000`.
 67. [x] [web] Open desk/check-in.
 68. [x] [web] Search for `member@zook.local`.
-69. [ ] [web] Perform a check-in.
-70. [ ] [web] Confirm check-in succeeds.
+69. [x] [web] Perform a check-in.
+70. [x] [web] Confirm check-in succeeds.
 71. [x] [web] Search for `desk-test-member@zook.local`.
 72. [ ] [web] Activate/process pending membership using demo/offline payment.
 73. [x] [web] Confirm no real payment page or real charge appears.
-74. [ ] [web] Confirm attendance history updates.
+74. [x] [web] Confirm attendance history updates.
 75. [x] [web] Log out.
 76. [x] [web] Log in as `trainer@zook.local` with OTP `000000`.
 77. [x] [web] Open coach/client list.
